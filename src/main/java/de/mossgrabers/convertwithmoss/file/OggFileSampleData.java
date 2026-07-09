@@ -43,7 +43,18 @@ public class OggFileSampleData extends AbstractFileSampleData
     @Override
     public void writeSample (final OutputStream outputStream) throws IOException
     {
-        AudioFileUtils.decompressToWav (this.sampleFile, outputStream);
+        // Decode with the direct decoder which emits all sample frames. The Java Sound path drops
+        // the final block of every file (about 10ms), which breaks sample loops that end at the
+        // end of the file. It is kept as a fallback in case a file cannot be parsed directly.
+        try
+        {
+            OggVorbisDecoder.decodeToWav (this.sampleFile, outputStream);
+        }
+        catch (final IOException ex)
+        {
+            // Nothing has been written to the output stream in this case (see decodeToWav)
+            AudioFileUtils.decompressToWav (this.sampleFile, outputStream);
+        }
     }
 
 
@@ -68,12 +79,12 @@ public class OggFileSampleData extends AbstractFileSampleData
         {
             // Fall back to fully decoding the file, which is exactly the data written later anyway
             final ByteArrayOutputStream outputStream = new ByteArrayOutputStream ();
-            AudioFileUtils.decompressToWav (this.sampleFile, outputStream);
+            this.writeSample (outputStream);
             this.audioMetadata = AudioFileUtils.getMetadata (new ByteArrayInputStream (outputStream.toByteArray ()));
             return;
         }
 
-        // The audio data is decoded to 16-bit when it is written (see decompressToWav)
+        // The audio data is decoded to 16-bit when it is written (see writeSample)
         this.audioMetadata = new DefaultAudioMetadata (this.audioMetadata.getChannels (), this.audioMetadata.getSampleRate (), bitResolution < 0 ? 16 : bitResolution, numberOfFrames);
     }
 
