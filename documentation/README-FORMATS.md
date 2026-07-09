@@ -562,6 +562,7 @@ There are metadata fields for creator and some description specified in the form
 ### Source Options
 
 * Log unused SF2 generators: If enabled, generators which are found in the source but are not used (not supported) as input for the conversion are logged.
+* Keep mismatched stereo samples as mono: If enabled, two samples that the SoundFont links as a stereo pair but whose left and right halves differ in length are kept as separate mono samples instead of being combined into one stereo sample. Off by default. Some SoundFonts - notably commercial E-mu banks - carry unreliable stereo links that flag unrelated mono samples as a pair, so enabling this avoids welding two different sounds into a single stereo sample; leave it off if a bank contains genuine stereo pairs whose channels differ slightly in length. (A differing pitch or sample rate always keeps the samples separate.)
 * Prefix with file name: If enabled, the name of the Soundfont file is added to all resulting destination files.
 * Prefix with program number: If enabled, the preset number of the preset is added to the resulting destination file.
 
