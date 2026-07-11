@@ -13,26 +13,26 @@ package de.mossgrabers.convertwithmoss.format.roland.mv8000;
 public class MV8000Smt
 {
     /** The size of a SMT slot frame in bits. */
-    public static final int  SIZE_BITS          = 210;
+    public static final int      SIZE_BITS          = 210;
 
-    private static final int OFFSET_SAMPLE_ID   = 9;
-    private static final int WIDTH_SAMPLE_ID    = 14;
-    private static final int OFFSET_SWITCH      = 23;
-    private static final int OFFSET_KEY_FOLLOW  = 25;
-    private static final int OFFSET_LEVEL       = 31;
-    private static final int OFFSET_PAN         = 38;
-    private static final int OFFSET_COARSE_TUNE = 45;
-    private static final int OFFSET_FINE_TUNE   = 52;
-    private static final int OFFSET_VELO_LOW    = 59;
-    private static final int OFFSET_FADE_LOW    = 66;
-    private static final int OFFSET_VELO_HIGH   = 73;
-    private static final int OFFSET_FADE_HIGH   = 80;
-    private static final int OFFSET_PLAY_MODE   = 207;
+    private static final int     OFFSET_SAMPLE_ID   = 9;
+    private static final int     WIDTH_SAMPLE_ID    = 14;
+    private static final int     OFFSET_SWITCH      = 23;
+    private static final int     OFFSET_KEY_FOLLOW  = 25;
+    private static final int     OFFSET_LEVEL       = 31;
+    private static final int     OFFSET_PAN         = 38;
+    private static final int     OFFSET_COARSE_TUNE = 45;
+    private static final int     OFFSET_FINE_TUNE   = 52;
+    private static final int     OFFSET_VELO_LOW    = 59;
+    private static final int     OFFSET_FADE_LOW    = 66;
+    private static final int     OFFSET_VELO_HIGH   = 73;
+    private static final int     OFFSET_FADE_HIGH   = 80;
+    private static final int     OFFSET_PLAY_MODE   = 207;
 
     /** Pitch key-follow value for +100% (normal chromatic tracking). */
-    public static final int  KEY_FOLLOW_NORMAL  = 40;
+    public static final int      KEY_FOLLOW_NORMAL  = 40;
     /** Pitch key-follow value for 0% (fixed pitch). */
-    public static final int  KEY_FOLLOW_OFF     = 32;
+    public static final int      KEY_FOLLOW_OFF     = 32;
 
     private final MV8000BitArray bits;
     private final int            baseOffset;
@@ -277,8 +277,8 @@ public class MV8000Smt
 
 
     /**
-     * Get the play mode. 0: loop forward, 1: one-shot (ignores the loop, plays the sample until
-     * its end), 2/3/4: rarely used alternative loop/one-shot modes (uneven values do not loop).
+     * Get the play mode. 0: loop forward, 1: one-shot (ignores the loop, plays the sample until its
+     * end), 2/3/4: rarely used alternative loop/one-shot modes (uneven values do not loop).
      *
      * @return The play mode in the range of 0..4
      */

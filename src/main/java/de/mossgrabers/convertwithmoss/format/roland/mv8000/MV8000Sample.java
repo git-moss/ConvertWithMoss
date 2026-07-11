@@ -30,8 +30,8 @@ public class MV8000Sample
 
     private static final int STEREO_SEPARATOR = 0x7F;
 
-    private int              id;
-    private String           name;
+    private final int        id;
+    private final String     name;
     private int              startPoint;
     private int              loopStart;
     private int              endPoint;
@@ -203,8 +203,8 @@ public class MV8000Sample
 
 
     /**
-     * Get the end point in sample frames. This is also the loop end. The wave data may contain
-     * more frames.
+     * Get the end point in sample frames. This is also the loop end. The wave data may contain more
+     * frames.
      *
      * @return The end point
      */

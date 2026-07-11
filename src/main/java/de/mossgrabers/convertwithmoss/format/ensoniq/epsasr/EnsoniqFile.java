@@ -69,13 +69,13 @@ public class EnsoniqFile
     public static final int                   TYPE_ASR_MACRO   = 34;
 
     /** The instrument file types. */
-    public static final List<Integer>         INSTRUMENT_TYPES = Collections.singletonList (Integer.valueOf (TYPE_EPS_INST));
+    public static final List<Integer>         INSTRUMENT_TYPES = Collections.unmodifiableList (Collections.singletonList (Integer.valueOf (TYPE_EPS_INST)));
     /** The bank file types. */
-    public static final List<Integer>         BANK_TYPES       = Arrays.asList (Integer.valueOf (TYPE_EPS_BANK), Integer.valueOf (TYPE_16PLUS_BANK), Integer.valueOf (TYPE_ASR_BANK));
+    public static final List<Integer>         BANK_TYPES       = Collections.unmodifiableList (Arrays.asList (Integer.valueOf (TYPE_EPS_BANK), Integer.valueOf (TYPE_16PLUS_BANK), Integer.valueOf (TYPE_ASR_BANK)));
     /** The song file types. */
-    public static final List<Integer>         SONG_TYPES       = Arrays.asList (Integer.valueOf (TYPE_EPS_SONG), Integer.valueOf (TYPE_16PLUS_SONG), Integer.valueOf (TYPE_ASR_SONG));
+    public static final List<Integer>         SONG_TYPES       = Collections.unmodifiableList (Arrays.asList (Integer.valueOf (TYPE_EPS_SONG), Integer.valueOf (TYPE_16PLUS_SONG), Integer.valueOf (TYPE_ASR_SONG)));
     /** The sequence file types. */
-    public static final List<Integer>         SEQUENCE_TYPES   = Arrays.asList (Integer.valueOf (5), Integer.valueOf (17), Integer.valueOf (18), Integer.valueOf (19), Integer.valueOf (25), Integer.valueOf (28));
+    public static final List<Integer>         SEQUENCE_TYPES   = Collections.unmodifiableList (Arrays.asList (Integer.valueOf (5), Integer.valueOf (17), Integer.valueOf (18), Integer.valueOf (19), Integer.valueOf (25), Integer.valueOf (28)));
 
     private static final Map<Integer, String> TYPE_MAP;
     static

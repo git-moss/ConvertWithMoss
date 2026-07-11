@@ -23,16 +23,16 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 public class TALSamplerConstants
 {
     /** Normalized value of -12dB. */
-    public static final double    MINUS_12_DB     = 0.353000;
+    public static final double       MINUS_12_DB     = 0.353000;
     /** Normalized value of +6dB. */
-    public static final double    PLUS_6_DB       = 1.0;
+    public static final double       PLUS_6_DB       = 1.0;
     /** The range between -12dB and +6dB. */
-    public static final double    VALUE_RANGE     = PLUS_6_DB - MINUS_12_DB;
+    public static final double       VALUE_RANGE     = PLUS_6_DB - MINUS_12_DB;
 
     /** The current file format version to set. */
-    public static final String    CURRENT_VERSION = "9";
+    public static final String       CURRENT_VERSION = "9";
     /** The IDs to for the 4 layers. */
-    public static final String [] LAYERS          = new String []
+    protected static final String [] LAYERS          = new String []
     {
         "a",
         "b",
@@ -40,8 +40,8 @@ public class TALSamplerConstants
         "d"
     };
 
-    private static final double   INDEX_OFFSET    = 0.0833333333333333;
-    private static final int []   LOW_PASS_POLES  = new int []
+    private static final double      INDEX_OFFSET    = 0.0833333333333333;
+    private static final int []      LOW_PASS_POLES  = new int []
     {
         4,
         2,

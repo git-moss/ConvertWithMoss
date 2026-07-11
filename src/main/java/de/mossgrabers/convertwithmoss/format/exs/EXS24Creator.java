@@ -132,10 +132,10 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                     final ISampleLoop loop = loops.get (0);
                     switch (loop.getType ())
                     {
-                        // LoopType.FORWARDS
-                        default -> exs24Zone.loopDirection = 0;
                         case LoopType.BACKWARDS -> exs24Zone.loopDirection = 1;
                         case LoopType.ALTERNATING -> exs24Zone.loopDirection = 2;
+                        // LoopType.FORWARDS
+                        default -> exs24Zone.loopDirection = 0;
                     }
                     exs24Zone.loopStart = loop.getStart ();
                     exs24Zone.loopEnd = loop.getEnd () + 1;

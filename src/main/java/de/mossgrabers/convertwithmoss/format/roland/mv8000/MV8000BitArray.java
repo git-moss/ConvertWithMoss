@@ -5,8 +5,8 @@
 package de.mossgrabers.convertwithmoss.format.roland.mv8000;
 
 /**
- * Read/write access to bit fields in a byte array (MSB first). The MV-8000 patch parameter block
- * is a densely bit-packed structure with 7-bit ASCII characters and parameter fields of varying
+ * Read/write access to bit fields in a byte array (MSB first). The MV-8000 patch parameter block is
+ * a densely bit-packed structure with 7-bit ASCII characters and parameter fields of varying
  * widths.
  *
  * @author Jürgen Moßgraber
