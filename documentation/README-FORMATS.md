@@ -61,6 +61,7 @@ The following multi-sample formats are supported:
 * [Native Instruments Maschine](#native-instruments-maschine)
 * [Polyend Tracker](#polyend-tracker)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+* [Roland MV-8000/MV-8800](#roland-mv-8000mv-8800)
 * [Roland S-50 Series](#roland-s-50-series) - read only
 * [Roland S-770 Series](#roland-s-770-series) - read only
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
@@ -489,6 +490,14 @@ The following limitations apply:
 * The filter cutoff frequency mapping is an approximation since Renoise's normalized cutoff to frequency curve is internal and not part of the format.
 * There are no dedicated category, author or keyword fields in the format; only the name and a free-text comment are available.
 * Samples stored as 32-bit FLAC inside a source instrument cannot be transcoded (a limitation of the bundled FLAC decoder) and are skipped with an error.
+
+## Roland MV-8000/MV-8800
+
+The Roland MV-8000 Production Studio (2003) and its successor MV-8800 are pad-based sampling workstations. A patch consists of up to 96 partials which are assigned to the 96 pads (6 pad banks with 16 pads), each partial layers up to 4 samples (SMT slots) with velocity ranges and crossfades. Stereo samples are stored as 2 mono samples. Patches are stored in single *.mv0* files which contain all parameters and the sample data (16-bit/44.1kHz).
+
+The file format is not documented by Roland, it was reverse-engineered from the factory patches and the parameter tables of the MV-8000/MV-8800 firmware (see *documentation/design/MV8000_FORMAT.md*). Names, the category, the note mapping, velocity ranges and crossfades, loops, play modes, pitch key-follow, SMT level/panning/coarse/fine tuning, the amplitude envelope, the filter (type, cutoff, resonance, envelope) and the sample data are read and written. The hardware curve of the envelope times is unknown, times are approximated with the curve of the S-7xx series. Note that MV-8800 *.mvf* files are effect presets (e.g. for the Analog Bass Synth) and not patches, they cannot be converted.
+
+When writing patches, samples are converted to 16-bit/44.1kHz. Since the note range of a patch is limited to MIDI notes 21-116, zones outside of this range are clipped or skipped. Identical samples mapped to multiple key ranges are stored only once.
 
 ## Roland S-50 Series
 
