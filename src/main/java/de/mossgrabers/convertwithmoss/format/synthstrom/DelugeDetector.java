@@ -180,14 +180,14 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         final String rootName = top.getNodeName ();
         // Root tag is either 'kit' or 'sound', already checked in fixBrokenXml
         final boolean isKit = DelugeTag.KIT.equals (rootName);
-        final List<IGroup> groups = isKit ? this.parseKit (file, top) : this.parseSound (file, top);
-        if (groups.isEmpty ())
+        final IGroup group = isKit ? this.parseKit (file, top) : this.parseSound (file, top);
+        if (group == null)
         {
             this.notifier.logError ("IDS_DELUGE_NO_SAMPLE_REFS");
             return Collections.emptyList ();
         }
 
-        return Collections.singletonList (this.createMultisampleSource (file, FileUtils.getNameWithoutType (file), groups));
+        return Collections.singletonList (this.createMultisampleSource (file, FileUtils.getNameWithoutType (file), Collections.singletonList (group)));
     }
 
 
@@ -196,17 +196,17 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param file The source file
      * @param soundElement The sound element
-     * @return A list with one group (containing all zones) or an empty list if not sample based
+     * @return One group (containing all zones) or null
      */
-    private List<IGroup> parseSound (final File file, final Element soundElement)
+    private IGroup parseSound (final File file, final Element soundElement)
     {
         final Element oscElement = findSampleOscillatorElement (soundElement);
         if (oscElement == null)
-            return Collections.emptyList ();
+            return null;
 
         final List<ISampleZone> zones = this.parseSampleOscillator (file, oscElement);
         if (zones.isEmpty ())
-            return Collections.emptyList ();
+            return null;
 
         applySoundParameters (soundElement, zones);
 
@@ -214,9 +214,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         for (final ISampleZone zone: zones)
             group.addSampleZone (zone);
 
-        final List<IGroup> groups = new ArrayList<> ();
-        groups.add (group);
-        return groups;
+        return group;
     }
 
 
@@ -226,20 +224,20 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param file The source file
      * @param kitElement The kit element
-     * @return A list with one group (containing all drum zones) or an empty list
+     * @return One group (containing all drum zones) or null
      */
-    private List<IGroup> parseKit (final File file, final Element kitElement)
+    private IGroup parseKit (final File file, final Element kitElement)
     {
         final Element soundSources = getDirectChild (kitElement, DelugeTag.SOUND_SOURCES);
         if (soundSources == null)
-            return Collections.emptyList ();
+            return null;
 
         final IGroup group = new DefaultGroup ();
         int note = KIT_BASE_NOTE;
         for (final Element drumSound: getDirectChildren (soundSources, DelugeTag.SOUND))
         {
             if (this.waitForDelivery ())
-                return Collections.emptyList ();
+                return null;
 
             final Element oscElement = findSampleOscillatorElement (drumSound);
             if (oscElement != null)
@@ -257,10 +255,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
                 break;
         }
 
-        final List<IGroup> groups = new ArrayList<> ();
-        if (!group.getSampleZones ().isEmpty ())
-            groups.add (group);
-        return groups;
+        return group.getSampleZones ().isEmpty () ? null : group;
     }
 
 

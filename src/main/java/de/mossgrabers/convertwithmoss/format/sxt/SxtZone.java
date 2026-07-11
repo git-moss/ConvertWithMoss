@@ -691,12 +691,12 @@ class SxtZone
             {
                 default:
                 case LOW_PASS:
-                    if (poles == 1)
-                        this.filterType = 65;
-                    else if (poles == 2)
-                        this.filterType = 61;
-                    else
-                        this.filterType = 60;
+                    switch (poles)
+                    {
+                        case 1 -> this.filterType = 65;
+                        case 2 -> this.filterType = 61;
+                        default -> this.filterType = 60;
+                    }
                     break;
 
                 case BAND_PASS:

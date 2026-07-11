@@ -29,16 +29,16 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 public class MV8000Patch
 {
     /** The lowest MIDI note of the 96 entry note table (A0, inherited from the S-770 lineage). */
-    public static final int       NOTE_BASE          = 21;
+    public static final int          NOTE_BASE         = 21;
 
     /** The number of note table entries / pads. */
-    public static final int       NUM_NOTES          = 96;
+    public static final int          NUM_NOTES         = 96;
 
     /** The number of partials. */
-    public static final int       NUM_PARTIALS       = 96;
+    public static final int          NUM_PARTIALS      = 96;
 
     /** The Roland category names (identical to the XV-5080 category list). */
-    public static final String [] CATEGORIES         =
+    public static final String []    CATEGORIES        =
     {
         "NO ASSIGN",
         "AC.PIANO",
@@ -81,32 +81,32 @@ public class MV8000Patch
         "COMBINATION"
     };
 
-    private static final String   MAGIC              = "MVFF";
-    private static final String   FORM_PATCH         = "PAT ";
-    private static final String   CHUNK_FORMAT       = "FMT ";
-    private static final String   CHUNK_PARAMETERS   = "PRM ";
-    private static final String   CHUNK_SAMPLES      = "SMPL";
-    private static final String   CHUNK_WAVE         = "WAVE";
+    private static final String      MAGIC             = "MVFF";
+    private static final String      FORM_PATCH        = "PAT ";
+    private static final String      CHUNK_FORMAT      = "FMT ";
+    private static final String      CHUNK_PARAMETERS  = "PRM ";
+    private static final String      CHUNK_SAMPLES     = "SMPL";
+    private static final String      CHUNK_WAVE        = "WAVE";
 
-    private static final int      VERSION            = 0x75;
-    private static final int      PRM_SIZE           = 15862;
-    private static final int      OFFSET_NAME_BITS   = 64;
-    private static final int      OFFSET_CATEGORY    = 148;
-    private static final int      OFFSET_NOTE_TABLE  = 52;
-    private static final int      OFFSET_PARTIALS    = 148;
-    private static final int      OFFSET_TAIL        = 15796;
-    private static final int      NAME_LENGTH        = 12;
+    private static final int         VERSION           = 0x75;
+    private static final int         PRM_SIZE          = 15862;
+    private static final int         OFFSET_NAME_BITS  = 64;
+    private static final int         OFFSET_CATEGORY   = 148;
+    private static final int         OFFSET_NOTE_TABLE = 52;
+    private static final int         OFFSET_PARTIALS   = 148;
+    private static final int         OFFSET_TAIL       = 15796;
+    private static final int         NAME_LENGTH       = 12;
 
     /** Patch common defaults (bits 155-416) from the factory patches, name/category zeroed. */
-    private static final byte []  COMMON_TEMPLATE    = HexFormat.of ().parseHex ("00000000000000000000001fe02204000000408102040100104fa04081020409d02040970204081020408100");
+    private static final byte []     COMMON_TEMPLATE   = HexFormat.of ().parseHex ("00000000000000000000001fe02204000000408102040100104fa04081020409d02040970204081020408100");
 
     /** The constant 66 byte tail of the parameter block (identical in all factory patches). */
-    private static final byte []  TAIL_TEMPLATE      = HexFormat.of ().parseHex ("858776b40818a040810200858776b408192040810200858776b40819a040810200858776b4081a2040810200858776b4081aa040810200858776b4081b2040810200");
+    private static final byte []     TAIL_TEMPLATE     = HexFormat.of ().parseHex ("858776b40818a040810200858776b408192040810200858776b40819a040810200858776b4081a2040810200858776b4081aa040810200858776b4081b2040810200");
 
-    private final MV8000BitArray  parameters;
-    private final MV8000Partial []partials           = new MV8000Partial [NUM_PARTIALS];
-    private final int []          noteTable          = new int [NUM_NOTES];
-    private final List<MV8000Sample> samples         = new ArrayList<> ();
+    private final MV8000BitArray     parameters;
+    private final MV8000Partial []   partials          = new MV8000Partial [NUM_PARTIALS];
+    private final int []             noteTable         = new int [NUM_NOTES];
+    private final List<MV8000Sample> samples           = new ArrayList<> ();
 
 
     /**
@@ -164,9 +164,9 @@ public class MV8000Patch
 
         for (int i = 0; i < NUM_PARTIALS; i++)
         {
-            final byte [] record = new byte [MV8000Partial.SIZE];
-            System.arraycopy (prmData, OFFSET_PARTIALS + i * MV8000Partial.SIZE, record, 0, MV8000Partial.SIZE);
-            this.partials[i] = new MV8000Partial (record);
+            final byte [] partialRecord = new byte [MV8000Partial.SIZE];
+            System.arraycopy (prmData, OFFSET_PARTIALS + i * MV8000Partial.SIZE, partialRecord, 0, MV8000Partial.SIZE);
+            this.partials[i] = new MV8000Partial (partialRecord);
         }
 
         if (samplesData != null)
@@ -208,12 +208,10 @@ public class MV8000Patch
                 throw new IOException ("Unexpected end of sample data in chunk: " + chunkID);
 
             if (CHUNK_PARAMETERS.equals (chunkID))
-            {
                 try (final InputStream in = new ByteArrayInputStream (samplesData, offset, size))
                 {
                     sample = new MV8000Sample (in);
                 }
-            }
             else if (CHUNK_WAVE.equals (chunkID) && sample != null)
             {
                 final byte [] waveData = new byte [size];

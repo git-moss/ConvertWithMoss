@@ -279,16 +279,14 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
 
     private int parseCrossfadeNotes ()
     {
-        int crossfadeNotes;
         try
         {
-            crossfadeNotes = Integer.parseInt (this.crossfadeNotesField.getText ());
+            return Integer.parseInt (this.crossfadeNotesField.getText ());
         }
         catch (final NumberFormatException _)
         {
-            crossfadeNotes = 0;
+            return 0;
         }
-        return crossfadeNotes;
     }
 
 

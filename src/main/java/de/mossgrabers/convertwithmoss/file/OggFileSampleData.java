@@ -50,7 +50,7 @@ public class OggFileSampleData extends AbstractFileSampleData
         {
             OggVorbisDecoder.decodeToWav (this.sampleFile, outputStream);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // Nothing has been written to the output stream in this case (see decodeToWav)
             AudioFileUtils.decompressToWav (this.sampleFile, outputStream);

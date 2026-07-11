@@ -124,11 +124,11 @@ public class AiffFileSampleData extends AbstractFileSampleData
             final String fileEnding = this.sampleFile.getName ().toLowerCase ();
             if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
             {
-                final AiffFile aiffFile = new AiffFile (this.sampleFile);
-                final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
+                final AiffFile replacementAiffFile = new AiffFile (this.sampleFile);
+                final AiffCommonChunk commonChunk = replacementAiffFile.getCommonChunk ();
                 final WaveFile wavFile = new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), (int) commonChunk.getNumSampleFrames ());
                 final DataChunk dataChunk = wavFile.getDataChunk ();
-                dataChunk.setData (aiffFile.getSoundDataChunk ().getData ());
+                dataChunk.setData (replacementAiffFile.getSoundDataChunk ().getData ());
                 wavFile.write (outputStream);
                 return;
             }

@@ -217,7 +217,7 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
         final double tuning = zone.getTuning ();
         final int semitones = Math.clamp ((int) Math.round (tuning), -48, 48);
         final int coarseTune = 64 + semitones;
-        final int fineTune = Math.clamp (64 + (int) Math.round ((tuning - semitones) * 100), 14, 114);
+        final int fineTune = Math.clamp (64L + (int) Math.round ((tuning - semitones) * 100), 14, 114);
         final int rootKey = Math.clamp (zone.getKeyRoot () < 0 ? zone.getKeyLow () : zone.getKeyRoot (), 0, 127);
 
         final String baseName = createUniqueSampleName (zone.getName (), usedSampleNames, isStereo ? 10 : 12);
@@ -258,7 +258,7 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
             if (isStereo)
                 slot.setPanning (channel == 0 ? 32 : 96);
             else
-                slot.setPanning (Math.clamp (64 + (int) Math.round (zone.getPanning () * 32.0), 32, 96));
+                slot.setPanning (Math.clamp (64L + (int) Math.round (zone.getPanning () * 32.0), 32, 96));
             slot.setCoarseTune (coarseTune);
             slot.setFineTune (fineTune);
             slot.setVelocityLow (Math.clamp (zone.getVelocityLow (), 1, 127));
@@ -266,7 +266,7 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
             slot.setVelocityHigh (Math.clamp (zone.getVelocityHigh (), 1, 127));
             slot.setVelocityFadeHigh (Math.clamp (zone.getVelocityCrossfadeHigh (), 0, 127));
             slot.setPlayMode (isOneShot ? 1 : 0);
-            slot.setKeyFollow (isKeyTracked ? Math.clamp (MV8000Smt.KEY_FOLLOW_OFF + (int) Math.round (zone.getKeyTracking () * 8), 16, 48) : MV8000Smt.KEY_FOLLOW_OFF);
+            slot.setKeyFollow (isKeyTracked ? Math.clamp (MV8000Smt.KEY_FOLLOW_OFF + Math.round (zone.getKeyTracking () * 8), 16, 48) : MV8000Smt.KEY_FOLLOW_OFF);
 
             slotCounts[partialIndex]++;
         }
@@ -337,7 +337,7 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
         if (envelope == null || depth == 0)
             return;
 
-        partial.setFilterEnvelopeDepth (Math.clamp (64 + (int) Math.round (depth * 63), 1, 127));
+        partial.setFilterEnvelopeDepth (Math.clamp (64 + Math.round (depth * 63), 1, 127));
         partial.setTvfEnvelopeTime (0, calculateTimeValue (envelope.getAttackTime ()));
         partial.setTvfEnvelopeTime (1, 0);
         partial.setTvfEnvelopeTime (2, calculateTimeValue (envelope.getDecayTime ()));

@@ -17,46 +17,42 @@ import java.util.HexFormat;
 public class MV8000Partial
 {
     /** The size of a partial record in bytes. */
-    public static final int      SIZE            = 163;
+    public static final int      SIZE              = 163;
 
     /** The number of SMT slots. */
-    public static final int      NUM_SMT_SLOTS   = 4;
+    public static final int      NUM_SMT_SLOTS     = 4;
 
     /** TVF filter type: off. */
-    public static final int      FILTER_OFF          = 0;
+    public static final int      FILTER_OFF        = 0;
     /** TVF filter type: low-pass. */
-    public static final int      FILTER_LPF          = 1;
+    public static final int      FILTER_LPF        = 1;
     /** TVF filter type: band-pass. */
-    public static final int      FILTER_BPF          = 2;
+    public static final int      FILTER_BPF        = 2;
     /** TVF filter type: high-pass. */
-    public static final int      FILTER_HPF          = 3;
+    public static final int      FILTER_HPF        = 3;
 
-    private static final int     NAME_LENGTH         = 12;
-    private static final int     OFFSET_SLOT_1       = 146;
-    private static final int     USED_TAG_OFFSET     = 84;
-    private static final int     USED_TAG_VALUE      = 0x27;
+    private static final int     NAME_LENGTH       = 12;
+    private static final int     OFFSET_SLOT_1     = 146;
+    private static final int     USED_TAG_OFFSET   = 84;
+    private static final int     USED_TAG_VALUE    = 0x27;
 
     // The TVF (filter) and TVA (amplifier) block, decoded from the parameter descriptor tables of
     // the MV-8000 firmware (see documentation/design/MV8000_FORMAT.md)
-    private static final int     OFFSET_TVF_TYPE     = 993;
-    private static final int     OFFSET_TVF_CUTOFF   = 997;
-    private static final int     OFFSET_TVF_RESO     = 1004;
-    private static final int     OFFSET_TVF_DEPTH    = 1034;
-    private static final int     OFFSET_TVF_LEVELS   = 1041;
-    private static final int     OFFSET_TVF_TIMES    = 1069;
-    private static final int     OFFSET_TVA_CURVE    = 1136;
-    private static final int     OFFSET_TVA_LEVELS   = 1159;
-    private static final int     OFFSET_TVA_TIMES    = 1180;
+    private static final int     OFFSET_TVF_TYPE   = 993;
+    private static final int     OFFSET_TVF_CUTOFF = 997;
+    private static final int     OFFSET_TVF_RESO   = 1004;
+    private static final int     OFFSET_TVF_DEPTH  = 1034;
+    private static final int     OFFSET_TVF_LEVELS = 1041;
+    private static final int     OFFSET_TVF_TIMES  = 1069;
+    private static final int     OFFSET_TVA_CURVE  = 1136;
+    private static final int     OFFSET_TVA_LEVELS = 1159;
+    private static final int     OFFSET_TVA_TIMES  = 1180;
 
     /** An unused partial record ('Init Partial') as found in the factory patches. */
-    private static final byte [] INIT_PARTIAL    = HexFormat.of ().parseHex (
-            "93bb4f441430f2e9a70ec01fe007fe4c9020400000107f810200101fc000000000000000000000000000000008000004"
-                    + "1fe040800407f00000000000000000000000000000000200000107f810200101fc000000000000000000000000000000"
-                    + "0080000041fe040800407f000000000000000000000000000000002007f00c0810207ffffc0000505004080f20406040"
-                    + "81fffff000a0a0a79020066000102040810000");
+    private static final byte [] INIT_PARTIAL      = HexFormat.of ().parseHex ("93bb4f441430f2e9a70ec01fe007fe4c9020400000107f810200101fc000000000000000000000000000000008000004" + "1fe040800407f00000000000000000000000000000000200000107f810200101fc000000000000000000000000000000" + "0080000041fe040800407f000000000000000000000000000000002007f00c0810207ffffc0000505004080f20406040" + "81fffff000a0a0a79020066000102040810000");
 
     private final MV8000BitArray bits;
-    private final MV8000Smt []   smtSlots        = new MV8000Smt [NUM_SMT_SLOTS];
+    private final MV8000Smt []   smtSlots          = new MV8000Smt [NUM_SMT_SLOTS];
 
 
     /**

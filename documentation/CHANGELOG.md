@@ -6,9 +6,9 @@
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Elektron Tonverk preset (TVPST) (thanks to Douglas Carmichael).
+* New: Added support for the Roland MV-8000/MV-8800 patch format (MV0) (thanks to Douglas Carmichael).
 * New: Added support for the Fairlight CMI 3 - read only (thanks to PythonBlue).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
-* New: Added support for the Roland MV-8000/MV-8800 patch format (MV0). The undocumented binary format was reverse-engineered from the factory patches and the parameter descriptor tables of the MV-8000/MV-8800 firmware; names, category, note mapping, velocity ranges/crossfades, loops and play modes, pitch key-follow, SMT level/panning/coarse/fine tuning, the amplitude envelope, the filter (type, cutoff, resonance, envelope) and the embedded sample data are read and written (thanks to Douglas Carmichael).
 * User Interface
   * New: Improved user interface for long lists of formats.
   * New: Added menu item when right clicking a log message to open the mentioned folder (if there is one).

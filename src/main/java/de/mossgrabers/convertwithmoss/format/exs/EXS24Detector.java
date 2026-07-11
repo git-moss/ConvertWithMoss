@@ -298,7 +298,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
     }
 
 
-    private static void readModulationMatrix (final EXS24Parameters parameters)
+    private static List<Modulator> readModulationMatrix (final EXS24Parameters parameters)
     {
         final List<Modulator> modulators = new ArrayList<> ();
         for (int i = 0; i < 11; i++)
@@ -324,6 +324,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
                 modulators.add (modulator);
             }
         }
+        return modulators;
     }
 
 
@@ -361,10 +362,10 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
      * Convert an EXS24 envelope time parameter to seconds. The parameter ranges from 0 to 127 and
      * maps to a maximum of 10 seconds, but the device applies a fourth-power (not linear) curve, so
      * low values are far shorter than a linear reading suggests. Calibrated against Logic reference
-     * instruments (parameter 19 = 5 ms, 27 = 20 ms, 53 = 303 ms, 71 = 977 ms, 94 = 3 s, 127 = 10 s),
-     * which fit seconds = 10 * (parameter / 127)^4 to within 1 percent. Reading these times linearly
-     * made e.g. a 7.5 ms attack come out as 1.65 seconds, so the note faded in too slowly to be
-     * heard.
+     * instruments (parameter 19 = 5 ms, 27 = 20 ms, 53 = 303 ms, 71 = 977 ms, 94 = 3 s, 127 = 10
+     * s), which fit seconds = 10 * (parameter / 127)^4 to within 1 percent. Reading these times
+     * linearly made e.g. a 7.5 ms attack come out as 1.65 seconds, so the note faded in too slowly
+     * to be heard.
      *
      * @param parameter The raw envelope time parameter (0..127), or null when not present
      * @return The time in seconds
