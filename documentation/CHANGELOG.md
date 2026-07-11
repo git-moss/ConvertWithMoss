@@ -10,6 +10,7 @@
 * New: Added support for the Downloadable Sound format (DLS) - read only.
 * User Interface
   * New: Improved user interface for long lists of formats.
+  * New: Added menu item when right clicking a log message to open the mentioned folder (if there is one).
   * Fixed: The source format list showed a stray comma before the file extensions (thanks to Douglas Carmichael).
 * Backend
   * New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - Ableton, Ensoniq EPS/ASR, EXS24, NI Kontakt, Renoise, SoundFont 2, SFZ, SXT, Tonverk (thanks to Douglas Carmichael).
