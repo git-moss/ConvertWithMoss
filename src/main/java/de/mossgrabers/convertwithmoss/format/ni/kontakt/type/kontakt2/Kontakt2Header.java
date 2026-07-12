@@ -633,25 +633,29 @@ public class Kontakt2Header
     {
         final byte [] bytes = text.getBytes (StandardCharsets.ISO_8859_1);
         final StringBuilder sb = new StringBuilder ();
-        for (int i = 0; i < text.length (); i++)
-            if (bytes[i] == (byte) 0xEF && i + 2 < bytes.length)
+        int pos = 0;
+        while (pos < text.length ())
+            if (bytes[pos] == (byte) 0xEF && pos + 2 < bytes.length)
             {
-                if (bytes[i + 1] == (byte) 0xBF && bytes[i + 2] == (byte) 0xBC)
+                if (bytes[pos + 1] == (byte) 0xBF && bytes[pos + 2] == (byte) 0xBC)
                 {
                     sb.append ('ü');
-                    i += 2;
+                    pos += 2;
                 }
             }
-            else if (bytes[i] == (byte) 0xC3 && i + 1 < bytes.length)
+            else if (bytes[pos] == (byte) 0xC3 && pos + 1 < bytes.length)
             {
-                if (bytes[i + 1] == (byte) 0xBC)
+                if (bytes[pos + 1] == (byte) 0xBC)
                 {
                     sb.append ('ü');
-                    i++;
+                    pos++;
                 }
             }
             else
-                sb.append ((char) bytes[i]);
+            {
+                sb.append ((char) bytes[pos]);
+                pos++;
+            }
         return sb.toString ();
     }
 }

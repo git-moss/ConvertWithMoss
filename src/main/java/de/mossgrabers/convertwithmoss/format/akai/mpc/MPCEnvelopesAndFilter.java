@@ -23,10 +23,12 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeM
  */
 public class MPCEnvelopesAndFilter
 {
-    private IFilter            filter                  = null;
-    private IEnvelopeModulator ampEnvelopeModulator    = null;
-    private IEnvelopeModulator filterEnvelopeModulator = null;
-    private IEnvelopeModulator pitchEnvelopeModulator  = null;
+    private static final String VALUE0                  = "value0";
+
+    private IFilter             filter                  = null;
+    private IEnvelopeModulator  ampEnvelopeModulator    = null;
+    private IEnvelopeModulator  filterEnvelopeModulator = null;
+    private IEnvelopeModulator  pitchEnvelopeModulator  = null;
 
 
     /**
@@ -63,7 +65,7 @@ public class MPCEnvelopesAndFilter
             if (filterDataNode == null)
                 return;
 
-            final JsonNode valueNode = filterDataNode.get ("value0");
+            final JsonNode valueNode = filterDataNode.get (VALUE0);
             final int filterID = valueNode.get ("filterType").asInt ();
             if (filterID <= 0)
                 return;
@@ -167,7 +169,7 @@ public class MPCEnvelopesAndFilter
         final JsonNode attributeNode = node.get (attribute);
         if (attributeNode == null)
             return defaultValue;
-        final JsonNode valueNode = attributeNode.get ("value0");
+        final JsonNode valueNode = attributeNode.get (VALUE0);
         return valueNode == null ? defaultValue : valueNode.asBoolean ();
     }
 
@@ -177,7 +179,7 @@ public class MPCEnvelopesAndFilter
         final JsonNode attributeNode = node.get (attribute);
         if (attributeNode == null)
             return defaultValue;
-        final JsonNode valueNode = attributeNode.get ("value0");
+        final JsonNode valueNode = attributeNode.get (VALUE0);
         if (valueNode == null)
             return defaultValue;
         final double value = valueNode.asDouble ();

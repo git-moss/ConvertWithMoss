@@ -434,12 +434,12 @@ public class S5xxPatch
             throw new IllegalArgumentException ("Invalid key");
         if (tone < 0 || tone >= 32)
             throw new IllegalArgumentException ("Invalid tone");
-        if (layer == 0)
-            this.toneToKey1[key] = (byte) tone;
-        else if (layer == 1)
-            this.toneToKey2[key] = (byte) tone;
-        else
-            throw new IllegalArgumentException ("Invalid table");
+        switch (layer)
+        {
+            case 0 -> this.toneToKey1[key] = (byte) tone;
+            case 1 -> this.toneToKey2[key] = (byte) tone;
+            default -> throw new IllegalArgumentException ("Invalid table");
+        }
     }
 
 

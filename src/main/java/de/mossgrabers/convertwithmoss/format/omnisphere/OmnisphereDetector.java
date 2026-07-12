@@ -51,14 +51,15 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
 {
-    private static final String    IDS_NOTIFY_ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String    IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND = "IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND";
+    private static final String    IDS_NOTIFY_ERR_BAD_METADATA_FILE     = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
 
-    private static final String [] PRESET_ENDINGS                   =
+    private static final String [] PRESET_ENDINGS                       =
     {
         ".prt_omn"
     };
 
-    private static final String [] MULTISAMPLE_ENDINGS              =
+    private static final String [] MULTISAMPLE_ENDINGS                  =
     {
         ".zmap"
     };
@@ -477,7 +478,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
             final String sampleName = sampleZone.getName ();
             final File sampleFile = new File (parentFolder, sampleName + ".db");
             if (!sampleFile.exists ())
-                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", sampleFile.getName ()));
+                throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, sampleFile.getName ()));
 
             final OmnisphereAggregatedFile aggregatedFile = new OmnisphereAggregatedFile ();
             aggregatedFile.read (sampleFile);
@@ -486,13 +487,13 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
             // SampleZone needs to be duplicated and all of them need to be added to a group
             final Map<String, byte []> wavFiles = aggregatedFile.getWavFiles ();
             if (wavFiles.isEmpty ())
-                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", sampleName + ".wav"));
+                throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, sampleName + ".wav"));
 
             // First assign pitch on/off, otherwise we would need to do it for all of the copied
             // sample-zones
             final Collection<Document> sampledInstrumentXmlFiles = aggregatedFile.getXmlFiles ("SampledInstrument").values ();
             if (sampledInstrumentXmlFiles.isEmpty ())
-                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", sampleFile.getName ()));
+                throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, sampleFile.getName ()));
             final Document sampledInstrumentXmlDocument = sampledInstrumentXmlFiles.iterator ().next ();
             final Element sampledInstrumentXmlRootElement = sampledInstrumentXmlDocument.getDocumentElement ();
             sampleZone.setKeyTracking (XMLUtils.getIntegerAttribute (sampledInstrumentXmlRootElement, "PitchedInstr", 1) > 0 ? 1.0 : 0);
@@ -516,7 +517,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                     final String wavFileName = new File (sampleWaveformElement.getAttribute ("AudioFilePath")).getName ();
                     final byte [] wavFileData = wavFiles.get (wavFileName);
                     if (wavFileData == null)
-                        throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", wavFileName));
+                        throw new IOException (Functions.getMessage (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, wavFileName));
 
                     final ISampleZone rrSampleZone = new DefaultSampleZone (sampleZone);
                     rrSampleZone.setName (FileUtils.getNameWithoutType (wavFileName));

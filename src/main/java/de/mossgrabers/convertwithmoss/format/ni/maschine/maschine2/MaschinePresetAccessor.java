@@ -179,7 +179,8 @@ public class MaschinePresetAccessor
         int offsetZone = isOldFormat ? PRE_X0D_ZONE_SIZE : X0D_ZONE_SIZE;
         int zoneOffset = 0;
         final List<String> filePaths = new ArrayList<> ();
-        for (int sampleIndex = 0; sampleIndex < numberOfSampleZones; sampleIndex++)
+        int sampleIndex = 0;
+        while (sampleIndex < numberOfSampleZones)
         {
             // Sample info parameter: 4 bytes - 5 bytes for libraries; path with a max. of 256
             // characters; 3 more bytes (01 01 00)
@@ -199,7 +200,7 @@ public class MaschinePresetAccessor
             {
                 offsetZone = 60;
                 zoneOffset = 60;
-                sampleIndex--;
+                // Don't increment sampleIndex!
                 continue;
             }
 
@@ -210,6 +211,7 @@ public class MaschinePresetAccessor
             readZoneParameters (zone, offsets.offsetFirstZone + zoneOffset, parameterArray, isOldFormat);
 
             zoneOffset += offsetZone;
+            sampleIndex++;
         }
 
         assignSampleFile (sourceFile, group, filePaths, this.notifier);
@@ -287,9 +289,7 @@ public class MaschinePresetAccessor
         final List<byte []> templateZone = new ArrayList<> (data.subList (X0D_FIRST_ZONE, X0D_FIRST_ZONE + X0D_ZONE_SIZE));
 
         // Remove both existing zones which are contained in the template
-        final int totalZoneLength = X0D_ZONE_SIZE * 2;
-        for (int i = 0; i < totalZoneLength; i++)
-            data.remove (X0D_FIRST_ZONE);
+        data.subList (X0D_FIRST_ZONE, X0D_FIRST_ZONE + X0D_ZONE_SIZE * 2).clear ();
 
         // There are no groups, therefore, collect all sample zones
         final List<ISampleZone> sampleZones = source.getAllSampleZones (true);
@@ -898,7 +898,7 @@ public class MaschinePresetAccessor
         soundInfoIn.skipNBytes (11);
 
         final String soundName = StreamUtils.readUtf16WithLength (soundInfoIn);
-        if (!soundName.isBlank () && !"Sampler".equals (soundName))
+        if (!soundName.isBlank () && !PLUGIN_MASCHINE_SAMPLER.equals (soundName))
             multisampleSource.setName (soundName);
         final String soundAuthor = StreamUtils.readUtf16WithLength (soundInfoIn);
         if (!soundAuthor.isBlank ())

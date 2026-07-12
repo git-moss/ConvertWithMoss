@@ -48,6 +48,7 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
+    private static final String                  FILTER_1_FREQ         = "Filter 1 Freq";
     private static final String                  IDS_NOTIFY_STORING    = "IDS_NOTIFY_STORING";
 
     private static final String                  ICON_CLARINET         = "clarinet";
@@ -642,15 +643,15 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, amplitudeEnvelope.getAttackSlope (), 6);
                     XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, amplitudeEnvelope.getDecaySlope (), 6);
                     XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, amplitudeEnvelope.getReleaseSlope (), 6);
-                    addModulationEntry (document, modulationElement, "ENV1", "Filter 1 Freq", (int) Math.round (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
+                    addModulationEntry (document, modulationElement, "ENV1", FILTER_1_FREQ, (int) Math.round (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
                 }
 
                 final double filterVelocityDepth = filter.getCutoffVelocityModulator ().getDepth ();
                 if (filterVelocityDepth != 0)
-                    addModulationEntry (document, modulationElement, "Vel", "Filter 1 Freq", (int) Math.round (filterVelocityDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
+                    addModulationEntry (document, modulationElement, "Vel", FILTER_1_FREQ, (int) Math.round (filterVelocityDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
                 final double cutoffKeyTracking = filter.getCutoffKeyTracking ();
                 if (cutoffKeyTracking != 0)
-                    addModulationEntry (document, modulationElement, "Key", "Filter 1 Freq", (int) Math.round (cutoffKeyTracking * 1200) + "Ct");
+                    addModulationEntry (document, modulationElement, "Key", FILTER_1_FREQ, (int) Math.round (cutoffKeyTracking * 1200) + "Ct");
             }
 
             // -----------------------------------------------------------

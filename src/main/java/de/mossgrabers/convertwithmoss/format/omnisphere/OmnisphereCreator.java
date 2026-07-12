@@ -55,6 +55,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 {
+    private static final String                    LEVEL                 = "Level";
     private static final String                    ATTRIB_VALUE_DATA_TAG = "ATTRIB_VALUE_DATA";
     private static final String                    DEFAULT_3F800000      = "3f800000";
     private static final String                    DEFAULT_3F000000      = "3f000000";
@@ -65,13 +66,13 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
     static
     {
         final List<String> hitVelocityList = new ArrayList<> ();
-        Collections.addAll (hitVelocityList, "Level", "Minimum", "Maximum");
+        Collections.addAll (hitVelocityList, LEVEL, "Minimum", "Maximum");
         ATTRIBUTE_ORDER.put ("HitVelocity", hitVelocityList);
         final List<String> sampleWaveformList = new ArrayList<> ();
-        Collections.addAll (sampleWaveformList, "RoundRobinSequenceNum", "BaseNote", "AudioFilePath", "Level", "A440");
+        Collections.addAll (sampleWaveformList, "RoundRobinSequenceNum", "BaseNote", "AudioFilePath", LEVEL, "A440");
         ATTRIBUTE_ORDER.put ("SampleWaveform", sampleWaveformList);
         final List<String> sampledInstrumentList = new ArrayList<> ();
-        Collections.addAll (sampledInstrumentList, ATTRIB_VALUE_DATA_TAG, "PitchedInstr", "Level");
+        Collections.addAll (sampledInstrumentList, ATTRIB_VALUE_DATA_TAG, "PitchedInstr", LEVEL);
         ATTRIBUTE_ORDER.put ("SampledInstrument", sampledInstrumentList);
     }
 
@@ -352,7 +353,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
         final Element rootElement = document.createElement ("HitBundle");
         document.appendChild (rootElement);
         rootElement.setAttribute ("BundleKind", Integer.toString (sampleZone.getKeyRoot ()));
-        rootElement.setAttribute ("Level", DEFAULT_3F800000);
+        rootElement.setAttribute (LEVEL, DEFAULT_3F800000);
 
         return document;
     }
@@ -375,10 +376,10 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
         final Element rootElement = document.createElement ("LayerHitStack");
         document.appendChild (rootElement);
-        rootElement.setAttribute ("Level", DEFAULT_3F800000);
+        rootElement.setAttribute (LEVEL, DEFAULT_3F800000);
 
         final Element hitVelocityElement = XMLUtils.addElement (document, rootElement, "HitVelocity");
-        hitVelocityElement.setAttribute ("Level", DEFAULT_3F800000);
+        hitVelocityElement.setAttribute (LEVEL, DEFAULT_3F800000);
         // No idea about this value but the sample is not found if it is set to the minimum velocity
         hitVelocityElement.setAttribute ("Minimum", "0");
         hitVelocityElement.setAttribute ("Maximum", Integer.toString (sampleZones.get (0).getVelocityHigh ()));
@@ -390,7 +391,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             sampleWaveformElement.setAttribute ("RoundRobinSequenceNum", roundRobinIndex);
             sampleWaveformElement.setAttribute ("BaseNote", Integer.toString (sampleZone.getKeyRoot ()));
             sampleWaveformElement.setAttribute ("AudioFilePath", this.createSampleFilename (sampleZone, -1, ".wav"));
-            sampleWaveformElement.setAttribute ("Level", DEFAULT_3F800000);
+            sampleWaveformElement.setAttribute (LEVEL, DEFAULT_3F800000);
             sampleWaveformElement.setAttribute ("A440", DEFAULT_3F800000);
         }
 
@@ -410,7 +411,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
         document.appendChild (rootElement);
         rootElement.setAttribute (ATTRIB_VALUE_DATA_TAG, "");
         rootElement.setAttribute ("PitchedInstr", sampleZone.getKeyTracking () == 0 ? "0" : "1");
-        rootElement.setAttribute ("Level", DEFAULT_3F800000);
+        rootElement.setAttribute (LEVEL, DEFAULT_3F800000);
 
         return document;
     }

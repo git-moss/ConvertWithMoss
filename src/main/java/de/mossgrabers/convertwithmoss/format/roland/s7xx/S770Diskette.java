@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -73,7 +74,7 @@ public class S770Diskette implements IS770Image
      * @param parentPath The path in which to look for the disk file
      * @return The data of the file if found otherwise null
      */
-    public static byte [] findContinuationDisk (final String diskName, final int index, final int numContinuationDiskettes, final File parentPath)
+    public static Optional<byte []> findContinuationDisk (final String diskName, final int index, final int numContinuationDiskettes, final File parentPath)
     {
         // Search the continuation file in the same folder as the 1st file
         for (final File childFile: parentPath.listFiles ())
@@ -104,7 +105,7 @@ public class S770Diskette implements IS770Image
                         final long sampleLength = raf.length () - raf.getFilePointer ();
                         final byte [] sampleData = new byte [(int) sampleLength];
                         raf.readFully (sampleData);
-                        return sampleData;
+                        return Optional.of (sampleData);
                     }
                 }
             }
@@ -114,7 +115,7 @@ public class S770Diskette implements IS770Image
             }
         }
 
-        return null;
+        return Optional.empty ();
     }
 
 

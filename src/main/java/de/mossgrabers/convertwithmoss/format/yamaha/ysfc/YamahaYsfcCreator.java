@@ -64,6 +64,8 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 {
+    private static final String                                 IDS_NOTIFY_STORING       = "IDS_NOTIFY_STORING";
+
     private static final int                                    MAX_PERFORMANCES         = 128;
 
     private static final DestinationAudioFormat                 DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
@@ -194,7 +196,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
         final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
         this.storeMultisamples (multisampleSources, multiFile, format);
 
@@ -215,7 +217,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
         final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
         final YsfcFile ysfcFile = new YsfcFile (true);
         ysfcFile.setVersionStr (format.getMaxVersionStr ());
@@ -244,7 +246,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
         final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
         final YsfcFile ysfcFile = new YsfcFile (true);
         ysfcFile.setVersionStr (format.getMaxVersionStr ());

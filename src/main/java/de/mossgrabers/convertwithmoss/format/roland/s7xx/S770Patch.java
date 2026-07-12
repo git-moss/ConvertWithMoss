@@ -18,6 +18,12 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class S770Patch
 {
+    private static final String        LFO_TVF_DEPTH  = ", lfoTvfDepth=";
+    private static final String        LFO_TVA_DEPTH  = ", lfoTvaDepth=";
+    private static final String        LFO_PITCH_CTRL = ", lfoPitchCtrl=";
+    private static final String        TVF_CTRL       = ", tvfCtrl=";
+    private static final String        TVA_CTRL       = ", tvaCtrl=";
+
     private final String               patchName;
     private final int                  programChangeNumber;
     private final int                  stereoMixLevel;
@@ -420,7 +426,7 @@ public class S770Patch
         @Override
         public String toString ()
         {
-            return "BenderSection [pitchCtrlUp=" + this.pitchCtrlUp + ", pitchCtrlDown=" + this.pitchCtrlDown + ", tvaCtrl=" + this.tvaCtrl + ", tvfCtrl=" + this.tvfCtrl + "]";
+            return "BenderSection [pitchCtrlUp=" + this.pitchCtrlUp + ", pitchCtrlDown=" + this.pitchCtrlDown + TVA_CTRL + this.tvaCtrl + TVF_CTRL + this.tvfCtrl + "]";
         }
     }
 
@@ -536,7 +542,7 @@ public class S770Patch
         @Override
         public String toString ()
         {
-            return "AfterTouchSection [pitchCtrl=" + this.pitchCtrl + ", tvaCtrl=" + this.tvaCtrl + ", tvfCtrl=" + this.tvfCtrl + ", lfoRateCtrl=" + this.lfoRateCtrl + ", lfoPitchCtrl=" + this.lfoPitchCtrl + ", lfoTvaDepth=" + this.lfoTvaDepth + ", lfoTvfDepth=" + this.lfoTvfDepth + "]";
+            return "AfterTouchSection [pitchCtrl=" + this.pitchCtrl + TVA_CTRL + this.tvaCtrl + TVF_CTRL + this.tvfCtrl + ", lfoRateCtrl=" + this.lfoRateCtrl + LFO_PITCH_CTRL + this.lfoPitchCtrl + LFO_TVA_DEPTH + this.lfoTvaDepth + LFO_TVF_DEPTH + this.lfoTvfDepth + "]";
         }
     }
 
@@ -613,7 +619,7 @@ public class S770Patch
         @Override
         public String toString ()
         {
-            return "ModulationSection [lfoRateCtrl=" + this.lfoRateCtrl + ", lfoPitchCtrl=" + this.lfoPitchCtrl + ", lfoTvaDepth=" + this.lfoTvaDepth + ", lfoTvfDepth=" + this.lfoTvfDepth + "]";
+            return "ModulationSection [lfoRateCtrl=" + this.lfoRateCtrl + LFO_PITCH_CTRL + this.lfoPitchCtrl + LFO_TVA_DEPTH + this.lfoTvaDepth + LFO_TVF_DEPTH + this.lfoTvfDepth + "]";
         }
     }
 
@@ -742,7 +748,7 @@ public class S770Patch
         @Override
         public String toString ()
         {
-            return "ControllerSection [ctrlNum=" + this.ctrlSelect + ", pitchCtrl=" + this.pitchCtrl + ", tvaCtrl=" + this.tvaCtrl + ", tvfCtrl=" + this.tvfCtrl + ", lfoRateCtrl=" + this.lfoRateCtrl + ", lfoPitchCtrl=" + this.lfoPitchCtrl + ", lfoTvaDepth=" + this.lfoTvaDepth + ", lfoTvfDepth=" + this.lfoTvfDepth + "]";
+            return "ControllerSection [ctrlNum=" + this.ctrlSelect + ", pitchCtrl=" + this.pitchCtrl + TVA_CTRL + this.tvaCtrl + TVF_CTRL + this.tvfCtrl + ", lfoRateCtrl=" + this.lfoRateCtrl + LFO_PITCH_CTRL + this.lfoPitchCtrl + LFO_TVA_DEPTH + this.lfoTvaDepth + LFO_TVF_DEPTH + this.lfoTvfDepth + "]";
         }
     }
 }

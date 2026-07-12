@@ -34,9 +34,12 @@ public class ZenCoreCreatorUI implements ICoreTaskSettings
     /** The 5-byte model tags in radio-button order; index 0 (KY019) is the default. */
     private static final String [] MODEL_TAGS            =
     {
-        "KY019", // FANTOM / FANTOM-0 / FANTOM EX / Juno-X / Jupiter-X / Jupiter-Xm
-        "MI085", // GAIA-2
-        "RC001"  // ZENOLOGY plug-in
+        /** FANTOM / FANTOM-0 / FANTOM EX / Juno-X / Jupiter-X / Jupiter-Xm. */
+        "KY019",
+        /** GAIA-2. */
+        "MI085",
+        /** ZENOLOGY plug-in. */
+        "RC001"
     };
 
     private ToggleGroup            targetDeviceToggleGroup;

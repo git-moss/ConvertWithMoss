@@ -46,6 +46,8 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    private static final String IDS_NOTIFY_ERR_LOAD_FILE    = "IDS_NOTIFY_ERR_LOAD_FILE";
+
     private static final double FILTER_MINIMUM_FREQUENCY    = 50.0;
     private static final double FILTER_MAXIMUM_CUTOFF_VALUE = 99.0;
     private static final double FILTER_FREQUENCY_RATIO      = Math.pow (15000.0 / FILTER_MINIMUM_FREQUENCY, 1.0 / FILTER_MAXIMUM_CUTOFF_VALUE);
@@ -95,7 +97,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
     }
@@ -109,7 +111,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
     }
@@ -166,7 +168,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
     }
@@ -205,23 +207,24 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
         waveSamples.addAll (waveSamplesUpper);
 
         int lowerKey = 0;
-        for (int i = mirageProgramLower.initialWavesample; i < allSampleData.size (); i++)
+        int sampleCounter = mirageProgramLower.initialWavesample;
+        while (sampleCounter < allSampleData.size ())
         {
-            MirageWaveSample mirageWaveSample = waveSamples.get (i);
+            MirageWaveSample mirageWaveSample = waveSamples.get (sampleCounter);
             if (mirageWaveSample.topKey < lowerKey)
             {
                 // Already in the upper sound, we are done!
-                if (i >= 8)
+                if (sampleCounter >= 8)
                     break;
                 // Skip to the upper sound samples!
-                if (i < 8 + mirageProgramUpper.initialWavesample)
-                    i = 8 + mirageProgramUpper.initialWavesample;
-                mirageWaveSample = waveSamples.get (i);
+                if (sampleCounter < 8 + mirageProgramUpper.initialWavesample)
+                    sampleCounter = 8 + mirageProgramUpper.initialWavesample;
+                mirageWaveSample = waveSamples.get (sampleCounter);
                 if (mirageWaveSample.topKey < lowerKey)
                     break;
             }
 
-            final ISampleZone osc1SampleZone = createSampleZone (multiSampleName, allSampleData, i);
+            final ISampleZone osc1SampleZone = createSampleZone (multiSampleName, allSampleData, sampleCounter);
 
             osc1SampleZone.setKeyLow (LOWEST_NOTE + lowerKey);
             osc1SampleZone.setKeyHigh (LOWEST_NOTE + mirageWaveSample.topKey);
@@ -233,12 +236,12 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             final double tuning = (mirageWaveSample.coarseTune - 4 + mirageWaveSample.fineTune / 256.0) * 12.0 - 7.0;
             int semitones = (int) tuning;
             final double fine = tuning - semitones;
-            if (i >= 8)
+            if (sampleCounter >= 8)
                 semitones -= 24;
             osc1SampleZone.setKeyRoot (45 - semitones);
             osc1SampleZone.setTuning (fine);
 
-            final MirageProgram program = i < 8 ? mirageProgramLower : mirageProgramUpper;
+            final MirageProgram program = sampleCounter < 8 ? mirageProgramLower : mirageProgramUpper;
 
             final IEnvelopeModulator ampEnvelopeModulation = createEnvelopeModulation (program.ampEnvelopeAttack, program.ampEnvelopeDecay, program.ampEnvelopeSustain, program.ampEnvelopeRelease, program.ampEnvelopeSustainVelocity);
             final IEnvelopeModulator amplitudeEnvelopeModulator = osc1SampleZone.getAmplitudeEnvelopeModulator ();
@@ -256,14 +259,10 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             if (cutoffEnvelopeModulator.getDepth () != 0 || filter.getCutoff () > 8000)
             {
                 filter.setCutoffKeyTracking (program.filterKybdTracking / 4.0);
-
                 osc1SampleZone.setFilter (filter);
             }
 
-            // Ignore since results do not work...
-            // final double mixVelocity = program.mixVelocitySensitivity / 124.0;
-            // osc1SampleZone.getAmplitudeVelocityModulator ().setDepth (mixVelocity);
-            // osc2SampleZone.getAmplitudeVelocityModulator ().setDepth (-mixVelocity);
+            // Note: program.mixVelocitySensitivity is ignored since results do not work...
 
             if (mirageWaveSample.loopMode > 0)
             {
@@ -294,13 +293,15 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             // apply parameters of uneven wave-sample!
             if (program.mixModeSwitch > 0)
             {
-                i++;
-                osc2SampleZone.setSampleData (allSampleData.get (i));
+                sampleCounter++;
+                osc2SampleZone.setSampleData (allSampleData.get (sampleCounter));
             }
 
             lowerKey = mirageWaveSample.topKey + 1;
             if (lowerKey > 60)
                 break;
+
+            sampleCounter++;
         }
 
         final List<IGroup> groups = new ArrayList<> ();

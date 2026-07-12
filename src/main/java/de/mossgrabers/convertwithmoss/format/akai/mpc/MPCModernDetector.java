@@ -66,10 +66,11 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 {
-    private static final String IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY = "IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY";
-    private static final String BAD_METADATA_FILE                 = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE = "IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE";
+    private static final String IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY   = "IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY";
+    private static final String BAD_METADATA_FILE                   = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
 
-    private final ObjectMapper  mapper                            = new ObjectMapper ();
+    private final ObjectMapper  mapper                              = new ObjectMapper ();
 
 
     /**
@@ -683,13 +684,13 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
             if (!"ACVS".equals (header[0]))
             {
-                this.notifier.logError ("IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE", header[0]);
+                this.notifier.logError (IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE, header[0]);
                 return Collections.emptyList ();
             }
 
             if (!"json".equals (header[3]))
             {
-                this.notifier.logError ("IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE", "Encoding is '" + header[3] + "'");
+                this.notifier.logError (IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE, "Encoding is '" + header[3] + "'");
                 return Collections.emptyList ();
             }
 
@@ -700,7 +701,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 case "SerialisableTrackData" -> jsonFormat = JSONFormat.TRACK;
                 case "SerialisableProgramData" -> jsonFormat = JSONFormat.PROGRAM;
                 default -> {
-                    this.notifier.logError ("IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE", header[2]);
+                    this.notifier.logError (IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE, header[2]);
                     return Collections.emptyList ();
                 }
             }

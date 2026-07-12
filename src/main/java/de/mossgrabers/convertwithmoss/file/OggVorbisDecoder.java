@@ -31,17 +31,16 @@ import com.github.trilarion.sound.vorbis.jcraft.jorbis.Info;
 /**
  * Decodes an Ogg Vorbis file to a 16-bit WAV file. The Java Sound path (the SPI wrapper around the
  * JOrbis decoder) stops draining the decoder at the last whole block and ignores the end-of-stream
- * length stored in the granule position of the last Ogg page. It therefore loses the final block
- * of every file (e.g. about 10ms for 44.1kHz files), which breaks sample loops that end at (or
- * near) the end of the file. This class drives the same JOrbis decoder directly, drains it fully
- * and so emits all sample frames - the output length matches the granule position of the last Ogg
- * page.
+ * length stored in the granule position of the last Ogg page. It therefore loses the final block of
+ * every file (e.g. about 10ms for 44.1kHz files), which breaks sample loops that end at (or near)
+ * the end of the file. This class drives the same JOrbis decoder directly, drains it fully and so
+ * emits all sample frames - the output length matches the granule position of the last Ogg page.
  *
  * @author Jürgen Moßgraber
  */
 public class OggVorbisDecoder
 {
-    private static final int READ_CHUNK_SIZE   = 8192;
+    private static final int READ_CHUNK_SIZE    = 8192;
     private static final int NUM_HEADER_PACKETS = 3;
 
 
@@ -55,9 +54,9 @@ public class OggVorbisDecoder
 
 
     /**
-     * Decodes an Ogg Vorbis file and writes the audio data in WAV format (16-bit signed PCM) to
-     * the given output stream. The WAV data is fully created in-memory before anything is written,
-     * so nothing has been written to the output stream if an exception occurs.
+     * Decodes an Ogg Vorbis file and writes the audio data in WAV format (16-bit signed PCM) to the
+     * given output stream. The WAV data is fully created in-memory before anything is written, so
+     * nothing has been written to the output stream if an exception occurs.
      *
      * @param inputFile The Ogg Vorbis file to decode
      * @param outputStream The output stream to write the WAV file to
@@ -117,8 +116,8 @@ public class OggVorbisDecoder
 
 
     /**
-     * Reads the first Ogg page and the 3 Vorbis header packets (identification, comment, setup)
-     * and initializes the stream and codec state from them.
+     * Reads the first Ogg page and the 3 Vorbis header packets (identification, comment, setup) and
+     * initializes the stream and codec state from them.
      *
      * @param inputStream Where to read the data from
      * @param syncState The Ogg page synchronization state
@@ -207,10 +206,8 @@ public class OggVorbisDecoder
                 continue;
             }
             // Ignore holes in the data
-            if (pageResult < 0)
-                continue;
             // Skip pages of other multiplexed streams
-            if (page.serialno () != serialNumber)
+            if ((pageResult < 0) || (page.serialno () != serialNumber))
                 continue;
 
             streamState.pagein (page);

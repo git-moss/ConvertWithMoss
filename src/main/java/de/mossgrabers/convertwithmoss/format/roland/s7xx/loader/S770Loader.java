@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770DirectoryEntry;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770DiskFormat;
@@ -144,14 +145,14 @@ public class S770Loader
         final List<byte []> continuationData = new ArrayList<> ();
         for (int i = 1; i <= numDiskettes; i++)
         {
-            final byte [] continuationDisk = S770Diskette.findContinuationDisk (diskName, i, numDiskettes, parentPath);
-            if (continuationDisk == null)
+            final Optional<byte []> continuationDisk = S770Diskette.findContinuationDisk (diskName, i, numDiskettes, parentPath);
+            if (continuationDisk.isEmpty ())
             {
                 System.out.println ("Could not find continuation disk " + (i + 1) + " of " + (numDiskettes + 1) + ". Cancelled.");
                 return;
             }
             System.out.println ("Found continuation disk " + (i + 1) + " of " + (numDiskettes + 1) + ".");
-            continuationData.add (continuationDisk);
+            continuationData.add (continuationDisk.get ());
         }
 
         final S770Diskette disk = new S770Diskette (in, header, continuationData);

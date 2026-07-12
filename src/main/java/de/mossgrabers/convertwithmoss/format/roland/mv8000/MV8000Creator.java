@@ -241,7 +241,11 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
                 sampleIdsByContent.put (contentKey, id);
 
                 // The stereo suffix is at the fixed character positions 10/11
-                final String sampleName = isStereo ? StringUtils.rightPadSpaces (baseName, 10) + (char) 0x7F + (channel == 0 ? 'L' : 'R') : baseName;
+                final String sampleName;
+                if (isStereo)
+                    sampleName = StringUtils.rightPadSpaces (baseName, 10) + (char) 0x7F + (channel == 0 ? 'L' : 'R');
+                else
+                    sampleName = baseName;
                 final MV8000Sample sample = new MV8000Sample (id.intValue (), sampleName);
                 sample.setWaveData (waveData);
                 sample.setStartPoint (startPoint);

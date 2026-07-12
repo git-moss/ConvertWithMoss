@@ -28,6 +28,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
  */
 public class InfoChunk extends AbstractListChunk
 {
+    // This must not be static since it is not thread safe!
     private final SimpleDateFormat    standardDateFormat  = new SimpleDateFormat ("MMMM d, yyyy", Locale.ENGLISH);
 
     private final SimpleDateFormat [] creationDateParsers = new SimpleDateFormat []

@@ -41,6 +41,9 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
 {
+    private static final String IDS_NOTIFY_ERR_LOAD_FILE = "IDS_NOTIFY_ERR_LOAD_FILE";
+
+
     /**
      * Constructor.
      *
@@ -94,7 +97,7 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
     }
@@ -108,7 +111,7 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
     }
@@ -151,7 +154,7 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
     }

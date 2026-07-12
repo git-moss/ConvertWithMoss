@@ -8,8 +8,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
 
 
 /**
- * A user sample of a Roland FANTOM / FANTOM-0 as described by a <i>USPa</i> record in a <i>.SVZ</i>,
- * together with the linked audio from the embedded <i>USDa</i> block.
+ * A user sample of a Roland FANTOM / FANTOM-0 as described by a <i>USPa</i> record in a
+ * <i>.SVZ</i>, together with the linked audio from the embedded <i>USDa</i> block.
  *
  * @author Jürgen Moßgraber
  */

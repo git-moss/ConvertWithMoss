@@ -56,6 +56,7 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetectorUI>
 {
+    private static final String                  DECENT_SAMPLER        = "DecentSampler";
     private static final String                  ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
     private static final String                  ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
 
@@ -95,7 +96,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      */
     public DecentSamplerDetector (final INotifier notifier)
     {
-        super ("DecentSampler", "DecentSampler", notifier, new DecentSamplerDetectorUI ("DecentSampler"), ENDING_DSPRESET, ENDING_DSLIBRARY);
+        super (DECENT_SAMPLER, DECENT_SAMPLER, notifier, new DecentSamplerDetectorUI (DECENT_SAMPLER), ENDING_DSPRESET, ENDING_DSLIBRARY);
     }
 
 

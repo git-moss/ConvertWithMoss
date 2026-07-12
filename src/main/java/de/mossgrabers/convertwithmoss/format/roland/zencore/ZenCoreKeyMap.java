@@ -5,26 +5,26 @@
 package de.mossgrabers.convertwithmoss.format.roland.zencore;
 
 /**
- * The key-map of a Roland FANTOM user multisample (<i>MSPa</i> block in a <i>.SVZ</i>). The record is
- * 1040 bytes: a 16 byte name followed by a flat table of 128 entries (one per MIDI key), each 8
- * bytes. Each entry references a sample by a 1-based index into the container's <i>USPa</i>/<i>USDa</i>
- * pool (0 = the key is unassigned); the FANTOM has no ranged/velocity zones - the mapping is strictly
- * per key.
+ * The key-map of a Roland FANTOM user multi-sample (<i>MSPa</i> block in a <i>.SVZ</i>). The record
+ * is 1040 bytes: a 16 byte name followed by a flat table of 128 entries (one per MIDI key), each 8
+ * bytes. Each entry references a sample by a 1-based index into the container's
+ * <i>USPa</i>/<i>USDa</i> pool (0 = the key is unassigned); the FANTOM has no ranged/velocity zones
+ * - the mapping is strictly per key.
  *
  * @author Jürgen Moßgraber
  */
 public class ZenCoreKeyMap
 {
     /** The size of a MSPa record in bytes. */
-    public static final int RECORD_SIZE = 1040;
+    public static final int  RECORD_SIZE = 1040;
     /** The number of keys in the map. */
-    public static final int NUM_KEYS    = 128;
+    public static final int  NUM_KEYS    = 128;
     /** The size of one per-key entry in bytes. */
-    public static final int ENTRY_SIZE  = 8;
+    public static final int  ENTRY_SIZE  = 8;
     private static final int NAME_LENGTH = 16;
 
-    private final String    name;
-    private final int []    sampleIndex = new int [NUM_KEYS];
+    private final String     name;
+    private final int []     sampleIndex = new int [NUM_KEYS];
 
 
     /**
@@ -42,7 +42,7 @@ public class ZenCoreKeyMap
 
 
     /**
-     * Get the multisample name.
+     * Get the multi-sample name.
      *
      * @return The name
      */

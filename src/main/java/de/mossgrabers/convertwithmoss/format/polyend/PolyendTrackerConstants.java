@@ -188,7 +188,7 @@ public final class PolyendTrackerConstants
     public static final int    SAMPLE_WAVETABLE        = 1;
 
     /** The firmware version bytes written into created files. */
-    public static final int [] WRITE_FW_VERSION        =
+    static final int []        WRITE_FW_VERSION        =
     {
         1,
         9,
@@ -199,7 +199,7 @@ public final class PolyendTrackerConstants
      * The file structure version bytes written into created files (matches the value found in all
      * factory files).
      */
-    public static final int [] WRITE_STRUCTURE_VERSION =
+    static final int []        WRITE_STRUCTURE_VERSION =
     {
         9,
         9,

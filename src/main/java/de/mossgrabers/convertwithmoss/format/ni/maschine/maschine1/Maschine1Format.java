@@ -63,8 +63,10 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Maschine1Format implements IMaschineFormat
 {
-    private static final byte [] MASCHINE_TEMPLATE_V1;
+    private static final String  IDS_NI_MASCHINE_V1_UNSOUND_FILE              = "IDS_NI_MASCHINE_V1_UNSOUND_FILE";
+    private static final String  IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION = "IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION";
 
+    private static final byte [] MASCHINE_TEMPLATE_V1;
     static
     {
         try
@@ -261,15 +263,15 @@ public class Maschine1Format implements IMaschineFormat
         // Read all zones - mostly in: "gtr " -> "gtfs" -> "psg " -> "gznc"
         this.zoneDataSection = findDataSection (this.topSection, "gznc");
         if (this.zoneDataSection == null || this.zoneDataSection.data == null)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
+            throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
         this.zoneParametersTopDataTags = readDataSectionParameters (new ByteArrayInputStream (this.zoneDataSection.data), isBigEndian);
         if (this.zoneParametersTopDataTags == null)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
+            throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
 
         // Read global sampler parameters
         this.presetDataSection = getData (this.zoneDataSection.parent.children, "gemo", "prst");
         if (this.presetDataSection == null || this.presetDataSection.data == null)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
+            throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
         this.presetParametersTopDataTags = readDataSectionParameters (new ByteArrayInputStream (this.presetDataSection.data), isBigEndian);
         final DataTag paramsTag = getDataTag (this.presetParametersTopDataTags, "dfp ", "pac ");
         if (paramsTag == null)
@@ -516,7 +518,7 @@ public class Maschine1Format implements IMaschineFormat
     {
         final Map<String, DataParameter> params = new HashMap<> ();
         if (gslParameterTag == null || dfpParameterTag == null)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
+            throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
 
         final DataTag crpTag = getDataTag (gslParameterTag, "gsl ", "dfp ", "prc ");
         if (crpTag == null)
@@ -556,7 +558,7 @@ public class Maschine1Format implements IMaschineFormat
         {
             final String id = StreamUtils.readAscii (in, 4, !isBigEndian);
             if (!V1_DATA_TAG.equals (id))
-                throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
+                throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
 
             final long dataVersion = StreamUtils.readUnsigned32 (in, isBigEndian);
             if (dataVersion != 2)
@@ -566,7 +568,7 @@ public class Maschine1Format implements IMaschineFormat
         }
 
         if (currentSection == null)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
+            throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
         return currentSection;
     }
 
@@ -583,7 +585,7 @@ public class Maschine1Format implements IMaschineFormat
     private static DataSection readDataSection (final InputStream in, final DataSection currentDataSection, final boolean isBigEndian) throws IOException
     {
         if (in.available () < 16)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
+            throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
 
         final DataSection section = new DataSection ();
         section.name = StreamUtils.readAscii (in, 4, !isBigEndian);
@@ -592,7 +594,7 @@ public class Maschine1Format implements IMaschineFormat
         final int size1 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         final int size2 = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         if (size1 != size2 || size1 < 0 || size1 > in.available ())
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_FILE"));
+            throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
 
         section.data = in.readNBytes (size1);
         // Remove the closing tag if it is not an XML tag
@@ -747,12 +749,12 @@ public class Maschine1Format implements IMaschineFormat
                 else if ("vt  ".equals (tag2))
                 {
                     if (dataTag == null)
-                        throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
+                        throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION));
 
                     // This is a parameter
                     final String tag3 = StreamUtils.readAscii (in, 4, !isBigEndian);
                     if (!"vt  ".equals (tag3))
-                        throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
+                        throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION));
 
                     dataTag.parameter = readParameter (in, isBigEndian);
                     dataTag.parameter.name = tag1;
@@ -760,12 +762,12 @@ public class Maschine1Format implements IMaschineFormat
                 else if (!StringUtils.isLowerCase (tag2))
                     dataTag = findMatchingStartTag (dataTag, tag2);
                 else
-                    throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
+                    throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION));
             }
             else
             {
                 if (dataTag == null)
-                    throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
+                    throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION));
                 dataTag = findMatchingStartTag (dataTag, tag1);
             }
         }
@@ -782,7 +784,7 @@ public class Maschine1Format implements IMaschineFormat
         while (!currentDataTag.name.equalsIgnoreCase (endTag))
         {
             if (currentDataTag.parent == null)
-                throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
+                throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION));
             currentDataTag = currentDataTag.parent;
         }
         return currentDataTag.parent;
@@ -794,7 +796,7 @@ public class Maschine1Format implements IMaschineFormat
         final int parameterVersion = (int) StreamUtils.readUnsigned32 (in, isBigEndian);
         // No idea about this but it is always 1
         if (parameterVersion != 0 || (in.read () & 0xFF) != 1)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION"));
+            throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_PARAMETER_SECTION));
 
         final DataParameter parameter = new DataParameter ();
         parameter.type = (int) StreamUtils.readUnsigned32 (in, isBigEndian);

@@ -162,38 +162,37 @@ public class MV8000Detector extends AbstractDetector<MetadataSettingsUI>
         final MV8000Partial partial = patch.getPartial (partialIndex);
         final IEnvelope amplitudeEnvelope = createAmplitudeEnvelope (partial);
 
-        for (int slotIndex = 0; slotIndex < MV8000Partial.NUM_SMT_SLOTS; slotIndex++)
+        int slotIndex = 0;
+        while (slotIndex < MV8000Partial.NUM_SMT_SLOTS)
         {
             final MV8000Smt slot = partial.getSmtSlot (slotIndex);
             final int sampleId = slot.getSampleId ();
-            if (sampleId == 0)
-                continue;
-
-            final MV8000Sample sample = samplesByID.get (Integer.valueOf (sampleId));
-            if (sample == null)
+            if (sampleId != 0)
             {
-                this.notifier.logError ("IDS_MV8000_SAMPLE_MISSING", Integer.toString (sampleId), partial.getName ());
-                continue;
+                final MV8000Sample sample = samplesByID.get (Integer.valueOf (sampleId));
+                if (sample == null)
+                    this.notifier.logError ("IDS_MV8000_SAMPLE_MISSING", Integer.toString (sampleId), partial.getName ());
+                else
+                {
+                    // Combine a left/right mono pair in 2 consecutive slots into 1 stereo zone
+                    MV8000Sample rightSample = null;
+                    if (slotIndex + 1 < MV8000Partial.NUM_SMT_SLOTS && sample.isStereoLeft ())
+                    {
+                        final MV8000Smt nextSlot = partial.getSmtSlot (slotIndex + 1);
+                        final MV8000Sample nextSample = samplesByID.get (Integer.valueOf (nextSlot.getSampleId ()));
+                        if (nextSample != null && nextSample.isStereoRightOf (sample) && nextSlot.getVelocityLow () == slot.getVelocityLow () && nextSlot.getVelocityHigh () == slot.getVelocityHigh ())
+                            rightSample = nextSample;
+                    }
+
+                    final ISampleZone zone = createZone (slot, sample, rightSample, keyLow, keyHigh);
+                    zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
+                    zone.getAmplitudeVelocityModulator ().setDepth (partial.getTvaVelocityCurve () == 0 ? 0 : 1);
+                    createFilter (zone, partial);
+                    groups.get (slotIndex).addSampleZone (zone);
+
+                    slotIndex += rightSample == null ? 1 : 2;
+                }
             }
-
-            // Combine a left/right mono pair in 2 consecutive slots into 1 stereo zone
-            MV8000Sample rightSample = null;
-            if (slotIndex + 1 < MV8000Partial.NUM_SMT_SLOTS && sample.isStereoLeft ())
-            {
-                final MV8000Smt nextSlot = partial.getSmtSlot (slotIndex + 1);
-                final MV8000Sample nextSample = samplesByID.get (Integer.valueOf (nextSlot.getSampleId ()));
-                if (nextSample != null && nextSample.isStereoRightOf (sample) && nextSlot.getVelocityLow () == slot.getVelocityLow () && nextSlot.getVelocityHigh () == slot.getVelocityHigh ())
-                    rightSample = nextSample;
-            }
-
-            final ISampleZone zone = createZone (slot, sample, rightSample, keyLow, keyHigh);
-            zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
-            zone.getAmplitudeVelocityModulator ().setDepth (partial.getTvaVelocityCurve () == 0 ? 0 : 1);
-            createFilter (zone, partial);
-            groups.get (slotIndex).addSampleZone (zone);
-
-            if (rightSample != null)
-                slotIndex++;
         }
     }
 
@@ -236,7 +235,13 @@ public class MV8000Detector extends AbstractDetector<MetadataSettingsUI>
         if (playMode % 2 == 0)
         {
             final ISampleLoop sampleLoop = new DefaultSampleLoop ();
-            sampleLoop.setType (playMode == 2 ? LoopType.ALTERNATING : playMode == 4 ? LoopType.BACKWARDS : LoopType.FORWARDS);
+            final LoopType type = switch (playMode)
+            {
+                case 2 -> LoopType.ALTERNATING;
+                case 4 -> LoopType.BACKWARDS;
+                default -> LoopType.FORWARDS;
+            };
+            sampleLoop.setType (type);
             sampleLoop.setStart (sample.getLoopStart ());
             sampleLoop.setEnd (sample.getEndPoint ());
             if (sampleLoop.getEnd () > sampleLoop.getStart ())
