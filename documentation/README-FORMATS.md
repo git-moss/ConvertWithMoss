@@ -64,6 +64,7 @@ The following multi-sample formats are supported:
 * [Roland MV-8000/MV-8800](#roland-mv-8000mv-8800)
 * [Roland S-50 Series](#roland-s-50-series) - read only
 * [Roland S-770 Series](#roland-s-770-series) - read only
+* [Roland ZEN-Core](#roland-zen-core)
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
@@ -510,6 +511,16 @@ The format of the S-50 is slightly different to the one used on the other models
 The Roland S-770 series comprises a family of digital PCM samplers introduced between 1989 and 1995, including the S-750, S-770, S-760, DJ-70, DJ-70 MkII, and SP-700. These instruments share a common sampling architecture based on high-resolution PCM playback, digital resonant Time Variant Filters (TVFs), and sophisticated modulation and envelope generators. The flagship S-770 expanded the platform with advanced multisampling capabilities, internal digital signal processing, and video-based graphical editing, while the later S-760 provided similar functionality in a more compact and cost-effective form. The DJ-70 and SP-700 adapted the technology for performance-oriented and phrase-sampling applications.
 
 Only reading is supported. But it supports both HD/CD-Rom and diskette image files. Also files that span multiple diskettes are supported (all disk files need to be in the same folder).
+
+## Roland ZEN-Core
+
+The ZEN-Core sound engine powers Roland's FANTOM-0, FANTOM / FANTOM EX, GAIA-2, Juno-X and Jupiter-X/Xm, as well as the ZENOLOGY plug-in. They share a common *.svz* container which holds a tone (or a bank of tones) together with its user samples and its keyboard mapping. ConvertWithMoss writes an importable *.svz* - a single tone for one multi-sample, or a multi-tone bank that shares one sample pool for several - which is loaded on the device through its *UTILITY -> IMPORT* function. The user samples and multisample key map of a *.svz* are also read back.
+
+User samples are written at the device-native 48 kHz / 16-bit. As the ZEN-Core voice engine has no loop cross-fade or de-click of its own, click-free playback (hardware-verified on a FANTOM-0) is prepared into the samples: the loop end is re-seated so the wrap reproduces the waveform's own step into the loop start - the seam invariant every Roland-authored loop satisfies - and a loop with no seamless end point (an evolving pad) gets its tail cross-faded in phase into the loop-start lead-in. Mono sources are stored mono the way the device's own sampler stores its imports; a looped sample stored as interleaved stereo ticks once per loop pass on the hardware even with a seamless wrap, besides doubling the file size and the device's sample RAM. Samples and multisamples are named with a content hash, since the device silently re-uses already imported ones of the same name. Each tone additionally carries the source's filter (type, cutoff, resonance) and amplitude envelope.
+
+### Destination Options
+
+* **Target Device**: the *.svz* header carries a 5-character model tag which selects the hardware that accepts the file. *FANTOM / Juno-X / Jupiter-X* (`KY019`) is the default and the device-confirmed case - it is the shared ZEN-Core tag present in the FANTOM, FANTOM-0, FANTOM EX, Juno-X, Jupiter-X/Xm and also the MC-707/MC-101 grooveboxes (their firmware carries the KY019 sound banks). *GAIA-2* (`MI085`) and the *ZENOLOGY plug-in* (`RC001`) are provided for those targets; their tags are derived from the device firmware.
 
 ## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 
