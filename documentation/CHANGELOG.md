@@ -9,6 +9,7 @@
 * New: Added support for the Roland MV-8000/MV-8800 patch format (MV0) (thanks to Douglas Carmichael).
 * New: Added support for the Fairlight CMI 3 - read only (thanks to PythonBlue).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
+* New: Added support for the Roland ZEN-Core sound format (SVZ). The undocumented container and tone format was reverse-engineered from device exports and the FANTOM/FANTOM-0 firmware (validated against 2048 factory tones). ConvertWithMoss writes an importable .svz - a single tone for one multi-sample, or a multi-tone bank that shares one sample pool for several - loadable through the device's IMPORT function; user samples are written at the native 48 kHz / 16-bit with the loop points snapped to zero-crossings and the post-loop tail tapered so no playback boundary lands on a non-zero sample (the ZEN-Core voice engine clicks on those), and each tone carries the source's filter (type, cutoff, resonance) and amplitude envelope. A selectable *Target Device* sets the header's model tag for the intended hardware: KY019 (the shared ZEN-Core tag of the FANTOM / FANTOM-0 / FANTOM EX / Juno-X / Jupiter-X/Xm; the default and the device-confirmed case), MI085 (GAIA-2) or RC001 (ZENOLOGY plug-in). The user samples and multisample key map of a .svz are also read back (thanks to Douglas Carmichael).
 * User Interface
   * New: Improved user interface for long lists of formats.
   * New: Added menu item when right clicking a log message to open the mentioned folder (if there is one).

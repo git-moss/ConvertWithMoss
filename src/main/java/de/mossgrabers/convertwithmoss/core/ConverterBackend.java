@@ -78,6 +78,8 @@ import de.mossgrabers.convertwithmoss.format.roland.mv8000.MV8000Creator;
 import de.mossgrabers.convertwithmoss.format.roland.mv8000.MV8000Detector;
 import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
+import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreCreator;
+import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreDetector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
@@ -166,6 +168,7 @@ public class ConverterBackend
             new MV8000Detector (notifier),
             new S5xxDetector (notifier),
             new S770Detector (notifier),
+            new ZenCoreDetector (notifier),
             new SxtDetector (notifier),
             new SampleFileDetector (notifier),
             new SfzDetector (notifier),
@@ -198,6 +201,7 @@ public class ConverterBackend
             new PolyendTrackerCreator (notifier),
             new RenoiseCreator (notifier),
             new MV8000Creator (notifier),
+            new ZenCoreCreator (notifier),
             new SxtCreator (notifier),
             new WavCreator (notifier),
             new SfzCreator (notifier),
