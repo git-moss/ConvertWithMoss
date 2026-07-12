@@ -58,6 +58,7 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    private static final String RENOISE               = "Renoise";
     private static final String ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
     private static final String SAMPLE_DATA_FOLDER    = "sampledata/";
 
@@ -69,7 +70,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public RenoiseDetector (final INotifier notifier)
     {
-        super ("Renoise", "Renoise", notifier, new MetadataSettingsUI ("Renoise"), ".xrni");
+        super (RENOISE, RENOISE, notifier, new MetadataSettingsUI (RENOISE), ".xrni");
     }
 
 

@@ -26,18 +26,18 @@ import java.util.zip.CRC32;
 public class ZenCoreContainer
 {
     /** Platform tag used inside a SVD table-of-contents. */
-    public static final String  PLATFORM_SVD = "KY19";
+    public static final String   PLATFORM_SVD = "KY19";
     /** Platform tag used inside a SVZ table-of-contents. */
-    public static final String  PLATFORM_SVZ = "ZCOR";
+    public static final String   PLATFORM_SVZ = "ZCOR";
 
-    private static final byte [] MAGIC_SVD   = new byte []
+    private static final byte [] MAGIC_SVD    = new byte []
     {
         'S',
         'V',
         'D',
         '5'
     };
-    private static final byte [] MAGIC_SVZ   = new byte []
+    private static final byte [] MAGIC_SVZ    = new byte []
     {
         'S',
         'V',
@@ -45,14 +45,15 @@ public class ZenCoreContainer
         'a'
     };
 
+
     /** A parsed section. */
     public static final class Section
     {
-        final String tag;
-        final int    fileOffset;
-        final int    count;
-        final int    unitSize;
-        final int    dataStart;
+        final String  tag;
+        final int     fileOffset;
+        final int     count;
+        final int     unitSize;
+        final int     dataStart;
         final byte [] file;
 
 
@@ -114,8 +115,9 @@ public class ZenCoreContainer
         }
     }
 
-    private final boolean               svz;
-    private final Map<String, Section>  sections = new LinkedHashMap<> ();
+
+    private final boolean              svz;
+    private final Map<String, Section> sections = new LinkedHashMap<> ();
 
 
     /**
@@ -250,12 +252,12 @@ public class ZenCoreContainer
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         writeU32LE (out, count);
         writeU32LE (out, unitSize);
-        writeU32LE (out, 16 + 4 * count);
+        writeU32LE (out, 16L + 4 * count);
         writeU32LE (out, 0);
-        for (final byte [] record: records)
-            writeU32LE (out, crc32 (record));
-        for (final byte [] record: records)
-            out.write (record);
+        for (final byte [] aRecord: records)
+            writeU32LE (out, crc32 (aRecord));
+        for (final byte [] aRecord: records)
+            out.write (aRecord);
         return out.toByteArray ();
     }
 

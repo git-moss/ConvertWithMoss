@@ -29,6 +29,7 @@ import javafx.scene.layout.Pane;
  */
 public class MaschineCreatorUI extends WavChunkSettingsUI
 {
+    private static final String IDS_OUTPUT_FORMAT      = "IDS_OUTPUT_FORMAT";
     private static final String MASCHINE_OUTPUT_FORMAT = "MaschineOutputFormat";
 
     private ToggleGroup         outputFormatGroup;
@@ -56,13 +57,13 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
 
         this.outputFormatGroup = new ToggleGroup ();
         final RadioButton order1 = panel.createRadioButton ("@IDS_MASCHINE_MASCHINE_1");
-        order1.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
+        order1.setAccessibleHelp (Functions.getMessage (IDS_OUTPUT_FORMAT));
         order1.setToggleGroup (this.outputFormatGroup);
         final RadioButton order2 = panel.createRadioButton ("@IDS_MASCHINE_MASCHINE_2");
-        order2.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
+        order2.setAccessibleHelp (Functions.getMessage (IDS_OUTPUT_FORMAT));
         order2.setToggleGroup (this.outputFormatGroup);
         final RadioButton order3 = panel.createRadioButton ("@IDS_MASCHINE_MASCHINE_3");
-        order3.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
+        order3.setAccessibleHelp (Functions.getMessage (IDS_OUTPUT_FORMAT));
         order3.setToggleGroup (this.outputFormatGroup);
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");

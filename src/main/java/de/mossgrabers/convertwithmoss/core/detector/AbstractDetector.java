@@ -47,6 +47,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.exception.MethodNotImplemented;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.FlacFileSampleData;
 import de.mossgrabers.convertwithmoss.file.OggFileSampleData;
@@ -269,7 +270,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
-        throw new RuntimeException (this.getClass ().getName () + " does not support Performance files.");
+        throw new MethodNotImplemented (this.getClass ().getName () + " does not support Performance files.");
     }
 
 

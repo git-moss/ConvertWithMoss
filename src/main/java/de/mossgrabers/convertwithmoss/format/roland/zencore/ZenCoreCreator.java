@@ -35,10 +35,10 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample
 
 
 /**
- * Creator for Roland FANTOM / FANTOM-0 (and other ZEN-Core hardware) keyboard instruments. Writes an
- * importable <i>.svz</i>: a single tone for one multi-sample (see {@link #createPreset}) or a
- * multi-tone bank sharing one sample pool for several (see {@link #createPresetLibrary}), loadable
- * through the device's <i>UTILITY &rarr; IMPORT &rarr; IMPORT TONE</i> function.
+ * Creator for Roland FANTOM / FANTOM-0 (and other ZEN-Core hardware) keyboard instruments. Writes a
+ * <i>.svz</i> file: a single tone for one multi-sample (see {@link #createPreset}) or a multi-tone
+ * bank sharing one sample pool for several (see {@link #createPresetLibrary}), loadable through the
+ * device's <i>UTILITY &rarr; IMPORT &rarr; IMPORT TONE</i> function.
  *
  * <p>
  * User samples are written at the FANTOM's native 48 kHz / 16-bit; loops are snapped to zero
@@ -50,14 +50,16 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample
  */
 public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 {
-    /** The FANTOM plays user samples at its native rate; resample everything to it and to 16-bit. */
-    private static final int                    SAMPLE_RATE   = 48000;
+    /**
+     * The FANTOM plays user samples at its native rate; resample everything to it and to 16-bit.
+     */
+    private static final int                    SAMPLE_RATE    = 48000;
     private static final DestinationAudioFormat ZENCORE_FORMAT = new DestinationAudioFormat (new int []
     {
         16
     }, SAMPLE_RATE, true);
 
-    private static final int                    ZERO_SEARCH   = 1024;
+    private static final int                    ZERO_SEARCH    = 1024;
 
 
     /**
@@ -120,7 +122,7 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
     private SvzInstrument buildInstrument (final IMultisampleSource multisampleSource, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
     {
-        // Rescale loop/start/end positions to the destination rate (the audio is resampled below).
+        // Scale loop/start/end positions to the destination rate (the audio is resampled below).
         recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
 
         final SvzInstrument instrument = new SvzInstrument ();
@@ -183,9 +185,9 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
 
     /**
-     * Approximate the FANTOM TVA envelope time value (0-1023) from a time in seconds. Roland's exact
-     * time table is not published; this log2 curve is calibrated so ~20 s maps to full scale and
-     * near-instant times map to 0.
+     * Approximate the FANTOM TVA envelope time value (0-1023) from a time in seconds. Roland's
+     * exact time table is not published; this log2 curve is calibrated so ~20 s maps to full scale
+     * and near-instant times map to 0.
      *
      * @param seconds The time in seconds
      * @return The 0-1023 time value
@@ -201,7 +203,12 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
     /**
      * Convert a zone's audio to the FANTOM sample pool, re-using an already-added identical sample.
      *
+     * @param zone The source sample zone
+     * @param pool The pool to which to add the result
+     * @param byContent The mapped indices of the already created SVZ samples
+     * @param usedNames The names of the already created SVZ samples
      * @return The 1-based index into the pool, or 0 if the sample could not be added
+     * @throws IOException Could not convert the sample to the target format
      */
     private int addSample (final ISampleZone zone, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
     {
@@ -232,8 +239,8 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
             loopStart = Math.clamp (loop.getStart (), 0, frames - 1);
             if (loop.getEnd () > loopStart)
                 end = Math.min (loop.getEnd (), frames);
-            // Hardware sample-prep: snap both loop points to zero crossings and taper the tail so no
-            // playback boundary lands on a non-zero value (the FANTOM clicks on those).
+            // Hardware sample-prep: snap both loop points to zero crossings and taper the tail so
+            // no play-back boundary lands on a non-zero value (the FANTOM clicks on those).
             final int [] snapped = prepLoopForHardware (pcm, channels, loopStart, end, frames);
             loopStart = snapped[0];
             end = snapped[1];
@@ -241,8 +248,9 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
         final int rootKey = Math.clamp (zone.getKeyRoot () < 0 ? zone.getKeyLow () : zone.getKeyRoot (), 0, 127);
 
-        // Re-use an identical sample mapped to several key ranges (dedupe by content + parameters).
-        final Object contentKey = List.of (ByteBuffer.wrap (pcm), Integer.valueOf (loopStart), Integer.valueOf (end), Boolean.valueOf (hasLoop), Integer.valueOf (rootKey));
+        // Re-use an identical sample mapped to several key ranges (detect duplicates by content +
+        // parameters).
+        final List<Object> contentKey = List.of (ByteBuffer.wrap (pcm), Integer.valueOf (loopStart), Integer.valueOf (end), Boolean.valueOf (hasLoop), Integer.valueOf (rootKey));
         final Integer existing = byContent.get (contentKey);
         if (existing != null)
             return existing.intValue ();
@@ -269,6 +277,11 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
      * Snap the loop start and end to the nearest rising zero crossing (the sample closest to zero
      * across all channels) and taper the post-loop tail to zero.
      *
+     * @param pcm The PCM data to edit
+     * @param channels The number of channels
+     * @param loopStart The start of the loop
+     * @param loopEnd The end of the loop
+     * @param frames The number of frames of the PCM data
      * @return {@code {newLoopStart, newLoopEnd}}
      */
     private static int [] prepLoopForHardware (final byte [] pcm, final int channels, final int loopStart, final int loopEnd, final int frames)

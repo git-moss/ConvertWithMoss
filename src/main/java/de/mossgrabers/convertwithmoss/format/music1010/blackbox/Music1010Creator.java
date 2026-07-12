@@ -43,10 +43,12 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Music1010Creator extends AbstractMusic1010Creator
 {
-    private static final int                 MAX_INSTRUMENTS              = 16;
+    private static final String              IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED = "IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED";
 
-    private static final Map<String, String> EMPTY_PARAM_ATTRIBUTES       = new HashMap<> ();
-    private static final Map<String, String> MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
+    private static final int                 MAX_INSTRUMENTS                        = 16;
+
+    private static final Map<String, String> EMPTY_PARAM_ATTRIBUTES                 = new HashMap<> ();
+    private static final Map<String, String> MULTISAMPLE_PARAM_ATTRIBUTES           = new HashMap<> ();
     static
     {
         EMPTY_PARAM_ATTRIBUTES.put ("gaindb", "0");
@@ -161,7 +163,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
         final File folder = this.createUniqueFilename (destinationFolder, performanceFolder, "");
         if (!folder.exists () && !folder.mkdir ())
         {
-            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", folder.getAbsolutePath ());
+            this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, folder.getAbsolutePath ());
             return;
         }
 
@@ -204,7 +206,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
             final File presetFolder = this.createUniqueFilename (folder, multisampleName, "");
             if (!presetFolder.mkdir ())
             {
-                this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", presetFolder.getAbsolutePath ());
+                this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, presetFolder.getAbsolutePath ());
                 continue;
             }
 
@@ -229,7 +231,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
         final File presetFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         if (!presetFolder.mkdir ())
         {
-            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", presetFolder.getAbsolutePath ());
+            this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, presetFolder.getAbsolutePath ());
             return;
         }
 

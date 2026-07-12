@@ -13,6 +13,8 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.mossgrabers.tools.Pair;
+
 
 /**
  * Reads/write Elektron elmulti files. Also reads eldrum files. Velocity layers can only be assigned
@@ -47,6 +49,18 @@ public class TonverkMultiFile
     public final List<TonverkKeyZone> keyZones   = new ArrayList<> ();
     /** Errors happening during the parsing. */
     public final List<String>         errors     = new ArrayList<> ();
+
+
+    /** Helper class for parsing the zone, layer, slot hierarchy. */
+    public static class ParseHierarchy
+    {
+        /** The current zone. */
+        public TonverkKeyZone       currentZone  = null;
+        /** The current layer. */
+        public TonverkVelocityLayer currentLayer = null;
+        /** The current slot. */
+        public TonverkSampleSlot    currentSlot  = null;
+    }
 
 
     /** A key zone. */
@@ -156,10 +170,7 @@ public class TonverkMultiFile
     {
         this.errors.clear ();
 
-        TonverkKeyZone currentZone = null;
-        TonverkVelocityLayer currentLayer = null;
-        TonverkSampleSlot currentSlot = null;
-
+        final ParseHierarchy hierarchy = new ParseHierarchy ();
         for (final String raw: Files.readAllLines (path))
         {
             final String line = raw.trim ();
@@ -168,47 +179,42 @@ public class TonverkMultiFile
 
             if (line.equals ("[[key-zones]]"))
             {
-                currentZone = new TonverkKeyZone ();
-                this.keyZones.add (currentZone);
-                currentLayer = null;
-                currentSlot = null;
+                hierarchy.currentZone = new TonverkKeyZone ();
+                this.keyZones.add (hierarchy.currentZone);
+                hierarchy.currentLayer = null;
+                hierarchy.currentSlot = null;
                 continue;
             }
 
             if (line.equals ("[[key-zones.velocity-layers]]"))
             {
-                if (currentZone == null)
+                if (hierarchy.currentZone == null)
                     throw new IllegalStateException ("velocity-layer without key-zone");
 
-                currentLayer = new TonverkVelocityLayer ();
-                currentZone.velocityLayers.add (currentLayer);
-                currentSlot = null;
+                hierarchy.currentLayer = new TonverkVelocityLayer ();
+                hierarchy.currentZone.velocityLayers.add (hierarchy.currentLayer);
+                hierarchy.currentSlot = null;
                 continue;
             }
 
             if (line.equals ("[[key-zones.velocity-layers.sample-slots]]"))
             {
-                if (currentLayer == null)
+                if (hierarchy.currentLayer == null)
                     throw new IllegalStateException ("sample-slot without velocity-layer");
-                currentSlot = new TonverkSampleSlot ();
-                currentLayer.sampleSlots.add (currentSlot);
+                hierarchy.currentSlot = new TonverkSampleSlot ();
+                hierarchy.currentLayer.sampleSlots.add (hierarchy.currentSlot);
                 continue;
             }
 
-            final Matcher m = KV.matcher (line);
-            if (!m.matches ())
-                throw new IllegalArgumentException ("Invalid line: " + line);
-            final String key = m.group (1);
-            final String value = stripQuotes (m.group (2).trim ());
-
-            if (currentSlot != null)
-                this.assignSampleSlot (currentSlot, key, value);
-            else if (currentLayer != null)
-                this.assignVelocityLayer (currentLayer, key, value);
-            else if (currentZone != null)
-                this.assignKeyZone (currentZone, key, value);
+            final Pair<String, String> keyValue = getKeyValue (line);
+            if (hierarchy.currentSlot != null)
+                this.assignSampleSlot (hierarchy.currentSlot, keyValue);
+            else if (hierarchy.currentLayer != null)
+                this.assignVelocityLayer (hierarchy.currentLayer, keyValue);
+            else if (hierarchy.currentZone != null)
+                this.assignKeyZone (hierarchy.currentZone, keyValue);
             else
-                this.assignRoot (this, key, value);
+                this.assignRoot (this, keyValue);
         }
     }
 
@@ -270,52 +276,52 @@ public class TonverkMultiFile
     }
 
 
-    private void assignRoot (final TonverkMultiFile multi, final String tag, final String value)
+    private void assignRoot (final TonverkMultiFile multi, final Pair<String, String> keyValue)
     {
-        switch (tag)
+        switch (keyValue.getKey ())
         {
-            case "version" -> multi.version = Integer.parseInt (value);
-            case "name" -> multi.name = value;
-            default -> this.errors.add ("Unknown root tag: " + tag);
+            case "version" -> multi.version = Integer.parseInt (keyValue.getValue ());
+            case "name" -> multi.name = keyValue.getValue ();
+            default -> this.errors.add ("Unknown root tag: " + keyValue.getKey ());
         }
     }
 
 
-    private void assignKeyZone (final TonverkKeyZone keyZone, final String tag, final String value)
+    private void assignKeyZone (final TonverkKeyZone keyZone, final Pair<String, String> keyValue)
     {
-        switch (tag)
+        switch (keyValue.getKey ())
         {
-            case "pitch" -> keyZone.pitch = Integer.parseInt (value);
-            case "key-center" -> keyZone.keyCenter = Double.parseDouble (value);
-            default -> this.errors.add ("Unknown key-zone tag: " + tag);
+            case "pitch" -> keyZone.pitch = Integer.parseInt (keyValue.getValue ());
+            case "key-center" -> keyZone.keyCenter = Double.parseDouble (keyValue.getValue ());
+            default -> this.errors.add ("Unknown key-zone tag: " + keyValue.getKey ());
         }
     }
 
 
-    private void assignVelocityLayer (final TonverkVelocityLayer velocityLayer, final String tag, final String value)
+    private void assignVelocityLayer (final TonverkVelocityLayer velocityLayer, final Pair<String, String> keyValue)
     {
-        switch (tag)
+        switch (keyValue.getKey ())
         {
-            case "velocity" -> velocityLayer.velocity = Double.parseDouble (value);
-            case "strategy" -> velocityLayer.strategy = value;
-            default -> this.errors.add ("Unknown velocity-layer tag: " + tag);
+            case "velocity" -> velocityLayer.velocity = Double.parseDouble (keyValue.getValue ());
+            case "strategy" -> velocityLayer.strategy = keyValue.getValue ();
+            default -> this.errors.add ("Unknown velocity-layer tag: " + keyValue.getKey ());
         }
     }
 
 
-    private void assignSampleSlot (final TonverkSampleSlot sampleSlot, final String tag, final String value)
+    private void assignSampleSlot (final TonverkSampleSlot sampleSlot, final Pair<String, String> keyValue)
     {
-        switch (tag)
+        switch (keyValue.getKey ())
         {
-            case "sample" -> sampleSlot.sample = value;
-            case "loop-mode" -> sampleSlot.loopMode = value;
-            case "loop-start" -> sampleSlot.loopStart = Integer.valueOf (value);
-            case "loop-end" -> sampleSlot.loopEnd = Integer.valueOf (value);
-            case "loop-crossfade" -> sampleSlot.loopCrossfade = Integer.valueOf (value);
-            case "keep-looping-on-release" -> sampleSlot.keepLoopingOnRelease = Boolean.valueOf (value);
-            case "trim-start" -> sampleSlot.trimStart = Integer.valueOf (value);
-            case "trim-end" -> sampleSlot.trimEnd = Integer.valueOf (value);
-            default -> this.errors.add ("Unknown sample-slot tag: " + tag);
+            case "sample" -> sampleSlot.sample = keyValue.getValue ();
+            case "loop-mode" -> sampleSlot.loopMode = keyValue.getValue ();
+            case "loop-start" -> sampleSlot.loopStart = Integer.valueOf (keyValue.getValue ());
+            case "loop-end" -> sampleSlot.loopEnd = Integer.valueOf (keyValue.getValue ());
+            case "loop-crossfade" -> sampleSlot.loopCrossfade = Integer.valueOf (keyValue.getValue ());
+            case "keep-looping-on-release" -> sampleSlot.keepLoopingOnRelease = Boolean.valueOf (keyValue.getValue ());
+            case "trim-start" -> sampleSlot.trimStart = Integer.valueOf (keyValue.getValue ());
+            case "trim-end" -> sampleSlot.trimEnd = Integer.valueOf (keyValue.getValue ());
+            default -> this.errors.add ("Unknown sample-slot tag: " + keyValue.getKey ());
         }
     }
 
@@ -366,6 +372,17 @@ public class TonverkMultiFile
                 text += "0";
         }
         return text;
+    }
+
+
+    private static Pair<String, String> getKeyValue (final String line)
+    {
+        final Matcher m = KV.matcher (line);
+        if (!m.matches ())
+            throw new IllegalArgumentException ("Invalid line: " + line);
+        final String key = m.group (1);
+        final String value = stripQuotes (m.group (2).trim ());
+        return new Pair<> (key, value);
     }
 
 

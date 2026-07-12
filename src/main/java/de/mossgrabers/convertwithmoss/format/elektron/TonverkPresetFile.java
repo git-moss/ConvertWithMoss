@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.ParseHierarchy;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
@@ -125,9 +126,8 @@ public class TonverkPresetFile
 
         boolean inParameters = false;
         boolean inMappingSlotRoot = false;
-        TonverkKeyZone currentZone = null;
-        TonverkVelocityLayer currentLayer = null;
-        TonverkSampleSlot currentSlot = null;
+
+        final ParseHierarchy hierarchy = new ParseHierarchy ();
 
         for (int i = 0; i < lines.size (); i++)
         {
@@ -141,31 +141,31 @@ public class TonverkPresetFile
                 final String section = stripSectionBrackets (line);
                 if (section.endsWith (".sample-slots"))
                 {
-                    if (currentLayer == null)
+                    if (hierarchy.currentLayer == null)
                         this.errors.add ("sample-slot without velocity-layer");
                     else
                     {
-                        currentSlot = new TonverkSampleSlot ();
-                        currentLayer.sampleSlots.add (currentSlot);
+                        hierarchy.currentSlot = new TonverkSampleSlot ();
+                        hierarchy.currentLayer.sampleSlots.add (hierarchy.currentSlot);
                     }
                 }
                 else if (section.endsWith (".velocity-layers"))
                 {
-                    if (currentZone == null)
+                    if (hierarchy.currentZone == null)
                         this.errors.add ("velocity-layer without key-zone");
                     else
                     {
-                        currentLayer = new TonverkVelocityLayer ();
-                        currentZone.velocityLayers.add (currentLayer);
-                        currentSlot = null;
+                        hierarchy.currentLayer = new TonverkVelocityLayer ();
+                        hierarchy.currentZone.velocityLayers.add (hierarchy.currentLayer);
+                        hierarchy.currentSlot = null;
                     }
                 }
                 else if (section.endsWith (".key-zones"))
                 {
-                    currentZone = new TonverkKeyZone ();
-                    this.keyZones.add (currentZone);
-                    currentLayer = null;
-                    currentSlot = null;
+                    hierarchy.currentZone = new TonverkKeyZone ();
+                    this.keyZones.add (hierarchy.currentZone);
+                    hierarchy.currentLayer = null;
+                    hierarchy.currentSlot = null;
                 }
                 else
                     this.errors.add ("Unknown array section: " + section);
@@ -185,9 +185,9 @@ public class TonverkPresetFile
                 else if (section.startsWith ("parameters.") && section.endsWith ("_mapping_slot"))
                 {
                     inMappingSlotRoot = true;
-                    currentZone = null;
-                    currentLayer = null;
-                    currentSlot = null;
+                    hierarchy.currentZone = null;
+                    hierarchy.currentLayer = null;
+                    hierarchy.currentSlot = null;
                 }
                 else
                     this.errors.add ("Unknown section: " + section);
@@ -238,12 +238,12 @@ public class TonverkPresetFile
 
             final String value = stripQuotes (rawValue);
 
-            if (currentSlot != null)
-                this.assignSampleSlot (currentSlot, key, value);
-            else if (currentLayer != null)
-                this.assignVelocityLayer (currentLayer, key, value);
-            else if (currentZone != null)
-                this.assignKeyZone (currentZone, key, value);
+            if (hierarchy.currentSlot != null)
+                this.assignSampleSlot (hierarchy.currentSlot, key, value);
+            else if (hierarchy.currentLayer != null)
+                this.assignVelocityLayer (hierarchy.currentLayer, key, value);
+            else if (hierarchy.currentZone != null)
+                this.assignKeyZone (hierarchy.currentZone, key, value);
             else if (inMappingSlotRoot)
             {
                 if ("name".equals (key))

@@ -539,7 +539,7 @@ public class S5xxTone
 
     /**
      * Get the TVF key-follow value.
-     * 
+     *
      * @return The value
      */
     public int getTvfKeyFollow ()

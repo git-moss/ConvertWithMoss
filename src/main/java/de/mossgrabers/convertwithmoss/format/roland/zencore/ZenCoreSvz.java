@@ -16,68 +16,85 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
 
 
 /**
- * Reads and writes the blocks of an importable Roland FANTOM keyboard-instrument <i>.SVZ</i>: a
- * constant <i>DIFa</i>, one <i>PATa</i> tone per instrument (ZEN-Core tone, 1632 bytes; its
- * oscillator points at the instrument's multisample via the Wave-Number L/R fields), one
- * <i>MSPa</i> 128-key map per instrument, a shared <i>USPa</i> sample-parameter pool (64 byte
- * records) and a shared <i>USDa</i> pool of <i>SMPd</i> sample chunks (a 460 byte header followed by
- * interleaved 16-bit little-endian PCM). All framing carries the per-record CRC32 tables verified
- * from device exports. Byte templates for the constant/opaque parts live next to this class as
- * resources. See {@code documentation/design/ZENCORE_FORMAT.md}.
+ * Reads and writes the blocks of a Roland FANTOM keyboard-instrument <i>.SVZ</i>: a constant
+ * <i>DIFa</i>, one <i>PATa</i> tone per instrument (ZEN-Core tone, 1632 bytes; its oscillator
+ * points at the instrument's multi-sample via the Wave-Number L/R fields), one <i>MSPa</i> 128-key
+ * map per instrument, a shared <i>USPa</i> sample-parameter pool (64 byte records) and a shared
+ * <i>USDa</i> pool of <i>SMPd</i> sample chunks (a 460 byte header followed by interleaved 16-bit
+ * little-endian PCM). All framing carries the per-record CRC32 tables verified from device exports.
+ * Byte templates for the constant/opaque parts live next to this class as resources. See
+ * {@code documentation/design/ZENCORE_FORMAT.md}.
  *
  * @author Jürgen Moßgraber
  */
 public final class ZenCoreSvz
 {
     /** The size of a USPa sample-parameter record. */
-    public static final int    USP_RECORD_SIZE  = 64;
-    /** The size of a MSPa multisample key-map record. */
-    public static final int    MSP_RECORD_SIZE  = 1040;
+    public static final int      USP_RECORD_SIZE  = 64;
+    /** The size of a MSPa multis-ample key-map record. */
+    public static final int      MSP_RECORD_SIZE  = 1040;
     /** The size of the fixed SMPd chunk header (PCM follows at this offset). */
-    public static final int    SMPD_HEADER_SIZE = 0x1CC;
+    public static final int      SMPD_HEADER_SIZE = 0x1CC;
 
-    private static final int   NAME_LENGTH      = 16;
-    private static final int   PREVIEW_OFFSET   = 0x60;
-    private static final int   PREVIEW_VALUES   = 182;
+    private static final int     NAME_LENGTH      = 16;
+    private static final int     PREVIEW_OFFSET   = 0x60;
+    private static final int     PREVIEW_VALUES   = 182;
 
-    // SVZ header (16 bytes): "SVZa" + version[2] + modelTag[5] + flag[1] + reserved[4]. The model tag
-    // selects the target device (KY019 = FANTOM/Juno-X/Jupiter-X, MI085 = GAIA-2, RC001 = ZENOLOGY).
-    private static final int   MODEL_TAG_OFFSET = 6;
-    private static final int   MODEL_TAG_LENGTH = 5;
+    // SVZ header (16 bytes): "SVZa" + version[2] + modelTag[5] + flag[1] + reserved[4]. The model
+    // tag
+    // selects the target device (KY019 = FANTOM/Juno-X/Jupiter-X, MI085 = GAIA-2, RC001 =
+    // ZENOLOGY).
+    private static final int     MODEL_TAG_OFFSET = 6;
+    private static final int     MODEL_TAG_LENGTH = 5;
 
     // USPa record field offsets (device-confirmed).
-    private static final int   USP_LOOP_MODE    = 0x14;
-    private static final int   USP_LEVEL        = 0x15;
-    private static final int   USP_ORIG_KEY     = 0x19;
-    private static final int   USP_START        = 0x1C;
-    private static final int   USP_LOOP_START   = 0x20;
-    private static final int   USP_END          = 0x24;
-    private static final int   USP_CHANNELS     = 0x2C;
+    private static final int     USP_LOOP_MODE    = 0x14;
+    private static final int     USP_LEVEL        = 0x15;
+    private static final int     USP_ORIG_KEY     = 0x19;
+    private static final int     USP_START        = 0x1C;
+    private static final int     USP_LOOP_START   = 0x20;
+    private static final int     USP_END          = 0x24;
+    private static final int     USP_CHANNELS     = 0x2C;
 
-    // PATa oscillator Wave-Number fields (device-confirmed): the 1-based multisample the tone plays.
-    // Wave R = Wave L makes the interleaved-stereo multisample play in stereo; R = 0 would be mono.
-    private static final int   PAT_WAVE_L       = 0xE2;
-    private static final int   PAT_WAVE_R       = 0xE4;
+    // PATa oscillator Wave-Number fields (device-confirmed): the 1-based multi-sample the tone
+    // plays. Wave R = Wave L makes the interleaved-stereo multi-sample play in stereo; R = 0 would
+    // be mono.
+    private static final int     PAT_WAVE_L       = 0xE2;
+    private static final int     PAT_WAVE_R       = 0xE4;
 
     // Partial-1 TVF filter + TVA amplitude-envelope offsets - validated against 2048 factory tones.
     // All values are u16 LE, 0-1023. Filter type is a small index times 0x100.
-    private static final int   PAT_FILTER_TYPE  = 0xEC;   // 1=LPF(0x100), 2=BPF(0x200), 3=HPF(0x300)
-    private static final int   PAT_CUTOFF       = 0xF0;
-    private static final int   PAT_RESONANCE    = 0xF6;
-    private static final int   PAT_TVA_TIME     = 0x37A;  // T1,T2,T3,T4 at +0,+2,+4,+6
-    private static final int   PAT_TVA_LEVEL    = 0x382;  // L1,L2,L3,L4 at +0,+2,+4,+6
 
+    /** 1=LPF(0x100), 2=BPF(0x200), =HPF(0x300). */
+    private static final int     PAT_FILTER_TYPE  = 0xEC;
+    private static final int     PAT_CUTOFF       = 0xF0;
+    private static final int     PAT_RESONANCE    = 0xF6;
+    /** T1,T2,T3,T4 at +0,+2,+4,+6. */
+    private static final int     PAT_TVA_TIME     = 0x37A;
+    /** L1,L2,L3,L4 at +0,+2,+4,+6. */
+    private static final int     PAT_TVA_LEVEL    = 0x382;
+
+    // -------------------------------------------------------------------------------
     // Loaded byte templates (constant or opaque device data).
-    private static final byte [] SVZ_HEADER     = load ("svz_header.bin");     // 16 bytes: SVZa + version + KY019
-    private static final byte [] DIFA           = load ("difa.bin");           // 32 byte constant record
-    private static final byte [] PATA_TEMPLATE  = load ("pata_multisample.bin"); // 1632 byte device multisample tone
-    private static final byte [] SMPD_HEADER    = load ("smpd_header.bin");    // 460 byte SMPd header
-    private static final byte [] USPA_TEMPLATE  = load ("uspa.bin");           // 64 byte device USPa record
+
+    /** 16 bytes: SVZa + version + KY019. */
+    private static final byte [] SVZ_HEADER       = load ("svz_header.bin");
+    /** 32 byte constant record. */
+    private static final byte [] DIFA             = load ("difa.bin");
+    /** 1632 byte device multi-sample tone. */
+    private static final byte [] PATA_TEMPLATE    = load ("pata_multisample.bin");
+    /** 460 byte SMPd header. */
+    private static final byte [] SMPD_HEADER      = load ("smpd_header.bin");
+    /** 64 byte device USPa record. */
+    private static final byte [] USPA_TEMPLATE    = load ("uspa.bin");
 
 
+    /**
+     * Constructor. Private due to utility class
+     */
     private ZenCoreSvz ()
     {
-        // Utility class
+        // Intentionally empty
     }
 
 
@@ -85,53 +102,60 @@ public final class ZenCoreSvz
     public static final class SvzSample
     {
         /** Interleaved 16-bit little-endian PCM (mono is duplicated to stereo before this). */
-        public byte []  pcm;
+        public byte [] pcm;
         /** Sample rate in Hz. */
-        public int      rate;
+        public int     rate;
         /** Number of channels (the FANTOM stores user samples as 2). */
-        public int      channels;
+        public int     channels;
         /** Sample name. */
-        public String   name;
+        public String  name;
         /** Original key (root note) 0-127. */
-        public int      originalKey;
+        public int     originalKey;
         /** Level 0-127. */
-        public int      level    = 127;
+        public int     level = 127;
         /** Whether the sample loops (forward) or is a one-shot. */
-        public boolean  hasLoop;
+        public boolean hasLoop;
         /** Loop start frame. */
-        public int      loopStart;
+        public int     loopStart;
         /** Loop end / play end frame. */
-        public int      end;
+        public int     end;
     }
+
 
     /** One instrument (tone) that maps keys onto samples of the shared pool. */
     public static final class SvzInstrument
     {
-        /** The instrument (tone and multisample) name. */
-        public String name;
+        /** The instrument (tone and multi-sample) name. */
+        public String       name;
         /** For each of the 128 keys the 1-based index into the sample pool, or 0 if unassigned. */
-        public final int []  keyToSample = new int [128];
+        public final int [] keyToSample  = new int [128];
 
-        // Optional Partial-1 tone parameters taken from the source; -1 keeps the template default.
+        // ----------------------------------------------------------------------------------------
+        // Optional Partial-1 tone parameters taken from the source; -1 keeps the template default
+
         /** Filter type: 1=LPF, 2=BPF, 3=HPF (-1 = keep template). */
-        public int filterType = -1;
+        public int          filterType   = -1;
         /** Filter cutoff 0-1023. */
-        public int cutoff     = -1;
+        public int          cutoff       = -1;
         /** Filter resonance 0-1023. */
-        public int resonance  = -1;
-        /** TVA amplitude-envelope time values 0-1023 (attack, hold, decay, release). */
-        public int envAttack  = -1;
-        public int envHold    = -1;
-        public int envDecay   = -1;
-        public int envRelease = -1;
-        /** TVA amplitude-envelope hold + sustain levels 0-1023. */
-        public int envHoldLevel = -1;
-        public int envSustain   = -1;
+        public int          resonance    = -1;
+        /** TVA amplitude-envelope time values 0-1023 - attack. */
+        public int          envAttack    = -1;
+        /** TVA amplitude-envelope time values 0-1023 - hold. */
+        public int          envHold      = -1;
+        /** TVA amplitude-envelope time values 0-1023 - decay. */
+        public int          envDecay     = -1;
+        /** TVA amplitude-envelope time values 0-1023 - release. */
+        public int          envRelease   = -1;
+        /** TVA amplitude-envelope hold + sustain levels 0-1023 - hold. */
+        public int          envHoldLevel = -1;
+        /** TVA amplitude-envelope hold + sustain levels 0-1023 - sustain. */
+        public int          envSustain   = -1;
     }
 
 
     /**
-     * Assemble an importable FANTOM instrument <i>.svz</i> from a shared sample pool and one or more
+     * Assemble a FANTOM instrument <i>.svz</i> from a shared sample pool and one or more
      * instruments (a single tone for one instrument, a multi-tone bank for several).
      *
      * @param pool The samples shared by all instruments (1-based referenced from the key-maps)
@@ -189,66 +213,67 @@ public final class ZenCoreSvz
 
     private static byte [] buildTone (final SvzInstrument instrument, final int multisampleNumber)
     {
-        final byte [] record = PATA_TEMPLATE.clone ();
-        System.arraycopy (ZenCoreUtil.padName (instrument.name, NAME_LENGTH), 0, record, 0, NAME_LENGTH);
-        putU16LE (record, PAT_WAVE_L, multisampleNumber);
-        putU16LE (record, PAT_WAVE_R, multisampleNumber);
+        final byte [] aRecord = PATA_TEMPLATE.clone ();
+        System.arraycopy (ZenCoreUtil.padName (instrument.name, NAME_LENGTH), 0, aRecord, 0, NAME_LENGTH);
+        putU16LE (aRecord, PAT_WAVE_L, multisampleNumber);
+        putU16LE (aRecord, PAT_WAVE_R, multisampleNumber);
 
         // Carry the source's filter over the template default (Partial 1).
         if (instrument.filterType >= 1)
         {
-            putU16LE (record, PAT_FILTER_TYPE, instrument.filterType * 0x100);
+            putU16LE (aRecord, PAT_FILTER_TYPE, instrument.filterType * 0x100);
             if (instrument.cutoff >= 0)
-                putU16LE (record, PAT_CUTOFF, instrument.cutoff);
+                putU16LE (aRecord, PAT_CUTOFF, instrument.cutoff);
             if (instrument.resonance >= 0)
-                putU16LE (record, PAT_RESONANCE, instrument.resonance);
+                putU16LE (aRecord, PAT_RESONANCE, instrument.resonance);
         }
 
         // Carry the source's amplitude envelope over the template default (4-time / 4-level TVA).
         if (instrument.envAttack >= 0)
         {
-            putU16LE (record, PAT_TVA_TIME, instrument.envAttack);
-            putU16LE (record, PAT_TVA_TIME + 2, Math.max (0, instrument.envHold));
-            putU16LE (record, PAT_TVA_TIME + 4, instrument.envDecay);
-            putU16LE (record, PAT_TVA_TIME + 6, instrument.envRelease);
-            putU16LE (record, PAT_TVA_LEVEL, 1023);                                                    // L1 = peak
-            putU16LE (record, PAT_TVA_LEVEL + 2, instrument.envHoldLevel >= 0 ? instrument.envHoldLevel : 1023);
-            putU16LE (record, PAT_TVA_LEVEL + 4, instrument.envSustain);                                // L3 = sustain
-            putU16LE (record, PAT_TVA_LEVEL + 6, 0);                                                    // L4 = silence
+            putU16LE (aRecord, PAT_TVA_TIME, instrument.envAttack);
+            putU16LE (aRecord, PAT_TVA_TIME + 2, Math.max (0, instrument.envHold));
+            putU16LE (aRecord, PAT_TVA_TIME + 4, instrument.envDecay);
+            putU16LE (aRecord, PAT_TVA_TIME + 6, instrument.envRelease);
+            putU16LE (aRecord, PAT_TVA_LEVEL, 1023); // L1 = peak
+            putU16LE (aRecord, PAT_TVA_LEVEL + 2, instrument.envHoldLevel >= 0 ? instrument.envHoldLevel : 1023);
+            putU16LE (aRecord, PAT_TVA_LEVEL + 4, instrument.envSustain); // L3 = sustain
+            putU16LE (aRecord, PAT_TVA_LEVEL + 6, 0); // L4 = silence
         }
-        return record;
+        return aRecord;
     }
 
 
     private static byte [] buildKeyMap (final SvzInstrument instrument)
     {
-        final byte [] record = new byte [MSP_RECORD_SIZE];
-        System.arraycopy (ZenCoreUtil.padName (instrument.name, NAME_LENGTH), 0, record, 0, NAME_LENGTH);
+        final byte [] aRecord = new byte [MSP_RECORD_SIZE];
+        System.arraycopy (ZenCoreUtil.padName (instrument.name, NAME_LENGTH), 0, aRecord, 0, NAME_LENGTH);
         for (int key = 0; key < 128; key++)
         {
             final int p = 16 + key * 8;
-            putU16LE (record, p, instrument.keyToSample[key]); // 1-based sample index, 0 = unassigned
-            record[p + 2] = 0x7F;                              // per-key level
-            record[p + 4] = (byte) 0x80;                       // constant flag
+            // 1-based sample index, 0 = unassigned
+            putU16LE (aRecord, p, instrument.keyToSample[key]);
+            aRecord[p + 2] = 0x7F; // per-key level
+            aRecord[p + 4] = (byte) 0x80; // constant flag
         }
-        return record;
+        return aRecord;
     }
 
 
     private static byte [] buildSampleParameters (final SvzSample sample)
     {
         // Start from a real device record so the sample-format fields (0x2E-0x3F) which determine
-        // stereo playback are correct; patch only the per-sample values.
-        final byte [] record = USPA_TEMPLATE.clone ();
-        System.arraycopy (ZenCoreUtil.padName (sample.name, NAME_LENGTH), 0, record, 0, NAME_LENGTH);
-        record[USP_LOOP_MODE] = (byte) (sample.hasLoop ? 0 : 1); // 0 = forward loop, 1 = one-shot
-        record[USP_LEVEL] = (byte) (sample.level & 0x7F);
-        record[USP_ORIG_KEY] = (byte) (sample.originalKey & 0x7F);
-        ZenCoreUtil.writeUnsigned32 (record, USP_START, 0, false);
-        ZenCoreUtil.writeUnsigned32 (record, USP_LOOP_START, sample.hasLoop ? sample.loopStart : 0, false);
-        ZenCoreUtil.writeUnsigned32 (record, USP_END, sample.end, false);
-        record[USP_CHANNELS] = (byte) sample.channels;
-        return record;
+        // stereo play-back are correct; patch only the per-sample values.
+        final byte [] aRecord = USPA_TEMPLATE.clone ();
+        System.arraycopy (ZenCoreUtil.padName (sample.name, NAME_LENGTH), 0, aRecord, 0, NAME_LENGTH);
+        aRecord[USP_LOOP_MODE] = (byte) (sample.hasLoop ? 0 : 1); // 0 = forward loop, 1 = one-shot
+        aRecord[USP_LEVEL] = (byte) (sample.level & 0x7F);
+        aRecord[USP_ORIG_KEY] = (byte) (sample.originalKey & 0x7F);
+        ZenCoreUtil.writeUnsigned32 (aRecord, USP_START, 0, false);
+        ZenCoreUtil.writeUnsigned32 (aRecord, USP_LOOP_START, sample.hasLoop ? sample.loopStart : 0, false);
+        ZenCoreUtil.writeUnsigned32 (aRecord, USP_END, sample.end, false);
+        aRecord[USP_CHANNELS] = (byte) sample.channels;
+        return aRecord;
     }
 
 
@@ -259,7 +284,8 @@ public final class ZenCoreSvz
         header[1] = 'M';
         header[2] = 'P';
         header[3] = 'd';
-        // f04 = played 16-bit sample count = end * channels (the device zero-pads any frames past it)
+        // f04 = played 16-bit sample count = end * channels (the device zero-pads any frames past
+        // it)
         ZenCoreUtil.writeUnsigned32 (header, 4, (long) sample.end * sample.channels, false);
         header[8] = (byte) sample.channels;
         header[9] = 16;
@@ -275,9 +301,13 @@ public final class ZenCoreSvz
 
 
     /**
-     * The 0x60-0x1CB region is a per-sample display preview the device stores individually (a signed
-     * peak-extreme envelope of the left channel over 182 windows). Regenerating it per sample keeps
-     * every sample's block distinct as the device does.
+     * The 0x60-0x1CB region is a per-sample display preview the device stores individually (a
+     * signed peak-extreme envelope of the left channel over 182 windows). Regenerating it per
+     * sample keeps every sample's block distinct as the device does.
+     *
+     * @param header The header data
+     * @param pcm The PCM data
+     * @param channels The number of channels
      */
     private static void writePreview (final byte [] header, final byte [] pcm, final int channels)
     {
@@ -340,7 +370,7 @@ public final class ZenCoreSvz
             if (channels < 1 || channels > 2)
                 channels = 2;
 
-            final int entryOffset = dirStart + i * 16;          // {index, offset, size, crc32}
+            final int entryOffset = dirStart + i * 16;
             if (entryOffset + 16 <= file.length)
             {
                 final int chunkOffset = (int) ZenCoreUtil.readUnsigned32 (file, entryOffset + 4, false);
@@ -361,7 +391,7 @@ public final class ZenCoreSvz
 
 
     /**
-     * Read the multisample key-map of a SVZ container, if present.
+     * Read the multi-sample key-map of a SVZ container, if present.
      *
      * @param container The parsed container
      * @return The key-map or null

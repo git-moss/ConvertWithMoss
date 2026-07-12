@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.file.sf2;
 import java.util.List;
 import java.util.Map.Entry;
 
+import de.mossgrabers.convertwithmoss.format.sf2.GeneratorHierarchy;
+
 
 /**
  * A SF2 preset zone.
@@ -88,7 +90,7 @@ public class Sf2PresetZone extends AbstractZone
         for (final Entry<Integer, Integer> gen: this.getGenerators ().entrySet ())
         {
             final int generator = gen.getKey ().intValue ();
-            sb.append ("      - Preset. Generator: ").append (Generator.getGeneratorName (generator)).append (" : ").append (gen.getValue ()).append ('\n');
+            sb.append ("      - Preset. Generator: ").append (GeneratorHierarchy.getGeneratorName (generator)).append (" : ").append (gen.getValue ()).append ('\n');
         }
 
         if (this.instrument != null)

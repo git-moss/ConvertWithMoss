@@ -25,8 +25,10 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class MaschinePresetParameterArray
 {
-    private static final String BOOST_ARCHIVE_MAGIC  = "serialization::archive";
-    private static final String NI_MASCHINE_DATA_TAG = "NI::MASCHINE::DATA::";
+    private static final String IDS_NI_MASCHINE_READ_ERROR = "IDS_NI_MASCHINE_READ_ERROR";
+
+    private static final String BOOST_ARCHIVE_MAGIC        = "serialization::archive";
+    private static final String NI_MASCHINE_DATA_TAG       = "NI::MASCHINE::DATA::";
 
     private final int []        version;
     private final boolean       isOldFormat;
@@ -45,12 +47,12 @@ public class MaschinePresetParameterArray
         {
             final long size = StreamUtils.readUnsigned32 (inputStream, false);
             if (size != inputStream.available ())
-                throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Wrong data size"));
+                throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_READ_ERROR, "Wrong data size"));
 
             inputStream.skipNBytes (1);
             final String magic = StreamUtils.readAsciiWith1ByteLength (inputStream);
             if (!BOOST_ARCHIVE_MAGIC.equals (magic))
-                throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Magic boost bytes not found."));
+                throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_READ_ERROR, "Magic boost bytes not found."));
 
             final byte [] versionBytes = inputStream.readNBytes (7);
             this.version = readIntegers (new ByteArrayInputStream (versionBytes), 4);
@@ -424,7 +426,7 @@ public class MaschinePresetParameterArray
         // Read the first index, must be 0
         final int firstIndex = StreamUtils.readVariableLengthNumberLE (inputStream);
         if (firstIndex != expectedIndex)
-            throw new IOException (Functions.getMessage ("IDS_NI_MASCHINE_READ_ERROR", "Array index does not match"));
+            throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_READ_ERROR, "Array index does not match"));
 
         int nextIndex;
         do

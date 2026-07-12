@@ -16,7 +16,6 @@ import java.util.regex.Pattern;
 public class HTMLUtils
 {
     private static final String    AMPERSAND       = "&amp;";
-    private static final int       PATTERN_FLAGS   = Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.MULTILINE | Pattern.DOTALL;
 
     private static final String [] HTML_CHARS      =
     {
@@ -305,18 +304,6 @@ public class HTMLUtils
     public static String noHTML (final String text)
     {
         return replaceStrings (replaceStrings (htmlQuote (text), "<", "&lt;"), ">", "&gt;");
-    }
-
-
-    /**
-     * Removes all tags from the text.
-     *
-     * @param text The text from which to remove the tags
-     * @return The text without the (HTML-) tags
-     */
-    public static String noTags (final String text)
-    {
-        return Pattern.compile ("<.*?>", PATTERN_FLAGS).matcher (text).replaceAll ("");
     }
 
 

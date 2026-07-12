@@ -37,6 +37,7 @@ import javafx.stage.Window;
  */
 public class DecentSamplerCreatorUI extends WavChunkSettingsUI
 {
+    private static final String TITLED_SEPARATOR_PANE          = "titled-separator-pane";
     private static final String DS_OUTPUT_CREATE_BUNDLE        = "DecentSamplerOutputCreateBundle";
     private static final String DS_OUTPUT_MAKE_MONOPHONIC      = "DecentSamplerOutputMakeMonophonic";
     private static final String DS_TEMPLATE_FOLDER_PATH        = "DecentSamplerTemplateFolderPath";
@@ -79,14 +80,14 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
         this.createBundleCheckBox = panel.createCheckBox ("@IDS_DS_CREATE_BUNDLE");
 
         final TitledSeparator separator = panel.createSeparator ("@IDS_DS_USER_INTERFACE");
-        separator.getStyleClass ().add ("titled-separator-pane");
+        separator.getStyleClass ().add (TITLED_SEPARATOR_PANE);
 
         this.makeMonophonicCheckBox = panel.createCheckBox ("@IDS_DS_MAKE_MONOPHONIC");
         this.addFilterToGroupsCheckBox = panel.createCheckBox ("@IDS_DS_ADD_FILTER_TO_GROUPS");
 
         final BoxPanel templateFolderPathPanel = new BoxPanel (Orientation.VERTICAL, false);
         final TitledSeparator templateFolderPathTitle = new TitledSeparator (Functions.getText ("@IDS_DS_TEMPLATE_FOLDER"));
-        templateFolderPathTitle.getStyleClass ().add ("titled-separator-pane");
+        templateFolderPathTitle.getStyleClass ().add (TITLED_SEPARATOR_PANE);
         templateFolderPathTitle.setLabelFor (this.templateFolderPathField);
         templateFolderPathPanel.addComponent (templateFolderPathTitle);
 
@@ -102,7 +103,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
         panel.addComponent (templateFolderPathPanel);
         panel.addComponent (createTemplatesButton);
 
-        this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
+        this.addWavChunkOptions (panel).getStyleClass ().add (TITLED_SEPARATOR_PANE);
         return panel.getPane ();
     }
 

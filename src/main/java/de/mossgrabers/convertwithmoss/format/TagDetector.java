@@ -633,8 +633,8 @@ public class TagDetector
 
 
     /**
-     * Detect a category from a category tag at the very start of a text (e.g. 'PAD Solina' or
-     * 'BASS Growler'). Such a prefix declares the intended category explicitly and therefore takes
+     * Detect a category from a category tag at the very start of a text (e.g. 'PAD Solina' or 'BASS
+     * Growler'). Such a prefix declares the intended category explicitly and therefore takes
      * precedence over keyword matches anywhere in the texts, which can otherwise win accidentally
      * (e.g. 'BELL Vibrato Strings' would be detected as Strings instead of Bell).
      *

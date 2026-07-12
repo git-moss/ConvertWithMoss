@@ -56,9 +56,12 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String                   ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String                   VALUE                                = "value";
 
-    private static final Map<Integer, FilterType> FILTER_TYPE_MAP       = new HashMap<> ();
+    private static final String                   IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND = "IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND";
+    private static final String                   ERR_BAD_METADATA_FILE                = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+
+    private static final Map<Integer, FilterType> FILTER_TYPE_MAP                      = new HashMap<> ();
     static
     {
         FILTER_TYPE_MAP.put (Integer.valueOf (1), FilterType.LOW_PASS);
@@ -316,11 +319,11 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             final Element resonanceElement = XMLUtils.getChildElementByName (zoneElement, "flt1_res_amt");
             if (cutoffElement != null && resonanceElement != null)
             {
-                final double normalizedCutoff = XMLUtils.getDoubleAttribute (cutoffElement, "value", 1.0);
+                final double normalizedCutoff = XMLUtils.getDoubleAttribute (cutoffElement, VALUE, 1.0);
                 // The [0..1] value is first squared (x²) to give it a perceptual curve, then
                 // linearly mapped to 20 Hz – 22050 Hz
                 final double hertz = 20 + Math.pow (normalizedCutoff, 2) * (22050.0 - 20.0);
-                final double resonance = XMLUtils.getDoubleAttribute (resonanceElement, "value", 0.0);
+                final double resonance = XMLUtils.getDoubleAttribute (resonanceElement, VALUE, 0.0);
                 final IFilter filter = new DefaultFilter (filterType, 4, hertz, resonance);
                 if (cutoffEnvelopeModulator != null && cutoffAmount > 0)
                 {
@@ -375,14 +378,14 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             final String filepath = zoneElement.getAttribute ("path");
             if (filepath == null || filepath.isBlank ())
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", ex);
+                this.notifier.logError (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, ex);
                 return null;
             }
 
             final File sampleFile = new File (filepath);
             if (!sampleFile.exists ())
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", sampleFile.getAbsolutePath ());
+                this.notifier.logError (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, sampleFile.getAbsolutePath ());
                 return null;
             }
             try
@@ -391,7 +394,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             }
             catch (final IOException ex2)
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", ex2);
+                this.notifier.logError (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, ex2);
                 return null;
             }
         }
@@ -443,7 +446,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
     private static double getDoubleValueAttribute (final Element parentElement, final String childElementName, final double defaultValue)
     {
         final Element childElement = XMLUtils.getChildElementByName (parentElement, childElementName);
-        return childElement == null ? defaultValue : XMLUtils.getDoubleAttribute (childElement, "value", defaultValue);
+        return childElement == null ? defaultValue : XMLUtils.getDoubleAttribute (childElement, VALUE, defaultValue);
     }
 
 

@@ -345,12 +345,6 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
     }
 
 
-    private RawRIFFChunk getRawChunk ()
-    {
-        return this.rawRiffChunk;
-    }
-
-
     /**
      * The sample loop section of a sample chunk.
      */

@@ -41,6 +41,31 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Kontakt5MonolithFormat extends AbstractKontaktFormat
 {
+    /** File container end of table of contents magic numbers. */
+    private static final byte [] FILE_CONTAINER_HEADER_END =
+    {
+        (byte) 0xF0,
+        (byte) 0xF0,
+        (byte) 0xF0,
+        (byte) 0xF0,
+        (byte) 0xF0,
+        (byte) 0xF0,
+        (byte) 0xF0,
+        (byte) 0xF0
+    };
+    /** File container end of table of files section magic numbers. */
+    private static final byte [] FILE_CONTAINER_FILES_END  =
+    {
+        (byte) 0xF1,
+        (byte) 0xF1,
+        (byte) 0xF1,
+        (byte) 0xF1,
+        (byte) 0xF1,
+        (byte) 0xF1,
+        (byte) 0xF1,
+        (byte) 0xF1
+    };
+
     private final String         noFileContainerError;
     private final Kontakt5Format kontakt5Type;
     private File                 sourceFolder;
@@ -142,7 +167,7 @@ public class Kontakt5MonolithFormat extends AbstractKontaktFormat
         inputStream.skipNBytes (248);
 
         final byte [] markerEnd = inputStream.readNBytes (8);
-        if (Arrays.compare (Magic.FILE_CONTAINER_HEADER_END, markerEnd) != 0)
+        if (Arrays.compare (FILE_CONTAINER_HEADER_END, markerEnd) != 0)
             throw new IOException (this.noFileContainerError);
 
         final long fileCount = StreamUtils.readUnsigned64 (inputStream, false);
@@ -195,7 +220,7 @@ public class Kontakt5MonolithFormat extends AbstractKontaktFormat
         }
 
         final byte [] filesMarkerEnd = inputStream.readNBytes (8);
-        if (Arrays.compare (Magic.FILE_CONTAINER_FILES_END, filesMarkerEnd) != 0)
+        if (Arrays.compare (FILE_CONTAINER_FILES_END, filesMarkerEnd) != 0)
             throw new IOException (this.noFileContainerError);
 
         // Unknown

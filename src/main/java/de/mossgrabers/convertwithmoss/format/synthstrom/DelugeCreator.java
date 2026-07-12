@@ -97,8 +97,9 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         // The Deluge resolves sample paths (SAMPLES/...) relative to the SD card root, and presets
         // live in a SYNTHS (or KITS) folder directly below that root. If the chosen output folder
         // already is that instrument folder or a sub-folder of it, write the preset there and place
-        // the samples in the card-root SAMPLES folder (the same place the detector reads them from).
-        // Otherwise treat the chosen folder as the card root and create the SYNTHS sub-folder below.
+        // the samples in the card-root SAMPLES folder (the same place the detector reads them
+        // from). Otherwise treat the chosen folder as the card root and create the SYNTHS
+        // sub-folder below.
         final File instrumentFolder = findInstrumentFolder (destinationFolder);
         final File presetFolder;
         final File cardRootFolder;
@@ -508,13 +509,13 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Calculate the Deluge sustain parameter for an amplitude envelope. A SoundFont commonly fakes a
-     * slow, sustaining pad with a (near) silent sustain plus a very long decay - e.g. a pad whose
-     * amplitude decays over 44 seconds - relying on that long decay to keep the note up. The Deluge's
-     * decay/release only reaches about 5.9 seconds, so such a note would instead collapse to silence
-     * within a few seconds and sound far too quiet. When the sustain is (near) silent but the decay
-     * is longer than the Deluge can represent, hold the note at the level implied by the zone's
-     * attenuation so it sustains at the source's level instead of dropping out.
+     * Calculate the Deluge sustain parameter for an amplitude envelope. A SoundFont commonly fakes
+     * a slow, sustaining pad with a (near) silent sustain plus a very long decay - e.g. a pad whose
+     * amplitude decays over 44 seconds - relying on that long decay to keep the note up. The
+     * Deluge's decay/release only reaches about 5.9 seconds, so such a note would instead collapse
+     * to silence within a few seconds and sound far too quiet. When the sustain is (near) silent
+     * but the decay is longer than the Deluge can represent, hold the note at the level implied by
+     * the zone's attenuation so it sustains at the source's level instead of dropping out.
      *
      * @param envelope The amplitude envelope
      * @param zoneGainDecibels The zone gain in decibels (the source's attenuation, 0 or negative)

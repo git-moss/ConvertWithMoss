@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import de.mossgrabers.convertwithmoss.exception.MethodNotImplemented;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFFile;
 import de.mossgrabers.convertwithmoss.file.riff.CommonRiffChunkId;
@@ -406,7 +407,7 @@ public class DlsFile extends AbstractRIFFFile
     @Override
     protected void fillChunkStack ()
     {
-        throw new RuntimeException ("Writing not supported.");
+        throw new MethodNotImplemented ("Writing not supported.");
     }
 
 

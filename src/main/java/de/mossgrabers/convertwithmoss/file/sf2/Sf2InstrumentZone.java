@@ -6,6 +6,8 @@ package de.mossgrabers.convertwithmoss.file.sf2;
 
 import java.util.Map.Entry;
 
+import de.mossgrabers.convertwithmoss.format.sf2.GeneratorHierarchy;
+
 
 /**
  * A SF2 instrument zone.
@@ -78,7 +80,7 @@ public class Sf2InstrumentZone extends AbstractZone
         for (final Entry<Integer, Integer> gen: this.getGenerators ().entrySet ())
         {
             final int generator = gen.getKey ().intValue ();
-            sb.append ("           - Instr. Generator: ").append (Generator.getGeneratorName (generator)).append (" : ").append (gen.getValue ()).append ('\n');
+            sb.append ("           - Instr. Generator: ").append (GeneratorHierarchy.getGeneratorName (generator)).append (" : ").append (gen.getValue ()).append ('\n');
         }
 
         if (this.sampleDescriptor != null)

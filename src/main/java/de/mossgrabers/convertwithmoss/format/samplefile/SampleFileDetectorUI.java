@@ -36,6 +36,8 @@ import javafx.scene.layout.Pane;
  */
 public class SampleFileDetectorUI extends MetadataSettingsUI
 {
+    private static final String                      TITLED_SEPARATOR_PANE              = "titled-separator-pane";
+
     private static final String                      SAMPLEFILE_TYPE                    = "samplefileType";
     private static final String                      SAMPLEFILE_GROUP_DETECTION_PATTERN = "samplefileDetectionPattern";
     private static final String                      SAMPLEFILE_IS_ASCENDING            = "samplefileIsAscending";
@@ -164,7 +166,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
         // -----------------------------------------------------------
         // Groups
 
-        panel.createSeparator ("@IDS_FILE_GROUPS").getStyleClass ().add ("titled-separator-pane");
+        panel.createSeparator ("@IDS_FILE_GROUPS").getStyleClass ().add (TITLED_SEPARATOR_PANE);
 
         // Layer detection pattern
         this.detectionPatternField = panel.createField ("@IDS_FILE_DETECTION", comma, -1);
@@ -191,12 +193,12 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
         // Metadata
 
         this.addTo (panel);
-        this.getSeparator ().getStyleClass ().add ("titled-separator-pane");
+        this.getSeparator ().getStyleClass ().add (TITLED_SEPARATOR_PANE);
 
         // -----------------------------------------------------------
         // Options
 
-        panel.createSeparator ("@IDS_FILE_OPTIONS").getStyleClass ().add ("titled-separator-pane");
+        panel.createSeparator ("@IDS_FILE_OPTIONS").getStyleClass ().add (TITLED_SEPARATOR_PANE);
 
         this.crossfadeNotesField = panel.createPositiveIntegerField ("@IDS_FILE_CROSSFADE_NOTES");
         this.crossfadeVelocitiesField = panel.createPositiveIntegerField ("@IDS_FILE_CROSSFADE_VELOCITIES");
