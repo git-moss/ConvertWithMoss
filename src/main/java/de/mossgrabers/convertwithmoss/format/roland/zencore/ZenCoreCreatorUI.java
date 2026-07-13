@@ -29,36 +29,66 @@ import javafx.scene.layout.Pane;
  */
 public class ZenCoreCreatorUI implements ICoreTaskSettings
 {
-    private static final String    ZENCORE_TARGET_DEVICE = "ZenCoreTargetDevice";
+    private static final String     ZENCORE_TARGET_DEVICE = "ZenCoreTargetDevice";
 
     /**
-     * The full 16-byte SVZ header per target device in radio-button order (magic "SVZa" + version[2]
-     * + model tag[5] + flag + reserved[4]); index 0 (FANTOM / KY019) is the default. The version and
-     * flag bytes differ per device, so the whole header, not only the model tag, is selected. The
-     * ZENOLOGY plug-in (RC001) is deliberately not offered: it imports only the tone from a .svz and
-     * never the user samples (verified with the FANTOM's own user-sample exports as well), so a
-     * multi-sample written for it would always play silent.
+     * The full 16-byte SVZ header per target device in radio-button order (magic "SVZa" +
+     * version[2] + model tag[5] + flag + reserved[4]); index 0 (FANTOM / KY019) is the default. The
+     * version and flag bytes differ per device, so the whole header, not only the model tag, is
+     * selected. The ZENOLOGY plug-in (RC001) is deliberately not offered: it imports only the tone
+     * from a .svz and never the user samples (verified with the FANTOM's own user-sample exports as
+     * well), so a multi-sample written for it would always play silent.
      */
-    private static final byte [] []  HEADERS             =
+    private static final byte [] [] HEADERS               =
     {
         // FANTOM / FANTOM-0 / FANTOM EX / Juno-X / Jupiter-X / Jupiter-Xm (device-confirmed)
         {
-            'S', 'V', 'Z', 'a', 0x05, 0x04, 'K', 'Y', '0', '1', '9', 0x24, 0, 0, 0, 0
+            'S',
+            'V',
+            'Z',
+            'a',
+            0x05,
+            0x04,
+            'K',
+            'Y',
+            '0',
+            '1',
+            '9',
+            0x24,
+            0,
+            0,
+            0,
+            0
         },
         // GAIA-2 (model tag firmware-derived; version + flag reuse the FANTOM values - unverified)
         {
-            'S', 'V', 'Z', 'a', 0x05, 0x04, 'M', 'I', '0', '8', '5', 0x24, 0, 0, 0, 0
+            'S',
+            'V',
+            'Z',
+            'a',
+            0x05,
+            0x04,
+            'M',
+            'I',
+            '0',
+            '8',
+            '5',
+            0x24,
+            0,
+            0,
+            0,
+            0
         }
     };
     /** The 5-character model tag per device, used to match the CLI parameter value. */
-    private static final String []   TAGS                =
+    private static final String []  TAGS                  =
     {
         "KY019",
         "MI085"
     };
 
-    private ToggleGroup            targetDeviceToggleGroup;
-    private int                    targetDevice;
+    private ToggleGroup             targetDeviceToggleGroup;
+    private int                     targetDevice;
 
 
     /** {@inheritDoc} */

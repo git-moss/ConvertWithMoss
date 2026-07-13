@@ -878,41 +878,26 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     {
         try
         {
-            // Read loop and root key if necessary. If loop was not explicitly
-            // deactivated, there is a loop present, which might need to read the
-            // parameters from the WAV file
-            List<ISampleLoop> loops = zone.getLoops ();
-            boolean readLoops = false;
-            ISampleLoop oldLoop = null;
-            if (!loops.isEmpty ())
-            {
-                oldLoop = loops.get (0);
-                readLoops = oldLoop.getStart () < 0 || oldLoop.getEnd () < 0;
-                if (readLoops)
-                    loops.clear ();
-            }
+            // If loop was not explicitly deactivated, there is a loop present, which might need to
+            // read the parameters from the WAV file
+            final List<ISampleLoop> loops = zone.getLoops ();
+            final boolean hasLoop = !loops.isEmpty () && loops.get (0).getStart () >= 0 && loops.get (0).getEnd () >= 0;
+            final List<ISampleLoop> previousLoops = new ArrayList<> (loops);
+            loops.clear ();
 
-            zone.getSampleData ().addZoneData (zone, true, readLoops);
+            zone.getSampleData ().addZoneData (zone, true, true);
 
             // If start or end was already set overwrite it here
-            if (readLoops)
+            if (loops.isEmpty () && hasLoop)
             {
-                loops = zone.getLoops ();
-                // The null check is not necessary but otherwise we get an Eclipse warning
-                if (oldLoop != null && !loops.isEmpty ())
+                final ISampleLoop previousLoop = previousLoops.get (0);
+                final int oldStart = previousLoop.getStart ();
+                final int oldEnd = previousLoop.getEnd ();
+                if (oldStart >= 0 && oldEnd >= 0)
                 {
-                    final ISampleLoop newLoop = loops.get (0);
-
-                    final int oldStart = oldLoop.getStart ();
-                    if (oldStart >= 0)
-                        newLoop.setStart (oldStart);
-                    final int oldEnd = oldLoop.getEnd ();
-                    if (oldEnd >= 0)
-                        newLoop.setEnd (oldEnd);
-
-                    // If values are still not set remove the loop
-                    if (newLoop.getStart () < 0 && newLoop.getEnd () < 0)
-                        loops.clear ();
+                    previousLoop.setStart (oldStart);
+                    previousLoop.setEnd (oldEnd);
+                    loops.add (previousLoop);
                 }
             }
         }

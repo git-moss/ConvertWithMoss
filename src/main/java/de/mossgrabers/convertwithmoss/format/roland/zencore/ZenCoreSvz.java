@@ -29,72 +29,82 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
 public final class ZenCoreSvz
 {
     /** The size of a USPa sample-parameter record. */
-    public static final int      USP_RECORD_SIZE  = 64;
+    public static final int      USP_RECORD_SIZE    = 64;
     /** The size of a MSPa multis-ample key-map record. */
-    public static final int      MSP_RECORD_SIZE  = 1040;
+    public static final int      MSP_RECORD_SIZE    = 1040;
     /** The size of the fixed SMPd chunk header (PCM follows at this offset). */
-    public static final int      SMPD_HEADER_SIZE = 0x1CC;
+    public static final int      SMPD_HEADER_SIZE   = 0x1CC;
 
-    private static final int     NAME_LENGTH      = 16;
-    private static final int     PREVIEW_OFFSET   = 0x60;
-    private static final int     PREVIEW_VALUES   = 182;
+    private static final int     NAME_LENGTH        = 16;
+    private static final int     PREVIEW_OFFSET     = 0x60;
+    private static final int     PREVIEW_VALUES     = 182;
 
     // USPa record field offsets (device-confirmed).
-    private static final int     USP_LOOP_MODE    = 0x14;
-    private static final int     USP_LEVEL        = 0x15;
-    private static final int     USP_ORIG_KEY     = 0x19;
-    private static final int     USP_START        = 0x1C;
-    private static final int     USP_LOOP_START   = 0x20;
-    private static final int     USP_END          = 0x24;
-    private static final int     USP_CHANNELS     = 0x2C;
+    private static final int     USP_LOOP_MODE      = 0x14;
+    private static final int     USP_LEVEL          = 0x15;
+    private static final int     USP_ORIG_KEY       = 0x19;
+    private static final int     USP_START          = 0x1C;
+    private static final int     USP_LOOP_START     = 0x20;
+    private static final int     USP_END            = 0x24;
+    private static final int     USP_CHANNELS       = 0x2C;
 
     // PATa oscillator Wave-Number fields (device-confirmed): the 1-based multi-sample the partial's
     // oscillator plays. A mono tone plays one multi-sample on both sides (Wave R = Wave L on
     // Partial 1). A stereo tone uses TWO partials (the factory way, verified in the FANTOM firmware
-    // where stereo sounds are separate "... L"/"... R" waves): Partial 1 plays the left multi-sample
-    // panned hard left, Partial 2 plays the right multi-sample panned hard right - each a mono loop,
+    // where stereo sounds are separate "... L"/"... R" waves): Partial 1 plays the left
+    // multi-sample
+    // panned hard left, Partial 2 plays the right multi-sample panned hard right - each a mono
+    // loop,
     // so neither has the loop-wrap click that an interleaved-stereo sample suffers.
-    private static final int     PAT_WAVE_L        = 0xE2;         // Partial 1 wave number (left)
-    private static final int     PAT_WAVE_R        = 0xE4;         // Partial 1 right wave (mono tone)
-    private static final int     PAT_PARTIAL_STRIDE = 0x7C;        // OSC/filter block stride per partial
-    private static final int     PAT_P2_WAVE        = 0xE2 + PAT_PARTIAL_STRIDE; // Partial 2 wave number
+    private static final int     PAT_WAVE_L         = 0xE2;                         // Partial 1
+                                                                                    // wave number
+                                                                                    // (left)
+    private static final int     PAT_WAVE_R         = 0xE4;                         // Partial 1
+                                                                                    // right wave
+                                                                                    // (mono tone)
+    private static final int     PAT_PARTIAL_STRIDE = 0x7C;                         // OSC/filter
+                                                                                    // block stride
+                                                                                    // per partial
+    private static final int     PAT_P2_WAVE        = 0xE2 + PAT_PARTIAL_STRIDE;    // Partial 2
+                                                                                    // wave number
 
     // Partial-1 TVF filter + TVA amplitude-envelope offsets - validated against 2048 factory tones.
     // All values are u16 LE, 0-1023. Filter type is a small index times 0x100. The filter block
     // repeats per partial at PAT_PARTIAL_STRIDE; the TVA envelope block repeats at PAT_ENV_STRIDE.
 
     /** 1=LPF(0x100), 2=BPF(0x200), =HPF(0x300). */
-    private static final int     PAT_FILTER_TYPE  = 0xEC;
-    private static final int     PAT_CUTOFF       = 0xF0;
-    private static final int     PAT_RESONANCE    = 0xF6;
+    private static final int     PAT_FILTER_TYPE    = 0xEC;
+    private static final int     PAT_CUTOFF         = 0xF0;
+    private static final int     PAT_RESONANCE      = 0xF6;
     /** T1,T2,T3,T4 at +0,+2,+4,+6. */
-    private static final int     PAT_TVA_TIME     = 0x37A;
+    private static final int     PAT_TVA_TIME       = 0x37A;
     /** L1,L2,L3,L4 at +0,+2,+4,+6. */
-    private static final int     PAT_TVA_LEVEL    = 0x382;
+    private static final int     PAT_TVA_LEVEL      = 0x382;
     /**
      * Per-partial stride of the TVA amplitude-envelope block: the four partials' TVA envelopes sit
      * back-to-back (P1 @0x37A, P2 @0x38A, ...). Hardware-verified: writing Partial 2's envelope at
      * the wrong stride left it at the template default (a short release), so the right channel cut
      * off well before the left.
      */
-    private static final int     PAT_ENV_STRIDE   = 0x10;
+    private static final int     PAT_ENV_STRIDE     = 0x10;
 
     // -------------------------------------------------------------------------------
     // Loaded byte templates (constant or opaque device data).
 
     /** 32 byte constant record. */
-    private static final byte [] DIFA             = load ("difa.bin");
+    private static final byte [] DIFA               = load ("difa.bin");
     /** 1632 byte device multi-sample tone (mono: one partial). */
-    private static final byte [] PATA_TEMPLATE    = load ("pata_multisample.bin");
+    private static final byte [] PATA_TEMPLATE      = load ("pata_multisample.bin");
     /**
-     * 1632 byte device two-partial hard-panned stereo tone. Partial 1 is panned hard left, Partial 2
-     * hard right; each plays its own mono multi-sample (see {@link #PAT_WAVE_L} / {@link #PAT_P2_WAVE}).
+     * 1632 byte device two-partial hard-panned stereo tone. Partial 1 is panned hard left, Partial
+     * 2 hard right; each plays its own mono multi-sample (see {@link #PAT_WAVE_L} /
+     * {@link #PAT_P2_WAVE}).
      */
-    private static final byte [] PATA_STEREO       = load ("pata_stereo.bin");
+    private static final byte [] PATA_STEREO        = load ("pata_stereo.bin");
     /** 460 byte SMPd header. */
-    private static final byte [] SMPD_HEADER      = load ("smpd_header.bin");
+    private static final byte [] SMPD_HEADER        = load ("smpd_header.bin");
     /** 64 byte device USPa record. */
-    private static final byte [] USPA_TEMPLATE    = load ("uspa.bin");
+    private static final byte [] USPA_TEMPLATE      = load ("uspa.bin");
 
 
     /**
@@ -131,11 +141,12 @@ public final class ZenCoreSvz
 
 
     /**
-     * One instrument (tone) that maps keys onto samples of the shared pool. A mono instrument has one
-     * multi-sample played by a one-partial tone. A stereo instrument stores its left and right
-     * channels as separate mono samples in two multi-samples, played by a two-partial tone (Partial 1
-     * = left, panned hard left; Partial 2 = right, panned hard right) - each channel is a mono loop,
-     * so it does not suffer the loop-wrap click of an interleaved-stereo sample. See ZenCoreCreator.
+     * One instrument (tone) that maps keys onto samples of the shared pool. A mono instrument has
+     * one multi-sample played by a one-partial tone. A stereo instrument stores its left and right
+     * channels as separate mono samples in two multi-samples, played by a two-partial tone (Partial
+     * 1 = left, panned hard left; Partial 2 = right, panned hard right) - each channel is a mono
+     * loop, so it does not suffer the loop-wrap click of an interleaved-stereo sample. See
+     * ZenCoreCreator.
      */
     public static final class SvzInstrument
     {
@@ -160,23 +171,23 @@ public final class ZenCoreSvz
         // Optional Partial-1 tone parameters taken from the source; -1 keeps the template default
 
         /** Filter type: 1=LPF, 2=BPF, 3=HPF (-1 = keep template). */
-        public int          filterType   = -1;
+        public int          filterType       = -1;
         /** Filter cutoff 0-1023. */
-        public int          cutoff       = -1;
+        public int          cutoff           = -1;
         /** Filter resonance 0-1023. */
-        public int          resonance    = -1;
+        public int          resonance        = -1;
         /** TVA amplitude-envelope time values 0-1023 - attack. */
-        public int          envAttack    = -1;
+        public int          envAttack        = -1;
         /** TVA amplitude-envelope time values 0-1023 - hold. */
-        public int          envHold      = -1;
+        public int          envHold          = -1;
         /** TVA amplitude-envelope time values 0-1023 - decay. */
-        public int          envDecay     = -1;
+        public int          envDecay         = -1;
         /** TVA amplitude-envelope time values 0-1023 - release. */
-        public int          envRelease   = -1;
+        public int          envRelease       = -1;
         /** TVA amplitude-envelope hold + sustain levels 0-1023 - hold. */
-        public int          envHoldLevel = -1;
+        public int          envHoldLevel     = -1;
         /** TVA amplitude-envelope hold + sustain levels 0-1023 - sustain. */
-        public int          envSustain   = -1;
+        public int          envSustain       = -1;
     }
 
 
@@ -186,8 +197,8 @@ public final class ZenCoreSvz
      *
      * @param pool The samples shared by all instruments (1-based referenced from the key-maps)
      * @param instruments One or more instruments (tones)
-     * @param header16 The 16-byte SVZ file header for the target device (magic + version + model tag
-     *            + flag + reserved); the version and flag bytes differ per device
+     * @param header16 The 16-byte SVZ file header for the target device (magic + version + model
+     *            tag + flag + reserved); the version and flag bytes differ per device
      * @return The <i>.svz</i> file content
      * @throws IOException Could not assemble the file
      */
@@ -197,7 +208,8 @@ public final class ZenCoreSvz
         final List<byte []> mspaRecords = new ArrayList<> ();
         for (final SvzInstrument instrument: instruments)
         {
-            // A mono tone has one multi-sample (played on both sides); a stereo tone has a left and a
+            // A mono tone has one multi-sample (played on both sides); a stereo tone has a left and
+            // a
             // right multi-sample, one per panned partial. Multi-samples are 1-based in file order.
             final int waveLeft = mspaRecords.size () + 1;
             mspaRecords.add (buildKeyMap (instrument.multisampleName, instrument.keyToSample));
@@ -231,7 +243,8 @@ public final class ZenCoreSvz
 
     private static byte [] buildTone (final SvzInstrument instrument, final int waveLeft, final int waveRight)
     {
-        // A stereo tone uses the two-partial hard-panned template (Partial 1 left, Partial 2 right),
+        // A stereo tone uses the two-partial hard-panned template (Partial 1 left, Partial 2
+        // right),
         // each partial playing its own mono multi-sample; a mono tone uses the one-partial template
         // and plays its multi-sample on both sides (Wave R = Wave L on Partial 1).
         final byte [] aRecord = (instrument.stereo ? PATA_STEREO : PATA_TEMPLATE).clone ();
@@ -343,9 +356,9 @@ public final class ZenCoreSvz
      * stores a smoothed (low-pass) envelope; taking the signed peak-extreme of each window instead
      * makes bright or aliased content (a square wave, say) swing between +/- full-scale from one
      * window to the next and draw as noise ("bow-ties"). A per-window average of the absolute
-     * amplitude is used instead - a smooth, always-positive envelope that tracks the waveform's shape
-     * for any content and never thrashes. Regenerating it per sample keeps each block distinct as the
-     * device does.
+     * amplitude is used instead - a smooth, always-positive envelope that tracks the waveform's
+     * shape for any content and never thrashes. Regenerating it per sample keeps each block
+     * distinct as the device does.
      *
      * @param header The header data
      * @param pcm The PCM data
@@ -416,7 +429,8 @@ public final class ZenCoreSvz
                 final int chunkStart = usdSectionStart + chunkOffset;
                 if (chunkSize > SMPD_HEADER_SIZE && chunkStart + chunkSize <= file.length)
                 {
-                    // The storage layout comes from the SMPd chunk: the USPa channel count is 2 even
+                    // The storage layout comes from the SMPd chunk: the USPa channel count is 2
+                    // even
                     // for mono-stored samples (the device's own exports store mono SMPd data).
                     int channels = file[chunkStart + 8] & 0xFF;
                     if (channels < 1 || channels > 2)

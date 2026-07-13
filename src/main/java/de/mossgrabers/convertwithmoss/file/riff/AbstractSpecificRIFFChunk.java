@@ -64,7 +64,7 @@ public abstract class AbstractSpecificRIFFChunk implements IRiffChunk
 
     /**
      * Get the raw RIFF chunk.
-     * 
+     *
      * @return The raw RIFF chunk
      */
     public RawRIFFChunk getRawChunk ()

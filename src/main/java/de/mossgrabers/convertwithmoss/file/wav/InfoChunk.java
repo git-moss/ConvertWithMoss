@@ -29,14 +29,12 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 public class InfoChunk extends AbstractListChunk
 {
     // This must not be static since it is not thread safe!
-    private final SimpleDateFormat    standardDateFormat  = new SimpleDateFormat ("MMMM d, yyyy", Locale.ENGLISH);
-
-    private final SimpleDateFormat [] creationDateParsers = new SimpleDateFormat []
+    private static final SimpleDateFormat [] CREATION_DATE_PARSERS = new SimpleDateFormat []
     {
         // 'Month Day, Year' where Month is initially capitalized and is the conventional full
         // English spelling of the month, Day is the date in decimal followed by a comma, and Year
         // is the full decimal year.
-        this.standardDateFormat,
+        new SimpleDateFormat ("MMMM d, yyyy", Locale.ENGLISH),
         // Other variations found which do not comply to the specification
         new SimpleDateFormat ("dd'st' MMMM yyyy", Locale.ENGLISH),
         new SimpleDateFormat ("dd'nd' MMMM yyyy", Locale.ENGLISH),
@@ -156,15 +154,15 @@ public class InfoChunk extends AbstractListChunk
     {
         final String dateTime = this.getInfoField (InfoRiffChunkId.INFO_ICRD, InfoRiffChunkId.INFO_IDIT, InfoRiffChunkId.INFO_YEAR);
         if (dateTime != null)
-            for (final SimpleDateFormat parser: this.creationDateParsers)
-                try
+            synchronized (CREATION_DATE_PARSERS)
+            {
+                for (int i = 0; i < CREATION_DATE_PARSERS.length; i++)
                 {
-                    return parser.parse (dateTime);
+                    final Date date = parseDate (i, dateTime);
+                    if (date != null)
+                        return date;
                 }
-                catch (final java.text.ParseException _)
-                {
-                    // Ignore
-                }
+            }
         return new Date ();
     }
 
@@ -176,7 +174,23 @@ public class InfoChunk extends AbstractListChunk
      */
     public void addCreationDate (final Date date)
     {
-        this.addInfoTextField (InfoRiffChunkId.INFO_ICRD, this.standardDateFormat.format (date == null ? new Date () : date), 256);
+        synchronized (CREATION_DATE_PARSERS)
+        {
+            this.addInfoTextField (InfoRiffChunkId.INFO_ICRD, CREATION_DATE_PARSERS[0].format (date == null ? new Date () : date), 256);
+        }
+    }
+
+
+    private static final Date parseDate (final int parserIndex, final String dateTime)
+    {
+        try
+        {
+            return CREATION_DATE_PARSERS[parserIndex].parse (dateTime);
+        }
+        catch (final java.text.ParseException _)
+        {
+            return null;
+        }
     }
 
 

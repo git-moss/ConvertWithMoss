@@ -78,7 +78,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
 
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            AbstractCreator.recalculateSamplePositions (multisampleSource, 48000, true);
+            AbstractCreator.recalculateAllSamplePositions (multisampleSource, 48000, true);
 
             final String multiSampleName = createSafeFilename (multisampleSource.getName ());
 

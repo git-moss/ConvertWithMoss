@@ -60,17 +60,15 @@ public abstract class AbstractListChunk extends RawRIFFChunk
 
     /**
      * Find a chunk with the given ID in the sub-chunks of this list.
-     * 
+     *
      * @param chunkId The chunk ID to look for
      * @return The chunk if it exists
      */
     public Optional<IRiffChunk> findSubChunk (final RiffChunkId chunkId)
     {
         for (final IRiffChunk chunk: this.subChunks)
-        {
             if (chunk.getId ().getFourCC () == chunkId.getFourCC ())
                 return Optional.of (chunk);
-        }
         return Optional.empty ();
     }
 
