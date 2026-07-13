@@ -45,9 +45,10 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample
  * <p>
  * User samples are written at the FANTOM's native 48 kHz / 16-bit. The voice engine has no loop
  * smoothing of its own, so click-free playback is baked into the samples: the loop end is re-seated
- * to a period-aligned point ({@link #optimizeLoopEnd}), a loop whose wrap still is not seamless gets
- * its tail cross-faded into the loop-start lead-in ({@link #crossfadeLoop}), and guard frames of the
- * loop-start continuation are stored past the loop end for the engine's interpolation look-ahead.
+ * to a period-aligned point ({@link #optimizeLoopEnd}), a loop whose wrap still is not seamless
+ * gets its tail cross-faded into the loop-start lead-in ({@link #crossfadeLoop}), and guard frames
+ * of the loop-start continuation are stored past the loop end for the engine's interpolation
+ * look-ahead.
  * </p>
  *
  * @author Jürgen Moßgraber
@@ -62,40 +63,40 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
      * period-aligned point afterwards ({@link #optimizeLoopEnd}) so re-sampling does not leave the
      * loop off its seamless wrap.
      */
-    private static final DestinationAudioFormat ZENCORE_FORMAT      = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat ZENCORE_FORMAT         = new DestinationAudioFormat (new int []
     {
         16
     }, 48000, true);
     /** The FANTOM's native user-sample rate; loop and play positions are rescaled to it. */
-    private static final int                    SAMPLE_RATE         = 48000;
+    private static final int                    SAMPLE_RATE            = 48000;
 
     /**
      * A loop whose wrap discontinuity (value or slope, of 32768 full-scale) is at or below this is
-     * left untouched - a hand-tuned, period-aligned loop (e.g. from an SF2) stays pristine. Above it,
-     * the loop end is nudged to a period-aligned point and, if the wrap still is not seamless, the
-     * loop tail is cross-faded. The threshold is deliberately small because audibility is relative to
-     * the material: bright content (its own samples move further per frame) masks a wrap step of ~50,
-     * but in a smooth pad the same step is a clearly audible tick on every loop pass, so only a wrap
-     * that is seamless for <i>any</i> material is left alone.
+     * left untouched - a hand-tuned, period-aligned loop (e.g. from an SF2) stays pristine. Above
+     * it, the loop end is nudged to a period-aligned point and, if the wrap still is not seamless,
+     * the loop tail is cross-faded. The threshold is deliberately small because audibility is
+     * relative to the material: bright content (its own samples move further per frame) masks a
+     * wrap step of ~50, but in a smooth pad the same step is a clearly audible tick on every loop
+     * pass, so only a wrap that is seamless for <i>any</i> material is left alone.
      */
-    private static final int                    LOOP_SEAM_TOLERANCE = 16;
+    private static final int                    LOOP_SEAM_TOLERANCE    = 16;
     /** How far (in frames) the loop end may be moved to find a seamless, period-aligned wrap. */
-    private static final int                    LOOP_END_SEARCH     = 1024;
+    private static final int                    LOOP_END_SEARCH        = 1024;
     /**
      * Number of guard frames stored after a loop end: copies of the loop-start continuation, so the
      * voice engine has valid look-ahead across the loop wrap. The device's own looped samples carry
      * such frames (their played-sample count runs a handful of frames past the loop end); without
-     * them the interpolator reads past the data at each wrap - the second interleaved (right) channel
-     * falls off the end first, which is heard as a per-wrap click on the right side.
+     * them the interpolator reads past the data at each wrap - the second interleaved (right)
+     * channel falls off the end first, which is heard as a per-wrap click on the right side.
      */
-    private static final int                    LOOP_GUARD_FRAMES   = 16;
+    private static final int                    LOOP_GUARD_FRAMES      = 16;
     /**
-     * Length (in frames) of the loop cross-fade applied only when a period-aligned loop end is still
-     * not seamless - an evolving pad whose timbre drifts across the loop has no phase-aligned end.
-     * About 21 ms at 48 kHz. Bright, already-seamless loops never reach this, so their audio is left
-     * bit-exact.
+     * Length (in frames) of the loop cross-fade applied only when a period-aligned loop end is
+     * still not seamless - an evolving pad whose timbre drifts across the loop has no phase-aligned
+     * end. About 21 ms at 48 kHz. Bright, already-seamless loops never reach this, so their audio
+     * is left bit-exact.
      */
-    private static final int                    LOOP_CROSSFADE      = 1024;
+    private static final int                    LOOP_CROSSFADE         = 1024;
     /**
      * Salted into the content-hashed sample names ({@link #uniqueName}): bump when the written
      * sample layout changes (SMPd header fields, guard scheme, ...), so a re-import loads the new
@@ -166,8 +167,9 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
     private SvzInstrument buildInstrument (final IMultisampleSource multisampleSource, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
     {
-        // The audio is resampled to 48 kHz (see ZENCORE_FORMAT), so rescale the loop/start/end frames
-        // to it; the loop end is then re-seated to a period-aligned point per sample in addSample.
+        // The audio is resampled to 48 kHz (see ZENCORE_FORMAT), so scale the loop/start/end
+        // frames to it; the loop end is then re-seated to a period-aligned point per sample in
+        // addSample.
         recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
 
         final SvzInstrument instrument = new SvzInstrument ();
@@ -218,9 +220,10 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
                     if (zone.getSampleData ().getAudioMetadata ().getChannels () > 1)
                         return true;
                 }
-                catch (final IOException ex)
+                catch (final IOException _)
                 {
-                    // Ignore - the sample is converted (and its channel count re-checked) in addSample.
+                    // Ignore - the sample is converted (and its channel count re-checked) in
+                    // addSample.
                 }
         return false;
     }
@@ -300,7 +303,8 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
      * avoids the loop-wrap click that the engine gives an interleaved-stereo sample.
      *
      * @param zone The source sample zone
-     * @param storeStereo Whether the instrument is stereo (split a stereo zone into two mono samples)
+     * @param storeStereo Whether the instrument is stereo (split a stereo zone into two mono
+     *            samples)
      * @param pool The pool to which to add the result
      * @param byContent The mapped indices of the already created SVZ samples
      * @param usedNames The names of the already created SVZ samples
@@ -322,10 +326,11 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
         if (frames <= 0)
             return null;
 
-        // Keep the source's loop points and audio untouched - no re-sampling, no zero-crossing snap -
-        // so a period-aligned loop stays seamless across the wrap (see ZENCORE_FORMAT). When the wrap
-        // is not already seamless the loop end is nudged (never the audio) to the nearest point whose
-        // waveform matches the loop start, so the wrap becomes seamless without altering the sample.
+        // Keep the source's loop points and audio untouched - no re-sampling, no zero-crossing snap
+        // - so a period-aligned loop stays seamless across the wrap (see ZENCORE_FORMAT). When the
+        // wrap is not already seamless the loop end is nudged (never the audio) to the nearest
+        // point whose waveform matches the loop start, so the wrap becomes seamless without
+        // altering the sample.
         // The loop preparation runs on the interleaved audio so both channels share one loop end.
         final List<ISampleLoop> loops = zone.getLoops ();
         final boolean hasLoop = !loops.isEmpty ();
@@ -338,18 +343,20 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
             if (loop.getEnd () > loopStart)
                 end = Math.min (loop.getEnd (), frames);
             end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
-            // If period-alignment still cannot make the wrap seamless - an evolving pad whose timbre
-            // drifts across the loop has no phase-aligned end - cross-fade the loop tail into the
-            // loop-start lead-in. Safe here precisely because the end is period-aligned first: the two
-            // blended stretches are in phase and reinforce, so the amplitude collapse an unaligned
-            // cross-fade caused on bright content does not happen. Already-seamless loops are skipped,
-            // as are loops starting at the first frames, which have no lead-in to measure or blend to.
+            // If period-alignment still cannot make the wrap seamless - an evolving pad whose
+            // timbre drifts across the loop has no phase-aligned end - cross-fade the loop tail
+            // into the loop-start lead-in. Safe here precisely because the end is period-aligned
+            // first: the two blended stretches are in phase and reinforce, so the amplitude
+            // collapse an unaligned cross-fade caused on bright content does not happen.
+            // Already-seamless loops are skipped, as are loops starting at the first frames, which
+            // have no lead-in to measure or blend to.
             if (loopStart >= 2 && wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
                 pcm = crossfadeLoop (pcm, channels, loopStart, end);
         }
 
         // Store the played part [0, end) plus, for a loop, LOOP_GUARD_FRAMES of the loop-start
-        // continuation as guard frames past the loop end (the device carries these on its own loops).
+        // continuation as guard frames past the loop end (the device carries these on its own
+        // loops).
         pcm = storeWithGuard (pcm, channels, end, hasLoop ? loopStart : -1);
 
         final int rootKey = Math.clamp (zone.getKeyRoot () < 0 ? zone.getKeyLow () : zone.getKeyRoot (), 0, 127);
@@ -364,8 +371,9 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
                 index
             };
         }
-        // A stereo instrument splits the zone into two mono samples (left, right); a mono instrument
-        // just keeps the left channel. Both mono samples share the loop end computed above.
+        // A stereo instrument splits the zone into two mono samples (left, right); a mono
+        // instrument just keeps the left channel. Both mono samples share the loop end computed
+        // above.
         final int left = addPooledSample (extractChannel (pcm, 2, 0), rate, zone.getName () + "_L", rootKey, level, hasLoop, loopStart, end, pool, byContent, usedNames);
         if (!storeStereo)
             return new int []
@@ -386,6 +394,17 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
      * parameters - e.g. the same sample mapped to several key ranges folds back into one). All
      * pooled samples are mono: a stereo zone is split into two mono samples before this is called.
      *
+     * @param pcm The PCM data
+     * @param rate The sample rate
+     * @param zoneName The name of the zone
+     * @param rootKey The root key of the sample
+     * @param level The level of the sample
+     * @param hasLoop Is the loop enabled?
+     * @param loopStart The loop start frame
+     * @param end The end of the sample
+     * @param pool The pool with the already created samples
+     * @param byContent The content de-duplication map
+     * @param usedNames The sample names used so far
      * @return The 1-based index into the pool
      */
     private static int addPooledSample (final byte [] pcm, final int rate, final String zoneName, final int rootKey, final int level, final boolean hasLoop, final int loopStart, final int end, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames)
@@ -396,7 +415,7 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
             return existing.intValue ();
 
         // The name hash covers everything the device caches under the sample name: the audio, the
-        // playback parameters and the writer's layout revision (see SAMPLE_FORMAT_REVISION).
+        // play-back parameters and the writer's layout revision (see SAMPLE_FORMAT_REVISION).
         final ByteBuffer parameters = ByteBuffer.allocate (32);
         parameters.putInt (SAMPLE_FORMAT_REVISION).putInt (loopStart).putInt (end).putInt (hasLoop ? 1 : 0);
         parameters.putInt (rootKey).putInt (level).putInt (rate);
@@ -425,8 +444,8 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
     /**
      * A <i>.svz</i> whose sample pool holds exactly one sample imports without an error, but the
      * device never loads its wave data: the multisample maps and displays correctly, yet shows an
-     * empty waveform and plays silent on every key (hardware-verified on a FANTOM-0; pools of two or
-     * more samples from the identical writer load fine). An inert spacer sample - a few hundred
+     * empty waveform and plays silent on every key (hardware-verified on a FANTOM-0; pools of two
+     * or more samples from the identical writer load fine). An inert spacer sample - a few hundred
      * bytes of silence assigned to no key - keeps every pool loadable.
      *
      * @param pool The sample pool
@@ -456,10 +475,10 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
     /**
      * When a loop's wrap is not already seamless, move the loop <b>end</b> (never the audio) to the
      * nearby point whose wrap is the least discontinuous, so the loop covers a whole number of wave
-     * cycles and the wrap is seamless. The sample data is left bit-exact - unlike a cross-fade, which
-     * writes a distorted, amplitude-cancelled region into the audio whenever the loop-end and
-     * loop-start phases differ (blending two out-of-phase copies of a bright waveform partly cancels
-     * them). A loop whose source points are already seamless is returned unchanged.
+     * cycles and the wrap is seamless. The sample data is left bit-exact - unlike a cross-fade,
+     * which writes a distorted, amplitude-cancelled region into the audio whenever the loop-end and
+     * loop-start phases differ (blending two out-of-phase copies of a bright waveform partly
+     * cancels them). A loop whose source points are already seamless is returned unchanged.
      *
      * @param pcm The interleaved 16-bit little-endian PCM (never modified)
      * @param channels The number of channels
@@ -478,7 +497,8 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
         // A forward loop's only discontinuity is the wrap L[end-1] -> L[loopStart], so the seamless
         // loop end is simply the candidate near the source end whose wrap deviates least from the
-        // waveform's own step into the loop start (see wrapDiscontinuity). Ties are broken towards the
+        // waveform's own step into the loop start (see wrapDiscontinuity). Ties are broken towards
+        // the
         // source end so the loop length changes as little as possible. The audio is never modified.
         final int lo = Math.max (loopStart + 2, loopEnd - LOOP_END_SEARCH);
         final int hi = Math.min (frames - LOOP_GUARD_FRAMES - 1, loopEnd + LOOP_END_SEARCH);
@@ -502,8 +522,9 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
      * waveform's own progression. A forward loop plays {@code [loopStart, loopEnd)} and wraps
      * {@code L[loopEnd-1] -> L[loopStart]}; that is seamless when {@code L[loopEnd-1]} equals the
      * natural predecessor of {@code L[loopStart]}, i.e. {@code L[loopStart-1]}, so the wrap just
-     * repeats the waveform's own step into the loop start. The click is the value and slope mismatch
-     * of the loop tail against the loop-start lead-in - measuring the raw {@code |L[loopEnd-1] -
+     * repeats the waveform's own step into the loop start. The click is the value and slope
+     * mismatch of the loop tail against the loop-start lead-in - measuring the raw
+     * {@code |L[loopEnd-1] -
      * L[loopStart]|} instead would wrongly flag the waveform's own (perfectly audible) slope.
      *
      * @param pcm The interleaved 16-bit little-endian PCM
@@ -528,8 +549,9 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
 
     /**
-     * Build the stored PCM: the played part {@code [0, end)} and, for a loop, {@link #LOOP_GUARD_FRAMES}
-     * guard frames past the loop end, each a copy of the matching loop-start-continuation frame.
+     * Build the stored PCM: the played part {@code [0, end)} and, for a loop,
+     * {@link #LOOP_GUARD_FRAMES} guard frames past the loop end, each a copy of the matching
+     * loop-start-continuation frame.
      *
      * @param pcm The interleaved 16-bit little-endian PCM
      * @param channels The number of channels
@@ -551,8 +573,10 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
             return oneShot;
         }
         // The played part [0, end) plus LOOP_GUARD_FRAMES of guard: copies of the loop-start
-        // continuation - the very frames the loop wraps to. The voice engine's look-ahead across the
-        // wrap then sees the loop restart (not audio running on past the loop end), so the interpolated
+        // continuation - the very frames the loop wraps to. The voice engine's look-ahead across
+        // the
+        // wrap then sees the loop restart (not audio running on past the loop end), so the
+        // interpolated
         // transition matches wherever the loop actually resumes.
         final byte [] stored = new byte [(end + LOOP_GUARD_FRAMES) * frameBytes];
         System.arraycopy (pcm, 0, stored, 0, played * frameBytes);
@@ -575,17 +599,18 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
     /**
      * Cross-fade the {@link #LOOP_CROSSFADE} frames ending at the loop end into the same number of
-     * frames ending at the loop start, so the loop tail gradually becomes the loop-start lead-in and
-     * the wrap is seamless even when no single end point is (an evolving pad). It is only ever called
-     * on a period-aligned loop, so the two stretches are in phase and blend without the amplitude
-     * cancellation an unaligned cross-fade causes on bright material. A linear (equal-gain) blend is
-     * used because in-phase signals add coherently.
+     * frames ending at the loop start, so the loop tail gradually becomes the loop-start lead-in
+     * and the wrap is seamless even when no single end point is (an evolving pad). It is only ever
+     * called on a period-aligned loop, so the two stretches are in phase and blend without the
+     * amplitude cancellation an unaligned cross-fade causes on bright material. A linear
+     * (equal-gain) blend is used because in-phase signals add coherently.
      *
      * @param pcm The interleaved 16-bit little-endian PCM (never modified)
      * @param channels The number of channels
      * @param loopStart The loop start frame
      * @param end The period-aligned loop end frame
-     * @return A copy of the PCM with the cross-faded loop tail, or the input if the loop is too short
+     * @return A copy of the PCM with the cross-faded loop tail, or the input if the loop is too
+     *         short
      */
     private static byte [] crossfadeLoop (final byte [] pcm, final int channels, final int loopStart, final int end)
     {
@@ -609,7 +634,7 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
     private static void setSample (final byte [] pcm, final int channels, final int frame, final int channel, final int value)
     {
-        final int clamped = value < -32768 ? -32768 : value > 32767 ? 32767 : value;
+        final int clamped = Math.clamp (value, -32768, 32767);
         final int idx = (frame * channels + channel) * 2;
         pcm[idx] = (byte) (clamped & 0xFF);
         pcm[idx + 1] = (byte) (clamped >> 8 & 0xFF);

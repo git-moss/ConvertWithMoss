@@ -486,7 +486,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected static void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate) throws IOException
     {
-        recalculateSamplePositions (multisampleSource, newSampleRate, false);
+        recalculateAllSamplePositions (multisampleSource, newSampleRate, false);
     }
 
 
@@ -500,35 +500,39 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      *            larger than the new sample rate
      * @throws IOException Could not retrieve the current sample rate
      */
-    protected static void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate, final boolean onlyIfLarger) throws IOException
+    protected static void recalculateAllSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate, final boolean onlyIfLarger) throws IOException
     {
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone sampleZone: group.getSampleZones ())
-            {
-                final ISampleData sampleData = sampleZone.getSampleData ();
-                if (sampleData == null)
-                    continue;
-                final int sampleRate = sampleData.getAudioMetadata ().getSampleRate ();
-                if (onlyIfLarger && sampleRate <= newSampleRate)
-                    continue;
-                final double sampleRateRatio = newSampleRate / (double) sampleRate;
-                final int start = sampleZone.getStart ();
-                if (start > 0)
-                    sampleZone.setStart ((int) Math.round (start * sampleRateRatio));
-                final int stop = sampleZone.getStop ();
-                if (stop > 0)
-                    sampleZone.setStop ((int) Math.round (stop * sampleRateRatio));
+                recalculateSamplePositions (sampleZone, newSampleRate, onlyIfLarger);
+    }
 
-                for (final ISampleLoop loop: sampleZone.getLoops ())
-                {
-                    final int loopStart = loop.getStart ();
-                    if (loopStart > 0)
-                        loop.setStart ((int) Math.round (loopStart * sampleRateRatio));
-                    final int loopEnd = loop.getEnd ();
-                    if (loopEnd > 0)
-                        loop.setEnd ((int) Math.round (loopEnd * sampleRateRatio));
-                }
-            }
+
+    private static void recalculateSamplePositions (final ISampleZone sampleZone, final int newSampleRate, final boolean onlyIfLarger) throws IOException
+    {
+        final ISampleData sampleData = sampleZone.getSampleData ();
+        if (sampleData == null)
+            return;
+        final int sampleRate = sampleData.getAudioMetadata ().getSampleRate ();
+        if (onlyIfLarger && sampleRate <= newSampleRate)
+            return;
+        final double sampleRateRatio = newSampleRate / (double) sampleRate;
+        final int start = sampleZone.getStart ();
+        if (start > 0)
+            sampleZone.setStart ((int) Math.round (start * sampleRateRatio));
+        final int stop = sampleZone.getStop ();
+        if (stop > 0)
+            sampleZone.setStop ((int) Math.round (stop * sampleRateRatio));
+
+        for (final ISampleLoop loop: sampleZone.getLoops ())
+        {
+            final int loopStart = loop.getStart ();
+            if (loopStart > 0)
+                loop.setStart ((int) Math.round (loopStart * sampleRateRatio));
+            final int loopEnd = loop.getEnd ();
+            if (loopEnd > 0)
+                loop.setEnd ((int) Math.round (loopEnd * sampleRateRatio));
+        }
     }
 
 

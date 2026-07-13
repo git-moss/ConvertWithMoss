@@ -53,7 +53,6 @@
 								<LivePackName Value="" />
 								<LivePackId Value="" />
 								<OriginalFileSize Value="%SAMPLE_FILE_SIZE%" />
-								<!--<OriginalCrc Value="2207" />-->
 							</FileRef>
 							<LastModDate Value="%SAMPLE_FILE_TIMESTAMP%" />
 							<SourceContext />

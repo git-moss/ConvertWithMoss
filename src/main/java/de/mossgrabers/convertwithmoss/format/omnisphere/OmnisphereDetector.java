@@ -234,7 +234,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
     }
 
 
-    private static void applyParameters (final List<IGroup> groups, final Element voiceElement, final int pitchBendUp, final int pitchBendDown, final boolean hasKeyTracking, final float pitchEnvelopeAmount, @SuppressWarnings("unused") final Element modEnvElement, final Element modEnvParamsElement)
+    private static void applyParameters (final List<IGroup> groups, final Element voiceElement, final int pitchBendUp, final int pitchBendDown, final boolean hasKeyTracking, final float pitchEnvelopeAmount, final Element modEnvElement, final Element modEnvParamsElement)
     {
         IFilter filter = null;
         final Element filterElement = XMLUtils.getChildElementByName (voiceElement, "FILTER");
@@ -248,8 +248,14 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
             final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
             cutoffEnvelopeModulator.setDepth (parseFloatAttribute (filterElement, "envdpth", 1.0f));
 
-            final Element filterParamsElement = XMLUtils.getChildElementByName (voiceElement, "FENVPARAMS");
             final IEnvelope filterEnvelope = cutoffEnvelopeModulator.getSource ();
+            final Element filterEnvElement = XMLUtils.getChildElementByName (voiceElement, "FENV");
+            final List<Element> filterEnvelopeElements = XMLUtils.getChildElementsByName (filterEnvElement, "p");
+            final boolean isFilterEnvSlopePresent = filterEnvelopeElements.size () == 4;
+            filterEnvelope.setAttackSlope (isFilterEnvSlopePresent ? parseSlopeAttribute (filterEnvelopeElements.get (0)) : 0);
+            filterEnvelope.setDecaySlope (isFilterEnvSlopePresent ? parseSlopeAttribute (filterEnvelopeElements.get (1)) : 0);
+            filterEnvelope.setReleaseSlope (isFilterEnvSlopePresent ? parseSlopeAttribute (filterEnvelopeElements.get (2)) : 0);
+            final Element filterParamsElement = XMLUtils.getChildElementByName (voiceElement, "FENVPARAMS");
             filterEnvelope.setAttackTime (parseTimeAttribute (filterParamsElement, "attk", 0.0f));
             filterEnvelope.setHoldTime (parseTimeAttribute (filterParamsElement, "hold", 0.0f));
             filterEnvelope.setDecayTime (parseTimeAttribute (filterParamsElement, "decy", 0.0f));
@@ -263,6 +269,12 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
             filter.getCutoffVelocityModulator ().setDepth (parseFloatAttribute (filterParamsElement, "velsens", 1.0f));
         }
 
+        final Element ampEnvElement = XMLUtils.getChildElementByName (voiceElement, "AENV");
+        final List<Element> ampEnvelopeElements = XMLUtils.getChildElementsByName (ampEnvElement, "p");
+        final boolean isAmpEnvSlopePresent = ampEnvelopeElements.size () == 4;
+        final double ampAttackSlope = isAmpEnvSlopePresent ? parseSlopeAttribute (ampEnvelopeElements.get (0)) : 0;
+        final double ampDecaySlope = isAmpEnvSlopePresent ? parseSlopeAttribute (ampEnvelopeElements.get (1)) : 0;
+        final double ampReleaseSlope = isAmpEnvSlopePresent ? parseSlopeAttribute (ampEnvelopeElements.get (2)) : 0;
         final Element ampParamsElement = XMLUtils.getChildElementByName (voiceElement, "AENVPARAMS");
         final double ampAttackTime = parseTimeAttribute (ampParamsElement, "attk", 0.0f);
         final double ampHoldTime = parseTimeAttribute (ampParamsElement, "hold", 0.0f);
@@ -271,6 +283,11 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         final double ampSustainLevel = parseFloatAttribute (ampParamsElement, "sust", 1.0f);
         final double ampVelocitySensitivity = parseFloatAttribute (ampParamsElement, "velsens", 1.0f);
 
+        final List<Element> envelopeElements = XMLUtils.getChildElementsByName (modEnvElement, "p");
+        final boolean isModEnvSlopePresent = envelopeElements.size () == 4;
+        final double modAttackSlope = isModEnvSlopePresent ? parseSlopeAttribute (envelopeElements.get (0)) : 0;
+        final double modDecaySlope = isModEnvSlopePresent ? parseSlopeAttribute (envelopeElements.get (1)) : 0;
+        final double modReleaseSlope = isModEnvSlopePresent ? parseSlopeAttribute (envelopeElements.get (2)) : 0;
         final double modAttackTime = parseTimeAttribute (modEnvParamsElement, "attk", 0.0f);
         final double modHoldTime = parseTimeAttribute (modEnvParamsElement, "hold", 0.0f);
         final double modDecayTime = parseTimeAttribute (modEnvParamsElement, "decy", 0.0f);
@@ -290,6 +307,9 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                 amplitudeEnvelope.setDecayTime (ampDecayTime);
                 amplitudeEnvelope.setReleaseTime (ampReleaseTime);
                 amplitudeEnvelope.setSustainLevel (ampSustainLevel);
+                amplitudeEnvelope.setAttackSlope (ampAttackSlope);
+                amplitudeEnvelope.setDecaySlope (ampDecaySlope);
+                amplitudeEnvelope.setReleaseSlope (ampReleaseSlope);
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocitySensitivity);
 
                 final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
@@ -300,6 +320,9 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                 pitchEnvelope.setDecayTime (modDecayTime);
                 pitchEnvelope.setReleaseTime (modReleaseTime);
                 pitchEnvelope.setSustainLevel (modSustainLevel);
+                pitchEnvelope.setAttackSlope (modAttackSlope);
+                pitchEnvelope.setDecaySlope (modDecaySlope);
+                pitchEnvelope.setReleaseSlope (modReleaseSlope);
 
                 if (filter != null)
                     zone.setFilter (filter);
@@ -567,6 +590,12 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
     }
 
 
+    private static double parseSlopeAttribute (final Element element)
+    {
+        return XMLUtils.getDoubleAttribute (element, "c", 0);
+    }
+
+
     private static double parseTimeAttribute (final Element element, final String attributeName, final float defaultValue)
     {
         if (element == null)
@@ -594,9 +623,9 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
     }
 
 
-    private static File findUserSampleFolder (final File parentFolder)
+    private static File findUserSampleFolder (final File presetFile)
     {
-        File folder = parentFolder;
+        File folder = presetFile;
         while ((folder = folder.getParentFile ()) != null)
         {
             final Set<String> children = new HashSet<> ();
@@ -607,6 +636,23 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                 return userSampleFolder.exists () ? userSampleFolder : null;
             }
         }
+
+        // If the required structure is not present check if the files are in the same folder
+        boolean hasDbFile = false;
+        boolean hasZmapFile = false;
+        final File parentFile = presetFile.getParentFile ();
+        for (final File file: parentFile.listFiles ())
+        {
+            if (!file.isFile ())
+                continue;
+            if (file.getName ().endsWith (".db"))
+                hasDbFile = true;
+            if (file.getName ().endsWith (".zmap"))
+                hasZmapFile = true;
+            if (hasDbFile && hasZmapFile)
+                return parentFile;
+        }
+
         return null;
     }
 

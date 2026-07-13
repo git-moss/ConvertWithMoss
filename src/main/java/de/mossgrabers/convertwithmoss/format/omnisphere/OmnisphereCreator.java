@@ -179,11 +179,9 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
                 text = text.replace ("%FENV_DECAY%", toTime (cutoffEnvelope.getDecayTime ()));
                 text = text.replace ("%FENV_SUSTAIN%", toHexFloat (cutoffEnvelope.getSustainLevel ()));
                 text = text.replace ("%FENV_RELEASE%", toTime (cutoffEnvelope.getReleaseTime ()));
-
-                final double attackSlope = (cutoffEnvelope.getAttackSlope () + 1.0) / 2.0;
-                text = text.replace ("%FENV_ATTACK_SLOPE%", toHexFloat (attackSlope));
-                text = text.replace ("%FENV_DECAY_SLOPE%", toHexFloat ((cutoffEnvelope.getDecaySlope () + 1.0) / 2.0));
-                text = text.replace ("%FENV_RELEASE_SLOPE%", toHexFloat ((cutoffEnvelope.getReleaseSlope () + 1.0) / 2.0));
+                text = text.replace ("%FENV_ATTACK_SLOPE%", toSlope (cutoffEnvelope.getAttackSlope ()));
+                text = text.replace ("%FENV_DECAY_SLOPE%", toSlope (cutoffEnvelope.getDecaySlope ()));
+                text = text.replace ("%FENV_RELEASE_SLOPE%", toSlope (cutoffEnvelope.getReleaseSlope ()));
 
                 text = text.replace ("%FENV_VEL_SENS%", toHexFloat (filter.getCutoffVelocityModulator ().getDepth ()));
                 // The range is 0..1 but it seems like 0.5 already opens the filter completely
@@ -204,9 +202,9 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             text = text.replace ("%AMP_DECAY%", toTime (ampEnvelope.getDecayTime ()));
             text = text.replace ("%AMP_SUSTAIN%", toHexFloat (ampEnvelope.getSustainLevel ()));
             text = text.replace ("%AMP_RELEASE%", toTime (ampEnvelope.getReleaseTime ()));
-            text = text.replace ("%AMP_ATTACK_SLOPE%", toHexFloat ((ampEnvelope.getAttackSlope () + 1.0) / 2.0));
-            text = text.replace ("%AMP_DECAY_SLOPE%", toHexFloat ((ampEnvelope.getDecaySlope () + 1.0) / 2.0));
-            text = text.replace ("%AMP_RELEASE_SLOPE%", toHexFloat ((ampEnvelope.getReleaseSlope () + 1.0) / 2.0));
+            text = text.replace ("%AMP_ATTACK_SLOPE%", toSlope (ampEnvelope.getAttackSlope ()));
+            text = text.replace ("%AMP_DECAY_SLOPE%", toSlope (ampEnvelope.getDecaySlope ()));
+            text = text.replace ("%AMP_RELEASE_SLOPE%", toSlope (ampEnvelope.getReleaseSlope ()));
             text = text.replace ("%AMP_VEL_SENS%", toHexFloat (firstSampleZone.getAmplitudeVelocityModulator ().getDepth ()));
 
             // Pitch Envelope
@@ -220,17 +218,19 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             text = text.replace ("%PITCH_MOD_AMOUNT%", toHexFloat ((pitchEnvelopeDepth + 1.0) / 2.0));
             text = text.replace ("%PITCH_MOD_INTENSITY%", toHexFloat (1.0));
 
+            // Stored in MODENV
             text = text.replace ("%MOD_ATTACK_SEC%", toHexFloat (modEnvelope.getAttackTime () / 100.0));
             text = text.replace ("%MOD_DECAY_SEC%", toHexFloat ((Math.max (0, modEnvelope.getHoldTime ()) + Math.max (0, modEnvelope.getDecayTime ())) / 100.0));
             text = text.replace ("%MOD_RELEASE_SEC%", toHexFloat (modEnvelope.getReleaseTime () / 100.0));
+            text = text.replace ("%MOD_ATTACK_SLOPE%", toSlope (modEnvelope.getAttackSlope ()));
+            text = text.replace ("%MOD_DECAY_SLOPE%", toSlope (modEnvelope.getDecaySlope ()));
+            text = text.replace ("%MOD_RELEASE_SLOPE%", toSlope (modEnvelope.getReleaseSlope ()));
+            // Stored in MODENVPARAMS
             text = text.replace ("%MOD_ATTACK%", toTime (modEnvelope.getAttackTime ()));
             text = text.replace ("%MOD_HOLD%", toTime (modEnvelope.getHoldTime ()));
             text = text.replace ("%MOD_DECAY%", toTime (modEnvelope.getDecayTime ()));
             text = text.replace ("%MOD_SUSTAIN%", toHexFloat (modEnvelope.getSustainLevel ()));
             text = text.replace ("%MOD_RELEASE%", toTime (modEnvelope.getReleaseTime ()));
-            text = text.replace ("%MOD_ATTACK_SLOPE%", toHexFloat ((modEnvelope.getAttackSlope () + 1.0) / 2.0));
-            text = text.replace ("%MOD_DECAY_SLOPE%", toHexFloat ((modEnvelope.getDecaySlope () + 1.0) / 2.0));
-            text = text.replace ("%MOD_RELEASE_SLOPE%", toHexFloat ((modEnvelope.getReleaseSlope () + 1.0) / 2.0));
 
             final File presetFile = new File (destFolder, filename + ".prt_omn");
             Files.write (presetFile.toPath (), text.getBytes (StandardCharsets.UTF_8));
@@ -449,6 +449,12 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             }
         }
         return out.toByteArray ();
+    }
+
+
+    private static String toSlope (final double slope)
+    {
+        return toHexFloat ((slope + 1.0) / 2.0);
     }
 
 

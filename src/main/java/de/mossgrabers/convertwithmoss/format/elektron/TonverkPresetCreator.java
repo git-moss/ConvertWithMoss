@@ -4,13 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.format.elektron;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -374,21 +370,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
 
     private static TonverkPresetFile loadTemplate (final String resourcePath) throws IOException
     {
-        final TonverkPresetFile preset = new TonverkPresetFile ();
-        try (final InputStream inputStream = TonverkPresetCreator.class.getResourceAsStream (resourcePath))
-        {
-            if (inputStream == null)
-                throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_LOAD_FILE", resourcePath));
-            final List<String> lines = new ArrayList<> ();
-            try (final BufferedReader reader = new BufferedReader (new InputStreamReader (inputStream, StandardCharsets.UTF_8)))
-            {
-                String line;
-                while ((line = reader.readLine ()) != null)
-                    lines.add (line);
-            }
-            preset.parse (lines);
-        }
-        return preset;
+        return new TonverkPresetFile (Functions.textFileFor (resourcePath).lines ().toList ());
     }
 
 

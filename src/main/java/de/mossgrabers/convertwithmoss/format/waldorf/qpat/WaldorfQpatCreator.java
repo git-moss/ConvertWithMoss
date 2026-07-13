@@ -352,7 +352,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 result.add (group);
                 continue;
             }
-            layers.sort (Comparator.comparingInt ((final List<ISampleZone> layer) -> layer.size ()).reversed ());
+            layers.sort (Comparator.<List<ISampleZone>> comparingInt (List::size).reversed ());
             for (final List<ISampleZone> layer: layers)
             {
                 final DefaultGroup layerGroup = new DefaultGroup (group.getName ());

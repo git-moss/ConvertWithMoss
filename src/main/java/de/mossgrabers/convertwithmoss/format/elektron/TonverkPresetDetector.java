@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.elektron;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,12 +75,9 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
         try
         {
-            final TonverkPresetFile preset = new TonverkPresetFile ();
-            preset.parse (sourceFile.toPath ());
-
+            final TonverkPresetFile preset = new TonverkPresetFile (Files.readAllLines (sourceFile.toPath ()));
             for (final String error: preset.errors)
                 this.notifier.logText (error);
-
             final IMultisampleSource source = this.convertPreset (sourceFile, preset);
             return source == null ? Collections.emptyList () : Collections.singletonList (source);
         }

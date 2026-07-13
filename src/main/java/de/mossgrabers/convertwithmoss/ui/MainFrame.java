@@ -1049,6 +1049,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             selectionModel.select (name);
             if (selectionModel.getSelectedItem () == null)
                 selectionModel.select (0);
+            this.formatList.scrollTo (selectionModel.getSelectedIndex ());
         }
 
 

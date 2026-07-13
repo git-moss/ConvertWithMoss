@@ -512,6 +512,13 @@ public class MaschinePresetParameterArray
     }
 
 
+    /**
+     * Find the first occurrence of a pattern in the data.
+     *
+     * @param data The data in which to search
+     * @param pattern The pattern to look for
+     * @return The position of the first occurrence of the pattern or -1 if not found
+     */
     private static int indexOf (final byte [] data, final byte [] pattern)
     {
         final int n = data.length;
@@ -519,13 +526,19 @@ public class MaschinePresetParameterArray
         if (m == 0 || n < m)
             return -1;
 
-        outer: for (int i = 0; i <= n - m; i++)
-        {
-            for (int j = 0; j < m; j++)
-                if (data[i + j] != pattern[j])
-                    continue outer;
-            return i; // Found match
-        }
-        return -1; // Not found
+        for (int i = 0; i <= n - m; i++)
+            if (matchesAt (data, pattern, i))
+                return i;
+
+        return -1;
+    }
+
+
+    private static boolean matchesAt (final byte [] data, final byte [] pattern, final int offset)
+    {
+        for (int j = 0; j < pattern.length; j++)
+            if (data[offset + j] != pattern[j])
+                return false;
+        return true;
     }
 }

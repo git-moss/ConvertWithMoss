@@ -284,15 +284,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
             zone.setNoteCrossfadeHigh (XMLUtils.getIntegerAttribute (keyElement, "high-fade", -1));
             zone.setTuning (XMLUtils.getDoubleAttribute (keyElement, "tune", 0));
 
-            // Older multisample files use true/false
-            final String attribute = keyElement.getAttribute ("track");
-            if (attribute != null)
-                if ("true".equals (attribute))
-                    zone.setKeyTracking (1.0);
-                else if ("false".equals (attribute))
-                    zone.setKeyTracking (0);
-                else
-                    zone.setKeyTracking (XMLUtils.getDoubleAttribute (keyElement, "track", 0));
+            setKeyTracking (zone, keyElement);
         }
 
         final Element velocityElement = XMLUtils.getChildElementByName (sampleElement, BitwigMultisampleTag.VELOCITY);
@@ -342,5 +334,20 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
         }
 
         group.addSampleZone (zone);
+    }
+
+
+    private static void setKeyTracking (final ISampleZone zone, final Element keyElement)
+    {
+        final String attribute = keyElement.getAttribute ("track");
+        if (attribute == null)
+            return;
+        // Older multi-sample files use true/false
+        if ("true".equals (attribute))
+            zone.setKeyTracking (1.0);
+        else if ("false".equals (attribute))
+            zone.setKeyTracking (0);
+        else
+            zone.setKeyTracking (XMLUtils.getDoubleAttribute (keyElement, "track", 0));
     }
 }
