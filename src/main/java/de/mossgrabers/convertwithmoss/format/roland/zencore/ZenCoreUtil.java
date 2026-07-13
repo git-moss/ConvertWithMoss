@@ -96,7 +96,8 @@ public final class ZenCoreUtil
 
 
     /**
-     * Convert a name to a fixed-length, space-padded ASCII block.
+     * Convert a name to a fixed-length, space-padded ASCII block - the device's convention for the
+     * <i>PATa</i> tone name only. Do not use for sample names, see {@link #padNameZero}.
      *
      * @param text The name
      * @param length The fixed length
@@ -107,6 +108,26 @@ public final class ZenCoreUtil
         final byte [] result = new byte [length];
         for (int i = 0; i < length; i++)
             result[i] = (byte) (i < text.length () ? text.charAt (i) : ' ');
+        return result;
+    }
+
+
+    /**
+     * Convert a name to a fixed-length, zero-padded ASCII block - the convention of the sample name
+     * fields (<i>USPa</i>, <i>SMPd</i>, <i>MSPa</i>) in every device-written file. This matters: a
+     * sample whose name field is space-padded instead imports without an error, but the device never
+     * binds its wave data - the multisample shows the sample with an empty waveform display and the
+     * tone plays silent on every key.
+     *
+     * @param text The name
+     * @param length The fixed length
+     * @return The zero-padded bytes
+     */
+    public static byte [] padNameZero (final String text, final int length)
+    {
+        final byte [] result = new byte [length];
+        for (int i = 0; i < Math.min (text.length (), length); i++)
+            result[i] = (byte) text.charAt (i);
         return result;
     }
 }

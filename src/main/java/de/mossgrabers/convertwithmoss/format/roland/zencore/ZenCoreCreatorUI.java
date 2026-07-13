@@ -31,15 +31,30 @@ public class ZenCoreCreatorUI implements ICoreTaskSettings
 {
     private static final String    ZENCORE_TARGET_DEVICE = "ZenCoreTargetDevice";
 
-    /** The 5-byte model tags in radio-button order; index 0 (KY019) is the default. */
-    private static final String [] MODEL_TAGS            =
+    /**
+     * The full 16-byte SVZ header per target device in radio-button order (magic "SVZa" + version[2]
+     * + model tag[5] + flag + reserved[4]); index 0 (FANTOM / KY019) is the default. The version and
+     * flag bytes differ per device, so the whole header, not only the model tag, is selected. The
+     * ZENOLOGY plug-in (RC001) is deliberately not offered: it imports only the tone from a .svz and
+     * never the user samples (verified with the FANTOM's own user-sample exports as well), so a
+     * multi-sample written for it would always play silent.
+     */
+    private static final byte [] []  HEADERS             =
     {
-        /** FANTOM / FANTOM-0 / FANTOM EX / Juno-X / Jupiter-X / Jupiter-Xm. */
+        // FANTOM / FANTOM-0 / FANTOM EX / Juno-X / Jupiter-X / Jupiter-Xm (device-confirmed)
+        {
+            'S', 'V', 'Z', 'a', 0x05, 0x04, 'K', 'Y', '0', '1', '9', 0x24, 0, 0, 0, 0
+        },
+        // GAIA-2 (model tag firmware-derived; version + flag reuse the FANTOM values - unverified)
+        {
+            'S', 'V', 'Z', 'a', 0x05, 0x04, 'M', 'I', '0', '8', '5', 0x24, 0, 0, 0, 0
+        }
+    };
+    /** The 5-character model tag per device, used to match the CLI parameter value. */
+    private static final String []   TAGS                =
+    {
         "KY019",
-        /** GAIA-2. */
-        "MI085",
-        /** ZENOLOGY plug-in. */
-        "RC001"
+        "MI085"
     };
 
     private ToggleGroup            targetDeviceToggleGroup;
@@ -54,7 +69,7 @@ public class ZenCoreCreatorUI implements ICoreTaskSettings
 
         panel.createSeparator ("@IDS_ZENCORE_TARGET_DEVICE");
         this.targetDeviceToggleGroup = new ToggleGroup ();
-        for (int i = 0; i < MODEL_TAGS.length; i++)
+        for (int i = 0; i < HEADERS.length; i++)
         {
             final RadioButton device = panel.createRadioButton ("@IDS_ZENCORE_TARGET_DEVICE_OPTION" + i);
             device.setAccessibleHelp (Functions.getMessage ("IDS_ZENCORE_TARGET_DEVICE"));
@@ -69,7 +84,10 @@ public class ZenCoreCreatorUI implements ICoreTaskSettings
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        Functions.setSelectedToggleIndex (this.targetDeviceToggleGroup, config.getInteger (ZENCORE_TARGET_DEVICE, 0));
+        // Clamp: configurations saved by older versions could hold the index of the since-removed
+        // ZENOLOGY option.
+        final int stored = config.getInteger (ZENCORE_TARGET_DEVICE, 0);
+        Functions.setSelectedToggleIndex (this.targetDeviceToggleGroup, stored < 0 || stored >= HEADERS.length ? 0 : stored);
     }
 
 
@@ -103,8 +121,8 @@ public class ZenCoreCreatorUI implements ICoreTaskSettings
             return true;
         }
         final String tag = value.trim ().toUpperCase ();
-        for (int i = 0; i < MODEL_TAGS.length; i++)
-            if (MODEL_TAGS[i].equals (tag))
+        for (int i = 0; i < TAGS.length; i++)
+            if (TAGS[i].equals (tag))
             {
                 this.targetDevice = i;
                 return true;
@@ -126,12 +144,13 @@ public class ZenCoreCreatorUI implements ICoreTaskSettings
 
 
     /**
-     * Get the selected target device's 5-byte model tag written into the SVZ header.
+     * Get the full 16-byte SVZ header for the selected target device (magic + version + model tag +
+     * flag + reserved).
      *
-     * @return The model tag (e.g. {@code KY019})
+     * @return A copy of the 16-byte header
      */
-    public String getModelTag ()
+    public byte [] getHeader ()
     {
-        return MODEL_TAGS[this.targetDevice];
+        return HEADERS[this.targetDevice].clone ();
     }
 }

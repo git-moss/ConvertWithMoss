@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.zip.CRC32;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -41,9 +43,11 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample
  * device's <i>UTILITY &rarr; IMPORT &rarr; IMPORT TONE</i> function.
  *
  * <p>
- * User samples are written at the FANTOM's native 48 kHz / 16-bit; loops are snapped to zero
- * crossings and the post-loop tail is tapered so no playback boundary lands on a non-zero value,
- * which is the sample-preparation needed for click-free hardware playback.
+ * User samples are written at the FANTOM's native 48 kHz / 16-bit. The voice engine has no loop
+ * smoothing of its own, so click-free playback is baked into the samples: the loop end is re-seated
+ * to a period-aligned point ({@link #optimizeLoopEnd}), a loop whose wrap still is not seamless gets
+ * its tail cross-faded into the loop-start lead-in ({@link #crossfadeLoop}), and guard frames of the
+ * loop-start continuation are stored past the loop end for the engine's interpolation look-ahead.
  * </p>
  *
  * @author Jürgen Moßgraber
@@ -51,15 +55,53 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample
 public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 {
     /**
-     * The FANTOM plays user samples at its native rate; resample everything to it and to 16-bit.
+     * The FANTOM's native user-sample rate is 48 kHz (its own sample exports are 48 kHz); a sample
+     * left at another rate is re-sampled by the device on playback, which aliases bright content (a
+     * near-clipping square is heard as a "corrupt", harsh region). User samples are therefore
+     * high-quality re-sampled to 48 kHz / 16-bit here, and the loop end is re-seated to a
+     * period-aligned point afterwards ({@link #optimizeLoopEnd}) so re-sampling does not leave the
+     * loop off its seamless wrap.
      */
-    private static final int                    SAMPLE_RATE    = 48000;
-    private static final DestinationAudioFormat ZENCORE_FORMAT = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat ZENCORE_FORMAT      = new DestinationAudioFormat (new int []
     {
         16
-    }, SAMPLE_RATE, true);
+    }, 48000, true);
+    /** The FANTOM's native user-sample rate; loop and play positions are rescaled to it. */
+    private static final int                    SAMPLE_RATE         = 48000;
 
-    private static final int                    ZERO_SEARCH    = 1024;
+    /**
+     * A loop whose wrap discontinuity (value or slope, of 32768 full-scale) is at or below this is
+     * left untouched - a hand-tuned, period-aligned loop (e.g. from an SF2) stays pristine. Above it,
+     * the loop end is nudged to a period-aligned point and, if the wrap still is not seamless, the
+     * loop tail is cross-faded. The threshold is deliberately small because audibility is relative to
+     * the material: bright content (its own samples move further per frame) masks a wrap step of ~50,
+     * but in a smooth pad the same step is a clearly audible tick on every loop pass, so only a wrap
+     * that is seamless for <i>any</i> material is left alone.
+     */
+    private static final int                    LOOP_SEAM_TOLERANCE = 16;
+    /** How far (in frames) the loop end may be moved to find a seamless, period-aligned wrap. */
+    private static final int                    LOOP_END_SEARCH     = 1024;
+    /**
+     * Number of guard frames stored after a loop end: copies of the loop-start continuation, so the
+     * voice engine has valid look-ahead across the loop wrap. The device's own looped samples carry
+     * such frames (their played-sample count runs a handful of frames past the loop end); without
+     * them the interpolator reads past the data at each wrap - the second interleaved (right) channel
+     * falls off the end first, which is heard as a per-wrap click on the right side.
+     */
+    private static final int                    LOOP_GUARD_FRAMES   = 16;
+    /**
+     * Length (in frames) of the loop cross-fade applied only when a period-aligned loop end is still
+     * not seamless - an evolving pad whose timbre drifts across the loop has no phase-aligned end.
+     * About 21 ms at 48 kHz. Bright, already-seamless loops never reach this, so their audio is left
+     * bit-exact.
+     */
+    private static final int                    LOOP_CROSSFADE      = 1024;
+    /**
+     * Salted into the content-hashed sample names ({@link #uniqueName}): bump when the written
+     * sample layout changes (SMPd header fields, guard scheme, ...), so a re-import loads the new
+     * bytes instead of the device re-using a same-named sample written by an older layout.
+     */
+    private static final int                    SAMPLE_FORMAT_REVISION = 8;
 
 
     /**
@@ -84,8 +126,9 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
         final Map<Object, Integer> byContent = new HashMap<> ();
         final Set<String> usedNames = new HashSet<> ();
         final SvzInstrument instrument = this.buildInstrument (multisampleSource, pool, byContent, usedNames);
+        ensureLoadableSamplePool (pool, byContent, usedNames);
 
-        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, List.of (instrument), this.settingsConfiguration.getModelTag ()));
+        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, List.of (instrument), this.settingsConfiguration.getHeader ()));
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
@@ -114,39 +157,84 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
         final List<SvzInstrument> instruments = new ArrayList<> ();
         for (final IMultisampleSource source: multisampleSources)
             instruments.add (this.buildInstrument (source, pool, byContent, usedNames));
+        ensureLoadableSamplePool (pool, byContent, usedNames);
 
-        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, instruments, this.settingsConfiguration.getModelTag ()));
+        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, instruments, this.settingsConfiguration.getHeader ()));
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
 
     private SvzInstrument buildInstrument (final IMultisampleSource multisampleSource, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
     {
-        // Scale loop/start/end positions to the destination rate (the audio is resampled below).
+        // The audio is resampled to 48 kHz (see ZENCORE_FORMAT), so rescale the loop/start/end frames
+        // to it; the loop end is then re-seated to a period-aligned point per sample in addSample.
         recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
 
         final SvzInstrument instrument = new SvzInstrument ();
         instrument.name = multisampleSource.getName ();
+        // The whole instrument is stereo if any of its zones is: one oscillator plays all its
+        // samples and its stereo mode is per-tone, so a stereo instrument stores every sample
+        // interleaved (mono zones duplicated) and a mono instrument stores every sample mono.
+        instrument.stereo = hasStereoZone (multisampleSource);
+
         ISampleZone representativeZone = null;
         for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                final int sampleIndex = this.addSample (zone, pool, byContent, usedNames);
-                if (sampleIndex <= 0)
+                final int [] sampleIndexes = this.addSample (zone, instrument.stereo, pool, byContent, usedNames);
+                if (sampleIndexes == null)
                     continue;
                 if (representativeZone == null)
                     representativeZone = zone;
                 final int keyLow = Math.max (0, zone.getKeyLow ());
                 final int keyHigh = Math.min (127, zone.getKeyHigh ());
                 for (int key = keyLow; key <= keyHigh; key++)
-                    instrument.keyToSample[key] = sampleIndex;
+                {
+                    instrument.keyToSample[key] = sampleIndexes[0];
+                    instrument.keyToSampleRight[key] = sampleIndexes[1];
+                }
             }
         // The FANTOM tone has one filter + amp envelope per partial; take them from a
         // representative zone so converted tones keep the source's character (offsets validated
         // against the 2048 factory tones).
         if (representativeZone != null)
             applyToneParameters (instrument, representativeZone);
+
+        // Name the multi-sample(s) by content (key map + the content-hashed sample names). A stereo
+        // instrument has a second, right-channel multi-sample for its second (hard-right) partial.
+        instrument.multisampleName = contentName (instrument.name, contentHash (keyMapContent ("L", instrument.keyToSample, pool)));
+        if (instrument.stereo)
+            instrument.multisampleNameRight = contentName (instrument.name, contentHash (keyMapContent ("R", instrument.keyToSampleRight, pool)));
         return instrument;
+    }
+
+
+    private static boolean hasStereoZone (final IMultisampleSource multisampleSource)
+    {
+        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
+            for (final ISampleZone zone: group.getSampleZones ())
+                try
+                {
+                    if (zone.getSampleData ().getAudioMetadata ().getChannels () > 1)
+                        return true;
+                }
+                catch (final IOException ex)
+                {
+                    // Ignore - the sample is converted (and its channel count re-checked) in addSample.
+                }
+        return false;
+    }
+
+
+    private static byte [] keyMapContent (final String channelTag, final int [] keyToSample, final List<SvzSample> pool)
+    {
+        final StringBuilder content = new StringBuilder (channelTag).append ('\n');
+        for (int key = 0; key < 128; key++)
+        {
+            final int sampleIndex = keyToSample[key];
+            content.append (key).append (':').append (sampleIndex == 0 ? "-" : pool.get (sampleIndex - 1).name).append ('\n');
+        }
+        return content.toString ().getBytes (StandardCharsets.US_ASCII);
     }
 
 
@@ -173,7 +261,11 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
             instrument.envAttack = timeToValue (env.getAttackTime ());
             final double hold = env.getHoldTime ();
             instrument.envHold = hold > 0 ? timeToValue (hold) : 0;
-            instrument.envDecay = timeToValue (env.getDecayTime ());
+            // Never write a decay time of 0: a tone whose TVA decay stage is instant imports but
+            // plays silent on a FANTOM-0 (an SFZ without ampeg opcodes defaults to an all-instant
+            // envelope). The floor is inaudibly fast but keeps the envelope valid - zero attack,
+            // hold and release are all fine on the hardware, only the decay stage kills the voice.
+            instrument.envDecay = Math.max (8, timeToValue (env.getDecayTime ()));
             final double release = env.getReleaseTime ();
             instrument.envRelease = release >= 0 ? timeToValue (release) : 150;
             final double holdLevel = env.getHoldLevel ();
@@ -201,34 +293,40 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
 
     /**
-     * Convert a zone's audio to the FANTOM sample pool, re-using an already-added identical sample.
+     * Convert a zone's audio to the FANTOM sample pool, re-using already-added identical samples.
+     * Everything is stored as mono samples: a mono instrument keeps its zones mono; a stereo
+     * instrument splits each stereo zone into two mono samples (left and right) sharing one common
+     * loop, played by the tone's two hard-panned partials - each channel is then a mono loop, which
+     * avoids the loop-wrap click that the engine gives an interleaved-stereo sample.
      *
      * @param zone The source sample zone
+     * @param storeStereo Whether the instrument is stereo (split a stereo zone into two mono samples)
      * @param pool The pool to which to add the result
      * @param byContent The mapped indices of the already created SVZ samples
      * @param usedNames The names of the already created SVZ samples
-     * @return The 1-based index into the pool, or 0 if the sample could not be added
+     * @return The 1-based left and right pool indexes (equal for a mono sample), or null on failure
      * @throws IOException Could not convert the sample to the target format
      */
-    private int addSample (final ISampleZone zone, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    private int [] addSample (final ISampleZone zone, final boolean storeStereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
     {
         final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData (), ZENCORE_FORMAT);
-        int channels = waveFile.getFormatChunk ().getNumberOfChannels ();
-        if (channels > 2)
+        final int channels = waveFile.getFormatChunk ().getNumberOfChannels ();
+        if (channels < 1 || channels > 2)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_MONO", Integer.toString (channels), zone.getName ());
-            return 0;
+            return null;
         }
         byte [] pcm = waveFile.getDataChunk ().getData ();
-        if (channels == 1)
-        {
-            pcm = monoToStereo (pcm);
-            channels = 2;
-        }
+        final int rate = waveFile.getFormatChunk ().getSampleRate ();
         final int frames = pcm.length / (2 * channels);
         if (frames <= 0)
-            return 0;
+            return null;
 
+        // Keep the source's loop points and audio untouched - no re-sampling, no zero-crossing snap -
+        // so a period-aligned loop stays seamless across the wrap (see ZENCORE_FORMAT). When the wrap
+        // is not already seamless the loop end is nudged (never the audio) to the nearest point whose
+        // waveform matches the loop start, so the wrap becomes seamless without altering the sample.
+        // The loop preparation runs on the interleaved audio so both channels share one loop end.
         final List<ISampleLoop> loops = zone.getLoops ();
         final boolean hasLoop = !loops.isEmpty ();
         int loopStart = 0;
@@ -239,29 +337,80 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
             loopStart = Math.clamp (loop.getStart (), 0, frames - 1);
             if (loop.getEnd () > loopStart)
                 end = Math.min (loop.getEnd (), frames);
-            // Hardware sample-prep: snap both loop points to zero crossings and taper the tail so
-            // no play-back boundary lands on a non-zero value (the FANTOM clicks on those).
-            final int [] snapped = prepLoopForHardware (pcm, channels, loopStart, end, frames);
-            loopStart = snapped[0];
-            end = snapped[1];
+            end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
+            // If period-alignment still cannot make the wrap seamless - an evolving pad whose timbre
+            // drifts across the loop has no phase-aligned end - cross-fade the loop tail into the
+            // loop-start lead-in. Safe here precisely because the end is period-aligned first: the two
+            // blended stretches are in phase and reinforce, so the amplitude collapse an unaligned
+            // cross-fade caused on bright content does not happen. Already-seamless loops are skipped,
+            // as are loops starting at the first frames, which have no lead-in to measure or blend to.
+            if (loopStart >= 2 && wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
+                pcm = crossfadeLoop (pcm, channels, loopStart, end);
         }
 
-        final int rootKey = Math.clamp (zone.getKeyRoot () < 0 ? zone.getKeyLow () : zone.getKeyRoot (), 0, 127);
+        // Store the played part [0, end) plus, for a loop, LOOP_GUARD_FRAMES of the loop-start
+        // continuation as guard frames past the loop end (the device carries these on its own loops).
+        pcm = storeWithGuard (pcm, channels, end, hasLoop ? loopStart : -1);
 
-        // Re-use an identical sample mapped to several key ranges (detect duplicates by content +
-        // parameters).
-        final List<Object> contentKey = List.of (ByteBuffer.wrap (pcm), Integer.valueOf (loopStart), Integer.valueOf (end), Boolean.valueOf (hasLoop), Integer.valueOf (rootKey));
+        final int rootKey = Math.clamp (zone.getKeyRoot () < 0 ? zone.getKeyLow () : zone.getKeyRoot (), 0, 127);
+        final int level = Math.clamp ((int) Math.round (Math.pow (10, zone.getGain () / 20.0) * 127.0), 0, 127);
+
+        if (channels == 1)
+        {
+            final int index = addPooledSample (pcm, rate, zone.getName (), rootKey, level, hasLoop, loopStart, end, pool, byContent, usedNames);
+            return new int []
+            {
+                index,
+                index
+            };
+        }
+        // A stereo instrument splits the zone into two mono samples (left, right); a mono instrument
+        // just keeps the left channel. Both mono samples share the loop end computed above.
+        final int left = addPooledSample (extractChannel (pcm, 2, 0), rate, zone.getName () + "_L", rootKey, level, hasLoop, loopStart, end, pool, byContent, usedNames);
+        if (!storeStereo)
+            return new int []
+            {
+                left,
+                left
+            };
+        return new int []
+        {
+            left,
+            addPooledSample (extractChannel (pcm, 2, 1), rate, zone.getName () + "_R", rootKey, level, hasLoop, loopStart, end, pool, byContent, usedNames)
+        };
+    }
+
+
+    /**
+     * Add a mono sample to the pool, re-using an already-added identical one (dedupe by content and
+     * parameters - e.g. the same sample mapped to several key ranges folds back into one). All
+     * pooled samples are mono: a stereo zone is split into two mono samples before this is called.
+     *
+     * @return The 1-based index into the pool
+     */
+    private static int addPooledSample (final byte [] pcm, final int rate, final String zoneName, final int rootKey, final int level, final boolean hasLoop, final int loopStart, final int end, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames)
+    {
+        final Object contentKey = List.of (ByteBuffer.wrap (pcm), Integer.valueOf (loopStart), Integer.valueOf (end), Boolean.valueOf (hasLoop), Integer.valueOf (rootKey), Integer.valueOf (level));
         final Integer existing = byContent.get (contentKey);
         if (existing != null)
             return existing.intValue ();
 
+        // The name hash covers everything the device caches under the sample name: the audio, the
+        // playback parameters and the writer's layout revision (see SAMPLE_FORMAT_REVISION).
+        final ByteBuffer parameters = ByteBuffer.allocate (32);
+        parameters.putInt (SAMPLE_FORMAT_REVISION).putInt (loopStart).putInt (end).putInt (hasLoop ? 1 : 0);
+        parameters.putInt (rootKey).putInt (level).putInt (rate);
+        final CRC32 crc = new CRC32 ();
+        crc.update (pcm);
+        crc.update (parameters.array ());
+
         final SvzSample sample = new SvzSample ();
         sample.pcm = pcm;
-        sample.rate = SAMPLE_RATE;
-        sample.channels = channels;
-        sample.name = uniqueName (zone.getName (), usedNames);
+        sample.rate = rate;
+        sample.channels = 1;
+        sample.name = uniqueName (zoneName, (int) crc.getValue (), usedNames);
         sample.originalKey = rootKey;
-        sample.level = Math.clamp ((int) Math.round (Math.pow (10, zone.getGain () / 20.0) * 127.0), 0, 127);
+        sample.level = level;
         sample.hasLoop = hasLoop;
         sample.loopStart = loopStart;
         sample.end = end;
@@ -274,65 +423,146 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
 
     /**
-     * Snap the loop start and end to the nearest rising zero crossing (the sample closest to zero
-     * across all channels) and taper the post-loop tail to zero.
+     * A <i>.svz</i> whose sample pool holds exactly one sample imports without an error, but the
+     * device never loads its wave data: the multisample maps and displays correctly, yet shows an
+     * empty waveform and plays silent on every key (hardware-verified on a FANTOM-0; pools of two or
+     * more samples from the identical writer load fine). An inert spacer sample - a few hundred
+     * bytes of silence assigned to no key - keeps every pool loadable.
      *
-     * @param pcm The PCM data to edit
-     * @param channels The number of channels
-     * @param loopStart The start of the loop
-     * @param loopEnd The end of the loop
-     * @param frames The number of frames of the PCM data
-     * @return {@code {newLoopStart, newLoopEnd}}
+     * @param pool The sample pool
+     * @param byContent The content de-duplication map
+     * @param usedNames The sample names used so far
      */
-    private static int [] prepLoopForHardware (final byte [] pcm, final int channels, final int loopStart, final int loopEnd, final int frames)
+    private static void ensureLoadableSamplePool (final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames)
     {
-        final int newStart = snapToZeroCrossing (pcm, channels, loopStart, frames);
-        final int newEnd = snapToZeroCrossing (pcm, channels, loopEnd, frames);
-
-        if (newEnd < frames - 1)
-        {
-            final int span = frames - newEnd;
-            for (int frame = newEnd; frame < frames; frame++)
-            {
-                final double gain = (double) (frames - 1 - frame) / span;
-                for (int channel = 0; channel < channels; channel++)
-                {
-                    final int idx = (frame * channels + channel) * 2;
-                    final int value = (int) Math.round ((short) (pcm[idx] & 0xFF | pcm[idx + 1] << 8) * gain);
-                    pcm[idx] = (byte) (value & 0xFF);
-                    pcm[idx + 1] = (byte) (value >> 8 & 0xFF);
-                }
-            }
-        }
-        return new int []
-        {
-            newStart,
-            newEnd
-        };
+        if (pool.size () == 1)
+            addPooledSample (new byte [128], SAMPLE_RATE, "Spacer", 60, 0, false, 0, 64, pool, byContent, usedNames);
     }
 
 
-    private static int snapToZeroCrossing (final byte [] pcm, final int channels, final int position, final int frames)
+    private static byte [] extractChannel (final byte [] interleaved, final int channels, final int channel)
     {
-        final int lo = Math.max (1, position - ZERO_SEARCH);
-        final int hi = Math.min (frames - 1, position + ZERO_SEARCH);
-        int best = position;
-        long bestCost = Long.MAX_VALUE;
-        for (int frame = lo; frame < hi; frame++)
+        final int frames = interleaved.length / (2 * channels);
+        final byte [] mono = new byte [frames * 2];
+        for (int frame = 0; frame < frames; frame++)
         {
-            // Left channel crossing up through zero.
-            if (!(sampleAt (pcm, channels, frame - 1, 0) < 0 && sampleAt (pcm, channels, frame, 0) >= 0))
-                continue;
-            long cost = 0;
-            for (int channel = 0; channel < channels; channel++)
-                cost += Math.abs (sampleAt (pcm, channels, frame, channel));
-            if (cost < bestCost)
+            mono[frame * 2] = interleaved[(frame * channels + channel) * 2];
+            mono[frame * 2 + 1] = interleaved[(frame * channels + channel) * 2 + 1];
+        }
+        return mono;
+    }
+
+
+    /**
+     * When a loop's wrap is not already seamless, move the loop <b>end</b> (never the audio) to the
+     * nearby point whose wrap is the least discontinuous, so the loop covers a whole number of wave
+     * cycles and the wrap is seamless. The sample data is left bit-exact - unlike a cross-fade, which
+     * writes a distorted, amplitude-cancelled region into the audio whenever the loop-end and
+     * loop-start phases differ (blending two out-of-phase copies of a bright waveform partly cancels
+     * them). A loop whose source points are already seamless is returned unchanged.
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM (never modified)
+     * @param channels The number of channels
+     * @param loopStart The loop start frame
+     * @param loopEnd The loop end frame from the source
+     * @param frames The total number of frames
+     * @return The (possibly nudged) loop end frame
+     */
+    private static int optimizeLoopEnd (final byte [] pcm, final int channels, final int loopStart, final int loopEnd, final int frames)
+    {
+        if (loopEnd - loopStart < 64 || loopStart < 2)
+            return loopEnd;
+        final int originalDiscontinuity = wrapDiscontinuity (pcm, channels, loopStart, loopEnd);
+        if (originalDiscontinuity <= LOOP_SEAM_TOLERANCE)
+            return loopEnd;
+
+        // A forward loop's only discontinuity is the wrap L[end-1] -> L[loopStart], so the seamless
+        // loop end is simply the candidate near the source end whose wrap deviates least from the
+        // waveform's own step into the loop start (see wrapDiscontinuity). Ties are broken towards the
+        // source end so the loop length changes as little as possible. The audio is never modified.
+        final int lo = Math.max (loopStart + 2, loopEnd - LOOP_END_SEARCH);
+        final int hi = Math.min (frames - LOOP_GUARD_FRAMES - 1, loopEnd + LOOP_END_SEARCH);
+        int best = loopEnd;
+        int bestDiscontinuity = originalDiscontinuity;
+        for (int candidate = lo; candidate <= hi; candidate++)
+        {
+            final int discontinuity = wrapDiscontinuity (pcm, channels, loopStart, candidate);
+            if (discontinuity < bestDiscontinuity || (discontinuity == bestDiscontinuity && Math.abs (candidate - loopEnd) < Math.abs (best - loopEnd)))
             {
-                bestCost = cost;
-                best = frame;
+                bestDiscontinuity = discontinuity;
+                best = candidate;
             }
         }
         return best;
+    }
+
+
+    /**
+     * The loop-wrap discontinuity in 16-bit full-scale units: how far the wrap deviates from the
+     * waveform's own progression. A forward loop plays {@code [loopStart, loopEnd)} and wraps
+     * {@code L[loopEnd-1] -> L[loopStart]}; that is seamless when {@code L[loopEnd-1]} equals the
+     * natural predecessor of {@code L[loopStart]}, i.e. {@code L[loopStart-1]}, so the wrap just
+     * repeats the waveform's own step into the loop start. The click is the value and slope mismatch
+     * of the loop tail against the loop-start lead-in - measuring the raw {@code |L[loopEnd-1] -
+     * L[loopStart]|} instead would wrongly flag the waveform's own (perfectly audible) slope.
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM
+     * @param channels The number of channels
+     * @param loopStart The loop start frame (at least 2)
+     * @param loopEnd The loop end frame
+     * @return The largest value / slope deviation across the wrap
+     */
+    private static int wrapDiscontinuity (final byte [] pcm, final int channels, final int loopStart, final int loopEnd)
+    {
+        int discontinuity = 0;
+        for (int channel = 0; channel < channels; channel++)
+        {
+            final int endValue = sampleAt (pcm, channels, loopEnd - 1, channel);
+            final int leadValue = sampleAt (pcm, channels, loopStart - 1, channel);
+            final int endSlope = endValue - sampleAt (pcm, channels, loopEnd - 2, channel);
+            final int leadSlope = leadValue - sampleAt (pcm, channels, loopStart - 2, channel);
+            discontinuity = Math.max (discontinuity, Math.max (Math.abs (endValue - leadValue), Math.abs (endSlope - leadSlope)));
+        }
+        return discontinuity;
+    }
+
+
+    /**
+     * Build the stored PCM: the played part {@code [0, end)} and, for a loop, {@link #LOOP_GUARD_FRAMES}
+     * guard frames past the loop end, each a copy of the matching loop-start-continuation frame.
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM
+     * @param channels The number of channels
+     * @param end The loop end / play end frame
+     * @param loopStart The loop start frame, or a negative value for a one-shot (no guard frames)
+     * @return The stored PCM (played part, plus guard frames for a loop)
+     */
+    private static byte [] storeWithGuard (final byte [] pcm, final int channels, final int end, final int loopStart)
+    {
+        final int frameBytes = channels * 2;
+        final int sourceFrames = pcm.length / frameBytes;
+        final int played = Math.min (end, sourceFrames);
+        if (loopStart < 0)
+        {
+            if (played >= sourceFrames)
+                return pcm;
+            final byte [] oneShot = new byte [played * frameBytes];
+            System.arraycopy (pcm, 0, oneShot, 0, played * frameBytes);
+            return oneShot;
+        }
+        // The played part [0, end) plus LOOP_GUARD_FRAMES of guard: copies of the loop-start
+        // continuation - the very frames the loop wraps to. The voice engine's look-ahead across the
+        // wrap then sees the loop restart (not audio running on past the loop end), so the interpolated
+        // transition matches wherever the loop actually resumes.
+        final byte [] stored = new byte [(end + LOOP_GUARD_FRAMES) * frameBytes];
+        System.arraycopy (pcm, 0, stored, 0, played * frameBytes);
+        for (int frame = end; frame < end + LOOP_GUARD_FRAMES; frame++)
+        {
+            final int sourceFrame = loopStart + (frame - end);
+            if (sourceFrame >= 0 && (sourceFrame + 1) * frameBytes <= pcm.length)
+                System.arraycopy (pcm, sourceFrame * frameBytes, stored, frame * frameBytes, frameBytes);
+        }
+        return stored;
     }
 
 
@@ -343,35 +573,94 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
     }
 
 
-    private static byte [] monoToStereo (final byte [] mono)
+    /**
+     * Cross-fade the {@link #LOOP_CROSSFADE} frames ending at the loop end into the same number of
+     * frames ending at the loop start, so the loop tail gradually becomes the loop-start lead-in and
+     * the wrap is seamless even when no single end point is (an evolving pad). It is only ever called
+     * on a period-aligned loop, so the two stretches are in phase and blend without the amplitude
+     * cancellation an unaligned cross-fade causes on bright material. A linear (equal-gain) blend is
+     * used because in-phase signals add coherently.
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM (never modified)
+     * @param channels The number of channels
+     * @param loopStart The loop start frame
+     * @param end The period-aligned loop end frame
+     * @return A copy of the PCM with the cross-faded loop tail, or the input if the loop is too short
+     */
+    private static byte [] crossfadeLoop (final byte [] pcm, final int channels, final int loopStart, final int end)
     {
-        final int frames = mono.length / 2;
-        final byte [] stereo = new byte [frames * 4];
-        for (int f = 0; f < frames; f++)
+        final int n = Math.min (LOOP_CROSSFADE, Math.min ((end - loopStart) / 4, loopStart));
+        if (n < 8)
+            return pcm;
+        final byte [] out = pcm.clone ();
+        for (int i = 0; i < n; i++)
         {
-            stereo[f * 4] = mono[f * 2];
-            stereo[f * 4 + 1] = mono[f * 2 + 1];
-            stereo[f * 4 + 2] = mono[f * 2];
-            stereo[f * 4 + 3] = mono[f * 2 + 1];
+            final double weight = (i + 1.0) / (n + 1.0); // 0 -> 1 as the loop end is approached
+            for (int channel = 0; channel < channels; channel++)
+            {
+                final int tail = sampleAt (pcm, channels, end - n + i, channel);
+                final int lead = sampleAt (pcm, channels, loopStart - n + i, channel);
+                setSample (out, channels, end - n + i, channel, (int) Math.round (tail * (1.0 - weight) + lead * weight));
+            }
         }
-        return stereo;
+        return out;
     }
 
 
-    private static String uniqueName (final String name, final Set<String> usedNames)
+    private static void setSample (final byte [] pcm, final int channels, final int frame, final int channel, final int value)
     {
-        String base = name == null ? "Sample" : name.trim ();
-        if (base.length () > 16)
-            base = base.substring (0, 16);
-        String candidate = base;
+        final int clamped = value < -32768 ? -32768 : value > 32767 ? 32767 : value;
+        final int idx = (frame * channels + channel) * 2;
+        pcm[idx] = (byte) (clamped & 0xFF);
+        pcm[idx + 1] = (byte) (clamped >> 8 & 0xFF);
+    }
+
+
+    /**
+     * Build a unique sample name that is also stable for identical content: the (truncated) zone
+     * name plus a 4-digit hash of the sample data, its playback parameters and the writer's layout
+     * revision. The device re-uses an already imported multisample/sample when a newly imported one
+     * has the same name - without a content-dependent name, re-importing a changed conversion
+     * silently keeps playing the old sample data. With it, equal names imply equal bytes, so such
+     * re-use is harmless.
+     *
+     * @param name The zone name
+     * @param hash The content hash (audio + parameters + layout revision)
+     * @param usedNames The names used so far (a found collision appends a counter)
+     * @return The unique name (at most 16 characters)
+     */
+    private static String uniqueName (final String name, final int hash, final Set<String> usedNames)
+    {
+        final String base = name == null ? "Sample" : name.trim ();
+        String candidate = contentName (base, hash);
         int counter = 1;
         while (!usedNames.add (candidate))
-        {
-            counter++;
-            final String suffix = Integer.toString (counter);
-            candidate = base.substring (0, Math.min (base.length (), 16 - suffix.length ())) + suffix;
-        }
+            candidate = contentName (base, hash + counter++);
         return candidate;
+    }
+
+
+    /**
+     * Combine a name and a content hash into a 16 character sample/multisample name. A too long
+     * name keeps its head and its tail (sample names typically end in the note, e.g. "..._D#3",
+     * which is the part that tells the zones apart).
+     *
+     * @param base The descriptive name
+     * @param hash The content hash
+     * @return The name, at most 11 characters of the base plus '_' and 4 hash digits
+     */
+    private static String contentName (final String base, final int hash)
+    {
+        final String prefix = base.length () > 11 ? base.substring (0, 7) + base.substring (base.length () - 4) : base;
+        return String.format ("%s_%04x", prefix, Integer.valueOf (hash & 0xFFFF));
+    }
+
+
+    private static int contentHash (final byte [] data)
+    {
+        final CRC32 crc = new CRC32 ();
+        crc.update (data);
+        return (int) crc.getValue ();
     }
 
 
