@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -27,6 +28,7 @@ public class EXS24File
     private final List<EXS24Sample>        samples    = new ArrayList<> ();
     private final Map<Integer, EXS24Group> groups     = new TreeMap<> ();
     private final EXS24Parameters          parameters = new EXS24Parameters ();
+    private final List<EXSModulator>       modulators = new ArrayList<> ();
     private final INotifier                notifier;
 
 
@@ -187,6 +189,8 @@ public class EXS24File
             sampleBlock.write (out);
         }
 
+        this.applyModulationMatrix ();
+
         // Write parameters
         this.parameters.write (isBigEndian).write (out);
     }
@@ -288,5 +292,85 @@ public class EXS24File
     private void setParameters (final EXS24Block block) throws IOException
     {
         this.parameters.read (block);
+
+        this.readModulationMatrix ();
+    }
+
+
+    /**
+     * Add a modulator.
+     * 
+     * @param modulator The modulator to add
+     */
+    public void addModulator (final EXSModulator modulator)
+    {
+        this.modulators.add (modulator);
+    }
+
+
+    /**
+     * Get a modulator which has the given source and destination.
+     * 
+     * @param source The ID of the source
+     * @param destination The ID of the destination
+     * @return The modulator if present
+     */
+    public Optional<EXSModulator> getModulator (final int source, final int destination)
+    {
+        for (final EXSModulator modulator: this.modulators)
+        {
+            if (modulator.source == source && modulator.destination == destination)
+                return Optional.of (modulator);
+        }
+        return Optional.empty ();
+    }
+
+
+    private List<EXSModulator> readModulationMatrix ()
+    {
+        this.modulators.clear ();
+        for (int i = 0; i < 11; i++)
+        {
+            int offset = i * 6;
+            if (i == 10)
+                offset += 178;
+
+            final Integer modSource = this.parameters.get (EXS24Parameters.MOD1_SOURCE + offset);
+            final Integer modDestination = this.parameters.get (EXS24Parameters.MOD1_DESTINATION + offset);
+            if (modSource == null || modDestination == null)
+                continue;
+            final Integer modBypass = this.parameters.get (EXS24Parameters.MOD1_BYPASS + offset);
+            if (modBypass == null || modBypass.intValue () == 0)
+            {
+                final EXSModulator modulator = new EXSModulator ();
+                modulator.source = modSource.intValue ();
+                modulator.destination = modDestination.intValue ();
+                final Integer modValueLow = this.parameters.get (EXS24Parameters.MOD1_AMOUNT_LOW + offset);
+                final Integer modValueHigh = this.parameters.get (EXS24Parameters.MOD1_AMOUNT_HIGH + offset);
+                modulator.lowValue = modValueLow == null ? 0 : modValueLow.intValue ();
+                modulator.highValue = modValueHigh == null ? 0 : modValueHigh.intValue ();
+                this.modulators.add (modulator);
+            }
+        }
+
+        return this.modulators;
+    }
+
+
+    private void applyModulationMatrix ()
+    {
+        for (int i = 0; i < Math.min (11, this.modulators.size ()); i++)
+        {
+            int offset = i * 6;
+            if (i == 10)
+                offset += 178;
+
+            final EXSModulator modulator = this.modulators.get (i);
+            this.parameters.put (EXS24Parameters.MOD1_SOURCE + offset, modulator.source);
+            this.parameters.put (EXS24Parameters.MOD1_DESTINATION + offset, modulator.destination);
+            this.parameters.put (EXS24Parameters.MOD1_BYPASS + offset, 0);
+            this.parameters.put (EXS24Parameters.MOD1_AMOUNT_LOW + offset, modulator.lowValue);
+            this.parameters.put (EXS24Parameters.MOD1_AMOUNT_HIGH + offset, modulator.highValue);
+        }
     }
 }

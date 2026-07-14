@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -160,6 +161,20 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
         for (final IGroup group: this.groups)
             for (final ISampleZone zone: group.getSampleZones ())
                 zone.setFilter (filter);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setGlobalPitchEnvelope (final double depth, final IEnvelope envelope)
+    {
+        for (final IGroup group: this.groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
+                pitchEnvelopeModulator.setDepth (depth);
+                pitchEnvelopeModulator.setSource (envelope);
+            }
     }
 
 

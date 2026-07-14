@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -178,6 +179,15 @@ public interface IMultisampleSource extends ISource
      * @param filter The filter to set
      */
     void setGlobalFilter (IFilter filter);
+
+
+    /**
+     * Set the envelope on all sample zones of the multi-sample.
+     * 
+     * @param depth The depth to set in the range of [-1,1]
+     * @param envelope The envelope to set
+     */
+    void setGlobalPitchEnvelope (double depth, IEnvelope envelope);
 
 
     /**
