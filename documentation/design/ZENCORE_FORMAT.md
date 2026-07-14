@@ -6,8 +6,9 @@ the same **ZEN-Core** sound engine and share the same on-disk formats and intern
 `KY19`/`KY019`; differences are capacity/feature only and are called out per section.
 
 The ZEN-Core lineage is wider than the FANTOM: the same container and voice engine are used by the
-MC-707/MC-101, GAIA-2, JUNO-X and JUPITER-X/Xm (all `RPG68`/`MI078`-class parts, verified from their
-firmware — see §10). A `.svz` written for the FANTOM therefore imports across that whole range.
+MC-707/MC-101, JUNO-X and JUPITER-X/Xm (all `RPG68`/`MI078`-class parts, verified from their firmware
+— see §10). A `.svz` written for the FANTOM therefore imports across that whole sample-capable range.
+The GAIA-2 shares the engine too but has no sampler, so it cannot use a user-sample `.svz` (§10).
 
 MIDI SysEx model ID: `00 00 00 5B`. This document is about the *file* formats on USB / internal
 storage, not SysEx.
@@ -118,26 +119,50 @@ against the 2048 factory tones in `FANTOM.SVD` (§5) plus on-device edit-diffs; 
 > an error and shows up correctly mapped in the multisample editor, but the device never binds its
 > wave data (empty waveform display, silent on every key).
 
-The tone has **four partials**, each with its own oscillator (wave number, pan), TVF filter and
-envelope set. Per-partial fields repeat at a **0x7C** stride in the oscillator/filter region and a
-**0x10** stride in the TVA-envelope region:
+The tone has **four partials**, each with its own oscillator (wave number, pan), keyboard/velocity
+window, TVF filter and three envelopes. The per-partial fields live in several **parallel tables**,
+each with its own base offset and stride (all offsets are Partial 1; add the stride per partial):
+
+| Per-partial table | Base | Stride | Partials 1–4 |
+|-------------------|------|--------|--------------|
+| Keyboard / range  | 0x0A0 | 0x0C | 0x0A0 / 0x0AC / 0x0B8 / 0x0C4 |
+| Oscillator / filter | 0x0CE | 0x7C | 0x0CE / 0x14A / 0x1C6 / 0x242 |
+| Pitch envelope    | 0x2B8 | 0x18 | 0x2B8 / 0x2D0 / 0x2E8 / 0x300 |
+| Filter (TVF) envelope | 0x318 | 0x18 | 0x318 / 0x330 / 0x348 / 0x360 |
+| TVA envelope      | 0x37A | 0x10 | 0x37A / 0x38A / 0x39A / 0x3AA |
 
 ```
 0x000  16  tone name (ASCII, space padded)
-0x0A4   1  Partial 2 enable (1 = on) — set for a stereo (two-partial) tone
-0x0CE   1  Partial 1 pan (signed, −64 = hard left … 0 = center … +63 = hard right)
-0x0DF   1  Wave Group: 0 = ROM/preset wave, 2 = user "Kbd" single sample, 3 = user multisample
-0x0E2   2  Partial 1 Wave Number L  = the 1-based multisample number
-0x0E4   2  Partial 1 Wave Number R  = same as L (mono tone); 0 = play L only
-0x0EC   2  Partial 1 TVF filter type × 0x100:  0=OFF, 0x100=LPF, 0x200=BPF, 0x300=HPF
-0x0F0   2  Partial 1 TVF cutoff     0–1023
-0x0F6   2  Partial 1 TVF resonance  0–1023
-0x14A   1  Partial 2 pan   (= 0x0CE + 0x7C)
-0x15E   2  Partial 2 Wave Number    (= 0x0E2 + 0x7C)
-0x168   2  Partial 2 TVF filter type (= 0x0EC + 0x7C); cutoff 0x16C, resonance 0x172
-0x37A   8  Partial 1 TVA env Times: attack, hold, decay, release  (default 0, 400, 400, 150)
-0x382   8  Partial 1 TVA env Levels: peak, hold, sustain, end     (default 1023,1023,1023,0)
-0x38A  16  Partial 2 TVA env (times+levels, = 0x37A + 0x10); Partial 3 @0x39A, Partial 4 @0x3AA
+
+Keyboard/range table (stride 0x0C):
+0x0A0   1  Velocity Range Lower (1–127)
+0x0A1   1  Velocity Range Upper (1–127)
+0x0A4   1  Partial-switch display gate for the NEXT partial (see "Partial switching" below)
+0x0A8   1  Key Range Lower (0 = C-1) ─┐ probable, not written by CWM; Partial 4's entry
+0x0A9   1  Key Range Upper (127 = G9)─┘ overlaps Partial 1's pan at 0x0CE, so it is truncated
+
+Oscillator/filter table (stride 0x7C):
+0x0CE   1  Partial pan (signed, −64 = hard left … 0 = center … +63 = hard right)
+0x0DF   1  Wave Group: 0 = ROM/off, 2 = user "Kbd" single sample, 3 = user multisample (active)
+0x0E2   2  Wave Number L = 1-based multisample number
+0x0E4   2  Wave Number R = L (mono tone, both sides); 0 = play L only (a hard-panned mono voice)
+0x0EC   2  TVF filter type × 0x100:  0=OFF, 0x100=LPF, 0x200=BPF, 0x300=HPF
+0x0F0   2  TVF cutoff 0–1023   (≈ 150 units per octave = 8 cents/unit, measured on a FANTOM-0)
+0x0F6   2  TVF resonance 0–1023
+
+Pitch-envelope table (stride 0x18):
+0x2B8   1  Pitch env depth (signed byte; ≈ 0.42 semitone per unit, capped ±63 on a PCM partial)
+0x2BC   8  Times T1–T4 (u16 each)
+0x2C4  10  Levels L0–L4 (signed s16 — the bipolar shape scaled by depth)
+
+Filter-envelope table (stride 0x18):
+0x318   1  Filter (TVF) env depth (signed byte; ≈ 20 cutoff units per unit = 160 cents/unit)
+0x31E   8  Times T1–T4 (u16 each)
+0x326  10  Levels L0–L4 (signed s16)
+
+TVA-envelope table (stride 0x10):
+0x37A   8  Times:  attack, hold, decay, release  (default 0, 400, 400, 150)
+0x382   8  Levels: peak, hold, sustain, end      (default 1023, 1023, 1023, 0)
 ```
 
 - **Stereo / mono.** User samples are stored **mono** (SMPd channel count 1, USPa channel count
@@ -153,28 +178,65 @@ envelope set. Per-partial fields repeat at a **0x7C** stride in the oscillator/f
   instrument uses one partial and plays its single multisample on both sides (Wave R = Wave L;
   R = 0 would drop the right channel — the device's own "To Multisample" import leaves R = 0, so
   its exported tones look correct but play mono; do not copy that default).
-- **Single-sample pools never load.** A `.svz` whose `USPa`/`USDa` pool holds exactly **one**
-  sample imports without an error, but the device never loads its wave data — the multisample
-  maps and displays correctly, yet shows an empty waveform and plays silent on every key
-  (hardware-verified on a factory-reset FANTOM-0; pools of two or more samples from the
-  identical writer load fine). The writer appends an inert, unmapped 128-byte silence "Spacer"
-  sample whenever a pool would otherwise hold a single sample.
-- **Velocity layers are not carried.** The `MSPa` key map is a flat one-sample-per-key table with
-  no velocity axis, so a multi-layer source is flattened to a single layer. Velocity layering
-  would have to use the four partials (one layer per partial), capped by the engine at four layers
-  mono / two stereo — a deliberate non-goal here.
-- Each partial also carries a second 4-time/4-level envelope block (the TVF or pitch envelope) next
-  to its TVA block; these are left at the template defaults.
+- **The last sample chunk's wave data does not reliably bind.** The last sample in the
+  `USPa`/`USDa` pool can import without an error yet never load its wave data — the multisample
+  maps and displays correctly, but the sample shows an empty waveform and plays silent on every
+  key (the tone does not even register on the *note active* meter). Hardware-verified on a
+  FANTOM-0 twice: a pool holding exactly **one** sample (whose only sample *is* the last) never
+  loads it, and a probe bank's **six**-sample pool imported with its last sample dead on every
+  attempt, while byte-identical content with an inert trailing sample appended played fine. (A
+  four-sample pool once imported completely, so the exact trigger beyond "last slot" is not
+  pinned down.) The writer therefore always appends an inert, unmapped 128-byte silence "Spacer"
+  sample, so no real sample ever sits in the last slot.
+- **Partial switching (two independent things: sound and display).** A partial *sounds* when its
+  **Wave Group (0x0DF+) = 3** with a non-zero **Wave Number**. To make an unused partial silent,
+  set **Wave Number L/R = 0** (a group-0 partial that keeps a non-zero wave number rings a ROM wave
+  — hardware-verified). Separately, the *partial page's ON/OFF display* is driven by the keyboard
+  byte at **0x0A4 + p·0x0C**, which — counter-intuitively — **gates the NEXT partial (p+1)**, not
+  its own: **1** = the next partial shows ON, **0** = it shows OFF; Partial 4 (no next partial) reads
+  **127**. So for `count` active partials the row of switch bytes is
+  `switch[p] = 127 if p==3 else (1 if p+1<count else (0 if p<count else 127))` — e.g. one active
+  partial → `[0,127,127,127]`, two → `[1,0,127,127]`, three → `[1,1,0,127]`, four → `[1,1,1,127]`.
+  Hardware-verified against device exports at one, two and four active partials (the writer's
+  two-active output is byte-identical to a device tone with Partial 3 switched off). This is why the
+  mono template (its Partial 1 byte is 0) shows its unused partials OFF while the stereo template
+  needs the byte corrected. The writer sets Wave 0 and this gate for every unused partial.
+- **Velocity layers.** The flat `MSPa` map has no velocity axis, so velocity layering uses the
+  partials instead: each distinct source velocity range is laid onto its own partial — **one partial
+  per mono layer** (centre pan), **two partials per stereo layer** (hard L/R). This is done
+  automatically (as the other formats map velocity layers). The engine's four partials cap it at
+  **four mono or two stereo layers**; any excess layers merge into the top one (with a warning). Each
+  active partial carries its own multisample, its velocity window (0x0A0/0x0A1), pan, and the shared
+  filter/envelope shaping; Partials 3–4 are cloned from a verified active partial before being
+  switched on so their opaque oscillator bytes stay device-valid.
+- **Pitch and filter envelopes (hardware-calibrated).** The pitch (0x2B8+) and TVF-filter (0x318+)
+  envelopes are **dedicated per-partial blocks** — a signed depth, four u16 times and five signed
+  levels — not mod-matrix routings (confirmed in the FANTOM Parameter guide, which lists PITCH ENV /
+  TVF ENV as their own sections and PIT-ENV/FLT-ENV/AMP-ENV as separate matrix *sources*). The writer
+  emits the standard attack-to-peak / decay-to-sustain / release-to-centre shape scaled by the depth.
+  Depths are calibrated on a FANTOM-0: the pitch envelope shifts **≈ 0.42 semitone per depth unit**
+  (source semitones × ~2.4, clamped to the PCM partial's ±63; the audible shift itself saturates near
+  +22 st), and the filter envelope moves the cutoff **≈ 20 units = 160 cents per depth unit** (source
+  cents ÷ 160). Written only when the source actually modulates; a zero depth leaves the default.
 - **A TVA decay time (Time 3) of 0 renders the tone silent** on a FANTOM-0 — the voice never sounds,
-  even with all levels at maximum. Zero attack, hold and release times are all fine (hardware-
-  verified); only the decay stage must be non-zero, which is also why the factory default keeps its
-  middle stage times at 400 despite flat levels. The writer floors the decay value accordingly.
-- **Modulation.** Pitch/filter envelopes, LFO1/2 and the mod-matrix exist in the record but are not
-  mapped — CWM's model has no LFO/matrix abstraction, so only the TVF filter and the TVA envelope
-  round-trip.
-- The writer starts from a real **device-authored** multisample tone (Wave Group 3, standard OSC
-  bytes) as the 1632-byte template and patches only name, Wave L/R and the filter/envelope fields;
-  everything else (structure, defaults, mod routings) stays device-valid for maximum acceptance.
+  even with all levels at maximum (which is also why the factory default keeps its middle stage
+  times at 400 despite flat levels). **A near-instant TVA attack produces a transient burst at
+  every note-on, and it is pure engine behavior, independent of the sample content.** Calibrated
+  on a FANTOM-0 with a bank of tones whose samples start at levels from 100 to 30000 of full
+  scale, at exact attack values (patched into `PATa`): the recorded onsets are byte-alike across
+  all start levels — the engine fades the sample data start itself — and only the attack value
+  shapes the residual burst: **~91 at attack 1** (an audible tick in quiet material), **~25 at
+  attack 8** (below the ~46 audibility line with margin), ~13 at 16, ~5 at 32; attack 0 is worst
+  (onset slope kinks of 26–98× the local slope). Zero hold and release times are fine. The writer
+  floors accordingly: attack ≥ 8 (also the value found by ear on the device for punchy basses, so
+  transients stay tight), decay ≥ 8.
+- **Modulation (not mapped).** LFO1/2 and the mod-matrix exist in the record but are not written —
+  CWM's model has no LFO/matrix abstraction. The TVF filter, the TVA envelope and the pitch/filter
+  envelopes round-trip; the rest stays at the template default.
+- The writer starts from a real **device-authored** tone as the 1632-byte template — a one-partial
+  multisample tone for mono, a two-partial hard-panned tone for stereo — and patches only the name,
+  per-partial wave/pan/velocity/switch and the filter/envelope fields; everything else (structure,
+  OSC defaults, mod routings) stays device-valid for maximum import acceptance.
 
 ### 3.2 `USPa` — sample parameters (64 bytes each)
 
@@ -287,6 +349,16 @@ loops.) CWM prepares samples accordingly:
 3. **In-phase loop cross-fade.** When no single end point is seamless (an evolving pad whose
    timbre drifts across the loop), blend the loop tail into the loop-start lead-in. The
    period-alignment in step 2 keeps the blend in phase, so bright content does not cancel.
+   Both step 2 and step 3 measure the waveform's own step *into* the loop start, so they need a
+   lead-in: a loop starting at the very first frames — a whole-file loop, or a start the
+   zero-crossing snap processing option moved there — first has its start advanced into the sample
+   (the skipped frames still play once before the first wrap), and only when its wrap is not
+   already seamless; a period-aligned whole-file loop, like the device's own exports, is left
+   byte-identical. The cross-fade can also only be as long as the lead-in, and it closes the wrap
+   mismatch by roughly 1/(fade length) — a loop starting only a few dozen frames in leaves an
+   audible residual (hardware-heard: a loop from frame 70 capped the fade at 70 frames, and its
+   ~4400 mismatch left a ~63 residual that ticked every pass), so a bad-wrapped loop whose short
+   lead-in limits the fade likewise has its start advanced before fading.
 4. **Guard frames.** Store the loop-start continuation after the loop end (within the play
    extent under the old `f04` convention; the engine's own allocator reserves a 64-frame margin
    past `f04/2` regardless, see §3.4).
@@ -388,18 +460,25 @@ covers all variants; a written `.svz` imports on every one.
 
 ## 10. Cross-device ZEN-Core
 
-The MC-707/MC-101 (`RPG68`), GAIA-2, JUNO-X and JUPITER-X/Xm run the same ZEN-Core voice engine — the
-sound-engine firmware (`C1A` partition) carries the identical `Phase Inc`/`DSP_LOOP`/`FadeOut` debug
-strings as the FANTOM-0's. Their application code is Roland-LZS-compressed (`init.lzs`, a
-non-Okumura scheme) but the SVZ/tone format is shared. **Every one of these has a sampler** (firmware
-strings `User Sample Info`, `Multisample Name0..16`, `SAMPLING`), so user-sample SVZs are usable
-across the line, not only on the FANTOM.
+The MC-707/MC-101 (`RPG68`), JUNO-X and JUPITER-X/Xm run the same ZEN-Core voice engine as the
+FANTOM-0 — the sound-engine firmware (`C1A` partition) carries the identical
+`Phase Inc`/`DSP_LOOP`/`FadeOut` debug strings. Their application code is Roland-LZS-compressed
+(`init.lzs`, a non-Okumura scheme) but the SVZ/tone format is shared. **Each of these has a sampler**
+(firmware strings `User Sample Info`, `Multisample Name0..16`, `SAMPLING`), so user-sample SVZs are
+usable across that line, not only on the FANTOM.
+
+**The GAIA-2 and the ZENOLOGY plug-in run the same engine but cannot load user samples**, so a
+multi-sample `.svz` is useless on them and the creator does not target them. The GAIA-2 has no sampler
+at all: its reference manual's `IMPORT` loads only tones (`.SVZ`/`.SDZ`) and Model-Expansion tones, no
+user-sample or sampling feature appears anywhere in the manual, and its oscillators are virtual-analog
+plus a *fixed* wavetable — it cannot even load custom wavetables, let alone user PCM. ZENOLOGY imports
+only the tone (see below). Both would play a multi-sample silent.
 
 **Model tag by device** (mined from firmware; the SVZ header's 5-byte `modelTag` selects the target).
 `KY019` is the shared ZEN-Core interchange tag and appears in the FANTOM, Juno-X, both Jupiters and
-the MC grooveboxes — those accept the FANTOM `.svz` as written. **GAIA-2 is the outlier: only
-`MI085` is present**, so a GAIA-2 `.svz` needs `modelTag = MI085`. Confirm each by exporting a sound
-from the device and reading its header.
+the MC grooveboxes — every sample-capable device accepts the FANTOM `.svz` as written, so the creator
+always writes `KY019`. The GAIA-2's `MI085` and the ZENOLOGY plug-in's `RC001` are documented here as
+reverse-engineering reference only, never written.
 
 | Device | Firmware model codes | Likely SVZ tag |
 |--------|----------------------|----------------|
@@ -409,12 +488,15 @@ from the device and reading its header.
 | Jupiter-X (`MI077`) | KY019, KY023, MI077 | `KY019` |
 | Jupiter-Xm (`KY023`) | KY019, KY023 | `KY019` |
 | MC-707 / MC-101 (`RPG68`) | RPG68, KY019, KY022 — the voice partition's content registry lists "RolandKY019 ROM0" and KY019 `EXP` banks | `KY019` |
-| **GAIA-2 (`MI085`)** | **MI085** | **`MI085`** |
+| GAIA-2 (`MI085`) | MI085 | not a creator target — no user-sample import (VA + fixed wavetable, no sampler) |
 | ZENOLOGY plug-in | — | `RC001` (header device-confirmed; **tone import only** — not offered as a creator target, see below) |
 
-The creator's default header carries `KY019`; the **selectable Target Device** writes the full
-16-byte header per device (version and flag bytes differ: ZENOLOGY uses `03 03`/`01` where the
-FANTOM family uses `05 04`/`24`).
+The creator always writes the 16-byte `KY019` header — magic `SVZa`, version `05 04`, tag `KY019`,
+flag `24`, four reserved bytes — stored as the `svz_header.bin` resource. There is no target-device
+option: `KY019` is the one tag every sample-capable ZEN-Core device accepts. The GAIA-2 (`MI085`) and
+ZENOLOGY (`RC001`) headers are recorded above only as reverse-engineering reference, since neither
+device can use a user-sample `.svz` (their version/flag bytes differ too: ZENOLOGY uses `03 03`/`01`
+where the FANTOM family uses `05 04`/`24`).
 
 **ZENOLOGY plug-in limitation (verified 2026-07-12).** ZENOLOGY Pro imports only the *tone* from a
 `.svz`: the `USPa`/`MSPa`/`USDa` user-sample sections are ignored — the imported tone shows its PCM
@@ -446,27 +528,35 @@ marketing). CWM handles `.SVZ` only.
   one-partial tone. A **stereo instrument** (any zone stereo) splits each zone into a left and a
   right mono sample (sharing one loop end), builds two multisamples, and writes a **two-partial
   tone** — Partial 1 = left panned hard left, Partial 2 = right panned hard right (§3.1). A pool
-  that would hold a single sample gets the inert spacer (§3.1); samples and multisamples are named
+  always ends with the inert spacer, since the last chunk's wave data does not reliably bind
+  (§3.1); samples and multisamples are named
   with a content hash (the device re-uses same-named imports, so equal names must imply equal
   bytes). The source's TVF filter and TVA amplitude envelope are carried into every partial so the
-  channels share the same shaping.
-- **Target device** (`ZenCoreCreatorUI`): a settings dropdown stamps the header (§2) — `KY019`
-  (FANTOM/Juno-X/Jupiter-X, default) or `MI085` (GAIA-2); ZENOLOGY (`RC001`) is not offered (§10).
+  channels share the same shaping. Tone names are capped at the PATa field's 16 characters (what
+  the device displays); names in one bank that would truncate identically get part of the shared
+  head elided with a `~` and keep their distinctive tail (`082_RTW2_106_BASS_SAW` / `..._SQR` →
+  `082_RTW2_106~SAW` / `082_RTW2_106~SQR`; identical source names fall back to `~2`, `~3`, …). A
+  source without a single convertible sample is
+  skipped with an error (it would import as a silent husk tone), one broken source does not lose
+  the rest of a library, and a library name typed with the `.svz` ending does not double up.
+- **Header**: the creator has no options; it always stamps the fixed 16-byte `KY019` header (§2),
+  read from the `svz_header.bin` resource — the one tag every sample-capable ZEN-Core device accepts.
+  The GAIA-2 (`MI085`) and the ZENOLOGY plug-in (`RC001`) are not targets, as neither can load user
+  samples (§10).
 - **Assembler** (`ZenCoreSvz` + `ZenCoreContainer`): builds the CRC32 block framing, the
   DIFa/PATa/USPa/MSPa/USDa blocks and the `SMPd` chunks. The constant/opaque byte templates
   (`svz_header.bin`, `difa.bin`, `pata_multisample.bin` mono tone, `pata_stereo.bin` two-partial
   hard-panned stereo tone, `smpd_header.bin`, `uspa.bin`) are resources next to the class.
 - **Envelope-time caveat:** Roland's exact envelope-time curve (seconds ↔ 0–1023) is not published,
-  so the writer uses a calibrated `log2` approximation (near-instant → 0, ~20 s → full scale). Filter
-  values and envelope *levels* are exact.
+  so the writer uses a calibrated `log2` approximation (near-instant → 0, ~20 s → full scale). Only
+  the *times* are approximate — filter type/cutoff, envelope *levels*, and the pitch/filter-envelope
+  **depth** scales (§3.1, hardware-calibrated on a FANTOM-0) are exact.
 
 ---
 
 ## 12. Not decoded / limitations
 
 - ZEN-Core **LFO1/LFO2** and the **mod-matrix** — no CWM abstraction, not translated.
-- **Pitch envelope** and **TVF (filter) envelope** offsets are located (the second env block at
-  `0x38A`) but not currently written.
 - `PRFa` scene internals, `RHYa`/`INSa` drum structures — read as inventory only.
 - The `.SMP`/`PADCONF` remaining per-record fields beyond sample length / key / loop are sufficient
   to rebuild a set but not exhaustively labeled.
