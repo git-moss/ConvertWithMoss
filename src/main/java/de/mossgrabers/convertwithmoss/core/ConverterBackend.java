@@ -11,7 +11,6 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
@@ -26,6 +25,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonCreator;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
 import de.mossgrabers.convertwithmoss.format.akai.akp.AkpDetector;
@@ -110,6 +110,8 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class ConverterBackend
 {
+    private static final String            IDS_NOTIFY_SAVE_FAILED      = "IDS_NOTIFY_SAVE_FAILED";
+
     protected INotifier                    notifier;
     protected final IDetector<?> []        detectors;
     protected final ICreator<?> []         creators;
@@ -224,7 +226,7 @@ public class ConverterBackend
      *
      * @return The detectors
      */
-    public IDetector<?> [] getDetectors ()
+    public IDetector<? extends ICoreTaskSettings> [] getDetectors ()
     {
         return this.detectors;
     }
@@ -235,7 +237,7 @@ public class ConverterBackend
      *
      * @return The creators
      */
-    public ICreator<?> [] getCreators ()
+    public ICreator<? extends ICoreTaskSettings> [] getCreators ()
     {
         return this.creators;
     }
@@ -266,7 +268,7 @@ public class ConverterBackend
         else
             this.notifier.log ("IDS_NOTIFY_DETECTING", detector.getName (), creator.getName ());
         this.creator.clearCancelled ();
-        this.detector.detect (detectionSettings.sourceFolder, new MultisampleSourceConsumer (), new PerformanceSourceConsumer (), detectPerformances);
+        this.detector.detect (detectionSettings.sourceFolder, this::acceptMultisample, this::acceptPerformance, detectPerformances);
     }
 
 
@@ -303,7 +305,7 @@ public class ConverterBackend
             }
             catch (final IOException | RuntimeException | OutOfMemoryError ex)
             {
-                this.notifier.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
+                this.notifier.logError (IDS_NOTIFY_SAVE_FAILED, ex);
             }
 
         this.notifier.log (cancelled ? "IDS_NOTIFY_CANCELLED" : "IDS_NOTIFY_FINISHED");
@@ -342,7 +344,7 @@ public class ConverterBackend
         }
         catch (final IOException | RuntimeException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
+            this.notifier.logError (IDS_NOTIFY_SAVE_FAILED, ex);
         }
     }
 
@@ -384,7 +386,7 @@ public class ConverterBackend
         }
         catch (final IOException | RuntimeException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_SAVE_FAILED", ex);
+            this.notifier.logError (IDS_NOTIFY_SAVE_FAILED, ex);
         }
     }
 
@@ -565,25 +567,5 @@ public class ConverterBackend
     {
         final String name = this.detectionSettings.wantsMultipleFiles && !libraryName.isEmpty () ? libraryName : performanceSources.get (0).getName ();
         return AbstractCreator.createSafeFilename (name);
-    }
-
-
-    private class MultisampleSourceConsumer implements Consumer<IMultisampleSource>
-    {
-        @Override
-        public void accept (final IMultisampleSource multisampleSource)
-        {
-            ConverterBackend.this.acceptMultisample (multisampleSource);
-        }
-    }
-
-
-    private class PerformanceSourceConsumer implements Consumer<IPerformanceSource>
-    {
-        @Override
-        public void accept (final IPerformanceSource performanceSource)
-        {
-            ConverterBackend.this.acceptPerformance (performanceSource);
-        }
     }
 }

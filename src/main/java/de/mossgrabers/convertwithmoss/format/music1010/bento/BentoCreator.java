@@ -45,11 +45,12 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class BentoCreator extends AbstractMusic1010Creator
 {
-    private static final String              PATCHES_FOLDER               = "UserPatches\\SampInst\\";
-    private static final int                 MAX_INSTRUMENTS              = 8;
+    private static final String              IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED = "IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED";
+    private static final String              PATCHES_FOLDER                         = "UserPatches\\SampInst\\";
+    private static final int                 MAX_INSTRUMENTS                        = 8;
 
-    private static final Map<String, String> TRACK_PARAM_ATTRIBUTES       = new HashMap<> ();
-    private static final Map<String, String> MULTISAMPLE_PARAM_ATTRIBUTES = new HashMap<> ();
+    private static final Map<String, String> TRACK_PARAM_ATTRIBUTES                 = new HashMap<> ();
+    private static final Map<String, String> MULTISAMPLE_PARAM_ATTRIBUTES           = new HashMap<> ();
     static
     {
         TRACK_PARAM_ATTRIBUTES.put ("selcellpos", "0");
@@ -120,7 +121,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         final File performanceFolder = this.createUniqueFilename (new File (destinationFolder, "Projects"), performanceFolderName, "");
         if (!performanceFolder.exists () && !performanceFolder.mkdirs ())
         {
-            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", performanceFolder.getAbsolutePath ());
+            this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, performanceFolder.getAbsolutePath ());
             return;
         }
 
@@ -143,7 +144,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         final File patchesFolder = new File (destinationFolder, PATCHES_FOLDER);
         if (!patchesFolder.exists () && !patchesFolder.mkdirs ())
         {
-            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", patchesFolder.getAbsolutePath ());
+            this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, patchesFolder.getAbsolutePath ());
             return;
         }
 
@@ -171,7 +172,7 @@ public class BentoCreator extends AbstractMusic1010Creator
             final File fullPresetFolder = this.createUniqueFilename (presetFolder, multisampleName, "");
             if (!fullPresetFolder.mkdirs ())
             {
-                this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", fullPresetFolder.getAbsolutePath ());
+                this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, fullPresetFolder.getAbsolutePath ());
                 continue;
             }
 
@@ -196,7 +197,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         final File presetFolder = this.createUniqueFilename (destinationFolder, multisampleName, "");
         if (!presetFolder.mkdir ())
         {
-            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", presetFolder.getAbsolutePath ());
+            this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, presetFolder.getAbsolutePath ());
             return;
         }
 

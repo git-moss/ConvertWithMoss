@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.file.sf2;
 import java.util.HashMap;
 import java.util.Map;
 
+import de.mossgrabers.convertwithmoss.format.sf2.GeneratorHierarchy;
+
 
 /**
  * A SF2 modulator.
@@ -115,7 +117,7 @@ public class Sf2Modulator
         final StringBuilder sb = new StringBuilder ();
 
         sb.append ("           - Modulator: " + getModulatorName (this.controllerSource));
-        sb.append ("               - Destination Generator: " + Generator.getGeneratorName (this.destinationGenerator) + " : " + this.modAmount + "\n");
+        sb.append ("               - Destination Generator: " + GeneratorHierarchy.getGeneratorName (this.destinationGenerator) + " : " + this.modAmount + "\n");
         sb.append ("               - Amount Source Operand: " + getModulatorName (this.amountSourceOperand) + "\n");
 
         return sb.toString ();

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -134,14 +135,14 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         final List<byte []> continuationData = new ArrayList<> ();
         for (int i = 1; i <= numDiskettes; i++)
         {
-            final byte [] continuationDisk = S770Diskette.findContinuationDisk (diskName, i, numDiskettes, parentPath);
-            if (continuationDisk == null)
+            final Optional<byte []> continuationDisk = S770Diskette.findContinuationDisk (diskName, i, numDiskettes, parentPath);
+            if (continuationDisk.isEmpty ())
             {
                 this.notifier.logError ("IDS_S7XX_CONTINUATION_DISK_NOT_FOUND", Integer.toString (i + 1), Integer.toString (numDiskettes + 1));
                 return null;
             }
             this.notifier.log ("IDS_S7XX_CONTINUATION_DISK_FOUND", Integer.toString (i + 1), Integer.toString (numDiskettes + 1));
-            continuationData.add (continuationDisk);
+            continuationData.add (continuationDisk.get ());
         }
 
         return new S770Diskette (input, header, continuationData);

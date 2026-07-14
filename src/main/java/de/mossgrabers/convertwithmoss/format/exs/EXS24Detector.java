@@ -289,18 +289,9 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
     }
 
 
-    private static class Modulator
+    private static List<EXSModulator> readModulationMatrix (final EXS24Parameters parameters)
     {
-        int source;
-        int destination;
-        int lowValue;
-        int highValue;
-    }
-
-
-    private static List<Modulator> readModulationMatrix (final EXS24Parameters parameters)
-    {
-        final List<Modulator> modulators = new ArrayList<> ();
+        final List<EXSModulator> modulators = new ArrayList<> ();
         for (int i = 0; i < 11; i++)
         {
             int offset = i * 6;
@@ -314,7 +305,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             final Integer modBypass = parameters.get (EXS24Parameters.MOD1_BYPASS + offset);
             if (modBypass == null || modBypass.intValue () == 0)
             {
-                final Modulator modulator = new Modulator ();
+                final EXSModulator modulator = new EXSModulator ();
                 modulator.source = modSource.intValue ();
                 modulator.destination = modDestination.intValue ();
                 final Integer modValueLow = parameters.get (EXS24Parameters.MOD1_AMOUNT_LOW + offset);

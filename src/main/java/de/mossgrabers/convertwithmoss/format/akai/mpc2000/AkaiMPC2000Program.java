@@ -20,13 +20,15 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AkaiMPC2000Program
 {
-    private final List<String>         sampleNames = new ArrayList<> ();
+    private static final String        IDS_MPC2000_UNKNOWN_FILE = "IDS_MPC2000_UNKNOWN_FILE";
+
+    private final List<String>         sampleNames              = new ArrayList<> ();
     private final String               programName;
     @SuppressWarnings("unused")
     private final SliderParams         sliderParams;
     @SuppressWarnings("unused")
     private final int                  midiChannel;
-    private final List<AkaiMPC2000Pad> pads        = new ArrayList<> ();
+    private final List<AkaiMPC2000Pad> pads                     = new ArrayList<> ();
     private final byte []              midiNotes;
 
 
@@ -40,11 +42,11 @@ public class AkaiMPC2000Program
     {
         final int byte1 = input.read ();
         if (byte1 != 0x07)
-            throw new IOException (Functions.getMessage ("IDS_MPC2000_UNKNOWN_FILE"));
+            throw new IOException (Functions.getMessage (IDS_MPC2000_UNKNOWN_FILE));
         final int byte2 = input.read ();
         final boolean isMPC3000 = byte2 == 0x00;
         if (!isMPC3000 && byte2 != 0x04)
-            throw new IOException (Functions.getMessage ("IDS_MPC2000_UNKNOWN_FILE"));
+            throw new IOException (Functions.getMessage (IDS_MPC2000_UNKNOWN_FILE));
 
         final int numSamples = isMPC3000 ? 64 : StreamUtils.readUnsigned16 (input, false);
         for (int i = 0; i < numSamples; i++)
@@ -175,7 +177,7 @@ public class AkaiMPC2000Program
     {
         final int value = in.read ();
         if (value != 0)
-            throw new IOException (Functions.getMessage ("IDS_MPC2000_UNKNOWN_FILE"));
+            throw new IOException (Functions.getMessage (IDS_MPC2000_UNKNOWN_FILE));
     }
 
 
@@ -185,7 +187,7 @@ public class AkaiMPC2000Program
         {
             final int actual = in.read ();
             if (actual != b)
-                throw new IOException (Functions.getMessage ("IDS_MPC2000_UNKNOWN_FILE"));
+                throw new IOException (Functions.getMessage (IDS_MPC2000_UNKNOWN_FILE));
         }
     }
 }

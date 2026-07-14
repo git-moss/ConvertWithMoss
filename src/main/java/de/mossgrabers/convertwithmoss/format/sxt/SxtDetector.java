@@ -42,6 +42,9 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettingsUI>
 {
+    private static final String IDS_SXT_REFILLS_NOT_SUPPORTED = "IDS_SXT_REFILLS_NOT_SUPPORTED";
+
+
     /**
      * Constructor.
      *
@@ -282,7 +285,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
         final String refillName = readString (in, isReason3);
         final String sampleURL = readString (in, isReason3);
         if (!refillName.isBlank () || !sampleURL.isBlank ())
-            throw new IOException (Functions.getMessage ("IDS_SXT_REFILLS_NOT_SUPPORTED", refillName));
+            throw new IOException (Functions.getMessage (IDS_SXT_REFILLS_NOT_SUPPORTED, refillName));
 
         // Reserved
         if (in.read () != 13)
@@ -357,7 +360,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
         {
             final String refillName = readString (in, isReason3);
             if (!refillName.isBlank ())
-                throw new IOException (Functions.getMessage ("IDS_SXT_REFILLS_NOT_SUPPORTED", refillName));
+                throw new IOException (Functions.getMessage (IDS_SXT_REFILLS_NOT_SUPPORTED, refillName));
             pathInfo.databasePath = readSubPaths (new StringBuilder (), in, isReason3);
 
             if (databasePathVersion >= SxtChunkConstants.VERSION_1_5_0)
@@ -378,7 +381,7 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
 
             // Part of refill?
             if (in.read () > 0)
-                throw new IOException (Functions.getMessage ("IDS_SXT_REFILLS_NOT_SUPPORTED", ""));
+                throw new IOException (Functions.getMessage (IDS_SXT_REFILLS_NOT_SUPPORTED, ""));
 
             if (absolutePathVersion >= SxtChunkConstants.VERSION_1_8_0)
             {

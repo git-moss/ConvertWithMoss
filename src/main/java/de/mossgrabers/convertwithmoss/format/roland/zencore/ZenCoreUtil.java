@@ -115,9 +115,9 @@ public final class ZenCoreUtil
     /**
      * Convert a name to a fixed-length, zero-padded ASCII block - the convention of the sample name
      * fields (<i>USPa</i>, <i>SMPd</i>, <i>MSPa</i>) in every device-written file. This matters: a
-     * sample whose name field is space-padded instead imports without an error, but the device never
-     * binds its wave data - the multisample shows the sample with an empty waveform display and the
-     * tone plays silent on every key.
+     * sample whose name field is space-padded instead imports without an error, but the device
+     * never binds its wave data - the multisample shows the sample with an empty waveform display
+     * and the tone plays silent on every key.
      *
      * @param text The name
      * @param length The fixed length

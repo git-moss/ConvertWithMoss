@@ -57,6 +57,9 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreatorUI>
 {
+    private static final String       IDS_NOTIFY_STORING   = "IDS_NOTIFY_STORING";
+    private static final String       DECENT_SAMPLER       = "DecentSampler";
+
     private static final List<String> IGNORE_FILES         = Collections.singletonList ("ui.xml");
     private static final String       LIBRARY_INFO_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<DecentSamplerLibraryInfo name=\"%LIBRARY_NAME%\"/>";
 
@@ -84,7 +87,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
      */
     public DecentSamplerCreator (final INotifier notifier)
     {
-        super ("DecentSampler", "DecentSampler", notifier, new DecentSamplerCreatorUI ("DecentSampler"));
+        super (DECENT_SAMPLER, DECENT_SAMPLER, notifier, new DecentSamplerCreatorUI (DECENT_SAMPLER));
     }
 
 
@@ -107,7 +110,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         {
             // Note: method is called for each multi-source individually!
             final File multiFile = this.createUniqueFilename (destinationFolder, multisampleSource.getName (), "dsbundle");
-            this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+            this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
             this.storeBundle (multiFile, Collections.singletonList (results.get (0)));
 
@@ -117,7 +120,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         {
             for (final PresetResult presetResult: results)
             {
-                this.notifier.log ("IDS_NOTIFY_STORING", presetResult.dsPresetFile.getAbsolutePath ());
+                this.notifier.log (IDS_NOTIFY_STORING, presetResult.dsPresetFile.getAbsolutePath ());
                 this.storePreset (destinationFolder, presetResult);
             }
 
@@ -139,7 +142,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         final boolean isBundle = this.settingsConfiguration.createBundle ();
         final String extension = isBundle ? "dsbundle" : "dslibrary";
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, extension);
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
         if (isBundle)
             this.storeBundle (multiFile, results);
         else

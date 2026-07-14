@@ -24,6 +24,8 @@ import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
  */
 public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
 {
+    private static final String         IDS_ISO_PROCESSING_FORMAT = "IDS_ISO_PROCESSING_FORMAT";
+
     private final EnsoniqEpsAsrDetector ensoniqDetector;
     private final S5xxDetector          rolandS5xxDetector;
     private final S770Detector          rolandS7xxDetector;
@@ -53,12 +55,12 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
         {
             case AKAI_MPC2000:
             case AKAI_MPC2000XL:
-                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                this.notifier.log (IDS_ISO_PROCESSING_FORMAT, IsoFormat.getName (isoFormat));
                 return AkaiMPC2000Detector.processAkaiMPC2000Disk (sourceFile, this.sourceFolder, this.notifier, this.settingsConfiguration);
 
             case AKAI_S1000_S1100:
             case AKAI_S3000:
-                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                this.notifier.log (IDS_ISO_PROCESSING_FORMAT, IsoFormat.getName (isoFormat));
                 return this.processAkaiS1000Disk (sourceFile);
 
             case ENSONIQ:
@@ -71,12 +73,12 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
                 return Collections.emptyList ();
 
             case ROLAND_S5XX:
-                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                this.notifier.log (IDS_ISO_PROCESSING_FORMAT, IsoFormat.getName (isoFormat));
                 this.rolandS5xxDetector.setSourceFolder (this.sourceFolder);
                 return this.rolandS5xxDetector.readPresetFile (sourceFile);
 
             case ROLAND_S7XX:
-                this.notifier.log ("IDS_ISO_PROCESSING_FORMAT", IsoFormat.getName (isoFormat));
+                this.notifier.log (IDS_ISO_PROCESSING_FORMAT, IsoFormat.getName (isoFormat));
                 this.rolandS7xxDetector.setSourceFolder (this.sourceFolder);
                 return this.rolandS7xxDetector.readPresetFile (sourceFile);
 

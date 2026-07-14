@@ -4,6 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.file.hfe;
 
+import java.util.Objects;
+
+
 /**
  * Represents a single disk sector with metadata and data.
  *
@@ -126,6 +129,27 @@ public class Sector implements Comparable<Sector>
         if (this.head != other.head)
             return Integer.compare (this.head, other.head);
         return Integer.compare (this.sectorNumber, other.sectorNumber);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int hashCode ()
+    {
+        return Objects.hash (Integer.valueOf (this.cylinder), Integer.valueOf (this.head), Integer.valueOf (this.sectorNumber));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean equals (final Object obj)
+    {
+        if (this == obj)
+            return true;
+        if ((obj == null) || (this.getClass () != obj.getClass ()))
+            return false;
+        final Sector other = (Sector) obj;
+        return this.cylinder == other.cylinder && this.head == other.head && this.sectorNumber == other.sectorNumber;
     }
 
 

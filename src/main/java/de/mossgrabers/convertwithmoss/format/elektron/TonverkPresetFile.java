@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.ParseHierarchy;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
@@ -82,6 +83,13 @@ public class TonverkPresetFile
     }
 
 
+    private static class ParseHierarchyEx extends ParseHierarchy
+    {
+        boolean inParameters      = false;
+        boolean inMappingSlotRoot = false;
+    }
+
+
     /** Format version of the preset (the top-level 'version'). */
     public int                        version            = 2;
     /** The preset category (e.g. 'KEYS', 'DRUMS'). */
@@ -90,7 +98,7 @@ public class TonverkPresetFile
     public final List<String>         tags               = new ArrayList<> ();
     /** All entries of the flat '[parameters]' block, in file order, values without quotes. */
     public final Map<String, String>  parameters         = new LinkedHashMap<> ();
-    /** The machine derived from the 'gen_machine' parameter (set after {@link #parse(Path)}). */
+    /** The machine derived from the 'gen_machine' parameter. */
     public Machine                    machine            = Machine.UNKNOWN;
     /** The display name stored in the mapping slot. */
     public String                     mappingSlotName    = "";
@@ -103,166 +111,168 @@ public class TonverkPresetFile
 
 
     /**
-     * Parses a Tonverk preset file.
-     *
-     * @param path The path to the file to parse
-     * @throws IOException Could not read/parse the file
-     */
-    public void parse (final Path path) throws IOException
-    {
-        this.parse (Files.readAllLines (path));
-    }
-
-
-    /**
-     * Parses the lines of a Tonverk preset file (or a template).
+     * Creates and parses a Tonverk preset file.
      *
      * @param lines The lines to parse
      */
-    public void parse (final List<String> lines)
+    public TonverkPresetFile (final List<String> lines)
     {
         this.errors.clear ();
 
-        boolean inParameters = false;
-        boolean inMappingSlotRoot = false;
-        TonverkKeyZone currentZone = null;
-        TonverkVelocityLayer currentLayer = null;
-        TonverkSampleSlot currentSlot = null;
+        final ParseHierarchyEx hierarchy = new ParseHierarchyEx ();
 
-        for (int i = 0; i < lines.size (); i++)
+        int i = 0;
+        while (i < lines.size ())
         {
             final String line = lines.get (i).trim ();
-            if (line.isEmpty () || line.startsWith ("#"))
-                continue;
-
-            // An array of tables, e.g. '[[parameters.gen_multi_mapping_slot.key-zones]]'
-            if (line.startsWith ("[["))
-            {
-                final String section = stripSectionBrackets (line);
-                if (section.endsWith (".sample-slots"))
-                {
-                    if (currentLayer == null)
-                        this.errors.add ("sample-slot without velocity-layer");
-                    else
-                    {
-                        currentSlot = new TonverkSampleSlot ();
-                        currentLayer.sampleSlots.add (currentSlot);
-                    }
-                }
-                else if (section.endsWith (".velocity-layers"))
-                {
-                    if (currentZone == null)
-                        this.errors.add ("velocity-layer without key-zone");
-                    else
-                    {
-                        currentLayer = new TonverkVelocityLayer ();
-                        currentZone.velocityLayers.add (currentLayer);
-                        currentSlot = null;
-                    }
-                }
-                else if (section.endsWith (".key-zones"))
-                {
-                    currentZone = new TonverkKeyZone ();
-                    this.keyZones.add (currentZone);
-                    currentLayer = null;
-                    currentSlot = null;
-                }
-                else
-                    this.errors.add ("Unknown array section: " + section);
-                inMappingSlotRoot = false;
-                continue;
-            }
-
-            // A table, e.g. '[parameters]' or '[parameters.gen_multi_mapping_slot]'
-            if (line.startsWith ("["))
-            {
-                final String section = stripSectionBrackets (line);
-                if (section.equals ("parameters"))
-                {
-                    inParameters = true;
-                    inMappingSlotRoot = false;
-                }
-                else if (section.startsWith ("parameters.") && section.endsWith ("_mapping_slot"))
-                {
-                    inMappingSlotRoot = true;
-                    currentZone = null;
-                    currentLayer = null;
-                    currentSlot = null;
-                }
-                else
-                    this.errors.add ("Unknown section: " + section);
-                continue;
-            }
-
-            // A key/value pair
-            final int eq = line.indexOf ('=');
-            if (eq < 0)
-            {
-                this.errors.add ("Invalid line: " + line);
-                continue;
-            }
-            final String key = line.substring (0, eq).trim ();
-            final String rawValue = line.substring (eq + 1).trim ();
-
-            // An array value, either inline ('[]' or "[ 'a', 'b' ]") or multi-line ('[' followed by
-            // the items on the next lines up to a closing ']').
-            if (rawValue.startsWith ("["))
-            {
-                final List<String> items = new ArrayList<> ();
-                if (rawValue.equals ("["))
-                    while (i + 1 < lines.size ())
-                    {
-                        final String arrayLine = lines.get (++i).trim ();
-                        if (arrayLine.equals ("]"))
-                            break;
-                        final String item = stripQuotes (arrayLine.endsWith (",") ? arrayLine.substring (0, arrayLine.length () - 1) : arrayLine);
-                        if (!item.isEmpty ())
-                            items.add (item);
-                    }
-                else
-                {
-                    String inline = rawValue.substring (1);
-                    if (inline.endsWith ("]"))
-                        inline = inline.substring (0, inline.length () - 1);
-                    for (final String part: inline.split (","))
-                    {
-                        final String item = stripQuotes (part.trim ());
-                        if (!item.isEmpty ())
-                            items.add (item);
-                    }
-                }
-                if ("tags".equals (key))
-                    this.tags.addAll (items);
-                continue;
-            }
-
-            final String value = stripQuotes (rawValue);
-
-            if (currentSlot != null)
-                this.assignSampleSlot (currentSlot, key, value);
-            else if (currentLayer != null)
-                this.assignVelocityLayer (currentLayer, key, value);
-            else if (currentZone != null)
-                this.assignKeyZone (currentZone, key, value);
-            else if (inMappingSlotRoot)
-            {
-                if ("name".equals (key))
-                    this.mappingSlotName = value;
-                else if ("version".equals (key))
-                    this.mappingSlotVersion = this.parseIntSafe (value, 0);
-            }
-            else if (inParameters)
-                this.parameters.put (key, value);
-            else
-                switch (key)
-                {
-                    case "version" -> this.version = this.parseIntSafe (value, 2);
-                    case "category" -> this.category = value;
-                    default -> this.errors.add ("Unknown root tag: " + key);
-                }
+            if (!this.parseLine (line, hierarchy))
+                i = this.parseParameters (lines, line, i, hierarchy);
+            i++;
         }
 
         this.machine = Machine.fromGenMachine (this.parameters.get ("gen_machine"));
+    }
+
+
+    private boolean parseLine (final String line, final ParseHierarchyEx hierarchy)
+    {
+        if (line.isEmpty () || line.startsWith ("#"))
+            return true;
+
+        // An array of tables, e.g. '[[parameters.gen_multi_mapping_slot.key-zones]]'
+        if (line.startsWith ("[["))
+        {
+            final String section = stripSectionBrackets (line);
+            if (section.endsWith (".sample-slots"))
+            {
+                if (hierarchy.currentLayer == null)
+                    this.errors.add ("sample-slot without velocity-layer");
+                else
+                {
+                    hierarchy.currentSlot = new TonverkSampleSlot ();
+                    hierarchy.currentLayer.sampleSlots.add (hierarchy.currentSlot);
+                }
+            }
+            else if (section.endsWith (".velocity-layers"))
+            {
+                if (hierarchy.currentZone == null)
+                    this.errors.add ("velocity-layer without key-zone");
+                else
+                {
+                    hierarchy.currentLayer = new TonverkVelocityLayer ();
+                    hierarchy.currentZone.velocityLayers.add (hierarchy.currentLayer);
+                    hierarchy.currentSlot = null;
+                }
+            }
+            else if (section.endsWith (".key-zones"))
+            {
+                hierarchy.currentZone = new TonverkKeyZone ();
+                this.keyZones.add (hierarchy.currentZone);
+                hierarchy.currentLayer = null;
+                hierarchy.currentSlot = null;
+            }
+            else
+                this.errors.add ("Unknown array section: " + section);
+            hierarchy.inMappingSlotRoot = false;
+            return true;
+        }
+
+        // A table, e.g. '[parameters]' or '[parameters.gen_multi_mapping_slot]'
+        if (line.startsWith ("["))
+        {
+            final String section = stripSectionBrackets (line);
+            if (section.equals ("parameters"))
+            {
+                hierarchy.inParameters = true;
+                hierarchy.inMappingSlotRoot = false;
+            }
+            else if (section.startsWith ("parameters.") && section.endsWith ("_mapping_slot"))
+            {
+                hierarchy.inMappingSlotRoot = true;
+                hierarchy.currentZone = null;
+                hierarchy.currentLayer = null;
+                hierarchy.currentSlot = null;
+            }
+            else
+                this.errors.add ("Unknown section: " + section);
+            return true;
+        }
+
+        return false;
+    }
+
+
+    private int parseParameters (final List<String> lines, final String line, final int linePos, final ParseHierarchyEx hierarchy)
+    {
+        int pos = linePos;
+
+        // A key/value pair
+        final int eq = line.indexOf ('=');
+        if (eq < 0)
+        {
+            this.errors.add ("Invalid line: " + line);
+            return pos;
+        }
+        final String key = line.substring (0, eq).trim ();
+        final String rawValue = line.substring (eq + 1).trim ();
+
+        // An array value, either inline ('[]' or "[ 'a', 'b' ]") or multi-line ('[' followed by
+        // the items on the next lines up to a closing ']').
+        if (rawValue.startsWith ("["))
+        {
+            final List<String> items = new ArrayList<> ();
+            if (rawValue.equals ("["))
+                while (pos + 1 < lines.size ())
+                {
+                    final String arrayLine = lines.get (++pos).trim ();
+                    if (arrayLine.equals ("]"))
+                        break;
+                    final String item = stripQuotes (arrayLine.endsWith (",") ? arrayLine.substring (0, arrayLine.length () - 1) : arrayLine);
+                    if (!item.isEmpty ())
+                        items.add (item);
+                }
+            else
+            {
+                String inline = rawValue.substring (1);
+                if (inline.endsWith ("]"))
+                    inline = inline.substring (0, inline.length () - 1);
+                for (final String part: inline.split (","))
+                {
+                    final String item = stripQuotes (part.trim ());
+                    if (!item.isEmpty ())
+                        items.add (item);
+                }
+            }
+            if ("tags".equals (key))
+                this.tags.addAll (items);
+            return pos;
+        }
+
+        final String value = stripQuotes (rawValue);
+
+        if (hierarchy.currentSlot != null)
+            this.assignSampleSlot (hierarchy.currentSlot, key, value);
+        else if (hierarchy.currentLayer != null)
+            this.assignVelocityLayer (hierarchy.currentLayer, key, value);
+        else if (hierarchy.currentZone != null)
+            this.assignKeyZone (hierarchy.currentZone, key, value);
+        else if (hierarchy.inMappingSlotRoot)
+        {
+            if ("name".equals (key))
+                this.mappingSlotName = value;
+            else if ("version".equals (key))
+                this.mappingSlotVersion = this.parseIntSafe (value, 0);
+        }
+        else if (hierarchy.inParameters)
+            this.parameters.put (key, value);
+        else
+            switch (key)
+            {
+                case "version" -> this.version = this.parseIntSafe (value, 2);
+                case "category" -> this.category = value;
+                default -> this.errors.add ("Unknown root tag: " + key);
+            }
+        return pos;
     }
 
 

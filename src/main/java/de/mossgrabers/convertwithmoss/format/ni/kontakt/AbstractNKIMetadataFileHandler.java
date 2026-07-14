@@ -1489,17 +1489,15 @@ public abstract class AbstractNKIMetadataFileHandler
 
     /**
      * Reads the pitch bend configuration from the external modulators of a group element.
-     * 
+     *
      * @param extModulators All external modulators of the group
      * @return The number of semi-tones (up=down)
      */
     private int readGroupPitchBend (final List<ExternalModulation> extModulators)
     {
         for (final ExternalModulation extModulator: extModulators)
-        {
             if (this.tags.pitchBendValue ().equals (extModulator.source) && this.tags.pitchValue ().equals (extModulator.target))
                 return Math.clamp ((int) Math.round (extModulator.intensity * 1200), -9600, 9600);
-        }
         return -1;
     }
 
@@ -1513,17 +1511,15 @@ public abstract class AbstractNKIMetadataFileHandler
     private double readGroupAmplitudeVelocityModulator (final List<ExternalModulation> extModulators)
     {
         for (final ExternalModulation extModulator: extModulators)
-        {
             if (this.tags.velocityValue ().equals (extModulator.source) && this.tags.volumeValue ().equals (extModulator.target))
                 return extModulator.intensity;
-        }
         return -1;
     }
 
 
     /**
      * Read all external not bypassed modulators from a group element.
-     * 
+     *
      * @param groupElement The group element to read from
      * @return The active modulators
      */
@@ -1550,17 +1546,17 @@ public abstract class AbstractNKIMetadataFileHandler
                 if (targetsElement == null)
                     continue;
                 for (final Element targetElement: XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false))
-                    createExtModulator (extModulators, source, modulatorParams, this.readValueMap (targetElement));
+                    this.createExtModulator (extModulators, source, modulatorParams, this.readValueMap (targetElement));
             }
             else
-                createExtModulator (extModulators, source, modulatorParams, modulatorParams);
+                this.createExtModulator (extModulators, source, modulatorParams, modulatorParams);
         }
 
         return extModulators;
     }
 
 
-    private void createExtModulator (List<ExternalModulation> extModulators, String source, Map<String, String> modulatorElementParams, Map<String, String> targetElementParams)
+    private void createExtModulator (final List<ExternalModulation> extModulators, final String source, final Map<String, String> modulatorElementParams, final Map<String, String> targetElementParams)
     {
         // Ignore bypassed modulators
         final String bypass = modulatorElementParams.get (this.tags.bypassParam ());

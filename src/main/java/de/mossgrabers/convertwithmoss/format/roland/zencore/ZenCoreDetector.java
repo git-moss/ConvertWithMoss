@@ -26,10 +26,10 @@ import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Detects Roland ZEN-Core importable <i>.SVZ</i> tone/sample packs: it reads the user samples of the
- * shared <i>USPa</i>/<i>USDa</i> pool and, when present, the <i>MSPa</i> multisample key map (turning
- * it into key-ranged zones). The <i>.SVZ</i> container is shared across the whole FANTOM range and
- * the wider ZEN-Core hardware line, so a file written by {@link ZenCoreCreator} round-trips back
+ * Detects Roland ZEN-Core <i>.SVZ</i> tone/sample packs: it reads the user samples of the shared
+ * <i>USPa</i>/<i>USDa</i> pool and, when present, the <i>MSPa</i> multi-sample key map (turning it
+ * into key-ranged zones). The <i>.SVZ</i> container is shared across the whole FANTOM range and the
+ * wider ZEN-Core hardware line, so a file written by {@link ZenCoreCreator} round-trips back
  * through this detector.
  *
  * @author Jürgen Moßgraber
@@ -82,10 +82,10 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
         {
             for (final ZenCoreSample sample: samples)
                 if (sample.getSampleData () != null)
-                    group.addSampleZone (this.createZone (sample, sample.getOriginalKey (), sample.getOriginalKey ()));
+                    group.addSampleZone (createZone (sample, sample.getOriginalKey (), sample.getOriginalKey ()));
         }
         else
-            this.buildZonesFromKeyMap (group, samples, keyMap);
+            buildZonesFromKeyMap (group, samples, keyMap);
 
         if (group.getSampleZones ().isEmpty ())
             return Collections.emptyList ();
@@ -95,7 +95,7 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private void buildZonesFromKeyMap (final IGroup group, final List<ZenCoreSample> samples, final ZenCoreKeyMap keyMap)
+    private static void buildZonesFromKeyMap (final IGroup group, final List<ZenCoreSample> samples, final ZenCoreKeyMap keyMap)
     {
         // Turn the flat 128-key table into contiguous zones (a zone per run of one sample index)
         int runStart = -1;
@@ -112,7 +112,7 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
                 {
                     final ZenCoreSample sample = samples.get (sampleListIndex);
                     if (sample.getSampleData () != null)
-                        group.addSampleZone (this.createZone (sample, runStart, key - 1));
+                        group.addSampleZone (createZone (sample, runStart, key - 1));
                 }
                 runStart = key;
                 runIndex = index;
@@ -121,7 +121,7 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private ISampleZone createZone (final ZenCoreSample sample, final int keyLow, final int keyHigh)
+    private static ISampleZone createZone (final ZenCoreSample sample, final int keyLow, final int keyHigh)
     {
         final ISampleZone zone = new DefaultSampleZone (sample.getName (), keyLow, keyHigh);
         zone.setSampleData (sample.getSampleData ());

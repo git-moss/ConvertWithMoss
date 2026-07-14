@@ -24,7 +24,7 @@ import javafx.scene.layout.Pane;
  */
 public class MetadataSettingsUI implements IMetadataConfig, ICoreTaskSettings
 {
-    private static final String PREFER_FOLDER_NAME       = "PreferFolderName";
+    private static final String PREFER_FOLDER_NAME        = "PreferFolderName";
     private static final String CATEGORY_FROM_NAME_PREFIX = "CategoryFromNamePrefix";
     private static final String DEFAULT_CREATOR           = "DefaultCreator";
     private static final String TAG_CREATORS              = "Creators";

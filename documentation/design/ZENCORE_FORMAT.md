@@ -118,43 +118,53 @@ against the 2048 factory tones in `FANTOM.SVD` (§5) plus on-device edit-diffs; 
 > an error and shows up correctly mapped in the multisample editor, but the device never binds its
 > wave data (empty waveform display, silent on every key).
 
+The tone has **four partials**, each with its own oscillator (wave number, pan), TVF filter and
+envelope set. Per-partial fields repeat at a **0x7C** stride in the oscillator/filter region and a
+**0x10** stride in the TVA-envelope region:
+
 ```
 0x000  16  tone name (ASCII, space padded)
+0x0A4   1  Partial 2 enable (1 = on) — set for a stereo (two-partial) tone
+0x0CE   1  Partial 1 pan (signed, −64 = hard left … 0 = center … +63 = hard right)
 0x0DF   1  Wave Group: 0 = ROM/preset wave, 2 = user "Kbd" single sample, 3 = user multisample
-0x0E2   2  Wave Number L  = the 1-based multisample number
-0x0E4   2  Wave Number R  = same as L for stereo; 0 = mono (plays L only)  ← the stereo switch
-0x0EC   2  TVF filter type × 0x100:  0=OFF, 0x100=LPF, 0x200=BPF, 0x300=HPF  (+0x400/0x600 variants)
-0x0F0   2  TVF cutoff     0–1023
-0x0F6   2  TVF resonance  0–1023
-0x37A   2  TVA env Time 1 (attack)   0–1023   default 0
-0x37C   2  TVA env Time 2 (hold)     0–1023   default 400
-0x37E   2  TVA env Time 3 (decay)    0–1023   default 400
-0x380   2  TVA env Time 4 (release)  0–1023   default 150
-0x382   2  TVA env Level 1 (peak)    0–1023   default 1023
-0x384   2  TVA env Level 2           0–1023   default 1023
-0x386   2  TVA env Level 3 (sustain) 0–1023   default 1023
-0x388   2  TVA env Level 4 (end)     0–1023   default 0
+0x0E2   2  Partial 1 Wave Number L  = the 1-based multisample number
+0x0E4   2  Partial 1 Wave Number R  = same as L (mono tone); 0 = play L only
+0x0EC   2  Partial 1 TVF filter type × 0x100:  0=OFF, 0x100=LPF, 0x200=BPF, 0x300=HPF
+0x0F0   2  Partial 1 TVF cutoff     0–1023
+0x0F6   2  Partial 1 TVF resonance  0–1023
+0x14A   1  Partial 2 pan   (= 0x0CE + 0x7C)
+0x15E   2  Partial 2 Wave Number    (= 0x0E2 + 0x7C)
+0x168   2  Partial 2 TVF filter type (= 0x0EC + 0x7C); cutoff 0x16C, resonance 0x172
+0x37A   8  Partial 1 TVA env Times: attack, hold, decay, release  (default 0, 400, 400, 150)
+0x382   8  Partial 1 TVA env Levels: peak, hold, sustain, end     (default 1023,1023,1023,0)
+0x38A  16  Partial 2 TVA env (times+levels, = 0x37A + 0x10); Partial 3 @0x39A, Partial 4 @0x3AA
 ```
 
-- **Stereo / mono.** User samples are stored **mono only** (SMPd channel count 1, USPa channel
-  count still 2). The voice engine **mis-plays interleaved-stereo storage**: the two channels'
-  samples alternate into the output as a Nyquist-carrier buzz modulated by L−R (measured at up
-  to ~60% of signal amplitude on a FANTOM-0), which degenerates to a tick on every loop pass
-  when the channels are identical. The device's own sampler stores mono as well. **True stereo
-  is what the tone's two wave slots are for**: a stereo source is split into per-channel mono
-  samples with two multisamples, and the tone plays **Wave L = left, Wave R = right**
-  (hardware-verified click- and artifact-free). A mono instrument plays one multisample on both
-  sides via **Wave R = Wave L**; R = 0 drops the right channel entirely (the device's
-  "To Multisample" import leaves R = 0, so its exported tones look correct but play mono — do
-  not copy that default).
+- **Stereo / mono.** User samples are stored **mono** (SMPd channel count 1, USPa channel count
+  still 2). The voice engine **mis-plays an interleaved-stereo sample**: the two channels
+  alternate into the output as a buzz, degenerating to a per-loop-pass tick when they are
+  identical, and it does this at **any** loop length (measured on a FANTOM-0). **True stereo is
+  built the factory way** — verified in the FANTOM firmware, where every stereo sound is stored
+  as separate "… L"/"… R" mono waves at different ROM addresses. A stereo source is therefore
+  split into two mono samples (left, right) in two multisamples, played by a **two-partial tone**:
+  Partial 1 plays the left multisample panned hard left (pan −64), Partial 2 the right multisample
+  panned hard right (pan +63). Each channel is then a mono loop, so neither has the interleaved
+  wrap click — hardware-verified click-free, wide, with matched left/right amplitude. A mono
+  instrument uses one partial and plays its single multisample on both sides (Wave R = Wave L;
+  R = 0 would drop the right channel — the device's own "To Multisample" import leaves R = 0, so
+  its exported tones look correct but play mono; do not copy that default).
 - **Single-sample pools never load.** A `.svz` whose `USPa`/`USDa` pool holds exactly **one**
   sample imports without an error, but the device never loads its wave data — the multisample
   maps and displays correctly, yet shows an empty waveform and plays silent on every key
   (hardware-verified on a factory-reset FANTOM-0; pools of two or more samples from the
   identical writer load fine). The writer appends an inert, unmapped 128-byte silence "Spacer"
   sample whenever a pool would otherwise hold a single sample.
-- A second identical 4-time/4-level envelope block sits at `0x38A` (the TVF or pitch envelope); it is
-  left at the template default.
+- **Velocity layers are not carried.** The `MSPa` key map is a flat one-sample-per-key table with
+  no velocity axis, so a multi-layer source is flattened to a single layer. Velocity layering
+  would have to use the four partials (one layer per partial), capped by the engine at four layers
+  mono / two stereo — a deliberate non-goal here.
+- Each partial also carries a second 4-time/4-level envelope block (the TVF or pitch envelope) next
+  to its TVA block; these are left at the template defaults.
 - **A TVA decay time (Time 3) of 0 renders the tone silent** on a FANTOM-0 — the voice never sounds,
   even with all levels at maximum. Zero attack, hold and release times are all fine (hardware-
   verified); only the decay stage must be non-zero, which is also why the factory default keeps its
@@ -179,8 +189,8 @@ values:
 0x1C   4  start point   (frames, LE u32) — 0
 0x20   4  loop start    (frames, LE u32)
 0x24   4  end / loop end(frames, LE u32)
-0x2C   1  channels — always 2 in Roland-authored files, even for mono-stored samples (the SMPd
-          channel count carries the actual storage layout)
+0x2C   1  channels — always 2 in device-written files and conforming packs, even for mono-stored
+          samples (the SMPd channel count carries the actual storage layout)
 0x2E-0x3F constant format descriptor: 32 32 00 01 e0 2e 00 00 10 00 01 10 00 00 00 00
           (copied verbatim from a device sample; determines the stereo sample format)
 ```
@@ -220,7 +230,7 @@ Each chunk is one **`SMPd`** sample. Two encodings exist and both import:
 ```
 0x000   4  "SMPd"
 0x004   4  u32 f04 = 2 × end  (the declared play extent; see below — an invariant of every
-           Roland-authored file, independent of the stored frame count and of the channel count)
+           conforming file, independent of the stored frame count and of the channel count)
 0x008   1  channels (2)
 0x009   1  bits (16)
 0x00C   4  u32 sample rate  (48000 — the FANTOM's native rate; see §8)
@@ -229,21 +239,24 @@ Each chunk is one **`SMPd`** sample. Two encodings exist and both import:
 0x1CC  ..  interleaved 16-bit LITTLE-endian PCM   ← note: opposite endianness to RFWV
 ```
 
-**The `f04` law.** Every Roland-authored file writes `f04 = 2 × end` exactly — all 425 looped
-samples of the SOURCE Sample Pack (which store 15 natural frames *past* `end`, i.e. beyond
-`f04/2`) and every FANTOM export (whose stored frames run up to 144 frames *short* of `end`;
-the engine zero-tolerates both). It is a play extent, not a storage size. The firmware
+**The `f04` law.** Every conforming file writes `f04 = 2 × end` exactly — every FANTOM export
+(whose stored frames run up to 144 frames *short* of `end`) as well as all 425 looped samples
+written by **Roland's own SF2→SVZ converter** (in the commercial third-party *SOURCE* pack by
+Vulture Culture, which stores 15 natural frames *past* `end`, i.e. beyond `f04/2`; the engine
+tolerates both). It is a play extent, not a storage size. The firmware
 (`mi078`, FANTOM-0 v1.07) confirms the division is hard-coded: the user-sample RAM allocator
 computes `frames = f04 >> 1` regardless of the channel count, then allocates
 `roundUp512bytes((frames + 64) × 2)` **per channel** — i.e. samples are stored channel-planar
 in 512-byte blocks with a fixed 64-frame allocation margin past the declared extent for the
 voice engine's read-ahead.
 
-**Roland SF2→SVZ converter `SMPd`** (reference only; not written by CWM): a `"SMPd"` tag with a
-u16 header size `0x20` at +4 and u8 version `1` at +6 (the firmware validates exactly these
-fields), followed by a complete embedded `RIFF`/`WAVE` file at 0x20 (44100 Hz), and the `USDa`
-directory CRCs are 0. The `USPa` record is byte-identical to the device's. CWM decodes such
-packs and re-emits device-native raw-PCM `SMPd`.
+**Roland SF2→SVZ converter `SMPd`** (reference only; not written by CWM): the output format of
+Roland's own SF2→SVZ converter, as shipped in commercial third-party packs (e.g. Vulture
+Culture's *SOURCE*): a `"SMPd"` tag with a u16 header size `0x20` at +4 and u8 version `1` at
++6 (the device firmware validates exactly these fields), followed by a complete embedded
+`RIFF`/`WAVE` file at 0x20 (44100 Hz), and the `USDa` directory CRCs are 0. The `USPa` record
+is byte-identical to the device's. CWM decodes such packs and re-emits device-native raw-PCM
+`SMPd`.
 
 ---
 
@@ -255,8 +268,9 @@ interpolates *across* every playback boundary, and the engine exposes **no tone-
 loop-crossfade** parameter (confirmed against the Parameter Guide and the MC-707/FANTOM-0 firmware —
 `De-Click` is the MC-707 *audio-looper's* control, `PreLoop LPF` is a reverb parameter, and the only
 tone crossfade is the partial velocity-crossfade curve). Clean playback is therefore entirely a
-**sample-preparation** job, and Roland's own content shows the target: every looped sample in the
-SOURCE Sample Pack — pads included — is value-matched at the **exclusive** seam
+**sample-preparation** job, and well-mastered content shows the target: every looped sample in
+the third-party *SOURCE* pack (SF2 sources converted with Roland's own SF2→SVZ converter) —
+pads included — is value-matched at the **exclusive** seam
 `L[end-1] == L[ls-1]` (median deviation 1 of 32768), the loop plays `[loopStart, end)`, and ~15
 frames of natural post-loop audio are stored after `end`. (The factory ROM waves appear to go
 further: their wave table — `wpf_*.bin` inside `QSPIImage.BIN`, 36-byte records with three
@@ -267,21 +281,23 @@ loops.) CWM prepares samples accordingly:
 1. **48 kHz / 16-bit.** Resample every sample to the FANTOM's native rate (removes an entire
    rate-conversion click layer that non-native rates add).
 2. **Period-aligned loop end.** Move the loop *end* (never the audio) to the nearby point whose
-   wrap deviates least from the waveform's own step into the loop start — the same exclusive
-   seam invariant Roland's converter targets.
+   wrap deviates least from the waveform's own step into the loop start — the exclusive seam
+   invariant that hardware-verified click-free playback requires (and that well-mastered packs
+   satisfy).
 3. **In-phase loop cross-fade.** When no single end point is seamless (an evolving pad whose
    timbre drifts across the loop), blend the loop tail into the loop-start lead-in. The
    period-alignment in step 2 keeps the blend in phase, so bright content does not cancel.
 4. **Guard frames.** Store the loop-start continuation after the loop end (within the play
    extent under the old `f04` convention; the engine's own allocator reserves a 64-frame margin
    past `f04/2` regardless, see §3.4).
-5. **Mono storage, always.** Hardware-measured: a looped user sample stored as **interleaved
-   stereo** (SMPd channel count 2) is mis-played — a Nyquist-carrier buzz of the two channels'
-   samples alternating into the output, degenerating to a once-per-wrap tick when the channels
+5. **Mono storage; stereo as two mono partials.** Hardware-measured: a looped user sample stored
+   as **interleaved stereo** (SMPd channel count 2) is mis-played at any loop length — the two
+   channels alternate into the output as a buzz, degenerating to a once-per-wrap tick when they
    are identical, **even when the wrap is mathematically seamless**. Byte-identical audio stored
-   **mono** plays clean. Mono sources are stored mono; stereo sources are split into
-   per-channel mono samples played through the tone's two wave slots (§3.1) —
-   hardware-verified click- and artifact-free including true stereo.
+   **mono** plays clean. So every sample is stored mono, and a stereo source is split into a left
+   and a right mono sample played by the tone's two hard-panned partials (§3.1) — the factory's
+   own way (its stereo sounds are separate "… L"/"… R" mono waves), hardware-verified click-free,
+   wide, and with matched left/right amplitude.
 
 ---
 
@@ -394,10 +410,22 @@ from the device and reading its header.
 | Jupiter-Xm (`KY023`) | KY019, KY023 | `KY019` |
 | MC-707 / MC-101 (`RPG68`) | RPG68, KY019, KY022 — the voice partition's content registry lists "RolandKY019 ROM0" and KY019 `EXP` banks | `KY019` |
 | **GAIA-2 (`MI085`)** | **MI085** | **`MI085`** |
-| ZENOLOGY plug-in | — | `RC001` (device-confirmed) |
+| ZENOLOGY plug-in | — | `RC001` (header device-confirmed; **tone import only** — not offered as a creator target, see below) |
 
-The creator's `svz_header.bin` template carries `KY019`; a **selectable target-device model tag** (a
-settings dropdown patching bytes 6–10 of the header) is the clean way to cover GAIA-2 and ZENOLOGY.
+The creator's default header carries `KY019`; the **selectable Target Device** writes the full
+16-byte header per device (version and flag bytes differ: ZENOLOGY uses `03 03`/`01` where the
+FANTOM family uses `05 04`/`24`).
+
+**ZENOLOGY plug-in limitation (verified 2026-07-12).** ZENOLOGY Pro imports only the *tone* from a
+`.svz`: the `USPa`/`MSPa`/`USDa` user-sample sections are ignored — the imported tone shows its PCM
+wave as *No Assign* with wave bank `---` and plays silent. This is not an encoding matter: the
+FANTOM's **own** exported user-sample tone behaves identically in the plug-in, and the samples-only
+`.svz` flavor (Roland's SF2→SVZ converter output) is rejected outright ("the file cannot be read").
+The plug-in's user samples exist only in its local library (ZENOLOGY Pro's *Sample Import*), its
+sound banks are a zlib-compressed `SVDx` image (the "for Plugin" export), and its "for Hardware/ZC1"
+export writes `DIFa`+`PATa`+`MDLa` (tones + model records, no user samples). Multisample `.svz`
+files are therefore hardware-only; the creator does not offer ZENOLOGY as a target (the `RC001`
+header itself is correct and accepted, documented here as reference).
 
 ---
 
@@ -414,20 +442,20 @@ marketing). CWM handles `.SVZ` only.
 - **Creator** (`ZenCoreCreator`, extends `AbstractCreator`): `createPreset` → one-tone `.svz`;
   `createPresetLibrary` → multi-tone bank `.svz` (`supportsPresetLibraries`). Per sample it converts
   to 48 kHz/16-bit (`AudioFileUtils.convertToWav` + `recalculateSamplePositions`), applies the §4
-  sample-prep and stores everything mono: a stereo zone is split into per-channel mono samples
-  played through the tone's two wave slots (§3.1), identical channels de-duplicate back into one
-  sample, and a pool that would hold a single sample gets the inert spacer (§3.1). Samples and
-  multisamples are named with a content hash (the device re-uses same-named imports, so equal
-  names must imply equal bytes), key ranges map into one `MSPa` table per channel. Per tone it
-  writes Wave L/R and carries the source's TVF filter (type/cutoff/resonance) and TVA amplitude
-  envelope into the `PATa`.
-- **Target device** (`ZenCoreCreatorUI`): a settings dropdown stamps the header's 5-byte `modelTag`
-  (§2) — `KY019` (FANTOM/Juno-X/Jupiter-X, default), `MI085` (GAIA-2) or `RC001` (ZENOLOGY) — so the
-  `.svz` imports on the chosen device (§10).
+  sample-prep and stores everything mono. A **mono instrument** has one multisample played by a
+  one-partial tone. A **stereo instrument** (any zone stereo) splits each zone into a left and a
+  right mono sample (sharing one loop end), builds two multisamples, and writes a **two-partial
+  tone** — Partial 1 = left panned hard left, Partial 2 = right panned hard right (§3.1). A pool
+  that would hold a single sample gets the inert spacer (§3.1); samples and multisamples are named
+  with a content hash (the device re-uses same-named imports, so equal names must imply equal
+  bytes). The source's TVF filter and TVA amplitude envelope are carried into every partial so the
+  channels share the same shaping.
+- **Target device** (`ZenCoreCreatorUI`): a settings dropdown stamps the header (§2) — `KY019`
+  (FANTOM/Juno-X/Jupiter-X, default) or `MI085` (GAIA-2); ZENOLOGY (`RC001`) is not offered (§10).
 - **Assembler** (`ZenCoreSvz` + `ZenCoreContainer`): builds the CRC32 block framing, the
   DIFa/PATa/USPa/MSPa/USDa blocks and the `SMPd` chunks. The constant/opaque byte templates
-  (`svz_header.bin`, `difa.bin`, `pata_multisample.bin`, `smpd_header.bin`, `uspa.bin`) are resources
-  next to the class.
+  (`svz_header.bin`, `difa.bin`, `pata_multisample.bin` mono tone, `pata_stereo.bin` two-partial
+  hard-panned stereo tone, `smpd_header.bin`, `uspa.bin`) are resources next to the class.
 - **Envelope-time caveat:** Roland's exact envelope-time curve (seconds ↔ 0–1023) is not published,
   so the writer uses a calibrated `log2` approximation (near-instant → 0, ~20 s → full scale). Filter
   values and envelope *levels* are exact.

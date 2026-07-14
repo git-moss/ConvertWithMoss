@@ -38,7 +38,7 @@ public class MV8000Patch
     public static final int          NUM_PARTIALS      = 96;
 
     /** The Roland category names (identical to the XV-5080 category list). */
-    public static final String []    CATEGORIES        =
+    static final String []           CATEGORIES        =
     {
         "NO ASSIGN",
         "AC.PIANO",

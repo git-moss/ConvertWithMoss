@@ -4,7 +4,10 @@
 
 package de.mossgrabers.convertwithmoss.file.sf2;
 
+import java.util.Optional;
+
 import de.mossgrabers.convertwithmoss.file.riff.AbstractListChunk;
+import de.mossgrabers.convertwithmoss.file.riff.IRiffChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 
 
@@ -15,30 +18,12 @@ import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
  */
 public class Sf2DataChunk extends AbstractListChunk
 {
-    private RawRIFFChunk sampleDataChunk;
-    private RawRIFFChunk sampleData24Chunk;
-
-
     /**
      * Constructor.
      */
     public Sf2DataChunk ()
     {
         super (Sf2RiffChunkId.DATA_ID.getFourCC ());
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public void add (final RawRIFFChunk chunk)
-    {
-        super.add (chunk);
-
-        final int id = chunk.getId ().getFourCC ();
-        if (id == Sf2RiffChunkId.SMPL_ID.getFourCC ())
-            this.sampleDataChunk = chunk;
-        else if (id == Sf2RiffChunkId.SM24_ID.getFourCC ())
-            this.sampleData24Chunk = chunk;
     }
 
 
@@ -53,7 +38,10 @@ public class Sf2DataChunk extends AbstractListChunk
      */
     public byte [] getSampleData ()
     {
-        return this.sampleDataChunk == null ? null : this.sampleDataChunk.getData ();
+        final Optional<IRiffChunk> chunk = this.findSubChunk (Sf2RiffChunkId.SMPL_ID);
+        if (chunk.isEmpty ())
+            return null;
+        return chunk.get () instanceof final RawRIFFChunk rawChunk ? rawChunk.getData () : null;
     }
 
 
@@ -66,6 +54,9 @@ public class Sf2DataChunk extends AbstractListChunk
      */
     public byte [] getSample24Data ()
     {
-        return this.sampleData24Chunk == null ? null : this.sampleData24Chunk.getData ();
+        final Optional<IRiffChunk> chunk = this.findSubChunk (Sf2RiffChunkId.SM24_ID);
+        if (chunk.isEmpty ())
+            return null;
+        return chunk.get () instanceof final RawRIFFChunk rawChunk ? rawChunk.getData () : null;
     }
 }

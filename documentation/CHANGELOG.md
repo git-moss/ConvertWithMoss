@@ -7,6 +7,7 @@
 * New: Added support for the Synthstrom Deluge instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Elektron Tonverk preset (TVPST) (thanks to Douglas Carmichael).
 * New: Added support for the Roland MV-8000/MV-8800 patch format (MV0) (thanks to Douglas Carmichael).
+* New: Added support for the Roland ZEN-Core sound format (SVZ) (thanks to Douglas Carmichael).
 * New: Added support for the Fairlight CMI 3 - read only (thanks to PythonBlue).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
 * New: Added support for the Roland ZEN-Core sound format (SVZ). The undocumented container and tone format was reverse-engineered from device exports and the FANTOM/FANTOM-0 firmware (validated against the 2048 factory tones and Roland's own SVZ sample packs). ConvertWithMoss writes an importable .svz - a single tone for one multi-sample, or a multi-tone bank that shares one sample pool for several - loadable through the device's IMPORT function, and each tone carries the source's filter (type, cutoff, resonance) and amplitude envelope. The ZEN-Core voice engine has no loop smoothing of its own, so click-free playback (hardware-verified on a FANTOM-0) is prepared into the samples: they are written at the native 48 kHz / 16-bit, the loop end is re-seated so the wrap reproduces the waveform's own step into the loop start (the seam invariant every Roland-authored loop satisfies), a loop with no seamless end point (an evolving pad) gets its tail cross-faded in phase into the loop-start lead-in, and mono sources are stored mono the way the device's own sampler stores its imports - a looped sample stored as interleaved stereo ticks once per loop pass on the hardware even with a seamless wrap, besides doubling the file and the device's sample RAM. Samples and multisamples are named with a content hash, since the device silently re-uses already imported ones of the same name. A selectable *Target Device* sets the header's model tag for the intended hardware: KY019 (the shared ZEN-Core tag of the FANTOM / FANTOM-0 / FANTOM EX / Juno-X / Jupiter-X/Xm; the default and the device-confirmed case), MI085 (GAIA-2) or RC001 (ZENOLOGY plug-in). The user samples and multisample key map of a .svz are also read back (thanks to Douglas Carmichael).
@@ -47,6 +48,8 @@
 * MPC
   * Fixed: Program in XTY file was not read.
 * Omnisphere
+  * New: Added support for reading envelope slopes.
+  * New: If the required folder structure is not found when reading an Omnisphere preset, the files are now also searched in the same folder as the preset file.
   * Fixed: Reading an Omnisphere preset with multiple sample voice elements did only return the samples of the last voice.
   * Fixed: Save formatting of ampersand character when writing.
 * SoundFont 2 (thanks to Douglas Carmichael)

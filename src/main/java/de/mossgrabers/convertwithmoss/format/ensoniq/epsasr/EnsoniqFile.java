@@ -20,6 +20,8 @@ import java.util.TreeMap;
  */
 public class EnsoniqFile
 {
+    private static final String               SD_SEQ           = "SD SEQ";
+
     /** Empty file reference. */
     public static final int                   TYPE_UNUSED      = 0;
     /** Operating System file. */
@@ -91,9 +93,9 @@ public class EnsoniqFile
         m.put (Integer.valueOf (7), "EPS SYSEX");
         m.put (Integer.valueOf (8), "PTR PRNT");
         m.put (Integer.valueOf (9), "EPS MACRO");
-        m.put (Integer.valueOf (17), "SD SEQ");
-        m.put (Integer.valueOf (18), "SD SEQ");
-        m.put (Integer.valueOf (19), "SD SEQ");
+        m.put (Integer.valueOf (17), SD_SEQ);
+        m.put (Integer.valueOf (18), SD_SEQ);
+        m.put (Integer.valueOf (19), SD_SEQ);
         m.put (Integer.valueOf (23), "16+ BANK");
         m.put (Integer.valueOf (24), "16+ FX");
         m.put (Integer.valueOf (25), "16+ SEQ");

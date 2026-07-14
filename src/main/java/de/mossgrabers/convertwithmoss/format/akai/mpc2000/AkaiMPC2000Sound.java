@@ -24,30 +24,32 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AkaiMPC2000Sound
 {
+    private static final String IDS_MPC2000_INVALID_SND_FILE = "IDS_MPC2000_INVALID_SND_FILE";
+
     /** Size of the SND file header in bytes. */
-    private static final int HEADER_SIZE   = 42;
+    private static final int    HEADER_SIZE                  = 42;
 
     /** Loop mode: No looping. */
-    public static final int  LOOP_MODE_OFF = 0;
+    public static final int     LOOP_MODE_OFF                = 0;
 
     /** Loop mode: Loop enabled. */
-    public static final int  LOOP_MODE_ON  = 1;
+    public static final int     LOOP_MODE_ON                 = 1;
 
-    private String           name;
-    private int              pad;
-    private int              level;
-    private int              tune;
-    private int              channels;
-    private long             start;
-    private long             loopEnd;
-    private long             end;
-    private long             loopLength;
-    private int              loopMode;
-    private int              beatsInLoop;
-    private int              sampleRate;
+    private String              name;
+    private int                 pad;
+    private int                 level;
+    private int                 tune;
+    private int                 channels;
+    private long                start;
+    private long                loopEnd;
+    private long                end;
+    private long                loopLength;
+    private int                 loopMode;
+    private int                 beatsInLoop;
+    private int                 sampleRate;
 
     // Sample data
-    private short []         sampleData;
+    private short []            sampleData;
 
 
     /**
@@ -73,7 +75,7 @@ public class AkaiMPC2000Sound
     public AkaiMPC2000Sound (final byte [] data) throws IOException
     {
         if (data.length < HEADER_SIZE)
-            throw new IOException (Functions.getMessage ("IDS_MPC2000_INVALID_SND_FILE", "too small (minimum " + HEADER_SIZE + " bytes)"));
+            throw new IOException (Functions.getMessage (IDS_MPC2000_INVALID_SND_FILE, "too small (minimum " + HEADER_SIZE + " bytes)"));
 
         this.parseHeader (data);
         this.parseSampleData (data);
@@ -106,11 +108,11 @@ public class AkaiMPC2000Sound
         // Check bytes (2 bytes)
         final int checkByte1 = buffer.get () & 0xFF;
         if (checkByte1 != 0x01)
-            throw new IOException (Functions.getMessage ("IDS_MPC2000_INVALID_SND_FILE", "not a MPC2000/MPC3000 SND file"));
+            throw new IOException (Functions.getMessage (IDS_MPC2000_INVALID_SND_FILE, "not a MPC2000/MPC3000 SND file"));
         final int checkByte2 = buffer.get () & 0xFF;
         final boolean isMPC3000 = checkByte2 == 0x02;
         if (!isMPC3000 && checkByte2 != 0x04)
-            throw new IOException (Functions.getMessage ("IDS_MPC2000_INVALID_SND_FILE", "not a MPC2000/MPC3000 SND file"));
+            throw new IOException (Functions.getMessage (IDS_MPC2000_INVALID_SND_FILE, "not a MPC2000/MPC3000 SND file"));
 
         // Sample name (16 bytes)
         final byte [] nameBytes = new byte [16];

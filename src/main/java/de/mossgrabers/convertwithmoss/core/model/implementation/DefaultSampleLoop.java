@@ -155,12 +155,4 @@ public class DefaultSampleLoop implements ISampleLoop
         final double loopLengthInSeconds = this.getLength () / (double) sampleRate;
         this.setCrossfade (crossfadeSeconds / loopLengthInSeconds);
     }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Object clone () throws CloneNotSupportedException
-    {
-        return super.clone ();
-    }
 }

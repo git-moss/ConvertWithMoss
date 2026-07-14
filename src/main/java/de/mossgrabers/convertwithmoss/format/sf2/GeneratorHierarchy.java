@@ -23,14 +23,79 @@ import de.mossgrabers.tools.Pair;
  */
 public class GeneratorHierarchy
 {
-    private static final Pair<Integer, Integer> DEFAULT_RANGE        = new Pair<> (Integer.valueOf (0), Integer.valueOf (127));
+    private static final Pair<Integer, Integer> DEFAULT_RANGE = new Pair<> (Integer.valueOf (0), Integer.valueOf (127));
 
-    private final Map<Integer, Integer>         instrumentZone       = new HashMap<> ();
-    private final Map<Integer, Integer>         instrumentZoneGlobal = new HashMap<> ();
-    private final Map<Integer, Integer>         presetZone           = new HashMap<> ();
-    private final Map<Integer, Integer>         presetZoneGlobal     = new HashMap<> ();
-    private final Set<Integer>                  processedGenerators  = new HashSet<> ();
-    private final Set<Integer>                  allGenerators        = new HashSet<> ();
+    static final String []                      GENERATORS    = new String [61];
+    static
+    {
+        GENERATORS[0] = "startAddrsOffset";
+        GENERATORS[1] = "endAddrsOffset";
+        GENERATORS[2] = "startloopAddrsOffset";
+        GENERATORS[3] = "endloopAddrsOffset";
+        GENERATORS[4] = "startAddrsCoarseOffset";
+        GENERATORS[5] = "modLfoToPitch";
+        GENERATORS[6] = "vibLfoToPitch";
+        GENERATORS[7] = "modEnvToPitch";
+        GENERATORS[8] = "initialFilterFc";
+        GENERATORS[9] = "initialFilterQ";
+        GENERATORS[10] = "modLfoToFilterFc";
+        GENERATORS[11] = "modEnvToFilterFc";
+        GENERATORS[12] = "endAddrsCoarseOffset";
+        GENERATORS[13] = "modLfoToVolume";
+        GENERATORS[14] = "unused1";
+        GENERATORS[15] = "chorusEffectsSend";
+        GENERATORS[16] = "reverbEffectsSend";
+        GENERATORS[17] = "pan";
+        GENERATORS[18] = "unused2";
+        GENERATORS[19] = "unused3";
+        GENERATORS[20] = "unused4";
+        GENERATORS[21] = "delayModLFO";
+        GENERATORS[22] = "freqModLFO";
+        GENERATORS[23] = "delayVibLFO";
+        GENERATORS[24] = "freqVibLFO";
+        GENERATORS[25] = "delayModEnv";
+        GENERATORS[26] = "attackModEnv";
+        GENERATORS[27] = "holdModEnv";
+        GENERATORS[28] = "decayModEnv";
+        GENERATORS[29] = "sustainModEnv";
+        GENERATORS[30] = "releaseModEnv";
+        GENERATORS[31] = "keynumToModEnvHold";
+        GENERATORS[32] = "keynumToModEnvDecay";
+        GENERATORS[33] = "delayVolEnv";
+        GENERATORS[34] = "attackVolEnv";
+        GENERATORS[35] = "holdVolEnv";
+        GENERATORS[36] = "decayVolEnv";
+        GENERATORS[37] = "sustainVolEnv";
+        GENERATORS[38] = "releaseVolEnv";
+        GENERATORS[39] = "keynumToVolEnvHold";
+        GENERATORS[40] = "keynumToVolEnvDecay";
+        GENERATORS[41] = "instrument";
+        GENERATORS[42] = "reserved1";
+        GENERATORS[43] = "keyRange";
+        GENERATORS[44] = "velRange";
+        GENERATORS[45] = "startloopAddrsCoarseOffset";
+        GENERATORS[46] = "keynum";
+        GENERATORS[47] = "velocity";
+        GENERATORS[48] = "initialAttenuation";
+        GENERATORS[49] = "reserved2";
+        GENERATORS[50] = "endloopAddrsCoarseOffset";
+        GENERATORS[51] = "coarseTune";
+        GENERATORS[52] = "fineTune";
+        GENERATORS[53] = "sampleID";
+        GENERATORS[54] = "sampleModes";
+        GENERATORS[55] = "reserved3";
+        GENERATORS[56] = "scaleTuning";
+        GENERATORS[57] = "exclusiveClass";
+        GENERATORS[58] = "overridingRootKey";
+        GENERATORS[59] = "unused5";
+        GENERATORS[60] = "endOper";
+    }
+    private final Map<Integer, Integer> instrumentZone       = new HashMap<> ();
+    private final Map<Integer, Integer> instrumentZoneGlobal = new HashMap<> ();
+    private final Map<Integer, Integer> presetZone           = new HashMap<> ();
+    private final Map<Integer, Integer> presetZoneGlobal     = new HashMap<> ();
+    private final Set<Integer>          processedGenerators  = new HashSet<> ();
+    private final Set<Integer>          allGenerators        = new HashSet<> ();
 
 
     /**
@@ -201,8 +266,22 @@ public class GeneratorHierarchy
         final Set<String> unsupported = new TreeSet<> ();
         for (final Integer generator: this.allGenerators)
             if (!this.processedGenerators.contains (generator))
-                unsupported.add (Generator.GENERATORS[generator.intValue ()]);
+                unsupported.add (GENERATORS[generator.intValue ()]);
         return unsupported;
+    }
+
+
+    /**
+     * Get a description of a generator.
+     *
+     * @param generatorID The ID of the generator
+     * @return The text for the ID
+     */
+    public static String getGeneratorName (final int generatorID)
+    {
+        if (generatorID >= GENERATORS.length || GENERATORS[generatorID] == null)
+            return "Undefined";
+        return GENERATORS[generatorID];
     }
 
 

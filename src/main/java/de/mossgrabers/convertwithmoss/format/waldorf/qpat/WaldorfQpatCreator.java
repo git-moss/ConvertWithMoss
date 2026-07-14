@@ -43,6 +43,8 @@ import de.mossgrabers.tools.StringUtils;
  */
 public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 {
+    private static final String                                AMP_ENV                = "AmpEnv";
+
     private static final String                                SLOPE_RC               = "RC";
     private static final String                                SLOPE_LINEAR           = "Lin";
     private static final String                                SLOPE_EXP              = "Exp";
@@ -331,10 +333,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Split each group whose zones stack (overlap in both key and velocity) into separate layers, so
-     * a layered preset maps to several oscillators instead of collapsing into one. Groups without an
-     * internal overlap are kept unchanged. The largest layer is placed first so it drives the main
-     * oscillator.
+     * Split each group whose zones stack (overlap in both key and velocity) into separate layers,
+     * so a layered preset maps to several oscillators instead of collapsing into one. Groups
+     * without an internal overlap are kept unchanged. The largest layer is placed first so it
+     * drives the main oscillator.
      *
      * @param groups The groups
      * @return The groups with stacked layers separated into individual groups
@@ -350,7 +352,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 result.add (group);
                 continue;
             }
-            layers.sort (Comparator.comparingInt ((final List<ISampleZone> layer) -> layer.size ()).reversed ());
+            layers.sort (Comparator.<List<ISampleZone>> comparingInt (List::size).reversed ());
             for (final List<ISampleZone> layer: layers)
             {
                 final DefaultGroup layerGroup = new DefaultGroup (group.getName ());
@@ -470,7 +472,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
                 final IEnvelopeModulator amplitudeEnvelopeModulator = firstZone.getAmplitudeEnvelopeModulator ();
                 final IEnvelope envelope = amplitudeEnvelopeModulator.getSource ();
-                createEnvelope (parameters, envelope, "AmpEnv", "AmpEnv", flattenAmpEnvelope);
+                createEnvelope (parameters, envelope, AMP_ENV, AMP_ENV, flattenAmpEnvelope);
 
                 // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
                 final double ampVeloAmount = amplitudeEnvelopeModulator.getDepth ();
@@ -585,7 +587,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final boolean isPitch = prefix.startsWith ("Free");
         // Only the amplitude envelope gates the VCA, so only it can click when a stage is instant;
         // a short filter or pitch envelope stage is left unchanged.
-        final boolean isAmplitude = "AmpEnv".equals (prefix);
+        final boolean isAmplitude = AMP_ENV.equals (prefix);
 
         if (isPitch && envelope.getStartLevel () != 0)
         {
