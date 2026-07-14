@@ -191,7 +191,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         }
 
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile), new ArrayList<> (groupsMap.values ()));
-        applyGlobalParameters (multisampleSource, exs24File.getParameters ());
+        applyGlobalParameters (multisampleSource, exs24File);
         return Optional.of (multisampleSource);
     }
 
@@ -249,13 +249,13 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
     }
 
 
-    private static void applyGlobalParameters (final IMultisampleSource multisampleSource, final EXS24Parameters parameters)
+    private static void applyGlobalParameters (final IMultisampleSource multisampleSource, final EXS24File exs24File)
     {
-        readModulationMatrix (parameters);
-
-        applyFilterParameters (multisampleSource, parameters);
+        applyFilterParameters (multisampleSource, exs24File);
+        applyPitchEnvelope (multisampleSource, exs24File);
 
         // Pitch bend up/down
+        final EXS24Parameters parameters = exs24File.getParameters ();
         final Integer pitchBendUp = parameters.get (EXS24Parameters.PITCH_BEND_UP);
         final Integer pitchBendDown = parameters.get (EXS24Parameters.PITCH_BEND_DOWN);
         final int bendUp = pitchBendUp != null ? pitchBendUp.intValue () * 100 : 200;
@@ -289,33 +289,20 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
     }
 
 
-    private static List<EXSModulator> readModulationMatrix (final EXS24Parameters parameters)
+    private static void applyPitchEnvelope (final IMultisampleSource multisampleSource, final EXS24File exs24File)
     {
-        final List<EXSModulator> modulators = new ArrayList<> ();
-        for (int i = 0; i < 11; i++)
-        {
-            int offset = i * 6;
-            if (i == 10)
-                offset += 178;
+        final Optional<EXSModulator> pitchModulator = exs24File.getModulator (EXSModulator.SOURCE_ENV2, EXSModulator.DESTINATION_PITCH);
+        if (pitchModulator.isEmpty ())
+            return;
 
-            final Integer modSource = parameters.get (EXS24Parameters.MOD1_SOURCE + offset);
-            final Integer modDestination = parameters.get (EXS24Parameters.MOD1_DESTINATION + offset);
-            if (modSource == null || modDestination == null)
-                continue;
-            final Integer modBypass = parameters.get (EXS24Parameters.MOD1_BYPASS + offset);
-            if (modBypass == null || modBypass.intValue () == 0)
-            {
-                final EXSModulator modulator = new EXSModulator ();
-                modulator.source = modSource.intValue ();
-                modulator.destination = modDestination.intValue ();
-                final Integer modValueLow = parameters.get (EXS24Parameters.MOD1_AMOUNT_LOW + offset);
-                final Integer modValueHigh = parameters.get (EXS24Parameters.MOD1_AMOUNT_HIGH + offset);
-                modulator.lowValue = modValueLow == null ? 0 : modValueLow.intValue ();
-                modulator.highValue = modValueHigh == null ? 0 : modValueHigh.intValue ();
-                modulators.add (modulator);
-            }
-        }
-        return modulators;
+        final int lowValue = pitchModulator.get ().lowValue;
+        if (lowValue == 0)
+            return;
+
+        final double envelopeMod = Math.clamp (EXSPitchModulationCurve.map (lowValue) / 1200.0, -1.0, 1.0);
+        final EXS24Parameters parameters = exs24File.getParameters ();
+        final IEnvelope globalPitchEnvelope = createEnvelope (parameters, 2);
+        multisampleSource.setGlobalPitchEnvelope (envelopeMod, globalPitchEnvelope);
     }
 
 
@@ -370,8 +357,10 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
     }
 
 
-    private static void applyFilterParameters (final IMultisampleSource multisampleSource, final EXS24Parameters parameters)
+    private static void applyFilterParameters (final IMultisampleSource multisampleSource, final EXS24File exs24File)
     {
+        final EXS24Parameters parameters = exs24File.getParameters ();
+
         final Integer isFilterEnabled = parameters.get (EXS24Parameters.FILTER1_TOGGLE);
         if (isFilterEnabled == null || isFilterEnabled.intValue () <= 0)
             return;
@@ -422,13 +411,21 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         final double cutoff = MathUtils.denormalize (frequency / 1000.0, 0, IFilter.MAX_FREQUENCY);
         final IFilter filter = new DefaultFilter (filterType, poles, cutoff, Math.clamp (resonance / 1000.0, 0, 1));
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
-        cutoffModulator.setDepth (1.0);
+
+        final Optional<EXSModulator> env2Modulator = exs24File.getModulator (EXSModulator.SOURCE_ENV2, EXSModulator.DESTINATION_FILTER_1_CUTOFF);
+        cutoffModulator.setDepth (env2Modulator.isPresent () ? env2Modulator.get ().lowValue / 1000.0 : 1.0);
         cutoffModulator.setSource (globalFilterEnvelope);
 
-        // TODO All MOD1_* to MOD11_* need to be checked, also for velocity modulation
-        @SuppressWarnings("unused")
+        // Only in old versions! New ones use the modulation matrix!
         final Integer keyTracking = parameters.get (EXS24Parameters.FILTER1_KEYTRACK);
-        IO.println (keyTracking);
+        if (keyTracking != null)
+            filter.setCutoffKeyTracking (keyTracking.intValue () / 1000.0);
+        else
+        {
+            final Optional<EXSModulator> keyModulator = exs24File.getModulator (EXSModulator.SOURCE_KEY, EXSModulator.DESTINATION_FILTER_1_CUTOFF);
+            if (keyModulator.isPresent ())
+                filter.setCutoffKeyTracking (keyModulator.get ().lowValue / 1000.0);
+        }
 
         multisampleSource.setGlobalFilter (filter);
     }

@@ -16,7 +16,7 @@
   * Fixed: The source format list showed a stray comma before the file extensions (thanks to Douglas Carmichael).
 * Backend
   * New: Added support for sustain / 'loop until release' loop mode (the loop runs while the key is held and then plays the remainder of the sample on release, as opposed to a continuous loop) - Ableton, Ensoniq EPS/ASR, EXS24, NI Kontakt, Renoise, SoundFont 2, SFZ, SXT, Tonverk (thanks to Douglas Carmichael).
-  * New: Added support for filter cutoff keyboard-tracking: Ableton Sampler, Akai AKP/AKM, Akai S1000, Bliss, Ensoniq, Omnisphere, SXT, Roland, SFZ, Synthstrom Deluge, TAL Sampler, TX16W, Waldorf, Yamaha YSFC.
+  * New: Added support for filter cutoff keyboard-tracking: Ableton Sampler, Akai AKP/AKM, Akai S1000, Bliss, Ensoniq, EXS, Omnisphere, SXT, Roland, SFZ, Synthstrom Deluge, TAL Sampler, TX16W, Waldorf, Yamaha YSFC.
   * New: Added several new tags for category detection.
   * New: Added an opt-in metadata option "Category tag at name start declares the category" (off by default): many commercial libraries prefix each preset name with its category (e.g. 'PAD Solina', 'BASS Growler'). When enabled, such a prefix takes precedence over keyword matches elsewhere in the name, which could otherwise win accidentally (e.g. 'BELL Vibrato Strings' was detected as Strings instead of Bell), and common abbreviations (BRAS, DRM, FLUT, GRAN, ORG, PERC, PHYS, PLUK, POLY, REES, STRG, SWEP, VOC) are recognized as well. Also added 'Reese' as a Bass category tag (thanks to Douglas Carmichael).
   * New: Added an opt-in *Snap loops to zero-crossings* processing option.
@@ -31,6 +31,7 @@
   * Fixed: Loops were dropped when reading the multi-sample mapping (.elmulti/.eldrum) format - the loop was parsed but never attached to the sample zone, so converted instruments lost their loop.
   * Fixed: A mapping slot without explicit sample-trim points read a sample start and end of -1 instead of the whole sample (e.g. a converted Waldorf QPAT then showed a sample start and end of -1 on the device).
 * EXS24
+  * New: Read/write filter envelope depth from/to modulation matrix.
   * Fixed: Loop type was not applied.
   * Fixed: Envelope times were converted from the EXS24 parameter linearly, but the device applies a fourth-power curve, so short times were greatly overstated - and the attack stage additionally skipped even the linear scaling, coming out about 12.7 times too long on top of that. A quick attack (e.g. 7.5 ms) was read as over a second, so plucked and struck instruments faded in too slowly to be heard and appeared silent. Envelope times are now converted with the hardware-calibrated curve seconds = 10 * (parameter / 127)^4, matching Logic to within one percent (thanks to Douglas Carmichael).
 * FLAC/OGG

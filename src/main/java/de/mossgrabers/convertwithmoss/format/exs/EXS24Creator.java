@@ -190,8 +190,9 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 final int velocityModulation = (int) Math.round (Math.clamp ((1 - velocityDepth) * -60.0, -60, 0));
                 exs24File.addParameter (EXS24Parameters.ENV1_VEL_SENS, velocityModulation);
 
-                createEnvelope (exs24File.getParameters (), 1, zone.getAmplitudeEnvelopeModulator ());
-                applyFilterParameters (exs24File.getParameters (), multisampleSource.getGlobalFilter ());
+                final EXS24Parameters parameters = exs24File.getParameters ();
+                createEnvelope (parameters, 1, zone.getAmplitudeEnvelopeModulator ());
+                applyFilterParameters (exs24File, parameters, multisampleSource.getGlobalFilter ());
             }
         }
 
@@ -233,7 +234,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
     }
 
 
-    private static void applyFilterParameters (final EXS24Parameters parameters, final Optional<IFilter> filterOpt)
+    private static void applyFilterParameters (final EXS24File exs24File, final EXS24Parameters parameters, final Optional<IFilter> filterOpt)
     {
         final boolean isEnabled = filterOpt.isPresent ();
         parameters.put (EXS24Parameters.FILTER1_TOGGLE, isEnabled ? 1 : 0);
@@ -279,10 +280,19 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
         }
         parameters.put (EXS24Parameters.FILTER1_TYPE, filterTypeIndex);
 
-        createEnvelope (parameters, 2, filter.getCutoffEnvelopeModulator ());
+        final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+        if (cutoffEnvelopeModulator.getDepth () != 0)
+        {
+            createEnvelope (parameters, 2, cutoffEnvelopeModulator);
+            final EXSModulator env2Modulator = new EXSModulator (EXSModulator.SOURCE_ENV2, EXSModulator.DESTINATION_FILTER_1_CUTOFF);
+            env2Modulator.lowValue = (int) Math.round (cutoffEnvelopeModulator.getDepth () * 1000.0);
+            env2Modulator.highValue = env2Modulator.lowValue < 0 ? 0 : 1000;
+            exs24File.addModulator (env2Modulator);
+        }
 
         parameters.put (EXS24Parameters.FILTER1_CUTOFF, (int) Math.round (MathUtils.normalize (filter.getCutoff (), 0, IFilter.MAX_FREQUENCY) * 1000.0));
         parameters.put (EXS24Parameters.FILTER1_RESO, (int) Math.round (filter.getResonance () * 1000));
+        parameters.put (EXS24Parameters.FILTER1_KEYTRACK, (int) Math.round (filter.getCutoffKeyTracking () * 1000.0));
     }
 
 

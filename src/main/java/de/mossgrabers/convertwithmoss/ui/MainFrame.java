@@ -1049,7 +1049,10 @@ public class MainFrame extends AbstractFrame implements INotifier
             selectionModel.select (name);
             if (selectionModel.getSelectedItem () == null)
                 selectionModel.select (0);
-            this.formatList.scrollTo (selectionModel.getSelectedIndex ());
+
+            final PauseTransition delay = new PauseTransition (Duration.seconds (1));
+            delay.setOnFinished (_ -> this.formatList.scrollTo (selectionModel.getSelectedIndex ()));
+            delay.play ();
         }
 
 
