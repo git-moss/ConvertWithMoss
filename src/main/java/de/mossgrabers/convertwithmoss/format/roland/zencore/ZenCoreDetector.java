@@ -14,13 +14,20 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzInstrument;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.tools.FileUtils;
 
@@ -89,6 +96,12 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
 
         if (group.getSampleZones ().isEmpty ())
             return Collections.emptyList ();
+        // Carry the first tone's shaping back into the model, so ZEN-Core sources convert with
+        // their filter and envelopes instead of pipeline defaults - the times through the same
+        // hardware-calibrated law the writer uses.
+        final SvzInstrument tone = ZenCoreSvz.readTone (container);
+        if (tone != null)
+            applyToneShaping (group, tone);
         final String name = FileUtils.getNameWithoutType (svzFile);
         this.notifier.log ("IDS_ZENCORE_READING_SVZ", name, Integer.toString (group.getSampleZones ().size ()));
         return Collections.singletonList (this.createMultisampleSource (svzFile, name, List.of (group)));
@@ -118,6 +131,65 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
                 runIndex = index;
             }
         }
+    }
+
+
+    private static void applyToneShaping (final IGroup group, final SvzInstrument tone)
+    {
+        final IEnvelope amplitudeEnvelope = new DefaultEnvelope ();
+        amplitudeEnvelope.setAttackTime (ZenCoreUtil.valueToTime (tone.envAttack));
+        amplitudeEnvelope.setHoldTime (tone.envHold > 0 ? ZenCoreUtil.valueToTime (tone.envHold) : 0);
+        amplitudeEnvelope.setDecayTime (ZenCoreUtil.valueToTime (tone.envDecay));
+        amplitudeEnvelope.setReleaseTime (ZenCoreUtil.valueToTime (tone.envRelease));
+        amplitudeEnvelope.setHoldLevel (tone.envHoldLevel / 1023.0);
+        amplitudeEnvelope.setSustainLevel (tone.envSustain / 1023.0);
+
+        for (final ISampleZone zone: group.getSampleZones ())
+        {
+            zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
+            if (tone.filterType >= 1 && tone.filterType <= 3)
+            {
+                final FilterType filterType = switch (tone.filterType)
+                {
+                    case 2 -> FilterType.BAND_PASS;
+                    case 3 -> FilterType.HIGH_PASS;
+                    default -> FilterType.LOW_PASS;
+                };
+                final IFilter filter = new DefaultFilter (filterType, 4, MathUtils.denormalizeCutoff (tone.cutoff / 1023.0), tone.resonance / 1023.0);
+                applyModulationEnvelope (filter.getCutoffEnvelopeModulator (), tone.filterEnvDepth, tone.filterEnvTimes, tone.filterEnvLevels, 75.0);
+                zone.setFilter (filter);
+            }
+            applyModulationEnvelope (zone.getPitchEnvelopeModulator (), tone.pitchEnvDepth, tone.pitchEnvTimes, tone.pitchEnvLevels, 280.0);
+        }
+    }
+
+
+    /**
+     * Turn a raw pitch/TVF modulation envelope back into a model envelope - the inverse of the
+     * writer's mapping (device depth = model depth * scale; a zero depth is the template default,
+     * i.e. no modulation).
+     *
+     * @param modulator The modulator to fill
+     * @param depth The signed device depth
+     * @param times The four raw times, or null
+     * @param levels The five raw levels, or null
+     * @param depthScale The hardware-calibrated depth scale (pitch 280, filter 75)
+     */
+    private static void applyModulationEnvelope (final IEnvelopeModulator modulator, final int depth, final int [] times, final int [] levels, final double depthScale)
+    {
+        if (depth == 0 || times == null || levels == null)
+            return;
+        modulator.setDepth (depth / depthScale);
+        final IEnvelope envelope = new DefaultEnvelope ();
+        envelope.setAttackTime (ZenCoreUtil.valueToTime (times[0]));
+        envelope.setHoldTime (times[1] > 0 ? ZenCoreUtil.valueToTime (times[1]) : 0);
+        envelope.setDecayTime (ZenCoreUtil.valueToTime (times[2]));
+        envelope.setReleaseTime (ZenCoreUtil.valueToTime (times[3]));
+        envelope.setStartLevel (levels[0] / 1023.0);
+        envelope.setHoldLevel (levels[2] / 1023.0);
+        envelope.setSustainLevel (levels[3] / 1023.0);
+        envelope.setEndLevel (levels[4] / 1023.0);
+        modulator.setSource (envelope);
     }
 
 

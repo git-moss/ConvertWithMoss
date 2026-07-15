@@ -223,9 +223,13 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         // map velocity layers automatically. A single velocity range folds into one mono/stereo
         // tone.
         final List<List<ISampleZone>> layers = collectVelocityLayers (multisampleSource);
+        final double [] minOnsetEdge =
+        {
+            Double.MAX_VALUE
+        };
         if (layers.size () >= 2)
         {
-            this.buildVelocityLayeredInstrument (instrument, layers, pool, byContent, usedNames);
+            this.buildVelocityLayeredInstrument (instrument, layers, pool, byContent, usedNames, minOnsetEdge);
             if (instrument.partials.isEmpty ())
             {
                 this.notifier.logError (IDS_ZENCORE_EMPTY_SOURCE, multisampleSource.getName ());
@@ -237,7 +241,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final List<ISampleZone> zones = new ArrayList<> ();
         for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
             zones.addAll (group.getSampleZones ());
-        final ISampleZone representativeZone = this.fillKeyMaps (zones, instrument.keyToSample, instrument.keyToSampleRight, instrument.stereo, pool, byContent, usedNames);
+        final ISampleZone representativeZone = this.fillKeyMaps (zones, instrument.keyToSample, instrument.keyToSampleRight, instrument.stereo, pool, byContent, usedNames, minOnsetEdge);
         // A source without a single convertible sample would import as a silent husk tone - skip
         // it instead (and report it; the file or library keeps only real instruments).
         if (representativeZone == null)
@@ -248,7 +252,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         // The FANTOM tone has one filter + amp envelope per partial; take them from a
         // representative zone so converted tones keep the source's character (offsets validated
         // against the 2048 factory tones).
-        applyToneParameters (instrument, representativeZone);
+        applyToneParameters (instrument, representativeZone, minOnsetEdge[0]);
 
         // Name the multi-sample(s) by content (key map + the content-hashed sample names). A stereo
         // instrument has a second, right-channel multi-sample for its second (hard-right) partial.
@@ -272,15 +276,17 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param pool The shared sample pool
      * @param byContent The content de-duplication map
      * @param usedNames The sample names used so far
+     * @param minOnsetEdge In/out: lowered to the smallest added onset edge ratio (see
+     *            applyToneParameters)
      * @return The first successfully added zone (a representative for the tone parameters), or null
      * @throws IOException Could not convert a sample
      */
-    private ISampleZone fillKeyMaps (final List<ISampleZone> zones, final int [] keyToSample, final int [] keyToSampleRight, final boolean stereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    private ISampleZone fillKeyMaps (final List<ISampleZone> zones, final int [] keyToSample, final int [] keyToSampleRight, final boolean stereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final double [] minOnsetEdge) throws IOException
     {
         ISampleZone representativeZone = null;
         for (final ISampleZone zone: zones)
         {
-            final Optional<int []> sampleIndexes = this.addSample (zone, stereo, pool, byContent, usedNames);
+            final Optional<int []> sampleIndexes = this.addSample (zone, stereo, pool, byContent, usedNames, minOnsetEdge);
             if (sampleIndexes.isEmpty ())
                 continue;
             if (representativeZone == null)
@@ -333,9 +339,11 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param pool The shared sample pool
      * @param byContent The content de-duplication map
      * @param usedNames The sample names used so far
+     * @param minOnsetEdge In/out: lowered to the smallest added onset edge ratio (see
+     *            applyToneParameters)
      * @throws IOException Could not convert a sample
      */
-    private void buildVelocityLayeredInstrument (final SvzInstrument instrument, final List<List<ISampleZone>> layers, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    private void buildVelocityLayeredInstrument (final SvzInstrument instrument, final List<List<ISampleZone>> layers, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final double [] minOnsetEdge) throws IOException
     {
         final boolean stereo = instrument.stereo;
         final int maxLayers = stereo ? 2 : 4;
@@ -359,7 +367,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             final int velHigh = li == effectiveLayers.size () - 1 ? 127 : Math.clamp (layerZones.get (0).getVelocityHigh (), 1, 127);
             final int [] keyLeft = new int [128];
             final int [] keyRight = new int [128];
-            final ISampleZone rep = this.fillKeyMaps (layerZones, keyLeft, keyRight, stereo, pool, byContent, usedNames);
+            final ISampleZone rep = this.fillKeyMaps (layerZones, keyLeft, keyRight, stereo, pool, byContent, usedNames, minOnsetEdge);
             if (rep == null)
                 continue;
             if (representativeZone == null)
@@ -374,7 +382,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         }
         instrument.partials = partials;
         if (representativeZone != null)
-            applyToneParameters (instrument, representativeZone);
+            applyToneParameters (instrument, representativeZone, minOnsetEdge[0]);
     }
 
 
@@ -503,7 +511,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
-    private static void applyToneParameters (final SvzInstrument instrument, final ISampleZone zone)
+    private static void applyToneParameters (final SvzInstrument instrument, final ISampleZone zone, final double minOnsetEdge)
     {
         final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isPresent ())
@@ -523,24 +531,27 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final IEnvelope env = zone.getAmplitudeEnvelopeModulator ().getSource ();
         if (env != null)
         {
-            // Never write an attack time below 8: the voice engine produces a transient burst
-            // at note-on, hardware-measured on a FANTOM-0 with a calibration bank as INDEPENDENT
-            // of the sample content (samples starting at 100 and at 30000 of full scale record
-            // byte-alike onsets - the engine fades the sample data start itself) and shaped only
-            // by the attack value: ~91 residual at attack 1 (an audible tick in quiet material),
-            // ~25 at attack 8 (below audibility with margin), ~13 at 16, ~5 at 32. Attack 8 is
-            // also the value found by ear on the device for punchy basses, so transients stay
-            // tight.
-            instrument.envAttack = Math.max (8, timeToValue (env.getAttackTime ()));
+            // Never write an attack time of 0: the voice engine produces a transient burst at
+            // note-on (hardware-measured on a FANTOM-0 as independent of the sample content and
+            // shaped only by the attack value: ~91 residual at attack 1, ~25 at attack 8 - below
+            // audibility - ~13 at 16). Whether attack 1 is safe depends on the material: high-edge
+            // content (saws, plucks, drum hits - onset edge above half the sample peak,
+            // hardware-verified masked at every pitch) hides the burst under its own onset and
+            // keeps the full transient at attack 1; smooth material (string pads - onset edge a
+            // few percent of peak) exposes it and gets attack 8, whose ~11 ms ramp is faster than
+            // half a cycle of a bass fundamental.
+            instrument.envAttack = ZenCoreUtil.timeToValue (env.getAttackTime ());
+            if (instrument.envAttack < 8)
+                instrument.envAttack = minOnsetEdge >= 0.5 ? Math.max (1, instrument.envAttack) : 8;
             final double hold = env.getHoldTime ();
-            instrument.envHold = hold > 0 ? timeToValue (hold) : 0;
+            instrument.envHold = hold > 0 ? ZenCoreUtil.timeToValue (hold) : 0;
             // Never write a decay time of 0: a tone whose TVA decay stage is instant imports but
             // plays silent on a FANTOM-0 (an SFZ without ampeg opcodes defaults to an all-instant
             // envelope). The floor is inaudibly fast but keeps the envelope valid - zero attack,
             // hold and release are all fine on the hardware, only the decay stage kills the voice.
-            instrument.envDecay = Math.max (8, timeToValue (env.getDecayTime ()));
+            instrument.envDecay = Math.max (8, ZenCoreUtil.timeToValue (env.getDecayTime ()));
             final double release = env.getReleaseTime ();
-            instrument.envRelease = release >= 0 ? timeToValue (release) : 150;
+            instrument.envRelease = release >= 0 ? ZenCoreUtil.timeToValue (release) : 150;
             final double holdLevel = env.getHoldLevel ();
             instrument.envHoldLevel = holdLevel < 0 ? 1023 : Math.clamp ((int) Math.round (holdLevel * 1023.0), 0, 1023);
             final double sustain = env.getSustainLevel ();
@@ -588,10 +599,10 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final double release = env.getReleaseTime ();
         final int [] times =
         {
-            timeToValue (env.getAttackTime ()),
-            hold > 0 ? timeToValue (hold) : 0,
-            timeToValue (env.getDecayTime ()),
-            release >= 0 ? timeToValue (release) : 150
+            ZenCoreUtil.timeToValue (env.getAttackTime ()),
+            hold > 0 ? ZenCoreUtil.timeToValue (hold) : 0,
+            ZenCoreUtil.timeToValue (env.getDecayTime ()),
+            release >= 0 ? ZenCoreUtil.timeToValue (release) : 150
         };
         final double sustain = env.getSustainLevel ();
         final int sustainLevel = sustain < 0 ? 1023 : Math.clamp ((int) Math.round (sustain * 1023.0), 0, 1023);
@@ -621,22 +632,6 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Approximate the FANTOM TVA envelope time value (0-1023) from a time in seconds. Roland's
-     * exact time table is not published; this log2 curve is calibrated so ~20 s maps to full scale
-     * and near-instant times map to 0.
-     *
-     * @param seconds The time in seconds
-     * @return The 0-1023 time value
-     */
-    private static int timeToValue (final double seconds)
-    {
-        if (seconds <= 0)
-            return 0;
-        return Math.clamp ((int) Math.round (1023 + 168 * Math.log (seconds / 20.0) / Math.log (2)), 0, 1023);
-    }
-
-
-    /**
      * Convert a zone's audio to the FANTOM sample pool, re-using already-added identical samples.
      * Everything is stored as mono samples: a mono instrument keeps its zones mono; a stereo
      * instrument splits each stereo zone into two mono samples (left and right) sharing one common
@@ -649,10 +644,12 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param pool The pool to which to add the result
      * @param byContent The mapped indices of the already created SVZ samples
      * @param usedNames The names of the already created SVZ samples
+     * @param minOnsetEdge In/out: lowered to this sample's onset edge ratio (see
+     *            applyToneParameters)
      * @return The 1-based left and right pool indexes (equal for a mono sample), or null on failure
      * @throws IOException Could not convert the sample to the target format
      */
-    private Optional<int []> addSample (final ISampleZone zone, final boolean storeStereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    private Optional<int []> addSample (final ISampleZone zone, final boolean storeStereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final double [] minOnsetEdge) throws IOException
     {
         final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData (), ZENCORE_FORMAT);
         final int channels = waveFile.getFormatChunk ().getNumberOfChannels ();
@@ -666,6 +663,21 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final int frames = pcm.length / (2 * channels);
         if (frames <= 0)
             return Optional.empty ();
+
+        // The sample's onset edge: its largest frame-to-frame step within the first ~25 ms,
+        // relative to the whole sample's peak. High-edge material (saws, plucks, drum hits) hides
+        // the engine's note-on transient under its own onset; smooth material (string pads, soft
+        // sines) exposes it (see applyToneParameters).
+        int fullPeak = 1;
+        for (int frame = 0; frame < frames; frame++)
+            for (int channel = 0; channel < channels; channel++)
+                fullPeak = Math.max (fullPeak, Math.abs (sampleAt (pcm, channels, frame, channel)));
+        int onsetEdge = 0;
+        final int onsetFrames = Math.min (1200, frames - 1);
+        for (int frame = 0; frame < onsetFrames; frame++)
+            for (int channel = 0; channel < channels; channel++)
+                onsetEdge = Math.max (onsetEdge, Math.abs (sampleAt (pcm, channels, frame + 1, channel) - sampleAt (pcm, channels, frame, channel)));
+        minOnsetEdge[0] = Math.min (minOnsetEdge[0], onsetEdge / (double) fullPeak);
 
         // Keep the source's loop points and audio untouched - no re-sampling, no zero-crossing snap
         // - so a period-aligned loop stays seamless across the wrap (see ZENCORE_FORMAT). When the
@@ -691,31 +703,46 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             // the loop end is then re-seated / cross-faded against the advanced start as usual. An
             // already-seamless wrap - e.g. a device export's own whole-file loop - is left
             // untouched, keeping such round-trips byte-identical.
-            if (loopStart < 2 && end - loopStart >= 64 && startWrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
-                loopStart += Math.min (LOOP_CROSSFADE, (end - loopStart) / 4);
-            end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
-            // If period-alignment still cannot make the wrap seamless - an evolving pad whose
-            // timbre drifts across the loop has no phase-aligned end - cross-fade the loop tail
-            // into the loop-start lead-in. Safe here precisely because the end is period-aligned
-            // first: the two blended stretches are in phase and reinforce, so the amplitude
-            // collapse an unaligned cross-fade caused on bright content does not happen.
-            // Already-seamless loops are skipped.
-            if (loopStart >= 2 && wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
+            // A source-specified loop cross-fade is baked into the audio: source formats like the
+            // Tonverk apply it live at playback, but the ZEN-Core engine has no loop cross-fade of
+            // its own. Without it, a loop whose sound evolves across the loop region jumps audibly
+            // at every wrap even though the waveform seam itself is perfect - hardware-heard as a
+            // pad that decays ~4 dB across its loop "resetting" on each pass. The baked fade
+            // defines the wrap, so the seam machinery below must leave both the audio and the
+            // loop points alone - re-seating the end afterwards would move the wrap away from the
+            // junction the fade constructed.
+            final int sourceCrossfade = loop.getCrossfadeInSamples ();
+            final byte [] baked = sourceCrossfade > 0 ? bakeLoopCrossfade (pcm, channels, loopStart, end, sourceCrossfade) : null;
+            if (baked != null)
+                pcm = baked;
+            else
             {
-                // The fade can only be as long as the lead-in, and it closes the wrap mismatch by
-                // roughly 1/(fade length) - a loop starting only a few dozen frames in leaves an
-                // audible residual step (hardware-heard: a loop from frame 70 capped the fade at
-                // 70 frames and its ~4400 mismatch left a residual of ~63 that ticked every
-                // pass). When the lead-in is the limiting factor, advance the loop start to give
-                // the fade full room - the skipped frames still play once - and re-seat the loop
-                // end for the new start.
-                if (loopStart < LOOP_CROSSFADE && loopStart < (end - loopStart) / 4)
-                {
+                if (loopStart < 2 && end - loopStart >= 64 && startWrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
                     loopStart += Math.min (LOOP_CROSSFADE, (end - loopStart) / 4);
-                    end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
+                end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
+                // If period-alignment still cannot make the wrap seamless - an evolving pad
+                // whose timbre drifts across the loop has no phase-aligned end - cross-fade the
+                // loop tail into the loop-start lead-in. Safe here precisely because the end is
+                // period-aligned first: the two blended stretches are in phase and reinforce, so
+                // the amplitude collapse an unaligned cross-fade caused on bright content does
+                // not happen. Already-seamless loops are skipped.
+                if (loopStart >= 2 && wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
+                {
+                    // The fade can only be as long as the lead-in, and it closes the wrap
+                    // mismatch by roughly 1/(fade length) - a loop starting only a few dozen
+                    // frames in leaves an audible residual step (hardware-heard: a loop from
+                    // frame 70 capped the fade at 70 frames and its ~4400 mismatch left a
+                    // residual of ~63 that ticked every pass). When the lead-in is the limiting
+                    // factor, advance the loop start to give the fade full room - the skipped
+                    // frames still play once - and re-seat the loop end for the new start.
+                    if (loopStart < LOOP_CROSSFADE && loopStart < (end - loopStart) / 4)
+                    {
+                        loopStart += Math.min (LOOP_CROSSFADE, (end - loopStart) / 4);
+                        end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
+                    }
+                    if (wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
+                        pcm = crossfadeLoop (pcm, channels, loopStart, end);
                 }
-                if (wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
-                    pcm = crossfadeLoop (pcm, channels, loopStart, end);
             }
         }
 
@@ -1025,6 +1052,124 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             }
         }
         return out;
+    }
+
+
+    /**
+     * Bake a source-specified loop cross-fade into the audio: blend the {@code fadeFrames} frames
+     * ending at the loop end into the same number of frames ending at the loop start, so the loop
+     * tail gradually becomes the loop-start lead-in. Unlike the fixed seam repair of
+     * {@link #crossfadeLoop}, the length follows the source (a fraction of the loop length, e.g.
+     * half a second on an evolving pad), clamped to the loop length and the available lead-in.
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM (never modified)
+     * @param channels The number of channels
+     * @param loopStart The loop start frame
+     * @param end The loop end frame
+     * @param fadeFrames The requested cross-fade length in frames
+     * @return A copy of the PCM with the cross-faded loop, or null if no fade fits
+     */
+    private static byte [] bakeLoopCrossfade (final byte [] pcm, final int channels, final int loopStart, final int end, final int fadeFrames)
+    {
+        final int frames = pcm.length / (2 * channels);
+
+        // A loop that already wraps cleanly - waveform-seamless and level-matched - is left
+        // untouched: baking a fade into material that needs no help would only soften it.
+        final int seam = loopStart >= 2 ? wrapDiscontinuity (pcm, channels, loopStart, end) : startWrapDiscontinuity (pcm, channels, loopStart, end);
+        final double tailLevel = rmsLevel (pcm, channels, Math.max (loopStart, end - 4800), end);
+        final double startLevel = rmsLevel (pcm, channels, loopStart, Math.min (end, loopStart + 4800));
+        final boolean levelMatched = Math.max (tailLevel, startLevel) <= Math.min (tailLevel, startLevel) * 1.12 + 32;
+        if (seam <= LOOP_SEAM_TOLERANCE && levelMatched)
+            return null;
+
+        // Prefer fading the loop START from the tail's natural continuation (the source audio past
+        // the loop end): the wrap then glides out of the unmodified tail straight into the loop
+        // content, following the source's own motion. Unlike the classic tail-side fade below,
+        // this also heals a level step sitting at the loop start itself - the tail-side fade's
+        // lead-in target lies before that step and lands in it. Only valid when the source
+        // actually carries the continuation past the loop end: an assembled sample bank may store
+        // unrelated data there, so the continuation must flow out of the tail without a step;
+        // otherwise fall back to the tail-side fade.
+        final int startFade = Math.min (fadeFrames, Math.min ((end - loopStart) / 2, frames - end));
+        if (startFade >= 8 && isContinuation (pcm, channels, end))
+        {
+            final byte [] out = pcm.clone ();
+            for (int i = 0; i < startFade; i++)
+            {
+                final double weight = (i + 1.0) / (startFade + 1.0); // 0 -> 1 into the loop
+                for (int channel = 0; channel < channels; channel++)
+                {
+                    final int loopValue = sampleAt (pcm, channels, loopStart + i, channel);
+                    final int tailContinuation = sampleAt (pcm, channels, end + i, channel);
+                    setSample (out, channels, loopStart + i, channel, (int) Math.round (loopValue * weight + tailContinuation * (1.0 - weight)));
+                }
+            }
+            return out;
+        }
+
+        final int n = Math.min (fadeFrames, Math.min (end - loopStart, loopStart));
+        if (n < 8)
+            return null;
+        final byte [] out = pcm.clone ();
+        for (int i = 0; i < n; i++)
+        {
+            final double weight = (i + 1.0) / n; // 0 -> 1, reaching the lead-in exactly at the end
+            for (int channel = 0; channel < channels; channel++)
+            {
+                final int tail = sampleAt (pcm, channels, end - n + i, channel);
+                final int lead = sampleAt (pcm, channels, loopStart - n + i, channel);
+                setSample (out, channels, end - n + i, channel, (int) Math.round (tail * (1.0 - weight) + lead * weight));
+            }
+        }
+        return out;
+    }
+
+
+    /**
+     * The RMS level of the frame range, across channels.
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM
+     * @param channels The number of channels
+     * @param from The first frame (inclusive)
+     * @param to The last frame (exclusive)
+     * @return The RMS level
+     */
+    private static double rmsLevel (final byte [] pcm, final int channels, final int from, final int to)
+    {
+        long sum = 0;
+        int count = 0;
+        for (int frame = from; frame < to; frame++)
+            for (int channel = 0; channel < channels; channel++)
+            {
+                final long v = sampleAt (pcm, channels, frame, channel);
+                sum += v * v;
+                count++;
+            }
+        return count == 0 ? 0 : Math.sqrt (sum / (double) count);
+    }
+
+
+    /**
+     * Whether the audio past the loop end actually continues the loop tail - true for a recording
+     * trimmed with room after the loop, false for an assembled sample whose post-loop data is
+     * unrelated (the step into it would be blended into the loop start by the start-side fade).
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM
+     * @param channels The number of channels
+     * @param end The loop end frame
+     * @return True if the first post-end frame flows out of the tail without a step
+     */
+    private static boolean isContinuation (final byte [] pcm, final int channels, final int end)
+    {
+        int localStep = 0;
+        int continuationStep = 0;
+        for (int channel = 0; channel < channels; channel++)
+        {
+            for (int frame = Math.max (1, end - 64); frame < end - 1; frame++)
+                localStep = Math.max (localStep, Math.abs (sampleAt (pcm, channels, frame + 1, channel) - sampleAt (pcm, channels, frame, channel)));
+            continuationStep = Math.max (continuationStep, Math.abs (sampleAt (pcm, channels, end, channel) - sampleAt (pcm, channels, end - 1, channel)));
+        }
+        return continuationStep <= Math.max (64, 4 * localStep);
     }
 
 
