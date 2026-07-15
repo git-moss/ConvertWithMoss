@@ -703,6 +703,51 @@ public final class ZenCoreSvz
     }
 
 
+    /**
+     * Read the tone shaping of the first <i>PATa</i> tone (its Partial 1): the filter, the TVA
+     * amplitude envelope and the pitch/TVF modulation envelopes - the read-side counterpart of
+     * writePartialShaping. All values are raw device values (times 0-1023, levels 0-1023, signed
+     * envelope depths); the detector converts them with the calibrated law.
+     *
+     * @param container The SVZ container
+     * @return The shaping in an {@link SvzInstrument}, or null if the container holds no tone
+     */
+    public static SvzInstrument readTone (final ZenCoreContainer container)
+    {
+        final ZenCoreContainer.Section pat = container.getSection ("PATa");
+        if (pat == null || pat.getCount () == 0)
+            return null;
+        final byte [] file = pat.getFile ();
+        final int r = pat.getDataStart ();
+        final SvzInstrument tone = new SvzInstrument ();
+        tone.filterType = ZenCoreUtil.readUnsigned16 (file, r + PAT_FILTER_TYPE, false) / 0x100;
+        tone.cutoff = ZenCoreUtil.readUnsigned16 (file, r + PAT_CUTOFF, false);
+        tone.resonance = ZenCoreUtil.readUnsigned16 (file, r + PAT_RESONANCE, false);
+        tone.envAttack = ZenCoreUtil.readUnsigned16 (file, r + PAT_TVA_TIME, false);
+        tone.envHold = ZenCoreUtil.readUnsigned16 (file, r + PAT_TVA_TIME + 2, false);
+        tone.envDecay = ZenCoreUtil.readUnsigned16 (file, r + PAT_TVA_TIME + 4, false);
+        tone.envRelease = ZenCoreUtil.readUnsigned16 (file, r + PAT_TVA_TIME + 6, false);
+        tone.envHoldLevel = ZenCoreUtil.readUnsigned16 (file, r + PAT_TVA_LEVEL + 2, false);
+        tone.envSustain = ZenCoreUtil.readUnsigned16 (file, r + PAT_TVA_LEVEL + 4, false);
+        tone.pitchEnvDepth = file[r + PAT_PITCH_ENV_DEPTH];
+        tone.pitchEnvTimes = readEnvBlock (file, r + PAT_PITCH_ENV_TIME, 4);
+        tone.pitchEnvLevels = readEnvBlock (file, r + PAT_PITCH_ENV_LEVEL, 5);
+        tone.filterEnvDepth = file[r + PAT_FILTER_ENV_DEPTH];
+        tone.filterEnvTimes = readEnvBlock (file, r + PAT_FILTER_ENV_TIME, 4);
+        tone.filterEnvLevels = readEnvBlock (file, r + PAT_FILTER_ENV_LEVEL, 5);
+        return tone;
+    }
+
+
+    private static int [] readEnvBlock (final byte [] file, final int offset, final int count)
+    {
+        final int [] values = new int [count];
+        for (int i = 0; i < count; i++)
+            values[i] = ZenCoreUtil.readUnsigned16 (file, offset + i * 2, false);
+        return values;
+    }
+
+
     private static InMemorySampleData decodePcm (final byte [] file, final int offset, final int size, final int channels, final int rate)
     {
         // SMPd PCM is already 16-bit little-endian, so it can be used verbatim.

@@ -227,9 +227,14 @@ TVA-envelope table (stride 0x10):
   all start levels — the engine fades the sample data start itself — and only the attack value
   shapes the residual burst: **~91 at attack 1** (an audible tick in quiet material), **~25 at
   attack 8** (below the ~46 audibility line with margin), ~13 at 16, ~5 at 32; attack 0 is worst
-  (onset slope kinks of 26–98× the local slope). Zero hold and release times are fine. The writer
-  floors accordingly: attack ≥ 8 (also the value found by ear on the device for punchy basses, so
-  transients stay tight), decay ≥ 8.
+  (onset slope kinks of 26–98× the local slope). Whether attack 1 is audible depends on the
+  material: high-edge content — saws, plucks, drum hits, whose onset edge (largest frame step in
+  the first ~25 ms over the sample peak) exceeds ~0.5 — hides the burst under its own onset,
+  hardware-verified masked at every pitch from 55 to 330 Hz; smooth material (string pads, onset
+  edge a few percent) exposes it. Zero hold and release times are fine. The writer floors
+  accordingly: a near-instant attack becomes 1 on high-edge material (keeping the full transient)
+  and 8 otherwise (whose ~11 ms ramp is faster than half a cycle of a bass fundamental);
+  decay ≥ 8.
 - **Modulation (not mapped).** LFO1/2 and the mod-matrix exist in the record but are not written —
   CWM's model has no LFO/matrix abstraction. The TVF filter, the TVA envelope and the pitch/filter
   envelopes round-trip; the rest stays at the template default.
@@ -520,7 +525,12 @@ marketing). CWM handles `.SVZ` only.
   present, the `MSPa` multisample key map (§3.3), turning it into key-ranged zones. A file written by
   the creator round-trips back through this detector. The `USDa` directory is read exactly as §3.4
   documents it (16-byte header, then a 16-byte entry per sample, chunk offsets relative to the block
-  start); the `MSPa` sample number is 1-based (0 = unassigned).
+  start); the `MSPa` sample number is 1-based (0 = unassigned). The first tone's shaping is read
+  back as well — the TVF filter (type, cutoff, resonance), the TVA amplitude envelope, and the
+  pitch/TVF modulation envelopes — with the same hardware-calibrated time law and depth scales the
+  writer uses, so ZEN-Core sources convert to other formats with their real envelopes instead of
+  pipeline defaults (measured round-trip error below one percent; a zero modulation depth is the
+  template default and reads as no modulation).
 - **Creator** (`ZenCoreCreator`, extends `AbstractCreator`): `createPreset` → one-tone `.svz`;
   `createPresetLibrary` → multi-tone bank `.svz` (`supportsPresetLibraries`). Per sample it converts
   to 48 kHz/16-bit (`AudioFileUtils.convertToWav` + `recalculateSamplePositions`), applies the §4

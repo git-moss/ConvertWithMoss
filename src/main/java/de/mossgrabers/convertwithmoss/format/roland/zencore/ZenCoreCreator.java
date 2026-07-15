@@ -219,9 +219,13 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         // mono or two stereo layers, the engine's four-partial ceiling - the way the other formats
         // map velocity layers automatically. A single velocity range folds into one mono/stereo tone.
         final List<List<ISampleZone>> layers = collectVelocityLayers (multisampleSource);
+        final double [] minOnsetEdge =
+        {
+            Double.MAX_VALUE
+        };
         if (layers.size () >= 2)
         {
-            this.buildVelocityLayeredInstrument (instrument, layers, pool, byContent, usedNames);
+            this.buildVelocityLayeredInstrument (instrument, layers, pool, byContent, usedNames, minOnsetEdge);
             if (instrument.partials.isEmpty ())
             {
                 this.notifier.logError ("IDS_ZENCORE_EMPTY_SOURCE", multisampleSource.getName ());
@@ -233,7 +237,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final List<ISampleZone> zones = new ArrayList<> ();
         for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
             zones.addAll (group.getSampleZones ());
-        final ISampleZone representativeZone = this.fillKeyMaps (zones, instrument.keyToSample, instrument.keyToSampleRight, instrument.stereo, pool, byContent, usedNames);
+        final ISampleZone representativeZone = this.fillKeyMaps (zones, instrument.keyToSample, instrument.keyToSampleRight, instrument.stereo, pool, byContent, usedNames, minOnsetEdge);
         // A source without a single convertible sample would import as a silent husk tone - skip
         // it instead (and report it; the file or library keeps only real instruments).
         if (representativeZone == null)
@@ -244,7 +248,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         // The FANTOM tone has one filter + amp envelope per partial; take them from a
         // representative zone so converted tones keep the source's character (offsets validated
         // against the 2048 factory tones).
-        applyToneParameters (instrument, representativeZone);
+        applyToneParameters (instrument, representativeZone, minOnsetEdge[0]);
 
         // Name the multi-sample(s) by content (key map + the content-hashed sample names). A stereo
         // instrument has a second, right-channel multi-sample for its second (hard-right) partial.
@@ -267,15 +271,17 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param pool The shared sample pool
      * @param byContent The content de-duplication map
      * @param usedNames The sample names used so far
+     * @param minOnsetEdge In/out: lowered to the smallest added onset edge ratio (see
+     *            applyToneParameters)
      * @return The first successfully added zone (a representative for the tone parameters), or null
      * @throws IOException Could not convert a sample
      */
-    private ISampleZone fillKeyMaps (final List<ISampleZone> zones, final int [] keyToSample, final int [] keyToSampleRight, final boolean stereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    private ISampleZone fillKeyMaps (final List<ISampleZone> zones, final int [] keyToSample, final int [] keyToSampleRight, final boolean stereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final double [] minOnsetEdge) throws IOException
     {
         ISampleZone representativeZone = null;
         for (final ISampleZone zone: zones)
         {
-            final int [] sampleIndexes = this.addSample (zone, stereo, pool, byContent, usedNames);
+            final int [] sampleIndexes = this.addSample (zone, stereo, pool, byContent, usedNames, minOnsetEdge);
             if (sampleIndexes == null)
                 continue;
             if (representativeZone == null)
@@ -327,9 +333,11 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param pool The shared sample pool
      * @param byContent The content de-duplication map
      * @param usedNames The sample names used so far
+     * @param minOnsetEdge In/out: lowered to the smallest added onset edge ratio (see
+     *            applyToneParameters)
      * @throws IOException Could not convert a sample
      */
-    private void buildVelocityLayeredInstrument (final SvzInstrument instrument, final List<List<ISampleZone>> layers, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    private void buildVelocityLayeredInstrument (final SvzInstrument instrument, final List<List<ISampleZone>> layers, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final double [] minOnsetEdge) throws IOException
     {
         final boolean stereo = instrument.stereo;
         final int maxLayers = stereo ? 2 : 4;
@@ -353,7 +361,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             final int velHigh = li == effectiveLayers.size () - 1 ? 127 : Math.clamp (layerZones.get (0).getVelocityHigh (), 1, 127);
             final int [] keyLeft = new int [128];
             final int [] keyRight = new int [128];
-            final ISampleZone rep = this.fillKeyMaps (layerZones, keyLeft, keyRight, stereo, pool, byContent, usedNames);
+            final ISampleZone rep = this.fillKeyMaps (layerZones, keyLeft, keyRight, stereo, pool, byContent, usedNames, minOnsetEdge);
             if (rep == null)
                 continue;
             if (representativeZone == null)
@@ -368,7 +376,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         }
         instrument.partials = partials;
         if (representativeZone != null)
-            applyToneParameters (instrument, representativeZone);
+            applyToneParameters (instrument, representativeZone, minOnsetEdge[0]);
     }
 
 
@@ -497,7 +505,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
-    private static void applyToneParameters (final SvzInstrument instrument, final ISampleZone zone)
+    private static void applyToneParameters (final SvzInstrument instrument, final ISampleZone zone, final double minOnsetEdge)
     {
         final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isPresent ())
@@ -517,24 +525,27 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final IEnvelope env = zone.getAmplitudeEnvelopeModulator ().getSource ();
         if (env != null)
         {
-            // Never write an attack time below 8: the voice engine produces a transient burst
-            // at note-on, hardware-measured on a FANTOM-0 with a calibration bank as INDEPENDENT
-            // of the sample content (samples starting at 100 and at 30000 of full scale record
-            // byte-alike onsets - the engine fades the sample data start itself) and shaped only
-            // by the attack value: ~91 residual at attack 1 (an audible tick in quiet material),
-            // ~25 at attack 8 (below audibility with margin), ~13 at 16, ~5 at 32. Attack 8 is
-            // also the value found by ear on the device for punchy basses, so transients stay
-            // tight.
-            instrument.envAttack = Math.max (8, timeToValue (env.getAttackTime ()));
+            // Never write an attack time of 0: the voice engine produces a transient burst at
+            // note-on (hardware-measured on a FANTOM-0 as independent of the sample content and
+            // shaped only by the attack value: ~91 residual at attack 1, ~25 at attack 8 - below
+            // audibility - ~13 at 16). Whether attack 1 is safe depends on the material: high-edge
+            // content (saws, plucks, drum hits - onset edge above half the sample peak,
+            // hardware-verified masked at every pitch) hides the burst under its own onset and
+            // keeps the full transient at attack 1; smooth material (string pads - onset edge a
+            // few percent of peak) exposes it and gets attack 8, whose ~11 ms ramp is faster than
+            // half a cycle of a bass fundamental.
+            instrument.envAttack = ZenCoreUtil.timeToValue (env.getAttackTime ());
+            if (instrument.envAttack < 8)
+                instrument.envAttack = minOnsetEdge >= 0.5 ? Math.max (1, instrument.envAttack) : 8;
             final double hold = env.getHoldTime ();
-            instrument.envHold = hold > 0 ? timeToValue (hold) : 0;
+            instrument.envHold = hold > 0 ? ZenCoreUtil.timeToValue (hold) : 0;
             // Never write a decay time of 0: a tone whose TVA decay stage is instant imports but
             // plays silent on a FANTOM-0 (an SFZ without ampeg opcodes defaults to an all-instant
             // envelope). The floor is inaudibly fast but keeps the envelope valid - zero attack,
             // hold and release are all fine on the hardware, only the decay stage kills the voice.
-            instrument.envDecay = Math.max (8, timeToValue (env.getDecayTime ()));
+            instrument.envDecay = Math.max (8, ZenCoreUtil.timeToValue (env.getDecayTime ()));
             final double release = env.getReleaseTime ();
-            instrument.envRelease = release >= 0 ? timeToValue (release) : 150;
+            instrument.envRelease = release >= 0 ? ZenCoreUtil.timeToValue (release) : 150;
             final double holdLevel = env.getHoldLevel ();
             instrument.envHoldLevel = holdLevel < 0 ? 1023 : Math.clamp ((int) Math.round (holdLevel * 1023.0), 0, 1023);
             final double sustain = env.getSustainLevel ();
@@ -580,10 +591,10 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final double release = env.getReleaseTime ();
         final int [] times =
         {
-            timeToValue (env.getAttackTime ()),
-            hold > 0 ? timeToValue (hold) : 0,
-            timeToValue (env.getDecayTime ()),
-            release >= 0 ? timeToValue (release) : 150
+            ZenCoreUtil.timeToValue (env.getAttackTime ()),
+            hold > 0 ? ZenCoreUtil.timeToValue (hold) : 0,
+            ZenCoreUtil.timeToValue (env.getDecayTime ()),
+            release >= 0 ? ZenCoreUtil.timeToValue (release) : 150
         };
         final double sustain = env.getSustainLevel ();
         final int sustainLevel = sustain < 0 ? 1023 : Math.clamp ((int) Math.round (sustain * 1023.0), 0, 1023);
@@ -609,68 +620,6 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * The FANTOM envelope-time law, hardware-calibrated on a FANTOM-0: a bank of tones with exact,
-     * patched TVA release values was recorded on the device and the exponential fades fitted. Each
-     * anchor pair is the time value and its measured audible stage span (the time to reach -40 dB;
-     * the separately measured attack-rise anchors agree within ~25%). The stage times are
-     * interpolated log-linearly between the anchors; the last pair extrapolates the measured curve
-     * to full scale. Roland's exact table is not published - the earlier log2 approximation
-     * overstated times several-fold below ~value 800 (a 0.5 s release was written as value 129,
-     * which really plays ~0.2 s, and everything below ~0.3 s collapsed to value 0).
-     */
-    private static final int []                 TIME_VALUE_ANCHORS     =
-    {
-        0,
-        8,
-        32,
-        75,
-        129,
-        256,
-        512,
-        800,
-        1023
-    };
-    /** The measured stage time in seconds per anchor of {@link #TIME_VALUE_ANCHORS}. */
-    private static final double []              TIME_SECOND_ANCHORS    =
-    {
-        0.010,
-        0.020,
-        0.060,
-        0.120,
-        0.200,
-        0.390,
-        1.240,
-        6.190,
-        21.5
-    };
-
-
-    /**
-     * Convert an envelope time in seconds to the FANTOM 0-1023 time value with the
-     * hardware-calibrated law (see {@link #TIME_VALUE_ANCHORS}).
-     *
-     * @param seconds The time in seconds
-     * @return The 0-1023 time value
-     */
-    private static int timeToValue (final double seconds)
-    {
-        if (seconds <= TIME_SECOND_ANCHORS[0])
-            return 0;
-        final int last = TIME_SECOND_ANCHORS.length - 1;
-        if (seconds >= TIME_SECOND_ANCHORS[last])
-            return TIME_VALUE_ANCHORS[last];
-        int i = 1;
-        while (TIME_SECOND_ANCHORS[i] < seconds)
-            i++;
-        final double s0 = TIME_SECOND_ANCHORS[i - 1];
-        final double s1 = TIME_SECOND_ANCHORS[i];
-        final int v0 = TIME_VALUE_ANCHORS[i - 1];
-        final int v1 = TIME_VALUE_ANCHORS[i];
-        return (int) Math.round (v0 + (v1 - v0) * Math.log (seconds / s0) / Math.log (s1 / s0));
-    }
-
-
-    /**
      * Convert a zone's audio to the FANTOM sample pool, re-using already-added identical samples.
      * Everything is stored as mono samples: a mono instrument keeps its zones mono; a stereo
      * instrument splits each stereo zone into two mono samples (left and right) sharing one common
@@ -683,10 +632,12 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param pool The pool to which to add the result
      * @param byContent The mapped indices of the already created SVZ samples
      * @param usedNames The names of the already created SVZ samples
+     * @param minOnsetEdge In/out: lowered to this sample's onset edge ratio (see
+     *            applyToneParameters)
      * @return The 1-based left and right pool indexes (equal for a mono sample), or null on failure
      * @throws IOException Could not convert the sample to the target format
      */
-    private int [] addSample (final ISampleZone zone, final boolean storeStereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    private int [] addSample (final ISampleZone zone, final boolean storeStereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final double [] minOnsetEdge) throws IOException
     {
         final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData (), ZENCORE_FORMAT);
         final int channels = waveFile.getFormatChunk ().getNumberOfChannels ();
@@ -700,6 +651,21 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final int frames = pcm.length / (2 * channels);
         if (frames <= 0)
             return null;
+
+        // The sample's onset edge: its largest frame-to-frame step within the first ~25 ms,
+        // relative to the whole sample's peak. High-edge material (saws, plucks, drum hits) hides
+        // the engine's note-on transient under its own onset; smooth material (string pads, soft
+        // sines) exposes it (see applyToneParameters).
+        int fullPeak = 1;
+        for (int frame = 0; frame < frames; frame++)
+            for (int channel = 0; channel < channels; channel++)
+                fullPeak = Math.max (fullPeak, Math.abs (sampleAt (pcm, channels, frame, channel)));
+        int onsetEdge = 0;
+        final int onsetFrames = Math.min (1200, frames - 1);
+        for (int frame = 0; frame < onsetFrames; frame++)
+            for (int channel = 0; channel < channels; channel++)
+                onsetEdge = Math.max (onsetEdge, Math.abs (sampleAt (pcm, channels, frame + 1, channel) - sampleAt (pcm, channels, frame, channel)));
+        minOnsetEdge[0] = Math.min (minOnsetEdge[0], onsetEdge / (double) fullPeak);
 
         // Keep the source's loop points and audio untouched - no re-sampling, no zero-crossing snap
         // - so a period-aligned loop stays seamless across the wrap (see ZENCORE_FORMAT). When the
