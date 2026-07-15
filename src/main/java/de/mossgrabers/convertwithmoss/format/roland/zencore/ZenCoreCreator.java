@@ -691,31 +691,46 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             // the loop end is then re-seated / cross-faded against the advanced start as usual. An
             // already-seamless wrap - e.g. a device export's own whole-file loop - is left
             // untouched, keeping such round-trips byte-identical.
-            if (loopStart < 2 && end - loopStart >= 64 && startWrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
-                loopStart += Math.min (LOOP_CROSSFADE, (end - loopStart) / 4);
-            end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
-            // If period-alignment still cannot make the wrap seamless - an evolving pad whose
-            // timbre drifts across the loop has no phase-aligned end - cross-fade the loop tail
-            // into the loop-start lead-in. Safe here precisely because the end is period-aligned
-            // first: the two blended stretches are in phase and reinforce, so the amplitude
-            // collapse an unaligned cross-fade caused on bright content does not happen.
-            // Already-seamless loops are skipped.
-            if (loopStart >= 2 && wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
+            // A source-specified loop cross-fade is baked into the audio: source formats like the
+            // Tonverk apply it live at playback, but the ZEN-Core engine has no loop cross-fade of
+            // its own. Without it, a loop whose sound evolves across the loop region jumps audibly
+            // at every wrap even though the waveform seam itself is perfect - hardware-heard as a
+            // pad that decays ~4 dB across its loop "resetting" on each pass. The baked fade
+            // defines the wrap, so the seam machinery below must leave both the audio and the
+            // loop points alone - re-seating the end afterwards would move the wrap away from the
+            // junction the fade constructed.
+            final int sourceCrossfade = loop.getCrossfadeInSamples ();
+            final byte [] baked = sourceCrossfade > 0 ? bakeLoopCrossfade (pcm, channels, loopStart, end, sourceCrossfade) : null;
+            if (baked != null)
+                pcm = baked;
+            else
             {
-                // The fade can only be as long as the lead-in, and it closes the wrap mismatch by
-                // roughly 1/(fade length) - a loop starting only a few dozen frames in leaves an
-                // audible residual step (hardware-heard: a loop from frame 70 capped the fade at
-                // 70 frames and its ~4400 mismatch left a residual of ~63 that ticked every
-                // pass). When the lead-in is the limiting factor, advance the loop start to give
-                // the fade full room - the skipped frames still play once - and re-seat the loop
-                // end for the new start.
-                if (loopStart < LOOP_CROSSFADE && loopStart < (end - loopStart) / 4)
-                {
+                if (loopStart < 2 && end - loopStart >= 64 && startWrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
                     loopStart += Math.min (LOOP_CROSSFADE, (end - loopStart) / 4);
-                    end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
+                end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
+                // If period-alignment still cannot make the wrap seamless - an evolving pad
+                // whose timbre drifts across the loop has no phase-aligned end - cross-fade the
+                // loop tail into the loop-start lead-in. Safe here precisely because the end is
+                // period-aligned first: the two blended stretches are in phase and reinforce, so
+                // the amplitude collapse an unaligned cross-fade caused on bright content does
+                // not happen. Already-seamless loops are skipped.
+                if (loopStart >= 2 && wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
+                {
+                    // The fade can only be as long as the lead-in, and it closes the wrap
+                    // mismatch by roughly 1/(fade length) - a loop starting only a few dozen
+                    // frames in leaves an audible residual step (hardware-heard: a loop from
+                    // frame 70 capped the fade at 70 frames and its ~4400 mismatch left a
+                    // residual of ~63 that ticked every pass). When the lead-in is the limiting
+                    // factor, advance the loop start to give the fade full room - the skipped
+                    // frames still play once - and re-seat the loop end for the new start.
+                    if (loopStart < LOOP_CROSSFADE && loopStart < (end - loopStart) / 4)
+                    {
+                        loopStart += Math.min (LOOP_CROSSFADE, (end - loopStart) / 4);
+                        end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
+                    }
+                    if (wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
+                        pcm = crossfadeLoop (pcm, channels, loopStart, end);
                 }
-                if (wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
-                    pcm = crossfadeLoop (pcm, channels, loopStart, end);
             }
         }
 
@@ -1025,6 +1040,124 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             }
         }
         return out;
+    }
+
+
+    /**
+     * Bake a source-specified loop cross-fade into the audio: blend the {@code fadeFrames} frames
+     * ending at the loop end into the same number of frames ending at the loop start, so the loop
+     * tail gradually becomes the loop-start lead-in. Unlike the fixed seam repair of
+     * {@link #crossfadeLoop}, the length follows the source (a fraction of the loop length, e.g.
+     * half a second on an evolving pad), clamped to the loop length and the available lead-in.
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM (never modified)
+     * @param channels The number of channels
+     * @param loopStart The loop start frame
+     * @param end The loop end frame
+     * @param fadeFrames The requested cross-fade length in frames
+     * @return A copy of the PCM with the cross-faded loop, or null if no fade fits
+     */
+    private static byte [] bakeLoopCrossfade (final byte [] pcm, final int channels, final int loopStart, final int end, final int fadeFrames)
+    {
+        final int frames = pcm.length / (2 * channels);
+
+        // A loop that already wraps cleanly - waveform-seamless and level-matched - is left
+        // untouched: baking a fade into material that needs no help would only soften it.
+        final int seam = loopStart >= 2 ? wrapDiscontinuity (pcm, channels, loopStart, end) : startWrapDiscontinuity (pcm, channels, loopStart, end);
+        final double tailLevel = rmsLevel (pcm, channels, Math.max (loopStart, end - 4800), end);
+        final double startLevel = rmsLevel (pcm, channels, loopStart, Math.min (end, loopStart + 4800));
+        final boolean levelMatched = Math.max (tailLevel, startLevel) <= Math.min (tailLevel, startLevel) * 1.12 + 32;
+        if (seam <= LOOP_SEAM_TOLERANCE && levelMatched)
+            return null;
+
+        // Prefer fading the loop START from the tail's natural continuation (the source audio past
+        // the loop end): the wrap then glides out of the unmodified tail straight into the loop
+        // content, following the source's own motion. Unlike the classic tail-side fade below,
+        // this also heals a level step sitting at the loop start itself - the tail-side fade's
+        // lead-in target lies before that step and lands in it. Only valid when the source
+        // actually carries the continuation past the loop end: an assembled sample bank may store
+        // unrelated data there, so the continuation must flow out of the tail without a step;
+        // otherwise fall back to the tail-side fade.
+        final int startFade = Math.min (fadeFrames, Math.min ((end - loopStart) / 2, frames - end));
+        if (startFade >= 8 && isContinuation (pcm, channels, end))
+        {
+            final byte [] out = pcm.clone ();
+            for (int i = 0; i < startFade; i++)
+            {
+                final double weight = (i + 1.0) / (startFade + 1.0); // 0 -> 1 into the loop
+                for (int channel = 0; channel < channels; channel++)
+                {
+                    final int loopValue = sampleAt (pcm, channels, loopStart + i, channel);
+                    final int tailContinuation = sampleAt (pcm, channels, end + i, channel);
+                    setSample (out, channels, loopStart + i, channel, (int) Math.round (loopValue * weight + tailContinuation * (1.0 - weight)));
+                }
+            }
+            return out;
+        }
+
+        final int n = Math.min (fadeFrames, Math.min (end - loopStart, loopStart));
+        if (n < 8)
+            return null;
+        final byte [] out = pcm.clone ();
+        for (int i = 0; i < n; i++)
+        {
+            final double weight = (i + 1.0) / n; // 0 -> 1, reaching the lead-in exactly at the end
+            for (int channel = 0; channel < channels; channel++)
+            {
+                final int tail = sampleAt (pcm, channels, end - n + i, channel);
+                final int lead = sampleAt (pcm, channels, loopStart - n + i, channel);
+                setSample (out, channels, end - n + i, channel, (int) Math.round (tail * (1.0 - weight) + lead * weight));
+            }
+        }
+        return out;
+    }
+
+
+    /**
+     * The RMS level of the frame range, across channels.
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM
+     * @param channels The number of channels
+     * @param from The first frame (inclusive)
+     * @param to The last frame (exclusive)
+     * @return The RMS level
+     */
+    private static double rmsLevel (final byte [] pcm, final int channels, final int from, final int to)
+    {
+        long sum = 0;
+        int count = 0;
+        for (int frame = from; frame < to; frame++)
+            for (int channel = 0; channel < channels; channel++)
+            {
+                final long v = sampleAt (pcm, channels, frame, channel);
+                sum += v * v;
+                count++;
+            }
+        return count == 0 ? 0 : Math.sqrt (sum / (double) count);
+    }
+
+
+    /**
+     * Whether the audio past the loop end actually continues the loop tail - true for a recording
+     * trimmed with room after the loop, false for an assembled sample whose post-loop data is
+     * unrelated (the step into it would be blended into the loop start by the start-side fade).
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM
+     * @param channels The number of channels
+     * @param end The loop end frame
+     * @return True if the first post-end frame flows out of the tail without a step
+     */
+    private static boolean isContinuation (final byte [] pcm, final int channels, final int end)
+    {
+        int localStep = 0;
+        int continuationStep = 0;
+        for (int channel = 0; channel < channels; channel++)
+        {
+            for (int frame = Math.max (1, end - 64); frame < end - 1; frame++)
+                localStep = Math.max (localStep, Math.abs (sampleAt (pcm, channels, frame + 1, channel) - sampleAt (pcm, channels, frame, channel)));
+            continuationStep = Math.max (continuationStep, Math.abs (sampleAt (pcm, channels, end, channel) - sampleAt (pcm, channels, end - 1, channel)));
+        }
+        return continuationStep <= Math.max (64, 4 * localStep);
     }
 
 

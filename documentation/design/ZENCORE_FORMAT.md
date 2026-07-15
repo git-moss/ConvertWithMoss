@@ -351,7 +351,16 @@ loops.) CWM prepares samples accordingly:
    wrap deviates least from the waveform's own step into the loop start — the exclusive seam
    invariant that hardware-verified click-free playback requires (and that well-mastered packs
    satisfy).
-3. **In-phase loop cross-fade.** When no single end point is seamless (an evolving pad whose
+3. **Source loop cross-fades are baked.** A source-specified loop cross-fade (a Renoise or
+   Tonverk patch, or the *Set fixed loop-crossfade* processing option) is blended into the audio
+   with its full source length before the seam machinery runs - source formats apply it live at
+   playback, but the ZEN-Core engine has no loop cross-fade of its own, so without baking, a loop
+   whose sound evolves across the loop region jumps audibly at every wrap even though the
+   waveform seam is perfect. When the source carries audio past the loop end, the fade is applied
+   at the loop *start*, blending from the tail's natural continuation - the wrap then follows the
+   source's own motion, which also heals a level step sitting at the loop start itself (the
+   classic tail-side fade, used as the fallback, targets the lead-in and cannot).
+4. **In-phase loop cross-fade.** When no single end point is seamless (an evolving pad whose
    timbre drifts across the loop), blend the loop tail into the loop-start lead-in. The
    period-alignment in step 2 keeps the blend in phase, so bright content does not cancel.
    Both step 2 and step 3 measure the waveform's own step *into* the loop start, so they need a
@@ -364,10 +373,10 @@ loops.) CWM prepares samples accordingly:
    audible residual (hardware-heard: a loop from frame 70 capped the fade at 70 frames, and its
    ~4400 mismatch left a ~63 residual that ticked every pass), so a bad-wrapped loop whose short
    lead-in limits the fade likewise has its start advanced before fading.
-4. **Guard frames.** Store the loop-start continuation after the loop end (within the play
+5. **Guard frames.** Store the loop-start continuation after the loop end (within the play
    extent under the old `f04` convention; the engine's own allocator reserves a 64-frame margin
    past `f04/2` regardless, see §3.4).
-5. **Mono storage; stereo as two mono partials.** Hardware-measured: a looped user sample stored
+6. **Mono storage; stereo as two mono partials.** Hardware-measured: a looped user sample stored
    as **interleaved stereo** (SMPd channel count 2) is mis-played at any loop length — the two
    channels alternate into the output as a buzz, degenerating to a once-per-wrap tick when they
    are identical, **even when the wrap is mathematically seamless**. Byte-identical audio stored
