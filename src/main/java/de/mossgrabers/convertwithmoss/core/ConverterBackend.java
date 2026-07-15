@@ -115,8 +115,8 @@ public class ConverterBackend
     private static final String            IDS_NOTIFY_SAVE_FAILED      = "IDS_NOTIFY_SAVE_FAILED";
 
     protected INotifier                    notifier;
-    protected final IDetector<?> []        detectors;
-    protected final ICreator<?> []         creators;
+    protected final List<IDetector<?>>     detectors;
+    protected final List<ICreator<?>>      creators;
 
     private IDetector<?>                   detector;
     private ICreator<?>                    creator;
@@ -139,89 +139,85 @@ public class ConverterBackend
         // Workaround for attribute limit of 200 which e.g. causes issues with TAL Sampler format
         System.setProperty ("jdk.xml.elementAttributeLimit", "1000");
 
-        this.detectors = new IDetector []
-        {
-            new BentoDetector (notifier),
-            new Music1010Detector (notifier),
-            new AbletonDetector (notifier),
-            new AkpDetector (notifier),
-            new AkaiMesaDetector (notifier),
-            new AkaiMPC60Detector (notifier),
-            new AkaiMPC1000Detector (notifier),
-            new AkaiMPC2000Detector (notifier),
-            new MPCModernDetector (notifier),
-            new AkaiS900Detector (notifier),
-            new AkaiS1000Detector (notifier),
-            new BitwigMultisampleDetector (notifier),
-            new BlissDetector (notifier),
-            new TX16WxDetector (notifier),
-            new DecentSamplerDetector (notifier),
-            new DlsDetector (notifier),
-            new DistingExDetector (notifier),
-            new TonverkMultiDetector (notifier),
-            new TonverkPresetDetector (notifier),
-            new EnsoniqEpsAsrDetector (notifier),
-            new MirageDetector (notifier),
-            new FairlightCmi3Detector (notifier),
-            new IsoDetector (notifier),
-            new KMPDetector (notifier),
-            new KorgmultisampleDetector (notifier),
-            new EXS24Detector (notifier),
-            new KontaktDetector (notifier),
-            new MaschineDetector (notifier),
-            new PolyendTrackerDetector (notifier),
-            new RenoiseDetector (notifier),
-            new MC707Detector (notifier),
-            new MV8000Detector (notifier),
-            new S5xxDetector (notifier),
-            new S770Detector (notifier),
-            new ZenCoreDetector (notifier),
-            new SxtDetector (notifier),
-            new SampleFileDetector (notifier),
-            new SfzDetector (notifier),
-            new Sf2Detector (notifier),
-            new OmnisphereDetector (notifier),
-            new SynclavierRegenDetector (notifier),
-            new DelugeDetector (notifier),
-            new TALSamplerDetector (notifier),
-            new WaldorfQpatDetector (notifier),
-            new YamahaYsfcDetector (notifier)
-        };
+        this.detectors = new ArrayList<> ();
+        this.detectors.add (new BentoDetector (notifier));
+        this.detectors.add (new Music1010Detector (notifier));
+        this.detectors.add (new AbletonDetector (notifier));
+        this.detectors.add (new AkpDetector (notifier));
+        this.detectors.add (new AkaiMesaDetector (notifier));
+        this.detectors.add (new AkaiMPC60Detector (notifier));
+        this.detectors.add (new AkaiMPC1000Detector (notifier));
+        this.detectors.add (new AkaiMPC2000Detector (notifier));
+        this.detectors.add (new MPCModernDetector (notifier));
+        this.detectors.add (new AkaiS900Detector (notifier));
+        this.detectors.add (new AkaiS1000Detector (notifier));
+        this.detectors.add (new BitwigMultisampleDetector (notifier));
+        this.detectors.add (new BlissDetector (notifier));
+        this.detectors.add (new TX16WxDetector (notifier));
+        this.detectors.add (new DecentSamplerDetector (notifier));
+        this.detectors.add (new DlsDetector (notifier));
+        this.detectors.add (new DistingExDetector (notifier));
+        this.detectors.add (new TonverkMultiDetector (notifier));
+        this.detectors.add (new TonverkPresetDetector (notifier));
+        this.detectors.add (new EnsoniqEpsAsrDetector (notifier));
+        this.detectors.add (new MirageDetector (notifier));
+        this.detectors.add (new FairlightCmi3Detector (notifier));
+        this.detectors.add (new IsoDetector (notifier));
+        this.detectors.add (new KMPDetector (notifier));
+        this.detectors.add (new KorgmultisampleDetector (notifier));
+        this.detectors.add (new EXS24Detector (notifier));
+        this.detectors.add (new KontaktDetector (notifier));
+        this.detectors.add (new MaschineDetector (notifier));
+        this.detectors.add (new PolyendTrackerDetector (notifier));
+        this.detectors.add (new RenoiseDetector (notifier));
+        this.detectors.add (new MC707Detector (notifier));
+        this.detectors.add (new MV8000Detector (notifier));
+        this.detectors.add (new S5xxDetector (notifier));
+        this.detectors.add (new S770Detector (notifier));
+        this.detectors.add (new ZenCoreDetector (notifier));
+        this.detectors.add (new SxtDetector (notifier));
+        this.detectors.add (new SampleFileDetector (notifier));
+        this.detectors.add (new SfzDetector (notifier));
+        this.detectors.add (new Sf2Detector (notifier));
+        this.detectors.add (new OmnisphereDetector (notifier));
+        this.detectors.add (new SynclavierRegenDetector (notifier));
+        this.detectors.add (new DelugeDetector (notifier));
+        this.detectors.add (new TALSamplerDetector (notifier));
+        this.detectors.add (new WaldorfQpatDetector (notifier));
+        this.detectors.add (new YamahaYsfcDetector (notifier));
 
-        this.creators = new ICreator []
-        {
-            new BentoCreator (notifier),
-            new Music1010Creator (notifier),
-            new AbletonCreator (notifier),
-            new MPCKeygroupCreator (notifier),
-            new BitwigMultisampleCreator (notifier),
-            new BlissCreator (notifier),
-            new TX16WxCreator (notifier),
-            new DecentSamplerCreator (notifier),
-            new DistingExCreator (notifier),
-            new TonverkMultiCreator (notifier),
-            new TonverkPresetCreator (notifier),
-            new KMPCreator (notifier),
-            new KorgmultisampleCreator (notifier),
-            new EXS24Creator (notifier),
-            new KontaktCreator (notifier),
-            new MaschineCreator (notifier),
-            new PolyendTrackerCreator (notifier),
-            new RenoiseCreator (notifier),
-            new MC707Creator (notifier),
-            new MV8000Creator (notifier),
-            new ZenCoreCreator (notifier),
-            new SxtCreator (notifier),
-            new WavCreator (notifier),
-            new SfzCreator (notifier),
-            new Sf2Creator (notifier),
-            new OmnisphereCreator (notifier),
-            new SynclavierRegenCreator (notifier),
-            new DelugeCreator (notifier),
-            new TALSamplerCreator (notifier),
-            new WaldorfQpatCreator (notifier),
-            new YamahaYsfcCreator (notifier)
-        };
+        this.creators = new ArrayList<> ();
+        this.creators.add (new BentoCreator (notifier));
+        this.creators.add (new Music1010Creator (notifier));
+        this.creators.add (new AbletonCreator (notifier));
+        this.creators.add (new MPCKeygroupCreator (notifier));
+        this.creators.add (new BitwigMultisampleCreator (notifier));
+        this.creators.add (new BlissCreator (notifier));
+        this.creators.add (new TX16WxCreator (notifier));
+        this.creators.add (new DecentSamplerCreator (notifier));
+        this.creators.add (new DistingExCreator (notifier));
+        this.creators.add (new TonverkMultiCreator (notifier));
+        this.creators.add (new TonverkPresetCreator (notifier));
+        this.creators.add (new KMPCreator (notifier));
+        this.creators.add (new KorgmultisampleCreator (notifier));
+        this.creators.add (new EXS24Creator (notifier));
+        this.creators.add (new KontaktCreator (notifier));
+        this.creators.add (new MaschineCreator (notifier));
+        this.creators.add (new PolyendTrackerCreator (notifier));
+        this.creators.add (new RenoiseCreator (notifier));
+        this.creators.add (new MC707Creator (notifier));
+        this.creators.add (new MV8000Creator (notifier));
+        this.creators.add (new ZenCoreCreator (notifier));
+        this.creators.add (new SxtCreator (notifier));
+        this.creators.add (new WavCreator (notifier));
+        this.creators.add (new SfzCreator (notifier));
+        this.creators.add (new Sf2Creator (notifier));
+        this.creators.add (new OmnisphereCreator (notifier));
+        this.creators.add (new SynclavierRegenCreator (notifier));
+        this.creators.add (new DelugeCreator (notifier));
+        this.creators.add (new TALSamplerCreator (notifier));
+        this.creators.add (new WaldorfQpatCreator (notifier));
+        this.creators.add (new YamahaYsfcCreator (notifier));
     }
 
 
@@ -230,7 +226,7 @@ public class ConverterBackend
      *
      * @return The detectors
      */
-    public IDetector<? extends ICoreTaskSettings> [] getDetectors ()
+    public List<IDetector<? extends ICoreTaskSettings>> getDetectors ()
     {
         return this.detectors;
     }
@@ -241,7 +237,7 @@ public class ConverterBackend
      *
      * @return The creators
      */
-    public ICreator<? extends ICoreTaskSettings> [] getCreators ()
+    public List<ICreator<? extends ICoreTaskSettings>> getCreators ()
     {
         return this.creators;
     }
