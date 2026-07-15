@@ -113,7 +113,7 @@ Clicking the *Process* button open a dialog to configure processing options whic
 * **Reduce bit-depth**: If the source sample has a higher bit-depth, it will be reduced to this setting.
 * **Reduce sample frequency**: Reduces the sample frequency of all samples to the given value. If the sample frequency is smaller than the selected value the sample is not modified.
 * **Always re-sample**: Does as well up-sampling to the set sample frequency and bit depth, if enabled.
-* **Set fixed loop-crossfade**: Sets all loop cross-fades (if supported by the destination format) to this percentage value.
+* **Set fixed loop-crossfade**: Sets all loop cross-fades (if supported by the destination format) to this percentage value. For a destination whose sound engine cannot cross-fade at playback (e.g. Roland ZEN-Core), the cross-fade is instead baked into the written sample audio; a loop that already wraps cleanly is left untouched.
 * **Snap loops to zero-crossings**: Moves the start and end of forward loops to a nearby zero-crossing, which removes the click that some sample libraries have at the loop point (e.g. auto-sampled instruments whose loop was not designed to be click-free). The adjustment is conservative: single-cycle loops are left untouched and a boundary is only moved when it actually reduces the discontinuity at the loop wrap. Enabled with `-Zs` on the command line.
 
 ## Options
