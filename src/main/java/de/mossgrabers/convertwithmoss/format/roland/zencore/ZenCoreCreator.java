@@ -609,18 +609,64 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Approximate the FANTOM TVA envelope time value (0-1023) from a time in seconds. Roland's
-     * exact time table is not published; this log2 curve is calibrated so ~20 s maps to full scale
-     * and near-instant times map to 0.
+     * The FANTOM envelope-time law, hardware-calibrated on a FANTOM-0: a bank of tones with exact,
+     * patched TVA release values was recorded on the device and the exponential fades fitted. Each
+     * anchor pair is the time value and its measured audible stage span (the time to reach -40 dB;
+     * the separately measured attack-rise anchors agree within ~25%). The stage times are
+     * interpolated log-linearly between the anchors; the last pair extrapolates the measured curve
+     * to full scale. Roland's exact table is not published - the earlier log2 approximation
+     * overstated times several-fold below ~value 800 (a 0.5 s release was written as value 129,
+     * which really plays ~0.2 s, and everything below ~0.3 s collapsed to value 0).
+     */
+    private static final int []                 TIME_VALUE_ANCHORS     =
+    {
+        0,
+        8,
+        32,
+        75,
+        129,
+        256,
+        512,
+        800,
+        1023
+    };
+    /** The measured stage time in seconds per anchor of {@link #TIME_VALUE_ANCHORS}. */
+    private static final double []              TIME_SECOND_ANCHORS    =
+    {
+        0.010,
+        0.020,
+        0.060,
+        0.120,
+        0.200,
+        0.390,
+        1.240,
+        6.190,
+        21.5
+    };
+
+
+    /**
+     * Convert an envelope time in seconds to the FANTOM 0-1023 time value with the
+     * hardware-calibrated law (see {@link #TIME_VALUE_ANCHORS}).
      *
      * @param seconds The time in seconds
      * @return The 0-1023 time value
      */
     private static int timeToValue (final double seconds)
     {
-        if (seconds <= 0)
+        if (seconds <= TIME_SECOND_ANCHORS[0])
             return 0;
-        return Math.clamp ((int) Math.round (1023 + 168 * Math.log (seconds / 20.0) / Math.log (2)), 0, 1023);
+        final int last = TIME_SECOND_ANCHORS.length - 1;
+        if (seconds >= TIME_SECOND_ANCHORS[last])
+            return TIME_VALUE_ANCHORS[last];
+        int i = 1;
+        while (TIME_SECOND_ANCHORS[i] < seconds)
+            i++;
+        final double s0 = TIME_SECOND_ANCHORS[i - 1];
+        final double s1 = TIME_SECOND_ANCHORS[i];
+        final int v0 = TIME_VALUE_ANCHORS[i - 1];
+        final int v1 = TIME_VALUE_ANCHORS[i];
+        return (int) Math.round (v0 + (v1 - v0) * Math.log (seconds / s0) / Math.log (s1 / s0));
     }
 
 

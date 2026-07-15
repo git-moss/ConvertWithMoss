@@ -547,10 +547,16 @@ marketing). CWM handles `.SVZ` only.
   DIFa/PATa/USPa/MSPa/USDa blocks and the `SMPd` chunks. The constant/opaque byte templates
   (`svz_header.bin`, `difa.bin`, `pata_multisample.bin` mono tone, `pata_stereo.bin` two-partial
   hard-panned stereo tone, `smpd_header.bin`, `uspa.bin`) are resources next to the class.
-- **Envelope-time caveat:** Roland's exact envelope-time curve (seconds ↔ 0–1023) is not published,
-  so the writer uses a calibrated `log2` approximation (near-instant → 0, ~20 s → full scale). Only
-  the *times* are approximate — filter type/cutoff, envelope *levels*, and the pitch/filter-envelope
-  **depth** scales (§3.1, hardware-calibrated on a FANTOM-0) are exact.
+- **Envelope-time law (hardware-calibrated):** Roland's exact time table is not published, so it
+  was measured on a FANTOM-0 with a release-ladder bank (exact values patched into `PATa`, the
+  recorded exponential fades fitted). The stage span (time to −40 dB) per value:
+  `0→10 ms, 8→20 ms, 32→60 ms, 75→120 ms, 129→200 ms, 256→390 ms, 512→1.24 s, 800→6.19 s`
+  (extrapolated to ~21 s at 1023; the separately measured attack-rise anchors agree within ~25%).
+  The writer interpolates log-linearly between these anchors for all four TVA stages and the
+  pitch/filter envelope times. The device's release at value 0 is a clean ~10–20 ms engine fade —
+  an instant source release never clicks at note-off, so no release floor is needed. (The earlier
+  `log2` approximation overstated times several-fold below ~value 800: a 0.5 s release was written
+  as 129, which really plays ~0.2 s, and everything below ~0.3 s collapsed to 0.)
 
 ---
 
