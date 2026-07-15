@@ -409,7 +409,11 @@ The Kurzweil K2000 (1991), K2500 and K2600 samplers/synthesizers share one objec
 
 When reading, each program becomes one multi-sample: its layers reference keymaps from which the key ranges, velocity levels, root keys, tunings, loops and the 16-bit sample data are read. Keymaps and samples which are not referenced by any program are converted as multi-samples of their own. Many factory and commercial K-series files map samples from the device ROM which is not present in the file; such zones cannot be converted and are skipped with a note.
 
-When writing, a *.krz* file is created which uses only K2000 features and therefore loads on all three device families. Each multi-sample becomes a program with one layer and a keymap; the velocity layers of the source are quantized onto the 8 dynamic levels of the keymap. One sample object is written per zone (16-bit, the sample rate is kept). Since the device plays a loop until the end of the sample, the data after the loop end is cut off. If any zone is stereo, all samples of the program are written as stereo pairs. The keymap covers MIDI notes 12-127 (C0-G9 in Kurzweil terms), keys below are dropped. Several multi-samples can be written into one file as a library; if the object IDs (200-999 per type) do not suffice, multiple files are created.
+When writing, a file is created which uses only K2000 features and therefore loads on all three device families. Each multi-sample becomes a program with one layer and a keymap; the velocity layers of the source are quantized onto the 8 dynamic levels of the keymap. One sample object is written per zone (16-bit, the sample rate is kept). Since the device plays a loop until the end of the sample, the data after the loop end is cut off. If any zone is stereo, all samples of the program are written as stereo pairs. The keymap covers MIDI notes 12-127 (C0-G9 in Kurzweil terms), keys below are dropped. Several multi-samples can be written into one file as a library; if the object IDs (200-999 per type) do not suffice, multiple files are created.
+
+#### Destination Options
+
+* Target Device: Selects the device family for which the file is named: *K2000 (krz)*, *K2500 (k25)* or *K2600 (k26)*. Since the written objects use only K2000 features, the selection only sets the file extension.
 
 ## Logic EXS24
 

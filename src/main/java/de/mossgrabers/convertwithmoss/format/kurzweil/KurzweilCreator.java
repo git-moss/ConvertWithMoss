@@ -23,20 +23,19 @@ import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 
 /**
- * Creator for Kurzweil K2000/K2500/K2600 files. Writes a .krz file which uses only K2000 features
- * and therefore loads on all three device families. Each multi-sample becomes a program with one
- * layer, a keymap and one sample object per zone; the velocity layers are mapped onto the 8
- * dynamic levels of the keymap.
+ * Creator for Kurzweil K2000/K2500/K2600 files. The written files use only K2000 features and
+ * therefore load on all three device families; the selected target device sets the file extension
+ * (.krz, .k25 or .k26). Each multi-sample becomes a program with one layer, a keymap and one
+ * sample object per zone; the velocity layers are mapped onto the 8 dynamic levels of the keymap.
  *
  * @author Jürgen Moßgraber
  */
-public class KurzweilCreator extends AbstractCreator<EmptySettingsUI>
+public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
 {
     private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -69,7 +68,7 @@ public class KurzweilCreator extends AbstractCreator<EmptySettingsUI>
      */
     public KurzweilCreator (final INotifier notifier)
     {
-        super ("Kurzweil K2x00", "Kurzweil", notifier, EmptySettingsUI.INSTANCE);
+        super ("Kurzweil K2x00", "Kurzweil", notifier, new KurzweilCreatorUI ());
     }
 
 
@@ -127,7 +126,7 @@ public class KurzweilCreator extends AbstractCreator<EmptySettingsUI>
         if (kurzweilFile.getPrograms ().isEmpty ())
             return;
 
-        final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (name), "krz");
+        final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (name), this.settingsConfiguration.getTargetDevice ().getExtension ());
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
         try (final OutputStream out = new BufferedOutputStream (new FileOutputStream (outputFile)))
         {
