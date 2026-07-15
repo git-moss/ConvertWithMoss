@@ -301,6 +301,7 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setSampleData (sampleDataCache.computeIfAbsent (Long.valueOf ((long) sample.getId () << 16 | headerIndex), _ -> createSampleData (header, rightHeader)));
         zone.setKeyRoot (header.getRootKey ());
         zone.setTuning ((entry.getTuning () + layer.getTranspose () * 100) / 100.0);
+        zone.setGain (header.getVolumeAdjust ());
         zone.setStart (0);
         zone.setStop (header.getNumberOfFrames ());
         addLoop (zone, header);
@@ -346,6 +347,7 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
             final ISampleZone zone = new DefaultSampleZone (sample.getName (), keyLow, keyHigh);
             zone.setSampleData (sampleDataCache.computeIfAbsent (Long.valueOf ((long) sample.getId () << 16 | headerIndex), _ -> createSampleData (header, rightHeader)));
             zone.setKeyRoot (rootKey);
+            zone.setGain (header.getVolumeAdjust ());
             zone.setStart (0);
             zone.setStop (header.getNumberOfFrames ());
             addLoop (zone, header);

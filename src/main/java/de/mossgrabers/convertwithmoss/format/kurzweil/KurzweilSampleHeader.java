@@ -218,6 +218,29 @@ public class KurzweilSampleHeader
 
 
     /**
+     * Get the volume adjustment of the sample. The file stores it in 0.5 dB steps (-64.0 to +63.5
+     * dB, as documented on the MISC page of the sample editor).
+     *
+     * @return The volume adjustment in dB
+     */
+    public double getVolumeAdjust ()
+    {
+        return this.volumeAdjust / 2.0;
+    }
+
+
+    /**
+     * Set the volume adjustment of the sample.
+     *
+     * @param volumeAdjustDB The volume adjustment in dB, clamped to -64.0..+63.5
+     */
+    public void setVolumeAdjust (final double volumeAdjustDB)
+    {
+        this.volumeAdjust = (int) Math.clamp (Math.round (volumeAdjustDB * 2.0), -128, 127);
+    }
+
+
+    /**
      * Get the root key.
      *
      * @return The MIDI note of the recorded pitch

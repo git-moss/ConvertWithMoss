@@ -37,10 +37,13 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
  */
 public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
 {
+    /** The maximum sample playback rate of the devices. */
+    private static final int                    MAX_SAMPLE_RATE    = 96000;
+
     private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (new int []
     {
         16
-    }, -1, false);
+    }, MAX_SAMPLE_RATE, false);
 
     private static final int                    MAX_NAME_LENGTH    = 16;
 
@@ -156,6 +159,9 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
     private void addMultisample (final KurzweilFile kurzweilFile, final IMultisampleSource multisampleSource, final Set<String> usedNames) throws IOException
     {
         final String name = multisampleSource.getName ();
+
+        // Samples above the maximum playback rate of the devices are down-sampled
+        recalculateAllSamplePositions (multisampleSource, MAX_SAMPLE_RATE, true);
 
         // Convert all zones first to know if the program needs to be stereo
         final List<PreparedZone> preparedZones = new ArrayList<> ();
@@ -376,6 +382,7 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
             header.setSampleData (preparedZone.channelData[Math.min (channel, preparedZone.channelData.length - 1)]);
             header.setSampleRate (preparedZone.sampleRate);
             header.setRootKey (preparedZone.rootKey);
+            header.setVolumeAdjust (preparedZone.zone.getGain ());
             if (preparedZone.isLooped)
                 header.setLoopStart (preparedZone.loopStart);
             sample.addHeader (header);

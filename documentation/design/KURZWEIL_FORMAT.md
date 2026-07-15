@@ -68,8 +68,10 @@ numHeaders+1 x sample header (32 bytes each):
     uint8  flags          0x80 = loop OFF (inverted!), 0x40 = sample data present in this
                           file (otherwise the header references device ROM), KurzFiler
                           writes 0x70 for imported samples
-    int8   volumeAdjust   (unit not confirmed, KurzFiler writes 0)
-    int8   altVolumeAdjust
+    int8   volumeAdjust   volume adjust in 0.5 dB steps (-64.0 to +63.5 dB, the range of
+                          the Volume Adjust parameter on the MISC page of the sample
+                          editor in the K2600 manual)
+    int8   altVolumeAdjust volume adjust used when the alternative start is active
     int16  maxPitch       highest playable transposition in cents:
                           ceil(1200*log2(96000e-9*samplePeriod)) + 100*rootKey - 1200
     int16  offsetToName
@@ -157,8 +159,10 @@ and sets mode 2.
 
 ## Not interpreted / unknown
 
-* The unit of the volume adjust fields (sample header and keymap entry) is not confirmed and
-  therefore ignored.
+* The unit of the keymap entry volume adjust field is not confirmed and therefore ignored
+  (the sample header volume adjust is confirmed to be 0.5 dB steps, see above).
 * The natural envelope records and the program ENV/ASR/LFO/FUN segment contents beyond the
-  values above are not decoded.
+  values above are not decoded. The per-sample playback direction (Normal/Reverse/
+  Bidirectional on the MISC page of the sample editor) is stored somewhere in the sample
+  header but the bit positions are unknown.
 * Multi-floppy spanning files (.KR1/.K21 etc. part files) are not supported.
