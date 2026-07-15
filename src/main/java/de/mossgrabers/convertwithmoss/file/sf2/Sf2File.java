@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
@@ -615,10 +616,11 @@ public class Sf2File extends AbstractRIFFFile
         final List<Sf2SampleDescriptor> samples = new ArrayList<> ();
         for (int i = 0; i < size / LENGTH_SHDR; i++)
         {
-            final byte [] sampleData = this.dataChunk.getSampleData ();
-            if (sampleData == null)
+            final Optional<byte []> sampleData = this.dataChunk.getSampleData ();
+            if (sampleData.isEmpty ())
                 throw new ParseException (Functions.getMessage ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA_CHUNK"));
-            final Sf2SampleDescriptor sampleDescriptor = new Sf2SampleDescriptor (i, sampleData, this.dataChunk.getSample24Data ());
+            final Optional<byte []> sample24Data = this.dataChunk.getSample24Data ();
+            final Sf2SampleDescriptor sampleDescriptor = new Sf2SampleDescriptor (i, sampleData.get (), sample24Data.isEmpty () ? null : sample24Data.get ());
             sampleDescriptor.readHeader (i * LENGTH_SHDR, chunk);
             samples.add (sampleDescriptor);
         }

@@ -41,35 +41,42 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 /**
  * Creator for Synclavier Regen timbres. A timbre is written as a library folder which contains the
  * timbre text file (<i>NN-Entry.txt</i>), the referenced samples as obfuscated FLAC files
- * (<i>.sflc</i>, see {@link SynclavierRegenCodec}) and the two bank index files. A partial (= group)
- * becomes a Synclavier partial, a sample zone becomes a patch list entry.
+ * (<i>.sflc</i>, see {@link SynclavierRegenCodec}) and the two bank index files. A partial (=
+ * group) becomes a Synclavier partial, a sample zone becomes a patch list entry.
  *
  * @author Jürgen Moßgraber
  */
 public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 {
-    private static final String LINE_FEED           = "\n";
-    private static final String FILTER_PREFIX       = "SynclavierTBPINoteFilter";
-    private static final String AMP_ENVELOPE_PREFIX = "SynclavierPTPIVEnv";
-    private static final String PAN_PARAM           = "SynclavierPTPIPan";
+    private static final String              STRINGS                = "strings";
+    private static final String              PERCUSSION             = "percussion";
+
+    private static final String              DOUBLE_ZERO            = " 0 0 ";
+    private static final String              LINE_FEED              = "\n";
+    private static final String              FILTER_PREFIX          = "SynclavierTBPINoteFilter";
+    private static final String              AMP_ENVELOPE_PREFIX    = "SynclavierPTPIVEnv";
+    private static final String              PAN_PARAM              = "SynclavierPTPIPan";
     /** The partial pan is stored as an integer in the range [-63..63], 0 is centered. */
-    private static final double PAN_RANGE           = 63.0;
-    private static final String TIMBRE_VERSION      = "SynclavierVirtualInstrumentTimbreVersion000 7 12 24 4063 99 14";
-    private static final String SAMPLE_INDEX    = "mFilenameNoExt\tmTitle\tmComment\tmSampleRate\tmFrameLength\tmChannels\tmMIDIKey\tmFileHz\tmPitchTrack\tmMarkStart\tmTotalLen\tmLoopLen\tmLoopXfade\tmLoopBits\tmMedia\tmExtension\tmDLMLSB";
-    private static final String TIMBRE_INDEX    = "bankEntry\ttimbreName\ttimbreInfo\ttimbrePartials\ttimbreDLMLSB";
-    /** The Regen addresses the timbres of a library as 8 banks of 8, so a library holds 64 timbres. */
-    private static final int    MAX_TIMBRES     = 64;
+    private static final double              PAN_RANGE              = 63.0;
+    private static final String              TIMBRE_VERSION         = "SynclavierVirtualInstrumentTimbreVersion000 7 12 24 4063 99 14";
+    private static final String              SAMPLE_INDEX           = "mFilenameNoExt\tmTitle\tmComment\tmSampleRate\tmFrameLength\tmChannels\tmMIDIKey\tmFileHz\tmPitchTrack\tmMarkStart\tmTotalLen\tmLoopLen\tmLoopXfade\tmLoopBits\tmMedia\tmExtension\tmDLMLSB";
+    private static final String              TIMBRE_INDEX           = "bankEntry\ttimbreName\ttimbreInfo\ttimbrePartials\ttimbreDLMLSB";
+    /**
+     * The Regen addresses the timbres of a library as 8 banks of 8, so a library holds 64 timbres.
+     */
+    private static final int                 MAX_TIMBRES            = 64;
     /** A Synclavier timbre has at most 12 partials, so at most 12 velocity layers. */
-    private static final int    MAX_PARTIALS    = 12;
+    private static final int                 MAX_PARTIALS           = 12;
     /** The Regen displays at most 220 characters of a library's Description.txt. */
-    private static final int    MAX_DESCRIPTION_LENGTH = 220;
+    private static final int                 MAX_DESCRIPTION_LENGTH = 220;
 
     /**
      * Maps the ConvertWithMoss categories to the Regen's canonical category tags (see the Regen
-     * manual, section 3.2 - Tags). Categories without a clear Regen equivalent are not listed and fall
-     * back to the sanitized category name, so a category is always written as at least a custom tag.
+     * manual, section 3.2 - Tags). Categories without a clear Regen equivalent are not listed and
+     * fall back to the sanitized category name, so a category is always written as at least a
+     * custom tag.
      */
-    private static final Map<String, String> REGEN_CATEGORY_TAGS = new HashMap<> ();
+    private static final Map<String, String> REGEN_CATEGORY_TAGS    = new HashMap<> ();
     static
     {
         REGEN_CATEGORY_TAGS.put ("bass", "bass");
@@ -78,15 +85,15 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
         REGEN_CATEGORY_TAGS.put ("vocal", "vox");
         REGEN_CATEGORY_TAGS.put ("chromatic percussion", "chime");
         REGEN_CATEGORY_TAGS.put ("drone", "drone");
-        REGEN_CATEGORY_TAGS.put ("drum", "percussion");
-        REGEN_CATEGORY_TAGS.put ("acoustic drum", "percussion");
-        REGEN_CATEGORY_TAGS.put ("clap", "percussion");
-        REGEN_CATEGORY_TAGS.put ("hi-hat", "percussion");
-        REGEN_CATEGORY_TAGS.put ("kick", "percussion");
-        REGEN_CATEGORY_TAGS.put ("snare", "percussion");
-        REGEN_CATEGORY_TAGS.put ("percussion", "percussion");
-        REGEN_CATEGORY_TAGS.put ("ensemble", "strings");
-        REGEN_CATEGORY_TAGS.put ("strings", "strings");
+        REGEN_CATEGORY_TAGS.put ("drum", PERCUSSION);
+        REGEN_CATEGORY_TAGS.put ("acoustic drum", PERCUSSION);
+        REGEN_CATEGORY_TAGS.put ("clap", PERCUSSION);
+        REGEN_CATEGORY_TAGS.put ("hi-hat", PERCUSSION);
+        REGEN_CATEGORY_TAGS.put ("kick", PERCUSSION);
+        REGEN_CATEGORY_TAGS.put ("snare", PERCUSSION);
+        REGEN_CATEGORY_TAGS.put (PERCUSSION, PERCUSSION);
+        REGEN_CATEGORY_TAGS.put ("ensemble", STRINGS);
+        REGEN_CATEGORY_TAGS.put (STRINGS, STRINGS);
         REGEN_CATEGORY_TAGS.put ("fx", "sfx");
         REGEN_CATEGORY_TAGS.put ("destruction", "sfx");
         REGEN_CATEGORY_TAGS.put ("keyboard", "keys");
@@ -200,10 +207,13 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
             for (int partial = 0; partial < groups.size (); partial++)
             {
                 final List<ISampleZone> zones = groups.get (partial).getSampleZones ();
-                // Volume and tuning are split into a shared per-partial part and a per-zone remainder:
-                // the patch entry gain field only reaches down to -12 dB and the tuning field only spans
+                // Volume and tuning are split into a shared per-partial part and a per-zone
+                // remainder:
+                // the patch entry gain field only reaches down to -12 dB and the tuning field only
+                // spans
                 // +-125 cents, so a deeper attenuation goes into the per-partial volume and whole
-                // semitones go into the per-partial transpose (Tran), leaving the fine rest in the entry.
+                // semitones go into the per-partial transpose (Tran), leaving the fine rest in the
+                // entry.
                 final double partialVolume = partialVolume (zones);
                 final int partialTranspose = partialTranspose (zones);
                 for (int entry = 0; entry < zones.size (); entry++)
@@ -216,21 +226,22 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
                     if (sampleName == null)
                     {
                         sampleName = uniqueSampleName (usedSampleNames, zone.getName ());
-                        this.writeSample (libraryFolder, sampleName, zone);
+                        writeSample (libraryFolder, sampleName, zone);
                         sampleIndex.append (sampleRow (sampleName, audioMetadata)).append (LINE_FEED);
                         writtenSamples.put (identity, sampleName);
                     }
                     timbre.append (patchEntry (partial, entry, zone, audioMetadata, safeLibraryName, sampleName, partialVolume, partialTranspose)).append (LINE_FEED);
                 }
-                // The volume line also marks the partial as active (required for the partial bit-mask)
-                timbre.append ("SynclavierPTPIVolume ").append (partial).append (" 0 0 ").append (number (partialVolume)).append (LINE_FEED);
+                // The volume line also marks the partial as active (required for the partial
+                // bit-mask)
+                timbre.append ("SynclavierPTPIVolume ").append (partial).append (DOUBLE_ZERO).append (number (partialVolume)).append (LINE_FEED);
                 timbre.append ("SynclavierPTPISynthMode ").append (partial).append (" 0 0 2").append (LINE_FEED);
                 if (partialTranspose != 0)
-                    timbre.append ("SynclavierPTPITran ").append (partial).append (" 0 0 ").append (number (partialTranspose)).append (LINE_FEED);
+                    timbre.append ("SynclavierPTPITran ").append (partial).append (DOUBLE_ZERO).append (number (partialTranspose)).append (LINE_FEED);
                 // The pan is a per-partial setting, so use the average pan of the partial's zones
                 final int pan = partialPan (zones);
                 if (pan != 0)
-                    timbre.append (PAN_PARAM).append (' ').append (partial).append (" 0 0 ").append (number (pan)).append (LINE_FEED);
+                    timbre.append (PAN_PARAM).append (' ').append (partial).append (DOUBLE_ZERO).append (number (pan)).append (LINE_FEED);
                 if (!zones.isEmpty ())
                     appendAmplitudeEnvelope (timbre, partial, zones.get (0));
                 if (velocityLayered)
@@ -249,9 +260,12 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
         writeTextFile (new File (libraryFolder, "_" + safeLibraryName + ".tsv"), sampleIndex.toString ());
         writeTextFile (new File (libraryFolder, "_TimbreIndex.tsv"), timbreIndex.toString ());
-        // The library description is the combined (unique) descriptions of its timbres, exactly as the
-        // SF2 creator forms its library comment, but capped to the Regen's 220 character display limit.
-        // When none of the timbres has a description, no Description.txt is written and the device shows
+        // The library description is the combined (unique) descriptions of its timbres, exactly as
+        // the
+        // SF2 creator forms its library comment, but capped to the Regen's 220 character display
+        // limit.
+        // When none of the timbres has a description, no Description.txt is written and the device
+        // shows
         // its own default.
         final Set<String> descriptions = new LinkedHashSet<> ();
         for (final IMultisampleSource multisampleSource: multisampleSources)
@@ -269,9 +283,9 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Appends the timbre-global note filter. The filter is taken from the source's global filter (as
-     * set by e.g. the EXS24 detector) or, if there is none, from the first zone that carries a filter
-     * (as set by e.g. the SFZ detector). This is the inverse of the filter mapping in
+     * Appends the timbre-global note filter. The filter is taken from the source's global filter
+     * (as set by e.g. the EXS24 detector) or, if there is none, from the first zone that carries a
+     * filter (as set by e.g. the SFZ detector). This is the inverse of the filter mapping in
      * {@link SynclavierRegenDetector}.
      *
      * @param timbre The timbre text to append to
@@ -357,7 +371,8 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Appends the per-partial crossfade window (XFStart/In/Out/End) that selects the partial by
      * velocity (the dynamic axis source is set to velocity for the whole timbre). The window comes
-     * from the velocity range of the partial's zones, the fade regions from the velocity cross-fades.
+     * from the velocity range of the partial's zones, the fade regions from the velocity
+     * cross-fades.
      *
      * @param timbre The timbre text to append to
      * @param partial The partial index
@@ -383,19 +398,19 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
         }
         final int xfIn = Math.min (high, low + fadeIn);
         final int xfOut = Math.max (xfIn, high - fadeOut);
-        timbre.append ("SynclavierPTPIXFStart ").append (partial).append (" 0 0 ").append (low).append (LINE_FEED);
-        timbre.append ("SynclavierPTPIXFIn ").append (partial).append (" 0 0 ").append (xfIn).append (LINE_FEED);
-        timbre.append ("SynclavierPTPIXFOut ").append (partial).append (" 0 0 ").append (xfOut).append (LINE_FEED);
-        timbre.append ("SynclavierPTPIXFEnd ").append (partial).append (" 0 0 ").append (high).append (LINE_FEED);
+        timbre.append ("SynclavierPTPIXFStart ").append (partial).append (DOUBLE_ZERO).append (low).append (LINE_FEED);
+        timbre.append ("SynclavierPTPIXFIn ").append (partial).append (DOUBLE_ZERO).append (xfIn).append (LINE_FEED);
+        timbre.append ("SynclavierPTPIXFOut ").append (partial).append (DOUBLE_ZERO).append (xfOut).append (LINE_FEED);
+        timbre.append ("SynclavierPTPIXFEnd ").append (partial).append (DOUBLE_ZERO).append (high).append (LINE_FEED);
     }
 
 
     /**
      * The Synclavier note-filter type index for a filter. The Regen note filter is multi-mode; the
-     * type field selects one of six variants (value = index / 255): 1 = Low Pass 12 dB, 2 = High Pass
-     * 12 dB, 3 = Band Pass 12 dB, 4 = Low Pass 24 dB, 5 = High Pass 24 dB, 6 = Band Pass 24 dB (12 dB =
-     * 2-pole, 24 dB = 4-pole; recovered from the device firmware). A notch/band-rejection filter has
-     * no Regen equivalent and falls back to low-pass.
+     * type field selects one of six variants (value = index / 255): 1 = Low Pass 12 dB, 2 = High
+     * Pass 12 dB, 3 = Band Pass 12 dB, 4 = Low Pass 24 dB, 5 = High Pass 24 dB, 6 = Band Pass 24 dB
+     * (12 dB = 2-pole, 24 dB = 4-pole; recovered from the device firmware). A notch/band-rejection
+     * filter has no Regen equivalent and falls back to low-pass.
      *
      * @param filter The filter
      * @return The type index 1..6
@@ -427,7 +442,7 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
     private static void appendPartial (final StringBuilder timbre, final int partial, final String key, final double value)
     {
-        timbre.append (AMP_ENVELOPE_PREFIX).append (key).append (' ').append (partial).append (" 0 0 ").append (number (value)).append (LINE_FEED);
+        timbre.append (AMP_ENVELOPE_PREFIX).append (key).append (' ').append (partial).append (DOUBLE_ZERO).append (number (value)).append (LINE_FEED);
     }
 
 
@@ -458,10 +473,10 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Computes the shared per-partial volume (a dB attenuation) so that each zone's remaining gain fits
-     * the patch entry gain field, whose floor is -12 dB. It is how far the quietest zone would underflow
-     * that floor, clamped to the Regen partial-volume range of -50..0 dB. 0 for the common case where no
-     * zone is below -12 dB.
+     * Computes the shared per-partial volume (a dB attenuation) so that each zone's remaining gain
+     * fits the patch entry gain field, whose floor is -12 dB. It is how far the quietest zone would
+     * underflow that floor, clamped to the Regen partial-volume range of -50..0 dB. 0 for the
+     * common case where no zone is below -12 dB.
      *
      * @param zones The zones of the partial
      * @return The per-partial volume in dB
@@ -479,9 +494,9 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Computes the shared per-partial transpose (whole semitones) from the average tuning of the
-     * partial's zones. Only used when the tuning exceeds what the per-zone patch entry tuning field can
-     * hold (+-125 cents); the per-zone fine remainder stays in the entry. Clamped to the Regen range of
-     * -24..+24 semitones. 0 for the common case of a fine tuning.
+     * partial's zones. Only used when the tuning exceeds what the per-zone patch entry tuning field
+     * can hold (+-125 cents); the per-zone fine remainder stays in the entry. Clamped to the Regen
+     * range of -24..+24 semitones. 0 for the common case of a fine tuning.
      *
      * @param zones The zones of the partial
      * @return The per-partial transpose in semitones
@@ -517,10 +532,10 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
      * @param audioMetadata The audio meta data of the sample
      * @param libraryName The (safe) library name, used as the virtual folder prefix
      * @param sampleName The (safe) sample base name
-     * @param partialVolume The shared per-partial volume (dB) that is written separately and therefore
-     *            removed from this entry's gain
-     * @param partialTranspose The shared per-partial transpose (semitones) that is written separately
-     *            and therefore removed from this entry's tuning
+     * @param partialVolume The shared per-partial volume (dB) that is written separately and
+     *            therefore removed from this entry's gain
+     * @param partialTranspose The shared per-partial transpose (semitones) that is written
+     *            separately and therefore removed from this entry's tuning
      * @return The line
      */
     private static String patchEntry (final int partial, final int entry, final ISampleZone zone, final IAudioMetadata audioMetadata, final String libraryName, final String sampleName, final double partialVolume, final int partialTranspose)
@@ -529,8 +544,10 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
         final int channels = Math.max (1, audioMetadata.getChannels ());
         final int sampleRate = audioMetadata.getSampleRate ();
 
-        // Reverse the hardware laws: volume fraction from gain (dB) and tuning fraction from cents. The
-        // shared per-partial volume and transpose are removed first as they are written as their own
+        // Reverse the hardware laws: volume fraction from gain (dB) and tuning fraction from cents.
+        // The
+        // shared per-partial volume and transpose are removed first as they are written as their
+        // own
         // per-partial lines (SynclavierPTPIVolume / SynclavierPTPITran)
         final double volumeFraction = Math.clamp ((zone.getGain () - partialVolume + 12.0) / 36.0, 0, 1);
         final double tuneFraction = Math.clamp (((zone.getTuning () - partialTranspose) * 100.0 + 125.0) / 250.0, 0, 1);
@@ -568,7 +585,6 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
      * Builds a row for the sample index TSV.
      *
      * @param sampleName The (safe) sample base name
-     * @param zone The sample zone
      * @param audioMetadata The audio meta data of the sample
      * @return The row
      */
@@ -597,7 +613,7 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
      * @param zone The zone whose sample is written
      * @throws IOException Could not write the file
      */
-    private void writeSample (final File libraryFolder, final String sampleName, final ISampleZone zone) throws IOException
+    private static void writeSample (final File libraryFolder, final String sampleName, final ISampleZone zone) throws IOException
     {
         final Path tempFile = Files.createTempFile ("CWM-", ".flac");
         try
@@ -653,18 +669,20 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
      * truncated.
      *
      * @param descriptions The individual (already stripped, non-blank) descriptions
-     * @return The combined description, never longer than {@link #MAX_DESCRIPTION_LENGTH} characters
+     * @return The combined description, never longer than {@link #MAX_DESCRIPTION_LENGTH}
+     *         characters
      */
     private static String combineDescriptions (final Set<String> descriptions)
     {
         final StringBuilder sb = new StringBuilder ();
         for (final String description: descriptions)
         {
-            final int separator = sb.length () == 0 ? 0 : 1;
+            final int separator = sb.isEmpty () ? 0 : 1;
             if (sb.length () + separator + description.length () > MAX_DESCRIPTION_LENGTH)
             {
-                // The first description alone exceeds the limit, so truncate it; otherwise stop adding
-                if (sb.length () == 0)
+                // The first description alone exceeds the limit, so truncate it; otherwise stop
+                // adding
+                if (sb.isEmpty ())
                     sb.append (description, 0, MAX_DESCRIPTION_LENGTH);
                 break;
             }
@@ -677,11 +695,11 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Builds the timbre comment from the meta data. The Regen stores the tags as #hash-tags inside the
-     * comment (see the Regen manual, section 3.2): the category becomes the primary category tag, the
-     * keywords become the property tags. On reading, the first tag is taken as the category again, so
-     * the category is written first. Tags are lower-cased and reduced to a single token; duplicates
-     * are removed.
+     * Builds the timbre comment from the meta data. The Regen stores the tags as #hash-tags inside
+     * the comment (see the Regen manual, section 3.2): the category becomes the primary category
+     * tag, the keywords become the property tags. On reading, the first tag is taken as the
+     * category again, so the category is written first. Tags are lower-cased and reduced to a
+     * single token; duplicates are removed.
      *
      * @param metadata The meta data
      * @return The comment line (description followed by the #hash-tags)
@@ -713,8 +731,8 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Maps a ConvertWithMoss category to a Regen category tag. Categories with a clear Regen
-     * equivalent are mapped to the canonical tag; the rest fall back to the sanitized category name so
-     * the category is still written as a (custom) tag.
+     * equivalent are mapped to the canonical tag; the rest fall back to the sanitized category name
+     * so the category is still written as a (custom) tag.
      *
      * @param category The category (may be null or "Unknown")
      * @return The Regen category tag or null if there is no usable category
@@ -729,8 +747,8 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Sanitizes a tag to the Regen convention: lower-case and reduced to letters and digits (tags are
-     * always shown in lower case and are a single token).
+     * Sanitizes a tag to the Regen convention: lower-case and reduced to letters and digits (tags
+     * are always shown in lower case and are a single token).
      *
      * @param tag The tag text
      * @return The sanitized tag or null if nothing remains

@@ -6,7 +6,6 @@ package de.mossgrabers.convertwithmoss.format.synclavier;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,30 +48,34 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 {
-    private static final String TIMBRE_MAGIC        = "SynclavierVirtualInstrumentTimbreVersion";
-    private static final String ENTRY               = "SynclavierPTPatchListEntry";
-    private static final String AMP_ENVELOPE_PREFIX = "SynclavierPTPIVEnv";
-    private static final String FILTER_PREFIX       = "SynclavierTBPINoteFilter";
-    private static final String CROSSFADE_PREFIX    = "SynclavierPTPIXF";
-    private static final String DYN_ENV_SOURCE      = "SynclavierTBPIDynEnvSrc";
-    private static final int    DYN_SOURCE_VELOCITY = 10;
-    private static final String PAN_PARAM           = "SynclavierPTPIPan";
+    private static final String    TIMBRE_MAGIC        = "SynclavierVirtualInstrumentTimbreVersion";
+    private static final String    ENTRY               = "SynclavierPTPatchListEntry";
+    private static final String    AMP_ENVELOPE_PREFIX = "SynclavierPTPIVEnv";
+    private static final String    FILTER_PREFIX       = "SynclavierTBPINoteFilter";
+    private static final String    CROSSFADE_PREFIX    = "SynclavierPTPIXF";
+    private static final String    DYN_ENV_SOURCE      = "SynclavierTBPIDynEnvSrc";
+
+    private static final int       DYN_SOURCE_VELOCITY = 10;
+
+    private static final String    PAN_PARAM           = "SynclavierPTPIPan";
     // The partial pan is stored as an integer in the range [-63..63], 0 is centered
-    private static final double PAN_RANGE           = 63.0;
-    // Per-partial gain and pitch (see the firmware parameter descriptor table). All add on top of the
-    // per-patch-entry gain and tuning. Volume is a dB attenuation (-50..0), Tune is cents (+-125), Tran
-    // is semitones (+-24), Octave is a reference frequency (a coarse octave transpose, 440 Hz = neutral)
-    private static final String VOLUME_PARAM        = "SynclavierPTPIVolume";
-    private static final String TUNE_PARAM          = "SynclavierPTPITune";
-    private static final String TRAN_PARAM          = "SynclavierPTPITran";
-    private static final String OCTAVE_PARAM        = "SynclavierPTPIOctave";
-    private static final double OCTAVE_REFERENCE_HZ = 440.0;
-    private static final String PARAGRAPH           = "¶";
-    private static final String SAMPLE_ENDING       = ".sflc";
+    private static final double    PAN_RANGE           = 63.0;
+
+    // Per-partial gain and pitch (see the firmware parameter descriptor table). All add on top of
+    // the per-patch-entry gain and tuning. Volume is a dB attenuation (-50..0), Tune is cents
+    // (+-125), 'Tran' is semi-tones (+-24), Octave is a reference frequency (a coarse octave
+    // transpose, 440 Hz = neutral)
+    private static final String    VOLUME_PARAM        = "SynclavierPTPIVolume";
+    private static final String    TUNE_PARAM          = "SynclavierPTPITune";
+    private static final String    TRAN_PARAM          = "SynclavierPTPITran";
+    private static final String    OCTAVE_PARAM        = "SynclavierPTPIOctave";
+    private static final double    OCTAVE_REFERENCE_HZ = 440.0;
+    private static final String    PARAGRAPH           = "¶";
+    private static final String    SAMPLE_ENDING       = ".sflc";
     // The audio extensions to probe, the obfuscated SFLC first
-    private static final String [] SAMPLE_ENDINGS = new String []
+    private static final String [] SAMPLE_ENDINGS      = new String []
     {
-        ".sflc",
+        SAMPLE_ENDING,
         ".flac",
         ".wav",
         ".aif",
@@ -95,9 +98,9 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
     @Override
     public Set<String> getFileEndings ()
     {
-        // The detector scans for the timbre files (*-entry.txt, see the constructor) since these hold
-        // the multi-sample mapping. For the format list the SFLC sample extension is shown instead: it
-        // is the extension unique to the Synclavier and the one users recognize.
+        // The detector scans for the timbre files (*-entry.txt, see the constructor) since these
+        // hold the multi-sample mapping. For the format list the SFLC sample extension is shown
+        // instead: it is the extension unique to the Synclavier and the one users recognize.
         return Set.of (SAMPLE_ENDING);
     }
 
@@ -164,15 +167,15 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         final StringBuilder commentBuilder = new StringBuilder ();
         for (int i = 1; i < magicIndex; i++)
         {
-            if (commentBuilder.length () > 0)
+            if (!commentBuilder.isEmpty ())
                 commentBuilder.append ('\n');
             commentBuilder.append (lines.get (i));
         }
 
         // Collect the patch list entries per partial. Note: the PTPIFile* scalar lines only mirror
-        // the currently selected patch line in the editor and may be stale, so all zone data is read
-        // exclusively from the patch list entries. In addition collect the per-partial amplitude
-        // envelope (PTPIVEnv*) and the timbre-global note filter (TBPINoteFilter*).
+        // the currently selected patch line in the editor and may be stale, so all zone data is
+        // read exclusively from the patch list entries. In addition collect the per-partial
+        // amplitude envelope (PTPIVEnv*) and the timbre-global note filter (TBPINoteFilter*).
         final Map<Integer, List<String []>> partials = new TreeMap<> ();
         final Map<Integer, Map<String, Double>> partialEnvelopes = new TreeMap<> ();
         final Map<Integer, Map<String, Double>> partialCrossfades = new TreeMap<> ();
@@ -189,11 +192,11 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             if (line.startsWith (ENTRY))
             {
                 final String [] tokens = splitEntry (line);
-                if (tokens != null)
+                if (tokens.length > 0)
                 {
                     final int partial = parseInt (tokens[0], -1);
                     if (partial >= 0)
-                        partials.computeIfAbsent (Integer.valueOf (partial), k -> new ArrayList<> ()).add (tokens);
+                        partials.computeIfAbsent (Integer.valueOf (partial), _ -> new ArrayList<> ()).add (tokens);
                 }
             }
             else if (line.startsWith (AMP_ENVELOPE_PREFIX))
@@ -204,8 +207,8 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                 collectPartialScalar (partialPans, line);
             else if (line.startsWith (VOLUME_PARAM))
                 collectPartialScalar (partialVolumes, line);
-            // Note: the Tune / Tran checks must not swallow the stale FileTune editor mirror, which is
-            // why the exact keywords (not a shared prefix) are matched
+            // Note: the Tune / Tran checks must not swallow the stale FileTune editor mirror, which
+            // is why the exact keywords (not a shared prefix) are matched
             else if (line.startsWith (TUNE_PARAM))
                 collectPartialScalar (partialTunes, line);
             else if (line.startsWith (TRAN_PARAM))
@@ -232,11 +235,13 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         {
             final DefaultGroup group = new DefaultGroup ("Partial " + (partialEntry.getKey ().intValue () + 1));
             final Map<String, Double> envelope = partialEnvelopes.get (partialEntry.getKey ());
-            // The crossfade window is a velocity split only when the dynamic axis source is velocity
+            // The crossfade window is a velocity split only when the dynamic axis source is
+            // velocity
             final Map<String, Double> crossfade = dynamicSource == DYN_SOURCE_VELOCITY ? partialCrossfades.get (partialEntry.getKey ()) : null;
-            // Pan, volume and the pitch offset are per-partial settings and apply to all the zones. The
-            // partial volume is a dB attenuation added to the zone gain; the partial Tune (cents), Tran
-            // (semitones) and Octave (a reference frequency) add up to a semitone offset on the tuning.
+            // Pan, volume and the pitch offset are per-partial settings and apply to all the zones.
+            // The partial volume is a dB attenuation added to the zone gain; the partial Tune
+            // (cents), Tran (semi-tones) and Octave (a reference frequency) add up to a semi-tone
+            // offset on the tuning.
             final Double partialPan = partialPans.get (partialEntry.getKey ());
             final Double partialVolume = partialVolumes.get (partialEntry.getKey ());
             final double pitchOffset = partialPitchOffset (partialEntry.getKey (), partialTunes, partialTrans, partialOctaves);
@@ -286,14 +291,15 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
      * Creates a sample zone from a patch list entry.
      *
      * @param folder The folder which contains the timbre and its samples
-     * @param sampleIndex Maps a sample base name to its file name (from the bank index), may be empty
+     * @param sampleIndex Maps a sample base name to its file name (from the bank index), may be
+     *            empty
      * @param tokens The tokens of the patch list entry (see {@link #splitEntry(String)})
      * @return The created zone or null if the referenced sample could not be found
      * @throws IOException Could not read the sample file
      */
     private ISampleZone createZone (final File folder, final Map<String, String> sampleIndex, final String [] tokens) throws IOException
     {
-        final File sampleFile = this.resolveSample (folder, sampleIndex, tokens[16]);
+        final File sampleFile = resolveSample (folder, sampleIndex, tokens[16]);
         if (sampleFile == null)
         {
             this.notifier.logError ("IDS_SYNCLAVIER_SAMPLE_NOT_FOUND", tokens[16]);
@@ -367,7 +373,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
      * @param reference The referenced sample path
      * @return The resolved file or null if it does not exist
      */
-    private File resolveSample (final File folder, final Map<String, String> sampleIndex, final String reference)
+    private static File resolveSample (final File folder, final Map<String, String> sampleIndex, final String reference)
     {
         String name = reference.replace ('\\', '/');
         final int slash = name.lastIndexOf ('/');
@@ -454,12 +460,10 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                 int nameColumn = -1;
                 int extColumn = -1;
                 for (int c = 0; c < header.length; c++)
-                {
                     if ("mFilenameNoExt".equals (header[c]))
                         nameColumn = c;
                     else if ("mExtension".equals (header[c]))
                         extColumn = c;
-                }
                 if (nameColumn < 0)
                     continue;
                 for (int r = 1; r < lines.size (); r++)
@@ -495,7 +499,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         final String rest = line.substring (ENTRY.length ()).trim ();
         final String [] parts = rest.split ("\\s+", 17);
         if (parts.length < 17)
-            return null;
+            return new String [0];
         return parts;
     }
 
@@ -508,16 +512,14 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         final List<String> keywords = new ArrayList<> ();
         final StringBuilder description = new StringBuilder ();
         for (final String token: comment.replace (PARAGRAPH, "\n").split ("\\s+"))
-        {
             if (token.startsWith ("#") && token.length () > 1)
                 keywords.add (token.substring (1));
             else
             {
-                if (description.length () > 0)
+                if (!description.isEmpty ())
                     description.append (' ');
                 description.append (token);
             }
-        }
 
         metadata.setDescription (description.toString ().trim ());
         if (!keywords.isEmpty ())
@@ -545,7 +547,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         if (partial < 0)
             return;
         final String key = tokens[0].substring (prefix.length ());
-        map.computeIfAbsent (Integer.valueOf (partial), k -> new HashMap<> ()).put (key, Double.valueOf (parseDouble (tokens[tokens.length - 1], 0)));
+        map.computeIfAbsent (Integer.valueOf (partial), _ -> new HashMap<> ()).put (key, Double.valueOf (parseDouble (tokens[tokens.length - 1], 0)));
     }
 
 
@@ -568,10 +570,10 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 
 
     /**
-     * Computes the additional tuning of a partial in semitones from its Tune (cents), Tran (semitones)
-     * and Octave (a reference frequency where 440 Hz is neutral) parameters. All three add up on top of
-     * the note and per-patch-entry tuning (the firmware pitch engine computes frequency = 440 * 2^(sum
-     * of semitones / 12)).
+     * Computes the additional tuning of a partial in semitones from its Tune (cents), Tran
+     * (semitones) and Octave (a reference frequency where 440 Hz is neutral) parameters. All three
+     * add up on top of the note and per-patch-entry tuning (the firmware pitch engine computes
+     * frequency = 440 * 2^(sum of semitones / 12)).
      *
      * @param partial The partial index
      * @param tunes The collected Tune parameters (cents)
@@ -641,9 +643,9 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 
     /**
      * Builds an {@link IFilter} from the timbre-global note filter parameters. The Synclavier note
-     * filter is a low-pass filter (with a 2- or 4-pole slope) with a cutoff (a fraction), a resonance
-     * (0..1), a filter envelope (attack, decay, release with a peak depth) and keyboard tracking. A
-     * fresh instance is returned on every call so it can be assigned to several zones.
+     * filter is a low-pass filter (with a 2- or 4-pole slope) with a cutoff (a fraction), a
+     * resonance (0..1), a filter envelope (attack, decay, release with a peak depth) and keyboard
+     * tracking. A fresh instance is returned on every call so it can be assigned to several zones.
      *
      * @param filterParameters The filter parameters (empty if the timbre has no filter)
      * @return The filter or null if the timbre has no note filter
@@ -654,7 +656,8 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         if (cutoff == null)
             return null;
 
-        // The note filter is multi-mode; the type index selects mode and slope (value = index / 255):
+        // The note filter is multi-mode; the type index selects mode and slope (value = index /
+        // 255):
         // 1 = LP 12dB, 2 = HP 12dB, 3 = BP 12dB, 4 = LP 24dB, 5 = HP 24dB, 6 = BP 24dB
         final Double type = filterParameters.get ("Type");
         final int typeIndex = type == null ? 1 : (int) Math.round (type.doubleValue () * 255.0);
@@ -687,8 +690,8 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 
 
     /**
-     * Applies a per-partial crossfade window (XFStart/In/Out/End) to a zone as its velocity range and
-     * cross-fades. Only called when the dynamic axis source is velocity, so the partials form
+     * Applies a per-partial crossfade window (XFStart/In/Out/End) to a zone as its velocity range
+     * and cross-fades. Only called when the dynamic axis source is velocity, so the partials form
      * velocity layers.
      *
      * @param zone The zone to update

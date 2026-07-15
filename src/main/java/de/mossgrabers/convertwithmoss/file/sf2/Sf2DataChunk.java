@@ -36,12 +36,12 @@ public class Sf2DataChunk extends AbstractListChunk
      *
      * @return The data
      */
-    public byte [] getSampleData ()
+    public Optional<byte []> getSampleData ()
     {
         final Optional<IRiffChunk> chunk = this.findSubChunk (Sf2RiffChunkId.SMPL_ID);
         if (chunk.isEmpty ())
-            return null;
-        return chunk.get () instanceof final RawRIFFChunk rawChunk ? rawChunk.getData () : null;
+            return Optional.empty ();
+        return chunk.get () instanceof final RawRIFFChunk rawChunk ? Optional.of (rawChunk.getData ()) : Optional.empty ();
     }
 
 
@@ -52,11 +52,11 @@ public class Sf2DataChunk extends AbstractListChunk
      *
      * @return The data
      */
-    public byte [] getSample24Data ()
+    public Optional<byte []> getSample24Data ()
     {
         final Optional<IRiffChunk> chunk = this.findSubChunk (Sf2RiffChunkId.SM24_ID);
         if (chunk.isEmpty ())
-            return null;
-        return chunk.get () instanceof final RawRIFFChunk rawChunk ? rawChunk.getData () : null;
+            return Optional.empty ();
+        return chunk.get () instanceof final RawRIFFChunk rawChunk ? Optional.of (rawChunk.getData ()) : Optional.empty ();
     }
 }

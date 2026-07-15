@@ -41,17 +41,17 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreUtil;
  * single-zone source becomes a <b>user tone</b> whose first partial plays the sample chromatically
  * (the pattern of Roland's own user-sample preset tones), a multi-zone source becomes a <b>user
  * drum kit</b> that maps each key of 21-108 to its zone's sample with the key transposition baked
- * into the per-key pitch (the pattern of Roland's own user-sample preset kits). The audio itself
- * is stored in the project like the device's sample import does: interleaved stereo 16-bit at
- * 44.1 kHz.
+ * into the per-key pitch (the pattern of Roland's own user-sample preset kits). The audio itself is
+ * stored in the project like the device's sample import does: interleaved stereo 16-bit at 44.1
+ * kHz.
  *
  * <p>
  * A kit key plays a single sample, so overlapping velocity layers cannot be represented - the
  * loudest layer is used. Optionally ({@link MC707CreatorUI}) a multi-zone source is written as a
  * <b>multisample tone</b> instead: a record of the project's multisample key-map table maps each
  * key to its zone's sample and the tone's first partial plays that map (wave group 3, the FANTOM
- * pattern on the shared tone record) - faithful for melodic sources, but no Roland-authored
- * project uses the map table, so this path is not verified on hardware. Copy the file to
+ * pattern on the shared tone record) - faithful for melodic sources, but no Roland-authored project
+ * uses the map table, so this path is not verified on hardware. Copy the file to
  * <code>ROLAND/PROJECT</code> on the device's SD card.
  * </p>
  *
@@ -60,55 +60,70 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreUtil;
 public class MC707Creator extends AbstractCreator<MC707CreatorUI>
 {
     /** The MC-707/MC-101 store user samples at 44.1 kHz / 16-bit (their native rate). */
-    private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat DESTINATION_FORMAT   = new DestinationAudioFormat (new int []
     {
         16
     }, 44100, true);
-    private static final int                    SAMPLE_RATE        = 44100;
+    private static final int                    SAMPLE_RATE          = 44100;
 
     // Partial oscillator fields, relative to the partial base 0xDF + partial * 0x7C.
-    private static final int                    PARTIAL_OSC        = 0xDF;
-    private static final int                    PARTIAL_STRIDE     = 0x7C;
-    private static final int                    OSC_WAVE_GROUP     = 0;     // 0 = ROM, 2 = user sample
-    private static final int                    OSC_WAVE_BANK      = 1;     // 0x08 for ROM waves, 0 for user samples
-    private static final int                    OSC_WAVE_L         = 3;
-    private static final int                    OSC_WAVE_R         = 5;
-    private static final int                    OSC_FILTER_TYPE    = 0x0D;  // type * 0x100: 1=LPF, 2=BPF, 3=HPF
-    private static final int                    OSC_CUTOFF         = 0x11;
-    private static final int                    OSC_RESONANCE      = 0x17;
+    private static final int                    PARTIAL_OSC          = 0xDF;
+    @SuppressWarnings("unused")
+    private static final int                    PARTIAL_STRIDE       = 0x7C;
+    // 0 = ROM, 2 = user sample
+    private static final int                    OSC_WAVE_GROUP       = 0;
+    // 0x08 for ROM waves, 0 for user samples
+    private static final int                    OSC_WAVE_BANK        = 1;
+    private static final int                    OSC_WAVE_L           = 3;
+    private static final int                    OSC_WAVE_R           = 5;
+    // type * 0x100: 1=LPF, 2=BPF, 3=HPF
+    private static final int                    OSC_FILTER_TYPE      = 0x0D;
+    private static final int                    OSC_CUTOFF           = 0x11;
+    private static final int                    OSC_RESONANCE        = 0x17;
     // Per-partial TVA envelope: 4 u16 times + 4 u16 levels (0-1023).
-    private static final int                    TONE_TVA           = 0x37A;
-    private static final int                    TONE_TVA_STRIDE    = 0x10;
+    private static final int                    TONE_TVA             = 0x37A;
+    private static final int                    TONE_TVA_STRIDE      = 0x10;
 
     // Drum-kit key record fields.
-    private static final int                    KEY_LEVEL          = 0x11;
-    private static final int                    KEY_PITCH          = 0x12;  // 0x3C plays the sample at native pitch
-    private static final int                    KEY_MODE           = 0x18;
-    private static final int                    KEY_WAVE_NUMBER    = 0x20;  // u32, 1-based sample slot
+    private static final int                    KEY_LEVEL            = 0x11;
+    // 0x3C plays the sample at native pitch
+    private static final int                    KEY_PITCH            = 0x12;
+    private static final int                    KEY_MODE             = 0x18;
+    // u32, 1-based sample slot
+    private static final int                    KEY_WAVE_NUMBER      = 0x20;
     /** The wave-reference mode bytes of a kit key playing a user sample (device-verified). */
     private static final byte []                KEY_MODE_USER_SAMPLE =
     {
-        0x00, 0x01, 0x01, 0x00, 0x01, 0x02, 0x08, 0x00
+        0x00,
+        0x01,
+        0x01,
+        0x00,
+        0x01,
+        0x02,
+        0x08,
+        0x00
     };
 
     // Sample-parameter record fields.
-    private static final int                    SP_USED            = 0x10;  // u32 1 = slot in use
-    private static final int                    SP_WHOLE           = 0x40;  // 1 = untrimmed & unlooped
-    private static final int                    SP_LEVEL           = 0x41;
-    private static final int                    SP_LOOP_SWITCH     = 0x44;
-    private static final int                    SP_ORIGINAL_KEY    = 0x45;
-    private static final int                    SP_START           = 0x48;
-    private static final int                    SP_LOOP_START      = 0x4C;
-    private static final int                    SP_END             = 0x50;
+    // u32 1 = slot in use
+    private static final int                    SP_USED              = 0x10;
+    // 1 = untrimmed & unlooped
+    private static final int                    SP_WHOLE             = 0x40;
+    private static final int                    SP_LEVEL             = 0x41;
+    private static final int                    SP_LOOP_SWITCH       = 0x44;
+    private static final int                    SP_ORIGINAL_KEY      = 0x45;
+    private static final int                    SP_START             = 0x48;
+    private static final int                    SP_LOOP_START        = 0x4C;
+    private static final int                    SP_END               = 0x50;
 
     /**
      * A device-authored user-sample tone record (from Roland's own preset projects, sound-design
      * fields reverted to the init tone): partial 1 is set up to play a user sample chromatically,
      * partials 2-4 are off. Name, wave number, filter and envelope are patched per source.
      */
-    private static final byte []                TONE_TEMPLATE      = loadResource ("tone_sample.bin");
+    private static final byte []                TONE_TEMPLATE        = loadResource ("tone_sample.bin");
 
-    private static final int                    MAX_NAME_LENGTH    = MC707Project.NAME_LENGTH - ".wav".length ();
+    private static final int                    MAX_NAME_LENGTH      = MC707Project.NAME_LENGTH - ".wav".length ();
 
 
     /**
@@ -172,7 +187,7 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
 
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            // The device's fixed sample rate - rescale all loop/start/end positions to it.
+            // The device's fixed sample rate - scale all loop/start/end positions to it.
             recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
 
             final List<ISampleZone> zones = new ArrayList<> ();
@@ -234,26 +249,26 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         if (sampleSlot < 0)
             return false;
 
-        final byte [] record = TONE_TEMPLATE.clone ();
-        System.arraycopy (ZenCoreUtil.padName (multisampleSource.getName (), MC707Project.NAME_LENGTH), 0, record, 0, MC707Project.NAME_LENGTH);
+        final byte [] toneRecord = TONE_TEMPLATE.clone ();
+        System.arraycopy (ZenCoreUtil.padName (multisampleSource.getName (), MC707Project.NAME_LENGTH), 0, toneRecord, 0, MC707Project.NAME_LENGTH);
 
         // Partial 1 plays the user sample (wave group 2); partials 2-4 stay off as in the template.
-        record[PARTIAL_OSC + OSC_WAVE_GROUP] = 2;
-        record[PARTIAL_OSC + OSC_WAVE_BANK] = 0;
-        putU16 (record, PARTIAL_OSC + OSC_WAVE_L, sampleSlot + 1);
-        putU16 (record, PARTIAL_OSC + OSC_WAVE_R, 0);
+        toneRecord[PARTIAL_OSC + OSC_WAVE_GROUP] = 2;
+        toneRecord[PARTIAL_OSC + OSC_WAVE_BANK] = 0;
+        putU16 (toneRecord, PARTIAL_OSC + OSC_WAVE_L, sampleSlot + 1);
+        putU16 (toneRecord, PARTIAL_OSC + OSC_WAVE_R, 0);
 
-        writeToneFilter (record, zone);
-        writeToneEnvelope (record, zone);
+        writeToneFilter (toneRecord, zone);
+        writeToneEnvelope (toneRecord, zone);
 
-        System.arraycopy (record, 0, project.getData (), project.getUserToneOffset (slot), MC707Project.TONE_SIZE);
+        System.arraycopy (toneRecord, 0, project.getData (), project.getUserToneOffset (slot), MC707Project.TONE_SIZE);
         return true;
     }
 
 
     /**
-     * Write a multi-zone source as a user tone playing a multisample: a record of the project's
-     * multisample key-map table maps each key to its zone's sample and partial 1 plays that map
+     * Write a multi-zone source as a user tone playing a multi-sample: a record of the project's
+     * multi-sample key-map table maps each key to its zone's sample and partial 1 plays that map
      * (wave group 3, the pattern of the FANTOM whose tone record the MC shares). Overlapping
      * velocity layers collapse to the loudest layer (the map holds one sample per key). No
      * Roland-authored project uses the map table, so this path is not verified on hardware.
@@ -313,21 +328,21 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         if (hasLayers)
             this.notifier.log ("IDS_MC707_LAYERS_REDUCED", multisampleSource.getName ());
 
-        final byte [] record = TONE_TEMPLATE.clone ();
-        System.arraycopy (ZenCoreUtil.padName (multisampleSource.getName (), MC707Project.NAME_LENGTH), 0, record, 0, MC707Project.NAME_LENGTH);
+        final byte [] toneRecord = TONE_TEMPLATE.clone ();
+        System.arraycopy (ZenCoreUtil.padName (multisampleSource.getName (), MC707Project.NAME_LENGTH), 0, toneRecord, 0, MC707Project.NAME_LENGTH);
 
         // Partial 1 plays the multisample map (wave group 3); the wave-bank byte stays 0x08 and
         // Wave R = Wave L as in the FANTOM's multisample tones (on the FANTOM R = 0 plays mono).
-        record[PARTIAL_OSC + OSC_WAVE_GROUP] = 3;
-        record[PARTIAL_OSC + OSC_WAVE_BANK] = 0x08;
-        putU16 (record, PARTIAL_OSC + OSC_WAVE_L, slot + 1);
-        putU16 (record, PARTIAL_OSC + OSC_WAVE_R, slot + 1);
+        toneRecord[PARTIAL_OSC + OSC_WAVE_GROUP] = 3;
+        toneRecord[PARTIAL_OSC + OSC_WAVE_BANK] = 0x08;
+        putU16 (toneRecord, PARTIAL_OSC + OSC_WAVE_L, slot + 1);
+        putU16 (toneRecord, PARTIAL_OSC + OSC_WAVE_R, slot + 1);
 
         final ISampleZone representative = zones.get (0);
-        writeToneFilter (record, representative);
-        writeToneEnvelope (record, representative);
+        writeToneFilter (toneRecord, representative);
+        writeToneEnvelope (toneRecord, representative);
 
-        System.arraycopy (record, 0, project.getData (), project.getUserToneOffset (slot), MC707Project.TONE_SIZE);
+        System.arraycopy (toneRecord, 0, project.getData (), project.getUserToneOffset (slot), MC707Project.TONE_SIZE);
         return true;
     }
 
@@ -392,7 +407,7 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
             final int keyOffset = project.getUserKitKeyOffset (slot, keyIndex);
             System.arraycopy (ZenCoreUtil.padName (pool.get (sampleSlot.intValue ()).name, MC707Project.NAME_LENGTH), 0, data, keyOffset, MC707Project.NAME_LENGTH);
             data[keyOffset + KEY_LEVEL] = (byte) levelFromGain (best.getGain ());
-            data[keyOffset + KEY_PITCH] = (byte) Math.clamp (0x3C + key - rootKey, 0, 127);
+            data[keyOffset + KEY_PITCH] = (byte) Math.clamp (0x3CL + key - rootKey, 0, 127);
             System.arraycopy (KEY_MODE_USER_SAMPLE, 0, data, keyOffset + KEY_MODE, KEY_MODE_USER_SAMPLE.length);
             ZenCoreUtil.writeUnsigned32 (data, keyOffset + KEY_WAVE_NUMBER, sampleSlot.intValue () + 1L, false);
             hasKeys = true;
@@ -493,11 +508,14 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         out.writeBytes (new byte []
         {
-            'S', 'M', 'P', 'h'
+            'S',
+            'M',
+            'P',
+            'h'
         });
         final byte [] header = new byte [28];
         header[0] = 0x20; // header size
-        header[4] = 2;    // version
+        header[4] = 2; // version
         ZenCoreUtil.writeUnsigned32 (header, 8, pool.size (), false);
         out.writeBytes (header);
 
@@ -559,10 +577,10 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
     /**
      * Write the source's filter into partial 1 of the tone record.
      *
-     * @param record The tone record
+     * @param toneRecord The tone record
      * @param zone The zone from which to get the filter
      */
-    private static void writeToneFilter (final byte [] record, final ISampleZone zone)
+    private static void writeToneFilter (final byte [] toneRecord, final ISampleZone zone)
     {
         final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isEmpty ())
@@ -577,9 +595,9 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         };
         if (filterType == 0)
             return;
-        putU16 (record, PARTIAL_OSC + OSC_FILTER_TYPE, filterType * 0x100);
-        putU16 (record, PARTIAL_OSC + OSC_CUTOFF, Math.clamp ((int) Math.round (MathUtils.normalizeCutoff (filter.getCutoff ()) * 1023.0), 0, 1023));
-        putU16 (record, PARTIAL_OSC + OSC_RESONANCE, Math.clamp ((int) Math.round (filter.getResonance () * 1023.0), 0, 1023));
+        putU16 (toneRecord, PARTIAL_OSC + OSC_FILTER_TYPE, filterType * 0x100);
+        putU16 (toneRecord, PARTIAL_OSC + OSC_CUTOFF, Math.clamp ((int) Math.round (MathUtils.normalizeCutoff (filter.getCutoff ()) * 1023.0), 0, 1023));
+        putU16 (toneRecord, PARTIAL_OSC + OSC_RESONANCE, Math.clamp ((int) Math.round (filter.getResonance () * 1023.0), 0, 1023));
     }
 
 
@@ -587,10 +605,10 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
      * Write the source's amplitude envelope into the TVA envelopes of all 4 partials
      * (Roland-authored tones carry identical values in all four blocks).
      *
-     * @param record The tone record
+     * @param toneRecord The tone record
      * @param zone The zone from which to get the envelope
      */
-    private static void writeToneEnvelope (final byte [] record, final ISampleZone zone)
+    private static void writeToneEnvelope (final byte [] toneRecord, final ISampleZone zone)
     {
         final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         if (envelope == null)
@@ -612,14 +630,14 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         for (int partial = 0; partial < 4; partial++)
         {
             final int offset = TONE_TVA + partial * TONE_TVA_STRIDE;
-            putU16 (record, offset, attack);
-            putU16 (record, offset + 2, hold);
-            putU16 (record, offset + 4, decay);
-            putU16 (record, offset + 6, release);
-            putU16 (record, offset + 8, 1023);      // L1 = peak
-            putU16 (record, offset + 10, holdLevel);
-            putU16 (record, offset + 12, sustain);  // L3 = sustain
-            putU16 (record, offset + 14, 0);        // L4 = silence
+            putU16 (toneRecord, offset, attack);
+            putU16 (toneRecord, offset + 2, hold);
+            putU16 (toneRecord, offset + 4, decay);
+            putU16 (toneRecord, offset + 6, release);
+            putU16 (toneRecord, offset + 8, 1023); // L1 = peak
+            putU16 (toneRecord, offset + 10, holdLevel);
+            putU16 (toneRecord, offset + 12, sustain); // L3 = sustain
+            putU16 (toneRecord, offset + 14, 0); // L4 = silence
         }
     }
 

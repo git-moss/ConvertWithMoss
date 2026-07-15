@@ -128,7 +128,8 @@ public class EXSPitchModulationCurve
             }
 
         // Bisection inside the segment.
-        double lo = XS[i], hi = XS[i + 1];
+        double lo = XS[i];
+        double hi = XS[i + 1];
         for (int iter = 0; iter < 60; iter++)
         {
             final double mid = 0.5 * (lo + hi);

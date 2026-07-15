@@ -215,19 +215,19 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
                     continue;
                 group.addSampleZone (createZone (sample, 0, 127, sample.rootKey, sample.level));
                 signature.append ('/').append (waveNumber);
+                continue;
             }
-            else if (waveGroup == 3 && waveNumber >= 1 && waveNumber <= MC707Project.NUM_MULTISAMPLE_MAPS)
-            {
-                // The partial plays a multisample: expand the key-map record into zones.
-                this.readMultisampleMap (project, waveNumber - 1, samples, group, signature);
-            }
+
+            // The partial plays a multi-sample: expand the key-map record into zones.
+            if (waveGroup == 3 && waveNumber >= 1 && waveNumber <= MC707Project.NUM_MULTISAMPLE_MAPS)
+                readMultisampleMap (project, waveNumber - 1, samples, group, signature);
         }
         this.addSource (file, name, group, signature.toString (), signatures, results);
     }
 
 
     /**
-     * Turn a multisample key-map record into key-ranged zones (a zone per run of one sample).
+     * Turn a multi-sample key-map record into key-ranged zones (a zone per run of one sample).
      *
      * @param project The project
      * @param mapSlot The 0-based map slot
@@ -235,7 +235,7 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
      * @param group Where to add the zones
      * @param signature The content signature to extend
      */
-    private void readMultisampleMap (final MC707Project project, final int mapSlot, final Map<Integer, MC707Sample> samples, final IGroup group, final StringBuilder signature)
+    private static void readMultisampleMap (final MC707Project project, final int mapSlot, final Map<Integer, MC707Sample> samples, final IGroup group, final StringBuilder signature)
     {
         final byte [] data = project.getData ();
         final int mapOffset = project.getMultisampleMapOffset (mapSlot);
@@ -334,7 +334,7 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
                 {
                     // The written pitch is 0x3C + (key - root), so the root of the merged zone is
                     // the key at which the pitch field crosses its center.
-                    final int rootKey = Math.clamp (runStartKey - (runPitch - 0x3C), 0, 127);
+                    final int rootKey = Math.clamp (runStartKey - (runPitch - 0x3CL), 0, 127);
                     group.addSampleZone (createZone (samples.get (Integer.valueOf (runSample)), runStartKey, key - 1, rootKey, runLevel));
                     signature.append ('/').append (runStartKey).append (':').append (runSample).append (':').append (runPitch).append (':').append (runLevel);
                 }

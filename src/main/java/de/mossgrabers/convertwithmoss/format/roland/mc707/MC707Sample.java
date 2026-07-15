@@ -6,8 +6,8 @@ package de.mossgrabers.convertwithmoss.format.roland.mc707;
 
 /**
  * One slot of a MC-707/MC-101 project's user-sample pool: the sample-parameter record fields plus
- * the audio of the matching <i>SMPd</i> chunk. The device stores every sample as interleaved
- * stereo 16-bit at 44.1 kHz; all positions are in stereo frames.
+ * the audio of the matching <i>SMPd</i> chunk. The device stores every sample as interleaved stereo
+ * 16-bit at 44.1 kHz; all positions are in stereo frames.
  *
  * @author Jürgen Moßgraber
  */
