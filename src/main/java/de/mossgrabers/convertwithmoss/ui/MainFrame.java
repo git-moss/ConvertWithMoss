@@ -12,7 +12,6 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,8 +142,8 @@ public class MainFrame extends AbstractFrame implements INotifier
     // Parameters of Settings dialog
     private boolean                addNewFiles;
     private boolean                enableDarkMode;
-    private TaskPane<IDetector<?>> sourceTaskPane;
-    private TaskPane<ICreator<?>>  destinationTaskPane;
+    private TaskPane               sourceTaskPane;
+    private TaskPane               destinationTaskPane;
 
 
     /**
@@ -196,7 +195,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         sourceUpperPane.addComponent (new BorderPane (this.sourcePathField, null, this.sourceFolderSelectButton, null, null));
         this.sourcePathField.setMaxWidth (Double.MAX_VALUE);
 
-        this.sourceTaskPane = new TaskPane<> (Arrays.asList (this.backend.getDetectors ()), true);
+        this.sourceTaskPane = new TaskPane (this.backend.getDetectors (), true);
         final BorderPane sourcePane = new BorderPane ();
         sourcePane.setTop (sourceUpperPane.getPane ());
         sourcePane.setCenter (this.sourceTaskPane.formatPane);
@@ -218,7 +217,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         destinationUpperPart.addComponent (destinationFolderPanel);
         this.destinationPathField.setMaxWidth (Double.MAX_VALUE);
 
-        this.destinationTaskPane = new TaskPane<> (Arrays.asList (this.backend.getCreators ()), false);
+        this.destinationTaskPane = new TaskPane (this.backend.getCreators (), false);
         this.configureDestinationTypePane ();
         final BorderPane destinationPane = new BorderPane ();
         destinationPane.setTop (destinationUpperPart.getPane ());
@@ -616,8 +615,8 @@ public class MainFrame extends AbstractFrame implements INotifier
             Functions.message ("@IDS_NOTIFY_SELECT_DESTINATION_FORMAT");
             return;
         }
-        final IDetector<?> detector = this.backend.getDetectors ()[selectedDetector];
-        final ICreator<?> creator = this.backend.getCreators ()[selectedCreator];
+        final IDetector<?> detector = this.backend.getDetectors ().get (selectedDetector);
+        final ICreator<?> creator = this.backend.getCreators ().get (selectedCreator);
         if (!detector.getSettings ().checkSettingsUI (this) || !creator.getSettings ().checkSettingsUI (this) || this.detectSettings.enableProcessing && !creator.checkProcessingCompatibility (this.detectSettings))
             return;
 
@@ -955,26 +954,26 @@ public class MainFrame extends AbstractFrame implements INotifier
     }
 
 
-    private class TaskPane<T extends ICoreTask<?>>
+    private class TaskPane// <T extends ICoreTask<?>>
     {
-        private final BorderPane           formatPane    = new BorderPane ();
-        private final TextField            search        = new TextField ();
-        private final StackPane            contentArea   = new StackPane ();
-        private final ListView<String>     formatList;
-        private final Map<String, T>       mappedTasks   = new HashMap<> ();
-        private final Map<String, Integer> mappedIndices = new HashMap<> ();
-        private final List<String>         indices       = new ArrayList<> ();
-        private final Map<String, Node>    mappedPanes   = new HashMap<> ();
+        private final BorderPane                formatPane    = new BorderPane ();
+        private final TextField                 search        = new TextField ();
+        private final StackPane                 contentArea   = new StackPane ();
+        private final ListView<String>          formatList;
+        private final Map<String, ICoreTask<?>> mappedTasks   = new HashMap<> ();
+        private final Map<String, Integer>      mappedIndices = new HashMap<> ();
+        private final List<String>              indices       = new ArrayList<> ();
+        private final Map<String, Node>         mappedPanes   = new HashMap<> ();
 
-        private String                     lastSelected  = null;
+        private String                          lastSelected  = null;
 
 
-        private TaskPane (final List<T> tasks, final boolean isSource)
+        private TaskPane (final List<? extends ICoreTask<?>> tasks, final boolean isSource)
         {
             final List<String> taskNames = new ArrayList<> ();
             for (int i = 0; i < tasks.size (); i++)
             {
-                final T task = tasks.get (i);
+                final ICoreTask<?> task = tasks.get (i);
                 String name = task.getName ();
                 final String fileEndings = formatFileEndings (task.getFileEndings ());
                 if (!fileEndings.isEmpty ())
@@ -1082,11 +1081,11 @@ public class MainFrame extends AbstractFrame implements INotifier
                 final int selectedType = MainFrame.this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
                 if (isSource)
                 {
-                    final IDetector<?> detector = MainFrame.this.sourceTaskPane.mappedTasks.get (itemText);
+                    final IDetector<?> detector = (IDetector<?>) MainFrame.this.sourceTaskPane.mappedTasks.get (itemText);
                     return selectedType != DEST_TYPE_PERFORMANCE && selectedType != DEST_TYPE_PERFORMANCE_LIBRARY || detector.supportsPerformances ();
                 }
 
-                final ICreator<?> creator = MainFrame.this.destinationTaskPane.mappedTasks.get (itemText);
+                final ICreator<?> creator = (ICreator<?>) MainFrame.this.destinationTaskPane.mappedTasks.get (itemText);
                 return selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_PRESET_LIBRARY && creator.supportsPresetLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances () || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY && creator.supportsPerformanceLibraries ();
             }
             return false;

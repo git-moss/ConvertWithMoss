@@ -479,11 +479,11 @@ public final class ZenCoreSvz
     }
 
 
-    private static void copyBlock (final byte [] record, final int from, final int to, final int length, final int limit)
+    private static void copyBlock (final byte [] toneRecord, final int from, final int to, final int length, final int limit)
     {
         final int n = Math.min (length, limit - to);
         if (n > 0)
-            System.arraycopy (record, from, record, to, n);
+            System.arraycopy (toneRecord, from, toneRecord, to, n);
     }
 
 
