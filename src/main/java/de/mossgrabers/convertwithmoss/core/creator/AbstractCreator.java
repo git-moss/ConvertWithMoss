@@ -575,12 +575,13 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected File createUniqueFilename (final File destinationFolder, final String sampleName, final String extension)
     {
         final String ext = extension.isBlank () ? "" : "." + extension;
-        File multiFile = new File (destinationFolder, sampleName + ext);
+        final String name = withoutExtensionTail (sampleName, extension);
+        File multiFile = new File (destinationFolder, name + ext);
         int counter = 1;
         while (multiFile.exists ())
         {
             counter++;
-            multiFile = new File (destinationFolder, sampleName + " (" + counter + ")" + ext);
+            multiFile = new File (destinationFolder, name + " (" + counter + ")" + ext);
         }
         return multiFile;
     }
@@ -597,14 +598,38 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected File createUniqueFilename (final File destinationFolder, final String sampleName, final String extension, final List<String> existingAbsoluteFilenames)
     {
-        File multiFile = new File (destinationFolder, sampleName + extension);
+        final String name = withoutExtensionTail (sampleName, extension);
+        File multiFile = new File (destinationFolder, name + extension);
         int counter = 1;
         while (existingAbsoluteFilenames.contains (multiFile.getAbsolutePath ()))
         {
             counter++;
-            multiFile = new File (destinationFolder, sampleName + " (" + counter + ")" + extension);
+            multiFile = new File (destinationFolder, name + " (" + counter + ")" + extension);
         }
         return multiFile;
+    }
+
+
+    /**
+     * Remove a doubled-up file ending from a name. A library name is free text from the user
+     * interface - typed with the file ending (e.g. "MyLibrary.xrni") it would otherwise come out
+     * as "MyLibrary_xrni.xrni", since the name sanitizing replaces the dot with an underscore
+     * before the name reaches the creator; both spellings are therefore handled. Only a tail that
+     * matches the extension actually being appended is removed.
+     *
+     * @param name The file name, without the extension that will be appended
+     * @param extension The extension that will be appended, with or without a leading dot
+     * @return The name without a trailing '.extension' or '_extension'
+     */
+    private static String withoutExtensionTail (final String name, final String extension)
+    {
+        final String bare = extension.startsWith (".") ? extension.substring (1) : extension;
+        if (bare.isBlank ())
+            return name;
+        final int tailLength = bare.length () + 1;
+        if (name.length () > tailLength && (name.regionMatches (true, name.length () - tailLength, "." + bare, 0, tailLength) || name.regionMatches (true, name.length () - tailLength, "_" + bare, 0, tailLength)))
+            return name.substring (0, name.length () - tailLength);
+        return name;
     }
 
 
