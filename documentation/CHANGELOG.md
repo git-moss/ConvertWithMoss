@@ -9,7 +9,6 @@
 * New: Added support for the Roland MV-8000/MV-8800 patch format (MV0) (thanks to Douglas Carmichael).
 * New: Added support for the Roland ZEN-Core sound format (SVZ) (thanks to Douglas Carmichael).
 * New: Added support for the Synclavier Regen timbre/library format (SFLC) (thanks to Douglas Carmichael).
-* New: Added support for the Roland ZEN-Core sound format (SVZ) (thanks to Douglas Carmichael).
 * New: Added support for the Roland MC-707/MC-101 project format (MPJ) (thanks to Douglas Carmichael).
 * New: Added support for the Fairlight CMI 3 - read only (thanks to PythonBlue).
 * New: Added support for the Downloadable Sound format (DLS) - read only.
