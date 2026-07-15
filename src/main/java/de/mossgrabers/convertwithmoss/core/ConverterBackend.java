@@ -89,6 +89,8 @@ import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
 import de.mossgrabers.convertwithmoss.format.sxt.SxtCreator;
 import de.mossgrabers.convertwithmoss.format.sxt.SxtDetector;
+import de.mossgrabers.convertwithmoss.format.synclavier.SynclavierRegenCreator;
+import de.mossgrabers.convertwithmoss.format.synclavier.SynclavierRegenDetector;
 import de.mossgrabers.convertwithmoss.format.synthstrom.DelugeCreator;
 import de.mossgrabers.convertwithmoss.format.synthstrom.DelugeDetector;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
@@ -176,6 +178,7 @@ public class ConverterBackend
             new ZenCoreDetector (notifier),
             new SxtDetector (notifier),
             new SampleFileDetector (notifier),
+            new SynclavierRegenDetector (notifier),
             new SfzDetector (notifier),
             new Sf2Detector (notifier),
             new OmnisphereDetector (notifier),
@@ -209,6 +212,7 @@ public class ConverterBackend
             new MV8000Creator (notifier),
             new ZenCoreCreator (notifier),
             new SxtCreator (notifier),
+            new SynclavierRegenCreator (notifier),
             new WavCreator (notifier),
             new SfzCreator (notifier),
             new Sf2Creator (notifier),
