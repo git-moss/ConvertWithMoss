@@ -3,6 +3,7 @@
 ## 19.0.1 (unreleased)
 
 * New: Improved logging if WAV file could not be written.
+* New: Added support for the Kurzweil K2000/K2500/K2600 format (KRZ, K25, K26) (thanks to Douglas Carmichael).
 * Synthstrom Deluge (thanks to Douglas Carmichael)
   * New: Added an Output Type creator option (Synth/Kit, CLI DelugeOutputType) to write a drum kit instead of a synth (sound) preset. A kit writes one drum per note, consolidating velocity layers and round-robins to the loudest layer (a Deluge drum is a single sample). The type is chosen explicitly because a one-sample-per-note layout is not necessarily a kit (e.g. a per-note synth bass).
   * New: Added a "Consolidate kit" option (CLI DelugeConsolidateKit) which reduces a drum kit to one drum per type (kick, snare, hi-hat, ...) ordered by drum role following the factory TR-808 layout (kick on the lowest row), so a beat can be programmed without switching rows. The consolidated drums are labelled by their role for a clean read-out on the device.

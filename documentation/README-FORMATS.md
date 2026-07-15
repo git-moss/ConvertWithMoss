@@ -403,6 +403,14 @@ Since the format is pretty simple all data stored in the file is available for t
 
 Since the format supports only one group of a multi-sample, multiple destination files are created for each group available in the source. If there is more than one group in the source the name of the created file has the velocity range of the group added. Using that information a multi-sample with up to 4 groups can be created as a Performance in the device.
 
+## Kurzweil K2000/K2500/K2600
+
+The Kurzweil K2000 (1991), K2500 and K2600 samplers/synthesizers share one object file format with the extensions *.krz*, *.k25* and *.k26*. A file is a bank of numbered objects: programs (presets), keymaps (the mapping of sample recordings across the keys and the 8 dynamic velocity levels) and samples, which may contain several recordings (multiple root keys, stereo pairs). The layout was derived from the source code of the GPL tool KurzFiler by Marc Halbruegge (see *documentation/design/KURZWEIL_FORMAT.md*).
+
+When reading, each program becomes one multi-sample: its layers reference keymaps from which the key ranges, velocity levels, root keys, tunings, loops and the 16-bit sample data are read. Keymaps and samples which are not referenced by any program are converted as multi-samples of their own. Many factory and commercial K-series files map samples from the device ROM which is not present in the file; such zones cannot be converted and are skipped with a note.
+
+When writing, a *.krz* file is created which uses only K2000 features and therefore loads on all three device families. Each multi-sample becomes a program with one layer and a keymap; the velocity layers of the source are quantized onto the 8 dynamic levels of the keymap. One sample object is written per zone (16-bit, the sample rate is kept). Since the device plays a loop until the end of the sample, the data after the loop end is cut off. If any zone is stereo, all samples of the program are written as stereo pairs. The keymap covers MIDI notes 12-127 (C0-G9 in Kurzweil terms), keys below are dropped. Several multi-samples can be written into one file as a library; if the object IDs (200-999 per type) do not suffice, multiple files are created.
+
 ## Logic EXS24
 
 The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digital audio workstation. It is primarily used for storing and playback of sampled instruments and sounds within Logic Pro. The format allows for comprehensive mapping and editing of samples, as well as providing various modulation and performance options.
