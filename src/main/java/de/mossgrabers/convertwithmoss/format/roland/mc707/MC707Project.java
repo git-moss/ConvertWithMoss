@@ -17,10 +17,10 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreUtil;
 /**
  * A Roland MC-707 / MC-101 project file (<i>.mpj</i>). The container is a fixed-layout variant of
  * the ZEN-Core <i>SVD5</i> framing (see <i>MC707_FORMAT.md</i>): a 7-entry TOC of <i>MC77</i>
- * sections in which only the looper-audio (<i>LPDa</i>) and user-sample (<i>USDa</i>) sections
- * vary in size. The <i>USRa</i> section holds the project's user banks (64 tones, 64 drum kits
- * with 88 key records each, 500 sample-parameter slots); the <i>PRJa</i> section additionally
- * holds the per-clip tone/kit banks of the 8 tracks.
+ * sections in which only the looper-audio (<i>LPDa</i>) and user-sample (<i>USDa</i>) sections vary
+ * in size. The <i>USRa</i> section holds the project's user banks (64 tones, 64 drum kits with 88
+ * key records each, 500 sample-parameter slots); the <i>PRJa</i> section additionally holds the
+ * per-clip tone/kit banks of the 8 tracks.
  *
  * <p>
  * New projects are created from the device's own init project: the firmware of both grooveboxes
@@ -33,61 +33,61 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreUtil;
 public class MC707Project
 {
     /** The number of user tone slots in the USRa bank. */
-    public static final int     NUM_USER_TONES      = 64;
+    public static final int           NUM_USER_TONES       = 64;
     /** The number of user drum-kit slots in the USRa bank. */
-    public static final int     NUM_USER_KITS       = 64;
+    public static final int           NUM_USER_KITS        = 64;
     /** The number of sample slots in the sample-parameter table. */
-    public static final int     NUM_SAMPLE_SLOTS    = 500;
+    public static final int           NUM_SAMPLE_SLOTS     = 500;
     /** The number of multisample key-map slots. */
-    public static final int     NUM_MULTISAMPLE_MAPS = 128;
+    public static final int           NUM_MULTISAMPLE_MAPS = 128;
     /** The number of clip-tone slots in the PRJa bank (6 groups of 16 clips + 1 current). */
-    public static final int     NUM_CLIP_TONES      = 102;
+    public static final int           NUM_CLIP_TONES       = 102;
     /** The number of clip-kit slots in the PRJa bank (8 groups of 16 clips + 1 current). */
-    public static final int     NUM_CLIP_KITS       = 136;
+    public static final int           NUM_CLIP_KITS        = 136;
 
     /** The size of a ZEN-Core tone record (identical to the FANTOM PATa record). */
-    public static final int     TONE_SIZE           = 1632;
+    public static final int           TONE_SIZE            = 1632;
     /** The size of a drum-kit common record. */
-    public static final int     KIT_SIZE            = 3328;
+    public static final int           KIT_SIZE             = 3328;
     /** The size of a drum-kit key record. */
-    public static final int     KIT_KEY_SIZE        = 216;
+    public static final int           KIT_KEY_SIZE         = 216;
     /** The size of a sample-parameter record. */
-    public static final int     SAMPLE_PARAM_SIZE   = 84;
+    public static final int           SAMPLE_PARAM_SIZE    = 84;
     /** The size of a multisample key-map record: the name plus 4 bytes for each of the 128 keys. */
-    public static final int     MULTISAMPLE_MAP_SIZE = 16 + 128 * 4;
+    public static final int           MULTISAMPLE_MAP_SIZE = 16 + 128 * 4;
     /** The number of key records of a kit; record 0 = MIDI key 21 (A0), record 87 = 108 (C8). */
-    public static final int     KIT_NUM_KEYS        = 88;
+    public static final int           KIT_NUM_KEYS         = 88;
     /** The MIDI note of a kit's first key record. */
-    public static final int     KIT_BASE_KEY        = 21;
+    public static final int           KIT_BASE_KEY         = 21;
     /** The length of all name fields. */
-    public static final int     NAME_LENGTH         = 16;
+    public static final int           NAME_LENGTH          = 16;
 
     // Offsets of the user banks inside the USRa section (16 byte block header included).
-    private static final int    USR_TONES           = 0x10;
-    private static final int    USR_KITS            = 0x10 + 0x19800;
-    private static final int    USR_KIT_KEYS        = 0x10 + 0x4D800;
-    private static final int    USR_SAMPLE_TABLE    = 0x10 + 0x176800;
-    private static final int    USR_MULTISAMPLE_MAPS = 0x10 + 0x180C10;
+    private static final int          USR_TONES            = 0x10;
+    private static final int          USR_KITS             = 0x10 + 0x19800;
+    private static final int          USR_KIT_KEYS         = 0x10 + 0x4D800;
+    private static final int          USR_SAMPLE_TABLE     = 0x10 + 0x176800;
+    private static final int          USR_MULTISAMPLE_MAPS = 0x10 + 0x180C10;
 
     // Offsets of the clip sound banks inside the PRJa section (see MC707_FORMAT.md §4).
-    private static final int    PRJ_NAME            = 0x10;
-    private static final int    PRJ_CLIPS           = 0x10F0;
-    private static final int    PRJ_TONES           = 0x31EBB0;
-    private static final int    PRJ_KITS            = 0x3475F0;
-    private static final int    PRJ_KIT_KEYS        = 0x3B5DF0;
+    private static final int          PRJ_NAME             = 0x10;
+    private static final int          PRJ_CLIPS            = 0x10F0;
+    private static final int          PRJ_TONES            = 0x31EBB0;
+    private static final int          PRJ_KITS             = 0x3475F0;
+    private static final int          PRJ_KIT_KEYS         = 0x3B5DF0;
 
     /** The size of a clip record (the clip's sound name and common data plus its sequence). */
-    private static final int    CLIP_RECORD_SIZE    = 0x5C40;
+    private static final int          CLIP_RECORD_SIZE     = 0x5C40;
 
-    private static final String MAGIC               = "PRJ5";
-    private static final int    TOC_OFFSET          = 0x10;
-    private static final int    TOC_ENTRY_SIZE      = 16;
-    private static final int    NUM_SECTIONS        = 7;
+    private static final String       MAGIC                = "PRJ5";
+    private static final int          TOC_OFFSET           = 0x10;
+    private static final int          TOC_ENTRY_SIZE       = 16;
+    private static final int          NUM_SECTIONS         = 7;
 
-    private static final byte [] TEMPLATE           = loadTemplate ();
+    private static final byte []      TEMPLATE             = loadTemplate ();
 
-    private final byte []       data;
-    private final Map<String, int []> sections     = new HashMap<> ();
+    private final byte []             data;
+    private final Map<String, int []> sections             = new HashMap<> ();
 
 
     /**

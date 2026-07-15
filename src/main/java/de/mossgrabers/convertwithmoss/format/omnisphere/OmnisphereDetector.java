@@ -51,6 +51,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
 {
+    private static final String FILE_ENDING_ZMAP = ".zmap";
     private static final String    IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND = "IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND";
     private static final String    IDS_NOTIFY_ERR_BAD_METADATA_FILE     = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
 
@@ -61,7 +62,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
 
     private static final String [] MULTISAMPLE_ENDINGS                  =
     {
-        ".zmap"
+        FILE_ENDING_ZMAP
     };
 
 
@@ -210,7 +211,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         for (int i = 0; i < 4; i++)
             if (voiceElements.get (i) instanceof final Element voiceElement && multisampleElements.get (i) instanceof final String soundSourceName)
             {
-                final String soundSourceFilename = soundSourceName + ".zmap";
+                final String soundSourceFilename = soundSourceName + FILE_ENDING_ZMAP;
                 this.notifier.log ("IDS_OMNISPHERE_NO_LOOKING_UP_SOUND_SOURCE", soundSourceFilename);
                 final File soundsourceFile = findFileRecursively (userSampleFolder, soundSourceFilename);
                 if (soundsourceFile == null)
@@ -647,7 +648,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                 continue;
             if (file.getName ().endsWith (".db"))
                 hasDbFile = true;
-            if (file.getName ().endsWith (".zmap"))
+            if (file.getName ().endsWith (FILE_ENDING_ZMAP))
                 hasZmapFile = true;
             if (hasDbFile && hasZmapFile)
                 return parentFile;

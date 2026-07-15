@@ -183,7 +183,7 @@ public interface IMultisampleSource extends ISource
 
     /**
      * Set the envelope on all sample zones of the multi-sample.
-     * 
+     *
      * @param depth The depth to set in the range of [-1,1]
      * @param envelope The envelope to set
      */
