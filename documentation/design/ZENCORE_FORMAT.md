@@ -353,17 +353,25 @@ loops.) CWM prepares samples accordingly:
    satisfy).
 3. **Source loop cross-fades are baked.** A source-specified loop cross-fade (a Renoise or
    Tonverk patch, or the *Set fixed loop-crossfade* processing option) is blended into the audio
-   with its full source length before the seam machinery runs - source formats apply it live at
-   playback, but the ZEN-Core engine has no loop cross-fade of its own, so without baking, a loop
-   whose sound evolves across the loop region jumps audibly at every wrap even though the
-   waveform seam is perfect. When the source carries audio past the loop end, the fade is applied
-   at the loop *start*, blending from the tail's natural continuation - the wrap then follows the
-   source's own motion, which also heals a level step sitting at the loop start itself (the
-   classic tail-side fade, used as the fallback, targets the lead-in and cannot).
+   with its full source length - source formats apply it live at playback, but the ZEN-Core
+   engine has no loop cross-fade of its own, so without baking, a loop whose sound evolves across
+   the loop region jumps audibly at every wrap even though the waveform seam is perfect. The
+   baked wrap then *defines* the loop: steps 2 and 4 are skipped for it, since re-seating the
+   loop end afterwards would move the wrap away from the junction the fade constructed. Three
+   guards keep the fade faithful. A loop that already wraps cleanly - seam step within tolerance
+   *and* RMS-level-matched across the junction - is left byte-identical: baking a fade into
+   material that needs no help would only soften it. When a fade is needed and the source stores
+   audio past the loop end, it is applied at the loop *start*, blending from the tail's natural
+   continuation - the wrap then follows the source's own motion across the boundary, which also
+   heals a level step sitting at the loop start itself (the tail-side fade cannot: it targets
+   the lead-in). And that continuation is first verified to flow out of the tail without a step,
+   because an assembled sample bank may store *unrelated* data past a loop end (hardware corpus:
+   a bass whose tail ends at +9411 with post-end data resuming at -4539); when it does not, the
+   classic tail-side fade into the loop-start lead-in is used instead.
 4. **In-phase loop cross-fade.** When no single end point is seamless (an evolving pad whose
    timbre drifts across the loop), blend the loop tail into the loop-start lead-in. The
    period-alignment in step 2 keeps the blend in phase, so bright content does not cancel.
-   Both step 2 and step 3 measure the waveform's own step *into* the loop start, so they need a
+   Both step 2 and this cross-fade measure the waveform's own step *into* the loop start, so they need a
    lead-in: a loop starting at the very first frames — a whole-file loop, or a start the
    zero-crossing snap processing option moved there — first has its start advanced into the sample
    (the skipped frames still play once before the first wrap), and only when its wrap is not
