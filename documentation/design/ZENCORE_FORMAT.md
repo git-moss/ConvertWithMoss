@@ -227,9 +227,14 @@ TVA-envelope table (stride 0x10):
   all start levels — the engine fades the sample data start itself — and only the attack value
   shapes the residual burst: **~91 at attack 1** (an audible tick in quiet material), **~25 at
   attack 8** (below the ~46 audibility line with margin), ~13 at 16, ~5 at 32; attack 0 is worst
-  (onset slope kinks of 26–98× the local slope). Zero hold and release times are fine. The writer
-  floors accordingly: attack ≥ 8 (also the value found by ear on the device for punchy basses, so
-  transients stay tight), decay ≥ 8.
+  (onset slope kinks of 26–98× the local slope). Whether attack 1 is audible depends on the
+  material: high-edge content — saws, plucks, drum hits, whose onset edge (largest frame step in
+  the first ~25 ms over the sample peak) exceeds ~0.5 — hides the burst under its own onset,
+  hardware-verified masked at every pitch from 55 to 330 Hz; smooth material (string pads, onset
+  edge a few percent) exposes it. Zero hold and release times are fine. The writer floors
+  accordingly: a near-instant attack becomes 1 on high-edge material (keeping the full transient)
+  and 8 otherwise (whose ~11 ms ramp is faster than half a cycle of a bass fundamental);
+  decay ≥ 8.
 - **Modulation (not mapped).** LFO1/2 and the mod-matrix exist in the record but are not written —
   CWM's model has no LFO/matrix abstraction. The TVF filter, the TVA envelope and the pitch/filter
   envelopes round-trip; the rest stays at the template default.
@@ -346,7 +351,16 @@ loops.) CWM prepares samples accordingly:
    wrap deviates least from the waveform's own step into the loop start — the exclusive seam
    invariant that hardware-verified click-free playback requires (and that well-mastered packs
    satisfy).
-3. **In-phase loop cross-fade.** When no single end point is seamless (an evolving pad whose
+3. **Source loop cross-fades are baked.** A source-specified loop cross-fade (a Renoise or
+   Tonverk patch, or the *Set fixed loop-crossfade* processing option) is blended into the audio
+   with its full source length before the seam machinery runs - source formats apply it live at
+   playback, but the ZEN-Core engine has no loop cross-fade of its own, so without baking, a loop
+   whose sound evolves across the loop region jumps audibly at every wrap even though the
+   waveform seam is perfect. When the source carries audio past the loop end, the fade is applied
+   at the loop *start*, blending from the tail's natural continuation - the wrap then follows the
+   source's own motion, which also heals a level step sitting at the loop start itself (the
+   classic tail-side fade, used as the fallback, targets the lead-in and cannot).
+4. **In-phase loop cross-fade.** When no single end point is seamless (an evolving pad whose
    timbre drifts across the loop), blend the loop tail into the loop-start lead-in. The
    period-alignment in step 2 keeps the blend in phase, so bright content does not cancel.
    Both step 2 and step 3 measure the waveform's own step *into* the loop start, so they need a
@@ -359,10 +373,10 @@ loops.) CWM prepares samples accordingly:
    audible residual (hardware-heard: a loop from frame 70 capped the fade at 70 frames, and its
    ~4400 mismatch left a ~63 residual that ticked every pass), so a bad-wrapped loop whose short
    lead-in limits the fade likewise has its start advanced before fading.
-4. **Guard frames.** Store the loop-start continuation after the loop end (within the play
+5. **Guard frames.** Store the loop-start continuation after the loop end (within the play
    extent under the old `f04` convention; the engine's own allocator reserves a 64-frame margin
    past `f04/2` regardless, see §3.4).
-5. **Mono storage; stereo as two mono partials.** Hardware-measured: a looped user sample stored
+6. **Mono storage; stereo as two mono partials.** Hardware-measured: a looped user sample stored
    as **interleaved stereo** (SMPd channel count 2) is mis-played at any loop length — the two
    channels alternate into the output as a buzz, degenerating to a once-per-wrap tick when they
    are identical, **even when the wrap is mathematically seamless**. Byte-identical audio stored
@@ -520,7 +534,12 @@ marketing). CWM handles `.SVZ` only.
   present, the `MSPa` multisample key map (§3.3), turning it into key-ranged zones. A file written by
   the creator round-trips back through this detector. The `USDa` directory is read exactly as §3.4
   documents it (16-byte header, then a 16-byte entry per sample, chunk offsets relative to the block
-  start); the `MSPa` sample number is 1-based (0 = unassigned).
+  start); the `MSPa` sample number is 1-based (0 = unassigned). The first tone's shaping is read
+  back as well — the TVF filter (type, cutoff, resonance), the TVA amplitude envelope, and the
+  pitch/TVF modulation envelopes — with the same hardware-calibrated time law and depth scales the
+  writer uses, so ZEN-Core sources convert to other formats with their real envelopes instead of
+  pipeline defaults (measured round-trip error below one percent; a zero modulation depth is the
+  template default and reads as no modulation).
 - **Creator** (`ZenCoreCreator`, extends `AbstractCreator`): `createPreset` → one-tone `.svz`;
   `createPresetLibrary` → multi-tone bank `.svz` (`supportsPresetLibraries`). Per sample it converts
   to 48 kHz/16-bit (`AudioFileUtils.convertToWav` + `recalculateSamplePositions`), applies the §4
@@ -547,10 +566,16 @@ marketing). CWM handles `.SVZ` only.
   DIFa/PATa/USPa/MSPa/USDa blocks and the `SMPd` chunks. The constant/opaque byte templates
   (`svz_header.bin`, `difa.bin`, `pata_multisample.bin` mono tone, `pata_stereo.bin` two-partial
   hard-panned stereo tone, `smpd_header.bin`, `uspa.bin`) are resources next to the class.
-- **Envelope-time caveat:** Roland's exact envelope-time curve (seconds ↔ 0–1023) is not published,
-  so the writer uses a calibrated `log2` approximation (near-instant → 0, ~20 s → full scale). Only
-  the *times* are approximate — filter type/cutoff, envelope *levels*, and the pitch/filter-envelope
-  **depth** scales (§3.1, hardware-calibrated on a FANTOM-0) are exact.
+- **Envelope-time law (hardware-calibrated):** Roland's exact time table is not published, so it
+  was measured on a FANTOM-0 with a release-ladder bank (exact values patched into `PATa`, the
+  recorded exponential fades fitted). The stage span (time to −40 dB) per value:
+  `0→10 ms, 8→20 ms, 32→60 ms, 75→120 ms, 129→200 ms, 256→390 ms, 512→1.24 s, 800→6.19 s`
+  (extrapolated to ~21 s at 1023; the separately measured attack-rise anchors agree within ~25%).
+  The writer interpolates log-linearly between these anchors for all four TVA stages and the
+  pitch/filter envelope times. The device's release at value 0 is a clean ~10–20 ms engine fade —
+  an instant source release never clicks at note-off, so no release floor is needed. (The earlier
+  `log2` approximation overstated times several-fold below ~value 800: a 0.5 s release was written
+  as 129, which really plays ~0.2 s, and everything below ~0.3 s collapsed to 0.)
 
 ---
 
