@@ -69,6 +69,7 @@ The following multi-sample formats are supported:
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
 * [Spectrasonics Omnisphere 3](#spectrasonics-omnisphere-3)
+* [Synclavier Regen](#synclavier-regen)
 * [Synthstrom Deluge](#synthstrom-deluge)
 * [TAL Sampler](#tal-sampler)
 * [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
@@ -634,6 +635,27 @@ then move the prt_omn file to
 
 **Note 1**: You can create a sub-folder with the name of a category, e.g. "Vox Humana" and put it there.
 **Note 2**: When opening Omnisphere both the presets and soundsources need to be rescanned! If only the presets are scanned an error shows up that the soundsource cannot be located!
+
+## Synclavier Regen
+
+The Synclavier Regen (2023) is a desktop re-creation of the classic Synclavier synthesizer. Its sounds are organized in *libraries* - a folder placed under *Libraries/* on the device SD card that holds one or more *timbres* together with their samples and two index files. A timbre is a plain UTF-8 text file named *NN-Entry.txt* which starts with a title and a comment line followed by *SynclavierVirtualInstrumentTimbreVersion...* and the parameter lines. A timbre has up to twelve *partials* (layers); each partial maps its samples across the keyboard through *SynclavierPTPatchListEntry* lines (key range, root key, volume, tuning, start, loop). ConvertWithMoss reads a whole library folder (each timbre becomes one multi-sample) and writes a library folder that can be copied to the device SD card.
+
+The format is not documented by Synclavier Digital, it was reverse-engineered from the device firmware and the freely available libraries (see *documentation/design/SYNCLAVIER_REGEN_FORMAT.md*). Names, the comment and its *#tags* (on writing, the category is written as the Regen's primary category tag - mapped to its canonical tag list, see the Regen manual - and the keywords as property tags; on reading, the first tag becomes the category and the rest the keywords), the partial/zone layout, key ranges, root keys, per-zone volume (`gain[dB] = 36 * f - 12`) and tuning (`tune[cents] = 250 * f - 125`), the per-partial volume (dB) and pitch (a fine tune in cents, a semitone transpose and an octave transpose), the sample start, the loop (start, end, cross-fade), velocity layers (each layer becomes a partial selected by velocity via its crossfade window - a timbre has 12 partials, so up to 12 velocity layers), the per-partial amplitude envelope, the per-partial panning and the timbre-global multi-mode filter (low-pass, high-pass or band-pass with a 2- or 4-pole slope; cutoff, resonance, filter envelope and keyboard tracking) are read and written. The additive/FM synthesis parameters (the index envelope, harmonic coefficients, frame partials, modulation matrix) are not converted. Mono and stereo samples in 16- or 24-bit at any sample rate are supported.
+
+Commercial libraries store their samples as *.sflc* files: a normal FLAC file whose bytes are obfuscated with a key-stream that is keyed by the file's own base name. ConvertWithMoss reads these transparently and, on writing, produces the same obfuscated *.sflc* files (so renaming an *.sflc* file breaks it). User libraries may instead reference plain *.wav* or *.flac* samples, which are also read. Samples that are used by several partials or timbres are stored only once, as in the original libraries. When a source folder is converted as a whole (the library option), all timbres are written into a single library folder together with the shared sample pool and the *_&lt;name&gt;.tsv* and *_TimbreIndex.tsv* index files; otherwise each timbre is written as its own small library folder.
+
+### Getting a converted library onto the Regen
+
+The Regen loads sounds from *libraries* on a FAT32-formatted SD card. To convert your sounds and use them on the device:
+
+1. Convert with *Synclavier Regen* as the destination. When converting a whole folder of sounds, enable the library option (the *Create Library* / library name field in the GUI, or `-l "<Name>"` on the command line) so they become one library you can browse on the device. Without it, every sound is written as its own separate one-timbre library, which quickly clutters the browser.
+2. Copy the produced library folder(s) into the `Libraries/` folder at the top level of the SD card - create `Libraries/` first if the card is blank. Everything a library needs is inside its own folder: the `NN-Entry.txt` timbres, the samples and the `_<name>.tsv` / `_TimbreIndex.tsv` index files. Copy the whole folder, not its contents.
+3. Insert the card into the Regen and choose *Load* on the *"Load SD Card?"* prompt.
+4. On the device, open the library browser, switch to the *User* libraries, select your library and load its timbres (they are addressed as *bank-entry*, e.g. *2-4*, matching the `NN-Entry.txt` numbering).
+
+A Regen library holds at most **64 timbres** (8 banks of 8). When a conversion produces more, it is automatically written as several numbered libraries (`<Name> 1`, `<Name> 2`, …), each within the limit.
+
+To give a library a cover and description in the browser, add a `CDImage.png` (1:1 aspect ratio) and a `Description.txt` (up to 220 characters) to its folder - both names are case-sensitive. The `Description.txt` is written automatically from the descriptions of the converted sounds (the same metadata description carried by other formats; the unique descriptions of a library's timbres are combined, as the SoundFont creator does for its comment). When none of the sounds has a description, no `Description.txt` is written and the device shows its default. Either way you can add or replace it.
 
 ## Synthstrom Deluge
 
