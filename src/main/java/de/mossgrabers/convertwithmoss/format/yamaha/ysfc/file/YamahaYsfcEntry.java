@@ -104,10 +104,8 @@ public class YamahaYsfcEntry
             // FF - 0 0 0 0 0 0 - 28 F7
             // 05 - 0 0 0 0 0 0 - 28 AA
             // 03 - 0 0 0 0 0 0 - 28 AA
-            @SuppressWarnings("unused")
-            byte [] unknown = null;
             if (version >= 410 && version < 500)
-                unknown = contentStream.readNBytes (9);
+                contentStream.readNBytes (9);
         }
 
         this.itemName = StreamUtils.readAsciiNullTerminated (contentStream);
