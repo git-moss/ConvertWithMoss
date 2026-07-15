@@ -88,6 +88,40 @@ public final class ZenCoreSvz
      */
     private static final int     PAT_ENV_STRIDE     = 0x10;
 
+    // Pitch and TVF (filter) modulation envelopes - dedicated per-partial blocks (not the mod
+    // matrix), offsets mapped from a ZENOLOGY tone with distinctive per-partial values. Each block
+    // is a signed-byte Env Depth, then four u16 times {T1..T4}, then five signed levels {L0..L4};
+    // the blocks repeat at PAT_MOD_ENV_STRIDE per partial.
+    private static final int     PAT_PITCH_ENV_DEPTH  = 0x2B8;
+    private static final int     PAT_PITCH_ENV_TIME   = 0x2BC;
+    private static final int     PAT_PITCH_ENV_LEVEL  = 0x2C4;
+    private static final int     PAT_FILTER_ENV_DEPTH = 0x318;
+    private static final int     PAT_FILTER_ENV_TIME  = 0x31E;
+    private static final int     PAT_FILTER_ENV_LEVEL = 0x326;
+    private static final int     PAT_MOD_ENV_STRIDE   = 0x18;
+
+    // Per-partial keyboard/OSC fields used to build multi-partial (velocity-layered) tones. Mapped
+    // by an edit-diff of ZENOLOGY-authored tones with distinctive per-partial velocity ranges and
+    // pans (a 4-partial and a 2-partial probe), then cross-checked against the verified templates.
+    /** Wave group: 3 = user multi-sample (partial active), 0 = partial off. OSC stride. */
+    private static final int     PAT_WAVE_GROUP       = 0xDF;
+    /** Partial pan: signed byte, -64 = hard left, 0 = centre, +63 = hard right. OSC stride. */
+    private static final int     PAT_PAN              = 0xCE;
+    /** Velocity range lower (1-127). Keyboard-table stride. */
+    private static final int     PAT_VEL_LOW          = 0xA0;
+    /** Velocity range upper (1-127). Keyboard-table stride. */
+    private static final int     PAT_VEL_HIGH         = 0xA1;
+    /**
+     * Partial switch: 1 = the partial sounds, 0 = off. Keyboard-table +0x04. Hardware-proven: a
+     * cloned partial with the correct wave group, wave, pan and velocity still stayed silent until
+     * this byte was set - it is the per-partial on/off the device's own partial page toggles.
+     */
+    private static final int     PAT_PARTIAL_SWITCH   = 0xA4;
+    /** Per-partial stride of the keyboard/range table (velocity + key range). */
+    private static final int     PAT_KBD_STRIDE       = 0x0C;
+    /** Wave-group value marking an active user-multi-sample partial. */
+    private static final int     WAVE_GROUP_ACTIVE    = 3;
+
     // -------------------------------------------------------------------------------
     // Loaded byte templates (constant or opaque device data).
 
@@ -105,6 +139,16 @@ public final class ZenCoreSvz
     private static final byte [] SMPD_HEADER        = load ("smpd_header.bin");
     /** 64 byte device USPa record. */
     private static final byte [] USPA_TEMPLATE      = load ("uspa.bin");
+    /**
+     * 16 byte <i>.svz</i> file header: magic "SVZa", version 05 04, model tag "KY019", flag 0x24 and
+     * four reserved bytes. KY019 is the shared ZEN-Core interchange tag of the sample-capable
+     * hardware - the FANTOM / FANTOM-0 / FANTOM EX, Juno-X, Jupiter-X/Xm and the MC-707/MC-101 -
+     * which all accept the same file. The GAIA-2 (MI085) and the ZENOLOGY plug-in (RC001) are not
+     * written as targets: neither loads the user samples a multi-sample needs (the GAIA-2 has no
+     * sampler at all - its manual's IMPORT loads only tones - and ZENOLOGY imports only the tone), so
+     * a multi-sample would play silent there.
+     */
+    private static final byte [] SVZ_HEADER         = load ("svz_header.bin");
 
 
     /**
@@ -141,6 +185,28 @@ public final class ZenCoreSvz
 
 
     /**
+     * One active partial of a velocity-layered tone: its own mono multi-sample (a 128-key map), a
+     * pan and a velocity window. A mono velocity layer is one partial (centre pan); a stereo layer is
+     * two partials (left/right, hard-panned). Up to four partials fit (the engine's ceiling), so up
+     * to four mono or two stereo velocity layers. Only used when {@link SvzInstrument#partials} is
+     * set; a single-layer tone uses the mono/stereo template path instead.
+     */
+    public static final class SvzPartial
+    {
+        /** For each of the 128 keys the 1-based pool sample index, 0 if unassigned. */
+        public final int [] keyToSample = new int [128];
+        /** The partial's multi-sample name (tone name plus a content hash). */
+        public String       multisampleName;
+        /** Pan -64 (hard left) .. 0 (centre) .. +63 (hard right). */
+        public int          pan;
+        /** Velocity range lower 1-127. */
+        public int          velLow      = 1;
+        /** Velocity range upper 1-127. */
+        public int          velHigh     = 127;
+    }
+
+
+    /**
      * One instrument (tone) that maps keys onto samples of the shared pool. A mono instrument has
      * one multi-sample played by a one-partial tone. A stereo instrument stores its left and right
      * channels as separate mono samples in two multi-samples, played by a two-partial tone (Partial
@@ -166,6 +232,12 @@ public final class ZenCoreSvz
         public final int [] keyToSample      = new int [128];
         /** For each of the 128 keys the 1-based right-channel pool sample index (stereo only). */
         public final int [] keyToSampleRight = new int [128];
+        /**
+         * When set (two or more entries), the tone is built as a velocity-layered multi-partial tone
+         * from these partials instead of the single mono/stereo multi-sample above; each partial has
+         * its own multi-sample, pan and velocity window.
+         */
+        public List<SvzPartial> partials;
 
         // ----------------------------------------------------------------------------------------
         // Optional Partial-1 tone parameters taken from the source; -1 keeps the template default
@@ -188,6 +260,22 @@ public final class ZenCoreSvz
         public int          envHoldLevel     = -1;
         /** TVA amplitude-envelope hold + sustain levels 0-1023 - sustain. */
         public int          envSustain       = -1;
+
+        // Optional pitch and TVF (filter) modulation envelopes. depth is a signed amount (pitch
+        // -63..+63, filter -100..+100); a null times array keeps the template default. times =
+        // {T1..T4} (0-1023), levels = {L0..L4} (signed, the modulation shape scaled by depth).
+        /** Pitch-envelope depth (signed), or 0 with null times to keep the default. */
+        public int          pitchEnvDepth;
+        /** Pitch-envelope times {T1..T4} 0-1023, or null. */
+        public int []       pitchEnvTimes;
+        /** Pitch-envelope levels {L0..L4} signed. */
+        public int []       pitchEnvLevels;
+        /** TVF (filter) envelope depth (signed), or 0 with null times to keep the default. */
+        public int          filterEnvDepth;
+        /** TVF (filter) envelope times {T1..T4} 0-1023, or null. */
+        public int []       filterEnvTimes;
+        /** TVF (filter) envelope levels {L0..L4} signed. */
+        public int []       filterEnvLevels;
     }
 
 
@@ -197,20 +285,29 @@ public final class ZenCoreSvz
      *
      * @param pool The samples shared by all instruments (1-based referenced from the key-maps)
      * @param instruments One or more instruments (tones)
-     * @param header16 The 16-byte SVZ file header for the target device (magic + version + model
-     *            tag + flag + reserved); the version and flag bytes differ per device
      * @return The <i>.svz</i> file content
      * @throws IOException Could not assemble the file
      */
-    public static byte [] buildSvz (final List<SvzSample> pool, final List<SvzInstrument> instruments, final byte [] header16) throws IOException
+    public static byte [] buildSvz (final List<SvzSample> pool, final List<SvzInstrument> instruments) throws IOException
     {
         final List<byte []> pataRecords = new ArrayList<> ();
         final List<byte []> mspaRecords = new ArrayList<> ();
         for (final SvzInstrument instrument: instruments)
         {
-            // A mono tone has one multi-sample (played on both sides); a stereo tone has a left and
-            // a
-            // right multi-sample, one per panned partial. Multi-samples are 1-based in file order.
+            // A velocity-layered tone has one multi-sample per active partial; a mono tone has one
+            // multi-sample (played on both sides); a stereo tone has a left and a right multi-sample,
+            // one per panned partial. Multi-samples are 1-based in file order.
+            if (instrument.partials != null && !instrument.partials.isEmpty ())
+            {
+                final int [] waveNumbers = new int [instrument.partials.size ()];
+                for (int i = 0; i < instrument.partials.size (); i++)
+                {
+                    waveNumbers[i] = mspaRecords.size () + 1;
+                    mspaRecords.add (buildKeyMap (instrument.partials.get (i).multisampleName, instrument.partials.get (i).keyToSample));
+                }
+                pataRecords.add (buildToneMulti (instrument, waveNumbers));
+                continue;
+            }
             final int waveLeft = mspaRecords.size () + 1;
             mspaRecords.add (buildKeyMap (instrument.multisampleName, instrument.keyToSample));
             int waveRight = waveLeft;
@@ -237,7 +334,7 @@ public final class ZenCoreSvz
         bodies.add (ZenCoreContainer.buildBlock (uspaRecords));
         bodies.add (ZenCoreContainer.buildBlock (mspaRecords));
         bodies.add (ZenCoreContainer.buildUsda (smpdChunks));
-        return ZenCoreContainer.buildSvz (header16, tags, bodies);
+        return ZenCoreContainer.buildSvz (SVZ_HEADER, tags, bodies);
     }
 
 
@@ -257,33 +354,177 @@ public final class ZenCoreSvz
 
         // Carry the source's filter and amplitude envelope over the template defaults, on both
         // partials of a stereo tone so the left and right channels share the same shaping.
-        final int partials = instrument.stereo ? 2 : 1;
-        for (int p = 0; p < partials; p++)
+        final int partialCount = instrument.stereo ? 2 : 1;
+        for (int p = 0; p < partialCount; p++)
+            writePartialShaping (aRecord, p, instrument);
+        // Switch off the template's unused partials (wave group 0 + Wave Number 0) so they stay
+        // silent: the mono template leaves all four enabled and the stereo template leaves Partial 3
+        // switched on, and a group-0 partial that keeps a non-zero wave number sounds a ROM wave
+        // (hardware-verified). Wave 0 = silent.
+        for (int p = partialCount; p < 4; p++)
         {
-            final int filterBase = p * PAT_PARTIAL_STRIDE;
-            if (instrument.filterType >= 1)
+            aRecord[PAT_WAVE_GROUP + p * PAT_PARTIAL_STRIDE] = 0;
+            putU16LE (aRecord, PAT_WAVE_L + p * PAT_PARTIAL_STRIDE, 0);
+            putU16LE (aRecord, PAT_WAVE_R + p * PAT_PARTIAL_STRIDE, 0);
+        }
+        // Partial-switch display byte: each partial's +0x04 gates the NEXT partial's on/off display
+        // (see buildToneMulti), so the disabled partials read OFF on the device's partial page.
+        for (int p = 0; p < 4; p++)
+            aRecord[PAT_PARTIAL_SWITCH + p * PAT_KBD_STRIDE] = (byte) (p == 3 ? 127 : p + 1 < partialCount ? 1 : p < partialCount ? 0 : 127);
+        return aRecord;
+    }
+
+
+    /**
+     * Build a velocity-layered tone: two to four active partials, each playing its own mono
+     * multi-sample within its own velocity window. Composed from the hardware-verified two-partial
+     * stereo template (two active partials, two off); Partials 3 and 4 are cloned byte-for-byte from
+     * the verified active Partials 1 and 2 before their wave, pan and velocity are set, so every
+     * active partial's opaque oscillator configuration is a known-good copy. Unused partials are left
+     * off (wave group 0). See {@link SvzPartial} and ZenCoreCreator.
+     *
+     * @param instrument The instrument whose {@link SvzInstrument#partials} drive the tone
+     * @param waveNumbers The 1-based multi-sample number per active partial (file order)
+     * @return The 1632 byte PATa tone record
+     */
+    private static byte [] buildToneMulti (final SvzInstrument instrument, final int [] waveNumbers)
+    {
+        final int count = waveNumbers.length;
+        final byte [] aRecord = PATA_STEREO.clone ();
+        System.arraycopy (ZenCoreUtil.padName (instrument.name, NAME_LENGTH), 0, aRecord, 0, NAME_LENGTH);
+        // Make Partials 3 and 4 active by cloning the verified active Partials 1 and 2.
+        if (count >= 3)
+            clonePartial (aRecord, 0, 2);
+        if (count >= 4)
+            clonePartial (aRecord, 1, 3);
+
+        for (int p = 0; p < 4; p++)
+        {
+            final int oscBase = p * PAT_PARTIAL_STRIDE;
+            final int kbdBase = p * PAT_KBD_STRIDE;
+            // Partial-switch byte (keyboard-table +0x04): each partial's byte gates the DISPLAY of
+            // the NEXT partial - 1 = the next partial shows ON, 0 = it shows OFF; Partial 4 has no
+            // next partial and reads 127. Hardware-verified against device exports at 1, 2 and 4
+            // active partials: leaving the last active partial's byte at 1 wrongly displayed the
+            // following (silent) partial as ON.
+            aRecord[PAT_PARTIAL_SWITCH + kbdBase] = (byte) (p == 3 ? 127 : p + 1 < count ? 1 : p < count ? 0 : 127);
+            if (p < count)
             {
-                putU16LE (aRecord, PAT_FILTER_TYPE + filterBase, instrument.filterType * 0x100);
-                if (instrument.cutoff >= 0)
-                    putU16LE (aRecord, PAT_CUTOFF + filterBase, instrument.cutoff);
-                if (instrument.resonance >= 0)
-                    putU16LE (aRecord, PAT_RESONANCE + filterBase, instrument.resonance);
+                final SvzPartial partial = instrument.partials.get (p);
+                aRecord[PAT_WAVE_GROUP + oscBase] = (byte) WAVE_GROUP_ACTIVE;
+                putU16LE (aRecord, PAT_WAVE_L + oscBase, waveNumbers[p]);
+                putU16LE (aRecord, PAT_WAVE_R + oscBase, 0); // each partial is a mono, panned voice
+                aRecord[PAT_PAN + oscBase] = (byte) Math.clamp (partial.pan, -64, 63);
+                aRecord[PAT_VEL_LOW + kbdBase] = (byte) Math.clamp (partial.velLow, 1, 127);
+                aRecord[PAT_VEL_HIGH + kbdBase] = (byte) Math.clamp (partial.velHigh, 1, 127);
+                writePartialShaping (aRecord, p, instrument);
             }
-            if (instrument.envAttack >= 0)
+            else
             {
-                final int t = PAT_TVA_TIME + p * PAT_ENV_STRIDE;
-                final int l = PAT_TVA_LEVEL + p * PAT_ENV_STRIDE;
-                putU16LE (aRecord, t, instrument.envAttack);
-                putU16LE (aRecord, t + 2, Math.max (0, instrument.envHold));
-                putU16LE (aRecord, t + 4, instrument.envDecay);
-                putU16LE (aRecord, t + 6, instrument.envRelease);
-                putU16LE (aRecord, l, 1023); // L1 = peak
-                putU16LE (aRecord, l + 2, instrument.envHoldLevel >= 0 ? instrument.envHoldLevel : 1023);
-                putU16LE (aRecord, l + 4, instrument.envSustain); // L3 = sustain
-                putU16LE (aRecord, l + 6, 0); // L4 = silence
+                // Switch the partial off: wave group 0 and - critically - Wave Number 0. A disabled
+                // partial that keeps a non-zero wave number sounds a ROM wave (hardware-verified:
+                // leftover Wave 1 played audibly under the real layers); wave 0 = no wave = silent.
+                aRecord[PAT_WAVE_GROUP + oscBase] = 0;
+                putU16LE (aRecord, PAT_WAVE_L + oscBase, 0);
+                putU16LE (aRecord, PAT_WAVE_R + oscBase, 0);
+                aRecord[PAT_VEL_LOW + kbdBase] = 1;
+                aRecord[PAT_VEL_HIGH + kbdBase] = (byte) 127;
             }
         }
         return aRecord;
+    }
+
+
+    /**
+     * Clone a partial's per-partial parameter blocks (oscillator/filter, pitch and filter modulation
+     * envelopes, TVA envelope) from one partial slot to another, so a template's verified active
+     * partial can be duplicated into an unused slot. Each block is copied within its own table and
+     * never past the following table.
+     *
+     * @param record The tone record
+     * @param src The source partial index (0-3)
+     * @param dst The destination partial index (0-3)
+     */
+    private static void clonePartial (final byte [] record, final int src, final int dst)
+    {
+        // The oscillator/filter block runs up to the pitch-envelope table, so the fourth partial's
+        // block is naturally shorter - never copy across that boundary.
+        copyBlock (record, PAT_PAN + src * PAT_PARTIAL_STRIDE, PAT_PAN + dst * PAT_PARTIAL_STRIDE, PAT_PARTIAL_STRIDE, PAT_PITCH_ENV_DEPTH);
+        copyBlock (record, PAT_PITCH_ENV_DEPTH + src * PAT_MOD_ENV_STRIDE, PAT_PITCH_ENV_DEPTH + dst * PAT_MOD_ENV_STRIDE, PAT_MOD_ENV_STRIDE, record.length);
+        copyBlock (record, PAT_FILTER_ENV_DEPTH + src * PAT_MOD_ENV_STRIDE, PAT_FILTER_ENV_DEPTH + dst * PAT_MOD_ENV_STRIDE, PAT_MOD_ENV_STRIDE, record.length);
+        copyBlock (record, PAT_TVA_TIME + src * PAT_ENV_STRIDE, PAT_TVA_TIME + dst * PAT_ENV_STRIDE, PAT_ENV_STRIDE, record.length);
+    }
+
+
+    private static void copyBlock (final byte [] record, final int from, final int to, final int length, final int limit)
+    {
+        final int n = Math.min (length, limit - to);
+        if (n > 0)
+            System.arraycopy (record, from, record, to, n);
+    }
+
+
+    /**
+     * Write the source's filter and amplitude/pitch/filter modulation envelopes into one partial,
+     * over the template defaults. Leaves any parameter the source does not specify at the template
+     * default. Shared by the mono/stereo and the velocity-layered tone builders so a partial is
+     * shaped identically in both.
+     *
+     * @param aRecord The tone record
+     * @param p The partial index (0-3)
+     * @param instrument The instrument carrying the (optional) filter and envelope parameters
+     */
+    private static void writePartialShaping (final byte [] aRecord, final int p, final SvzInstrument instrument)
+    {
+        final int filterBase = p * PAT_PARTIAL_STRIDE;
+        if (instrument.filterType >= 1)
+        {
+            putU16LE (aRecord, PAT_FILTER_TYPE + filterBase, instrument.filterType * 0x100);
+            if (instrument.cutoff >= 0)
+                putU16LE (aRecord, PAT_CUTOFF + filterBase, instrument.cutoff);
+            if (instrument.resonance >= 0)
+                putU16LE (aRecord, PAT_RESONANCE + filterBase, instrument.resonance);
+        }
+        if (instrument.envAttack >= 0)
+        {
+            final int t = PAT_TVA_TIME + p * PAT_ENV_STRIDE;
+            final int l = PAT_TVA_LEVEL + p * PAT_ENV_STRIDE;
+            putU16LE (aRecord, t, instrument.envAttack);
+            putU16LE (aRecord, t + 2, Math.max (0, instrument.envHold));
+            putU16LE (aRecord, t + 4, instrument.envDecay);
+            putU16LE (aRecord, t + 6, instrument.envRelease);
+            putU16LE (aRecord, l, 1023); // L1 = peak
+            putU16LE (aRecord, l + 2, instrument.envHoldLevel >= 0 ? instrument.envHoldLevel : 1023);
+            putU16LE (aRecord, l + 4, instrument.envSustain); // L3 = sustain
+            putU16LE (aRecord, l + 6, 0); // L4 = silence
+        }
+        final int modBase = p * PAT_MOD_ENV_STRIDE;
+        writeModEnv (aRecord, PAT_PITCH_ENV_DEPTH + modBase, PAT_PITCH_ENV_TIME + modBase, PAT_PITCH_ENV_LEVEL + modBase, instrument.pitchEnvDepth, instrument.pitchEnvTimes, instrument.pitchEnvLevels);
+        writeModEnv (aRecord, PAT_FILTER_ENV_DEPTH + modBase, PAT_FILTER_ENV_TIME + modBase, PAT_FILTER_ENV_LEVEL + modBase, instrument.filterEnvDepth, instrument.filterEnvTimes, instrument.filterEnvLevels);
+    }
+
+
+    /**
+     * Write one pitch/TVF modulation envelope block (signed-byte depth, four u16 times, five signed
+     * levels) into a partial, or leave the template default if the envelope is absent.
+     *
+     * @param record The tone record
+     * @param depthOffset The signed-byte Env Depth offset
+     * @param timeOffset The four-time block offset
+     * @param levelOffset The five-level block offset
+     * @param depth The signed depth amount
+     * @param times The four times {T1..T4} 0-1023, or null to keep the template default
+     * @param levels The five levels {L0..L4} (signed)
+     */
+    private static void writeModEnv (final byte [] record, final int depthOffset, final int timeOffset, final int levelOffset, final int depth, final int [] times, final int [] levels)
+    {
+        if (times == null)
+            return;
+        record[depthOffset] = (byte) Math.clamp (depth, -128, 127);
+        for (int i = 0; i < 4; i++)
+            putU16LE (record, timeOffset + i * 2, times[i]);
+        for (int i = 0; i < 5; i++)
+            putU16LE (record, levelOffset + i * 2, levels[i] & 0xFFFF);
     }
 
 

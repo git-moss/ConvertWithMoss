@@ -12,8 +12,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,13 +28,16 @@ import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzInstrument;
+import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzPartial;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample;
 
 
@@ -53,7 +58,7 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample
  *
  * @author Jürgen Moßgraber
  */
-public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
+public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
 {
     /**
      * The FANTOM's native user-sample rate is 48 kHz (its own sample exports are 48 kHz); a sample
@@ -112,7 +117,7 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
      */
     public ZenCoreCreator (final INotifier notifier)
     {
-        super ("Roland ZEN-Core", "ZenCore", notifier, new ZenCoreCreatorUI ());
+        super ("Roland ZEN-Core", "ZenCore", notifier, EmptySettingsUI.INSTANCE);
     }
 
 
@@ -120,16 +125,17 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "svz");
-        this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
-
         final List<SvzSample> pool = new ArrayList<> ();
         final Map<Object, Integer> byContent = new HashMap<> ();
         final Set<String> usedNames = new HashSet<> ();
-        final SvzInstrument instrument = this.buildInstrument (multisampleSource, pool, byContent, usedNames);
+        final SvzInstrument instrument = this.buildInstrument (multisampleSource, pool, byContent, usedNames, assignToneNames (Collections.singletonList (multisampleSource.getName ())).get (0));
+        if (instrument == null)
+            return;
         ensureLoadableSamplePool (pool, byContent, usedNames);
 
-        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, List.of (instrument), this.settingsConfiguration.getHeader ()));
+        final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "svz");
+        this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
+        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, List.of (instrument)));
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
@@ -149,23 +155,53 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
         if (multisampleSources.isEmpty ())
             return;
 
-        final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (libraryName), "svz");
-        this.notifier.log ("IDS_ZENCORE_WRITING_BANK", libraryName, Integer.toString (multisampleSources.size ()));
+        // The library name is free text from the user interface; typed with the ".svz" ending it
+        // would otherwise end up as "name_svz.svz". The backend sanitizes the name before it
+        // reaches this creator (the dot becomes an underscore), so both spellings are handled.
+        String name = libraryName.trim ();
+        if (name.length () > 4 && (name.regionMatches (true, name.length () - 4, ".svz", 0, 4) || name.regionMatches (true, name.length () - 4, "_svz", 0, 4)))
+            name = name.substring (0, name.length () - 4);
 
         final List<SvzSample> pool = new ArrayList<> ();
         final Map<Object, Integer> byContent = new HashMap<> ();
         final Set<String> usedNames = new HashSet<> ();
         final List<SvzInstrument> instruments = new ArrayList<> ();
+        final List<String> sourceNames = new ArrayList<> ();
         for (final IMultisampleSource source: multisampleSources)
-            instruments.add (this.buildInstrument (source, pool, byContent, usedNames));
+            sourceNames.add (source.getName ());
+        final List<String> toneNames = assignToneNames (sourceNames);
+        // One broken source (e.g. an unreadable sample file) must not lose the whole library -
+        // report it and continue with the remaining sources.
+        for (int i = 0; i < multisampleSources.size (); i++)
+        {
+            final IMultisampleSource source = multisampleSources.get (i);
+            try
+            {
+                final SvzInstrument instrument = this.buildInstrument (source, pool, byContent, usedNames, toneNames.get (i));
+                if (instrument != null)
+                    instruments.add (instrument);
+            }
+            catch (final IOException | RuntimeException ex)
+            {
+                this.notifier.logError ("IDS_ZENCORE_SOURCE_FAILED", source.getName ());
+                this.notifier.logError (ex);
+            }
+        }
+        if (instruments.isEmpty ())
+        {
+            this.notifier.logError ("IDS_ZENCORE_EMPTY_SOURCE", name);
+            return;
+        }
         ensureLoadableSamplePool (pool, byContent, usedNames);
 
-        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, instruments, this.settingsConfiguration.getHeader ()));
+        final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (name), "svz");
+        this.notifier.log ("IDS_ZENCORE_WRITING_BANK", name, Integer.toString (instruments.size ()));
+        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, instruments));
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
 
-    private SvzInstrument buildInstrument (final IMultisampleSource multisampleSource, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    private SvzInstrument buildInstrument (final IMultisampleSource multisampleSource, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final String toneName) throws IOException
     {
         // The audio is resampled to 48 kHz (see ZENCORE_FORMAT), so scale the loop/start/end
         // frames to it; the loop end is then re-seated to a period-aligned point per sample in
@@ -173,34 +209,42 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
         recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
 
         final SvzInstrument instrument = new SvzInstrument ();
-        instrument.name = multisampleSource.getName ();
+        instrument.name = toneName;
         // The whole instrument is stereo if any of its zones is: one oscillator plays all its
         // samples and its stereo mode is per-tone, so a stereo instrument stores every sample
         // interleaved (mono zones duplicated) and a mono instrument stores every sample mono.
         instrument.stereo = hasStereoZone (multisampleSource);
 
-        ISampleZone representativeZone = null;
-        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
-            for (final ISampleZone zone: group.getSampleZones ())
+        // Distinct source velocity ranges are each mapped onto their own partial(s) - up to four
+        // mono or two stereo layers, the engine's four-partial ceiling - the way the other formats
+        // map velocity layers automatically. A single velocity range folds into one mono/stereo tone.
+        final List<List<ISampleZone>> layers = collectVelocityLayers (multisampleSource);
+        if (layers.size () >= 2)
+        {
+            this.buildVelocityLayeredInstrument (instrument, layers, pool, byContent, usedNames);
+            if (instrument.partials.isEmpty ())
             {
-                final int [] sampleIndexes = this.addSample (zone, instrument.stereo, pool, byContent, usedNames);
-                if (sampleIndexes == null)
-                    continue;
-                if (representativeZone == null)
-                    representativeZone = zone;
-                final int keyLow = Math.max (0, zone.getKeyLow ());
-                final int keyHigh = Math.min (127, zone.getKeyHigh ());
-                for (int key = keyLow; key <= keyHigh; key++)
-                {
-                    instrument.keyToSample[key] = sampleIndexes[0];
-                    instrument.keyToSampleRight[key] = sampleIndexes[1];
-                }
+                this.notifier.logError ("IDS_ZENCORE_EMPTY_SOURCE", multisampleSource.getName ());
+                return null;
             }
+            return instrument;
+        }
+
+        final List<ISampleZone> zones = new ArrayList<> ();
+        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
+            zones.addAll (group.getSampleZones ());
+        final ISampleZone representativeZone = this.fillKeyMaps (zones, instrument.keyToSample, instrument.keyToSampleRight, instrument.stereo, pool, byContent, usedNames);
+        // A source without a single convertible sample would import as a silent husk tone - skip
+        // it instead (and report it; the file or library keeps only real instruments).
+        if (representativeZone == null)
+        {
+            this.notifier.logError ("IDS_ZENCORE_EMPTY_SOURCE", multisampleSource.getName ());
+            return null;
+        }
         // The FANTOM tone has one filter + amp envelope per partial; take them from a
         // representative zone so converted tones keep the source's character (offsets validated
         // against the 2048 factory tones).
-        if (representativeZone != null)
-            applyToneParameters (instrument, representativeZone);
+        applyToneParameters (instrument, representativeZone);
 
         // Name the multi-sample(s) by content (key map + the content-hashed sample names). A stereo
         // instrument has a second, right-channel multi-sample for its second (hard-right) partial.
@@ -208,6 +252,218 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
         if (instrument.stereo)
             instrument.multisampleNameRight = contentName (instrument.name, contentHash (keyMapContent ("R", instrument.keyToSampleRight, pool)));
         return instrument;
+    }
+
+
+    /**
+     * Add each zone's audio to the pool and map its key range onto the resulting sample indices. The
+     * zones are processed in order, so re-used samples fold together and a later zone wins a shared
+     * key (velocity flattening for the single-layer case; one velocity layer at a time otherwise).
+     *
+     * @param zones The zones to add, in order
+     * @param keyToSample The 128-key left/only sample map to fill (1-based indices)
+     * @param keyToSampleRight The 128-key right-channel sample map to fill (stereo)
+     * @param stereo Whether the instrument is stereo (split stereo zones into two mono samples)
+     * @param pool The shared sample pool
+     * @param byContent The content de-duplication map
+     * @param usedNames The sample names used so far
+     * @return The first successfully added zone (a representative for the tone parameters), or null
+     * @throws IOException Could not convert a sample
+     */
+    private ISampleZone fillKeyMaps (final List<ISampleZone> zones, final int [] keyToSample, final int [] keyToSampleRight, final boolean stereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    {
+        ISampleZone representativeZone = null;
+        for (final ISampleZone zone: zones)
+        {
+            final int [] sampleIndexes = this.addSample (zone, stereo, pool, byContent, usedNames);
+            if (sampleIndexes == null)
+                continue;
+            if (representativeZone == null)
+                representativeZone = zone;
+            final int keyLow = Math.max (0, zone.getKeyLow ());
+            final int keyHigh = Math.min (127, zone.getKeyHigh ());
+            for (int key = keyLow; key <= keyHigh; key++)
+            {
+                keyToSample[key] = sampleIndexes[0];
+                keyToSampleRight[key] = sampleIndexes[1];
+            }
+        }
+        return representativeZone;
+    }
+
+
+    /**
+     * Group the source's zones by their velocity range - one bucket per distinct range, ordered from
+     * the lowest velocity up. A single bucket (the usual case, every zone spanning the full velocity
+     * range) means there is nothing to layer.
+     *
+     * @param multisampleSource The source
+     * @return The zone buckets ordered by ascending velocity (fewer than two if not layered)
+     */
+    private static List<List<ISampleZone>> collectVelocityLayers (final IMultisampleSource multisampleSource)
+    {
+        final Map<Integer, List<ISampleZone>> byRange = new LinkedHashMap<> ();
+        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final Integer key = Integer.valueOf (zone.getVelocityLow () << 8 | zone.getVelocityHigh () & 0xFF);
+                byRange.computeIfAbsent (key, k -> new ArrayList<> ()).add (zone);
+            }
+        final List<List<ISampleZone>> layers = new ArrayList<> (byRange.values ());
+        layers.sort ( (a, b) -> Integer.compare (a.get (0).getVelocityLow (), b.get (0).getVelocityLow ()));
+        return layers;
+    }
+
+
+    /**
+     * Build a velocity-layered tone: each velocity range becomes one partial (mono, centred) or two
+     * partials (stereo, hard-panned left/right). The engine has four partials, so at most four mono
+     * or two stereo layers fit; any excess layers are merged into the top one (with a warning) so no
+     * velocity is left silent. The outermost velocity bounds are opened to 1 and 127 so the whole
+     * range triggers a layer.
+     *
+     * @param instrument The instrument to populate (its {@code partials} list)
+     * @param layers The velocity-ordered zone buckets (at least two)
+     * @param pool The shared sample pool
+     * @param byContent The content de-duplication map
+     * @param usedNames The sample names used so far
+     * @throws IOException Could not convert a sample
+     */
+    private void buildVelocityLayeredInstrument (final SvzInstrument instrument, final List<List<ISampleZone>> layers, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
+    {
+        final boolean stereo = instrument.stereo;
+        final int maxLayers = stereo ? 2 : 4;
+        List<List<ISampleZone>> effectiveLayers = layers;
+        if (layers.size () > maxLayers)
+        {
+            this.notifier.logError ("IDS_ZENCORE_VELOCITY_LAYER_CAP", Integer.toString (layers.size ()), Integer.toString (maxLayers));
+            effectiveLayers = new ArrayList<> (layers.subList (0, maxLayers - 1));
+            final List<ISampleZone> merged = new ArrayList<> ();
+            for (int i = maxLayers - 1; i < layers.size (); i++)
+                merged.addAll (layers.get (i));
+            effectiveLayers.add (merged);
+        }
+
+        final List<SvzPartial> partials = new ArrayList<> ();
+        ISampleZone representativeZone = null;
+        for (int li = 0; li < effectiveLayers.size (); li++)
+        {
+            final List<ISampleZone> layerZones = effectiveLayers.get (li);
+            final int velLow = li == 0 ? 1 : Math.clamp (layerZones.get (0).getVelocityLow (), 1, 127);
+            final int velHigh = li == effectiveLayers.size () - 1 ? 127 : Math.clamp (layerZones.get (0).getVelocityHigh (), 1, 127);
+            final int [] keyLeft = new int [128];
+            final int [] keyRight = new int [128];
+            final ISampleZone rep = this.fillKeyMaps (layerZones, keyLeft, keyRight, stereo, pool, byContent, usedNames);
+            if (rep == null)
+                continue;
+            if (representativeZone == null)
+                representativeZone = rep;
+            if (stereo)
+            {
+                partials.add (makePartial (keyLeft, -64, velLow, velHigh, instrument.name, "L" + li, pool));
+                partials.add (makePartial (keyRight, 63, velLow, velHigh, instrument.name, "R" + li, pool));
+            }
+            else
+                partials.add (makePartial (keyLeft, 0, velLow, velHigh, instrument.name, "P" + li, pool));
+        }
+        instrument.partials = partials;
+        if (representativeZone != null)
+            applyToneParameters (instrument, representativeZone);
+    }
+
+
+    /**
+     * Create one partial of a velocity-layered tone from a key map, pan and velocity window, naming
+     * its multi-sample by content so identical layers fold together and a changed layer re-imports.
+     *
+     * @param keyToSample The 128-key sample map for this partial (copied)
+     * @param pan The pan -64 (hard left) .. 0 (centre) .. +63 (hard right)
+     * @param velLow The velocity range lower bound 1-127
+     * @param velHigh The velocity range upper bound 1-127
+     * @param name The tone name (the multi-sample name's descriptive part)
+     * @param channelTag A per-partial tag salting the content hash so partials get distinct names
+     * @param pool The shared sample pool (for the content-hashed sample names)
+     * @return The partial
+     */
+    private static SvzPartial makePartial (final int [] keyToSample, final int pan, final int velLow, final int velHigh, final String name, final String channelTag, final List<SvzSample> pool)
+    {
+        final SvzPartial partial = new SvzPartial ();
+        System.arraycopy (keyToSample, 0, partial.keyToSample, 0, 128);
+        partial.pan = pan;
+        partial.velLow = velLow;
+        partial.velHigh = velHigh;
+        partial.multisampleName = contentName (name, contentHash (keyMapContent (channelTag, keyToSample, pool)));
+        return partial;
+    }
+
+
+    /**
+     * Shorten each source name to the 16 characters the PATa name field holds (the name the
+     * device displays), keeping the names recognizable: a name whose plain truncation is unique
+     * keeps it, and names that would truncate identically - e.g. "082_RTW2_106_BASS_SAW" and
+     * "..._SQR", whose distinguishing part is cut off - get part of the shared head elided with a
+     * '~' and keep their distinctive tail instead ("082_RTW2_106~SAW" / "082_RTW2_106~SQR").
+     * Whatever still collides (identical source names) falls back to a ~2, ~3, ... counter.
+     *
+     * @param sourceNames The source names in bank order
+     * @return One unique tone name (at most 16 characters) per source, in the same order
+     */
+    private static List<String> assignToneNames (final List<String> sourceNames)
+    {
+        final List<String> bases = new ArrayList<> ();
+        for (final String name: sourceNames)
+            bases.add (name == null || name.isBlank () ? "Tone" : name.trim ());
+
+        final List<String> result = new ArrayList<> ();
+        for (final String base: bases)
+            result.add (base.length () <= 16 ? base : base.substring (0, 16));
+
+        // Give the members of each identically-truncating group the shortest tail of their full
+        // name that tells them apart (a member that fits untruncated keeps its exact name)
+        final Map<String, List<Integer>> groups = new LinkedHashMap<> ();
+        for (int i = 0; i < result.size (); i++)
+            groups.computeIfAbsent (result.get (i), k -> new ArrayList<> ()).add (Integer.valueOf (i));
+        for (final List<Integer> group: groups.values ())
+        {
+            if (group.size () < 2)
+                continue;
+            for (int tailLength = 3; tailLength <= 14; tailLength++)
+            {
+                final Set<String> tails = new HashSet<> ();
+                for (final Integer index: group)
+                {
+                    final String base = bases.get (index.intValue ());
+                    tails.add (base.substring (Math.max (0, base.length () - tailLength)));
+                }
+                if (tails.size () < group.size ())
+                    continue;
+                for (final Integer index: group)
+                {
+                    final String base = bases.get (index.intValue ());
+                    if (base.length () <= 16)
+                        continue;
+                    final String tail = base.substring (base.length () - tailLength);
+                    result.set (index.intValue (), base.substring (0, 15 - tailLength) + "~" + tail);
+                }
+                break;
+            }
+        }
+
+        // Whatever still collides (identical source names) gets a counter
+        final Set<String> used = new HashSet<> ();
+        for (int i = 0; i < result.size (); i++)
+        {
+            final String name = result.get (i);
+            String candidate = name;
+            int counter = 2;
+            while (!used.add (candidate))
+            {
+                final String suffix = "~" + counter++;
+                candidate = name.substring (0, Math.min (name.length (), 16 - suffix.length ())) + suffix;
+            }
+            result.set (i, candidate);
+        }
+        return result;
     }
 
 
@@ -261,7 +517,15 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
         final IEnvelope env = zone.getAmplitudeEnvelopeModulator ().getSource ();
         if (env != null)
         {
-            instrument.envAttack = timeToValue (env.getAttackTime ());
+            // Never write an attack time below 8: the voice engine produces a transient burst
+            // at note-on, hardware-measured on a FANTOM-0 with a calibration bank as INDEPENDENT
+            // of the sample content (samples starting at 100 and at 30000 of full scale record
+            // byte-alike onsets - the engine fades the sample data start itself) and shaped only
+            // by the attack value: ~91 residual at attack 1 (an audible tick in quiet material),
+            // ~25 at attack 8 (below audibility with margin), ~13 at 16, ~5 at 32. Attack 8 is
+            // also the value found by ear on the device for punchy basses, so transients stay
+            // tight.
+            instrument.envAttack = Math.max (8, timeToValue (env.getAttackTime ()));
             final double hold = env.getHoldTime ();
             instrument.envHold = hold > 0 ? timeToValue (hold) : 0;
             // Never write a decay time of 0: a tone whose TVA decay stage is instant imports but
@@ -275,6 +539,71 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
             instrument.envHoldLevel = holdLevel < 0 ? 1023 : Math.clamp ((int) Math.round (holdLevel * 1023.0), 0, 1023);
             final double sustain = env.getSustainLevel ();
             instrument.envSustain = sustain < 0 ? 1023 : Math.clamp ((int) Math.round (sustain * 1023.0), 0, 1023);
+        }
+
+        // Pitch and TVF (filter) modulation envelopes (written only when the source actually
+        // modulates - a zero depth keeps the template default). Both scales are HARDWARE-CALIBRATED
+        // (DEPTHCAL banks on a FANTOM-0). PITCH (280, +/-63): the model depth is semitones/120 and
+        // the device pitch envelope shifts ~0.42 semitone per depth unit, so 120/0.42 ~= 280 units
+        // per unit depth, clamped to the PCM partial's +/-63 (audible shift itself saturates ~+22 st).
+        // FILTER (75, +/-100): the device cutoff scales 150 units per octave (8 cents/unit) and the
+        // filter envelope moves cutoff ~20 units per depth unit = 160 cents/unit; the model depth is
+        // cents/12000, so 12000/160 ~= 75 units per unit depth.
+        applyModulationEnvelope (zone.getPitchEnvelopeModulator (), 280, 63, true, instrument);
+        if (optFilter.isPresent ())
+            applyModulationEnvelope (optFilter.get ().getCutoffEnvelopeModulator (), 75, 100, false, instrument);
+    }
+
+
+    /**
+     * Carry a pitch or filter modulation envelope (shape + depth) into the tone. The device stores
+     * the envelope as a signed depth plus a 4-time / 5-level shape; the shape is the standard
+     * attack-to-peak / decay-to-sustain / release-to-centre, scaled by the depth.
+     *
+     * @param modulator The source envelope modulator (its depth is the modulation amount)
+     * @param depthScale The device units written per unit of source depth (before clamping)
+     * @param depthMax The device depth clamp (+/- this value)
+     * @param pitch True for the pitch envelope, false for the TVF (filter) envelope
+     * @param instrument The instrument to update
+     */
+    private static void applyModulationEnvelope (final IEnvelopeModulator modulator, final int depthScale, final int depthMax, final boolean pitch, final SvzInstrument instrument)
+    {
+        if (modulator == null)
+            return;
+        final double depth = modulator.getDepth ();
+        final IEnvelope env = modulator.getSource ();
+        // No meaningful modulation - leave the template default so nothing is clobbered.
+        if (env == null || Double.isNaN (depth) || Math.abs (depth) < 0.005)
+            return;
+
+        final double hold = env.getHoldTime ();
+        final double release = env.getReleaseTime ();
+        final int [] times =
+        {
+            timeToValue (env.getAttackTime ()),
+            hold > 0 ? timeToValue (hold) : 0,
+            timeToValue (env.getDecayTime ()),
+            release >= 0 ? timeToValue (release) : 150
+        };
+        final double sustain = env.getSustainLevel ();
+        final int sustainLevel = sustain < 0 ? 1023 : Math.clamp ((int) Math.round (sustain * 1023.0), 0, 1023);
+        // Shape: start at centre, attack to full, hold, decay to sustain, release back to centre.
+        final int [] levels =
+        {
+            0, 1023, 1023, sustainLevel, 0
+        };
+        final int depthValue = Math.clamp ((int) Math.round (depth * depthScale), -depthMax, depthMax);
+        if (pitch)
+        {
+            instrument.pitchEnvDepth = depthValue;
+            instrument.pitchEnvTimes = times;
+            instrument.pitchEnvLevels = levels;
+        }
+        else
+        {
+            instrument.filterEnvDepth = depthValue;
+            instrument.filterEnvTimes = times;
+            instrument.filterEnvLevels = levels;
         }
     }
 
@@ -342,16 +671,40 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
             loopStart = Math.clamp (loop.getStart (), 0, frames - 1);
             if (loop.getEnd () > loopStart)
                 end = Math.min (loop.getEnd (), frames);
+            // A loop starting at the very first frames - a whole-file loop, or a loop start the
+            // zero-crossing snap processing option moved there - has no lead-in, which the seam
+            // machinery below measures against (the waveform's own step into the loop start at
+            // loopStart-1/-2). If such a loop's wrap is not already seamless, advance the loop
+            // start into the sample: the skipped frames still play once before the first wrap and
+            // the loop end is then re-seated / cross-faded against the advanced start as usual. An
+            // already-seamless wrap - e.g. a device export's own whole-file loop - is left
+            // untouched, keeping such round-trips byte-identical.
+            if (loopStart < 2 && end - loopStart >= 64 && startWrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
+                loopStart += Math.min (LOOP_CROSSFADE, (end - loopStart) / 4);
             end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
             // If period-alignment still cannot make the wrap seamless - an evolving pad whose
             // timbre drifts across the loop has no phase-aligned end - cross-fade the loop tail
             // into the loop-start lead-in. Safe here precisely because the end is period-aligned
             // first: the two blended stretches are in phase and reinforce, so the amplitude
             // collapse an unaligned cross-fade caused on bright content does not happen.
-            // Already-seamless loops are skipped, as are loops starting at the first frames, which
-            // have no lead-in to measure or blend to.
+            // Already-seamless loops are skipped.
             if (loopStart >= 2 && wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
-                pcm = crossfadeLoop (pcm, channels, loopStart, end);
+            {
+                // The fade can only be as long as the lead-in, and it closes the wrap mismatch by
+                // roughly 1/(fade length) - a loop starting only a few dozen frames in leaves an
+                // audible residual step (hardware-heard: a loop from frame 70 capped the fade at
+                // 70 frames and its ~4400 mismatch left a residual of ~63 that ticked every
+                // pass). When the lead-in is the limiting factor, advance the loop start to give
+                // the fade full room - the skipped frames still play once - and re-seat the loop
+                // end for the new start.
+                if (loopStart < LOOP_CROSSFADE && loopStart < (end - loopStart) / 4)
+                {
+                    loopStart += Math.min (LOOP_CROSSFADE, (end - loopStart) / 4);
+                    end = optimizeLoopEnd (pcm, channels, loopStart, end, frames);
+                }
+                if (wrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
+                    pcm = crossfadeLoop (pcm, channels, loopStart, end);
+            }
         }
 
         // Store the played part [0, end) plus, for a loop, LOOP_GUARD_FRAMES of the loop-start
@@ -442,11 +795,14 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
 
 
     /**
-     * A <i>.svz</i> whose sample pool holds exactly one sample imports without an error, but the
-     * device never loads its wave data: the multisample maps and displays correctly, yet shows an
-     * empty waveform and plays silent on every key (hardware-verified on a FANTOM-0; pools of two
-     * or more samples from the identical writer load fine). An inert spacer sample - a few hundred
-     * bytes of silence assigned to no key - keeps every pool loadable.
+     * The wave data of the LAST sample chunk in the pool does not reliably bind on import: the
+     * multisample maps and displays correctly, yet the last sample shows an empty waveform and
+     * plays silent on every key (hardware-verified on a FANTOM-0 - a probe bank's six-sample pool
+     * imported with its last sample dead on every attempt, and identical content with an inert
+     * trailing sample appended played; a pool holding exactly one sample, whose only sample IS the
+     * last, was the first sighting of the same rule). An inert spacer sample - a few hundred bytes
+     * of silence assigned to no key - is therefore always appended, so no real sample sits in the
+     * last slot.
      *
      * @param pool The sample pool
      * @param byContent The content de-duplication map
@@ -454,8 +810,7 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
      */
     private static void ensureLoadableSamplePool (final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames)
     {
-        if (pool.size () == 1)
-            addPooledSample (new byte [128], SAMPLE_RATE, "Spacer", 60, 0, false, 0, 64, pool, byContent, usedNames);
+        addPooledSample (new byte [128], SAMPLE_RATE, "Spacer", 60, 0, false, 0, 64, pool, byContent, usedNames);
     }
 
 
@@ -543,6 +898,35 @@ public class ZenCoreCreator extends AbstractCreator<ZenCoreCreatorUI>
             final int endSlope = endValue - sampleAt (pcm, channels, loopEnd - 2, channel);
             final int leadSlope = leadValue - sampleAt (pcm, channels, loopStart - 2, channel);
             discontinuity = Math.max (discontinuity, Math.max (Math.abs (endValue - leadValue), Math.abs (endSlope - leadSlope)));
+        }
+        return discontinuity;
+    }
+
+
+    /**
+     * The wrap discontinuity of a loop that starts at the very first frames, where the lead-in
+     * frames {@link #wrapDiscontinuity} measures against do not exist: the missing lead is
+     * extrapolated from the waveform's step out of the loop start instead. Only used to decide
+     * whether such a loop needs its start advanced (see addSample) so the regular seam machinery
+     * can run; a wrap that already follows the waveform's own progression - a period-aligned
+     * whole-file loop, like the device's own exports - stays untouched.
+     *
+     * @param pcm The interleaved 16-bit little-endian PCM
+     * @param channels The number of channels
+     * @param loopStart The loop start frame (0 or 1)
+     * @param loopEnd The loop end frame (at least loopStart + 3)
+     * @return The largest value / slope deviation across the wrap
+     */
+    private static int startWrapDiscontinuity (final byte [] pcm, final int channels, final int loopStart, final int loopEnd)
+    {
+        int discontinuity = 0;
+        for (int channel = 0; channel < channels; channel++)
+        {
+            final int startValue = sampleAt (pcm, channels, loopStart, channel);
+            final int startSlope = sampleAt (pcm, channels, loopStart + 1, channel) - startValue;
+            final int endValue = sampleAt (pcm, channels, loopEnd - 1, channel);
+            final int endSlope = endValue - sampleAt (pcm, channels, loopEnd - 2, channel);
+            discontinuity = Math.max (discontinuity, Math.max (Math.abs (endValue - (startValue - startSlope)), Math.abs (endSlope - startSlope)));
         }
         return discontinuity;
     }
