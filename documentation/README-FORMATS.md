@@ -61,6 +61,7 @@ The following multi-sample formats are supported:
 * [Native Instruments Maschine](#native-instruments-maschine)
 * [Polyend Tracker](#polyend-tracker)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+* [Roland MC-707/MC-101](#roland-mc-707mc-101)
 * [Roland MV-8000/MV-8800](#roland-mv-8000mv-8800)
 * [Roland S-50 Series](#roland-s-50-series) - read only
 * [Roland S-770 Series](#roland-s-770-series) - read only
@@ -491,6 +492,25 @@ The following limitations apply:
 * The filter cutoff frequency mapping is an approximation since Renoise's normalized cutoff to frequency curve is internal and not part of the format.
 * There are no dedicated category, author or keyword fields in the format; only the name and a free-text comment are available.
 * Samples stored as 32-bit FLAC inside a source instrument cannot be transcoded (a limitation of the bundled FLAC decoder) and are skipped with an error.
+
+## Roland MC-707/MC-101
+
+The Roland MC-707 and MC-101 GROOVEBOX run the ZEN-Core sound engine and keep all of their user content in a single project file (*.mpj*) on the SD card: the tracks with their clips, the project's user tone and drum-kit banks and the user samples with their audio. Both devices use the byte-identical format, so a written project loads on either one. The file format is not documented by Roland; it was reverse-engineered from Roland's own preset projects and the init-project image embedded in the device firmware (see *documentation/design/MC707_FORMAT.md*). Written projects have not been verified on hardware yet - feedback is welcome.
+
+A written project is the device's own init project with the converted sounds placed in its user banks, so everything outside of the converted content is in the exact factory-default state. Copy the file to the `ROLAND/PROJECT` folder of the SD card and load it as a project; the sounds appear as the project's user tones and user drum kits, the samples in the project's sample list. A single-zone source becomes a **user tone** whose first partial plays the sample chromatically, carrying the source's filter (type, cutoff, resonance) and amplitude envelope - the exact record pattern of Roland's own user-sample preset tones. A multi-zone source becomes a **user drum kit** that maps each key of the kit range (A0-C8) to its zone's sample with the key transposition baked into the per-key pitch, the pattern of Roland's own user-sample preset kits. Samples are stored the way the device's sample import stores them: interleaved stereo 16-bit at the native 44.1 kHz (mono sources are duplicated to both channels), with level, original key, start, loop start and end in the project's sample-parameter table. When creating a library, all sources are packed into the user banks of one project file.
+
+Reading extracts every tone and drum kit that plays user samples - from the user banks as well as from the per-clip sounds of the tracks (this includes Roland's downloadable preset projects). The audio of ROM-wave sounds is not contained in the file and cannot be converted. Runs of neighboring kit keys playing the same sample with an ascending chromatic pitch merge back into one key-ranged zone, so a written project round-trips.
+
+The following options are supported:
+
+* **Write as multisample tones instead of drum kits**: the project format also contains a multisample key-map table - the analog of the FANTOM's, whose tone record layout the MC shares. With this option a multi-zone source becomes one chromatic **multisample tone** (a key map plus a tone whose first partial plays it), which represents melodic multisamples faithfully. It is off by default because no Roland-authored project uses that table, so unlike the drum-kit pattern it could not be verified against real files; treat it as experimental until confirmed on hardware. Multisample tones written this way are read back.
+
+The following limitations apply:
+
+* A project holds up to 64 user tones, 64 user drum kits and 500 samples; sources beyond that are skipped with an error.
+* A drum kit key (and a multisample map key) plays a single sample, so overlapping velocity layers are reduced to the loudest layer; drum kit zones outside of A0-C8 are dropped.
+* The tone's chromatic keyboard tracking spans the full keyboard; per-partial key/velocity ranges are not written (their binary encoding is not fully decoded).
+* The envelope time curve (seconds to the 0-1023 range) is an approximation, as with the other ZEN-Core formats.
 
 ## Roland MV-8000/MV-8800
 

@@ -74,6 +74,8 @@ import de.mossgrabers.convertwithmoss.format.polyend.PolyendTrackerCreator;
 import de.mossgrabers.convertwithmoss.format.polyend.PolyendTrackerDetector;
 import de.mossgrabers.convertwithmoss.format.renoise.RenoiseCreator;
 import de.mossgrabers.convertwithmoss.format.renoise.RenoiseDetector;
+import de.mossgrabers.convertwithmoss.format.roland.mc707.MC707Creator;
+import de.mossgrabers.convertwithmoss.format.roland.mc707.MC707Detector;
 import de.mossgrabers.convertwithmoss.format.roland.mv8000.MV8000Creator;
 import de.mossgrabers.convertwithmoss.format.roland.mv8000.MV8000Detector;
 import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
@@ -167,6 +169,7 @@ public class ConverterBackend
             new MaschineDetector (notifier),
             new PolyendTrackerDetector (notifier),
             new RenoiseDetector (notifier),
+            new MC707Detector (notifier),
             new MV8000Detector (notifier),
             new S5xxDetector (notifier),
             new S770Detector (notifier),
@@ -202,6 +205,7 @@ public class ConverterBackend
             new MaschineCreator (notifier),
             new PolyendTrackerCreator (notifier),
             new RenoiseCreator (notifier),
+            new MC707Creator (notifier),
             new MV8000Creator (notifier),
             new ZenCoreCreator (notifier),
             new SxtCreator (notifier),
