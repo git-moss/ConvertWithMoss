@@ -162,17 +162,27 @@ public class AudioSampleReducer
 
     private static byte [] trimSample (final byte [] data, final ISampleZone sampleZone) throws IOException, UnsupportedAudioFileException
     {
-        final int start = sampleZone.getStart ();
+        final int start = Math.max (0, sampleZone.getStart ());
         int end = sampleZone.getStop ();
         final List<ISampleLoop> loops = sampleZone.getLoops ();
         if (!loops.isEmpty ())
         {
             final int loopEnd = loops.get (0).getEnd ();
-            if (loopEnd < end)
+            if (loopEnd > 0 && loopEnd < end)
                 end = loopEnd;
         }
         sampleZone.setStart (0);
         sampleZone.setStop (end - start);
+
+        // The audio was cut at the zone start - move the loop points with it
+        if (start > 0)
+            for (final ISampleLoop loop: loops)
+            {
+                loop.setStart (Math.max (0, loop.getStart () - start));
+                if (loop.getEnd () > 0)
+                    loop.setEnd (Math.max (0, loop.getEnd () - start));
+            }
+
         return trimSampleData (data, start, end);
     }
 
