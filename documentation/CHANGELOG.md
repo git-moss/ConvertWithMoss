@@ -24,6 +24,7 @@
   * New: Added an opt-in metadata option "Category tag at name start declares the category" (off by default): many commercial libraries prefix each preset name with its category (e.g. 'PAD Solina', 'BASS Growler'). When enabled, such a prefix takes precedence over keyword matches elsewhere in the name, which could otherwise win accidentally (e.g. 'BELL Vibrato Strings' was detected as Strings instead of Bell), and common abbreviations (BRAS, DRM, FLUT, GRAN, ORG, PERC, PHYS, PLUK, POLY, REES, STRG, SWEP, VOC) are recognized as well. Also added 'Reese' as a Bass category tag (thanks to Douglas Carmichael).
   * New: Added an opt-in *Snap loops to zero-crossings* processing option.
   * Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
+  * Fixed: A library name typed with its file ending (e.g. "MyLibrary.xrni") produced a doubled-up file name ("MyLibrary_xrni.xrni") - the ending is now recognized for every destination format (thanks to Douglas Carmichael).
   * Fixed: The "Trim start and end" processing option cut the audio to the zone's start/end but left the loop points at their old positions, so a trimmed sample with a non-zero start got a displaced loop - the loop end could even point past the end of the trimmed audio. The loop points now move with the cut (thanks to Douglas Carmichael).
   * Fixed: Fixed some potential NullPointerExceptions.
 * 1010music (thanks to Douglas Carmichael)
