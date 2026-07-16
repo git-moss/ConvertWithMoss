@@ -47,6 +47,8 @@ public class DetectSettings
     public int     loopCrossfades  = 0;
     /** Snap forward loop boundaries to the nearest zero-crossing to avoid loop clicks. */
     public boolean snapLoopsToZero = false;
+    /** Transpose playback by this number of semitones by moving the sample root keys. 0 is off. */
+    public int     transposeSemitones = 0;
 
 
     /**
@@ -56,6 +58,6 @@ public class DetectSettings
      */
     public boolean needsProcessing ()
     {
-        return this.enableProcessing && (this.maxNumberOfSamples > 0 || this.enableMakeMono || this.enableTrimSample || this.reduceBitDepth > 0 || this.reduceFrequency > 0 || this.enableNormalize || this.loopCrossfades > 0 || this.snapLoopsToZero);
+        return this.enableProcessing && (this.maxNumberOfSamples > 0 || this.enableMakeMono || this.enableTrimSample || this.reduceBitDepth > 0 || this.reduceFrequency > 0 || this.enableNormalize || this.loopCrossfades > 0 || this.snapLoopsToZero || this.transposeSemitones != 0);
     }
 }
