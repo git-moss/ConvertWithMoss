@@ -34,9 +34,13 @@ public class ProcessingDialog extends AbstractDialog
     private static final List<String> BIT_DEPTH       = new ArrayList<> ();
     private static final List<String> FREQ_RESOLUTiON = new ArrayList<> ();
     private static final List<String> LOOP_CROSSFADES = new ArrayList<> ();
+    private static final List<String> TRANSPOSE       = new ArrayList<> ();
+    private static final int          TRANSPOSE_RANGE = 24;
 
     static
     {
+        for (int i = -TRANSPOSE_RANGE; i <= TRANSPOSE_RANGE; i++)
+            TRANSPOSE.add (i == 0 ? "Off" : String.format ("%+d", Integer.valueOf (i)));
         Collections.addAll (BIT_DEPTH, "Ignore", "24 bit", "16 bit", "8 bit");
         Collections.addAll (FREQ_RESOLUTiON, "Ignore", "48 kHz", "44.1 kHz", "32 kHz", "31.25 kHz", "30 kHz", "28 kHz", "27 kHz", "24 kHz", "22.05 kHz", "16 kHz", "12 kHz", "11.025 kHz", "8 kHz");
         Collections.addAll (LOOP_CROSSFADES, "Off", "0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "8%", "9%", "10%", "11%", "12%", "13%", "14%", "15%", "16%", "17%", "18%", "19%", "20%", "21%", "22%", "23%", "24%", "25%", "26%", "27%", "28%", "29%", "30%", "31%", "32%", "33%", "34%", "35%", "36%", "37%", "38%", "39%", "40%", "41%", "42%", "43%", "44%", "45%", "46%", "47%", "48%", "49%", "50%", "51%", "52%", "53%", "54%", "55%", "56%", "57%", "58%", "59%", "60%", "61%", "62%", "63%", "64%", "65%", "66%", "67%", "68%", "69%", "70%", "71%", "72%", "73%", "74%", "75%", "76%", "77%", "78%", "79%", "80%", "81%", "82%", "83%", "84%", "85%", "86%", "87%", "88%", "89%", "90%", "91%", "92%", "93%", "94%", "95%", "96%", "97%", "98%", "99%", "100%");
@@ -64,6 +68,8 @@ public class ProcessingDialog extends AbstractDialog
     public ComboBox<String>        loopCrossfadesCombobox;
     /** Check-box to snap forward loop boundaries to zero-crossings. */
     public CheckBox                snapLoopsCheckbox;
+    /** Combo-box for transposing playback by semitones. */
+    public ComboBox<String>        transposeCombobox;
 
 
     /**
@@ -73,7 +79,7 @@ public class ProcessingDialog extends AbstractDialog
      */
     protected ProcessingDialog (final Window owner)
     {
-        super (owner, "@IDS_PROCESSING_DIALOG", true, true, 400, 300);
+        super (owner, "@IDS_PROCESSING_DIALOG", true, true, 400, 340);
 
         this.setResizable (false);
 
@@ -206,6 +212,29 @@ public class ProcessingDialog extends AbstractDialog
     }
 
 
+    /**
+     * Select the transpose value.
+     *
+     * @param semitones The number of semitones in the range of [-24..24]
+     */
+    public void selectTranspose (final int semitones)
+    {
+        this.transposeCombobox.getSelectionModel ().select (Math.clamp (semitones, -TRANSPOSE_RANGE, TRANSPOSE_RANGE) + TRANSPOSE_RANGE);
+    }
+
+
+    /**
+     * Get the transpose value.
+     *
+     * @return The number of semitones in the range of [-24..24]
+     */
+    public int getTranspose ()
+    {
+        final int itemIndex = this.transposeCombobox.getSelectionModel ().getSelectedIndex ();
+        return itemIndex < 0 ? 0 : itemIndex - TRANSPOSE_RANGE;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     protected Pane init ()
@@ -228,12 +257,16 @@ public class ProcessingDialog extends AbstractDialog
         this.loopCrossfadesCombobox = panel4.createComboBox ("@IDS_PROCESSING_LOOP_CROSSFADE", "@IDS_PROCESSING_LOOP_CROSSFADE_TOOLTIP", LOOP_CROSSFADES);
         this.snapLoopsCheckbox = panel4.createCheckBox ("@IDS_PROCESSING_SNAP_LOOPS_LABEL", "@IDS_PROCESSING_SNAP_LOOPS_TOOLTIP");
 
+        final BoxPanel panel5 = new TwoColsPanel ();
+        this.transposeCombobox = panel5.createComboBox ("@IDS_PROCESSING_TRANSPOSE_LABEL", "@IDS_PROCESSING_TRANSPOSE_TOOLTIP", TRANSPOSE);
+
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
         this.enableProcessingCheckbox = panel.createCheckBox ("@IDS_PROCESSING_ENABLE", "@IDS_PROCESSING_ENABLE_TOOLTIP");
         panel.addComponent (layoutPane (panel1, "@IDS_PROCESSING_NORMALIZE_HEADER"));
         panel.addComponent (layoutPane (panel2, "@IDS_PROCESSING_MINIMIZE_HEADER"));
         panel.addComponent (layoutPane (panel3, "@IDS_PROCESSING_RESOLUTION"));
         panel.addComponent (layoutPane (panel4, "@IDS_PROCESSING_LOOPS"));
+        panel.addComponent (layoutPane (panel5, "@IDS_PROCESSING_PITCH"));
         this.setButtons ("@IDS_SETTINGS_DLG_OK", "@IDS_SETTINGS_DLG_CANCEL");
 
         this.traversalManager.add (this.normalizeCheckbox);
@@ -245,6 +278,7 @@ public class ProcessingDialog extends AbstractDialog
         this.traversalManager.add (this.alwaysResampleCheckbox);
         this.traversalManager.add (this.loopCrossfadesCombobox);
         this.traversalManager.add (this.snapLoopsCheckbox);
+        this.traversalManager.add (this.transposeCombobox);
         this.traversalManager.add (this.getOKButton ());
         this.traversalManager.add (this.getCancelButton ());
 
