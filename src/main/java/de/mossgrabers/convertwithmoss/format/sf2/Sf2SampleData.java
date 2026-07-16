@@ -25,10 +25,11 @@ public class Sf2SampleData extends AbstractSampleData
 {
     private final Sf2SampleDescriptor sample;
     private Sf2SampleDescriptor       rightSample;
-    private final boolean             is24;
-    private final long                lengthInSamples;
-    private final long                leftLengthInSamples;
-    private final long                rightLengthInSamples;
+    private int                       rightChannelOffset = 0;
+    private boolean                   is24;
+    private long                      lengthInSamples;
+    private long                      leftLengthInSamples;
+    private long                      rightLengthInSamples;
 
 
     /**
@@ -41,7 +42,12 @@ public class Sf2SampleData extends AbstractSampleData
     {
         this.sample = sample;
         this.rightSample = sample;
+        this.updateFormat ();
+    }
 
+
+    private void updateFormat ()
+    {
         // For 24 bit the data must be present and the length must match
         final byte [] leftSampleData = this.sample.getSampleData ();
         final byte [] leftSample24Data = this.sample.getSample24Data ();
@@ -51,7 +57,7 @@ public class Sf2SampleData extends AbstractSampleData
 
         this.leftLengthInSamples = this.sample.getEnd () - this.sample.getStart ();
         this.rightLengthInSamples = this.rightSample.getEnd () - this.rightSample.getStart ();
-        this.lengthInSamples = Math.max (this.leftLengthInSamples, this.rightLengthInSamples);
+        this.lengthInSamples = Math.max (this.leftLengthInSamples, this.rightLengthInSamples - this.rightChannelOffset);
     }
 
 
@@ -81,9 +87,10 @@ public class Sf2SampleData extends AbstractSampleData
             for (int i = 0; i < this.lengthInSamples; i++)
             {
                 final int dataOffset = 6 * i;
-                final int sampleOffset = 2 * i;
-                final int leftOffset = 2 * leftStart + sampleOffset;
-                final int rightOffset = 2 * rightStart + sampleOffset;
+                final int leftOffset = 2 * (leftStart + i);
+                // The right channel might be moved by the alignment offset, see setRightSample()
+                final int rightIndex = i + this.rightChannelOffset;
+                final int rightOffset = 2 * (rightStart + rightIndex);
 
                 // Support for different lengths of left/right mono file
                 if (i < this.leftLengthInSamples && leftOffset < leftSampleData.length)
@@ -92,9 +99,9 @@ public class Sf2SampleData extends AbstractSampleData
                     data[dataOffset + 1] = leftSampleData[leftOffset];
                     data[dataOffset + 2] = leftSampleData[leftOffset + 1];
                 }
-                if (i < this.rightLengthInSamples && rightOffset < rightSampleData.length)
+                if (rightIndex >= 0 && rightIndex < this.rightLengthInSamples && rightOffset < rightSampleData.length)
                 {
-                    data[dataOffset + 3] = rightSample24Data[rightStart + i];
+                    data[dataOffset + 3] = rightSample24Data[rightStart + rightIndex];
                     data[dataOffset + 4] = rightSampleData[rightOffset];
                     data[dataOffset + 5] = rightSampleData[rightOffset + 1];
                 }
@@ -103,16 +110,17 @@ public class Sf2SampleData extends AbstractSampleData
             for (int i = 0; i < this.lengthInSamples; i++)
             {
                 final int dataOffset = 4 * i;
-                final int sampleOffset = 2 * i;
-                final int leftOffset = 2 * leftStart + sampleOffset;
-                final int rightOffset = 2 * rightStart + sampleOffset;
+                final int leftOffset = 2 * (leftStart + i);
+                // The right channel might be moved by the alignment offset, see setRightSample()
+                final int rightIndex = i + this.rightChannelOffset;
+                final int rightOffset = 2 * (rightStart + rightIndex);
 
                 if (i < this.leftLengthInSamples && leftOffset < leftSampleData.length)
                 {
                     data[dataOffset] = leftSampleData[leftOffset];
                     data[dataOffset + 1] = leftSampleData[leftOffset + 1];
                 }
-                if (i < this.rightLengthInSamples && rightOffset < rightSampleData.length)
+                if (rightIndex >= 0 && rightIndex < this.rightLengthInSamples && rightOffset < rightSampleData.length)
                 {
                     data[dataOffset + 2] = rightSampleData[rightOffset];
                     data[dataOffset + 3] = rightSampleData[rightOffset + 1];
@@ -137,6 +145,18 @@ public class Sf2SampleData extends AbstractSampleData
 
 
     /**
+     * Get the sample description of the right side. Identical to the left side one if this is a
+     * mono sample.
+     *
+     * @return The sample description
+     */
+    public Sf2SampleDescriptor getRightSample ()
+    {
+        return this.rightSample;
+    }
+
+
+    /**
      * Set the right side for the left side mono sample.
      *
      * @param rightSample The matching right side sample
@@ -144,6 +164,39 @@ public class Sf2SampleData extends AbstractSampleData
     public void setRightSample (final Sf2SampleDescriptor rightSample)
     {
         this.rightSample = rightSample;
+        this.rightChannelOffset = computeAlignmentOffset (this.sample, rightSample);
+        this.updateFormat ();
+        // Force re-creation with the updated length
+        this.audioMetadata = null;
+    }
+
+
+    /**
+     * Calculates the frame offset which aligns the right channel of a stereo pair with the left
+     * one. Some conversion tools write one channel with extra frames at its start, which offsets
+     * its loop and its length by the same amount (e.g. in the DigitalSoundFactory E-mu E4 banks
+     * every right channel sample is 1 frame longer and its loop starts 1 frame later). If both
+     * loops have the same length and the loop offset matches the length offset, the pair is
+     * aligned by skipping (or delaying by) that many frames of the right channel.
+     *
+     * @param left The sample of the left channel
+     * @param right The sample of the right channel
+     * @return The number of frames the right channel must be moved to line up with the left one,
+     *         0 if the pair is already aligned or cannot be aligned
+     */
+    public static int computeAlignmentOffset (final Sf2SampleDescriptor left, final Sf2SampleDescriptor right)
+    {
+        // Both samples need a valid loop of the same length which lies fully inside of the sample
+        final long leftLoopLength = left.getLoopEnd () - left.getLoopStart ();
+        final long rightLoopLength = right.getLoopEnd () - right.getLoopStart ();
+        if (leftLoopLength <= 0 || leftLoopLength != rightLoopLength)
+            return 0;
+        if (left.getLoopStart () < left.getStart () || left.getLoopEnd () > left.getEnd () || right.getLoopStart () < right.getStart () || right.getLoopEnd () > right.getEnd ())
+            return 0;
+
+        final long loopOffset = right.getLoopStart () - right.getStart () - (left.getLoopStart () - left.getStart ());
+        final long lengthOffset = right.getEnd () - right.getStart () - (left.getEnd () - left.getStart ());
+        return loopOffset == lengthOffset ? (int) loopOffset : 0;
     }
 
 

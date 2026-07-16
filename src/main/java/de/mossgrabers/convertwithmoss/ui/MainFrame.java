@@ -100,6 +100,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private static final String    PROCESSING_ALWAYS_RESAMPLE          = "ProcessingAlwaysResample";
     private static final String    PROCESSING_LOOP_CROSSFADES          = "ProcessingLoopCrossfades";
     private static final String    PROCESSING_SNAP_LOOPS               = "ProcessingSnapLoops";
+    private static final String    PROCESSING_TRANSPOSE                = "ProcessingTranspose";
 
     private static final int       DEST_TYPE_PRESET                    = 0;
     private static final int       DEST_TYPE_PRESET_LIBRARY            = 1;
@@ -455,6 +456,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.detectSettings.alwaysResample = this.config.getBoolean (PROCESSING_ALWAYS_RESAMPLE, false);
         this.detectSettings.loopCrossfades = this.config.getInteger (PROCESSING_LOOP_CROSSFADES, 0);
         this.detectSettings.snapLoopsToZero = this.config.getBoolean (PROCESSING_SNAP_LOOPS, false);
+        this.detectSettings.transposeSemitones = this.config.getInteger (PROCESSING_TRANSPOSE, 0);
 
         // Options
         //
@@ -509,6 +511,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setBoolean (PROCESSING_ALWAYS_RESAMPLE, this.detectSettings.alwaysResample);
         this.config.setInteger (PROCESSING_LOOP_CROSSFADES, this.detectSettings.loopCrossfades);
         this.config.setBoolean (PROCESSING_SNAP_LOOPS, this.detectSettings.snapLoopsToZero);
+        this.config.setInteger (PROCESSING_TRANSPOSE, this.detectSettings.transposeSemitones);
 
         //
         // Options
@@ -575,6 +578,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.processingDialog.alwaysResampleCheckbox.setSelected (this.detectSettings.alwaysResample);
         this.processingDialog.selectLoopCrossfades (this.detectSettings.loopCrossfades);
         this.processingDialog.snapLoopsCheckbox.setSelected (this.detectSettings.snapLoopsToZero);
+        this.processingDialog.selectTranspose (this.detectSettings.transposeSemitones);
 
         if (this.processingDialog.display ())
         {
@@ -589,6 +593,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.detectSettings.alwaysResample = this.processingDialog.alwaysResampleCheckbox.isSelected ();
             this.detectSettings.loopCrossfades = this.processingDialog.getLoopCrossfades ();
             this.detectSettings.snapLoopsToZero = this.processingDialog.snapLoopsCheckbox.isSelected ();
+            this.detectSettings.transposeSemitones = this.processingDialog.getTranspose ();
         }
     }
 
