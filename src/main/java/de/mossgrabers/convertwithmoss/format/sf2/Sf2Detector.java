@@ -50,6 +50,10 @@ import de.mossgrabers.tools.Pair;
  */
 public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 {
+    /** The maximum absolute 16 bit value which still counts as silence (about -60dBFS), which covers dithered 'digital silence'. */
+    private static final int SILENCE_THRESHOLD = 32;
+
+
     /**
      * Constructor.
      *
@@ -150,6 +154,24 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 this.notifier.log ("IDS_NOTIFY_SF2_SKIP_EMPTY_PRESET", presetName);
                 continue;
             }
+
+            // Also skip marker presets whose samples contain only digital silence - e.g. the
+            // vendor and copyright presets of the E-mu E4 Producer Series banks reference half a
+            // second of dithered silence instead of no sample at all.
+            if (containsOnlySilence (multisampleSource.getNonEmptyGroups (false)))
+            {
+                this.notifier.log ("IDS_NOTIFY_SF2_SKIP_SILENT_PRESET", presetName);
+                continue;
+            }
+            // Purely informational: when the analyzed audio of the samples consistently
+            // contradicts the mapped root keys by whole octaves, the preset sounds that many
+            // octaves off. Seen in commercial banks, e.g. several E-mu E4 Producer Series presets
+            // carry root keys one octave above the samples' true pitch and therefore sound one
+            // octave lower than played. The Transpose processing option can correct the playback
+            // pitch without changing the key mapping.
+            final int octaveOffset = detectOctaveOffset (multisampleSource.getNonEmptyGroups (false));
+            if (octaveOffset != 0)
+                this.notifier.log (octaveOffset > 0 ? "IDS_NOTIFY_SF2_SOUNDS_LOWER" : "IDS_NOTIFY_SF2_SOUNDS_HIGHER", presetName, Integer.toString (Math.abs (octaveOffset) / 12));
 
             this.fillMetadata (sf2File, parts, multisampleSource.getMetadata ());
             multisamples.add (multisampleSource);
@@ -418,16 +440,26 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             return false;
         }
 
+        // If one channel of a genuine stereo pair simply carries extra frames at its start (the
+        // loop offset matches the length offset), the channels are re-aligned when they are
+        // combined (see Sf2SampleData.setRightSample). Such pairs are compared as if already
+        // aligned, so they are neither warned about nor kept as mono. E.g. in the
+        // DigitalSoundFactory E-mu E4 banks every right channel sample is 1 frame longer and
+        // loops 1 frame later.
+        final int alignmentOffset = Sf2SampleData.computeAlignmentOffset (left, right);
+        if (alignmentOffset != 0 && this.settingsConfiguration.logUnsupportedAttributes ())
+            this.notifier.log ("IDS_NOTIFY_SF2_ALIGNED_STEREO", left.getName (), right.getName (), Integer.toString (alignmentOffset));
+
         // Loops must have the same start and length
         final long leftStart = left.getLoopStart () - left.getStart ();
-        final long rightStart = right.getLoopStart () - right.getStart ();
+        final long rightStart = right.getLoopStart () - right.getStart () - alignmentOffset;
         final long leftLoopLength = left.getLoopEnd () - left.getLoopStart ();
         final long rightLoopLength = right.getLoopEnd () - right.getLoopStart ();
         if (!leftSampleZone.getLoops ().isEmpty () && (leftStart != rightStart || leftLoopLength != rightLoopLength))
             this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_LOOP_LENGTH", left.getName (), right.getName (), Long.toString (leftStart), Long.toString (leftLoopLength), Long.toString (rightStart), Long.toString (rightLoopLength));
 
         final long leftLength = left.getEnd () - left.getStart ();
-        final long rightLength = right.getEnd () - right.getStart ();
+        final long rightLength = right.getEnd () - right.getStart () - alignmentOffset;
         if (leftLength != rightLength)
         {
             if (this.settingsConfiguration.logUnsupportedAttributes ())
@@ -441,6 +473,178 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         }
 
         return true;
+    }
+
+
+    /**
+     * Checks if all samples referenced by the given groups contain only digital silence.
+     *
+     * @param groups The groups which contain the samples to check
+     * @return True if none of the samples contains anything audible
+     */
+    private static boolean containsOnlySilence (final List<IGroup> groups)
+    {
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final Sf2SampleData sampleData = (Sf2SampleData) zone.getSampleData ();
+                final Sf2SampleDescriptor sample = sampleData.getSample ();
+                final Sf2SampleDescriptor rightSample = sampleData.getRightSample ();
+                if (!isSilence (sample) || rightSample != sample && !isSilence (rightSample))
+                    return false;
+            }
+        return true;
+    }
+
+
+    /**
+     * Checks if the sample contains only digital silence.
+     *
+     * @param sample The sample to check
+     * @return True if the sample does not contain anything audible
+     */
+    private static boolean isSilence (final Sf2SampleDescriptor sample)
+    {
+        final byte [] data = sample.getSampleData ();
+        final int end = (int) Math.min (sample.getEnd (), data.length / 2);
+        for (int i = (int) sample.getStart (); i < end; i++)
+        {
+            final short value = (short) (data[2 * i] & 0xFF | data[2 * i + 1] << 8);
+            if (Math.abs (value) > SILENCE_THRESHOLD)
+                return false;
+        }
+        return true;
+     * Checks if the pitch of the sample audio consistently contradicts the mapped root keys by a
+     * whole number of octaves. Only a strong consensus is reported: at least 3 zones must be
+     * measurable and at least 3/4 of them must agree on the same non-zero multiple of 12
+     * semitones (up to 2 octaves).
+     *
+     * @param groups The groups which contain the sample zones to check
+     * @return The offset of the root keys in semitones (a positive multiple of 12 means the
+     *         preset sounds that many octaves lower than played), 0 if the roots match the audio
+     *         or no reliable consensus was found
+     */
+    private static int detectOctaveOffset (final List<IGroup> groups)
+    {
+        int consensus = 0;
+        int consensusCount = 0;
+        int measured = 0;
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final int keyRoot = zone.getKeyRoot ();
+                if (keyRoot < 0)
+                    continue;
+                final Sf2SampleDescriptor sample = ((Sf2SampleData) zone.getSampleData ()).getSample ();
+                final double pitch = detectPitch (sample);
+                if (pitch < 0)
+                    continue;
+                measured++;
+                final double offset = keyRoot - pitch;
+                final int nearestOctave = (int) Math.round (offset / 12.0) * 12;
+                if (Math.abs (offset - nearestOctave) > 0.6 || Math.abs (nearestOctave) > 24)
+                    continue;
+                if (nearestOctave == 0)
+                {
+                    // The first zones already confirm that the roots match the audio
+                    if (measured >= 2 && consensusCount == 0)
+                        return 0;
+                    continue;
+                }
+                if (consensus == 0)
+                    consensus = nearestOctave;
+                if (consensus == nearestOctave)
+                    consensusCount++;
+            }
+        return measured >= 3 && consensusCount >= 3 && consensusCount * 4 >= measured * 3 ? consensus : 0;
+    }
+
+
+    /**
+     * Detects the pitch of the sample with an auto-correlation over the loop area (or the middle
+     * of the sample if it has no loop), which contains the sustained and most periodic part.
+     *
+     * @param sample The sample to analyze
+     * @return The detected pitch as a fractional MIDI note number, -1 if the audio is not
+     *         periodic enough for a reliable detection
+     */
+    private static double detectPitch (final Sf2SampleDescriptor sample)
+    {
+        final byte [] data = sample.getSampleData ();
+        final long start = sample.getStart ();
+        final long end = Math.min (sample.getEnd (), data.length / 2);
+        long from = start + (end - start) / 3;
+        final long loopStart = sample.getLoopStart ();
+        if (sample.getLoopEnd () - loopStart >= 32 && loopStart >= start && loopStart < end)
+            from = loopStart;
+        final int length = (int) Math.min (4096, end - from);
+        if (length < 512)
+            return -1;
+
+        final double [] frames = new double [length];
+        double sum = 0;
+        for (int i = 0; i < length; i++)
+        {
+            final int index = (int) (2 * (from + i));
+            final short value = (short) (data[index] & 0xFF | data[index + 1] << 8);
+            frames[i] = value;
+            sum += value;
+        }
+        final double mean = sum / length;
+        double energy = 0;
+        for (int i = 0; i < length; i++)
+        {
+            frames[i] -= mean;
+            energy += frames[i] * frames[i];
+        }
+        if (energy == 0)
+            return -1;
+
+        final long sampleRate = sample.getSampleRate ();
+        final int minimumLag = Math.max (8, (int) (sampleRate / 2000));
+        final int maximumLag = Math.min (length / 2, (int) (sampleRate / 25));
+        if (maximumLag <= minimumLag)
+            return -1;
+
+        final double [] correlations = new double [maximumLag + 1];
+        int bestLag = -1;
+        double bestCorrelation = 0;
+        for (int lag = minimumLag; lag <= maximumLag; lag++)
+        {
+            double correlation = 0;
+            for (int i = 0; i + lag < length; i++)
+                correlation += frames[i] * frames[i + lag];
+            correlations[lag] = correlation;
+            if (correlation > bestCorrelation)
+            {
+                bestCorrelation = correlation;
+                bestLag = lag;
+            }
+        }
+        // Reject non-periodic content like percussion or noise
+        if (bestLag < 0 || bestCorrelation / energy < 0.4)
+            return -1;
+
+        // The correlation of a harmonic sound peaks at every multiple of the true period - move
+        // to the shortest lag which is nearly as strong to not lock onto a sub-octave
+        int lag = bestLag;
+        while (lag / 2 >= minimumLag)
+        {
+            int candidate = -1;
+            double candidateCorrelation = 0;
+            for (int i = Math.max (minimumLag, lag / 2 - 2); i <= Math.min (lag / 2 + 2, maximumLag); i++)
+                if (correlations[i] > candidateCorrelation)
+                {
+                    candidateCorrelation = correlations[i];
+                    candidate = i;
+                }
+            if (candidate < 0 || candidateCorrelation < 0.9 * correlations[lag])
+                break;
+            lag = candidate;
+        }
+
+        final double frequency = (double) sampleRate / lag;
+        return 69 + 12 * Math.log (frequency / 440.0) / Math.log (2);
     }
 
 

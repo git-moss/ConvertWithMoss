@@ -423,6 +423,22 @@ public class ConverterBackend
             }
 
             // -----------------------------------------------------------
+            // Transpose playback by moving the sample root keys - the key ranges are not changed
+
+            final int transpose = this.detectionSettings.transposeSemitones;
+            if (transpose != 0)
+            {
+                this.notifier.log ("IDS_PROCESSING_TRANSPOSE", Integer.toString (transpose));
+                for (final IGroup group: multisampleSource.getGroups ())
+                    for (final ISampleZone zone: group.getSampleZones ())
+                    {
+                        final int keyRoot = zone.getKeyRoot ();
+                        if (keyRoot >= 0)
+                            zone.setKeyRoot (Math.clamp (keyRoot - (long) transpose, 0, 127));
+                    }
+            }
+
+            // -----------------------------------------------------------
             // Combine split-mono samples to stereo samples if necessary for further processing
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
