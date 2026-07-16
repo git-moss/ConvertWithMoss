@@ -64,6 +64,7 @@
 * TX16W
   * Fixed: First check if the referenced absolute sample file path exists before searching all local folders.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
+  * New: The preset Author and Bank fields can now be set with the *Author* and *Bank* creator options (or the CLI parameters QPATAuthor / QPATBank); leaving them empty keeps the values from the source. This lets a converted library be tagged so its presets are grouped and browsable by author and bank on the device.
   * New: A layered preset - one that stacks several samples on the same note (e.g. a body plus a swell, common in rompler banks) - is now spread across the three oscillators instead of collapsing into one, so the sound keeps its full body. Each set of zones that would sound simultaneously gets its own oscillator (up to three).
   * Fixed: Sample Loop mode 2 was not set to alternating but backwards.
   * Fixed: Samples were referenced with a leading drive number (an absolute path such as `4:samples/...`). This caused two problems on the device: a preset placed on a drive other than the hard-coded one showed the "Find Sample Map" screen and the samples had to be located by hand, and the device doubled the prefix when using its own "Export -> With Samples" (e.g. `3:2:samples/...`), so the samples could not be backed up. Sample paths are now written relative to the preset, which the device resolves against the folder the preset was loaded from - the samples load automatically on any drive and export/back up cleanly (confirmed on Iridium OS 4).

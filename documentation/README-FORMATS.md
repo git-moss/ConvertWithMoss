@@ -710,6 +710,8 @@ If this format is used as the source it produces 1 or 2 output presets, one for 
 ### Destination Options
 
 * Re-sample to 16bit/44.1kHz: If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it might impact the performance.
+* Author: Written into the preset's Author field, which the device shows and can group presets by. When left empty, the creator from the source metadata is kept (e.g. the sound designer stored in a SoundFont).
+* Bank: Written into the preset's Bank field. When left empty, the description from the source metadata is kept.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
 ## Yamaha YSFC
