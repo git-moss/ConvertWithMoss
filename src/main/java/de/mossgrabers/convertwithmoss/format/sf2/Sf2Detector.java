@@ -50,6 +50,10 @@ import de.mossgrabers.tools.Pair;
  */
 public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 {
+    /** The maximum absolute 16 bit value which still counts as silence (about -60dBFS), which covers dithered 'digital silence'. */
+    private static final int SILENCE_THRESHOLD = 32;
+
+
     /**
      * Constructor.
      *
@@ -151,6 +155,14 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 continue;
             }
 
+            // Also skip marker presets whose samples contain only digital silence - e.g. the
+            // vendor and copyright presets of the E-mu E4 Producer Series banks reference half a
+            // second of dithered silence instead of no sample at all.
+            if (containsOnlySilence (multisampleSource.getNonEmptyGroups (false)))
+            {
+                this.notifier.log ("IDS_NOTIFY_SF2_SKIP_SILENT_PRESET", presetName);
+                continue;
+            }
             // Purely informational: when the analyzed audio of the samples consistently
             // contradicts the mapped root keys by whole octaves, the preset sounds that many
             // octaves off. Seen in commercial banks, e.g. several E-mu E4 Producer Series presets
@@ -428,16 +440,26 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             return false;
         }
 
+        // If one channel of a genuine stereo pair simply carries extra frames at its start (the
+        // loop offset matches the length offset), the channels are re-aligned when they are
+        // combined (see Sf2SampleData.setRightSample). Such pairs are compared as if already
+        // aligned, so they are neither warned about nor kept as mono. E.g. in the
+        // DigitalSoundFactory E-mu E4 banks every right channel sample is 1 frame longer and
+        // loops 1 frame later.
+        final int alignmentOffset = Sf2SampleData.computeAlignmentOffset (left, right);
+        if (alignmentOffset != 0 && this.settingsConfiguration.logUnsupportedAttributes ())
+            this.notifier.log ("IDS_NOTIFY_SF2_ALIGNED_STEREO", left.getName (), right.getName (), Integer.toString (alignmentOffset));
+
         // Loops must have the same start and length
         final long leftStart = left.getLoopStart () - left.getStart ();
-        final long rightStart = right.getLoopStart () - right.getStart ();
+        final long rightStart = right.getLoopStart () - right.getStart () - alignmentOffset;
         final long leftLoopLength = left.getLoopEnd () - left.getLoopStart ();
         final long rightLoopLength = right.getLoopEnd () - right.getLoopStart ();
         if (!leftSampleZone.getLoops ().isEmpty () && (leftStart != rightStart || leftLoopLength != rightLoopLength))
             this.notifier.logError ("IDS_NOTIFY_ERR_DIFFERENT_LOOP_LENGTH", left.getName (), right.getName (), Long.toString (leftStart), Long.toString (leftLoopLength), Long.toString (rightStart), Long.toString (rightLoopLength));
 
         final long leftLength = left.getEnd () - left.getStart ();
-        final long rightLength = right.getEnd () - right.getStart ();
+        final long rightLength = right.getEnd () - right.getStart () - alignmentOffset;
         if (leftLength != rightLength)
         {
             if (this.settingsConfiguration.logUnsupportedAttributes ())
@@ -455,6 +477,43 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
 
     /**
+     * Checks if all samples referenced by the given groups contain only digital silence.
+     *
+     * @param groups The groups which contain the samples to check
+     * @return True if none of the samples contains anything audible
+     */
+    private static boolean containsOnlySilence (final List<IGroup> groups)
+    {
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final Sf2SampleData sampleData = (Sf2SampleData) zone.getSampleData ();
+                final Sf2SampleDescriptor sample = sampleData.getSample ();
+                final Sf2SampleDescriptor rightSample = sampleData.getRightSample ();
+                if (!isSilence (sample) || rightSample != sample && !isSilence (rightSample))
+                    return false;
+            }
+        return true;
+    }
+
+
+    /**
+     * Checks if the sample contains only digital silence.
+     *
+     * @param sample The sample to check
+     * @return True if the sample does not contain anything audible
+     */
+    private static boolean isSilence (final Sf2SampleDescriptor sample)
+    {
+        final byte [] data = sample.getSampleData ();
+        final int end = (int) Math.min (sample.getEnd (), data.length / 2);
+        for (int i = (int) sample.getStart (); i < end; i++)
+        {
+            final short value = (short) (data[2 * i] & 0xFF | data[2 * i + 1] << 8);
+            if (Math.abs (value) > SILENCE_THRESHOLD)
+                return false;
+        }
+        return true;
      * Checks if the pitch of the sample audio consistently contradicts the mapped root keys by a
      * whole number of octaves. Only a strong consensus is reported: at least 3 zones must be
      * measurable and at least 3/4 of them must agree on the same non-zero multiple of 12
