@@ -225,8 +225,8 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private void parseZone (final File zipFile, final IGroup group, final Element zoneElement, final int programIndex, final int zoneIndex)
     {
-        final ISampleZone zone = this.initZone (zipFile, zoneElement, programIndex, zoneIndex);
-        if (zone == null)
+        final Optional<ISampleZone> zoneOpt = this.initZone (zipFile, zoneElement, programIndex, zoneIndex);
+        if (zoneOpt.isEmpty ())
             return;
 
         final Element lowElement = XMLUtils.getChildElementByName (zoneElement, BlissTag.LOW_INPUT_RANGE);
@@ -234,6 +234,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         if (lowElement == null || highElement == null)
             return;
 
+        final ISampleZone zone = zoneOpt.get ();
         zone.setStart (0);
         zone.setStop (XMLUtils.getIntegerAttribute (zoneElement, "num_samples", 0));
         zone.setGain (XMLUtils.getIntegerAttribute (zoneElement, "mp_gain", 0));
@@ -353,13 +354,13 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private DefaultSampleZone initZone (final File zipFile, final Element zoneElement, final int programIndex, final int zoneIndex)
+    private Optional<ISampleZone> initZone (final File zipFile, final Element zoneElement, final int programIndex, final int zoneIndex)
     {
         final String originalFilename = zoneElement.getAttribute ("name");
         if (originalFilename == null || originalFilename.isBlank ())
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing name attribute");
-            return null;
+            return Optional.empty ();
         }
 
         // The name is like "MyName.wav" but reference is a fixed path:
@@ -379,14 +380,14 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             if (filepath == null || filepath.isBlank ())
             {
                 this.notifier.logError (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, ex);
-                return null;
+                return Optional.empty ();
             }
 
             final File sampleFile = new File (filepath);
             if (!sampleFile.exists ())
             {
                 this.notifier.logError (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, sampleFile.getAbsolutePath ());
-                return null;
+                return Optional.empty ();
             }
             try
             {
@@ -395,11 +396,11 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             catch (final IOException ex2)
             {
                 this.notifier.logError (IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND, ex2);
-                return null;
+                return Optional.empty ();
             }
         }
 
-        return new DefaultSampleZone (FileUtils.getNameWithoutType (originalFilename), sampleData);
+        return Optional.of (new DefaultSampleZone (FileUtils.getNameWithoutType (originalFilename), sampleData));
     }
 
 

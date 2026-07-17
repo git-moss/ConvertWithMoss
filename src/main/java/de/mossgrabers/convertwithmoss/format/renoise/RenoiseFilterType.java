@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.format.renoise;
 
+import java.util.Optional;
+
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 
 
@@ -78,16 +80,16 @@ public final class RenoiseFilterType
      * @return The model filter type or null if the index is not a plain filter (None or a special
      *         effect type)
      */
-    public static FilterType fromFilterTypeIndex (final int index)
+    public static Optional<FilterType> fromFilterTypeIndex (final int index)
     {
         if (index >= INDEX_LP_CLEAN && index <= INDEX_LP_DIODE)
-            return FilterType.LOW_PASS;
+            return Optional.of (FilterType.LOW_PASS);
         if (index >= INDEX_HP_CLEAN && index <= INDEX_HP_MOOG)
-            return FilterType.HIGH_PASS;
+            return Optional.of (FilterType.HIGH_PASS);
         if (index >= INDEX_BP_CLEAN && index <= INDEX_BANDPASS)
-            return FilterType.BAND_PASS;
+            return Optional.of (FilterType.BAND_PASS);
         if (index == INDEX_BANDSTOP)
-            return FilterType.BAND_REJECTION;
-        return null;
+            return Optional.of (FilterType.BAND_REJECTION);
+        return Optional.empty ();
     }
 }

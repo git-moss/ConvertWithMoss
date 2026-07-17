@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
@@ -144,13 +145,14 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
         final String creator = top.getAttribute (AbletonTag.ATTR_CREATOR);
 
-        final Pair<List<Element>, File> samplerElements = getSamplerElements (top, multiSampleFile);
-        if (samplerElements == null)
+        final Optional<Pair<List<Element>, File>> samplerElementsOpt = getSamplerElements (top, multiSampleFile);
+        if (samplerElementsOpt.isEmpty ())
         {
             this.notifier.logError ("IDS_ADV_NOT_A_SAMPLER_PRESET");
             return Collections.emptyList ();
         }
 
+        final Pair<List<Element>, File> samplerElements = samplerElementsOpt.get ();
         final File rootPath = samplerElements.getValue ();
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         int counter = 0;
@@ -282,9 +284,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         // Round-robin support
         multisampleSource.setGroups (getBooleanValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_ENABLE) ? applyRoundRobin (mapElement, group) : Collections.singletonList (group));
 
-        final IFilter filter = readFilter (deviceElement);
-        if (filter != null)
-            multisampleSource.setGlobalFilter (filter);
+        final Optional<IFilter> filter = readFilter (deviceElement);
+        if (filter.isPresent ())
+            multisampleSource.setGlobalFilter (filter.get ());
 
         applyGlobalEnvelopes (deviceElement, multisampleSource);
     }
@@ -386,7 +388,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static IFilter readFilter (final Element samplePartsElement)
+    private static Optional<IFilter> readFilter (final Element samplePartsElement)
     {
         try
         {
@@ -394,7 +396,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final Element filterIsOnElement = getRequiredElement (filterElement, AbletonTag.TAG_IS_ON);
             final boolean isFilterOn = getBooleanValueAttribute (filterIsOnElement, AbletonTag.TAG_MANUAL);
             if (!isFilterOn)
-                return null;
+                return Optional.empty ();
 
             final Element slotElement = getRequiredElement (filterElement, AbletonTag.TAG_SLOT);
             final Element valueElement = getRequiredElement (slotElement, AbletonTag.TAG_VALUE);
@@ -461,12 +463,12 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final double modPitchDepth = getDoubleValueAttribute (modByPitchElement, AbletonTag.TAG_MANUAL, 1);
             filter.setCutoffKeyTracking (modPitchDepth);
 
-            return filter;
+            return Optional.of (filter);
         }
         catch (final IOException _)
         {
             // No filter configured
-            return null;
+            return Optional.empty ();
         }
     }
 
@@ -624,7 +626,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static Pair<List<Element>, File> getSamplerElements (final Element top, final File multiSampleFile) throws IOException
+    private static Optional<Pair<List<Element>, File>> getSamplerElements (final Element top, final File multiSampleFile) throws IOException
     {
         final List<Element> samplerElements = new ArrayList<> ();
 
@@ -637,13 +639,13 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         {
             deviceElement = XMLUtils.getChildElementByName (top, AbletonTag.TAG_DEVICE_RACK);
             if (deviceElement == null)
-                return null;
+                return Optional.empty ();
             samplerElements.addAll (XMLUtils.getChildElementsByName (deviceElement, AbletonTag.TAG_DEVICE_SAMPLER, true));
             samplerElements.addAll (XMLUtils.getChildElementsByName (deviceElement, AbletonTag.TAG_DEVICE_SIMPLER, true));
         }
 
         final File rootPath = getRootPath (multiSampleFile, deviceElement);
-        return new Pair<> (samplerElements, rootPath);
+        return Optional.of (new Pair<> (samplerElements, rootPath));
     }
 
 

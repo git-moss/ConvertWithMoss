@@ -80,7 +80,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
 
     /** {@inheritDoc} */
     @Override
-    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    public Optional<IPerformanceSource> readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
         final Kontakt2Header header = this.readHeader (fileAccess);
 
@@ -108,7 +108,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
             this.notifier.logError ("IDS_NOTIFY_ERR_ILLEGAL_CHARACTER", ex);
         }
 
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -187,12 +187,12 @@ public class Kontakt2Format extends AbstractKontaktFormat
     }
 
 
-    private IPerformanceSource getPerformanceSource (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
+    private Optional<IPerformanceSource> getPerformanceSource (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
     {
         final List<Pair<IMultisampleSource, Program>> sources = this.getMultisampleSources (sourceFolder, sourceFile, metadataConfig);
         final MultiConfiguration multiConfiguration = this.programAccessor.getMultiConfiguration ();
         if (multiConfiguration == null)
-            return null;
+            return Optional.empty ();
 
         final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
@@ -207,7 +207,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
             instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
             performanceSource.addInstrument (instrumentSource);
         }
-        return performanceSource;
+        return Optional.of (performanceSource);
     }
 
 

@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -194,7 +195,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static List<IGroup> createSampleZones (final String multiSampleName, final MirageProgram mirageProgramLower, final List<MirageWaveSample> waveSamplesLower, final List<ISampleData> sampleDataLower, final MirageProgram mirageProgramUpper, final List<MirageWaveSample> waveSamplesUpper, final List<ISampleData> sampleDataUpper)
+    private static List<IGroup> createSampleZones (final String multiSampleName, final MirageProgram mirageProgramLower, final List<MirageWaveSample> waveSamplesLower, final List<ISampleData> sampleDataLower, final MirageProgram mirageProgramUpper, final List<MirageWaveSample> waveSamplesUpper, final List<ISampleData> sampleDataUpper) throws IOException
     {
         final IGroup osc1Group = new DefaultGroup ("OSC1");
         final IGroup osc2Group = new DefaultGroup ("OSC2");
@@ -274,7 +275,10 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
 
             // If OSC Mix is not fully set to one OSC (0 = OSC1, 252 = OSC2) create 2 layers!
             final ISampleZone osc2SampleZone = new DefaultSampleZone (osc1SampleZone);
-            osc2SampleZone.setSampleData (osc1SampleZone.getSampleData ());
+            final Optional<ISampleData> sampleData = osc1SampleZone.getSampleData ();
+            if (sampleData.isEmpty ())
+                throw new IOException ("Empty sample data in zone: " + osc1SampleZone.getName ());
+            osc2SampleZone.setSampleData (sampleData.get ());
             // Tune the 2nd oscillator upwards, interpret as 1 cent
             osc2SampleZone.setTuning (osc2SampleZone.getTuning () + program.oscDetune / 100.0);
             osc2Group.addSampleZone (osc2SampleZone);

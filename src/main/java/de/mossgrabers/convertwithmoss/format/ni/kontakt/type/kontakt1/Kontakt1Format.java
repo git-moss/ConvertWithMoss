@@ -12,6 +12,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -51,14 +52,16 @@ public class Kontakt1Format extends AbstractKontaktFormat
 
     /** {@inheritDoc} */
     @Override
-    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    public Optional<IPerformanceSource> readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
         final long timeSeconds = this.readHeader (fileAccess);
         try
         {
             final String xmlCode = CompressionUtils.readZLIB (fileAccess);
-            final IPerformanceSource performanceSource = this.handler.parseMulti (sourceFolder, sourceFile, xmlCode, metadataConfig, Collections.emptyMap ());
-            performanceSource.getMetadata ().setCreationDateTime (new Date (timeSeconds * 1000));
+            final Optional<IPerformanceSource> performanceSource = this.handler.parseMulti (sourceFolder, sourceFile, xmlCode, metadataConfig, Collections.emptyMap ());
+            if (performanceSource.isEmpty ())
+                return Optional.empty ();
+            performanceSource.get ().getMetadata ().setCreationDateTime (new Date (timeSeconds * 1000));
             return performanceSource;
         }
         catch (final UnsupportedEncodingException ex)
@@ -70,7 +73,7 @@ public class Kontakt1Format extends AbstractKontaktFormat
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
         }
 
-        return null;
+        return Optional.empty ();
     }
 
 

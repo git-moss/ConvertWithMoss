@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata.ChunkDataFactory;
@@ -62,9 +63,10 @@ public class NIContainerDataChunk
             this.nextDataChunk.read (bin);
         }
 
-        this.data = ChunkDataFactory.createChunkData (chunkType);
-        if (this.data == null)
+        final Optional<IChunkData> chunkData = ChunkDataFactory.createChunkData (chunkType);
+        if (chunkData.isEmpty ())
             throw new IOException (Functions.getMessage ("IDS_NKI_UNSUPPORTED_CONTAINER_CHUNK_TYPE"));
+        this.data = chunkData.get ();
         this.dataSize = bin.available ();
         this.data.read (bin);
     }

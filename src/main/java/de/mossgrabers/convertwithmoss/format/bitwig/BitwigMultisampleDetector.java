@@ -326,7 +326,7 @@ public class BitwigMultisampleDetector extends AbstractDetector<EmptySettingsUI>
 
         try
         {
-            zone.getSampleData ().addZoneData (zone, false, false);
+            sampleData.addZoneData (zone, false, false);
         }
         catch (final IOException ex)
         {

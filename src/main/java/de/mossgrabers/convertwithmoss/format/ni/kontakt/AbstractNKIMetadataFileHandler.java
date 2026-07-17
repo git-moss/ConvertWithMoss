@@ -123,7 +123,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The parsed multi-sample source
      * @throws IOException An error occurred parsing the XML document
      */
-    public IPerformanceSource parseMulti (final File sourceFolder, final File sourceFile, final String xmlCode, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
+    public Optional<IPerformanceSource> parseMulti (final File sourceFolder, final File sourceFile, final String xmlCode, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         final Element top = this.getTopLevelElement (xmlCode);
         final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
@@ -143,7 +143,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
             instruments.add (instrumentSource);
         }
-        return performanceSource;
+        return Optional.of (performanceSource);
     }
 
 
@@ -674,9 +674,9 @@ public abstract class AbstractNKIMetadataFileHandler
         final LinkedList<IGroup> groups = new LinkedList<> ();
         for (final Element groupElement: groupElements)
         {
-            final IGroup group = this.getGroup (programParameters, groupElement, zoneElements, sourcePath, monolithSamples);
-            if (group != null)
-                groups.add (group);
+            final Optional<IGroup> group = this.getGroup (programParameters, groupElement, zoneElements, sourcePath, monolithSamples);
+            if (group.isPresent ())
+                groups.add (group.get ());
         }
         return groups;
     }
@@ -694,15 +694,15 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The group created from the zone element (null, if there is no group element)
      * @throws IOException Could not get sample file(s)
      */
-    private IGroup getGroup (final Map<String, String> programParameters, final Element groupElement, final List<Element> zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
+    private Optional<IGroup> getGroup (final Map<String, String> programParameters, final Element groupElement, final List<Element> zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         if (groupElement == null)
-            return null;
+            return Optional.empty ();
 
         final IGroup group = new DefaultGroup ();
         group.setName (this.getGroupName (groupElement));
         final Map<String, String> groupParameters = this.readParameters (groupElement);
-        final IFilter filter = this.readFilter (groupElement);
+        final Optional<IFilter> filter = this.readFilter (groupElement);
 
         final Map<String, IEnvelopeModulator> groupInternalModulators = this.readGroupInternalModulators (groupElement);
         final List<ExternalModulation> extModulators = this.readExtModulators (groupElement);
@@ -714,7 +714,7 @@ public abstract class AbstractNKIMetadataFileHandler
         final List<ISampleZone> zones = this.getSampleMetadataFromZones (programParameters, groupParameters, groupInternalModulators, groupElement, groupZones, pitchBend, ampVelocityMod, sourcePath, monolithSamples, filter);
         group.setSampleZones (zones);
         this.parseRoundRobin (groupElement, zones);
-        return group;
+        return Optional.of (group);
     }
 
 
@@ -738,7 +738,7 @@ public abstract class AbstractNKIMetadataFileHandler
      *         returned.
      * @throws IOException Could not get sample file
      */
-    private List<ISampleZone> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IEnvelopeModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final double ampVelocityMod, final String sourcePath, final Map<String, ISampleData> monolithSamples, final IFilter filter) throws IOException
+    private List<ISampleZone> getSampleMetadataFromZones (final Map<String, String> programParameters, final Map<String, String> groupParameters, final Map<String, IEnvelopeModulator> groupModulators, final Element groupElement, final Element [] groupZones, final int pitchBend, final double ampVelocityMod, final String sourcePath, final Map<String, ISampleData> monolithSamples, final Optional<IFilter> filter) throws IOException
     {
         if (groupElement == null || groupZones == null)
             return Collections.emptyList ();
@@ -747,16 +747,17 @@ public abstract class AbstractNKIMetadataFileHandler
 
         for (final Element zoneElement: groupZones)
         {
-            final File sampleFile = this.getZoneSampleFile (zoneElement, sourcePath, !monolithSamples.isEmpty ());
-            if (sampleFile == null)
+            final Optional<File> sampleFileOpt = this.getZoneSampleFile (zoneElement, sourcePath, !monolithSamples.isEmpty ());
+            if (sampleFileOpt.isEmpty ())
                 continue;
 
-            final ISampleData sampleData = this.getSampleData (sampleFile, monolithSamples);
-            if (sampleData != null)
+            final File sampleFile = sampleFileOpt.get ();
+            final Optional<ISampleData> sampleData = this.getSampleData (sampleFile, monolithSamples);
+            if (sampleData.isPresent ())
             {
-                final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
-                if (filter != null)
-                    zone.setFilter (filter);
+                final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData.get ());
+                if (filter.isPresent ())
+                    zone.setFilter (filter.get ());
                 this.readSampleZone (programParameters, groupParameters, groupModulators, pitchBend, ampVelocityMod, sampleMetadataList, zoneElement, zone);
             }
         }
@@ -765,13 +766,13 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private ISampleData getSampleData (final File sampleFile, final Map<String, ISampleData> monolithSamples) throws IOException
+    private Optional<ISampleData> getSampleData (final File sampleFile, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         if (!monolithSamples.isEmpty ())
-            return monolithSamples.get (sampleFile.getName ());
+            return Optional.of (monolithSamples.get (sampleFile.getName ()));
 
         if (sampleFile.getName ().toLowerCase ().endsWith (".ncw"))
-            return new NcwFileSampleData (sampleFile);
+            return Optional.of (new NcwFileSampleData (sampleFile));
 
         // Check the type of the source sample for compatibility and handle them
         // accordingly
@@ -781,10 +782,10 @@ public abstract class AbstractNKIMetadataFileHandler
             if (AudioFileFormat.Type.WAVE.equals (type))
             {
                 if (AudioFileUtils.checkSampleFile (sampleFile, this.notifier))
-                    return new WavFileSampleData (sampleFile);
+                    return Optional.of (new WavFileSampleData (sampleFile));
             }
             else if (AudioFileFormat.Type.AIFF.equals (type))
-                return new AiffFileSampleData (sampleFile);
+                return Optional.of (new AiffFileSampleData (sampleFile));
 
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ());
         }
@@ -792,7 +793,7 @@ public abstract class AbstractNKIMetadataFileHandler
         {
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ());
         }
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -800,7 +801,9 @@ public abstract class AbstractNKIMetadataFileHandler
     {
         try
         {
-            zone.getSampleData ().addZoneData (zone, true, true);
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isPresent ())
+                sampleData.get ().addZoneData (zone, true, true);
         }
         catch (final FileNotFoundException ex)
         {
@@ -1033,11 +1036,11 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The sample file. Null is returned if file cannot be retrieved successfully.
      * @throws IOException Could not get the file
      */
-    private File getZoneSampleFile (final Element zoneElement, final String sourcePath, final boolean isMonolith) throws IOException
+    private Optional<File> getZoneSampleFile (final Element zoneElement, final String sourcePath, final boolean isMonolith) throws IOException
     {
         final Element sampleElement = XMLUtils.getChildElementByName (zoneElement, this.tags.zoneSample ());
         if (sampleElement == null)
-            return null;
+            return Optional.empty ();
 
         final Map<String, String> sampleParameters = this.readValueMap (sampleElement);
         String encodedSampleFileName = sampleParameters.get (this.tags.sampleFileAttribute ());
@@ -1046,7 +1049,7 @@ public abstract class AbstractNKIMetadataFileHandler
         if (encodedSampleFileName == null)
         {
             this.notifier.logError ("IDS_NKI_SAMPLE_FILE_ATTRIBUTE_MISSING");
-            return null;
+            return Optional.empty ();
         }
 
         return this.getFileFromEncodedSampleFileName (encodedSampleFileName, sourcePath, isMonolith);
@@ -1062,7 +1065,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The File if it can be found, null else
      * @throws IOException Could not decode file name
      */
-    protected File getFileFromEncodedSampleFileName (final String encodedSampleFileName, final String sourcePath, final boolean isMonolith) throws IOException
+    protected Optional<File> getFileFromEncodedSampleFileName (final String encodedSampleFileName, final String sourcePath, final boolean isMonolith) throws IOException
     {
         final DecodedPath decodedPath = this.decodeEncodedSampleFileName (encodedSampleFileName);
         if (decodedPath.getLibrary () != null)
@@ -1070,7 +1073,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
         final String samplePath = decodedPath.getPath ();
         if (isMonolith)
-            return new File (samplePath);
+            return Optional.of (new File (samplePath));
 
         final File parentFolder = new File (sourcePath);
 
@@ -1086,7 +1089,7 @@ public abstract class AbstractNKIMetadataFileHandler
             {
                 sampleFile = new File (resultPath, absoluteParentPath.getFileName ().toString ());
                 if (sampleFile.exists () && sampleFile.canRead ())
-                    return sampleFile;
+                    return Optional.of (sampleFile);
             }
 
             // If it is an absolute path, try to find the sample file in all possible sub-paths from
@@ -1098,29 +1101,29 @@ public abstract class AbstractNKIMetadataFileHandler
                 subFolder = subFolder == null ? new File (folder) : new File (folder, subFolder.getPath ());
                 sampleFile = new File (parentFolder, subFolder.getPath ());
                 if (sampleFile.exists () && sampleFile.canRead ())
-                    return this.logFoundFolder (sampleFile, originalAbsoluteParentPath);
+                    return Optional.of (this.logFoundFolder (sampleFile, originalAbsoluteParentPath));
             }
 
             // Search all sub-folders
             final String fileName = absoluteParentPath.getFileName ().toString ();
             sampleFile = AbstractDetector.findSampleFile (this.notifier, parentFolder, null, fileName, 0);
             if (sampleFile != null)
-                return this.logFoundFolder (sampleFile, originalAbsoluteParentPath);
+                return Optional.of (this.logFoundFolder (sampleFile, originalAbsoluteParentPath));
 
             this.notifier.logError ("IDS_NKI_SAMPLE_FILE_DOES_NOT_EXIST", samplePath);
-            return null;
+            return Optional.empty ();
         }
 
         sampleFile = new File (parentFolder, samplePath);
         if (sampleFile.exists () && sampleFile.canRead ())
-            return sampleFile;
+            return Optional.of (sampleFile);
         // Search all sub-folders - also triggers searching for different extension cases
         // Also go up 1 folder in case this is a library
         sampleFile = AbstractDetector.findSampleFile (this.notifier, parentFolder, null, sampleFile.getAbsolutePath (), 1);
         if (sampleFile.exists () && sampleFile.canRead ())
-            return sampleFile;
+            return Optional.of (sampleFile);
         this.notifier.logError ("IDS_NKI_SAMPLE_FILE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -1178,7 +1181,7 @@ public abstract class AbstractNKIMetadataFileHandler
                 case 'F', 'f':
                     final char [] fractionBuffer = new char [id == 'f' ? 6 : 11];
                     if (reader.read (fractionBuffer) != fractionBuffer.length)
-                        error (encodedSampleFileName);
+                        throw error (encodedSampleFileName);
                     int c;
                     while ((c = reader.read ()) != -1)
                         path.append ((char) c);
@@ -1196,12 +1199,10 @@ public abstract class AbstractNKIMetadataFileHandler
                     break;
 
                 default:
-                    error (encodedSampleFileName);
+                    throw error (encodedSampleFileName);
             }
 
-        error (encodedSampleFileName);
-        // Never reached
-        return null;
+        throw error (encodedSampleFileName);
     }
 
 
@@ -1260,17 +1261,18 @@ public abstract class AbstractNKIMetadataFileHandler
             final Element envElement = XMLUtils.getChildElementByName (modulatorElement, this.tags.envelopeElement ());
             if (envElement != null && !this.hasNameValuePairs (modulatorElement, this.tags.bypassParam (), this.tags.yes ()))
             {
-                final String modulationTarget = this.getModulationTarget (modulatorElement);
-                if (modulationTarget != null)
+                final Optional<String> modulationTarget = this.getModulationTarget (modulatorElement);
+                if (modulationTarget.isPresent ())
                 {
                     final double modulationIntensity = this.getModulationIntensity (modulatorElement);
                     if (modulationIntensity != 0)
                     {
-                        final IEnvelopeModulator modulator = this.readModulatorFromElement (envElement);
-                        if (modulator != null)
+                        final Optional<IEnvelopeModulator> modulatorOpt = this.readModulatorFromElement (envElement);
+                        if (modulatorOpt.isPresent ())
                         {
+                            final IEnvelopeModulator modulator = modulatorOpt.get ();
                             modulator.setDepth (modulationIntensity);
-                            modulators.put (modulationTarget, modulator);
+                            modulators.put (modulationTarget.get (), modulator);
                         }
                     }
                 }
@@ -1286,22 +1288,22 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param groupElement The group element
      * @return The filter or null if none is found
      */
-    private IFilter readFilter (final Element groupElement)
+    private Optional<IFilter> readFilter (final Element groupElement)
     {
         final Element filterElement = XMLUtils.getChildElementByName (groupElement, this.tags.groupFilter ());
         if (filterElement == null)
-            return null;
+            return Optional.empty ();
         final Map<String, String> valueMap = this.readValueMap (filterElement);
         if (valueMap.isEmpty ())
-            return null;
+            return Optional.empty ();
         final String type = valueMap.get ("type");
         if (type == null)
-            return null;
+            return Optional.empty ();
         final Matcher matcher = FILTER_TYPE_PATTERN.matcher (type);
         if (!matcher.matches ())
         {
             this.notifier.logError ("IDS_NKI_UNKNOWN_FILTER_TYPE", type);
-            return null;
+            return Optional.empty ();
         }
         FilterType filterType;
         switch (matcher.group (1))
@@ -1316,14 +1318,14 @@ public abstract class AbstractNKIMetadataFileHandler
                 filterType = FilterType.BAND_PASS;
                 break;
             default:
-                return null;
+                return Optional.empty ();
         }
 
         final String cutoffText = valueMap.get ("cutoff");
         final double cutoff = cutoffText == null ? 1.0 : Double.parseDouble (cutoffText);
         final String resonanceText = valueMap.get ("resonance");
         final double resonance = resonanceText == null ? 0 : Double.parseDouble (resonanceText);
-        return new DefaultFilter (filterType, Integer.parseInt (matcher.group (2)), cutoff, resonance);
+        return Optional.of (new DefaultFilter (filterType, Integer.parseInt (matcher.group (2)), cutoff, resonance));
     }
 
 
@@ -1333,11 +1335,11 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param envElement The modulator XML element
      * @return The IModulator, if modulator could be read successfully, otherwise null
      */
-    private IEnvelopeModulator readModulatorFromElement (final Element envElement)
+    private Optional<IEnvelopeModulator> readModulatorFromElement (final Element envElement)
     {
         final String envType = envElement.getAttribute (this.tags.envTypeAttribute ());
         if (envType == null)
-            return null;
+            return Optional.empty ();
 
         try
         {
@@ -1355,11 +1357,11 @@ public abstract class AbstractNKIMetadataFileHandler
                 env.setSustainLevel (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.sustainParam ()));
                 env.setReleaseTime (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.releaseParam ()) / 1000.0d);
             }
-            return modulator;
+            return Optional.of (modulator);
         }
         catch (final ValueNotAvailableException _)
         {
-            return null;
+            return Optional.empty ();
         }
     }
 
@@ -1421,7 +1423,7 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param modulator The modulator element
      * @return The target value, null if not present
      */
-    protected abstract String getModulationTarget (Element modulator);
+    protected abstract Optional<String> getModulationTarget (Element modulator);
 
 
     /**
@@ -1475,15 +1477,15 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param nameValuePairs A number of name, value pairs, e.g. "volume", "1", "bypass", "no"
      * @return The element with the value name pairs. If none could be found, null is returned.
      */
-    protected Element findElementWithParameters (final Element parentElement, final String elementNameToBeFound, final String... nameValuePairs)
+    protected Optional<Element> findElementWithParameters (final Element parentElement, final String elementNameToBeFound, final String... nameValuePairs)
     {
         for (final Element elementOfInterest: XMLUtils.getChildElementsByName (parentElement, elementNameToBeFound))
         {
             final boolean doesMatch = this.hasNameValuePairs (elementOfInterest, nameValuePairs);
             if (doesMatch)
-                return elementOfInterest;
+                return Optional.of (elementOfInterest);
         }
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -1608,9 +1610,9 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private static void error (final String encodedSampleFileName) throws IOException
+    private static IOException error (final String encodedSampleFileName)
     {
-        throw new IOException (Functions.getMessage ("IDS_NKI_UNEXPECTED_STATE", encodedSampleFileName));
+        return new IOException (Functions.getMessage ("IDS_NKI_UNEXPECTED_STATE", encodedSampleFileName));
     }
 
 
@@ -1618,11 +1620,11 @@ public abstract class AbstractNKIMetadataFileHandler
     {
         final char [] lengthBuffer = new char [3];
         if (reader.read (lengthBuffer) != lengthBuffer.length)
-            error (encodedSampleFileName);
+            throw error (encodedSampleFileName);
         final int length = Integer.parseInt (new String (lengthBuffer));
         final char [] folder = new char [length];
         if (reader.read (folder) != length)
-            error (encodedSampleFileName);
+            throw error (encodedSampleFileName);
         return new String (folder);
     }
 

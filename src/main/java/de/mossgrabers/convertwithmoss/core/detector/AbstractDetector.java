@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -608,21 +609,6 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     /**
      * Guess metadata from the sample names and folder. Also check for the Broadcast Audio Extension
-     * chunk in the first sample WAV.
-     *
-     * @param configuration The metadata settings
-     * @param metadata The metadata object to fill
-     * @param sampleData The wave file data
-     * @param parts The already processed parts of the file name
-     */
-    protected void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final List<IFileBasedSampleData> sampleData, final String [] parts)
-    {
-        createMetadata (configuration, metadata, sampleData == null || sampleData.isEmpty () ? null : sampleData.get (0), parts);
-    }
-
-
-    /**
-     * Guess metadata from the sample names and folder. Also check for the Broadcast Audio Extension
      * chunk in the sample WAV.
      *
      * @param configuration The metadata settings
@@ -630,7 +616,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param sampleData The sample file data
      * @param parts The already processed parts of the file name
      */
-    protected static void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts)
+    protected static void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final Optional<? extends IFileBasedSampleData> sampleData, final String [] parts)
     {
         createMetadata (configuration, metadata, sampleData, parts, null);
     }
@@ -646,12 +632,12 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param parts The already processed parts of the file name
      * @param category If the category is not null, it is assigned and not detected
      */
-    protected static void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final IFileBasedSampleData sampleData, final String [] parts, final String category)
+    protected static void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final Optional<? extends IFileBasedSampleData> sampleData, final String [] parts, final String category)
     {
         if (configuration != null)
             metadata.detectMetadata (configuration, parts, category);
-        if (sampleData != null)
-            sampleData.updateMetadata (metadata);
+        if (sampleData.isPresent ())
+            sampleData.get ().updateMetadata (metadata);
     }
 
 
@@ -688,16 +674,20 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param groups The groups
      * @return The WAV file or null if it does not exist
      */
-    protected static WavFileSampleData getFirstSample (final List<IGroup> groups)
+    protected static Optional<WavFileSampleData> getFirstSample (final List<IGroup> groups)
     {
-        WavFileSampleData sampleFile = null;
-        if (!groups.isEmpty ())
-        {
-            final List<ISampleZone> zones = groups.get (0).getSampleZones ();
-            if (!zones.isEmpty () && zones.get (0).getSampleData () instanceof final WavFileSampleData sf)
-                sampleFile = sf;
-        }
-        return sampleFile;
+        if (groups.isEmpty ())
+            return Optional.empty ();
+
+        final List<ISampleZone> zones = groups.get (0).getSampleZones ();
+        if (zones.isEmpty ())
+            return Optional.empty ();
+
+        final Optional<ISampleData> sampleData = zones.get (0).getSampleData ();
+        if (sampleData.isPresent () && sampleData.get () instanceof final WavFileSampleData sf)
+            return Optional.of (sf);
+
+        return Optional.empty ();
     }
 
 
@@ -817,9 +807,9 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         // ... and search recursively...
         if (notifier != null)
             notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN", fileType, startDirectory.getAbsolutePath ());
-        final File found = findFileRecursively (startDirectory, sampleFile.getName ());
+        final Optional<File> found = findFileRecursively (startDirectory, sampleFile.getName ());
         // Returning the original non-existing file triggers the missing file error...
-        if (found == null)
+        if (found.isEmpty ())
         {
             if (notifier != null)
                 notifier.logText ("\n");
@@ -828,7 +818,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
         if (notifier != null)
             notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN_FOUND");
-        return found;
+        return found.get ();
     }
 
 
@@ -852,25 +842,27 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     }
 
 
-    protected static File findFileRecursively (final File folder, final String fileName)
+    protected static Optional<File> findFileRecursively (final File folder, final String fileName)
     {
-        File sampleFile = new File (folder, fileName);
+        final File sampleFile = new File (folder, fileName);
         if (sampleFile.exists ())
-            return sampleFile;
+            return Optional.of (sampleFile);
 
         final File [] children = folder.listFiles (File::isDirectory);
-        if (children != null)
-            for (final File subFolder: children)
-            {
-                if (subFolder.isHidden () || subFolder.getName ().startsWith ("."))
-                    continue;
+        if (children == null)
+            return Optional.empty ();
 
-                sampleFile = findFileRecursively (subFolder, fileName);
-                if (sampleFile != null)
-                    return sampleFile;
-            }
+        for (final File subFolder: children)
+        {
+            if (subFolder.isHidden () || subFolder.getName ().startsWith ("."))
+                continue;
 
-        return null;
+            final Optional<File> sampleFileOpt = findFileRecursively (subFolder, fileName);
+            if (sampleFileOpt.isPresent ())
+                return sampleFileOpt;
+        }
+
+        return Optional.empty ();
     }
 
 
@@ -885,7 +877,11 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             final List<ISampleLoop> previousLoops = new ArrayList<> (loops);
             loops.clear ();
 
-            zone.getSampleData ().addZoneData (zone, true, true);
+            final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
+            if (sampleDataOpt.isEmpty ())
+                return;
+
+            sampleDataOpt.get ().addZoneData (zone, true, true);
 
             // If start or end was already set overwrite it here
             if (loops.isEmpty () && hasLoop)

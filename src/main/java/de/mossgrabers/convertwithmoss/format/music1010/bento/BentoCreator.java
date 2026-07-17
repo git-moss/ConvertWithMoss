@@ -237,9 +237,10 @@ public class BentoCreator extends AbstractMusic1010Creator
      */
     private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final boolean trim, final String subFolder, final boolean isPerformance) throws IOException
     {
-        final Pair<Document, Element> sessionDocument = this.createSessionDocument ();
-        if (sessionDocument == null)
+        final Optional<Pair<Document, Element>> sessionDocumentOpt = this.createSessionDocument ();
+        if (sessionDocumentOpt.isEmpty ())
             return Optional.empty ();
+        final Pair<Document, Element> sessionDocument = sessionDocumentOpt.get ();
         final Document document = sessionDocument.getKey ();
         final Element sessionElement = sessionDocument.getValue ();
 

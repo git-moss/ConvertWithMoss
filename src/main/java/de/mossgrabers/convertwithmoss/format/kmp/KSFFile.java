@@ -10,9 +10,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
@@ -82,7 +84,7 @@ public class KSFFile
      * @throws IOException Could not read the file
      * @throws ParseException Error during parsing
      */
-    public static String read (final InputStream inputStream, final ISampleZone zone) throws IOException, ParseException
+    public static Optional<String> read (final InputStream inputStream, final ISampleZone zone) throws IOException, ParseException
     {
         final DataInputStream in = new DataInputStream (inputStream);
 
@@ -180,7 +182,7 @@ public class KSFFile
 
                 case KSF_SAMPLE_FILENAME_ID:
                     assertSize (id, dataSize, KSF_SAMPLE_FILENAME_SIZE);
-                    return new String (in.readNBytes (KSF_SAMPLE_FILENAME_SIZE));
+                    return Optional.of (new String (in.readNBytes (KSF_SAMPLE_FILENAME_SIZE)));
 
                 case KSF_SAMPLE_DIVIDED_PARAM_ID, KSF_SAMPLE_DIVIDED_DATA_ID:
                     throw new ParseException (Functions.getMessage ("IDS_KMP_ERR_DISTRIBUTED_KSF_NOT_SUPPORTED"));
@@ -199,7 +201,7 @@ public class KSFFile
         zone.setName (combinedName.trim ());
         zone.setSampleData (sampleData);
 
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -264,7 +266,10 @@ public class KSFFile
         out.write (KSF_SAMPLE_DATA_ID.getBytes ());
 
         // Convert the file to be a 8 or 16 bit WAV file with a maximum of 48kHz
-        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleZone.getSampleData (), DESTINATION_FORMAT);
+        final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + sampleZone.getName ());
+        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
         final FormatChunk formatChunk = waveFile.getFormatChunk ();
         final DataChunk dataChunk = waveFile.getDataChunk ();
         final byte [] data = dataChunk.getData ();

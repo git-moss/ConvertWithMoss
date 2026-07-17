@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.KontaktPresetAccessor;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.KontaktPresetChunk;
@@ -49,9 +50,9 @@ public class CompareKontaktPrograms
             niContainerItem1.read (inputStream1);
             niContainerItem2.read (inputStream2);
 
-            final NIContainerDataChunk dataChunk1 = niContainerItem1.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
-            final NIContainerDataChunk dataChunk2 = niContainerItem2.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
-            if (dataChunk1.getData () instanceof final PresetChunkData preset1 && dataChunk2.getData () instanceof final PresetChunkData preset2)
+            final Optional<NIContainerDataChunk> dataChunk1 = niContainerItem1.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+            final Optional<NIContainerDataChunk> dataChunk2 = niContainerItem2.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+            if (dataChunk1.isPresent () && dataChunk1.get ().getData () instanceof final PresetChunkData preset1 && dataChunk2.isPresent () && dataChunk2.get ().getData () instanceof final PresetChunkData preset2)
             {
                 final KontaktPresetAccessor presetAccessor1 = new KontaktPresetAccessor ();
                 final KontaktPresetAccessor presetAccessor2 = new KontaktPresetAccessor ();

@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.roland.s5xx;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -15,11 +16,11 @@ import java.util.List;
  */
 public class S5xxDiskImage
 {
-    private final S5xxDiskImageHeader header;
-    private final List<S5xxPatch>     patches;
-    private final List<S5xxTone>      tones;
-    private final S5xxDiskLabel       diskLabel;
-    private final List<S5xxWaveData>  waveData;
+    private final S5xxDiskImageHeader     header;
+    private final List<S5xxPatch>         patches;
+    private final List<S5xxTone>          tones;
+    private final Optional<S5xxDiskLabel> diskLabel;
+    private final List<S5xxWaveData>      waveData;
 
 
     /**
@@ -31,7 +32,7 @@ public class S5xxDiskImage
      * @param diskLabel The label of the disk
      * @param waveData The wave data on the disk
      */
-    public S5xxDiskImage (final S5xxDiskImageHeader header, final List<S5xxPatch> patches, final List<S5xxTone> tones, final S5xxDiskLabel diskLabel, final List<S5xxWaveData> waveData)
+    public S5xxDiskImage (final S5xxDiskImageHeader header, final List<S5xxPatch> patches, final List<S5xxTone> tones, final Optional<S5xxDiskLabel> diskLabel, final List<S5xxWaveData> waveData)
     {
         this.header = header;
         this.patches = Collections.unmodifiableList (patches);
@@ -79,7 +80,7 @@ public class S5xxDiskImage
      *
      * @return The label, null for LAND type
      */
-    public S5xxDiskLabel getDiskLabel ()
+    public Optional<S5xxDiskLabel> getDiskLabel ()
     {
         return this.diskLabel;
     }
@@ -114,8 +115,8 @@ public class S5xxDiskImage
         final StringBuilder sb = new StringBuilder ();
         sb.append ("=== Roland Disk Image ===\n").append (this.header).append ('\n');
 
-        if (this.diskLabel != null)
-            sb.append ("\n--- Disk Label ---\n").append (this.diskLabel.getFullText ()).append ('\n');
+        if (this.diskLabel.isPresent ())
+            sb.append ("\n--- Disk Label ---\n").append (this.diskLabel.get ().getFullText ()).append ('\n');
         if (!this.patches.isEmpty ())
         {
             sb.append ("\n--- Patches (").append (this.patches.size ()).append (") ---\n");

@@ -125,6 +125,11 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 exs24Zone.fineTuning = (int) Math.round ((tune - exs24Zone.coarseTuning) * 100);
                 exs24Zone.pan = (int) Math.round (zone.getPanning () * 50);
 
+                final Optional<ISampleData> sampleData = zone.getSampleData ();
+                if (sampleData.isEmpty ())
+                    throw new IOException ("Empty sample data in zone: " + zone.getName ());
+                final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+
                 final List<ISampleLoop> loops = zone.getLoops ();
                 exs24Zone.loopOn = !loops.isEmpty ();
                 if (exs24Zone.loopOn)
@@ -142,21 +147,14 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                     final double crossfade = loop.getCrossfade ();
                     final int loopLength = loop.getLength ();
                     if (crossfade > 0 && loopLength > 0)
-                        try
-                        {
-                            final double loopLengthInSeconds = loopLength / (double) zone.getSampleData ().getAudioMetadata ().getSampleRate ();
-                            exs24Zone.loopCrossfade = (int) Math.round (crossfade * loopLengthInSeconds * 1000.0);
-                        }
-                        catch (final IOException ex)
-                        {
-                            this.notifier.logError (ex);
-                        }
+                    {
+                        final double loopLengthInSeconds = loopLength / (double) audioMetadata.getSampleRate ();
+                        exs24Zone.loopCrossfade = (int) Math.round (crossfade * loopLengthInSeconds * 1000.0);
+                    }
                     exs24Zone.loopTune = (int) Math.round (loop.getTuning () * 100.0);
                 }
 
                 // Fill sample
-                final ISampleData sampleData = zone.getSampleData ();
-                final IAudioMetadata audioMetadata = sampleData.getAudioMetadata ();
                 final String name = zone.getName () + ".wav";
                 final File sampleFile = writtenSamples.get (name);
                 exs24Sample.name = name;

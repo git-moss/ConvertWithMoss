@@ -8,12 +8,14 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -175,7 +177,10 @@ public final class LoopZeroSnapper
     private static int [] readMonoSignal (final ISampleZone zone) throws IOException, UnsupportedAudioFileException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
-        zone.getSampleData ().writeSample (out);
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+        sampleData.get ().writeSample (out);
         try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (new ByteArrayInputStream (out.toByteArray ())))
         {
             final AudioFormat format = audioInputStream.getFormat ();

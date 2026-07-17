@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -58,7 +59,7 @@ public interface IKontaktFormat
      * @param metadataConfig Default metadata
      * @throws IOException Error reading the file
      */
-    IPerformanceSource readNKM (File sourceFolder, File sourceFile, RandomAccessFile fileAccess, IMetadataConfig metadataConfig) throws IOException;
+    Optional<IPerformanceSource> readNKM (File sourceFolder, File sourceFile, RandomAccessFile fileAccess, IMetadataConfig metadataConfig) throws IOException;
 
 
     /**

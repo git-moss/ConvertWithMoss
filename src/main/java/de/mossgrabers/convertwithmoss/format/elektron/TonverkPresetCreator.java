@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
@@ -216,9 +217,10 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         preset.machine = Machine.MULTI;
 
         final String prefix = Machine.MULTI.getParameterPrefix ();
-        final ISampleZone reference = firstZone (multisampleSource);
-        if (reference != null)
+        final Optional<ISampleZone> referenceOpt = firstZone (multisampleSource);
+        if (referenceOpt.isPresent ())
         {
+            final ISampleZone reference = referenceOpt.get ();
             applyAmplitudeEnvelope (preset, reference.getAmplitudeEnvelopeModulator ().getSource (), prefix);
             reference.getFilter ().ifPresent (filter -> applyFilter (preset, filter, prefix));
             applyGainAndPanning (preset, reference.getGain (), reference.getPanning (), prefix);
@@ -386,12 +388,12 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     }
 
 
-    private static ISampleZone firstZone (final IMultisampleSource multisampleSource)
+    private static Optional<ISampleZone> firstZone (final IMultisampleSource multisampleSource)
     {
         for (final IGroup group: multisampleSource.getGroups ())
             if (!group.getSampleZones ().isEmpty ())
-                return group.getSampleZones ().get (0);
-        return null;
+                return Optional.of (group.getSampleZones ().get (0));
+        return Optional.empty ();
     }
 
 
@@ -408,11 +410,11 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     @Override
     protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
-        final ISampleData sampleData = zone.getSampleData ();
-        if (sampleData == null)
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
             return;
 
-        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData, destinationFormat);
+        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), destinationFormat);
         if (wavFile.getDataChunk () == null)
             throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));
 

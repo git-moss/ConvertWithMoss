@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.DoubleConsumer;
@@ -247,9 +248,10 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             final double pitchOffset = partialPitchOffset (partialEntry.getKey (), partialTunes, partialTrans, partialOctaves);
             for (final String [] tokens: partialEntry.getValue ())
             {
-                final ISampleZone zone = this.createZone (folder, sampleIndex, tokens);
-                if (zone != null)
+                final Optional<ISampleZone> zoneOpt = this.createZone (folder, sampleIndex, tokens);
+                if (zoneOpt.isPresent ())
                 {
+                    final ISampleZone zone = zoneOpt.get ();
                     applyAmplitudeEnvelope (zone, envelope);
                     if (crossfade != null)
                         applyVelocityWindow (zone, crossfade);
@@ -259,9 +261,9 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                         zone.setGain (zone.getGain () + partialVolume.doubleValue ());
                     if (pitchOffset != 0)
                         zone.setTuning (zone.getTuning () + pitchOffset);
-                    final IFilter zoneFilter = buildFilter (filterParameters);
-                    if (zoneFilter != null)
-                        zone.setFilter (zoneFilter);
+                    final Optional<IFilter> zoneFilter = buildFilter (filterParameters);
+                    if (zoneFilter.isPresent ())
+                        zone.setFilter (zoneFilter.get ());
                     group.addSampleZone (zone);
                 }
             }
@@ -275,9 +277,9 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         final IMultisampleSource multisampleSource = this.createMultisampleSource (file, title, groups);
         // The note filter is timbre-global; some creators read it per-zone (set above), others read
         // the global filter of the multi-sample - so set it there as well
-        final IFilter globalFilter = buildFilter (filterParameters);
-        if (globalFilter != null)
-            multisampleSource.setGlobalFilter (globalFilter);
+        final Optional<IFilter> globalFilter = buildFilter (filterParameters);
+        if (globalFilter.isPresent ())
+            multisampleSource.setGlobalFilter (globalFilter.get ());
         final IMetadata metadata = multisampleSource.getMetadata ();
         applyComment (metadata, commentBuilder.toString ());
         // The name of the containing folder is a good guess for the bank/library (= creator)
@@ -297,15 +299,16 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
      * @return The created zone or null if the referenced sample could not be found
      * @throws IOException Could not read the sample file
      */
-    private ISampleZone createZone (final File folder, final Map<String, String> sampleIndex, final String [] tokens) throws IOException
+    private Optional<ISampleZone> createZone (final File folder, final Map<String, String> sampleIndex, final String [] tokens) throws IOException
     {
-        final File sampleFile = resolveSample (folder, sampleIndex, tokens[16]);
-        if (sampleFile == null)
+        final Optional<File> sampleFileOpt = resolveSample (folder, sampleIndex, tokens[16]);
+        if (sampleFileOpt.isEmpty ())
         {
             this.notifier.logError ("IDS_SYNCLAVIER_SAMPLE_NOT_FOUND", tokens[16]);
-            return null;
+            return Optional.empty ();
         }
 
+        final File sampleFile = sampleFileOpt.get ();
         final ISampleData sampleData = this.openSampleData (sampleFile);
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
 
@@ -340,7 +343,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             zone.addLoop (loop);
         }
 
-        return zone;
+        return Optional.of (zone);
     }
 
 
@@ -373,7 +376,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
      * @param reference The referenced sample path
      * @return The resolved file or null if it does not exist
      */
-    private static File resolveSample (final File folder, final Map<String, String> sampleIndex, final String reference)
+    private static Optional<File> resolveSample (final File folder, final Map<String, String> sampleIndex, final String reference)
     {
         String name = reference.replace ('\\', '/');
         final int slash = name.lastIndexOf ('/');
@@ -383,7 +386,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         // The exact referenced file (a plain WAV/FLAC in a user library)
         final File exact = new File (folder, name);
         if (exact.exists ())
-            return exact;
+            return Optional.of (exact);
 
         String base = name;
         final int dot = base.lastIndexOf ('.');
@@ -398,7 +401,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         {
             final File candidate = new File (folder, base + ending);
             if (candidate.exists ())
-                return candidate;
+                return Optional.of (candidate);
         }
 
         // Consult the bank index (handles truncated names and alternative extensions)
@@ -407,7 +410,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         {
             final File indexedFile = new File (folder, indexed);
             if (indexedFile.exists ())
-                return indexedFile;
+                return Optional.of (indexedFile);
         }
         if (truncated)
             for (final Map.Entry<String, String> e: sampleIndex.entrySet ())
@@ -415,7 +418,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                 {
                     final File candidate = new File (folder, e.getValue ());
                     if (candidate.exists ())
-                        return candidate;
+                        return Optional.of (candidate);
                 }
 
         // Case-insensitive search in the folder
@@ -426,9 +429,9 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                 final String childLower = child.getName ().toLowerCase (Locale.US);
                 for (final String ending: SAMPLE_ENDINGS)
                     if (childLower.equals ((base + ending).toLowerCase (Locale.US)))
-                        return child;
+                        return Optional.of (child);
             }
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -650,11 +653,11 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
      * @param filterParameters The filter parameters (empty if the timbre has no filter)
      * @return The filter or null if the timbre has no note filter
      */
-    private static IFilter buildFilter (final Map<String, Double> filterParameters)
+    private static Optional<IFilter> buildFilter (final Map<String, Double> filterParameters)
     {
         final Double cutoff = filterParameters.get ("Cutoff");
         if (cutoff == null)
-            return null;
+            return Optional.empty ();
 
         // The note filter is multi-mode; the type index selects mode and slope (value = index /
         // 255):
@@ -685,7 +688,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         if (pitchTrack != null)
             filter.setCutoffKeyTracking (Math.clamp (pitchTrack.doubleValue (), 0, 1));
 
-        return filter;
+        return Optional.of (filter);
     }
 
 

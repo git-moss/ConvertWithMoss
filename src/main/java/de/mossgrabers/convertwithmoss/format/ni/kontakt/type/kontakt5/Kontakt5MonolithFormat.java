@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
@@ -111,7 +112,7 @@ public class Kontakt5MonolithFormat extends AbstractKontaktFormat
 
     /** {@inheritDoc} */
     @Override
-    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    public Optional<IPerformanceSource> readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
         this.sourceFolder = sourceFolder;
 

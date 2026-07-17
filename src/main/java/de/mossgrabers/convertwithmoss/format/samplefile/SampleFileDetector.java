@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -17,6 +18,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -177,7 +179,11 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
 
             for (final IGroup group: groups)
                 for (final ISampleZone zone: group.getSampleZones ())
-                    zone.getSampleData ().addZoneData (zone, true, true);
+                {
+                    final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
+                    if (sampleDataOpt.isPresent ())
+                        sampleDataOpt.get ().addZoneData (zone, true, true);
+                }
 
             // Remove all loops if requested
             if (this.settingsConfiguration.isShouldIgnoreLoops ())

@@ -90,11 +90,11 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
 
         final String basePath = isProject ? file.getParentFile ().getParentFile ().getParent () : file.getParent ();
-        final IPerformanceSource performanceSource = this.processPresetFile (file, basePath);
-        if (performanceSource == null)
+        final Optional<IPerformanceSource> performanceSource = this.processPresetFile (file, basePath);
+        if (performanceSource.isEmpty ())
             return Collections.emptyList ();
 
-        final List<IInstrumentSource> instruments = performanceSource.getInstruments ();
+        final List<IInstrumentSource> instruments = performanceSource.get ().getInstruments ();
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         for (final IInstrumentSource instrument: instruments)
             multisampleSources.add (instrument.getMultisampleSource ());
@@ -110,8 +110,8 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         // Step out of the Projects folder; Patches folder is expected on that level!
         final String basePath = file.getParentFile ().getParentFile ().getParent ();
-        final IPerformanceSource processPresetFile = this.processPresetFile (file, basePath);
-        return processPresetFile == null ? Collections.emptyList () : Collections.singletonList (processPresetFile);
+        final Optional<IPerformanceSource> processPresetFile = this.processPresetFile (file, basePath);
+        return processPresetFile.isEmpty () ? Collections.emptyList () : Collections.singletonList (processPresetFile.get ());
     }
 
 
@@ -122,7 +122,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
      * @param basePath The base path to look for samples
      * @return The processed multi-sample (singleton list)
      */
-    private IPerformanceSource processPresetFile (final File file, final String basePath)
+    private Optional<IPerformanceSource> processPresetFile (final File file, final String basePath)
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
@@ -133,7 +133,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         catch (final IOException | SAXException ex)
         {
             this.notifier.logError (ERR_LOAD_FILE, ex);
-            return null;
+            return Optional.empty ();
         }
     }
 
@@ -147,31 +147,31 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private IPerformanceSource parseXMLFile (final File sourceFile, final String basePath, final Document document)
+    private Optional<IPerformanceSource> parseXMLFile (final File sourceFile, final String basePath, final Document document)
     {
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
-            return null;
+            return Optional.empty ();
         }
 
         final Element sessionElement = XMLUtils.getChildElementByName (top, Music1010Tag.SESSION);
         if (sessionElement == null)
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Session tag");
-            return null;
+            return Optional.empty ();
         }
         final String versionAttribute = sessionElement.getAttribute (Music1010Tag.ATTR_VERSION);
         if (versionAttribute == null || !"1".equals (versionAttribute))
         {
             this.notifier.logError ("IDS_1010_MUSIC_WRONG_VERSION", versionAttribute == null ? "'none'" : versionAttribute);
-            return null;
+            return Optional.empty ();
         }
 
         final List<Element> trackElements = XMLUtils.getChildElementsByName (sessionElement, Music1010Tag.TRACK);
         if (trackElements.isEmpty ())
-            return null;
+            return Optional.empty ();
 
         final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         // Use the parent folders name since all presets are called preset.xml
@@ -198,14 +198,14 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
                         break;
                 }
             if (instElement == null || assetElements.isEmpty ())
-                return null;
+                return Optional.empty ();
 
             final Optional<IInstrumentSource> instrumentSource = this.parseMultisample (sourceFile, performanceSource.getName (), trackElement, instElement, assetElements, basePath);
             if (instrumentSource.isPresent ())
                 performanceSource.addInstrument (instrumentSource.get ());
         }
 
-        return performanceSource;
+        return Optional.of (performanceSource);
     }
 
 

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -156,13 +157,13 @@ public class AkaiS900DiskImage
      * @param sample The Akai S900 sample to convert
      * @return The created WaveFile
      */
-    public static WaveFile writeSample (final AkaiS900Sample sample)
+    public static Optional<WaveFile> writeSample (final AkaiS900Sample sample)
     {
         final byte [] sampleData = sample.getSampleData ();
 
         final long sampleCount = sample.getSampleLength ();
         if (sampleCount == 0)
-            return null;
+            return Optional.empty ();
 
         // Correct sample count
         // Round up to even number
@@ -182,7 +183,7 @@ public class AkaiS900DiskImage
         final WaveFile wavFile = new WaveFile (1, sampleRate, 16, (int) sampleCountPart);
         final DataChunk dataChunk = wavFile.getDataChunk ();
         dataChunk.setData (wavBuffer);
-        return wavFile;
+        return Optional.of (wavFile);
     }
 
 

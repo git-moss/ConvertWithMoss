@@ -126,9 +126,9 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
-    public ISampleData getSampleData ()
+    public Optional<ISampleData> getSampleData ()
     {
-        return this.sampleData;
+        return Optional.ofNullable (this.sampleData);
     }
 
 

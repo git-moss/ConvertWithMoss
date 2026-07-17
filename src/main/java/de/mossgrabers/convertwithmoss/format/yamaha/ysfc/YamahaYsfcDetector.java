@@ -13,6 +13,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
@@ -31,6 +32,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -303,10 +305,10 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                 {
                     final YamahaYsfcPartElement element = elements.get (e);
 
-                    final IMultisampleSource waveform = this.checkElement (element, waveforms, e + 1);
-                    if (waveform == null)
+                    final Optional<IMultisampleSource> waveform = this.checkElement (element, waveforms, e + 1);
+                    if (waveform.isEmpty ())
                         continue;
-                    final List<IGroup> waveGroups = waveform.getGroups ();
+                    final List<IGroup> waveGroups = waveform.get ().getGroups ();
                     if (waveGroups.isEmpty ())
                         return Collections.emptyList ();
 
@@ -314,7 +316,9 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                     {
                         // Clone all sample zones since they could be referenced multiple times
                         final ISampleZone sampleZone = new DefaultSampleZone (waveformSampleZone);
-                        sampleZone.setSampleData (waveformSampleZone.getSampleData ());
+                        final Optional<ISampleData> sampleData = waveformSampleZone.getSampleData ();
+                        if (sampleData.isPresent ())
+                            sampleZone.setSampleData (sampleData.get ());
 
                         // Check if the waveformSampleZone is in the key/velocity range
                         // Ignore if fully outside or clip the ranges it if necessary
@@ -394,10 +398,10 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                 {
                     final YamahaYsfcPartElement element = elements.get (e);
 
-                    final IMultisampleSource waveform = this.checkElement (element, waveforms, e + 1);
-                    if (waveform == null)
+                    final Optional<IMultisampleSource> waveform = this.checkElement (element, waveforms, e + 1);
+                    if (waveform.isEmpty ())
                         continue;
-                    final List<IGroup> waveGroups = waveform.getGroups ();
+                    final List<IGroup> waveGroups = waveform.get ().getGroups ();
                     if (waveGroups.isEmpty ())
                         return Collections.emptyList ();
 
@@ -405,7 +409,9 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                     {
                         // Clone all sample zones since they could be referenced multiple times
                         final ISampleZone sampleZone = new DefaultSampleZone (waveformSampleZone);
-                        sampleZone.setSampleData (waveformSampleZone.getSampleData ());
+                        final Optional<ISampleData> sampleData = waveformSampleZone.getSampleData ();
+                        if (sampleData.isPresent ())
+                            sampleZone.setSampleData (sampleData.get ());
 
                         // Check if the waveformSampleZone is in the key/velocity range
                         // Ignore if fully outside or clip the ranges it if necessary
@@ -687,24 +693,24 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
     }
 
 
-    private IMultisampleSource checkElement (final YamahaYsfcPartElement element, final List<IMultisampleSource> waveforms, final int elementIndex)
+    private Optional<IMultisampleSource> checkElement (final YamahaYsfcPartElement element, final List<IMultisampleSource> waveforms, final int elementIndex)
     {
         // Element is switched off
         if (element.getElementSwitch () != 1)
-            return null;
+            return Optional.empty ();
         if (element.getWaveBank () == 0)
         {
             this.notifier.logError ("IDS_YSFC_ELEMENT_REFERENCES_PRESET_WAVEFORM", Integer.toString (elementIndex));
-            return null;
+            return Optional.empty ();
         }
         final int waveformNumber = element.getWaveformNumber ();
         if (waveformNumber < 1 || waveformNumber > waveforms.size ())
         {
             this.notifier.logError ("IDS_YSFC_WAVEFORM_OUT_OF_RANGE", Integer.toString (waveformNumber));
-            return null;
+            return Optional.empty ();
         }
 
-        return waveforms.get (waveformNumber - 1);
+        return Optional.of (waveforms.get (waveformNumber - 1));
     }
 
 

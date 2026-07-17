@@ -12,11 +12,13 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -210,20 +212,21 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setPanning (PolyendTrackerValueConverter.rawPanningToModel (buffer.getShort (PolyendTrackerConstants.OFF_PANNING)));
         zone.setTuning (PolyendTrackerValueConverter.toTuning (buffer.get (PolyendTrackerConstants.OFF_TUNE), buffer.get (PolyendTrackerConstants.OFF_FINETUNE)));
 
-        final IEnvelope amplitudeEnvelope = readEnvelope (buffer, PolyendTrackerConstants.ENV_VOLUME);
-        if (amplitudeEnvelope != null)
-            zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
+        final Optional<IEnvelope> amplitudeEnvelope = readEnvelope (buffer, PolyendTrackerConstants.ENV_VOLUME);
+        if (amplitudeEnvelope.isPresent ())
+            zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope.get ());
 
-        final IEnvelope pitchEnvelope = readEnvelope (buffer, PolyendTrackerConstants.ENV_FINETUNE);
-        if (pitchEnvelope != null)
+        final Optional<IEnvelope> pitchEnvelope = readEnvelope (buffer, PolyendTrackerConstants.ENV_FINETUNE);
+        if (pitchEnvelope.isPresent ())
         {
-            zone.getPitchEnvelopeModulator ().setSource (pitchEnvelope);
-            zone.getPitchEnvelopeModulator ().setDepth (1.0);
+            final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
+            pitchEnvelopeModulator.setSource (pitchEnvelope.get ());
+            pitchEnvelopeModulator.setDepth (1.0);
         }
 
-        final IFilter filter = buildFilter (buffer);
-        if (filter != null)
-            zone.setFilter (filter);
+        final Optional<IFilter> filter = buildFilter (buffer);
+        if (filter.isPresent ())
+            zone.setFilter (filter.get ());
     }
 
 
@@ -233,10 +236,10 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
      * @param buffer The buffer with the file content
      * @return The filter or null if no (audible) filter is set
      */
-    private static IFilter buildFilter (final ByteBuffer buffer)
+    private static Optional<IFilter> buildFilter (final ByteBuffer buffer)
     {
         if ((buffer.get (PolyendTrackerConstants.OFF_FILTER_ENABLED) & 0xFF) == 0)
-            return null;
+            return Optional.empty ();
 
         final FilterType filterType = switch (buffer.get (PolyendTrackerConstants.OFF_FILTER_TYPE) & 0xFF)
         {
@@ -246,32 +249,34 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
             default -> null;
         };
         if (filterType == null)
-            return null;
+            return Optional.empty ();
 
         final double cutoff = Math.clamp (buffer.getFloat (PolyendTrackerConstants.OFF_CUTOFF), 0.0, 1.0);
         final double hertz = PolyendTrackerValueConverter.normalizedCutoffToHertz (cutoff);
 
         // A filter parked wide open is sonically transparent - treat it as no filter
         if (filterType == FilterType.HIGH_PASS && hertz <= TRANSPARENT_HIGH_PASS_MAX_HERTZ || filterType == FilterType.LOW_PASS && hertz >= TRANSPARENT_LOW_PASS_MIN_HERTZ)
-            return null;
+            return Optional.empty ();
 
         final double resonance = PolyendTrackerValueConverter.rawResonanceToModel (buffer.getFloat (PolyendTrackerConstants.OFF_RESONANCE));
         final IFilter filter = new DefaultFilter (filterType, 2, hertz, resonance);
 
-        final IEnvelope cutoffEnvelope = readEnvelope (buffer, PolyendTrackerConstants.ENV_CUTOFF);
-        if (cutoffEnvelope != null)
+        final Optional<IEnvelope> cutoffEnvelope = readEnvelope (buffer, PolyendTrackerConstants.ENV_CUTOFF);
+        if (cutoffEnvelope.isPresent ())
         {
             final int base = PolyendTrackerConstants.OFF_ENVELOPES + PolyendTrackerConstants.ENV_CUTOFF * PolyendTrackerConstants.ENVELOPE_SIZE;
             final double amount = Math.clamp (buffer.getFloat (base + PolyendTrackerConstants.ENV_OFF_AMOUNT), 0.0, 1.0);
             final double depth = PolyendTrackerValueConverter.normalizedCutoffToHertz (Math.clamp (cutoff + amount, 0.0, 1.0)) - hertz;
             if (depth != 0)
             {
-                filter.getCutoffEnvelopeModulator ().setSource (cutoffEnvelope);
-                filter.getCutoffEnvelopeModulator ().setDepth (depth);
+                final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+                cutoffEnvelopeModulator.setSource (cutoffEnvelope.get ());
+                IEnvelopeModulator cutoffEnvelopeModulator2 = filter.getCutoffEnvelopeModulator ();
+                cutoffEnvelopeModulator2.setDepth (depth);
             }
         }
 
-        return filter;
+        return Optional.of (filter);
     }
 
 
@@ -282,13 +287,13 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
      * @param slot The index of the envelope (0 = volume, 2 = cutoff, 5 = fine tune)
      * @return The envelope or null
      */
-    private static IEnvelope readEnvelope (final ByteBuffer buffer, final int slot)
+    private static Optional<IEnvelope> readEnvelope (final ByteBuffer buffer, final int slot)
     {
         final int base = PolyendTrackerConstants.OFF_ENVELOPES + slot * PolyendTrackerConstants.ENVELOPE_SIZE;
         final boolean usesLFO = (buffer.get (base + PolyendTrackerConstants.ENV_OFF_LFO_FLAG) & 0xFF) != 0;
         final boolean enabled = (buffer.get (base + PolyendTrackerConstants.ENV_OFF_ENABLED) & 0xFF) != 0;
         if (!enabled || usesLFO)
-            return null;
+            return Optional.empty ();
 
         final int delay = buffer.getShort (base + PolyendTrackerConstants.ENV_OFF_DELAY) & 0xFFFF;
         final int attack = buffer.getShort (base + PolyendTrackerConstants.ENV_OFF_ATTACK) & 0xFFFF;
@@ -306,7 +311,7 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         envelope.setDecayTime (PolyendTrackerValueConverter.millisecondsToSeconds (decay));
         envelope.setSustainLevel (Math.clamp (sustain, 0.0, 1.0));
         envelope.setReleaseTime (PolyendTrackerValueConverter.millisecondsToSeconds (release));
-        return envelope;
+        return Optional.of (envelope);
     }
 
 

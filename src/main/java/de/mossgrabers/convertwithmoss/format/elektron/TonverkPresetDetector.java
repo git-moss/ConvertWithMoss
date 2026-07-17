@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -21,6 +22,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -78,8 +80,8 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
             final TonverkPresetFile preset = new TonverkPresetFile (Files.readAllLines (sourceFile.toPath ()));
             for (final String error: preset.errors)
                 this.notifier.logText (error);
-            final IMultisampleSource source = this.convertPreset (sourceFile, preset);
-            return source == null ? Collections.emptyList () : Collections.singletonList (source);
+            final Optional<IMultisampleSource> source = this.convertPreset (sourceFile, preset);
+            return source.isEmpty () ? Collections.emptyList () : Collections.singletonList (source.get ());
         }
         catch (final IOException ex)
         {
@@ -89,7 +91,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private IMultisampleSource convertPreset (final File sourceFile, final TonverkPresetFile preset) throws IOException
+    private Optional<IMultisampleSource> convertPreset (final File sourceFile, final TonverkPresetFile preset) throws IOException
     {
         final List<IGroup> groups;
         switch (preset.machine)
@@ -105,12 +107,12 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
                     this.notifier.logError ("IDS_TONVERK_EMPTY_OR_CORRUPT", sourceFile.getName ());
                 else
                     this.notifier.logError ("IDS_TONVERK_UNKNOWN_MACHINE", genMachine == null ? "" : genMachine);
-                return null;
+                return Optional.empty ();
             }
         }
 
         if (groups.isEmpty ())
-            return null;
+            return Optional.empty ();
 
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile), groups);
 
@@ -120,7 +122,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         if (!preset.tags.isEmpty ())
             metadata.setKeywords (preset.tags.toArray (new String [preset.tags.size ()]));
 
-        return multisampleSource;
+        return Optional.of (multisampleSource);
     }
 
 
@@ -147,9 +149,10 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
                 final List<ISampleZone> zones = new ArrayList<> ();
                 for (final TonverkSampleSlot slot: velocityLayer.sampleSlots)
                 {
-                    final ISampleZone zone = this.createMappedZone (sourceFile, slot, keyZone.pitch, keyZone.keyCenter);
-                    if (zone == null)
+                    final Optional<ISampleZone> zoneOpt = this.createMappedZone (sourceFile, slot, keyZone.pitch, keyZone.keyCenter);
+                    if (zoneOpt.isEmpty ())
                         continue;
+                    final ISampleZone zone = zoneOpt.get ();
                     applyAmplitudeEnvelope (zone, preset, prefix);
                     applyFilter (zone, preset, prefix);
                     applyGainAndPanning (zone, preset, prefix);
@@ -185,21 +188,24 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
     private List<IGroup> buildOneShotGroups (final File sourceFile, final TonverkPresetFile preset) throws IOException
     {
         final String prefix = Machine.ONESHOT.getParameterPrefix ();
-        final File sampleFile = resolveSample (sourceFile, preset.param (prefix + "_sample_slot"));
-        if (sampleFile == null)
+        final Optional<File> sampleFile = resolveSample (sourceFile, preset.param (prefix + "_sample_slot"));
+        if (sampleFile.isEmpty ())
         {
             this.notifier.logError ("IDS_TONVERK_SAMPLE_NOT_FOUND", preset.param (prefix + "_sample_slot"));
             return Collections.emptyList ();
         }
 
-        final ISampleZone zone = this.createSampleZone (sampleFile);
+        final ISampleZone zone = this.createSampleZone (sampleFile.get ());
         zone.setKeyRoot (ONESHOT_ROOT_NOTE);
         zone.setKeyLow (0);
         zone.setKeyHigh (127);
         zone.setVelocityLow (0);
         zone.setVelocityHigh (127);
 
-        final int frames = zone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+        final int frames = sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
         if (frames > 0)
         {
             final double startNormalized = preset.paramDouble (prefix + "_sample_start", 0);
@@ -254,9 +260,10 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
             for (final TonverkVelocityLayer velocityLayer: keyZone.velocityLayers)
                 for (final TonverkSampleSlot slot: velocityLayer.sampleSlots)
                 {
-                    final ISampleZone zone = this.createMappedZone (sourceFile, slot, keyZone.pitch, keyZone.keyCenter);
-                    if (zone == null)
+                    final Optional<ISampleZone> zoneOpt = this.createMappedZone (sourceFile, slot, keyZone.pitch, keyZone.keyCenter);
+                    if (zoneOpt.isEmpty ())
                         continue;
+                    final ISampleZone zone = zoneOpt.get ();
                     zone.setKeyLow (keyZone.pitch);
                     zone.setKeyHigh (keyZone.pitch);
                     zone.setVelocityLow (0);
@@ -283,23 +290,26 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
      * @return The created sample zone
      * @throws IOException Could not read
      */
-    private ISampleZone createMappedZone (final File sourceFile, final TonverkSampleSlot slot, final int pitch, final double keyCenter) throws IOException
+    private Optional<ISampleZone> createMappedZone (final File sourceFile, final TonverkSampleSlot slot, final int pitch, final double keyCenter) throws IOException
     {
-        final File sampleFile = resolveSample (sourceFile, slot.sample);
-        if (sampleFile == null)
+        final Optional<File> sampleFile = resolveSample (sourceFile, slot.sample);
+        if (sampleFile.isEmpty ())
         {
             this.notifier.logError ("IDS_TONVERK_SAMPLE_NOT_FOUND", slot.sample);
-            return null;
+            return Optional.empty ();
         }
 
-        final ISampleZone zone = this.createSampleZone (sampleFile);
+        final ISampleZone zone = this.createSampleZone (sampleFile.get ());
         zone.setKeyRoot (pitch);
         zone.setTuning (pitch - keyCenter);
 
         // A mapping slot without explicit trim points plays the whole sample. Default to the full
         // range (0 .. number-of-frames) rather than leaving the model default of -1, which other
         // formats would write out verbatim (e.g. the Waldorf QPAT shows a sample start/end of -1).
-        final int frames = zone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+        final int frames = sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
         zone.setStart (slot.trimStart != null && slot.trimStart.intValue () >= 0 ? slot.trimStart.intValue () : 0);
         zone.setStop (slot.trimEnd != null && slot.trimEnd.intValue () >= 0 ? slot.trimEnd.intValue () : frames);
 
@@ -319,7 +329,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
             zone.getLoops ().add (loop);
         }
 
-        return zone;
+        return Optional.of (zone);
     }
 
 
@@ -404,14 +414,14 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
      * @param devicePath The absolute device path of the sample
      * @return The resolved file or null if it could not be found
      */
-    private static File resolveSample (final File file, final String devicePath)
+    private static Optional<File> resolveSample (final File file, final String devicePath)
     {
         if (devicePath == null || devicePath.isBlank ())
-            return null;
+            return Optional.empty ();
 
         final File asIs = new File (devicePath);
         if (asIs.exists ())
-            return asIs;
+            return Optional.of (asIs);
 
         String relative = devicePath.replace ('\\', '/');
         final int mountIndex = relative.indexOf (DEVICE_MOUNT_PREFIX);
@@ -425,7 +435,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         {
             final File candidate = new File (directory, relative);
             if (candidate.exists ())
-                return candidate;
+                return Optional.of (candidate);
         }
 
         // Fall back to dropping leading path segments (in case the mount maps deeper into the tree)
@@ -437,11 +447,11 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
             {
                 final File candidate = new File (directory, tail);
                 if (candidate.exists ())
-                    return candidate;
+                    return Optional.of (candidate);
             }
         }
 
-        return null;
+        return Optional.empty ();
     }
 
 

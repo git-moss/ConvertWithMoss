@@ -32,6 +32,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
@@ -219,7 +220,10 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
                 for (int entry = 0; entry < zones.size (); entry++)
                 {
                     final ISampleZone zone = zones.get (entry);
-                    final IAudioMetadata audioMetadata = zone.getSampleData ().getAudioMetadata ();
+                    final Optional<ISampleData> sampleData = zone.getSampleData ();
+                    if (sampleData.isEmpty ())
+                        throw new IOException ("Empty sample data in zone: " + zone.getName ());
+                    final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
 
                     final String identity = zone.getName () + "|" + audioMetadata.getNumberOfSamples () + "|" + audioMetadata.getSampleRate () + "|" + audioMetadata.getChannels ();
                     String sampleName = writtenSamples.get (identity);
@@ -618,7 +622,10 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
         final Path tempFile = Files.createTempFile ("CWM-", ".flac");
         try
         {
-            AudioFileUtils.compressToFLAC (zone.getSampleData (), FLAC_TARGET_FORMAT, tempFile.toFile ());
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isEmpty ())
+                throw new IOException ("Empty sample data in zone: " + zone.getName ());
+            AudioFileUtils.compressToFLAC (sampleData.get (), FLAC_TARGET_FORMAT, tempFile.toFile ());
             final byte [] flacData = Files.readAllBytes (tempFile);
             final byte [] obfuscated = SynclavierRegenCodec.transform (flacData, sampleName);
             Files.write (new File (libraryFolder, sampleName + ".sflc").toPath (), obfuscated);
@@ -712,16 +719,16 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
             sb.append (description.replace ("\r", "").replace ("\n", "¶"));
 
         final Set<String> tags = new LinkedHashSet<> ();
-        final String categoryTag = regenCategoryTag (metadata.getCategory ());
-        if (categoryTag != null)
-            tags.add (categoryTag);
+        final Optional<String> categoryTag = regenCategoryTag (metadata.getCategory ());
+        if (categoryTag.isPresent ())
+            tags.add (categoryTag.get ());
         final String [] keywords = metadata.getKeywords ();
         if (keywords != null)
             for (final String keyword: keywords)
             {
-                final String tag = sanitizeTag (keyword);
-                if (tag != null)
-                    tags.add (tag);
+                final Optional<String> tag = sanitizeTag (keyword);
+                if (tag.isPresent ())
+                    tags.add (tag.get ());
             }
         for (final String tag: tags)
             sb.append (" #").append (tag);
@@ -737,12 +744,12 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
      * @param category The category (may be null or "Unknown")
      * @return The Regen category tag or null if there is no usable category
      */
-    private static String regenCategoryTag (final String category)
+    private static Optional<String> regenCategoryTag (final String category)
     {
         if (category == null || category.isBlank () || "Unknown".equalsIgnoreCase (category))
-            return null;
+            return Optional.empty ();
         final String mapped = REGEN_CATEGORY_TAGS.get (category.toLowerCase (Locale.US));
-        return mapped != null ? mapped : sanitizeTag (category);
+        return mapped != null ? Optional.of (mapped) : sanitizeTag (category);
     }
 
 
@@ -753,12 +760,12 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
      * @param tag The tag text
      * @return The sanitized tag or null if nothing remains
      */
-    private static String sanitizeTag (final String tag)
+    private static Optional<String> sanitizeTag (final String tag)
     {
         if (tag == null)
-            return null;
+            return Optional.empty ();
         final String sanitized = tag.toLowerCase (Locale.US).replaceAll ("[^a-z0-9]", "");
-        return sanitized.isBlank () ? null : sanitized;
+        return Optional.ofNullable (sanitized.isBlank () ? null : sanitized);
     }
 
 

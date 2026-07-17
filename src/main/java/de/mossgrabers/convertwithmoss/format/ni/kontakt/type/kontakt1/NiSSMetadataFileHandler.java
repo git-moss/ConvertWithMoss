@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt1;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.w3c.dom.Element;
 
@@ -65,13 +66,13 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected String getModulationTarget (final Element modulator)
+    protected Optional<String> getModulationTarget (final Element modulator)
     {
         for (final Element valueElement: XMLUtils.getChildElementsByName (modulator, this.tags.value ()))
             // We only support 1 target!
             if (this.tags.targetParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
-                return valueElement.getAttribute (this.tags.valueValueAttribute ());
-        return null;
+                return Optional.of (valueElement.getAttribute (this.tags.valueValueAttribute ()));
+        return Optional.empty ();
     }
 
 

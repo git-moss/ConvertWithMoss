@@ -106,9 +106,16 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                 final boolean isDiskette = header.getDiskFormat () == S770DiskFormat.DISKETTE;
                 this.notifier.log ("IDS_S7XX_VERSION", header.getS70Str (), header.getVersionStr (), header.getDiskName (), isDiskette ? "diskette" : "CD-ROM/HD");
 
-                final IS770Image image = isDiskette ? this.loadDiskette (input, header, sourceFile.getParentFile ()) : new S770Hd (input, header);
-                if (image == null)
-                    return Collections.emptyList ();
+                final IS770Image image;
+                if (isDiskette)
+                {
+                    final Optional<S770Diskette> diskette = this.loadDiskette (input, header, sourceFile.getParentFile ());
+                    if (diskette.isEmpty ())
+                        return Collections.emptyList ();
+                    image = diskette.get ();
+                }
+                else
+                    image = new S770Hd (input, header);
 
                 return this.readPatches (sourceFile, image);
             }
@@ -121,14 +128,14 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private S770Diskette loadDiskette (final InputStream input, final S770Header header, final File parentPath) throws IOException
+    private Optional<S770Diskette> loadDiskette (final InputStream input, final S770Header header, final File parentPath) throws IOException
     {
         final int indexDiskette = header.getIndexDiskette ();
         final int numDiskettes = header.getNumDiskettes ();
         if (indexDiskette != 0)
         {
             this.notifier.logError ("IDS_S7XX_CONTINUATION_DISK_IGNORED", Integer.toString (indexDiskette + 1), Integer.toString (numDiskettes + 1));
-            return null;
+            return Optional.empty ();
         }
 
         final String diskName = header.getDiskName ();
@@ -139,13 +146,13 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
             if (continuationDisk.isEmpty ())
             {
                 this.notifier.logError ("IDS_S7XX_CONTINUATION_DISK_NOT_FOUND", Integer.toString (i + 1), Integer.toString (numDiskettes + 1));
-                return null;
+                return Optional.empty ();
             }
             this.notifier.log ("IDS_S7XX_CONTINUATION_DISK_FOUND", Integer.toString (i + 1), Integer.toString (numDiskettes + 1));
             continuationData.add (continuationDisk.get ());
         }
 
-        return new S770Diskette (input, header, continuationData);
+        return Optional.of (new S770Diskette (input, header, continuationData));
     }
 
 

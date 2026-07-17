@@ -138,12 +138,12 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             if (this.waitForDelivery ())
                 return Optional.empty ();
 
-            final Pair<ISampleZone, File> zonePair = this.createAndCheckSampleZone (parentFile, previousFolder, exs24Zone, exs24Samples);
-            if (zonePair == null)
+            final Optional<Pair<ISampleZone, File>> zonePair = this.createAndCheckSampleZone (parentFile, previousFolder, exs24Zone, exs24Samples);
+            if (zonePair.isEmpty ())
                 continue;
-            previousFolder = zonePair.getValue ();
+            previousFolder = zonePair.get ().getValue ();
 
-            final ISampleZone zone = zonePair.getKey ();
+            final ISampleZone zone = zonePair.get ().getKey ();
             zone.setKeyRoot (exs24Zone.key);
             zone.setKeyLow (exs24Zone.keyLow);
             zone.setKeyHigh (exs24Zone.keyHigh);
@@ -215,7 +215,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
     }
 
 
-    private Pair<ISampleZone, File> createAndCheckSampleZone (final File parentFile, final File previousFolder, final EXS24Zone exs24Zone, final List<EXS24Sample> exs24Samples) throws IOException
+    private Optional<Pair<ISampleZone, File>> createAndCheckSampleZone (final File parentFile, final File previousFolder, final EXS24Zone exs24Zone, final List<EXS24Sample> exs24Samples) throws IOException
     {
         // If sample index is not set, use the zone id (index)
         int sampleIndex = exs24Zone.sampleIndex;
@@ -228,14 +228,14 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         if (sampleIndex >= exs24Samples.size ())
         {
             this.notifier.logError ("IDS_EXS_SAMPLE_INDEX_OUT_OF_BOUNDS", Integer.toString (sampleIndex));
-            return null;
+            return Optional.empty ();
         }
 
         final EXS24Sample exs24Sample = exs24Samples.get (sampleIndex);
         if (exs24Sample == null)
         {
             this.notifier.logError ("IDS_EXS_SAMPLE_INDEX_OUT_OF_BOUNDS", Integer.toString (sampleIndex));
-            return null;
+            return Optional.empty ();
         }
 
         final int height = this.settingsConfiguration.getDirectorySearchHeight ();
@@ -243,9 +243,9 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         if (!sampleFile.exists ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
-            return null;
+            return Optional.empty ();
         }
-        return new Pair<> (this.createSampleZone (sampleFile), sampleFile.getParentFile ());
+        return Optional.of (new Pair<> (this.createSampleZone (sampleFile), sampleFile.getParentFile ()));
     }
 
 

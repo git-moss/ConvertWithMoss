@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -27,8 +28,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
-import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzInstrument;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzInstrument;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -83,25 +84,25 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
-        final ZenCoreKeyMap keyMap = ZenCoreSvz.readKeyMap (container);
+        final Optional<ZenCoreKeyMap> keyMap = ZenCoreSvz.readKeyMap (container);
         final IGroup group = new DefaultGroup ("Samples");
-        if (keyMap == null)
+        if (keyMap.isEmpty ())
         {
             for (final ZenCoreSample sample: samples)
                 if (sample.getSampleData () != null)
                     group.addSampleZone (createZone (sample, sample.getOriginalKey (), sample.getOriginalKey ()));
         }
         else
-            buildZonesFromKeyMap (group, samples, keyMap);
+            buildZonesFromKeyMap (group, samples, keyMap.get ());
 
         if (group.getSampleZones ().isEmpty ())
             return Collections.emptyList ();
         // Carry the first tone's shaping back into the model, so ZEN-Core sources convert with
         // their filter and envelopes instead of pipeline defaults - the times through the same
         // hardware-calibrated law the writer uses.
-        final SvzInstrument tone = ZenCoreSvz.readTone (container);
-        if (tone != null)
-            applyToneShaping (group, tone);
+        final Optional<SvzInstrument> tone = ZenCoreSvz.readTone (container);
+        if (tone.isPresent ())
+            applyToneShaping (group, tone.get ());
         final String name = FileUtils.getNameWithoutType (svzFile);
         this.notifier.log ("IDS_ZENCORE_READING_SVZ", name, Integer.toString (group.getSampleZones ().size ()));
         return Collections.singletonList (this.createMultisampleSource (svzFile, name, List.of (group)));

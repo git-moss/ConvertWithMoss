@@ -299,7 +299,8 @@ public class KeyMapping
                     for (final ISampleZone zone: zones)
                         try
                         {
-                            if (!zone.getSampleData ().getAudioMetadata ().isMono ())
+                            final Optional<ISampleData> sampleData = zone.getSampleData ();
+                            if (sampleData.isEmpty () || !sampleData.get ().getAudioMetadata ().isMono ())
                                 throw new MultisampleException (Functions.getMessage ("IDS_WAV_FILES_MUST_BE_MONO"), entry);
                         }
                         catch (final IOException ex)
@@ -392,7 +393,9 @@ public class KeyMapping
     private static ISampleZone combineLeftRight (final ISampleZone leftChannelZone, final ISampleZone rightChannelZone, final String pattern) throws CombinationNotPossibleException
     {
         // Always true
-        if (leftChannelZone.getSampleData () instanceof final WavFileSampleData leftChannel && rightChannelZone.getSampleData () instanceof final WavFileSampleData rightChannel)
+        final Optional<ISampleData> leftSampleData = leftChannelZone.getSampleData ();
+        final Optional<ISampleData> rightSampleData = rightChannelZone.getSampleData ();
+        if (leftSampleData.isPresent () && leftSampleData.get () instanceof final WavFileSampleData leftChannel && rightSampleData.isPresent () && rightSampleData.get () instanceof final WavFileSampleData rightChannel)
         {
             final ISampleData stereoData = leftChannel.combine (rightChannel);
             final ISampleZone stereoSampleZone = new DefaultSampleZone (leftChannelZone);

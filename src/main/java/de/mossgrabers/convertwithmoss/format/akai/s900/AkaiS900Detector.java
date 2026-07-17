@@ -128,8 +128,8 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
             return Optional.empty ();
         }
 
-        final WaveFile waveFile = AkaiS900DiskImage.writeSample (sample);
-        if (waveFile == null)
+        final Optional<WaveFile> waveFile = AkaiS900DiskImage.writeSample (sample);
+        if (waveFile.isEmpty ())
         {
             this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
             return Optional.empty ();
@@ -138,7 +138,7 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         final int lowKey = keygroup.getKeyLow ();
         final int highKey = keygroup.getKeyHigh ();
         final ISampleZone sampleZone = new DefaultSampleZone (sampleName, lowKey, highKey);
-        sampleZone.setSampleData (new WavFileSampleData (waveFile));
+        sampleZone.setSampleData (new WavFileSampleData (waveFile.get ()));
 
         sampleZone.setReversed (sample.getDirection () == 'R');
 

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
@@ -82,8 +83,8 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
     {
         if (this.infoChunk == null)
             return "";
-        final String result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IENG, InfoRiffChunkId.INFO_IART, InfoRiffChunkId.INFO_ITCH, InfoRiffChunkId.INFO_ISTR, InfoRiffChunkId.INFO_STAR);
-        return result == null ? "" : result.trim ();
+        final Optional<String> result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IENG, InfoRiffChunkId.INFO_IART, InfoRiffChunkId.INFO_ITCH, InfoRiffChunkId.INFO_ISTR, InfoRiffChunkId.INFO_STAR);
+        return result.isEmpty () ? "" : result.get ().trim ();
     }
 
 
@@ -96,8 +97,8 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
     {
         if (this.infoChunk == null)
             return "";
-        final String result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IKEY);
-        return result == null ? "" : result.trim ();
+        final Optional<String> result = this.infoChunk.getInfoField (InfoRiffChunkId.INFO_IKEY);
+        return result.isEmpty () ? "" : result.get ().trim ();
     }
 
 
@@ -197,12 +198,12 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
         if (this.infoChunk != null)
             for (final RiffChunkId riffChunkId: riffChunkIds)
             {
-                final String value = this.infoChunk.getInfoField (riffChunkId);
-                if (value == null)
+                final Optional<String> value = this.infoChunk.getInfoField (riffChunkId);
+                if (value.isEmpty ())
                     continue;
                 if (!sb.isEmpty ())
                     sb.append ('\n');
-                sb.append (riffChunkId.getDescription ()).append (": ").append (value.trim ());
+                sb.append (riffChunkId.getDescription ()).append (": ").append (value.get ().trim ());
             }
         return sb.toString ();
     }

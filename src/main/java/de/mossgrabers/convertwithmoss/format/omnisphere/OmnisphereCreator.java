@@ -301,7 +301,11 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
         final String description = metadata.getDescription ();
         if (!description.isBlank ())
-            sb.append ("Description=").append (HTMLUtils.unicodeToHTML (description).replace ("\r\n", HTML_RETURN).replace ("\r", HTML_RETURN).replace ("\n", HTML_RETURN)).append (';');
+        {
+            final Optional<String> html = HTMLUtils.unicodeToHTML (description);
+            if (html.isPresent ())
+                sb.append ("Description=").append (html.get ().replace ("\r\n", HTML_RETURN).replace ("\r", HTML_RETURN).replace ("\n", HTML_RETURN)).append (';');
+        }
 
         return sb.toString ();
     }
@@ -424,15 +428,15 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             this.rewriteFile (multisampleSource, zone, out, DESTINATION_FORMAT, true);
         else
         {
-            final ISampleData sampleData = zone.getSampleData ();
-            if (sampleData == null)
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isEmpty ())
             {
                 this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), zone.getName ());
                 this.notifier.logText ("\n");
             }
             else
             {
-                sampleData.writeSample (out);
+                sampleData.get ().writeSample (out);
                 final WaveFile wavFile = new WaveFile ();
                 try
                 {

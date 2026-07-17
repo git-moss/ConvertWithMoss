@@ -233,7 +233,11 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         zoneElement.setAttribute ("name", zone.getName () + ".wav");
         zoneElement.setAttribute ("path", "");
 
-        XMLUtils.setIntegerAttribute (zoneElement, "num_samples", zone.getSampleData ().getAudioMetadata ().getNumberOfSamples ());
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+
+        XMLUtils.setIntegerAttribute (zoneElement, "num_samples", sampleData.get ().getAudioMetadata ().getNumberOfSamples ());
         XMLUtils.setIntegerAttribute (zoneElement, "mp_gain", (int) Math.round (zone.getGain ()));
         XMLUtils.setDoubleAttribute (zoneElement, "vel_amp", zone.getAmplitudeVelocityModulator ().getDepth (), 2);
         XMLUtils.setIntegerAttribute (zoneElement, "mp_pan", (int) Math.round (zone.getPanning () * 100.0));
@@ -347,11 +351,12 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
     @Override
     protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
-        ISampleData sampleData = zone.getSampleData ();
-        if (sampleData == null)
+        final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
+        if (sampleDataOpt.isEmpty ())
             return;
 
         // Trim and convert to FLAC
+        ISampleData sampleData = sampleDataOpt.get ();
         final Path tempFile = Files.createTempFile ("CWM-", ".flac");
         try
         {

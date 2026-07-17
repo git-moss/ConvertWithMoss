@@ -278,10 +278,10 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final List<IInstrumentSource> acceptedInstrumentSources = new ArrayList<> ();
         for (final IInstrumentSource instrumentSource: performanceSource.getInstruments ())
         {
-            final File preset = this.createPreset (destinationFolder, instrumentSource);
-            if (preset != null)
+            final Optional<File> preset = this.createPreset (destinationFolder, instrumentSource);
+            if (preset.isPresent ())
             {
-                programFiles.add (preset);
+                programFiles.add (preset.get ());
                 acceptedInstrumentSources.add (instrumentSource);
             }
         }
@@ -300,7 +300,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     }
 
 
-    private File createPreset (final File destinationFolder, final IInstrumentSource instrumentSource) throws IOException
+    private Optional<File> createPreset (final File destinationFolder, final IInstrumentSource instrumentSource) throws IOException
     {
         final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
         final String sampleName = createSafeFilename (multisampleSource.getName ());
@@ -308,7 +308,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final Optional<String> metadata = this.createPresetDocument (relativeFolderName, instrumentSource);
         if (metadata.isEmpty ())
-            return null;
+            return Optional.empty ();
 
         final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "txprog");
         this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
@@ -317,7 +317,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         this.progress.notifyDone ();
 
-        return multiFile;
+        return Optional.of (multiFile);
     }
 
 

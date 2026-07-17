@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -125,12 +126,12 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
     @Override
     protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
-        final ISampleData sampleData = zone.getSampleData ();
-        if (sampleData == null)
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
             return;
 
         // Convert resolution
-        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData, destinationFormat);
+        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), destinationFormat);
         if (wavFile.getDataChunk () == null)
             throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));
 
@@ -181,10 +182,10 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
                     final ISampleZone zone = sampleZones.get (roundRobinIndex);
                     zone.setName (TonverkMultiFile.createSampleName (presetName, velocityLayerIndex, keyRoot, roundRobinIndex));
 
-                    final ISampleData sampleData = zone.getSampleData ();
-                    if (sampleData == null)
+                    final Optional<ISampleData> sampleData = zone.getSampleData ();
+                    if (sampleData.isEmpty ())
                         continue;
-                    final int numberOfSamples = sampleData.getAudioMetadata ().getNumberOfSamples ();
+                    final int numberOfSamples = sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
                     final int stop = zone.getStop ();
                     if (stop <= 0 || stop > numberOfSamples)
                         zone.setStop (numberOfSamples);
@@ -293,10 +294,10 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                final ISampleData sampleData = zone.getSampleData ();
-                if (sampleData == null)
+                final Optional<ISampleData> sampleData = zone.getSampleData ();
+                if (sampleData.isEmpty ())
                     continue;
-                final double ratio = 48000.0 / sampleData.getAudioMetadata ().getSampleRate ();
+                final double ratio = 48000.0 / sampleData.get ().getAudioMetadata ().getSampleRate ();
                 if (ratio == 1)
                     continue;
 

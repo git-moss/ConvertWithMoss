@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -103,13 +104,13 @@ public class KontaktDetector extends AbstractDetector<MetadataSettingsUI>
         try (final RandomAccessFile fileAccess = new RandomAccessFile (sourceFile, "r"))
         {
             final IKontaktFormat format = this.detectFormat (fileAccess);
-            final IPerformanceSource result = format.readNKM (this.sourceFolder, sourceFile, fileAccess, this.settingsConfiguration);
-            if (result == null || result.getInstruments ().isEmpty ())
+            final Optional<IPerformanceSource> result = format.readNKM (this.sourceFolder, sourceFile, fileAccess, this.settingsConfiguration);
+            if (result.isEmpty () || result.get ().getInstruments ().isEmpty ())
             {
                 this.notifier.logError ("IDS_NI_COULD_NOT_DETECT_GROUPS");
                 return Collections.emptyList ();
             }
-            return Collections.singletonList (result);
+            return List.of (result.get ());
         }
         catch (final IOException ex)
         {

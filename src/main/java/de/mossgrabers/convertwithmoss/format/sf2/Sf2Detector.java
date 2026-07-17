@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -20,6 +21,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -50,7 +52,10 @@ import de.mossgrabers.tools.Pair;
  */
 public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 {
-    /** The maximum absolute 16 bit value which still counts as silence (about -60dBFS), which covers dithered 'digital silence'. */
+    /**
+     * The maximum absolute 16 bit value which still counts as silence (about -60dBFS), which covers
+     * dithered 'digital silence'.
+     */
     private static final int SILENCE_THRESHOLD = 32;
 
 
@@ -91,8 +96,9 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
      * @param sf2File The parsed SF2 file
      * @param parts The path parts
      * @return The multi-sample sources
+     * @throws IOException Could not parse the SF2 file
      */
-    private List<IMultisampleSource> parseSF2File (final File sourceFile, final Sf2File sf2File, final String [] parts)
+    private List<IMultisampleSource> parseSF2File (final File sourceFile, final Sf2File sf2File, final String [] parts) throws IOException
     {
         final List<IMultisampleSource> multisamples = new ArrayList<> ();
 
@@ -127,9 +133,13 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                         continue;
                     }
                     generators.setInstrumentZoneGenerators (instrZone.getGenerators ());
-                    final ISampleZone zone = createSampleZone (instrZone.getSample (), generators);
-                    parseModulators (zone, presetZone, instrZone);
-                    group.addSampleZone (zone);
+                    final Optional<ISampleZone> zoneOpt = createSampleZone (instrZone.getSample (), generators);
+                    if (zoneOpt.isPresent ())
+                    {
+                        final ISampleZone zone = zoneOpt.get ();
+                        parseModulators (zone, presetZone, instrZone);
+                        group.addSampleZone (zone);
+                    }
                 }
 
                 groups.add (group);
@@ -249,8 +259,9 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
      *
      * @param groups The groups which contain the samples to combine
      * @return The groups with combined samples for convenience
+     * @throws IOException Could not combine to stereo
      */
-    private List<IGroup> combineToStereo (final List<IGroup> groups)
+    private List<IGroup> combineToStereo (final List<IGroup> groups) throws IOException
     {
         for (final IGroup group: groups)
         {
@@ -265,30 +276,35 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
             for (final ISampleZone zone: zones)
             {
-                final Sf2SampleData sf2SampleData = (Sf2SampleData) zone.getSampleData ();
-                final Sf2SampleDescriptor sample = sf2SampleData.getSample ();
-
-                // Store left and right samples in different lists first
-                switch (sample.getSampleType ())
+                final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
+                if (sampleDataOpt.isEmpty ())
+                    throw new IOException ("Empty sample data in zone: " + zone.getName ());
+                if (sampleDataOpt.get () instanceof final Sf2SampleData sf2SampleData)
                 {
-                    case Sf2SampleDescriptor.LEFT:
-                        leftSamples.add (zone);
-                        break;
+                    final Sf2SampleDescriptor sample = sf2SampleData.getSample ();
 
-                    case Sf2SampleDescriptor.RIGHT:
-                        rightSamples.add (zone);
-                        break;
+                    // Store left and right samples in different lists first
+                    switch (sample.getSampleType ())
+                    {
+                        case Sf2SampleDescriptor.LEFT:
+                            leftSamples.add (zone);
+                            break;
 
-                    default:
-                    case Sf2SampleDescriptor.MONO:
-                        final double panning = zone.getPanning ();
-                        if (panning == 0)
-                            resultSamples.add (zone);
-                        else if (panning < 0)
-                            panLeftSamples.add (zone);
-                        else
-                            panRightSamples.add (zone);
-                        break;
+                        case Sf2SampleDescriptor.RIGHT:
+                            rightSamples.add (zone);
+                            break;
+
+                        default:
+                        case Sf2SampleDescriptor.MONO:
+                            final double panning = zone.getPanning ();
+                            if (panning == 0)
+                                resultSamples.add (zone);
+                            else if (panning < 0)
+                                panLeftSamples.add (zone);
+                            else
+                                panRightSamples.add (zone);
+                            break;
+                    }
                 }
             }
 
@@ -319,30 +335,39 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
         for (final ISampleZone leftSampleZone: leftSampleZones)
         {
-            final Sf2SampleData leftSampleData = (Sf2SampleData) leftSampleZone.getSampleData ();
-            final int rightSampleIndex = leftSampleData.getSample ().getLinkedSample ();
+            final Optional<ISampleData> leftSampleDataOpt = leftSampleZone.getSampleData ();
+            if (leftSampleDataOpt.isEmpty ())
+                continue;
 
-            ISampleZone rightSampleZone;
             boolean found = false;
-            for (int i = 0; i < rightSampleZones.size (); i++)
+            if (leftSampleDataOpt.get () instanceof final Sf2SampleData leftSampleData)
             {
-                rightSampleZone = rightSampleZones.get (i);
-                final Sf2SampleData rightSampleData = (Sf2SampleData) rightSampleZone.getSampleData ();
-                final Sf2SampleDescriptor sample = rightSampleData.getSample ();
-                // Match via the linked index
-                if (sample.getSampleIndex () == rightSampleIndex)
+                final int rightSampleIndex = leftSampleData.getSample ().getLinkedSample ();
+
+                ISampleZone rightSampleZone;
+                for (int i = 0; i < rightSampleZones.size (); i++)
                 {
-                    if (this.compareSampleFormat (leftSampleZone, rightSampleZone))
+                    rightSampleZone = rightSampleZones.get (i);
+                    final Optional<ISampleData> sampleData = rightSampleZone.getSampleData ();
+                    if (sampleData.isPresent () && sampleData.get () instanceof final Sf2SampleData rightSampleData)
                     {
-                        // Store the matching right side sample with the left side one
-                        leftSampleData.setRightSample (sample);
-                        updateFilename (leftSampleZone, rightSampleZone);
-                        leftSampleZone.setPanning (Math.clamp (leftSampleZone.getPanning () + rightSampleZone.getPanning (), -1.0, 1.0));
-                        resultSamples.add (leftSampleZone);
-                        rightSampleZones.remove (i);
-                        found = true;
+                        final Sf2SampleDescriptor sample = rightSampleData.getSample ();
+                        // Match via the linked index
+                        if (sample.getSampleIndex () == rightSampleIndex)
+                        {
+                            if (this.compareSampleFormat (leftSampleZone, rightSampleZone))
+                            {
+                                // Store the matching right side sample with the left side one
+                                leftSampleData.setRightSample (sample);
+                                updateFilename (leftSampleZone, rightSampleZone);
+                                leftSampleZone.setPanning (Math.clamp (leftSampleZone.getPanning () + rightSampleZone.getPanning (), -1.0, 1.0));
+                                resultSamples.add (leftSampleZone);
+                                rightSampleZones.remove (i);
+                                found = true;
+                            }
+                            break;
+                        }
                     }
-                    break;
                 }
             }
 
@@ -389,13 +414,20 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                     if (this.compareSampleFormat (panLeftSampleZone, panRightSampleZone))
                     {
                         // Store the matching right side sample with the left side one
-                        final Sf2SampleData leftSampleData = (Sf2SampleData) panLeftSampleZone.getSampleData ();
-                        updateFilename (panLeftSampleZone, panRightSampleZone);
-                        leftSampleData.setRightSample (((Sf2SampleData) panRightSampleZone.getSampleData ()).getSample ());
-                        panLeftSampleZone.setPanning (Math.clamp (panLeftSampleZone.getPanning () + panRightSampleZone.getPanning (), -1.0, 1.0));
-                        resultSamples.add (panLeftSampleZone);
-                        panRightSamples.remove (i);
-                        found = true;
+                        final Optional<ISampleData> leftSampleDataOpt = panLeftSampleZone.getSampleData ();
+                        if (leftSampleDataOpt.isPresent () && leftSampleDataOpt.get () instanceof final Sf2SampleData leftSampleData)
+                        {
+                            updateFilename (panLeftSampleZone, panRightSampleZone);
+                            final Optional<ISampleData> rightSampleDataOpt = panRightSampleZone.getSampleData ();
+                            if (rightSampleDataOpt.isPresent () && rightSampleDataOpt.get () instanceof Sf2SampleData rightSampleData)
+                            {
+                                leftSampleData.setRightSample (rightSampleData.getSample ());
+                                panLeftSampleZone.setPanning (Math.clamp (panLeftSampleZone.getPanning () + panRightSampleZone.getPanning (), -1.0, 1.0));
+                                resultSamples.add (panLeftSampleZone);
+                                panRightSamples.remove (i);
+                                found = true;
+                            }
+                        }
                     }
                     break;
                 }
@@ -415,8 +447,15 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
     private boolean compareSampleFormat (final ISampleZone leftSampleZone, final ISampleZone rightSampleZone)
     {
-        final Sf2SampleDescriptor left = ((Sf2SampleData) leftSampleZone.getSampleData ()).getSample ();
-        final Sf2SampleDescriptor right = ((Sf2SampleData) rightSampleZone.getSampleData ()).getSample ();
+        final Optional<ISampleData> leftSampleDataOpt = leftSampleZone.getSampleData ();
+        if (leftSampleDataOpt.isEmpty () || !(leftSampleDataOpt.get () instanceof final Sf2SampleData leftSampleData))
+            return false;
+        final Optional<ISampleData> rightSampleDataOpt = rightSampleZone.getSampleData ();
+        if (rightSampleDataOpt.isEmpty () || !(rightSampleDataOpt.get () instanceof final Sf2SampleData rightSampleData))
+            return false;
+
+        final Sf2SampleDescriptor left = leftSampleData.getSample ();
+        final Sf2SampleDescriptor right = rightSampleData.getSample ();
 
         // A genuine stereo pair must match in pitch and sample rate. If either differs the two
         // samples are not really a pair - some SoundFonts (e.g. commercial E-mu banks) carry
@@ -487,11 +526,14 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         for (final IGroup group: groups)
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                final Sf2SampleData sampleData = (Sf2SampleData) zone.getSampleData ();
-                final Sf2SampleDescriptor sample = sampleData.getSample ();
-                final Sf2SampleDescriptor rightSample = sampleData.getRightSample ();
-                if (!isSilence (sample) || rightSample != sample && !isSilence (rightSample))
-                    return false;
+                final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
+                if (sampleDataOpt.isPresent () && sampleDataOpt.get () instanceof Sf2SampleData sampleData)
+                {
+                    final Sf2SampleDescriptor sample = sampleData.getSample ();
+                    final Sf2SampleDescriptor rightSample = sampleData.getRightSample ();
+                    if (!isSilence (sample) || rightSample != sample && !isSilence (rightSample))
+                        return false;
+                }
             }
         return true;
     }
@@ -514,15 +556,19 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 return false;
         }
         return true;
+    }
+
+
+    /**
      * Checks if the pitch of the sample audio consistently contradicts the mapped root keys by a
      * whole number of octaves. Only a strong consensus is reported: at least 3 zones must be
-     * measurable and at least 3/4 of them must agree on the same non-zero multiple of 12
-     * semitones (up to 2 octaves).
+     * measurable and at least 3/4 of them must agree on the same non-zero multiple of 12 semitones
+     * (up to 2 octaves).
      *
      * @param groups The groups which contain the sample zones to check
-     * @return The offset of the root keys in semitones (a positive multiple of 12 means the
-     *         preset sounds that many octaves lower than played), 0 if the roots match the audio
-     *         or no reliable consensus was found
+     * @return The offset of the root keys in semitones (a positive multiple of 12 means the preset
+     *         sounds that many octaves lower than played), 0 if the roots match the audio or no
+     *         reliable consensus was found
      */
     private static int detectOctaveOffset (final List<IGroup> groups)
     {
@@ -535,38 +581,42 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 final int keyRoot = zone.getKeyRoot ();
                 if (keyRoot < 0)
                     continue;
-                final Sf2SampleDescriptor sample = ((Sf2SampleData) zone.getSampleData ()).getSample ();
-                final double pitch = detectPitch (sample);
-                if (pitch < 0)
-                    continue;
-                measured++;
-                final double offset = keyRoot - pitch;
-                final int nearestOctave = (int) Math.round (offset / 12.0) * 12;
-                if (Math.abs (offset - nearestOctave) > 0.6 || Math.abs (nearestOctave) > 24)
-                    continue;
-                if (nearestOctave == 0)
+                final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
+                if (sampleDataOpt.isPresent () && sampleDataOpt.get () instanceof final Sf2SampleData sampleData)
                 {
-                    // The first zones already confirm that the roots match the audio
-                    if (measured >= 2 && consensusCount == 0)
-                        return 0;
-                    continue;
+                    final Sf2SampleDescriptor sample = sampleData.getSample ();
+                    final double pitch = detectPitch (sample);
+                    if (pitch < 0)
+                        continue;
+                    measured++;
+                    final double offset = keyRoot - pitch;
+                    final int nearestOctave = (int) Math.round (offset / 12.0) * 12;
+                    if (Math.abs (offset - nearestOctave) > 0.6 || Math.abs (nearestOctave) > 24)
+                        continue;
+                    if (nearestOctave == 0)
+                    {
+                        // The first zones already confirm that the roots match the audio
+                        if (measured >= 2 && consensusCount == 0)
+                            return 0;
+                        continue;
+                    }
+                    if (consensus == 0)
+                        consensus = nearestOctave;
+                    if (consensus == nearestOctave)
+                        consensusCount++;
                 }
-                if (consensus == 0)
-                    consensus = nearestOctave;
-                if (consensus == nearestOctave)
-                    consensusCount++;
             }
         return measured >= 3 && consensusCount >= 3 && consensusCount * 4 >= measured * 3 ? consensus : 0;
     }
 
 
     /**
-     * Detects the pitch of the sample with an auto-correlation over the loop area (or the middle
-     * of the sample if it has no loop), which contains the sustained and most periodic part.
+     * Detects the pitch of the sample with an auto-correlation over the loop area (or the middle of
+     * the sample if it has no loop), which contains the sustained and most periodic part.
      *
      * @param sample The sample to analyze
-     * @return The detected pitch as a fractional MIDI note number, -1 if the audio is not
-     *         periodic enough for a reliable detection
+     * @return The detected pitch as a fractional MIDI note number, -1 if the audio is not periodic
+     *         enough for a reliable detection
      */
     private static double detectPitch (final Sf2SampleDescriptor sample)
     {
@@ -655,7 +705,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
      * @param generators All hierarchical generator values
      * @return The sample zone
      */
-    private static ISampleZone createSampleZone (final Sf2SampleDescriptor sample, final GeneratorHierarchy generators)
+    private static Optional<ISampleZone> createSampleZone (final Sf2SampleDescriptor sample, final GeneratorHierarchy generators)
     {
         try
         {
@@ -783,12 +833,12 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 pitchEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
             }
 
-            return zone;
+            return Optional.of (zone);
         }
         catch (final IOException _)
         {
             // Can never happen
-            return null;
+            return Optional.empty ();
         }
     }
 

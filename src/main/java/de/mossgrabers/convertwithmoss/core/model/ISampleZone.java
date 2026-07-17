@@ -39,7 +39,7 @@ public interface ISampleZone
      *
      * @return The referenced sample data
      */
-    ISampleData getSampleData ();
+    Optional<ISampleData> getSampleData ();
 
 
     /**

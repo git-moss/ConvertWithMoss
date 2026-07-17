@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata;
 import java.lang.reflect.InvocationTargetException;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.format.ni.nicontainer.NIContainerChunkType;
 
@@ -56,18 +57,18 @@ public class ChunkDataFactory
      * @param type The type to match
      * @return The instance or null if no specific data class is registered for the given type
      */
-    public static IChunkData createChunkData (final NIContainerChunkType type)
+    public static Optional<IChunkData> createChunkData (final NIContainerChunkType type)
     {
         final Class<? extends IChunkData> clazz = TEMPLATES.get (type);
         if (clazz == null)
-            return null;
+            return Optional.empty ();
         try
         {
-            return clazz.getConstructor ().newInstance ();
+            return Optional.of (clazz.getConstructor ().newInstance ());
         }
         catch (final InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException _)
         {
-            return null;
+            return Optional.empty ();
         }
     }
 

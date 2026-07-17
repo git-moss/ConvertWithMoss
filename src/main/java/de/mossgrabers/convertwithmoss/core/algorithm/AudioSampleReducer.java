@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
@@ -17,6 +18,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
@@ -63,7 +65,10 @@ public class AudioSampleReducer
         {
             byte [] data = sampleCache.get (i);
             final ISampleZone sampleZone = sampleZones.get (i);
-            final IAudioMetadata audioMetadata = sampleZone.getSampleData ().getAudioMetadata ();
+            final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+            if (sampleData.isEmpty ())
+                throw new IOException ("Empty sample data in zone: " + sampleZone.getName ());
+            final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
             sourceSampleRates[i] = audioMetadata.getSampleRate ();
 
             // Trim start/end
@@ -542,7 +547,10 @@ public class AudioSampleReducer
         for (final ISampleZone zone: sampleZones)
         {
             final ByteArrayOutputStream arrayOut = new ByteArrayOutputStream ();
-            zone.getSampleData ().writeSample (arrayOut);
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isEmpty ())
+                throw new IOException ("Empty sample data in zone: " + zone.getName ());
+            sampleData.get ().writeSample (arrayOut);
             sampleCache.add (arrayOut.toByteArray ());
         }
         return sampleCache;

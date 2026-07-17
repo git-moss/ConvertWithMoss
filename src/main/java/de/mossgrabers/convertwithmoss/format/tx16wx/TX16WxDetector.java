@@ -35,6 +35,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -120,15 +121,15 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
     @Override
     protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
-        final IInstrumentSource instrumentSource = this.readPresetFileAsInstrument (sourceFile);
-        return instrumentSource == null ? Collections.emptyList () : Collections.singletonList (instrumentSource.getMultisampleSource ());
+        final Optional<IInstrumentSource> instrumentSource = this.readPresetFileAsInstrument (sourceFile);
+        return instrumentSource.isEmpty () ? Collections.emptyList () : Collections.singletonList (instrumentSource.get ().getMultisampleSource ());
     }
 
 
-    private IInstrumentSource readPresetFileAsInstrument (final File sourceFile)
+    private Optional<IInstrumentSource> readPresetFileAsInstrument (final File sourceFile)
     {
         if (this.waitForDelivery ())
-            return null;
+            return Optional.empty ();
 
         try (final FileInputStream in = new FileInputStream (sourceFile))
         {
@@ -139,7 +140,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         catch (final IOException | SAXException ex)
         {
             this.notifier.logError (ERR_LOAD_FILE, ex);
-            return null;
+            return Optional.empty ();
         }
     }
 
@@ -206,9 +207,10 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             }
             previousFolder = programFile.getParentFile ();
 
-            final IInstrumentSource instrumentSource = this.readPresetFileAsInstrument (programFile);
-            if (instrumentSource == null)
+            final Optional<IInstrumentSource> instrumentSourceOpt = this.readPresetFileAsInstrument (programFile);
+            if (instrumentSourceOpt.isEmpty ())
                 continue;
+            final IInstrumentSource instrumentSource = instrumentSourceOpt.get ();
 
             final String midiChannelAttribute = slotElement.getAttribute (TX16WxTag.MIDI_CHANNEL);
             final int midiChannel;
@@ -235,13 +237,13 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private IInstrumentSource parsePresetFile (final File sourceFile, final String basePath, final Document document)
+    private Optional<IInstrumentSource> parsePresetFile (final File sourceFile, final String basePath, final Document document)
     {
         final Element topElement = document.getDocumentElement ();
         if (!TX16WxTag.PROGRAM.equals (topElement.getNodeName ()))
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Program tag");
-            return null;
+            return Optional.empty ();
         }
 
         final Map<String, ISampleZone> sampleMap = this.parseSamples (topElement, basePath);
@@ -270,7 +272,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             instrumentSource.setClipKeyHigh (getNoteAttribute (boundsElement, TX16WxTag.HI_NOTE, TX16WxTag.HI_NOTE_ALT));
         }
 
-        return instrumentSource;
+        return Optional.of (instrumentSource);
     }
 
 
@@ -533,7 +535,10 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
         try
         {
-            zone.getSampleData ().addZoneData (zone, false, false);
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isEmpty ())
+                throw new IOException ("Empty sample data in zone: " + zone.getName ());
+            sampleData.get ().addZoneData (zone, false, false);
         }
         catch (final IOException ex)
         {

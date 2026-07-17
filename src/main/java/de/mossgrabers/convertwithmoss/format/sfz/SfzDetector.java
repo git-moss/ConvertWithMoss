@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -145,12 +146,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             final String line = iterator.next ();
             if (line.startsWith ("#include"))
             {
-                final String includedFilePath = extractIncludedFilePath (line);
-                if (includedFilePath == null)
+                final Optional<String> includedFilePath = extractIncludedFilePath (line);
+                if (includedFilePath.isEmpty ())
                     throw new IOException (Functions.getMessage ("IDS_SFZ_MALFORMED_INCLUDE", line));
 
                 // Recursively parse the included file
-                final File includedFile = new File (file.getParent (), includedFilePath);
+                final File includedFile = new File (file.getParent (), includedFilePath.get ());
                 content.append (this.parseFile (includedFile, cachedContents, processingFiles));
             }
             else
@@ -166,13 +167,13 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
     }
 
 
-    private static String extractIncludedFilePath (final String line)
+    private static Optional<String> extractIncludedFilePath (final String line)
     {
         final int start = line.indexOf ('"');
         final int end = line.lastIndexOf ('"');
         if (start < 0 || end < 0 || start == end)
-            return null;
-        return line.substring (start + 1, end);
+            return Optional.empty ();
+        return Optional.of (line.substring (start + 1, end));
     }
 
 
@@ -633,7 +634,9 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (crossfadeInSeconds > 0)
             try
             {
-                loop.setCrossfadeInSeconds (crossfadeInSeconds, sampleMetadata.getSampleData ().getAudioMetadata ().getSampleRate ());
+                final Optional<ISampleData> sampleData = sampleMetadata.getSampleData ();
+                if (sampleData.isPresent ())
+                    loop.setCrossfadeInSeconds (crossfadeInSeconds, sampleData.get ().getAudioMetadata ().getSampleRate ());
             }
             catch (final IOException ex)
             {

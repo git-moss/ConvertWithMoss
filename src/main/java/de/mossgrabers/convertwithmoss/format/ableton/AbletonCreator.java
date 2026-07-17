@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -262,7 +263,10 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
     {
         final String zoneFileName = zone.getName () + ".wav";
 
-        final IAudioMetadata audioMetadata = zone.getSampleData ().getAudioMetadata ();
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+        final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
         final File sampleFile = writtenSamples.get (zoneFileName);
         if (sampleFile == null)
             throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", zoneFileName));

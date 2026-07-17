@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -213,12 +214,12 @@ public class S5xxDiskImageParser
     }
 
 
-    private S5xxDiskLabel parseDiskLabel ()
+    private Optional<S5xxDiskLabel> parseDiskLabel ()
     {
         // Last byte needed is index 68718 = LABEL_ROWS25_OFF + 12 groups × 4 bytes − 1
         final int endNeeded = LABEL_ROWS25_OFF + LABEL_ROW_LEN * 4; // 68719
         if (this.data.length < endNeeded)
-            return null;
+            return Optional.empty ();
 
         final String [] rows = new String [LABEL_ROW_COUNT];
 
@@ -239,7 +240,7 @@ public class S5xxDiskImageParser
         for (int r = 0; r < 4; r++)
             rows[r + 1] = new String (chars[r]);
 
-        return new S5xxDiskLabel (rows);
+        return Optional.of (new S5xxDiskLabel (rows));
     }
 
 

@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -169,9 +170,9 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
                     continue;
                 }
 
-                final IInstrumentSource instrumentSource = this.readPresetFileAsInstrument (presetFile, part);
-                if (instrumentSource != null)
-                    performanceSource.addInstrument (instrumentSource);
+                final Optional<IInstrumentSource> instrumentSource = this.readPresetFileAsInstrument (presetFile, part);
+                if (instrumentSource.isPresent ())
+                    performanceSource.addInstrument (instrumentSource.get ());
             }
 
             return Collections.singletonList (performanceSource);
@@ -184,14 +185,14 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private IInstrumentSource readPresetFileAsInstrument (final File sourceFile, final AkmPart part)
+    private Optional<IInstrumentSource> readPresetFileAsInstrument (final File sourceFile, final AkmPart part)
     {
         if (this.waitForDelivery ())
-            return null;
+            return Optional.empty ();
 
         final List<IMultisampleSource> multisampleSources = this.createMultisample (sourceFile, false);
         if (multisampleSources.isEmpty ())
-            return null;
+            return Optional.empty ();
 
         final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSources.get (0), part.getMidiChannel () % 16);
         instrumentSource.setName (part.getPresetName ());
@@ -200,7 +201,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
 
         final List<IGroup> groups = instrumentSource.getMultisampleSource ().getGroups ();
         if (groups.isEmpty ())
-            return null;
+            return Optional.empty ();
 
         final double panningFactor = part.getPanning () / 50.0 * 2.0;
         final double volumeFactor = part.getVolume () / 100.0;
@@ -211,6 +212,6 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
                 zone.setGain (zone.getGain () * volumeFactor);
             }
 
-        return instrumentSource;
+        return Optional.of (instrumentSource);
     }
 }

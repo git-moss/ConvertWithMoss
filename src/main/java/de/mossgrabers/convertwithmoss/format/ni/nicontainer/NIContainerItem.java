@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.ni.nicontainer.chunkdata.SubTreeItemChunkData;
@@ -179,18 +180,18 @@ public class NIContainerItem
      * @param type The type of the chunk to look for
      * @return The chunk or null if none is found
      */
-    public NIContainerDataChunk find (final NIContainerChunkType type)
+    public Optional<NIContainerDataChunk> find (final NIContainerChunkType type)
     {
         NIContainerDataChunk chunk = this.dataChunk;
         while (chunk != null)
         {
             if (chunk.getChunkType () == type)
-                return chunk;
+                return Optional.of (chunk);
 
             if (chunk.getData () instanceof final SubTreeItemChunkData subTree && !subTree.isEncrypted ())
             {
-                final NIContainerDataChunk found = subTree.getSubTree ().find (type);
-                if (found != null)
+                final Optional<NIContainerDataChunk> found = subTree.getSubTree ().find (type);
+                if (found.isPresent ())
                     return found;
             }
 
@@ -199,12 +200,12 @@ public class NIContainerItem
 
         for (final NIContainerChildItem childItem: this.children)
         {
-            final NIContainerDataChunk found = childItem.getItem ().find (type);
-            if (found != null)
+            final Optional<NIContainerDataChunk> found = childItem.getItem ().find (type);
+            if (found.isPresent ())
                 return found;
         }
 
-        return null;
+        return Optional.empty ();
     }
 
 

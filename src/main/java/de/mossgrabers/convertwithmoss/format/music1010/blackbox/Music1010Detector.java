@@ -84,11 +84,11 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         if (this.waitForDelivery () || !"preset.xml".equals (file.getName ()))
             return Collections.emptyList ();
 
-        final IPerformanceSource performanceSource = this.processPresetFile (file);
-        if (performanceSource == null)
+        final Optional<IPerformanceSource> performanceSource = this.processPresetFile (file);
+        if (performanceSource.isEmpty ())
             return Collections.emptyList ();
 
-        final List<IInstrumentSource> instruments = performanceSource.getInstruments ();
+        final List<IInstrumentSource> instruments = performanceSource.get ().getInstruments ();
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         for (final IInstrumentSource instrument: instruments)
             multisampleSources.add (instrument.getMultisampleSource ());
@@ -102,8 +102,8 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
     {
         if (this.waitForDelivery () || !"preset.xml".equals (sourceFile.getName ()))
             return Collections.emptyList ();
-        final IPerformanceSource processPresetFile = this.processPresetFile (sourceFile);
-        return processPresetFile == null ? Collections.emptyList () : Collections.singletonList (processPresetFile);
+        final Optional<IPerformanceSource> processPresetFile = this.processPresetFile (sourceFile);
+        return processPresetFile.isEmpty () ? Collections.emptyList () : List.of (processPresetFile.get ());
     }
 
 
@@ -113,7 +113,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
      * @param file The preset file
      * @return The processed multi-sample (singleton list)
      */
-    private IPerformanceSource processPresetFile (final File file)
+    private Optional<IPerformanceSource> processPresetFile (final File file)
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
@@ -125,7 +125,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         catch (final IOException | SAXException ex)
         {
             this.notifier.logError (ERR_LOAD_FILE, ex);
-            return null;
+            return Optional.empty ();
         }
     }
 
@@ -139,20 +139,20 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
      * @param document The XML document to parse
      * @return The parsed multi-sample source
      */
-    private IPerformanceSource parseMetadataFile (final File sourceFile, final String basePath, final Document document)
+    private Optional<IPerformanceSource> parseMetadataFile (final File sourceFile, final String basePath, final Document document)
     {
         final Element top = document.getDocumentElement ();
         if (!Music1010Tag.ROOT.equals (top.getNodeName ()))
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, "Unknown Root");
-            return null;
+            return Optional.empty ();
         }
 
         final Element sessionElement = XMLUtils.getChildElementByName (top, Music1010Tag.SESSION);
         if (sessionElement == null)
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, "Missing Session tag");
-            return null;
+            return Optional.empty ();
         }
 
         final List<Element> cellElements = XMLUtils.getChildElementsByName (sessionElement, Music1010Tag.CELL);
@@ -176,7 +176,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
                 if (instrumentSource.isPresent ())
                     performanceSource.addInstrument (instrumentSource.get ());
             }
-        return performanceSource;
+        return Optional.of (performanceSource);
     }
 
 
@@ -445,7 +445,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
 
         try
         {
-            sampleZone.getSampleData ().addZoneData (sampleZone, false, true);
+            sampleData.addZoneData (sampleZone, false, true);
         }
         catch (final IOException ex)
         {
