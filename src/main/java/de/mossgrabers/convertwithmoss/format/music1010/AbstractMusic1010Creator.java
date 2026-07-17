@@ -161,11 +161,11 @@ public abstract class AbstractMusic1010Creator extends AbstractWavCreator<Music1
      *
      * @return The document and the session element
      */
-    protected Pair<Document, Element> createSessionDocument ()
+    protected Optional<Pair<Document, Element>> createSessionDocument ()
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
-            return null;
+            return Optional.empty ();
         final Document document = optionalDocument.get ();
         document.setXmlStandalone (true);
 
@@ -174,7 +174,7 @@ public abstract class AbstractMusic1010Creator extends AbstractWavCreator<Music1
         final Element sessionElement = XMLUtils.addElement (document, rootElement, Music1010Tag.SESSION);
         sessionElement.setAttribute (Music1010Tag.ATTR_VERSION, "1");
 
-        return new Pair<> (document, sessionElement);
+        return Optional.of (new Pair<> (document, sessionElement));
     }
 
 

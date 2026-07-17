@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.core.algorithm;
 
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -98,10 +99,11 @@ public class MultiSampleReducer
             for (int i = 0; i < zones.size (); i++)
                 for (int j = i + 1; j < zones.size (); j++)
                 {
-                    final MergeCandidate candidate = tryCreateMerge (group, zones.get (i), zones.get (j));
-                    if (candidate == null || !isCoveragePreserved (groups, candidate, originalMask))
+                    final Optional<MergeCandidate> candidateOpt = tryCreateMerge (group, zones.get (i), zones.get (j));
+                    if (candidateOpt.isEmpty () || !isCoveragePreserved (groups, candidateOpt.get (), originalMask))
                         continue;
 
+                    final MergeCandidate candidate = candidateOpt.get ();
                     if (best == null || candidate.score < best.score)
                         best = candidate;
                 }
@@ -110,14 +112,14 @@ public class MultiSampleReducer
     }
 
 
-    private static MergeCandidate tryCreateMerge (final IGroup group, final ISampleZone a, final ISampleZone b)
+    private static Optional<MergeCandidate> tryCreateMerge (final IGroup group, final ISampleZone a, final ISampleZone b)
     {
         // Horizontal merge (adjacent in key)
         if (sameVelocityRange (a, b) && areKeyAdjacent (a, b))
         {
             final int newLow = Math.min (a.getKeyLow (), b.getKeyLow ());
             final int newHigh = Math.max (a.getKeyHigh (), b.getKeyHigh ());
-            return createCandidate (group, a, b, newLow, newHigh, a.getVelocityLow (), a.getVelocityHigh ());
+            return Optional.of (createCandidate (group, a, b, newLow, newHigh, a.getVelocityLow (), a.getVelocityHigh ()));
         }
 
         // Vertical merge (adjacent in velocity)
@@ -125,10 +127,10 @@ public class MultiSampleReducer
         {
             final int newVelLow = Math.min (a.getVelocityLow (), b.getVelocityLow ());
             final int newVelHigh = Math.max (a.getVelocityHigh (), b.getVelocityHigh ());
-            return createCandidate (group, a, b, a.getKeyLow (), a.getKeyHigh (), newVelLow, newVelHigh);
+            return Optional.of (createCandidate (group, a, b, a.getKeyLow (), a.getKeyHigh (), newVelLow, newVelHigh));
         }
 
-        return null;
+        return Optional.empty ();
     }
 
 

@@ -10,12 +10,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -106,7 +108,10 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
             // A slot without explicit trim points plays the whole sample; default to the full range
             // (0 .. number-of-frames) rather than leaving the model default of -1, which
             // destinations such as the Waldorf QPAT would otherwise write out verbatim.
-            final int frames = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
+            final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+            if (sampleData.isEmpty ())
+                throw new IOException ("Empty sample data in zone: " + sampleZone.getName ());
+            final int frames = sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
             sampleZone.setStart (sampleSlot.trimStart != null && sampleSlot.trimStart.intValue () >= 0 ? sampleSlot.trimStart.intValue () : 0);
             sampleZone.setStop (sampleSlot.trimEnd != null && sampleSlot.trimEnd.intValue () >= 0 ? sampleSlot.trimEnd.intValue () : frames);
 

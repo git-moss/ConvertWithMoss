@@ -31,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -100,17 +101,18 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         // the samples in the card-root SAMPLES folder (the same place the detector reads them
         // from). Otherwise treat the chosen folder as the card root and create the SYNTHS
         // sub-folder below.
-        final File instrumentFolder = findInstrumentFolder (destinationFolder);
+        final Optional<File> instrumentFolderOpt = findInstrumentFolder (destinationFolder);
         final File presetFolder;
         final File cardRootFolder;
         String sampleSubPath = "";
-        if (instrumentFolder == null)
+        if (instrumentFolderOpt.isEmpty ())
         {
             presetFolder = new File (destinationFolder, SYNTHS_FOLDER);
             cardRootFolder = destinationFolder;
         }
         else
         {
+            final File instrumentFolder = instrumentFolderOpt.get ();
             presetFolder = destinationFolder;
             cardRootFolder = instrumentFolder.getParentFile ();
             // Mirror the preset's sub-folder path (below SYNTHS/KITS) into the SAMPLES folder so a
@@ -155,17 +157,17 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param folder The chosen output folder
      * @return The instrument folder or null
      */
-    private static File findInstrumentFolder (final File folder)
+    private static Optional<File> findInstrumentFolder (final File folder)
     {
         File current = folder;
         while (current != null)
         {
             final String name = current.getName ();
             if (SYNTHS_FOLDER.equalsIgnoreCase (name) || KITS_FOLDER.equalsIgnoreCase (name))
-                return current;
+                return Optional.of (current);
             current = current.getParentFile ();
         }
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -469,10 +471,14 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
             return stop;
         try
         {
-            final IAudioMetadata audioMetadata = zone.getSampleData ().getAudioMetadata ();
-            final int numberOfSamples = audioMetadata.getNumberOfSamples ();
-            if (numberOfSamples > 0)
-                return numberOfSamples;
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isPresent ())
+            {
+                final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+                final int numberOfSamples = audioMetadata.getNumberOfSamples ();
+                if (numberOfSamples > 0)
+                    return numberOfSamples;
+            }
         }
         catch (final IOException _)
         {
@@ -554,9 +560,12 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         // The Deluge has no loop cross-fade parameter. A loop cross-fade (set via the 'Set fixed
         // loop-crossfade' processing option or read from the source) is baked into the sample audio
         // so that forward loops do not click at the loop point.
-        final ISampleLoop loop = getCrossfadeLoop (zone);
-        if (loop != null)
-            applyLoopCrossfade (wavFile, loop.getStart (), loop.getEnd (), loop.getCrossfadeInSamples ());
+        final Optional<ISampleLoop> loopOpt = getCrossfadeLoop (zone);
+        if (loopOpt.isEmpty ())
+            return;
+
+        final ISampleLoop loop = loopOpt.get ();
+        applyLoopCrossfade (wavFile, loop.getStart (), loop.getEnd (), loop.getCrossfadeInSamples ());
     }
 
 
@@ -567,15 +576,15 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param zone The zone
      * @return The loop or null if no cross-fade should be applied
      */
-    private static ISampleLoop getCrossfadeLoop (final ISampleZone zone)
+    private static Optional<ISampleLoop> getCrossfadeLoop (final ISampleZone zone)
     {
         final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
-            return null;
+            return Optional.empty ();
         final ISampleLoop loop = loops.get (0);
         if (loop.getCrossfade () > 0 && loop.getType () == LoopType.FORWARDS && loop.getStart () >= 0 && loop.getEnd () > loop.getStart ())
-            return loop;
-        return null;
+            return Optional.of (loop);
+        return Optional.empty ();
     }
 
 

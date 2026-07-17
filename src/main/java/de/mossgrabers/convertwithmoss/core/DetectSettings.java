@@ -38,15 +38,15 @@ public class DetectSettings
     /** The maximum number of samples to limit to. */
     public int     maxNumberOfSamples;
     /** The bit depth to reduce to. 0 is off. */
-    public int     reduceBitDepth  = 0;
+    public int     reduceBitDepth     = 0;
     /** The frequency to reduce to. 0 is off. */
-    public int     reduceFrequency = 0;
+    public int     reduceFrequency    = 0;
     /** Does up-sampling as well. */
-    public boolean alwaysResample  = false;
+    public boolean alwaysResample     = false;
     /** The fixed loop cross-fade. 0 is off. */
-    public int     loopCrossfades  = 0;
+    public int     loopCrossfades     = 0;
     /** Snap forward loop boundaries to the nearest zero-crossing to avoid loop clicks. */
-    public boolean snapLoopsToZero = false;
+    public boolean snapLoopsToZero    = false;
     /** Transpose playback by this number of semitones by moving the sample root keys. 0 is off. */
     public int     transposeSemitones = 0;
 

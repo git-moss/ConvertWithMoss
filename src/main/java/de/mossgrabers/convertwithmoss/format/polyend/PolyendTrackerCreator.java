@@ -76,14 +76,14 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
         if (countZones (multisampleSource) > 1)
             this.notifier.log ("IDS_PTI_ONLY_ONE_SAMPLE", zone.getName ());
 
-        final ISampleData sampleData = zone.getSampleData ();
-        if (sampleData == null)
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
         {
             this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), "-");
             return;
         }
 
-        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
+        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_AUDIO_FORMAT);
         final FormatChunk formatChunk = waveFile.getFormatChunk ();
         final int channels = formatChunk.getNumberOfChannels ();
         if (channels < 1 || channels > 2)
@@ -103,7 +103,7 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
         final File file = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "pti");
         this.notifier.log ("IDS_NOTIFY_STORING", file.getAbsolutePath ());
 
-        final byte [] output = createInstrument (multisampleSource.getName (), zone, sampleData, pcm, channels, frames);
+        final byte [] output = createInstrument (multisampleSource.getName (), zone, sampleData.get (), pcm, channels, frames);
         try (final FileOutputStream out = new FileOutputStream (file))
         {
             out.write (output);

@@ -83,7 +83,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
 
     /** {@inheritDoc} */
     @Override
-    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
+    public Optional<IPerformanceSource> readNKM (final File sourceFolder, final File sourceFile, final RandomAccessFile fileAccess, final IMetadataConfig metadataConfig) throws IOException
     {
         try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
         {
@@ -111,19 +111,19 @@ public class Kontakt5Format extends AbstractKontaktFormat
      * @return The parsed multi-sample sources
      * @throws IOException Error reading the file
      */
-    public IPerformanceSource readNKM (final File sourceFolder, final File sourceFile, final InputStream inputStream, final IMetadataConfig metadataConfig, final Map<Long, ISampleZone> monolithSamples) throws IOException
+    public Optional<IPerformanceSource> readNKM (final File sourceFolder, final File sourceFile, final InputStream inputStream, final IMetadataConfig metadataConfig, final Map<Long, ISampleZone> monolithSamples) throws IOException
     {
         this.sourceFolder = sourceFolder;
 
         final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
         final Optional<KontaktPresetAccessor> presetAccessor = this.readKontaktPreset (niContainerItem, monolithSamples);
         if (presetAccessor.isEmpty ())
-            return null;
+            return Optional.empty ();
 
         final List<Pair<IMultisampleSource, Program>> sources = this.convertPrograms (presetAccessor.get (), niContainerItem, sourceFile, metadataConfig, monolithSamples);
         final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
-        return readMultiConfiguration (presetAccessor.get (), sources, performanceSource) ? performanceSource : null;
+        return readMultiConfiguration (presetAccessor.get (), sources, performanceSource) ? Optional.of (performanceSource) : Optional.empty ();
     }
 
 
@@ -199,8 +199,8 @@ public class Kontakt5Format extends AbstractKontaktFormat
     {
         final boolean isMonolith = monolithSamples != null;
 
-        final NIContainerDataChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
-        if (appChunk != null && appChunk.getData () instanceof final AuthoringApplicationChunkData appChunkData)
+        final Optional<NIContainerDataChunk> appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
+        if (appChunk.isPresent () && appChunk.get ().getData () instanceof final AuthoringApplicationChunkData appChunkData)
         {
             final AuthoringApplication application = appChunkData.getApplication ();
             if (application != AuthoringApplication.KONTAKT)
@@ -208,8 +208,8 @@ public class Kontakt5Format extends AbstractKontaktFormat
 
             this.notifier.log ("IDS_NKI_FOUND_KONTAKT_TYPE", "Container", appChunkData.getApplicationVersion (), isMonolith ? " - monolith" : "", "Little-Endian");
 
-            final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
-            if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+            final Optional<NIContainerDataChunk> presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+            if (presetChunk.isPresent () && presetChunk.get ().getData () instanceof final PresetChunkData presetChunkData)
             {
                 final KontaktPresetAccessor programAccessor = new KontaktPresetAccessor ();
                 programAccessor.readKontaktPresetChunks (presetChunkData.getPresetData ());
@@ -233,8 +233,8 @@ public class Kontakt5Format extends AbstractKontaktFormat
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (new ByteArrayInputStream (NKI_TEMPLATE));
 
-        final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
-        if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+        final Optional<NIContainerDataChunk> presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+        if (presetChunk.isPresent () && presetChunk.get ().getData () instanceof final PresetChunkData presetChunkData)
         {
             final KontaktPresetAccessor programAccessor = new KontaktPresetAccessor ();
             programAccessor.readKontaktPresetChunks (presetChunkData.getPresetData ());
@@ -261,8 +261,8 @@ public class Kontakt5Format extends AbstractKontaktFormat
      */
     private static void updateMetadata (final NIContainerItem niContainerItem, final IMultisampleSource source, final IMetadataConfig metadataConfig, final String [] parts)
     {
-        final NIContainerDataChunk soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
-        if (soundInfoChunk != null && soundInfoChunk.getData () instanceof final SoundinfoChunkData soundinfo)
+        final Optional<NIContainerDataChunk> soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
+        if (soundInfoChunk.isPresent () && soundInfoChunk.get ().getData () instanceof final SoundinfoChunkData soundinfo)
         {
             final List<String> attributes = soundinfo.getAttributes ();
             final IMetadata metadata = source.getMetadata ();
@@ -337,8 +337,9 @@ public class Kontakt5Format extends AbstractKontaktFormat
         final Map<String, ISampleData> sampleFileMap = new HashMap<> ();
         for (final ISampleZone zone: monolithSamples.values ())
         {
-            final ISampleData sampleData = zone.getSampleData ();
-            sampleFileMap.put (zone.getName (), sampleData);
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isPresent ())
+                sampleFileMap.put (zone.getName (), sampleData.get ());
         }
 
         for (final IGroup group: multisampleSource.getGroups ())

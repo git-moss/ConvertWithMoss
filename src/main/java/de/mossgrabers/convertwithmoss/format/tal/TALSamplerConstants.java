@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -159,7 +160,11 @@ public class TALSamplerConstants
                 lengths += zone.getStop ();
                 numSamples++;
                 if (sampleRate < 0)
-                    sampleRate = zone.getSampleData ().getAudioMetadata ().getSampleRate ();
+                {
+                    final Optional<ISampleData> sampleData = zone.getSampleData ();
+                    if (sampleData.isPresent ())
+                        sampleRate = sampleData.get ().getAudioMetadata ().getSampleRate ();
+                }
             }
         return lengths == 0 ? 0.001 : Math.max (0.001, lengths / (double) numSamples / sampleRate);
     }

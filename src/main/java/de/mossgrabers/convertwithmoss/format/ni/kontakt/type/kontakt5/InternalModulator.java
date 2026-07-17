@@ -238,11 +238,11 @@ public class InternalModulator
     }
 
 
-    private Optional<IEnvelopeModulator> createEnvelopeModulator (final ModulatedParameter envelopeParameter)
+    private Optional<IEnvelopeModulator> createEnvelopeModulator (final Optional<ModulatedParameter> envelopeParameter)
     {
-        if (envelopeParameter == null)
+        if (envelopeParameter.isEmpty ())
             return Optional.empty ();
-        final IEnvelopeModulator envelopeModulator = new DefaultEnvelopeModulator (envelopeParameter.intensity);
+        final IEnvelopeModulator envelopeModulator = new DefaultEnvelopeModulator (envelopeParameter.get ().intensity);
         final IEnvelope envelope = envelopeModulator.getSource ();
         envelope.setAttackSlope (this.curve);
         envelope.setAttackTime (this.attack / 1000.0);
@@ -417,8 +417,8 @@ public class InternalModulator
 
     private void readBlock2 (final InputStream in) throws IOException
     {
-        final ModulatedParameter envelopeParameter = this.getEnvelopeParameter (PARAMETER_NAME_VOLUME, PARAMETER_NAME_CUTOFF, PARAMETER_NAME_PITCH);
-        if (envelopeParameter == null || !this.isEnvelopeModulator ())
+        final Optional<ModulatedParameter> envelopeParameter = this.getEnvelopeParameter (PARAMETER_NAME_VOLUME, PARAMETER_NAME_CUTOFF, PARAMETER_NAME_PITCH);
+        if (envelopeParameter.isEmpty () || !this.isEnvelopeModulator ())
             return;
 
         // Too short but not understood what it contains
@@ -452,13 +452,13 @@ public class InternalModulator
     }
 
 
-    private ModulatedParameter getEnvelopeParameter (final String... parameters)
+    private Optional<ModulatedParameter> getEnvelopeParameter (final String... parameters)
     {
         for (final ModulatedParameter modulatedParameter: this.modulatedParameters)
             for (final String parameter: parameters)
                 if (modulatedParameter.parameterName.equals (parameter))
-                    return modulatedParameter;
-        return null;
+                    return Optional.of (modulatedParameter);
+        return Optional.empty ();
     }
 
 

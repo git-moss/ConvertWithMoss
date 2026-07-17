@@ -28,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
@@ -440,7 +441,10 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
      */
     private int addSample (final ISampleZone zone, final int rootKey, final List<MC707Sample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames) throws IOException
     {
-        final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData (), DESTINATION_FORMAT);
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            return -1;
+        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
         final int channels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (channels < 1 || channels > 2)
         {

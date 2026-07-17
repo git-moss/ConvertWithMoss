@@ -60,10 +60,10 @@ public enum ZoneChannels
         for (final IGroup group: groups)
             for (final ISampleZone sampleZone: group.getSampleZones ())
             {
-                final ISampleData sampleData = sampleZone.getSampleData ();
-                if (sampleData == null)
+                final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+                if (sampleData.isEmpty ())
                     continue;
-                final boolean isStereo = sampleData.getAudioMetadata ().getChannels () == 2;
+                final boolean isStereo = sampleData.get ().getAudioMetadata ().getChannels () == 2;
                 if (stereo == null)
                 {
                     // First iteration, store if mono or stereo
@@ -148,8 +148,12 @@ public enum ZoneChannels
             final ByteArrayOutputStream rightBuffer = new ByteArrayOutputStream ();
             final ISampleZone leftSampleZone = leftSampleZones.get (i);
             final ISampleZone rightSampleZone = rightSampleZones.get (i);
-            leftSampleZone.getSampleData ().writeSample (leftBuffer);
-            rightSampleZone.getSampleData ().writeSample (rightBuffer);
+            final Optional<ISampleData> leftSampleData = leftSampleZone.getSampleData ();
+            final Optional<ISampleData> rightSampleData = rightSampleZone.getSampleData ();
+            if (leftSampleData.isEmpty () || rightSampleData.isEmpty ())
+                throw new IOException ("Empty sample in the source.");
+            leftSampleData.get ().writeSample (leftBuffer);
+            rightSampleData.get ().writeSample (rightBuffer);
             try (final InputStream inLeft = new ByteArrayInputStream (leftBuffer.toByteArray ()); final InputStream inRight = new ByteArrayInputStream (rightBuffer.toByteArray ()))
             {
                 leftSampleZone.setSampleData (new WavFileSampleData (inLeft).combine (new WavFileSampleData (inRight)));
@@ -204,8 +208,12 @@ public enum ZoneChannels
                 return false;
         }
 
-        final IAudioMetadata metadataLeft = leftSampleZone.getSampleData ().getAudioMetadata ();
-        final IAudioMetadata metadataRight = rightSampleZone.getSampleData ().getAudioMetadata ();
+        final Optional<ISampleData> leftSampleData = leftSampleZone.getSampleData ();
+        final Optional<ISampleData> rightSampleData = rightSampleZone.getSampleData ();
+        if (leftSampleData.isEmpty () || rightSampleData.isEmpty ())
+            throw new IOException ("Empty sample in the source.");
+        final IAudioMetadata metadataLeft = leftSampleData.get ().getAudioMetadata ();
+        final IAudioMetadata metadataRight = rightSampleData.get ().getAudioMetadata ();
         return metadataLeft.getNumberOfSamples () == metadataRight.getNumberOfSamples () && metadataLeft.getBitResolution () == metadataRight.getBitResolution () && metadataLeft.getSampleRate () == metadataRight.getSampleRate ();
     }
 

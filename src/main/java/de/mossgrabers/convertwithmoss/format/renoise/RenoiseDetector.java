@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -163,9 +164,9 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         final List<ISampleZone> zones = new ArrayList<> ();
         for (int i = 0; i < sampleElements.size (); i++)
         {
-            final ISampleZone zone = this.parseSample (sourceFile, sampleElements.get (i), i, sampleEntries, modulationSets);
-            if (zone != null)
-                zones.add (zone);
+            final Optional<ISampleZone> zone = this.parseSample (sourceFile, sampleElements.get (i), i, sampleEntries, modulationSets);
+            if (zone.isPresent ())
+                zones.add (zone.get ());
         }
 
         if (zones.isEmpty ())
@@ -179,9 +180,9 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             name = FileUtils.getNameWithoutType (sourceFile);
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groupByVelocity (zones, roundRobin));
 
-        final String comments = readComments (top);
-        if (comments != null && !comments.isBlank ())
-            multisampleSource.getMetadata ().setDescription (comments);
+        final Optional<String> comments = readComments (top);
+        if (comments.isPresent ())
+            multisampleSource.getMetadata ().setDescription (comments.get ());
 
         this.printUnsupportedElements ();
         this.printUnsupportedAttributes ();
@@ -200,18 +201,19 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      * @param modulationSets The parsed modulation sets
      * @return The sample zone or null if the sample could not be loaded
      */
-    private ISampleZone parseSample (final File sourceFile, final Element sampleElement, final int index, final List<String> sampleEntries, final List<ModulationSet> modulationSets)
+    private Optional<ISampleZone> parseSample (final File sourceFile, final Element sampleElement, final int index, final List<String> sampleEntries, final List<ModulationSet> modulationSets)
     {
         final String fileName = XMLUtils.getChildElementContent (sampleElement, RenoiseTag.FILE_NAME);
 
-        final ISampleData sampleData = this.loadSampleData (sourceFile, fileName, index, sampleEntries);
-        if (sampleData == null)
-            return null;
+        final Optional<ISampleData> sampleDataOpt = this.loadSampleData (sourceFile, fileName, index, sampleEntries);
+        if (sampleDataOpt.isEmpty ())
+            return Optional.empty ();
 
         String name = XMLUtils.getChildElementContent (sampleElement, RenoiseTag.NAME);
         if (name == null || name.isBlank ())
             name = fileName == null || fileName.isBlank () ? "Sample " + (index + 1) : fileName;
 
+        final ISampleData sampleData = sampleDataOpt.get ();
         final ISampleZone zone = new DefaultSampleZone (name, sampleData);
 
         zone.setGain (RenoiseValueConverter.volumeToGain (XMLUtils.getChildElementDoubleContent (sampleElement, RenoiseTag.VOLUME, 1.0)));
@@ -275,12 +277,12 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                 zone.getPitchEnvelopeModulator ().setSource (modulationSet.pitchEnvelope);
                 zone.getPitchEnvelopeModulator ().setDepth (1.0);
             }
-            final IFilter filter = modulationSet.createFilter ();
-            if (filter != null)
-                zone.setFilter (filter);
+            final Optional<IFilter> filter = modulationSet.createFilter ();
+            if (filter.isPresent ())
+                zone.setFilter (filter.get ());
         }
 
-        return zone;
+        return Optional.of (zone);
     }
 
 
@@ -295,26 +297,29 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      * @param sampleEntries The audio file entries found in the SampleData folder
      * @return The sample data or null if it could not be loaded
      */
-    private ISampleData loadSampleData (final File sourceFile, final String fileName, final int index, final List<String> sampleEntries)
+    private Optional<ISampleData> loadSampleData (final File sourceFile, final String fileName, final int index, final List<String> sampleEntries)
     {
         // Renoise resolves samples by its index. The FileName element holds the (absolute)
         // path on the original author's machine, so it is only used as a fall-back match.
-        String entryName = index < sampleEntries.size () ? sampleEntries.get (index) : null;
-        if (entryName == null)
+        Optional<String> entryName = Optional.ofNullable (index < sampleEntries.size () ? sampleEntries.get (index) : null);
+        if (entryName.isEmpty ())
+        {
             entryName = findSampleEntry (fileName, sampleEntries);
-        if (entryName == null)
-            // Found sample sections without a filename and the names "Repeater Mode" or "Repeater
-            // Divisor". Couldn't find anything in the manual, if someone knows, get in touch
-            return null;
+            if (entryName.isEmpty ())
+                // Found sample sections without a filename and the names "Repeater Mode" or
+                // "Repeater Divisor". Couldn't find anything in the manual, if someone knows, get
+                // in touch
+                return Optional.empty ();
+        }
 
         try
         {
-            return createZipSampleData (sourceFile, entryName);
+            return Optional.of (createZipSampleData (sourceFile, entryName.get ()));
         }
         catch (final IOException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", ex);
-            return null;
+            return Optional.empty ();
         }
     }
 
@@ -327,16 +332,16 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      * @param sampleEntries The audio file entries found in the SampleData folder
      * @return The matching entry name or null if there is no match
      */
-    private static String findSampleEntry (final String fileName, final List<String> sampleEntries)
+    private static Optional<String> findSampleEntry (final String fileName, final List<String> sampleEntries)
     {
         if (fileName == null || fileName.isBlank ())
-            return null;
+            return Optional.empty ();
 
         final String needle = baseName (fileName).toLowerCase (Locale.US);
         for (final String entry: sampleEntries)
             if (baseName (entry).toLowerCase (Locale.US).equals (needle))
-                return entry;
-        return null;
+                return Optional.of (entry);
+        return Optional.empty ();
     }
 
 
@@ -479,14 +484,14 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      * @param top The root element
      * @return The comments joined by line-feeds or null if there are none
      */
-    private static String readComments (final Element top)
+    private static Optional<String> readComments (final Element top)
     {
         final Element globalProperties = XMLUtils.getChildElementByName (top, RenoiseTag.GLOBAL_PROPERTIES);
         if (globalProperties == null)
-            return null;
+            return Optional.empty ();
         final Element commentsElement = XMLUtils.getChildElementByName (globalProperties, RenoiseTag.COMMENTS);
         if (commentsElement == null)
-            return null;
+            return Optional.empty ();
 
         final StringBuilder sb = new StringBuilder ();
         for (final Element commentElement: XMLUtils.getChildElementsByName (commentsElement, RenoiseTag.COMMENT, false))
@@ -495,7 +500,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                 sb.append ('\n');
             sb.append (XMLUtils.readTextContent (commentElement));
         }
-        return sb.toString ();
+        final String result = sb.toString ();
+        return result.isBlank () ? Optional.empty () : Optional.of (result);
     }
 
 
@@ -603,17 +609,18 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
          * @return The filter or null if this set does not select a (plain) filter or the selected
          *         filter is parked wide open and therefore sonically transparent
          */
-        IFilter createFilter ()
+        Optional<IFilter> createFilter ()
         {
-            final FilterType filterType = RenoiseFilterType.fromFilterTypeIndex (this.filterTypeIndex);
-            if (filterType == null)
-                return null;
+            final Optional<FilterType> filterTypeOpt = RenoiseFilterType.fromFilterTypeIndex (this.filterTypeIndex);
+            if (filterTypeOpt.isEmpty ())
+                return Optional.empty ();
 
             final double cutoff = this.cutoffValue < 0 ? IFilter.MAX_FREQUENCY : RenoiseValueConverter.mixerToCutoff (this.cutoffValue);
 
             // A filter parked wide open is sonically transparent - treat it as no filter
+            final FilterType filterType = filterTypeOpt.get ();
             if ((filterType == FilterType.HIGH_PASS && cutoff <= TRANSPARENT_HIGH_PASS_MAX_HERTZ) || (filterType == FilterType.LOW_PASS && cutoff >= TRANSPARENT_LOW_PASS_MIN_HERTZ))
-                return null;
+                return Optional.empty ();
 
             final double resonance = this.resonanceValue < 0 ? 0 : RenoiseValueConverter.mixerToResonance (this.resonanceValue);
             final IFilter filter = new DefaultFilter (filterType, 2, cutoff, resonance);
@@ -622,7 +629,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                 filter.getCutoffEnvelopeModulator ().setSource (this.cutoffEnvelope);
                 filter.getCutoffEnvelopeModulator ().setDepth (1.0);
             }
-            return filter;
+            return Optional.of (filter);
         }
     }
 }

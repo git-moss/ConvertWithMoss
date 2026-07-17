@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.file.riff.AbstractListChunk;
@@ -80,13 +81,13 @@ public class InfoChunk extends AbstractListChunk
      * @param infoChunkID The ID of the info chunk to get
      * @return The sub-chunk content as an ASCII string
      */
-    public String getInfoField (final RiffChunkId infoChunkID)
+    public Optional<String> getInfoField (final RiffChunkId infoChunkID)
     {
         final int id = infoChunkID.getFourCC ();
         for (final IRiffChunk chunk: this.subChunks)
             if (chunk.getId ().getFourCC () == id)
-                return chunkDataToAsciiString (chunk);
-        return null;
+                return Optional.ofNullable (chunkDataToAsciiString (chunk));
+        return Optional.empty ();
     }
 
 
@@ -96,15 +97,15 @@ public class InfoChunk extends AbstractListChunk
      * @param riffIDs The IDs of the info fields to check
      * @return The first present value of the given IDs is returned
      */
-    public String getInfoField (final RiffChunkId... riffIDs)
+    public Optional<String> getInfoField (final RiffChunkId... riffIDs)
     {
         for (final RiffChunkId id: riffIDs)
         {
-            final String value = this.getInfoField (id);
-            if (value != null)
-                return value;
+            final Optional<String> value = this.getInfoField (id);
+            if (value.isPresent ())
+                return Optional.of (value.get ());
         }
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -152,15 +153,15 @@ public class InfoChunk extends AbstractListChunk
      */
     public Date getCreationDate ()
     {
-        final String dateTime = this.getInfoField (InfoRiffChunkId.INFO_ICRD, InfoRiffChunkId.INFO_IDIT, InfoRiffChunkId.INFO_YEAR);
-        if (dateTime != null)
+        final Optional<String> dateTime = this.getInfoField (InfoRiffChunkId.INFO_ICRD, InfoRiffChunkId.INFO_IDIT, InfoRiffChunkId.INFO_YEAR);
+        if (dateTime.isPresent ())
             synchronized (CREATION_DATE_PARSERS)
             {
                 for (int i = 0; i < CREATION_DATE_PARSERS.length; i++)
                 {
-                    final Date date = parseDate (i, dateTime);
-                    if (date != null)
-                        return date;
+                    final Optional<Date> date = parseDate (i, dateTime.get ());
+                    if (date.isPresent ())
+                        return date.get ();
                 }
             }
         return new Date ();
@@ -181,15 +182,15 @@ public class InfoChunk extends AbstractListChunk
     }
 
 
-    private static final Date parseDate (final int parserIndex, final String dateTime)
+    private static final Optional<Date> parseDate (final int parserIndex, final String dateTime)
     {
         try
         {
-            return CREATION_DATE_PARSERS[parserIndex].parse (dateTime);
+            return Optional.of (CREATION_DATE_PARSERS[parserIndex].parse (dateTime));
         }
         catch (final java.text.ParseException _)
         {
-            return null;
+            return Optional.empty ();
         }
     }
 

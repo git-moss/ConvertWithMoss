@@ -15,6 +15,7 @@ import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -609,7 +610,10 @@ class SxtZone
         this.rootKey = AbstractCreator.limitToDefault (zone.getKeyRoot (), this.keyRangeStart);
         this.sampleStart = zone.getStart ();
         this.sampleEnd = zone.getStop ();
-        final IAudioMetadata audioMetadata = zone.getSampleData ().getAudioMetadata ();
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+        final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
         this.sampleSize = audioMetadata.getNumberOfSamples ();
 
         final double tune = zone.getTuning ();

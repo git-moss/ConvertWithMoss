@@ -51,7 +51,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
 {
-    private static final String FILE_ENDING_ZMAP = ".zmap";
+    private static final String    FILE_ENDING_ZMAP                     = ".zmap";
     private static final String    IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND = "IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND";
     private static final String    IDS_NOTIFY_ERR_BAD_METADATA_FILE     = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
 
@@ -113,8 +113,8 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         if (this.waitForDelivery ())
             return Collections.emptyList ();
 
-        final File userSampleFolder = findUserSampleFolder (presetFile);
-        if (userSampleFolder == null)
+        final Optional<File> userSampleFolder = findUserSampleFolder (presetFile);
+        if (userSampleFolder.isEmpty ())
         {
             this.notifier.logError ("IDS_OMNISPHERE_NO_USER_SAMPLE_FOLDER");
             return Collections.emptyList ();
@@ -123,7 +123,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
         try
         {
             final Document document = OmnisphereAggregatedFile.parseXml (content);
-            return this.parsePresetDescription (presetFile, document, userSampleFolder);
+            return this.parsePresetDescription (presetFile, document, userSampleFolder.get ());
         }
         catch (final IOException ex)
         {
@@ -213,13 +213,14 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
             {
                 final String soundSourceFilename = soundSourceName + FILE_ENDING_ZMAP;
                 this.notifier.log ("IDS_OMNISPHERE_NO_LOOKING_UP_SOUND_SOURCE", soundSourceFilename);
-                final File soundsourceFile = findFileRecursively (userSampleFolder, soundSourceFilename);
-                if (soundsourceFile == null)
+                final Optional<File> soundsourceFileOpt = findFileRecursively (userSampleFolder, soundSourceFilename);
+                if (soundsourceFileOpt.isEmpty ())
                 {
                     this.notifier.logError ("IDS_OMNISPHERE_SOUND_SOURCE_NOT_FOUND", soundSourceFilename);
                     return Collections.emptyList ();
                 }
 
+                final File soundsourceFile = soundsourceFileOpt.get ();
                 final String content = this.loadTextFile (soundsourceFile).trim ();
                 final Optional<IMultisampleSource> msSource = this.parseZmapFile (soundsourceFile, content, userSampleFolder);
                 if (msSource.isPresent ())
@@ -624,7 +625,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
     }
 
 
-    private static File findUserSampleFolder (final File presetFile)
+    private static Optional<File> findUserSampleFolder (final File presetFile)
     {
         File folder = presetFile;
         while ((folder = folder.getParentFile ()) != null)
@@ -634,7 +635,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
             if (children.contains ("Soundsources"))
             {
                 final File userSampleFolder = new File (new File (folder, "Soundsources"), "User");
-                return userSampleFolder.exists () ? userSampleFolder : null;
+                return userSampleFolder.exists () ? Optional.of (userSampleFolder) : Optional.empty ();
             }
         }
 
@@ -651,10 +652,10 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
             if (file.getName ().endsWith (FILE_ENDING_ZMAP))
                 hasZmapFile = true;
             if (hasDbFile && hasZmapFile)
-                return parentFile;
+                return Optional.of (parentFile);
         }
 
-        return null;
+        return Optional.empty ();
     }
 
 

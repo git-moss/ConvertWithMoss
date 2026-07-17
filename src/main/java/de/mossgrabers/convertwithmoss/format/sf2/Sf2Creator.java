@@ -270,14 +270,14 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                     return Optional.empty ();
 
                 // Ensure that the WAV is 16 or 24 bit
-                final ISampleData sampleData = sampleZone.getSampleData ();
-                if (sampleData == null)
+                final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+                if (sampleData.isEmpty ())
                 {
                     this.notifier.logError ("IDS_ERR_NO_SAMPLE_DATA", sampleZone.getName ());
                     continue;
                 }
 
-                final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
+                final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_AUDIO_FORMAT);
                 final FormatChunk formatChunk = waveFile.getFormatChunk ();
                 final int numberOfChannels = formatChunk.getNumberOfChannels ();
                 if (numberOfChannels > 2)

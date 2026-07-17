@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -478,8 +479,11 @@ public class MaschinePresetAccessor
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_SAMPLE_START, newZone, 0, start, start, 0, 0, 0);
         MaschinePresetParameterArray.writeIntegers (X0D_ZONE_SAMPLE_END, newZone, 0, stop, stop, stop + 1, 0, 0);
 
+        final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + sampleZone.getName ());
+        final int length = sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
-        final int length = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
         MaschinePresetParameterArray.writeIntegers (out, 0, length - 1, length - 1);
         out.write (new byte []
         {

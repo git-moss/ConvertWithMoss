@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -157,9 +158,9 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                         for (final Element layerElement: XMLUtils.getChildElementsByName (groupElement, TALSamplerTag.MULTISAMPLES, false))
                             for (final Element sampleElement: XMLUtils.getChildElementsByName (layerElement, TALSamplerTag.MULTISAMPLE, false))
                             {
-                                final ISampleZone sampleZone = this.parseSample (parentFolder, programElement, groupCounter, sampleElement);
-                                if (sampleZone != null)
-                                    group.addSampleZone (sampleZone);
+                                final Optional<ISampleZone> sampleZone = this.parseSample (parentFolder, programElement, groupCounter, sampleElement);
+                                if (sampleZone.isPresent ())
+                                    group.addSampleZone (sampleZone.get ());
                             }
                         groups.add (group);
                     }
@@ -187,14 +188,14 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
      * @return The created sample metadata
      * @throws IOException Could not create the sample metadata
      */
-    private ISampleZone parseSample (final File parentFolder, final Element programElement, final int groupCounter, final Element sampleElement) throws IOException
+    private Optional<ISampleZone> parseSample (final File parentFolder, final Element programElement, final int groupCounter, final Element sampleElement) throws IOException
     {
         final String filename = sampleElement.getAttribute (TALSamplerTag.MULTISAMPLE_URL);
         if (filename == null || filename.isBlank ())
         {
             // Notify but do not crash
             this.notifier.logError ("IDS_NOTIFY_ERR_NO_SAMPLE_FILE");
-            return null;
+            return Optional.empty ();
         }
 
         if (filename.endsWith (".talwav"))
@@ -211,7 +212,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         catch (final FileNotFoundException ex)
         {
             this.notifier.logError (ex, false);
-            return null;
+            return Optional.empty ();
         }
 
         zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, 0)));
@@ -247,8 +248,10 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             zone.addLoop (loop);
         }
 
-        zone.getSampleData ().addZoneData (zone, false, false);
-        return zone;
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isPresent ())
+            sampleData.get ().addZoneData (zone, false, false);
+        return Optional.of (zone);
     }
 
 

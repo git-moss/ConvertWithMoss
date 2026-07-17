@@ -291,7 +291,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
     {
         final String ignoreBaseNoteStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE);
         final boolean ignoreBaseNote = ignoreBaseNoteStr != null && MPCKeygroupTag.TRUE.equals (ignoreBaseNoteStr);
-        final IFilter filter = parseFilter (instrumentElement);
+        final Optional<IFilter> filter = parseFilter (instrumentElement);
         final IEnvelope volumeEnvelope = parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK, MPCKeygroupTag.INSTRUMENT_VOLUME_HOLD, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY, MPCKeygroupTag.INSTRUMENT_VOLUME_SUSTAIN, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE, MPCKeygroupTag.INSTRUMENT_VOLUME_ATTACK_CURVE, MPCKeygroupTag.INSTRUMENT_VOLUME_DECAY_CURVE, MPCKeygroupTag.INSTRUMENT_VOLUME_RELEASE_CURVE);
         final IEnvelope pitchEnvelope = parseEnvelope (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK, MPCKeygroupTag.INSTRUMENT_PITCH_HOLD, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY, MPCKeygroupTag.INSTRUMENT_PITCH_SUSTAIN, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE, MPCKeygroupTag.INSTRUMENT_PITCH_ATTACK_CURVE, MPCKeygroupTag.INSTRUMENT_PITCH_DECAY_CURVE, MPCKeygroupTag.INSTRUMENT_PITCH_RELEASE_CURVE);
 
@@ -304,9 +304,10 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             final int velStart = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_START, 0);
             final int velEnd = XMLUtils.getChildElementIntegerContent (layerElement, MPCKeygroupTag.LAYER_VEL_END, 0);
 
-            final ISampleZone zone = this.parseSampleZone (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote, triggerType);
-            if (zone == null)
+            final Optional<ISampleZone> zoneOpt = this.parseSampleZone (layerElement, basePath, keyLow, keyHigh, velStart, velEnd, zonePlay, ignoreBaseNote, triggerType);
+            if (zoneOpt.isEmpty ())
                 continue;
+            final ISampleZone zone = zoneOpt.get ();
             zones.add (zone);
 
             //
@@ -335,7 +336,8 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             if (!isOneShot)
                 this.parseLoop (layerElement, zone);
 
-            zone.setFilter (filter);
+            if (filter.isPresent ())
+                zone.setFilter (filter.get ());
 
             this.readMissingData (isDrum, zone);
         }
@@ -364,16 +366,16 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @param instrumentElement The instrument element
      * @return The filter or null
      */
-    private static IFilter parseFilter (final Element instrumentElement)
+    private static Optional<IFilter> parseFilter (final Element instrumentElement)
     {
         final int filterID = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_TYPE, -1);
         if (filterID <= 0)
-            return null;
+            return Optional.empty ();
         final double cutoff = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_CUTOFF, 1);
         final double resonance = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RESONANCE, 0);
         final MPCFilter filter = new MPCFilter (filterID, cutoff, resonance);
         if (filter.getType () == null)
-            return null;
+            return Optional.empty ();
 
         final double filterAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_ENV_AMOUNT, 0);
         if (filterAmount > 0)
@@ -389,7 +391,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
         filter.setCutoffKeyTracking (XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_KEYTRACK, 0));
 
-        return filter;
+        return Optional.of (filter);
     }
 
 
@@ -407,16 +409,16 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @param triggerType The trigger type
      * @return The sample metadata or null
      */
-    private ISampleZone parseSampleZone (final Element layerElement, final File basePath, final int keyLow, final int keyHigh, final int velStart, final int velEnd, final PlayLogic zonePlay, final boolean ignoreBaseNote, final TriggerType triggerType)
+    private Optional<ISampleZone> parseSampleZone (final Element layerElement, final File basePath, final int keyLow, final int keyHigh, final int velStart, final int velEnd, final PlayLogic zonePlay, final boolean ignoreBaseNote, final TriggerType triggerType)
     {
         final Element sampleNameElement = XMLUtils.getChildElementByName (layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME);
         if (sampleNameElement == null)
-            return null;
+            return Optional.empty ();
 
         // Use this method to preserve whitespace since some filenames end with a space!
         final String sampleName = sampleNameElement.getTextContent ();
         if (sampleName.isBlank ())
-            return null;
+            return Optional.empty ();
 
         final ISampleData sampleData;
         try
@@ -426,7 +428,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         catch (final IOException _)
         {
             this.notifier.logError (IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY);
-            return null;
+            return Optional.empty ();
         }
         final ISampleZone zone = new DefaultSampleZone (sampleName, sampleData);
 
@@ -448,7 +450,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
         final String activeStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_ACTIVE);
         if (activeStr != null && !activeStr.equalsIgnoreCase (MPCKeygroupTag.TRUE))
-            return zone;
+            return Optional.of (zone);
 
         final String volumeStr = XMLUtils.getChildElementContent (layerElement, MPCKeygroupTag.LAYER_VOLUME);
         if (volumeStr != null && !volumeStr.isBlank ())
@@ -485,7 +487,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         if (sliceEndStr != null && !sliceEndStr.isBlank ())
             zone.setStop (Integer.parseInt (sliceEndStr));
 
-        return zone;
+        return Optional.of (zone);
     }
 
 
@@ -538,7 +540,11 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         try
         {
             if (needsUpdate || needsRootKey)
-                zone.getSampleData ().addZoneData (zone, needsRootKey, false);
+            {
+                final Optional<ISampleData> sampleData = zone.getSampleData ();
+                if (sampleData.isPresent ())
+                    sampleData.get ().addZoneData (zone, needsRootKey, false);
+            }
         }
         catch (final FileNotFoundException ex)
         {
@@ -812,9 +818,9 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 final Iterator<JsonNode> layersNodes = instrumentNode.get ("layersv").elements ();
                 while (layersNodes.hasNext ())
                 {
-                    final ISampleZone sampleZone = this.readJsonSampleZone (multiSampleFile, instrumentNode, layersNodes.next (), lowNote, highNote, pitchBendUp, pitchBendDown, tuning, sampleInfos, globalEnvelopesAndFilter, jsonFormat);
-                    if (sampleZone != null)
-                        group.addSampleZone (sampleZone);
+                    final Optional<ISampleZone> sampleZone = this.readJsonSampleZone (multiSampleFile, instrumentNode, layersNodes.next (), lowNote, highNote, pitchBendUp, pitchBendDown, tuning, sampleInfos, globalEnvelopesAndFilter, jsonFormat);
+                    if (sampleZone.isPresent ())
+                        group.addSampleZone (sampleZone.get ());
                 }
             }
 
@@ -855,15 +861,15 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
     }
 
 
-    private ISampleZone readJsonSampleZone (final File multiSampleFile, final JsonNode instrumentNode, final JsonNode layerNode, final int lowNote, final int highNote, final int pitchBendUp, final int pitchBendDown, final double tuning, final Map<String, SampleInfo> sampleInfos, final MPCEnvelopesAndFilter globalEnvelopesAndFilter, final JSONFormat jsonFormat) throws IOException
+    private Optional<ISampleZone> readJsonSampleZone (final File multiSampleFile, final JsonNode instrumentNode, final JsonNode layerNode, final int lowNote, final int highNote, final int pitchBendUp, final int pitchBendDown, final double tuning, final Map<String, SampleInfo> sampleInfos, final MPCEnvelopesAndFilter globalEnvelopesAndFilter, final JSONFormat jsonFormat) throws IOException
     {
         if (!layerNode.get ("active").asBoolean ())
-            return null;
+            return Optional.empty ();
 
         final String sampleName = layerNode.get ("sampleName").asText ();
         final String sampleFileName = layerNode.get ("sampleFile").asText ();
         if (sampleName.isBlank () || sampleFileName.isBlank ())
-            return null;
+            return Optional.empty ();
 
         final String sampleFolderName = FileUtils.getNameWithoutType (multiSampleFile);
         final File path = new File (multiSampleFile.getParentFile (), sampleFolderName + "_[" + jsonFormat.getName () + "Data]");
@@ -871,7 +877,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         if (!file.exists ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", file.getAbsolutePath ());
-            return null;
+            return Optional.empty ();
         }
 
         final ISampleData sampleData = new WavFileSampleData (file);
@@ -951,7 +957,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         setModulator (sampleZone.getAmplitudeEnvelopeModulator (), globalEnvelopesAndFilter != null ? globalEnvelopesAndFilter.getAmpEnvelopeModulator () : null, envelopesAndFilter.getAmpEnvelopeModulator ());
         setModulator (sampleZone.getPitchEnvelopeModulator (), globalEnvelopesAndFilter != null ? globalEnvelopesAndFilter.getPitchEnvelopeModulator () : null, envelopesAndFilter.getPitchEnvelopeModulator ());
 
-        return sampleZone;
+        return Optional.of (sampleZone);
     }
 
 

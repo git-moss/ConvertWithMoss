@@ -31,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -106,8 +107,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     {
         final String multiSampleName = createSafeFilename (multisampleSource.getName ());
         final String safeSampleFolderName = multiSampleName + FOLDER_POSTFIX;
-        final String metadata = this.createPresetDocument (safeSampleFolderName, multisampleSource);
-        if (metadata == null)
+        final Optional<String> metadata = this.createPresetDocument (safeSampleFolderName, multisampleSource);
+        if (metadata.isEmpty ())
             return;
 
         final File multiFile = this.createUniqueFilename (destinationFolder, multiSampleName, "sfz");
@@ -115,7 +116,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
         {
-            writer.write (metadata);
+            writer.write (metadata.get ());
         }
 
         // Store all samples
@@ -145,7 +146,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
      * @param multisampleSource The multi-sample
      * @return The XML structure
      */
-    private String createPresetDocument (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
+    private Optional<String> createPresetDocument (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
     {
         final StringBuilder sb = new StringBuilder (SFZ_HEADER);
 
@@ -174,7 +175,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (groups.isEmpty ())
         {
             this.notifier.logError ("IDS_ERR_NO_GROUPS_IN_SOURCE");
-            return null;
+            return Optional.empty ();
         }
 
         final ParameterLevel ampEnvParamLevel = getAmpEnvelopeParamLevel (multisampleSource);
@@ -225,7 +226,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                 this.createSample (safeSampleFolderName, sb, zone, isNotRoundRobinGroup, ampEnvParamLevel);
         }
 
-        return sb.toString ();
+        return Optional.of (sb.toString ());
     }
 
 
@@ -413,7 +414,10 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                     double loopLengthInSeconds;
                     try
                     {
-                        loopLengthInSeconds = loopLength / (double) zone.getSampleData ().getAudioMetadata ().getSampleRate ();
+                        final Optional<ISampleData> sampleData = zone.getSampleData ();
+                        if (sampleData.isEmpty ())
+                            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+                        loopLengthInSeconds = loopLength / (double) sampleData.get ().getAudioMetadata ().getSampleRate ();
                         final double crossfadeInSeconds = crossfade * loopLengthInSeconds;
                         buffer.append (' ').append (SfzOpcode.LOOP_CROSSFADE).append ('=').append (formatAsFloat (crossfadeInSeconds));
                     }

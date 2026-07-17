@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.w3c.dom.Element;
 
@@ -61,17 +62,17 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected String getModulationTarget (final Element modulator)
+    protected Optional<String> getModulationTarget (final Element modulator)
     {
         final Element targetsElement = XMLUtils.getChildElementByName (modulator, K2Tag.K2_TARGETS_ELEMENT);
         if (targetsElement == null)
-            return null;
+            return Optional.empty ();
         for (final Element targetElement: XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false))
             for (final Element valueElement: XMLUtils.getChildElementsByName (targetElement, this.tags.value (), false))
                 // We only support 1 target!
                 if (this.tags.targetParam ().equals (valueElement.getAttribute (this.tags.valueNameAttribute ())))
-                    return valueElement.getAttribute (this.tags.valueValueAttribute ());
-        return null;
+                    return Optional.of (valueElement.getAttribute (this.tags.valueValueAttribute ()));
+        return Optional.empty ();
     }
 
 

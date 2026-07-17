@@ -38,6 +38,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -115,7 +116,7 @@ public class Maschine1Format implements IMaschineFormat
     private List<DataTag>                     zoneParametersTopDataTags   = null;
     private DataSection                       presetDataSection           = null;
     private List<DataTag>                     presetParametersTopDataTags = null;
-    private SoundinfoDocument                 soundinfoDocument           = null;
+    private Optional<SoundinfoDocument>       soundinfoDocument           = Optional.empty ();
 
 
     /**
@@ -163,8 +164,8 @@ public class Maschine1Format implements IMaschineFormat
         for (final DataTag zoneTag: this.zoneParametersTopDataTags)
         {
             // gsl/pfd pairs represent 1 zone but there can also be more like "osid"
-            final DataTag gslParameterTag = getDataTag (zoneTag, "gzn ", "gsl ");
-            final DataTag dfpParameterTag = getDataTag (zoneTag, "gzn ", "dfp ");
+            final Optional<DataTag> gslParameterTag = getDataTag (zoneTag, "gzn ", "gsl ");
+            final Optional<DataTag> dfpParameterTag = getDataTag (zoneTag, "gzn ", "dfp ");
             final Map<String, DataParameter> params = collectZoneParameters (gslParameterTag, dfpParameterTag);
             group.addSampleZone (createSampleZone (params, filePaths));
         }
@@ -175,7 +176,10 @@ public class Maschine1Format implements IMaschineFormat
         // Correct play-back end and loop end
         for (final ISampleZone sampleZone: group.getSampleZones ())
         {
-            final int length = sampleZone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
+            final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+            if (sampleData.isEmpty ())
+                throw new IOException ("Empty sample data in zone: " + sampleZone.getName ());
+            final int length = sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
             sampleZone.setStop (sampleZone.getStop () + length);
             final List<ISampleLoop> loops = sampleZone.getLoops ();
             if (!loops.isEmpty ())
@@ -256,34 +260,36 @@ public class Maschine1Format implements IMaschineFormat
         this.version = StreamUtils.readUnsigned32 (inputStream, isBigEndian);
         this.topSection = this.readDataSections (inputStream, isBigEndian);
 
-        final DataSection metaDataSection = getData (this.topSection.children, "gtr ", "info");
-        if (metaDataSection != null && metaDataSection.data != null)
-            this.soundinfoDocument = readMetadata (metaDataSection.data);
+        final Optional<DataSection> metaDataSection = getData (this.topSection.children, "gtr ", "info");
+        if (metaDataSection.isPresent () && metaDataSection.get ().data != null)
+            this.soundinfoDocument = readMetadata (metaDataSection.get ().data);
 
         // Read all zones - mostly in: "gtr " -> "gtfs" -> "psg " -> "gznc"
-        this.zoneDataSection = findDataSection (this.topSection, "gznc");
-        if (this.zoneDataSection == null || this.zoneDataSection.data == null)
+        final Optional<DataSection> dataSection = findDataSection (this.topSection, "gznc");
+        if (dataSection.isEmpty () || dataSection.get ().data == null)
             throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
+        this.zoneDataSection = dataSection.get ();
         this.zoneParametersTopDataTags = readDataSectionParameters (new ByteArrayInputStream (this.zoneDataSection.data), isBigEndian);
         if (this.zoneParametersTopDataTags == null)
             throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
 
         // Read global sampler parameters
-        this.presetDataSection = getData (this.zoneDataSection.parent.children, "gemo", "prst");
-        if (this.presetDataSection == null || this.presetDataSection.data == null)
+        final Optional<DataSection> data = getData (this.zoneDataSection.parent.children, "gemo", "prst");
+        if (data.isEmpty () || data.get ().data == null)
             throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
+        this.presetDataSection = data.get ();
         this.presetParametersTopDataTags = readDataSectionParameters (new ByteArrayInputStream (this.presetDataSection.data), isBigEndian);
-        final DataTag paramsTag = getDataTag (this.presetParametersTopDataTags, "dfp ", "pac ");
-        if (paramsTag == null)
+        final Optional<DataTag> paramsTag = getDataTag (this.presetParametersTopDataTags, "dfp ", "pac ");
+        if (paramsTag.isEmpty ())
             return true;
         this.globalParametersVriTags.clear ();
-        for (final DataTag childTag: paramsTag.children)
+        for (final DataTag childTag: paramsTag.get ().children)
         {
-            final DataTag vriTag = getDataTag (childTag, "par ", "osid", "vr  ", "vri ");
-            if (vriTag != null)
+            final Optional<DataTag> vriTag = getDataTag (childTag, "par ", "osid", "vr  ", "vri ");
+            if (vriTag.isPresent ())
             {
-                final int paramIndex = vriTag.parameter.name.getBytes ()[3];
-                this.globalParametersVriTags.put (Integer.valueOf (paramIndex), vriTag.parameter);
+                final DataParameter parameter = vriTag.get ().parameter;
+                this.globalParametersVriTags.put (Integer.valueOf (parameter.name.getBytes ()[3]), parameter);
             }
         }
 
@@ -470,18 +476,18 @@ public class Maschine1Format implements IMaschineFormat
      * @param metaData The raw bytes of the XML document
      * @return The sound info document
      */
-    private static SoundinfoDocument readMetadata (final byte [] metaData)
+    private static Optional<SoundinfoDocument> readMetadata (final byte [] metaData)
     {
         try
         {
             // Note: There is a prefix of 03 00 00 00 00 which is removed by the trim!
             final String xml = StreamUtils.readUtf8 (new ByteArrayInputStream (metaData)).trim ();
-            return new SoundinfoDocument (xml);
+            return Optional.of (new SoundinfoDocument (xml));
         }
         catch (final SAXException | IOException _)
         {
             // Ignore
-            return null;
+            return Optional.empty ();
         }
     }
 
@@ -493,14 +499,14 @@ public class Maschine1Format implements IMaschineFormat
      */
     private void applyMetadata (final IMultisampleSource multisampleSource)
     {
-        if (this.soundinfoDocument == null)
+        if (this.soundinfoDocument.isEmpty ())
             return;
 
         final IMetadata metadata = multisampleSource.getMetadata ();
-        final String author = this.soundinfoDocument.getAuthor ();
+        final String author = this.soundinfoDocument.get ().getAuthor ();
         if (author != null)
             metadata.setCreator (author);
-        final Set<String> categories = this.soundinfoDocument.getCategories ();
+        final Set<String> categories = this.soundinfoDocument.get ().getCategories ();
         if (!categories.isEmpty ())
             metadata.setCategory (categories.iterator ().next ());
     }
@@ -514,32 +520,28 @@ public class Maschine1Format implements IMaschineFormat
      * @return The parameters of the zone mapped by their names
      * @throws IOException Could not collect the parameters
      */
-    private static Map<String, DataParameter> collectZoneParameters (final DataTag gslParameterTag, final DataTag dfpParameterTag) throws IOException
+    private static Map<String, DataParameter> collectZoneParameters (final Optional<DataTag> gslParameterTag, final Optional<DataTag> dfpParameterTag) throws IOException
     {
         final Map<String, DataParameter> params = new HashMap<> ();
-        if (gslParameterTag == null || dfpParameterTag == null)
+        if (gslParameterTag.isEmpty () || dfpParameterTag.isEmpty ())
             throw new IOException (Functions.getMessage (IDS_NI_MASCHINE_V1_UNSOUND_FILE));
 
-        final DataTag crpTag = getDataTag (gslParameterTag, "gsl ", "dfp ", "prc ");
-        if (crpTag == null)
-            return Collections.emptyMap ();
-        for (final DataTag childTag: crpTag.children)
-        {
-            final DataTag vriTag = getDataTag (childTag, "prp ", "vr  ", "vri ");
-            if (vriTag != null)
-                params.put (vriTag.parameter.name, vriTag.parameter);
-        }
-
-        final DataTag prcTag2 = getDataTag (dfpParameterTag, "dfp ", "prc ");
-        if (prcTag2 == null)
-            return Collections.emptyMap ();
-        for (final DataTag childTag: prcTag2.children)
-        {
-            final DataTag vriTag = getDataTag (childTag, "prp ", "vr  ", "vri ");
-            if (vriTag != null)
-                params.put (vriTag.parameter.name, vriTag.parameter);
-        }
+        getVriParameters (getDataTag (gslParameterTag.get (), "gsl ", "dfp ", "prc "), params);
+        getVriParameters (getDataTag (dfpParameterTag.get (), "dfp ", "prc "), params);
         return params;
+    }
+
+
+    private static void getVriParameters (final Optional<DataTag> dataTag, final Map<String, DataParameter> params)
+    {
+        if (dataTag.isEmpty ())
+            return;
+        for (final DataTag childTag: dataTag.get ().children)
+        {
+            final Optional<DataTag> vriTag = getDataTag (childTag, "prp ", "vr  ", "vri ");
+            if (vriTag.isPresent ())
+                params.put (vriTag.get ().parameter.name, vriTag.get ().parameter);
+        }
     }
 
 
@@ -623,7 +625,7 @@ public class Maschine1Format implements IMaschineFormat
      * @param path The path indicating the names of the children to walk 'down'
      * @return The data section or null if it does not exist
      */
-    private static DataSection getData (final List<DataSection> startChildren, final String... path)
+    private static Optional<DataSection> getData (final List<DataSection> startChildren, final String... path)
     {
         List<DataSection> children = startChildren;
         DataSection found = null;
@@ -637,10 +639,10 @@ public class Maschine1Format implements IMaschineFormat
                     break;
                 }
             if (found == null)
-                return null;
+                return Optional.empty ();
             children = found.children;
         }
-        return found == null ? null : found;
+        return Optional.ofNullable (found);
     }
 
 
@@ -651,19 +653,19 @@ public class Maschine1Format implements IMaschineFormat
      * @param tagName The name of the section to look for
      * @return The data of the found section or null if it was not found
      */
-    private static DataSection findDataSection (final DataSection section, final String tagName)
+    private static Optional<DataSection> findDataSection (final DataSection section, final String tagName)
     {
         if (tagName.equals (section.name))
-            return section;
+            return Optional.of (section);
 
         for (final DataSection childSection: section.children)
         {
-            final DataSection subSection = findDataSection (childSection, tagName);
-            if (subSection != null)
+            final Optional<DataSection> subSection = findDataSection (childSection, tagName);
+            if (subSection.isPresent ())
                 return subSection;
         }
 
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -674,7 +676,7 @@ public class Maschine1Format implements IMaschineFormat
      * @param path The path to follow to find the tag
      * @return The data tag or null if not found
      */
-    private static DataTag getDataTag (final DataTag tag, final String... path)
+    private static Optional<DataTag> getDataTag (final DataTag tag, final String... path)
     {
         return getDataTag (Collections.singletonList (tag), path);
     }
@@ -687,7 +689,7 @@ public class Maschine1Format implements IMaschineFormat
      * @param path The path to follow to find the tag
      * @return The data tag or null if not found
      */
-    private static DataTag getDataTag (final List<DataTag> tags, final String... path)
+    private static Optional<DataTag> getDataTag (final List<DataTag> tags, final String... path)
     {
         List<DataTag> children = tags;
         DataTag found = null;
@@ -701,10 +703,10 @@ public class Maschine1Format implements IMaschineFormat
                     break;
                 }
             if (found == null)
-                return null;
+                return Optional.empty ();
             children = found.children;
         }
-        return found;
+        return Optional.of (found);
     }
 
 
@@ -845,11 +847,12 @@ public class Maschine1Format implements IMaschineFormat
     private void updateMetadata (final IMultisampleSource multisampleSource) throws IOException
     {
         final IMetadata metadata = multisampleSource.getMetadata ();
-        this.soundinfoDocument = new SoundinfoDocument (metadata.getCreator (), metadata.getCategory ());
-        final String xmlCode = this.soundinfoDocument.createDocument (multisampleSource.getName ());
+        final SoundinfoDocument document = new SoundinfoDocument (metadata.getCreator (), metadata.getCategory ());
+        this.soundinfoDocument = Optional.of (document);
+        final String xmlCode = document.createDocument (multisampleSource.getName ());
 
-        final DataSection metaDataSection = getData (this.topSection.children, "gtr ", "info");
-        if (metaDataSection == null)
+        final Optional<DataSection> metaDataSection = getData (this.topSection.children, "gtr ", "info");
+        if (metaDataSection.isEmpty ())
             throw new IOException ("Metadata section not found.");
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         out.write (new byte []
@@ -861,7 +864,7 @@ public class Maschine1Format implements IMaschineFormat
             0x00
         });
         out.write (xmlCode.getBytes (StandardCharsets.UTF_8));
-        metaDataSection.data = out.toByteArray ();
+        metaDataSection.get ().data = out.toByteArray ();
     }
 
 
@@ -890,7 +893,10 @@ public class Maschine1Format implements IMaschineFormat
             final String samplePath = zone.getName () + ".wav";
             setParameterText (newZoneTag, "rlur", samplePath);
 
-            final int sampleLength = zone.getSampleData ().getAudioMetadata ().getNumberOfSamples ();
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isEmpty ())
+                throw new IOException ("Empty sample data in zone: " + zone.getName ());
+            final int sampleLength = sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
             setParameterInteger (newZoneTag, "zsst", Math.max (0, zone.getStart ()));
             setParameterInteger (newZoneTag, "zsed", Math.clamp (zone.getStop (), 0, sampleLength) - sampleLength);
 
@@ -1226,7 +1232,7 @@ public class Maschine1Format implements IMaschineFormat
         final DataTag copy = new DataTag ();
         copy.name = src.name;
         copy.osid = src.osid;
-        copy.parameter = cloneParameter (src.parameter);
+        copy.parameter = src.parameter == null ? null : cloneParameter (src.parameter);
 
         // parent is null and needs to be fixed outside if it is not a top tag
         copy.parent = null;
@@ -1243,8 +1249,6 @@ public class Maschine1Format implements IMaschineFormat
 
     private static DataParameter cloneParameter (final DataParameter p)
     {
-        if (p == null)
-            return null;
         final DataParameter q = new DataParameter ();
         q.name = p.name;
         q.type = p.type;
@@ -1257,39 +1261,39 @@ public class Maschine1Format implements IMaschineFormat
 
     private static void setParameterInteger (final DataTag dataTag, final String name, final int value)
     {
-        final DataParameter param = findParameterByName (dataTag, name);
-        if (param != null)
-            param.integerValue = value;
+        final Optional<DataParameter> param = findParameterByName (dataTag, name);
+        if (param.isPresent ())
+            param.get ().integerValue = value;
     }
 
 
     private static void setParameterFloat (final DataTag dataTag, final String name, final float value)
     {
-        final DataParameter param = findParameterByName (dataTag, name);
-        if (param != null)
-            param.floatValue = value;
+        final Optional<DataParameter> param = findParameterByName (dataTag, name);
+        if (param.isPresent ())
+            param.get ().floatValue = value;
     }
 
 
     private static void setParameterText (final DataTag dataTag, final String name, final String value)
     {
-        final DataParameter param = findParameterByName (dataTag, name);
-        if (param != null)
-            param.textValue = value;
+        final Optional<DataParameter> param = findParameterByName (dataTag, name);
+        if (param.isPresent ())
+            param.get ().textValue = value;
     }
 
 
-    private static DataParameter findParameterByName (final DataTag dataTag, final String name)
+    private static Optional<DataParameter> findParameterByName (final DataTag dataTag, final String name)
     {
         if (dataTag.parameter != null && Objects.equals (dataTag.parameter.name, name))
-            return dataTag.parameter;
+            return Optional.of (dataTag.parameter);
         for (final DataTag child: dataTag.children)
         {
-            final DataParameter result = findParameterByName (child, name);
-            if (result != null)
+            final Optional<DataParameter> result = findParameterByName (child, name);
+            if (result.isPresent ())
                 return result;
         }
-        return null;
+        return Optional.empty ();
     }
 
 

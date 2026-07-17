@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.core.utils;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -43,8 +44,9 @@ public class NameValueParser
                 continue;
 
             final String key = token.substring (0, equalsIndex).trim ();
-            final String value = HTMLUtils.htmlToUnicode (token.substring (equalsIndex + 1).trim ());
-            map.computeIfAbsent (key, _ -> new ArrayList<> ()).add (value);
+            final Optional<String> value = HTMLUtils.htmlToUnicode (token.substring (equalsIndex + 1).trim ());
+            if (value.isPresent ())
+                map.computeIfAbsent (key, _ -> new ArrayList<> ()).add (value.get ());
         }
         return map;
     }

@@ -376,8 +376,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
      */
     private void storeRenoiseSample (final ZipOutputStream zipOutputStream, final ISampleZone zone, final int zoneIndex, final Date dateTime) throws IOException
     {
-        final ISampleData sampleData = zone.getSampleData ();
-        if (sampleData == null)
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
         {
             this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), this.sampleBaseName (zoneIndex, zone));
             this.notifier.logText ("\n");
@@ -387,11 +387,12 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         // Renoise has no loop cross-fade parameter. By default the loop is written exactly as it is
         // (faithful). Only if a cross-fade is requested - e.g. via the loop cross-fade processing
         // option - it is baked into the sample audio here.
-        ISampleData renderSource = sampleData;
-        final ISampleLoop loop = getCrossfadeLoop (zone);
-        if (loop != null)
+        ISampleData renderSource = sampleData.get ();
+        final Optional<ISampleLoop> loopOpt = getCrossfadeLoop (zone);
+        if (loopOpt.isPresent ())
         {
-            final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
+            final ISampleLoop loop = loopOpt.get ();
+            final WaveFile waveFile = AudioFileUtils.convertToWav (renderSource, DESTINATION_AUDIO_FORMAT);
             applyLoopCrossfade (waveFile, loop.getStart (), loop.getEnd (), loop.getCrossfadeInSamples ());
             renderSource = new WavFileSampleData (waveFile);
         }
@@ -452,15 +453,15 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
      * @param zone The zone
      * @return The loop or null if no cross-fade should be applied
      */
-    private static ISampleLoop getCrossfadeLoop (final ISampleZone zone)
+    private static Optional<ISampleLoop> getCrossfadeLoop (final ISampleZone zone)
     {
         final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
-            return null;
+            return Optional.empty ();
         final ISampleLoop loop = loops.get (0);
         if (loop.getType () == LoopType.FORWARDS && loop.getCrossfade () > 0 && loop.getStart () >= 0 && loop.getEnd () > loop.getStart ())
-            return loop;
-        return null;
+            return Optional.of (loop);
+        return Optional.empty ();
     }
 
 

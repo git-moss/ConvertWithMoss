@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -624,9 +625,9 @@ public class TagDetector
     {
         if (categoryFromNamePrefix)
         {
-            final String category = detectCategoryByNamePrefix (texts);
-            if (category != null)
-                return category;
+            final Optional<String> category = detectCategoryByNamePrefix (texts);
+            if (category.isPresent ())
+                return category.get ();
         }
         return detect (texts, CATEGORY_LOOKUP, CATEGORY_UNKNOWN);
     }
@@ -641,7 +642,7 @@ public class TagDetector
      * @param texts The texts, the most specific (e.g. the preset name) first
      * @return The category or null if the first word of none of the texts is a category tag
      */
-    private static String detectCategoryByNamePrefix (final Collection<String> texts)
+    private static Optional<String> detectCategoryByNamePrefix (final Collection<String> texts)
     {
         for (final String text: texts)
         {
@@ -650,10 +651,10 @@ public class TagDetector
             {
                 final String category = CATEGORY_PREFIX_LOOKUP.get (tokens[0]);
                 if (category != null)
-                    return category;
+                    return Optional.of (category);
             }
         }
-        return null;
+        return Optional.empty ();
     }
 
 

@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.core.utils;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -220,10 +221,10 @@ public class HTMLUtils
      * @param source The string in which to replace special characters
      * @return The string with replaces special characters
      */
-    public static String unicodeToHTML (final String source)
+    public static Optional<String> unicodeToHTML (final String source)
     {
         if (source == null)
-            return null;
+            return Optional.empty ();
         final StringBuilder builder = new StringBuilder ();
         for (int i = 0; i < source.length (); i++)
         {
@@ -236,7 +237,7 @@ public class HTMLUtils
             else
                 builder.append (c);
         }
-        return builder.toString ();
+        return Optional.of (builder.toString ());
     }
 
 
@@ -246,10 +247,10 @@ public class HTMLUtils
      * @param source The source code
      * @return The code with replaced special chars
      */
-    public static String htmlToUnicode (final String source)
+    public static Optional<String> htmlToUnicode (final String source)
     {
         if (source == null)
-            return null;
+            return Optional.empty ();
         int pos1 = 0;
         int pos2;
         final StringBuilder translated = new StringBuilder ();
@@ -278,7 +279,7 @@ public class HTMLUtils
         }
 
         // Append the rest, if no chars found append complete source
-        return translated.append (source.substring (pos1, source.length ())).toString ();
+        return Optional.of (translated.append (source.substring (pos1, source.length ())).toString ());
     }
 
 
@@ -325,10 +326,10 @@ public class HTMLUtils
      * @param source The string in which to replace
      * @return The replaced string
      */
-    public static String preserveAmp (final String source)
+    public static Optional<String> preserveAmp (final String source)
     {
         if (source == null)
-            return null;
+            return Optional.empty ();
 
         final StringBuilder builder = new StringBuilder ();
         int pos = 0;
@@ -338,7 +339,7 @@ public class HTMLUtils
             builder.append (source.substring (pos, pos2)).append (AMPERSAND);
             pos = pos2 + 1;
         }
-        return builder.append (source.substring (pos)).toString ();
+        return Optional.of (builder.append (source.substring (pos)).toString ());
     }
 
 

@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.file.hfe;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -92,15 +93,18 @@ public class MfmDecoder
             if (findSync (bitStream))
             {
                 final int markByte = bitStream.readMfmByte ();
+                if (markByte != IDAM)
+                    continue;
 
-                if (markByte == IDAM)
+                final Optional<Sector> sectorOpt = this.readSectorHeader (bitStream);
+                if (sectorOpt.isEmpty ())
+                    continue;
+
+                final Sector sector = sectorOpt.get ();
+                if (sector.isCrcValid () && findNextDataMark (bitStream))
                 {
-                    final Sector sector = this.readSectorHeader (bitStream);
-                    if (sector != null && sector.isCrcValid () && findNextDataMark (bitStream))
-                    {
-                        this.readSectorData (bitStream, sector);
-                        sectors.add (sector);
-                    }
+                    this.readSectorData (bitStream, sector);
+                    sectors.add (sector);
                 }
             }
 
@@ -138,10 +142,10 @@ public class MfmDecoder
     }
 
 
-    private Sector readSectorHeader (final BitStream bitStream)
+    private Optional<Sector> readSectorHeader (final BitStream bitStream)
     {
         if (!bitStream.hasRemaining ())
-            return null;
+            return Optional.empty ();
 
         final int cyl = bitStream.readMfmByte ();
         final int head = bitStream.readMfmByte ();
@@ -171,7 +175,7 @@ public class MfmDecoder
             System.out.printf ("Header CRC: calc=0x%04X read=0x%04X C:%d H:%d S:%d%n", Integer.valueOf (calculatedCrc), Integer.valueOf (readCrc), Integer.valueOf (cyl), Integer.valueOf (head), Integer.valueOf (sectorNum));
 
         final int sectorSize = 128 << sizeCode;
-        return new Sector (cyl, head, sectorNum, sizeCode, new byte [sectorSize], crcValid);
+        return Optional.of (new Sector (cyl, head, sectorNum, sizeCode, new byte [sectorSize], crcValid));
     }
 
 

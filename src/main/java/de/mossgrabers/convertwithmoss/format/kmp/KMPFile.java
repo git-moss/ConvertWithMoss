@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
@@ -257,7 +258,9 @@ public class KMPFile
                         // All good, not a reference to internal sample memory
                     }
 
-                sampleFilename = this.readKSFZone (zone, sampleFilename);
+                final Optional<String> ksfZone = this.readKSFZone (zone, sampleFilename);
+                if (ksfZone.isPresent ())
+                    sampleFilename = ksfZone.get ();
             }
         }
     }
@@ -277,7 +280,7 @@ public class KMPFile
     }
 
 
-    private String readKSFZone (final ISampleZone zone, final String filename) throws IOException, ParseException
+    private Optional<String> readKSFZone (final ISampleZone zone, final String filename) throws IOException, ParseException
     {
         File ksfFile = new File (this.sampleFolder1, filename);
         if (!ksfFile.exists ())

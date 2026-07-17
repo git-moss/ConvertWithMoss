@@ -481,7 +481,9 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         try
         {
-            sampleZone.getSampleData ().addZoneData (sampleZone, false, loop == null);
+            final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+            if (sampleData.isPresent ())
+                sampleData.get ().addZoneData (sampleZone, false, loop == null);
         }
         catch (final IOException ex)
         {

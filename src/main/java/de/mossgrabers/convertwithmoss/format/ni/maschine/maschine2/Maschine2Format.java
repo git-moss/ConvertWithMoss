@@ -83,8 +83,8 @@ public class Maschine2Format implements IMaschineFormat
         try (final InputStream inputStream = Channels.newInputStream (fileAccess.getChannel ()))
         {
             final NIContainerItem niContainerItem = new NIContainerItem (inputStream);
-            final NIContainerDataChunk appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
-            if (appChunk != null && appChunk.getData () instanceof final AuthoringApplicationChunkData appChunkData)
+            final Optional<NIContainerDataChunk> appChunk = niContainerItem.find (NIContainerChunkType.AUTHORING_APPLICATION);
+            if (appChunk.isPresent () && appChunk.get ().getData () instanceof final AuthoringApplicationChunkData appChunkData)
             {
                 final AuthoringApplication application = appChunkData.getApplication ();
                 if (application != AuthoringApplication.MASCHINE)
@@ -92,8 +92,8 @@ public class Maschine2Format implements IMaschineFormat
 
                 this.notifier.log ("IDS_NI_MASCHINE_FOUND_TYPE", "Container", appChunkData.getApplicationVersion ());
 
-                final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
-                if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+                final Optional<NIContainerDataChunk> presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+                if (presetChunk.isPresent () && presetChunk.get ().getData () instanceof final PresetChunkData presetChunkData)
                 {
                     final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor (this.notifier);
                     final Optional<IMultisampleSource> result = programAccessor.readMaschinePreset (sourceFolder, sourceFile, presetChunkData.getPresetData ());
@@ -118,8 +118,8 @@ public class Maschine2Format implements IMaschineFormat
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (new ByteArrayInputStream (version == 2 ? MASCHINE_TEMPLATE_V2 : MASCHINE_TEMPLATE_V3));
 
-        final NIContainerDataChunk soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
-        if (soundInfoChunk != null && soundInfoChunk.getData () instanceof final SoundinfoChunkData soundInfoChunkData)
+        final Optional<NIContainerDataChunk> soundInfoChunk = niContainerItem.find (NIContainerChunkType.SOUNDINFO_ITEM);
+        if (soundInfoChunk.isPresent () && soundInfoChunk.get ().getData () instanceof final SoundinfoChunkData soundInfoChunkData)
         {
             soundInfoChunkData.setName (multisampleSource.getName ());
             final IMetadata metadata = multisampleSource.getMetadata ();
@@ -130,8 +130,8 @@ public class Maschine2Format implements IMaschineFormat
             soundInfoChunkData.setAttributes (Collections.singletonList (metadata.getCategory ()));
         }
 
-        final NIContainerDataChunk presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
-        if (presetChunk != null && presetChunk.getData () instanceof final PresetChunkData presetChunkData)
+        final Optional<NIContainerDataChunk> presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
+        if (presetChunk.isPresent () && presetChunk.get ().getData () instanceof final PresetChunkData presetChunkData)
         {
             final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor (this.notifier);
             final byte [] presetData = programAccessor.writeMaschinePreset (multisampleSource, presetChunkData.getPresetData (), safeSampleFolderName);

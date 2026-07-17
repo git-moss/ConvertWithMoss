@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
@@ -717,12 +718,12 @@ public final class ZenCoreSvz
      * @param container The parsed container
      * @return The key-map or null
      */
-    public static ZenCoreKeyMap readKeyMap (final ZenCoreContainer container)
+    public static Optional<ZenCoreKeyMap> readKeyMap (final ZenCoreContainer container)
     {
         final ZenCoreContainer.Section msp = container.getSection ("MSPa");
         if (msp == null || msp.getCount () == 0)
-            return null;
-        return new ZenCoreKeyMap (msp.getFile (), msp.getDataStart ());
+            return Optional.empty ();
+        return Optional.of (new ZenCoreKeyMap (msp.getFile (), msp.getDataStart ()));
     }
 
 
@@ -735,11 +736,11 @@ public final class ZenCoreSvz
      * @param container The SVZ container
      * @return The shaping in an {@link SvzInstrument}, or null if the container holds no tone
      */
-    public static SvzInstrument readTone (final ZenCoreContainer container)
+    public static Optional<SvzInstrument> readTone (final ZenCoreContainer container)
     {
         final ZenCoreContainer.Section pat = container.getSection ("PATa");
         if (pat == null || pat.getCount () == 0)
-            return null;
+            return Optional.empty ();
         final byte [] file = pat.getFile ();
         final int r = pat.getDataStart ();
         final SvzInstrument tone = new SvzInstrument ();
@@ -758,7 +759,7 @@ public final class ZenCoreSvz
         tone.filterEnvDepth = file[r + PAT_FILTER_ENV_DEPTH];
         tone.filterEnvTimes = readEnvBlock (file, r + PAT_FILTER_ENV_TIME, 4);
         tone.filterEnvLevels = readEnvBlock (file, r + PAT_FILTER_ENV_LEVEL, 5);
-        return tone;
+        return Optional.of (tone);
     }
 
 

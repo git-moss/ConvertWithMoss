@@ -125,12 +125,12 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             if (this.waitForDelivery ())
                 return Optional.empty ();
 
-            final ISampleZone zone = this.createAndCheckSampleZone (instrument, dlsRegion, dlsFile.getWaveInfoFileNames (), waveSampleData);
-            if (zone == null)
+            final Optional<ISampleZone> zone = this.createAndCheckSampleZone (instrument, dlsRegion, dlsFile.getWaveInfoFileNames (), waveSampleData);
+            if (zone.isEmpty ())
                 continue;
             final Integer layerIndex = Integer.valueOf (dlsRegion.getLayer ());
             final IGroup group = groupsMap.computeIfAbsent (layerIndex, index -> new DefaultGroup ("Layer " + index));
-            group.addSampleZone (zone);
+            group.addSampleZone (zone.get ());
         }
 
         final String name = FileUtils.getNameWithoutType (sourceFile);
@@ -163,13 +163,13 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private ISampleZone createAndCheckSampleZone (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final List<String> waveInfoChunks, final List<WavFileSampleData> waveSampleData)
+    private Optional<ISampleZone> createAndCheckSampleZone (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final List<String> waveInfoChunks, final List<WavFileSampleData> waveSampleData)
     {
         final long sampleIndex = dlsRegion.getTableIndex ();
         if (sampleIndex >= waveSampleData.size ())
         {
             this.notifier.logError ("IDS_EXS_SAMPLE_INDEX_OUT_OF_BOUNDS", Long.toString (sampleIndex));
-            return null;
+            return Optional.empty ();
         }
 
         final ISampleZone zone = new DefaultSampleZone (waveInfoChunks.get ((int) sampleIndex), waveSampleData.get ((int) sampleIndex));
@@ -195,7 +195,7 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
 
         zone.getLoops ().addAll (dlsRegion.getLoops ());
 
-        return zone;
+        return Optional.of (zone);
     }
 
 
@@ -207,34 +207,34 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         amplitudeModulator.setDepth (1.0);
         amplitudeModulator.setSource (amplitudeEnvelope);
 
-        final DlsArticulation velocityModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_KEYONVELOCITY, DlsArticulation.CONN_DST_GAIN);
-        if (velocityModulation != null)
-            zone.getAmplitudeVelocityModulator ().setDepth (gainToLinear (velocityModulation.getScale ()));
+        final Optional<DlsArticulation> velocityModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_KEYONVELOCITY, DlsArticulation.CONN_DST_GAIN);
+        if (velocityModulation.isPresent ())
+            zone.getAmplitudeVelocityModulator ().setDepth (gainToLinear (velocityModulation.get ().getScale ()));
 
         // Pitch bend up/down
-        final DlsArticulation pitchBendModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_PITCHWHEEL, DlsArticulation.CONN_DST_PITCH);
-        if (pitchBendModulation != null)
+        final Optional<DlsArticulation> pitchBendModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_PITCHWHEEL, DlsArticulation.CONN_DST_PITCH);
+        if (pitchBendModulation.isPresent ())
         {
-            final int bendValue = pitchBendModulation.getScale ();
+            final int bendValue = pitchBendModulation.get ().getScale ();
             zone.setBendUp (bendValue);
             zone.setBendDown (-bendValue);
         }
 
         // Pitch envelope
-        final DlsArticulation pitchModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_EG2, DlsArticulation.CONN_DST_PITCH);
-        if (pitchModulation != null)
+        final Optional<DlsArticulation> pitchModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_EG2, DlsArticulation.CONN_DST_PITCH);
+        if (pitchModulation.isPresent ())
         {
             final IEnvelope pitchEnvelope = createEnvelope (dlsInstrument, dlsRegion, true);
             final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
-            pitchEnvelopeModulator.setDepth (normalizeEG2ToPitch (pitchModulation.getScale ()));
+            pitchEnvelopeModulator.setDepth (normalizeEG2ToPitch (pitchModulation.get ().getScale ()));
             pitchEnvelopeModulator.setSource (pitchEnvelope);
         }
 
         // Pitch tuning
-        final DlsArticulation pitchTuning = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_PITCH);
-        if (pitchTuning != null)
+        final Optional<DlsArticulation> pitchTuning = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_PITCH);
+        if (pitchTuning.isPresent ())
         {
-            final double tuning = normalizeEG2ToPitch (pitchTuning.getScale ());
+            final double tuning = normalizeEG2ToPitch (pitchTuning.get ().getScale ());
             zone.setTuning (zone.getTuning () + tuning);
         }
 
@@ -242,21 +242,21 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static DlsArticulation getArticulation (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int source, final int destination)
+    private static Optional<DlsArticulation> getArticulation (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int source, final int destination)
     {
-        DlsArticulation articulation = getArticulation (dlsRegion.getArticulations (), source, destination);
-        if (articulation == null)
-            articulation = getArticulation (dlsInstrument.getArticulations (), source, destination);
-        return articulation;
+        final Optional<DlsArticulation> articulation = getArticulation (dlsRegion.getArticulations (), source, destination);
+        if (articulation.isPresent ())
+            return articulation;
+        return getArticulation (dlsInstrument.getArticulations (), source, destination);
     }
 
 
-    private static DlsArticulation getArticulation (final List<DlsArticulation> articulations, final int source, final int destination)
+    private static Optional<DlsArticulation> getArticulation (final List<DlsArticulation> articulations, final int source, final int destination)
     {
         for (final DlsArticulation articulation: articulations)
             if (articulation.getSource () == source && articulation.getDestination () == destination)
-                return articulation;
-        return null;
+                return Optional.of (articulation);
+        return Optional.empty ();
     }
 
 
@@ -273,8 +273,8 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             sustain = getLevel (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_EG1_SUSTAINLEVEL);
         else
         {
-            final DlsArticulation articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_EG2_SUSTAINLEVEL);
-            sustain = articulation == null ? -1 : normalizeEG2ToPitch (articulation.getScale ());
+            final Optional<DlsArticulation> articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_EG2_SUSTAINLEVEL);
+            sustain = articulation.isEmpty () ? -1 : normalizeEG2ToPitch (articulation.get ().getScale ());
         }
 
         final IEnvelope envelope = new DefaultEnvelope ();
@@ -297,15 +297,15 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
 
     private static double getTime (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int destination)
     {
-        final DlsArticulation articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, destination);
-        return articulation == null ? -1 : DlsArticulation.absoluteTimeToSeconds (articulation.getScale ());
+        final Optional<DlsArticulation> articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, destination);
+        return articulation.isEmpty () ? -1 : DlsArticulation.absoluteTimeToSeconds (articulation.get ().getScale ());
     }
 
 
     private static double getLevel (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int destination)
     {
-        final DlsArticulation articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, destination);
-        return articulation == null ? -1 : DlsArticulation.normalizeSustainLevel (articulation.getScale ());
+        final Optional<DlsArticulation> articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, destination);
+        return articulation.isEmpty () ? -1 : DlsArticulation.normalizeSustainLevel (articulation.get ().getScale ());
     }
 
 

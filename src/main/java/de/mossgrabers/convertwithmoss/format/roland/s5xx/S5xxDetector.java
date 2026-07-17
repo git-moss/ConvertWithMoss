@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -321,13 +322,13 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static String createMetadataDescription (final S5xxDiskLabel diskLabel)
+    private static String createMetadataDescription (final Optional<S5xxDiskLabel> diskLabel)
     {
-        if (diskLabel == null)
+        if (diskLabel.isEmpty ())
             return "";
 
         final StringBuilder sb = new StringBuilder ();
-        for (final String row: diskLabel.getRows ())
+        for (final String row: diskLabel.get ().getRows ())
             if (row != null && !row.isBlank ())
                 sb.append (row.trim ()).append ("\n");
         return sb.toString ().trim ();
@@ -416,7 +417,9 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
                 return false;
             try
             {
-                if (sampleZone1.getSampleData ().getAudioMetadata ().getNumberOfSamples () != sampleZone2.getSampleData ().getAudioMetadata ().getNumberOfSamples ())
+                final Optional<ISampleData> sampleData = sampleZone1.getSampleData ();
+                final Optional<ISampleData> sampleData2 = sampleZone2.getSampleData ();
+                if (sampleData.isEmpty () || sampleData2.isEmpty () || sampleData.get ().getAudioMetadata ().getNumberOfSamples () != sampleData2.get ().getAudioMetadata ().getNumberOfSamples ())
                     return false;
             }
             catch (final IOException _)

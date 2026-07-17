@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
@@ -180,7 +181,11 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
      */
     private int fillSlots (final MV8000Patch patch, final int partialIndex, final int [] slotCounts, final ISampleZone zone, final int sampleId, final Set<String> usedSampleNames, final Map<Object, Integer> sampleIdsByContent) throws IOException
     {
-        final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData (), DESTINATION_FORMAT);
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+
+        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
         final int numChannels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (numChannels > 2)
         {

@@ -461,12 +461,12 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
                 final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, extension));
                 this.progress.notifyProgress ();
-                final ISampleData sampleData = zone.getSampleData ();
-                if (sampleData == null)
+                final Optional<ISampleData> sampleData = zone.getSampleData ();
+                if (sampleData.isEmpty ())
                     this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
                 else
                 {
-                    AudioFileUtils.compressToFLAC (sampleData, FLAC_TARGET_FORMAT, file);
+                    AudioFileUtils.compressToFLAC (sampleData.get (), FLAC_TARGET_FORMAT, file);
                     writtenFiles.add (file);
                 }
             }
@@ -510,10 +510,10 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     private static void recalculateSamplePositions (final ISampleZone sampleZone, final int newSampleRate, final boolean onlyIfLarger) throws IOException
     {
-        final ISampleData sampleData = sampleZone.getSampleData ();
-        if (sampleData == null)
+        final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+        if (sampleData.isEmpty ())
             return;
-        final int sampleRate = sampleData.getAudioMetadata ().getSampleRate ();
+        final int sampleRate = sampleData.get ().getAudioMetadata ().getSampleRate ();
         if (onlyIfLarger && sampleRate <= newSampleRate)
             return;
         final double sampleRateRatio = newSampleRate / (double) sampleRate;
@@ -612,10 +612,10 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Remove a doubled-up file ending from a name. A library name is free text from the user
-     * interface - typed with the file ending (e.g. "MyLibrary.xrni") it would otherwise come out
-     * as "MyLibrary_xrni.xrni", since the name sanitizing replaces the dot with an underscore
-     * before the name reaches the creator; both spellings are therefore handled. Only a tail that
-     * matches the extension actually being appended is removed.
+     * interface - typed with the file ending (e.g. "MyLibrary.xrni") it would otherwise come out as
+     * "MyLibrary_xrni.xrni", since the name sanitizing replaces the dot with an underscore before
+     * the name reaches the creator; both spellings are therefore handled. Only a tail that matches
+     * the extension actually being appended is removed.
      *
      * @param name The file name, without the extension that will be appended
      * @param extension The extension that will be appended, with or without a leading dot
@@ -751,14 +751,14 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void storeSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final IMultisampleSource multiSampleSource, final int zoneIndex, final ISampleZone zone, final String path) throws IOException
     {
-        final String name = this.checkSampleName (alreadyStored, zoneIndex, zone, path);
-        if (name == null)
+        final Optional<String> name = this.checkSampleName (alreadyStored, zoneIndex, zone, path);
+        if (name.isEmpty ())
             return;
 
-        final ISampleData sampleData = zone.getSampleData ();
-        if (sampleData == null)
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
         {
-            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
+            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name.get ());
             this.notifier.logText ("\n");
             return;
         }
@@ -769,8 +769,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
             if (this.requiresRewrite (DESTINATION_FORMAT))
                 this.rewriteFile (multiSampleSource, zone, checkedOut, DESTINATION_FORMAT, false);
             else
-                sampleData.writeSample (checkedOut);
-            putUncompressedEntry (zipOutputStream, name, bout.toByteArray (), crc, multiSampleSource.getMetadata ().getCreationDateTime ());
+                sampleData.get ().writeSample (checkedOut);
+            putUncompressedEntry (zipOutputStream, name.get (), bout.toByteArray (), crc, multiSampleSource.getMetadata ().getCreationDateTime ());
         }
     }
 
@@ -893,14 +893,14 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                         this.rewriteFile (multisampleSource, zone, fos, destinationFormat, trim);
                     else
                     {
-                        final ISampleData sampleData = zone.getSampleData ();
-                        if (sampleData == null)
+                        final Optional<ISampleData> sampleData = zone.getSampleData ();
+                        if (sampleData.isEmpty ())
                         {
                             this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
                             this.notifier.logText ("\n");
                         }
                         else
-                            sampleData.writeSample (fos);
+                            sampleData.get ().writeSample (fos);
                     }
 
                     writtenFiles.add (file);
@@ -948,12 +948,12 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
-        final ISampleData sampleData = zone.getSampleData ();
-        if (sampleData == null)
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
             return;
 
         // Convert resolution
-        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData, destinationFormat);
+        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), destinationFormat);
         if (wavFile.getDataChunk () == null)
             throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));
 
@@ -1031,11 +1031,11 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected void zipSamplefile (final Set<String> alreadyStored, final ZipOutputStream zipOutputStream, final int zoneIndex, final ISampleZone zone, final Date dateTime, final String path) throws IOException
     {
-        final String name = this.checkSampleName (alreadyStored, zoneIndex, zone, path);
-        if (name == null)
+        final Optional<String> name = this.checkSampleName (alreadyStored, zoneIndex, zone, path);
+        if (name.isEmpty ())
             return;
 
-        final ZipEntry entry = new ZipEntry (name);
+        final ZipEntry entry = new ZipEntry (name.get ());
         if (dateTime != null)
         {
             final long millis = dateTime.getTime ();
@@ -1044,14 +1044,14 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         }
 
         zipOutputStream.putNextEntry (entry);
-        final ISampleData sampleData = zone.getSampleData ();
-        if (sampleData == null)
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
         {
-            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name);
+            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), name.get ());
             this.notifier.logText ("\n");
         }
         else
-            sampleData.writeSample (zipOutputStream);
+            sampleData.get ().writeSample (zipOutputStream);
         zipOutputStream.closeEntry ();
     }
 
@@ -1126,15 +1126,15 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      * @param path The prefix path
      * @return The full path or null if already added to the ZIP
      */
-    protected String checkSampleName (final Set<String> alreadyStored, final int zoneIndex, final ISampleZone zone, final String path)
+    protected Optional<String> checkSampleName (final Set<String> alreadyStored, final int zoneIndex, final ISampleZone zone, final String path)
     {
         String filename = this.createFileName (zoneIndex, zone);
         if (path != null)
             filename = path + FORWARD_SLASH + filename;
         if (alreadyStored.contains (filename))
-            return null;
+            return Optional.empty ();
         alreadyStored.add (filename);
-        return filename;
+        return Optional.of (filename);
     }
 
 

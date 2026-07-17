@@ -174,7 +174,7 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
                 zone.setKeyTracking (0);
 
             // Add missing information from the WAV file
-            zone.getSampleData ().addZoneData (zone, true, true);
+            sampleData.addZoneData (zone, true, true);
 
             groups.computeIfAbsent (Integer.valueOf (velocity), v -> new DefaultGroup ("Group " + v)).addSampleZone (zone);
         }

@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.akai.s1000;
 
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
@@ -118,13 +119,14 @@ public class AkaiS1000ProgramConverter
                 if (sampleName == null || sampleName.isBlank ())
                     continue;
 
-                final AkaiS1000Sample sample = lookupSample (samples, sampleName);
-                if (sample == null)
+                final Optional<AkaiS1000Sample> sampleOpt = lookupSample (samples, sampleName);
+                if (sampleOpt.isEmpty ())
                 {
                     this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
                     continue;
                 }
 
+                final AkaiS1000Sample sample = sampleOpt.get ();
                 final ISampleZone sampleZone = new DefaultSampleZone (sampleName, lowKey, highKey);
 
                 final short [] samples16bit = sample.getSamples ();
@@ -197,14 +199,14 @@ public class AkaiS1000ProgramConverter
     }
 
 
-    private static AkaiS1000Sample lookupSample (final List<AkaiS1000Sample> samples, final String sampleName)
+    private static Optional<AkaiS1000Sample> lookupSample (final List<AkaiS1000Sample> samples, final String sampleName)
     {
         if (sampleName == null)
-            return null;
+            return Optional.empty ();
         for (final AkaiS1000Sample sample: samples)
             if (sampleName.equals (sample.getName ()))
-                return sample;
-        return null;
+                return Optional.of (sample);
+        return Optional.empty ();
     }
 
 

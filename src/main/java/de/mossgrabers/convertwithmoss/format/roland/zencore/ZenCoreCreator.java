@@ -31,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
@@ -131,14 +132,14 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final List<SvzSample> pool = new ArrayList<> ();
         final Map<Object, Integer> byContent = new HashMap<> ();
         final Set<String> usedNames = new HashSet<> ();
-        final SvzInstrument instrument = this.buildInstrument (multisampleSource, pool, byContent, usedNames, assignToneNames (Collections.singletonList (multisampleSource.getName ())).get (0));
-        if (instrument == null)
+        final Optional<SvzInstrument> instrument = this.buildInstrument (multisampleSource, pool, byContent, usedNames, assignToneNames (Collections.singletonList (multisampleSource.getName ())).get (0));
+        if (instrument.isEmpty ())
             return;
         ensureLoadableSamplePool (pool, byContent, usedNames);
 
         final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "svz");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
-        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, List.of (instrument)));
+        writeFile (outputFile, ZenCoreSvz.buildSvz (pool, List.of (instrument.get ())));
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
@@ -180,9 +181,9 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             final IMultisampleSource source = multisampleSources.get (i);
             try
             {
-                final SvzInstrument instrument = this.buildInstrument (source, pool, byContent, usedNames, toneNames.get (i));
-                if (instrument != null)
-                    instruments.add (instrument);
+                final Optional<SvzInstrument> instrument = this.buildInstrument (source, pool, byContent, usedNames, toneNames.get (i));
+                if (instrument.isPresent ())
+                    instruments.add (instrument.get ());
             }
             catch (final IOException | RuntimeException ex)
             {
@@ -204,7 +205,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
-    private SvzInstrument buildInstrument (final IMultisampleSource multisampleSource, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final String toneName) throws IOException
+    private Optional<SvzInstrument> buildInstrument (final IMultisampleSource multisampleSource, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final String toneName) throws IOException
     {
         // The audio is resampled to 48 kHz (see ZENCORE_FORMAT), so scale the loop/start/end
         // frames to it; the loop end is then re-seated to a period-aligned point per sample in
@@ -233,9 +234,9 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             if (instrument.partials.isEmpty ())
             {
                 this.notifier.logError (IDS_ZENCORE_EMPTY_SOURCE, multisampleSource.getName ());
-                return null;
+                return Optional.empty ();
             }
-            return instrument;
+            return Optional.of (instrument);
         }
 
         final List<ISampleZone> zones = new ArrayList<> ();
@@ -247,7 +248,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         if (representativeZone == null)
         {
             this.notifier.logError (IDS_ZENCORE_EMPTY_SOURCE, multisampleSource.getName ());
-            return null;
+            return Optional.empty ();
         }
         // The FANTOM tone has one filter + amp envelope per partial; take them from a
         // representative zone so converted tones keep the source's character (offsets validated
@@ -259,7 +260,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         instrument.multisampleName = contentName (instrument.name, contentHash (keyMapContent ("L", instrument.keyToSample, pool)));
         if (instrument.stereo)
             instrument.multisampleNameRight = contentName (instrument.name, contentHash (keyMapContent ("R", instrument.keyToSampleRight, pool)));
-        return instrument;
+        return Optional.of (instrument);
     }
 
 
@@ -487,7 +488,8 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             for (final ISampleZone zone: group.getSampleZones ())
                 try
                 {
-                    if (zone.getSampleData ().getAudioMetadata ().getChannels () > 1)
+                    final Optional<ISampleData> sampleData = zone.getSampleData ();
+                    if (sampleData.isPresent () && sampleData.get ().getAudioMetadata ().getChannels () > 1)
                         return true;
                 }
                 catch (final IOException _)
@@ -651,7 +653,10 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      */
     private Optional<int []> addSample (final ISampleZone zone, final boolean storeStereo, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames, final double [] minOnsetEdge) throws IOException
     {
-        final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData (), ZENCORE_FORMAT);
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), ZENCORE_FORMAT);
         final int channels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (channels < 1 || channels > 2)
         {
@@ -712,9 +717,9 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
             // loop points alone - re-seating the end afterwards would move the wrap away from the
             // junction the fade constructed.
             final int sourceCrossfade = loop.getCrossfadeInSamples ();
-            final byte [] baked = sourceCrossfade > 0 ? bakeLoopCrossfade (pcm, channels, loopStart, end, sourceCrossfade) : null;
-            if (baked != null)
-                pcm = baked;
+            final Optional<byte []> baked = sourceCrossfade > 0 ? bakeLoopCrossfade (pcm, channels, loopStart, end, sourceCrossfade) : Optional.empty ();
+            if (baked.isPresent ())
+                pcm = baked.get ();
             else
             {
                 if (loopStart < 2 && end - loopStart >= 64 && startWrapDiscontinuity (pcm, channels, loopStart, end) > LOOP_SEAM_TOLERANCE)
@@ -1069,7 +1074,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param fadeFrames The requested cross-fade length in frames
      * @return A copy of the PCM with the cross-faded loop, or null if no fade fits
      */
-    private static byte [] bakeLoopCrossfade (final byte [] pcm, final int channels, final int loopStart, final int end, final int fadeFrames)
+    private static Optional<byte []> bakeLoopCrossfade (final byte [] pcm, final int channels, final int loopStart, final int end, final int fadeFrames)
     {
         final int frames = pcm.length / (2 * channels);
 
@@ -1080,7 +1085,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final double startLevel = rmsLevel (pcm, channels, loopStart, Math.min (end, loopStart + 4800));
         final boolean levelMatched = Math.max (tailLevel, startLevel) <= Math.min (tailLevel, startLevel) * 1.12 + 32;
         if (seam <= LOOP_SEAM_TOLERANCE && levelMatched)
-            return null;
+            return Optional.empty ();
 
         // Prefer fading the loop START from the tail's natural continuation (the source audio past
         // the loop end): the wrap then glides out of the unmodified tail straight into the loop
@@ -1104,12 +1109,12 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
                     setSample (out, channels, loopStart + i, channel, (int) Math.round (loopValue * weight + tailContinuation * (1.0 - weight)));
                 }
             }
-            return out;
+            return Optional.of (out);
         }
 
         final int n = Math.min (fadeFrames, Math.min (end - loopStart, loopStart));
         if (n < 8)
-            return null;
+            return Optional.empty ();
         final byte [] out = pcm.clone ();
         for (int i = 0; i < n; i++)
         {
@@ -1121,7 +1126,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
                 setSample (out, channels, end - n + i, channel, (int) Math.round (tail * (1.0 - weight) + lead * weight));
             }
         }
-        return out;
+        return Optional.of (out);
     }
 
 

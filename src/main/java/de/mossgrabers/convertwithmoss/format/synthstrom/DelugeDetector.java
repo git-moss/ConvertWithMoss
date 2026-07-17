@@ -10,6 +10,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -180,14 +181,14 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         final String rootName = top.getNodeName ();
         // Root tag is either 'kit' or 'sound', already checked in fixBrokenXml
         final boolean isKit = DelugeTag.KIT.equals (rootName);
-        final IGroup group = isKit ? this.parseKit (file, top) : this.parseSound (file, top);
-        if (group == null)
+        final Optional<IGroup> group = isKit ? this.parseKit (file, top) : this.parseSound (file, top);
+        if (group.isEmpty ())
         {
             this.notifier.logError ("IDS_DELUGE_NO_SAMPLE_REFS");
             return Collections.emptyList ();
         }
 
-        return Collections.singletonList (this.createMultisampleSource (file, FileUtils.getNameWithoutType (file), Collections.singletonList (group)));
+        return Collections.singletonList (this.createMultisampleSource (file, FileUtils.getNameWithoutType (file), Collections.singletonList (group.get ())));
     }
 
 
@@ -198,15 +199,15 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param soundElement The sound element
      * @return One group (containing all zones) or null
      */
-    private IGroup parseSound (final File file, final Element soundElement)
+    private Optional<IGroup> parseSound (final File file, final Element soundElement)
     {
-        final Element oscElement = findSampleOscillatorElement (soundElement);
-        if (oscElement == null)
-            return null;
+        final Optional<Element> oscElement = findSampleOscillatorElement (soundElement);
+        if (oscElement.isEmpty ())
+            return Optional.empty ();
 
-        final List<ISampleZone> zones = this.parseSampleOscillator (file, oscElement);
+        final List<ISampleZone> zones = this.parseSampleOscillator (file, oscElement.get ());
         if (zones.isEmpty ())
-            return null;
+            return Optional.empty ();
 
         applySoundParameters (soundElement, zones);
 
@@ -214,7 +215,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         for (final ISampleZone zone: zones)
             group.addSampleZone (zone);
 
-        return group;
+        return Optional.of (group);
     }
 
 
@@ -226,25 +227,26 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param kitElement The kit element
      * @return One group (containing all drum zones) or null
      */
-    private IGroup parseKit (final File file, final Element kitElement)
+    private Optional<IGroup> parseKit (final File file, final Element kitElement)
     {
-        final Element soundSources = getDirectChild (kitElement, DelugeTag.SOUND_SOURCES);
-        if (soundSources == null)
-            return null;
+        final Optional<Element> soundSources = getDirectChild (kitElement, DelugeTag.SOUND_SOURCES);
+        if (soundSources.isEmpty ())
+            return Optional.empty ();
 
         final IGroup group = new DefaultGroup ();
         int note = KIT_BASE_NOTE;
-        for (final Element drumSound: getDirectChildren (soundSources, DelugeTag.SOUND))
+        for (final Element drumSound: getDirectChildren (soundSources.get (), DelugeTag.SOUND))
         {
             if (this.waitForDelivery ())
-                return null;
+                return Optional.empty ();
 
-            final Element oscElement = findSampleOscillatorElement (drumSound);
-            if (oscElement != null)
+            final Optional<Element> oscElement = findSampleOscillatorElement (drumSound);
+            if (oscElement.isPresent ())
             {
-                final ISampleZone zone = this.createDrumZone (file, oscElement, note);
-                if (zone != null)
+                final Optional<ISampleZone> zoneOpt = this.createDrumZone (file, oscElement.get (), note);
+                if (zoneOpt.isPresent ())
                 {
+                    final ISampleZone zone = zoneOpt.get ();
                     applySoundParameters (drumSound, Collections.singletonList (zone));
                     group.addSampleZone (zone);
                     note++;
@@ -255,7 +257,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
                 break;
         }
 
-        return group.getSampleZones ().isEmpty () ? null : group;
+        return group.getSampleZones ().isEmpty () ? Optional.empty () : Optional.of (group);
     }
 
 
@@ -265,15 +267,18 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param soundElement The sound element to search
      * @return The oscillator element or null if there is no sample based oscillator
      */
-    private static Element findSampleOscillatorElement (final Element soundElement)
+    private static Optional<Element> findSampleOscillatorElement (final Element soundElement)
     {
         for (final String oscTag: OSC_TAGS)
         {
-            final Element osc = getDirectChild (soundElement, oscTag);
-            if (osc != null && DelugeTag.TYPE_SAMPLE.equals (getValue (osc, DelugeTag.TYPE)) && (getDirectChild (osc, DelugeTag.SAMPLE_RANGES) != null || !getValue (osc, DelugeTag.FILE_NAME).isBlank ()))
-                return osc;
+            final Optional<Element> oscOpt = getDirectChild (soundElement, oscTag);
+            if (oscOpt.isEmpty ())
+                continue;
+            final Element osc = oscOpt.get ();
+            if (DelugeTag.TYPE_SAMPLE.equals (getValue (osc, DelugeTag.TYPE)) && (getDirectChild (osc, DelugeTag.SAMPLE_RANGES).isPresent () || !getValue (osc, DelugeTag.FILE_NAME).isBlank ()))
+                return Optional.of (osc);
         }
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -290,28 +295,28 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         final boolean reversed = getIntValue (oscElement, DelugeTag.REVERSED, 0) != 0;
 
         final List<ISampleZone> zones = new ArrayList<> ();
-        final Element sampleRanges = getDirectChild (oscElement, DelugeTag.SAMPLE_RANGES);
-        if (sampleRanges != null)
+        final Optional<Element> sampleRanges = getDirectChild (oscElement, DelugeTag.SAMPLE_RANGES);
+        if (sampleRanges.isPresent ())
         {
-            final List<Element> rangeElements = getDirectChildren (sampleRanges, DelugeTag.SAMPLE_RANGE);
+            final List<Element> rangeElements = getDirectChildren (sampleRanges.get (), DelugeTag.SAMPLE_RANGE);
             int previousTopNote = -1;
             for (final Element rangeElement: rangeElements)
             {
                 final int topNote = getIntValue (rangeElement, DelugeTag.RANGE_TOP_NOTE, -1);
                 final int keyLow = previousTopNote + 1;
                 final int keyHigh = topNote >= 0 ? topNote : 127;
-                final ISampleZone zone = this.createZone (file, rangeElement, rangeElement, keyLow, keyHigh, -1, loopMode, reversed);
-                if (zone != null)
-                    zones.add (zone);
+                final Optional<ISampleZone> zone = this.createZone (file, rangeElement, rangeElement, keyLow, keyHigh, -1, loopMode, reversed);
+                if (zone.isPresent ())
+                    zones.add (zone.get ());
                 previousTopNote = keyHigh;
             }
         }
         else
         {
             // Single sample - file name and zone are stored directly on the oscillator element
-            final ISampleZone zone = this.createZone (file, oscElement, oscElement, 0, 127, -1, loopMode, reversed);
-            if (zone != null)
-                zones.add (zone);
+            final Optional<ISampleZone> zone = this.createZone (file, oscElement, oscElement, 0, 127, -1, loopMode, reversed);
+            if (zone.isPresent ())
+                zones.add (zone.get ());
         }
         return zones;
     }
@@ -325,19 +330,19 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param note The note to which the drum is mapped
      * @return The zone or null if the drum has no usable sample
      */
-    private ISampleZone createDrumZone (final File file, final Element oscElement, final int note)
+    private Optional<ISampleZone> createDrumZone (final File file, final Element oscElement, final int note)
     {
         final int loopMode = getIntValue (oscElement, DelugeTag.LOOP_MODE, DelugeTag.LOOP_MODE_CUT);
         final boolean reversed = getIntValue (oscElement, DelugeTag.REVERSED, 0) != 0;
 
         Element attributeElement = oscElement;
         Element zoneParent = oscElement;
-        final Element sampleRanges = getDirectChild (oscElement, DelugeTag.SAMPLE_RANGES);
-        if (sampleRanges != null)
+        final Optional<Element> sampleRanges = getDirectChild (oscElement, DelugeTag.SAMPLE_RANGES);
+        if (sampleRanges.isPresent ())
         {
-            final List<Element> rangeElements = getDirectChildren (sampleRanges, DelugeTag.SAMPLE_RANGE);
+            final List<Element> rangeElements = getDirectChildren (sampleRanges.get (), DelugeTag.SAMPLE_RANGE);
             if (rangeElements.isEmpty ())
-                return null;
+                return Optional.empty ();
             attributeElement = rangeElements.get (0);
             zoneParent = rangeElements.get (0);
         }
@@ -359,11 +364,11 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param reversed True if the sample is reversed
      * @return The created zone or null if the sample could not be loaded
      */
-    private ISampleZone createZone (final File file, final Element attributeElement, final Element zoneParent, final int keyLow, final int keyHigh, final double fixedRootNote, final int loopMode, final boolean reversed)
+    private Optional<ISampleZone> createZone (final File file, final Element attributeElement, final Element zoneParent, final int keyLow, final int keyHigh, final double fixedRootNote, final int loopMode, final boolean reversed)
     {
         final String fileName = getValue (attributeElement, DelugeTag.FILE_NAME);
         if (fileName.isBlank ())
-            return null;
+            return Optional.empty ();
 
         // Expect the sample 1 folder upwards from KIT or SYNTHS in a SAMPLES folder (which is part
         // of the relative path in fileName)
@@ -378,7 +383,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         if (!sampleFile.exists ())
         {
             this.notifier.logError (ERR_SAMPLE_MISSING, sampleFile.getAbsolutePath ());
-            return null;
+            return Optional.empty ();
         }
         this.previousSampleFolder = sampleFile.getParentFile ();
 
@@ -390,7 +395,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         catch (final IOException ex)
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
-            return null;
+            return Optional.empty ();
         }
 
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
@@ -411,18 +416,18 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         // normal forward loop here. Without this a held STRETCH patch (e.g. a sustained pad) would
         // play its sample once and then drop out, because no loop was created at all.
         final boolean isLoop = loopMode == DelugeTag.LOOP_MODE_LOOP || loopMode == DelugeTag.LOOP_MODE_STRETCH;
-        final ISampleLoop loop = applyZonePositions (getDirectChild (zoneParent, DelugeTag.ZONE), zone, sampleData, isLoop);
+        final Optional<ISampleLoop> loop = applyZonePositions (getDirectChild (zoneParent, DelugeTag.ZONE), zone, sampleData, isLoop);
 
         try
         {
-            sampleData.addZoneData (zone, false, loop == null && isLoop);
+            sampleData.addZoneData (zone, false, loop.isEmpty () && isLoop);
         }
         catch (final IOException ex)
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, ex);
         }
 
-        return zone;
+        return Optional.of (zone);
     }
 
 
@@ -431,17 +436,18 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * Handles both the sample-frame based positions and the older milliseconds/seconds based
      * positions.
      *
-     * @param zoneElement The zone element (may be null)
+     * @param zoneElementOpt The zone element (may be null)
      * @param zone The zone to fill
      * @param sampleData The sample data (used for the sample rate when converting milliseconds)
      * @param isLoop True if the oscillator loop mode is set to loop
      * @return The created loop or null if there is none
      */
-    private static ISampleLoop applyZonePositions (final Element zoneElement, final ISampleZone zone, final ISampleData sampleData, final boolean isLoop)
+    private static Optional<ISampleLoop> applyZonePositions (final Optional<Element> zoneElementOpt, final ISampleZone zone, final ISampleData sampleData, final boolean isLoop)
     {
-        if (zoneElement == null)
-            return null;
+        if (zoneElementOpt.isEmpty ())
+            return Optional.empty ();
 
+        final Element zoneElement = zoneElementOpt.get ();
         int sampleRate = 0;
         int numberOfSamples = Integer.MAX_VALUE;
         try
@@ -472,12 +478,12 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             zone.setStop (end);
 
         if (!isLoop)
-            return null;
+            return Optional.empty ();
 
         final int loopStart = (int) Math.round (getDoubleValue (zoneElement, DelugeTag.START_LOOP_POS, -1));
         final int loopEnd = (int) Math.round (getDoubleValue (zoneElement, DelugeTag.END_LOOP_POS, -1));
         if (loopStart <= 0 && loopEnd <= 0)
-            return null;
+            return Optional.empty ();
 
         final ISampleLoop loop = new DefaultSampleLoop ();
         loop.setType (LoopType.FORWARDS);
@@ -496,7 +502,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
                 loop.setEnd (loopEndDefault);
         }
         zone.addLoop (loop);
-        return loop;
+        return Optional.of (loop);
     }
 
 
@@ -509,11 +515,12 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static void applySoundParameters (final Element soundElement, final List<ISampleZone> zones)
     {
-        final Element defaultParams = getDirectChild (soundElement, DelugeTag.DEFAULT_PARAMS);
-        if (defaultParams == null)
+        final Optional<Element> defaultParamsOpt = getDirectChild (soundElement, DelugeTag.DEFAULT_PARAMS);
+        if (defaultParamsOpt.isEmpty ())
             return;
+        final Element defaultParams = defaultParamsOpt.get ();
 
-        final Element envelope1 = getDirectChild (defaultParams, DelugeTag.ENVELOPE1);
+        final Optional<Element> envelope1 = getDirectChild (defaultParams, DelugeTag.ENVELOPE1);
         // The Deluge expresses velocity sensitivity of the amplitude as a "velocity" patch cable
         // routed to the post-effects volume.
         final double amplitudeVelocityDepth = readPatchCableDepth (defaultParams, DelugeTag.SOURCE_VELOCITY, DelugeTag.DESTINATION_VOLUME);
@@ -521,14 +528,14 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         for (final ISampleZone zone: zones)
         {
             final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
-            if (envelope1 != null)
-                readEnvelope (envelope1, amplitudeModulator.getSource ());
+            if (envelope1.isPresent ())
+                readEnvelope (envelope1.get (), amplitudeModulator.getSource ());
             amplitudeModulator.setDepth (amplitudeVelocityDepth);
 
             // A fresh filter is read per zone so the zones do not share mutable modulators.
-            final IFilter filter = readFilter (soundElement, defaultParams);
-            if (filter != null)
-                zone.setFilter (filter);
+            final Optional<IFilter> filter = readFilter (soundElement, defaultParams);
+            if (filter.isPresent ())
+                zone.setFilter (filter.get ());
         }
     }
 
@@ -568,39 +575,39 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param defaultParams The default parameters element which contains the frequency/resonance
      * @return The filter or null
      */
-    private static IFilter readFilter (final Element soundElement, final Element defaultParams)
+    private static Optional<IFilter> readFilter (final Element soundElement, final Element defaultParams)
     {
-        final Element nestedLpf = getDirectChild (defaultParams, DelugeTag.LPF);
-        final String lpfFrequency = nestedLpf != null ? getValue (nestedLpf, DelugeTag.FREQUENCY) : getValue (defaultParams, DelugeTag.LPF_FREQUENCY);
+        final Optional<Element> nestedLpf = getDirectChild (defaultParams, DelugeTag.LPF);
+        final String lpfFrequency = nestedLpf.isPresent () ? getValue (nestedLpf.get (), DelugeTag.FREQUENCY) : getValue (defaultParams, DelugeTag.LPF_FREQUENCY);
         if (!lpfFrequency.isBlank ())
         {
             final int frequencyParam = DelugeValues.parseValue (lpfFrequency, DelugeValues.PARAM_MAX);
             if (frequencyParam < DelugeValues.PARAM_MAX)
             {
-                final String lpfResonance = nestedLpf != null ? getValue (nestedLpf, DelugeTag.RESONANCE) : getValue (defaultParams, DelugeTag.LPF_RESONANCE);
+                final String lpfResonance = nestedLpf.isPresent () ? getValue (nestedLpf.get (), DelugeTag.RESONANCE) : getValue (defaultParams, DelugeTag.LPF_RESONANCE);
                 final double resonance = DelugeValues.paramToLevel (DelugeValues.parseValue (lpfResonance, DelugeValues.PARAM_MIN));
                 final IFilter filter = createFilter (getValue (soundElement, DelugeTag.LPF_MODE), FilterType.LOW_PASS, 4, DelugeValues.paramToCutoff (frequencyParam), resonance);
                 applyFilterModulation (filter, defaultParams, DelugeTag.LPF_FREQUENCY);
-                return filter;
+                return Optional.of (filter);
             }
         }
 
-        final Element nestedHpf = getDirectChild (defaultParams, DelugeTag.HPF);
-        final String hpfFrequency = nestedHpf != null ? getValue (nestedHpf, DelugeTag.FREQUENCY) : getValue (defaultParams, DelugeTag.HPF_FREQUENCY);
+        final Optional<Element> nestedHpf = getDirectChild (defaultParams, DelugeTag.HPF);
+        final String hpfFrequency = nestedHpf.isPresent () ? getValue (nestedHpf.get (), DelugeTag.FREQUENCY) : getValue (defaultParams, DelugeTag.HPF_FREQUENCY);
         if (!hpfFrequency.isBlank ())
         {
             final int frequencyParam = DelugeValues.parseValue (hpfFrequency, DelugeValues.PARAM_MIN);
             if (frequencyParam > DelugeValues.PARAM_MIN)
             {
-                final String hpfResonance = nestedHpf != null ? getValue (nestedHpf, DelugeTag.RESONANCE) : getValue (defaultParams, DelugeTag.HPF_RESONANCE);
+                final String hpfResonance = nestedHpf.isPresent () ? getValue (nestedHpf.get (), DelugeTag.RESONANCE) : getValue (defaultParams, DelugeTag.HPF_RESONANCE);
                 final double resonance = DelugeValues.paramToLevel (DelugeValues.parseValue (hpfResonance, DelugeValues.PARAM_MIN));
                 final IFilter filter = createFilter (getValue (soundElement, DelugeTag.HPF_MODE), FilterType.HIGH_PASS, 2, DelugeValues.paramToCutoff (frequencyParam), resonance);
                 applyFilterModulation (filter, defaultParams, DelugeTag.HPF_FREQUENCY);
-                return filter;
+                return Optional.of (filter);
             }
         }
 
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -621,10 +628,10 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         filter.setCutoffKeyTracking (readPatchCableDepth (defaultParams, DelugeTag.SOURCE_NOTE, frequencyDestination));
 
         // Filter envelope: the modulation envelope (envelope2) routed to the filter frequency.
-        final Element envelope2 = getDirectChild (defaultParams, DelugeTag.ENVELOPE2);
+        final Optional<Element> envelope2 = getDirectChild (defaultParams, DelugeTag.ENVELOPE2);
         final IEnvelopeModulator envelopeModulator = filter.getCutoffEnvelopeModulator ();
-        if (envelope2 != null)
-            readEnvelope (envelope2, envelopeModulator.getSource ());
+        if (envelope2.isPresent ())
+            readEnvelope (envelope2.get (), envelopeModulator.getSource ());
         envelopeModulator.setDepth (readPatchCableDepth (defaultParams, DelugeTag.ENVELOPE2, frequencyDestination));
 
         // Filter velocity: the "velocity" source routed to the filter frequency.
@@ -659,10 +666,10 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static String findPatchCableAmount (final Element defaultParams, final String source, final String destination)
     {
-        final Element patchCables = getDirectChild (defaultParams, DelugeTag.PATCH_CABLES);
-        if (patchCables == null)
+        final Optional<Element> patchCables = getDirectChild (defaultParams, DelugeTag.PATCH_CABLES);
+        if (patchCables.isEmpty ())
             return "";
-        for (final Element cable: getDirectChildren (patchCables, DelugeTag.PATCH_CABLE))
+        for (final Element cable: getDirectChildren (patchCables.get (), DelugeTag.PATCH_CABLE))
             if (source.equals (getValue (cable, DelugeTag.SOURCE)) && destination.equals (getValue (cable, DelugeTag.DESTINATION)))
                 return getValue (cable, DelugeTag.AMOUNT);
         return "";
@@ -741,8 +748,8 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         final String attribute = parent.getAttribute (name);
         if (!attribute.isEmpty ())
             return attribute;
-        final Element child = getDirectChild (parent, name);
-        return child == null ? "" : child.getTextContent ().trim ();
+        final Optional<Element> child = getDirectChild (parent, name);
+        return child.isEmpty () ? "" : child.get ().getTextContent ().trim ();
     }
 
 
@@ -785,12 +792,12 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * @param name The name of the child element
      * @return The child element or null
      */
-    private static Element getDirectChild (final Element parent, final String name)
+    private static Optional<Element> getDirectChild (final Element parent, final String name)
     {
         for (final Element child: XMLUtils.getChildElements (parent))
             if (name.equals (child.getNodeName ()))
-                return child;
-        return null;
+                return Optional.of (child);
+        return Optional.empty ();
     }
 
 

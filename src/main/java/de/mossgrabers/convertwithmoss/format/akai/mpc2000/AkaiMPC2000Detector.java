@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -41,6 +42,15 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
 {
+    private static final String [] SOUND_FILE_ENDINGS = new String []
+    {
+        ".wav",
+        ".WAV",
+        ".snd",
+        ".SND"
+    };
+
+
     /**
      * Constructor.
      *
@@ -149,37 +159,29 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
             if (sampleName == null || sampleName.isBlank ())
                 continue;
 
-            final File sampleFile = findSample (parentFolder, sampleName);
-            if (sampleFile == null)
+            final Optional<File> sampleFileOpt = findSample (parentFolder, sampleName);
+            if (sampleFileOpt.isEmpty ())
             {
                 this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
                 continue;
             }
 
-            if (sampleFile.getName ().toLowerCase ().endsWith (".wav"))
-                samples.put (sampleName, new WavFileSampleData (sampleFile));
-            else
-                samples.put (sampleName, new AkaiMPC2000SampleData (sampleFile));
+            final File file = sampleFileOpt.get ();
+            samples.put (sampleName, file.getName ().toLowerCase ().endsWith (".wav") ? new WavFileSampleData (file) : new AkaiMPC2000SampleData (file));
         }
         return samples;
     }
 
 
-    private static File findSample (final File parentFolder, final String sampleName)
+    private static Optional<File> findSample (final File parentFolder, final String sampleName)
     {
-        File sampleFile = new File (parentFolder, sampleName + ".wav");
-        if (sampleFile.exists ())
-            return sampleFile;
-        sampleFile = new File (parentFolder, sampleName + ".WAV");
-        if (sampleFile.exists ())
-            return sampleFile;
-        sampleFile = new File (parentFolder, sampleName + ".snd");
-        if (sampleFile.exists ())
-            return sampleFile;
-        sampleFile = new File (parentFolder, sampleName + ".SND");
-        if (sampleFile.exists ())
-            return sampleFile;
-        return null;
+        for (int i = 0; i < SOUND_FILE_ENDINGS.length; i++)
+        {
+            final File sampleFile = new File (parentFolder, sampleName + SOUND_FILE_ENDINGS[i]);
+            if (sampleFile.exists ())
+                return Optional.of (sampleFile);
+        }
+        return Optional.empty ();
     }
 
 
