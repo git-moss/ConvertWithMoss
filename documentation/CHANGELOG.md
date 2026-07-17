@@ -26,6 +26,7 @@
   * Fixed: Ignores hidden files/folders and the known Windows system folders when checking for empty-folder (thanks to Douglas Carmichael).
   * Fixed: A library name typed with its file ending (e.g. "MyLibrary.xrni") produced a doubled-up file name ("MyLibrary_xrni.xrni") - the ending is now recognized for every destination format (thanks to Douglas Carmichael).
   * Fixed: The "Trim start and end" processing option cut the audio to the zone's start/end but left the loop points at their old positions, so a trimmed sample with a non-zero start got a displaced loop - the loop end could even point past the end of the trimmed audio. The loop points now move with the cut (thanks to Douglas Carmichael).
+  * Fixed: Replaced the external FLAC encoder library with an own implementation: the library crashed on samples whose length modulo 4096 was 2, 3 or 4 (e.g. "The FLAC encoder failed for sample '...'" when writing Renoise files; SFZ with FLAC option, Bliss and Synclavier Regen were affected as well) (thanks to Douglas Carmichael).
   * Fixed: Fixed some potential NullPointerExceptions.
 * 1010music (thanks to Douglas Carmichael)
   * Fixed: The amplitude decay and release times were written with a different time scale than the one used when reading them back (25 seconds instead of 38 seconds full-scale), so a converted blackbox/Bento preset played its decay and release noticeably shorter than the source. The write scale now matches the read scale.

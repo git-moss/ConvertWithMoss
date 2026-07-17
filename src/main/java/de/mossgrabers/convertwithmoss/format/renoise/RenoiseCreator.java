@@ -7,16 +7,12 @@ package de.mossgrabers.convertwithmoss.format.renoise;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.zip.CRC32;
 import java.util.zip.ZipOutputStream;
-
-import javax.sound.sampled.UnsupportedAudioFileException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -343,9 +339,9 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Store all samples of the multi-sample into the ZIP. The samples are stored as FLAC; if the
-     * (bundled) FLAC encoder fails on a sample - some samples trigger a bug in the encoder library
-     * - the sample is stored as an uncompressed WAV file instead, which Renoise reads as well.
+     * Store all samples of the multi-sample into the ZIP. The samples are stored as FLAC; should
+     * the FLAC encoder ever fail on a sample, the sample is stored as an uncompressed WAV file
+     * instead, which Renoise reads as well.
      *
      * @param zipOutputStream The ZIP output stream
      * @param multisampleSource The multi-sample
@@ -401,7 +397,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         String extension;
         try
         {
-            data = encodeToFlac (renderSource);
+            data = AudioFileUtils.compressToFLAC (renderSource);
             extension = ".flac";
         }
         catch (final IOException | RuntimeException _)
@@ -415,34 +411,6 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final CRC32 crc = new CRC32 ();
         crc.update (data);
         putUncompressedEntry (zipOutputStream, name, data, crc, dateTime);
-    }
-
-
-    /**
-     * FLAC encode the given sample data and return the bytes. It is important to write to a file
-     * first otherwise the FLAC header is not updated. 32-bit float samples are reduced to a FLAC
-     * compatible resolution by compressToFLAC.
-     *
-     * @param sampleData The sample data
-     * @return The FLAC encoded bytes
-     * @throws IOException Could not encode the sample
-     */
-    private static byte [] encodeToFlac (final ISampleData sampleData) throws IOException
-    {
-        final Path tempFile = Files.createTempFile ("CWM-Renoise-", ".flac");
-        try
-        {
-            AudioFileUtils.compressToFLAC (sampleData, FLAC_TARGET_FORMAT, tempFile.toFile ());
-            return Files.readAllBytes (tempFile);
-        }
-        catch (final UnsupportedAudioFileException ex)
-        {
-            throw new IOException (ex);
-        }
-        finally
-        {
-            Files.deleteIfExists (tempFile);
-        }
     }
 
 
