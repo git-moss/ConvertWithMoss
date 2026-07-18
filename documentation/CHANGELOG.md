@@ -1,6 +1,6 @@
 # Changes
 
-## 19.0.0 (unreleased)
+## 19.0.0
 
 * New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
 * New: Added support for the Renoise instrument (XRNI) format (thanks to Douglas Carmichael).
