@@ -220,7 +220,8 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
         zone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.START_SAMPLE, -1)));
         zone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.END_SAMPLE, -1)));
-        zone.setReversed (XMLUtils.getBooleanAttribute (sampleElement, TALSamplerTag.REVERSE, false));
+        // The flag is stored numerically (0/1) like all other TAL flags
+        zone.setReversed (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.REVERSE, 0) > 0);
 
         final double layerTranspose = Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LAYER_TRANSPOSE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 48.0 - 24.0);
         final double sampleTune = Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_TUNE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 48.0 - 24.0);
