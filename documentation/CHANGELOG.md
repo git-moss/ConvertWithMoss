@@ -3,6 +3,7 @@
 ## 19.0.1 (unreleased)
 
 * DecentSampler (thanks to Douglas Carmichael)
+  * New: Added a source option "Create one multi-sample per group": creates a separate multi-sample for each group (disabled groups included), e.g. for presets which contain several alternative kits as groups and switch between them via their user interface.
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
 
 ## 19.0.0

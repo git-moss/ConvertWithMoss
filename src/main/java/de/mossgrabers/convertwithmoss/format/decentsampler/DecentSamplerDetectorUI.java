@@ -26,9 +26,12 @@ import javafx.scene.layout.Pane;
 public class DecentSamplerDetectorUI extends MetadataSettingsUI
 {
     private static final String DECENT_SAMPLER_LOG_UNSUPPORTED_ATTRIBUTES = "DecentSamplerLogUnsupportedAttributes";
+    private static final String DECENT_SAMPLER_MULTISAMPLE_PER_GROUP      = "DecentSamplerMultisamplePerGroup";
 
     private CheckBox            logUnsupportedAttributesCheckBox;
     private boolean             logUnsupportedAttributes;
+    private CheckBox            multisamplePerGroupCheckBox;
+    private boolean             multisamplePerGroup;
 
 
     /**
@@ -53,6 +56,7 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
 
         panel.createSeparator ("@IDS_DS_OPTIONS");
 
+        this.multisamplePerGroupCheckBox = panel.createCheckBox ("@IDS_DS_MULTISAMPLE_PER_GROUP", "@IDS_DS_MULTISAMPLE_PER_GROUP_TOOLTIP");
         this.logUnsupportedAttributesCheckBox = panel.createCheckBox ("@IDS_DS_LOG_UNSUPPORTED_ATTRIBUTES");
 
         // -----------------------------------------------------------
@@ -71,6 +75,7 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
         super.saveSettings (config);
 
         config.setBoolean (DECENT_SAMPLER_LOG_UNSUPPORTED_ATTRIBUTES, this.logUnsupportedAttributesCheckBox.isSelected ());
+        config.setBoolean (DECENT_SAMPLER_MULTISAMPLE_PER_GROUP, this.multisamplePerGroupCheckBox.isSelected ());
     }
 
 
@@ -81,6 +86,7 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
         super.loadSettings (config);
 
         this.logUnsupportedAttributesCheckBox.setSelected (config.getBoolean (DECENT_SAMPLER_LOG_UNSUPPORTED_ATTRIBUTES, false));
+        this.multisamplePerGroupCheckBox.setSelected (config.getBoolean (DECENT_SAMPLER_MULTISAMPLE_PER_GROUP, false));
     }
 
 
@@ -92,6 +98,7 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
             return false;
 
         this.logUnsupportedAttributes = this.logUnsupportedAttributesCheckBox.isSelected ();
+        this.multisamplePerGroup = this.multisamplePerGroupCheckBox.isSelected ();
         return true;
     }
 
@@ -105,6 +112,9 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
 
         final String value = parameters.remove (DECENT_SAMPLER_LOG_UNSUPPORTED_ATTRIBUTES);
         this.logUnsupportedAttributes = "1".equals (value);
+
+        final String multisamplePerGroupValue = parameters.remove (DECENT_SAMPLER_MULTISAMPLE_PER_GROUP);
+        this.multisamplePerGroup = "1".equals (multisamplePerGroupValue);
         return true;
     }
 
@@ -115,6 +125,7 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
     {
         final List<String> parameterNames = new ArrayList<> (Arrays.asList (super.getCLIParameterNames ()));
         parameterNames.add (DECENT_SAMPLER_LOG_UNSUPPORTED_ATTRIBUTES);
+        parameterNames.add (DECENT_SAMPLER_MULTISAMPLE_PER_GROUP);
         return parameterNames.toArray (new String [parameterNames.size ()]);
     }
 
@@ -127,5 +138,16 @@ public class DecentSamplerDetectorUI extends MetadataSettingsUI
     public boolean logUnsupportedAttributes ()
     {
         return this.logUnsupportedAttributes;
+    }
+
+
+    /**
+     * Should a separate multi-sample be created for each group?
+     *
+     * @return True to create one multi-sample per group
+     */
+    public boolean isMultisamplePerGroup ()
+    {
+        return this.multisamplePerGroup;
     }
 }

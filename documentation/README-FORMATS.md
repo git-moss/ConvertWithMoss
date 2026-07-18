@@ -227,6 +227,7 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 
 ### Source Options
 
+* Create one multi-sample per group: Creates a separate multi-sample for each group instead of one multi-sample which contains all groups. Intended for presets which contain several alternative kits or articulations as groups and switch between them via their user interface (only one group is enabled at a time). Disabled groups are converted as well when this option is enabled; when it is off, only the enabled groups are converted.
 * Log unused XML elements and attributes: If enabled the XML elements and attributes which are not used in the translation process are logged.
 
 ### Destination Options
