@@ -106,6 +106,16 @@ public class DelugeTag
     public static final String OSC_B_VOLUME                 = "oscBVolume";
     /** The post-effects volume. */
     public static final String VOLUME                       = "volume";
+    /** The panning. */
+    public static final String PAN                          = "pan";
+    /** The reverb send amount. */
+    public static final String REVERB_AMOUNT                = "reverbAmount";
+    /** The delay effect container. */
+    public static final String DELAY                        = "delay";
+    /** The delay rate. */
+    public static final String DELAY_RATE                   = "rate";
+    /** The delay feedback. */
+    public static final String DELAY_FEEDBACK               = "feedback";
     /** The low-pass filter frequency. */
     public static final String LPF_FREQUENCY                = "lpfFrequency";
     /** The low-pass filter resonance. */
