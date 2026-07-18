@@ -4,6 +4,8 @@
 
 * Synthstrom Deluge (thanks to Douglas Carmichael)
   * New: Added an Output Type creator option (Synth/Kit, CLI DelugeOutputType) to write a drum kit instead of a synth (sound) preset. A kit writes one drum per note, consolidating velocity layers and round-robins to the loudest layer (a Deluge drum is a single sample). The type is chosen explicitly because a one-sample-per-note layout is not necessarily a kit (e.g. a per-note synth bass).
+  * New: Added a "Consolidate kit" option (CLI DelugeConsolidateKit) which reduces a drum kit to one drum per type (kick, snare, hi-hat, ...) ordered by drum role following the factory TR-808 layout (kick on the lowest row), so a beat can be programmed without switching rows. The consolidated drums are labelled by their role for a clean read-out on the device.
+  * Fixed: Kit drums were pitched by their keyboard mapping note, so a drum mapped to e.g. note 35 played 25 semitones too low (audible on toms). Kit drums now play at their natural pitch (transpose 0), like the factory kits; only an explicit detune is kept.
 * DecentSampler (thanks to Douglas Carmichael)
   * New: Added a source option "Create one multi-sample per group": creates a separate multi-sample for each group (disabled groups included), e.g. for presets which contain several alternative kits as groups and switch between them via their user interface.
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
