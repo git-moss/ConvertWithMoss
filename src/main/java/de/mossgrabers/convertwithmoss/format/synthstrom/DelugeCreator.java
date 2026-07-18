@@ -94,9 +94,11 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
     {
         final boolean createKit = this.settingsConfiguration.getOutputType () == DelugeCreatorUI.OutputType.KIT;
 
-        // A synth maps one layer across the keyboard (one zone per upper key); a kit turns every
-        // zone into its own drum
-        final List<ISampleZone> zones = createKit ? getAllZones (multisampleSource) : getMappedZones (multisampleSource);
+        // Both a synth and a kit use one zone per note: the synth maps that single layer across
+        // the keyboard, a kit turns each note into its own drum. Velocity layers and round-robins
+        // (several zones on the same note) are consolidated to the loudest layer since a Deluge
+        // drum is a single sample
+        final List<ISampleZone> zones = getMappedZones (multisampleSource);
         if (zones.isEmpty ())
         {
             this.notifier.logError ("IDS_DELUGE_NO_SAMPLES");
@@ -215,25 +217,6 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             lastKeyHigh = keyHigh;
         }
         return result;
-    }
-
-
-    /**
-     * Collect all zones of all groups. Each zone becomes its own drum in a kit, so - unlike the
-     * synth mapping - zones are not reduced to one per key. They are ordered by their key so the
-     * drums are laid out low to high.
-     *
-     * @param multisampleSource The multi-sample source
-     * @return All zones ordered by key and velocity
-     */
-    private static List<ISampleZone> getAllZones (final IMultisampleSource multisampleSource)
-    {
-        final List<ISampleZone> allZones = new ArrayList<> ();
-        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
-            allZones.addAll (group.getSampleZones ());
-
-        allZones.sort (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyLow (), 0)).thenComparingInt (zone -> limitToDefault (zone.getVelocityLow (), 0)));
-        return allZones;
     }
 
 

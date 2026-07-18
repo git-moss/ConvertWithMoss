@@ -3,7 +3,7 @@
 ## 19.0.1 (unreleased)
 
 * Synthstrom Deluge (thanks to Douglas Carmichael)
-  * New: Added an Output Type creator option (Synth/Kit, CLI DelugeOutputType) to write a drum kit instead of a synth (sound) preset. A kit writes one drum per sample. The type is chosen explicitly because a one-sample-per-note layout is not necessarily a kit (e.g. a per-note synth bass).
+  * New: Added an Output Type creator option (Synth/Kit, CLI DelugeOutputType) to write a drum kit instead of a synth (sound) preset. A kit writes one drum per note, consolidating velocity layers and round-robins to the loudest layer (a Deluge drum is a single sample). The type is chosen explicitly because a one-sample-per-note layout is not necessarily a kit (e.g. a per-note synth bass).
 
 ## 19.0.0
 
