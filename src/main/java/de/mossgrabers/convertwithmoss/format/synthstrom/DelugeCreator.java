@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -105,6 +106,16 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             return;
         }
 
+        // Consolidate a kit to one drum per type (kick, snare, hat, ...), ordered by drum role
+        // so the essential drums sit on the lowest rows for beat programming without scrolling
+        if (createKit && this.settingsConfiguration.isConsolidateKit ())
+        {
+            final List<ISampleZone> compact = consolidateByRole (zones);
+            this.notifier.log ("IDS_DELUGE_KIT_CONSOLIDATED", Integer.toString (zones.size ()), Integer.toString (compact.size ()));
+            zones.clear ();
+            zones.addAll (compact);
+        }
+
         // A kit holds at most one drum per note (36 up to 127); drop the surplus and say so
         if (createKit && zones.size () > MAX_KIT_DRUMS)
         {
@@ -155,7 +166,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         this.writeSamples (sampleFolder, createTemporarySource (multisampleSource, zones));
 
         // Create and store the XML document referencing the samples by their card-relative path
-        final Optional<String> metadata = createKit ? this.createKitDocument (zones, relativeSampleFolder) : this.createSoundDocument (zones, relativeSampleFolder);
+        final Optional<String> metadata = createKit ? this.createKitDocument (zones, relativeSampleFolder, this.settingsConfiguration.isConsolidateKit ()) : this.createSoundDocument (zones, relativeSampleFolder);
         if (metadata.isEmpty ())
             return;
         try (final FileWriter writer = new FileWriter (presetFile, StandardCharsets.UTF_8))
@@ -217,6 +228,174 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             lastKeyHigh = keyHigh;
         }
         return result;
+    }
+
+
+    /**
+     * The role of a drum in a kit. The declaration order is the order in which the drums are
+     * written, i.e. the row order on the device (kick on the lowest row), following the layout
+     * of the factory TR-808 kit.
+     */
+    private enum DrumRole
+    {
+        KICK, SNARE, TOM, HAT_CLOSED, HAT_OPEN, CLAP, RIM, COWBELL, CLAVE, CONGA, BONGO, TIMBALE, MARACA, SHAKER, CABASA, TAMBOURINE, GUIRO, TRIANGLE, BLOCK, BELL, CRASH, SPLASH, CHINA, RIDE, CYMBAL
+    }
+
+
+    /**
+     * Get the human-readable label for a drum role, used as the drum name on the device.
+     *
+     * @param role The role
+     * @return The label
+     */
+    private static String roleLabel (final DrumRole role)
+    {
+        return switch (role)
+        {
+            case KICK -> "Kick";
+            case SNARE -> "Snare";
+            case TOM -> "Tom";
+            case HAT_CLOSED -> "Hat Closed";
+            case HAT_OPEN -> "Hat Open";
+            case CLAP -> "Clap";
+            case RIM -> "Rim";
+            case COWBELL -> "Cowbell";
+            case CLAVE -> "Clave";
+            case CONGA -> "Conga";
+            case BONGO -> "Bongo";
+            case TIMBALE -> "Timbale";
+            case MARACA -> "Maraca";
+            case SHAKER -> "Shaker";
+            case CABASA -> "Cabasa";
+            case TAMBOURINE -> "Tambourine";
+            case GUIRO -> "Guiro";
+            case TRIANGLE -> "Triangle";
+            case BLOCK -> "Wood Block";
+            case BELL -> "Bell";
+            case CRASH -> "Crash";
+            case SPLASH -> "Splash";
+            case CHINA -> "China";
+            case RIDE -> "Ride";
+            case CYMBAL -> "Cymbal";
+        };
+    }
+
+
+    /**
+     * Consolidate the drums of a kit to one per recognized type, ordered by drum role. Several
+     * drums of the same type (e.g. three kicks, five toms) are reduced to the first one; drums
+     * whose type is not recognized are all kept and appended in their original order.
+     *
+     * @param zones The drum zones (already one per note)
+     * @return The consolidated, role-ordered zones
+     */
+    private static List<ISampleZone> consolidateByRole (final List<ISampleZone> zones)
+    {
+        final EnumMap<DrumRole, ISampleZone> byRole = new EnumMap<> (DrumRole.class);
+        final List<ISampleZone> others = new ArrayList<> ();
+        for (final ISampleZone zone: zones)
+        {
+            final DrumRole role = classifyDrum (zone.getName ());
+            if (role == null)
+                others.add (zone);
+            else
+                byRole.putIfAbsent (role, zone);
+        }
+
+        final List<ISampleZone> result = new ArrayList<> (byRole.size () + others.size ());
+        result.addAll (byRole.values ());
+        result.addAll (others);
+        return result;
+    }
+
+
+    /**
+     * Classify a drum by its name into a role. Handles full names (kick, snare, tom, ...), the
+     * numbered variants many kits use (kic2, sna3) and the four-character truncations the Deluge
+     * factory kits store (e.g. cras, cowb, tamb, shak, bloc, caba, tria, spla, chin). Names that
+     * cannot be identified return null and are kept as-is.
+     *
+     * @param name The drum/zone name
+     * @return The role or null if the name is not recognized
+     */
+    private static DrumRole classifyDrum (final String name)
+    {
+        final String n = name.toLowerCase (Locale.ENGLISH);
+
+        // Kick (kick, kic2..kic5, bass drum). A bare "bass" is intentionally not matched since it
+        // is more likely a melodic bass hit than a bass drum
+        if (n.contains ("kick") || n.contains ("kic") || n.contains ("bassdrum") || n.contains ("bass drum"))
+            return DrumRole.KICK;
+        // Clap / finger snap (checked before snare so "snap" is not read as a snare)
+        if (n.contains ("clap") || n.contains ("snap") || n.contains ("hclap"))
+            return DrumRole.CLAP;
+        // Snare (snare, snar, sna2..sna5)
+        if (n.contains ("snar") || n.contains ("sna") || n.contains ("snr"))
+            return DrumRole.SNARE;
+        // Hi-hat (hatc, hato, hat2, hh) - open or closed
+        if (n.contains ("hat") || n.contains ("hihat") || n.contains ("hi-hat") || n.contains ("hh"))
+            return isOpenHat (n) ? DrumRole.HAT_OPEN : DrumRole.HAT_CLOSED;
+        // Rim / side stick
+        if (n.contains ("rim") || n.contains ("sidestick") || n.contains ("side stick") || n.contains ("xstick") || n.contains ("cross stick"))
+            return DrumRole.RIM;
+        // Tom (toml, tomm, tomh, tomt, tomb)
+        if (n.contains ("tom"))
+            return DrumRole.TOM;
+        // Timbale (timl, timh)
+        if (n.contains ("timbale") || n.contains ("timb") || n.contains ("timl") || n.contains ("timh"))
+            return DrumRole.TIMBALE;
+        // Conga (conl, conm, conh)
+        if (n.contains ("conga") || n.contains ("cong") || n.contains ("conl") || n.contains ("conm") || n.contains ("conh"))
+            return DrumRole.CONGA;
+        if (n.contains ("bongo") || n.contains ("bong"))
+            return DrumRole.BONGO;
+        // Cowbell (before bell)
+        if (n.contains ("cowbell") || n.contains ("cowb") || n.contains ("cow bell"))
+            return DrumRole.COWBELL;
+        if (n.contains ("clave") || n.contains ("clav"))
+            return DrumRole.CLAVE;
+        if (n.contains ("maraca") || n.contains ("marac"))
+            return DrumRole.MARACA;
+        if (n.contains ("shaker") || n.contains ("shake") || n.contains ("shak"))
+            return DrumRole.SHAKER;
+        if (n.contains ("cabasa") || n.contains ("caba"))
+            return DrumRole.CABASA;
+        if (n.contains ("tambourine") || n.contains ("tambo") || n.contains ("tamb"))
+            return DrumRole.TAMBOURINE;
+        if (n.contains ("guiro") || n.contains ("guir"))
+            return DrumRole.GUIRO;
+        if (n.contains ("triangle") || n.contains ("tria") || n.contains ("trng"))
+            return DrumRole.TRIANGLE;
+        // Wood block
+        if (n.contains ("woodblock") || n.contains ("wood block") || n.contains ("block") || n.contains ("bloc") || n.contains ("wood") || n.contains ("wdblk"))
+            return DrumRole.BLOCK;
+        // Bell / chime (after cowbell)
+        if (n.contains ("bell") || n.contains ("chime") || n.contains ("chim"))
+            return DrumRole.BELL;
+        // Cymbals - specific ones before the generic cymbal
+        if (n.contains ("crash") || n.contains ("cras"))
+            return DrumRole.CRASH;
+        if (n.contains ("splash") || n.contains ("spla"))
+            return DrumRole.SPLASH;
+        if (n.contains ("china") || n.contains ("chin"))
+            return DrumRole.CHINA;
+        if (n.contains ("ride"))
+            return DrumRole.RIDE;
+        if (n.contains ("cymbal") || n.contains ("cymb") || n.contains ("cym"))
+            return DrumRole.CYMBAL;
+        return null;
+    }
+
+
+    /**
+     * Determine whether a hi-hat name denotes an open hi-hat (as opposed to a closed one).
+     *
+     * @param lowerCaseName The already lower-cased name
+     * @return True for an open hi-hat
+     */
+    private static boolean isOpenHat (final String lowerCaseName)
+    {
+        return lowerCaseName.contains ("open") || lowerCaseName.contains ("hato") || lowerCaseName.contains (" oh") || lowerCaseName.contains ("ohh") || lowerCaseName.endsWith (" o") || lowerCaseName.contains (" o ");
     }
 
 
@@ -288,7 +467,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         soundElement.setAttribute (DelugeTag.FIRMWARE_VERSION, DelugeTag.FIRMWARE_VERSION_VALUE);
         soundElement.setAttribute (DelugeTag.EARLIEST_COMPATIBLE_FIRMWARE, DelugeTag.EARLIEST_COMPATIBLE_VALUE);
 
-        writeSound (document, soundElement, zones, relativeSampleFolder);
+        writeSound (document, soundElement, zones, relativeSampleFolder, false);
 
         return this.createXMLString (document);
     }
@@ -303,7 +482,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      * @param relativeSampleFolder The card-relative path of the sample folder
      * @return The XML document as a string
      */
-    private Optional<String> createKitDocument (final List<ISampleZone> zones, final String relativeSampleFolder)
+    private Optional<String> createKitDocument (final List<ISampleZone> zones, final String relativeSampleFolder, final boolean useRoleLabels)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -324,8 +503,13 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         for (final ISampleZone zone: zones)
         {
             final Element drumSound = XMLUtils.addElement (document, soundSources, DelugeTag.SOUND);
-            XMLUtils.addTextElement (document, drumSound, DelugeTag.NAME, createSafeFilename (zone.getName ()));
-            writeSound (document, drumSound, Collections.singletonList (zone), relativeSampleFolder);
+            // When consolidating, label each drum by its role (Kick, Snare, ...) for a clean
+            // read-out on the device; the sample file keeps its original name. Unrecognized
+            // drums and non-consolidated kits keep their sample-derived name.
+            final DrumRole role = useRoleLabels ? classifyDrum (zone.getName ()) : null;
+            final String drumName = role == null ? createSafeFilename (zone.getName ()) : roleLabel (role);
+            XMLUtils.addTextElement (document, drumSound, DelugeTag.NAME, drumName);
+            writeSound (document, drumSound, Collections.singletonList (zone), relativeSampleFolder, true);
         }
 
         return this.createXMLString (document);
@@ -342,7 +526,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      *            a drum)
      * @param relativeSampleFolder The card-relative path of the sample folder
      */
-    private static void writeSound (final Document document, final Element soundElement, final List<ISampleZone> zones, final String relativeSampleFolder)
+    private static void writeSound (final Document document, final Element soundElement, final List<ISampleZone> zones, final String relativeSampleFolder, final boolean isKit)
     {
         final boolean anyLoop = zones.stream ().anyMatch (zone -> !zone.getLoops ().isEmpty ());
         final boolean reversed = zones.stream ().anyMatch (ISampleZone::isReversed);
@@ -356,7 +540,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         XMLUtils.addTextElement (document, osc1, DelugeTag.TIME_STRETCH_AMOUNT, "0");
 
         if (zones.size () == 1)
-            writeZone (document, osc1, zones.get (0), relativeSampleFolder, -1);
+            writeZone (document, osc1, zones.get (0), relativeSampleFolder, -1, isKit);
         else
         {
             final Element sampleRanges = XMLUtils.addElement (document, osc1, DelugeTag.SAMPLE_RANGES);
@@ -365,7 +549,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
                 final Element sampleRange = XMLUtils.addElement (document, sampleRanges, DelugeTag.SAMPLE_RANGE);
                 // The last (highest) range does not store the top note - it covers everything above
                 final int topNote = i == zones.size () - 1 ? -1 : limitToDefault (zones.get (i).getKeyHigh (), 127);
-                writeZone (document, sampleRange, zones.get (i), relativeSampleFolder, topNote);
+                writeZone (document, sampleRange, zones.get (i), relativeSampleFolder, topNote, isKit);
             }
         }
 
@@ -425,14 +609,18 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      * @param relativeSampleFolder The card-relative path of the sample folder
      * @param topNote The top note of the range or -1 if it should not be written
      */
-    private static void writeZone (final Document document, final Element parent, final ISampleZone zone, final String relativeSampleFolder, final int topNote)
+    private static void writeZone (final Document document, final Element parent, final ISampleZone zone, final String relativeSampleFolder, final int topNote, final boolean isKit)
     {
         if (topNote >= 0)
             XMLUtils.addTextElement (document, parent, DelugeTag.RANGE_TOP_NOTE, Integer.toString (topNote));
 
         XMLUtils.addTextElement (document, parent, DelugeTag.FILE_NAME, relativeSampleFolder + "/" + createSafeFilename (zone.getName ()) + ".wav");
 
-        final double rootNote = (zone.getKeyRoot () < 0 ? limitToDefault (zone.getKeyHigh (), DelugeValues.REFERENCE_NOTE) : zone.getKeyRoot ()) + zone.getTuning ();
+        // A synth maps the sample across the keyboard, so its transpose follows the root note. A
+        // kit drum is triggered by its own pad and must play at its natural pitch (like the
+        // factory kits, which use transpose 0), so the keyboard mapping note is ignored and only
+        // an explicit detune is kept
+        final double rootNote = isKit ? DelugeValues.REFERENCE_NOTE + zone.getTuning () : (zone.getKeyRoot () < 0 ? limitToDefault (zone.getKeyHigh (), DelugeValues.REFERENCE_NOTE) : zone.getKeyRoot ()) + zone.getTuning ();
         final int [] transposeCents = DelugeValues.transposeCentsFromRootNote (rootNote);
         XMLUtils.addTextElement (document, parent, DelugeTag.TRANSPOSE_OSC, Integer.toString (transposeCents[0]));
         XMLUtils.addTextElement (document, parent, DelugeTag.CENTS, Integer.toString (transposeCents[1]));

@@ -690,6 +690,7 @@ The Deluge has no loop cross-fade parameter of its own, so - exactly like the Re
 ### Destination Options
 
 * Output Type: Choose whether to write a *Synth (Sound)* preset (the default) or a *Drum Kit*. A kit writes one drum per sample; use it for drum/percussion sets. CLI: `DelugeOutputType=kit` (or `sound`).
+* Consolidate kit (one drum per type): For a *Drum Kit*, reduce the kit to a single drum per recognized type (kick, snare, hi-hat, tom, ...) and order the drums by drum role - kick on the lowest row - following the factory TR-808 layout, so a beat can be programmed without switching rows. Several drums of the same type are reduced to the first; unrecognized drums are all kept and appended at the end. Each consolidated drum is labelled by its role (Kick, Snare, Hat Closed, ...) for a clean read-out on the device, while the sample files keep their original names. CLI: `DelugeConsolidateKit=1`.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information).
 
 ### Limitations
