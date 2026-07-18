@@ -37,7 +37,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -62,7 +61,7 @@ import de.mossgrabers.tools.XMLUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
+public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 {
     private static final String SYNTHS_FOLDER            = "SYNTHS";
     private static final String KITS_FOLDER              = "KITS";
@@ -70,6 +69,12 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     /** The Deluge's decay/release rate table tops out at about 5.9 seconds. */
     private static final double MAX_DELUGE_DECAY_SECONDS = 5.9;
+
+    /** The Deluge's default kit master volume (unity gain). */
+    private static final int    DEFAULT_KIT_VOLUME       = 0x3504F334;
+
+    /** The maximum number of drums in a kit (one per note from 36 up to 127). */
+    private static final int    MAX_KIT_DRUMS            = 92;
 
 
     /**
@@ -79,7 +84,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
      */
     public DelugeCreator (final INotifier notifier)
     {
-        super ("Synthstrom Deluge", "Deluge", notifier, new WavChunkSettingsUI ("Deluge"));
+        super ("Synthstrom Deluge", "Deluge", notifier, new DelugeCreatorUI ("Deluge"));
     }
 
 
@@ -87,12 +92,24 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final List<ISampleZone> zones = getMappedZones (multisampleSource);
+        final boolean createKit = this.settingsConfiguration.getOutputType () == DelugeCreatorUI.OutputType.KIT;
+
+        // A synth maps one layer across the keyboard (one zone per upper key); a kit turns every
+        // zone into its own drum
+        final List<ISampleZone> zones = createKit ? getAllZones (multisampleSource) : getMappedZones (multisampleSource);
         if (zones.isEmpty ())
         {
             this.notifier.logError ("IDS_DELUGE_NO_SAMPLES");
             return;
         }
+
+        // A kit holds at most one drum per note (36 up to 127); drop the surplus and say so
+        if (createKit && zones.size () > MAX_KIT_DRUMS)
+        {
+            this.notifier.logError ("IDS_DELUGE_KIT_TOO_MANY_DRUMS", Integer.toString (zones.size ()), Integer.toString (MAX_KIT_DRUMS));
+            zones.subList (MAX_KIT_DRUMS, zones.size ()).clear ();
+        }
+
         makeUniqueSampleNames (zones);
 
         // The Deluge resolves sample paths (SAMPLES/...) relative to the SD card root, and presets
@@ -107,7 +124,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         String sampleSubPath = "";
         if (instrumentFolderOpt.isEmpty ())
         {
-            presetFolder = new File (destinationFolder, SYNTHS_FOLDER);
+            presetFolder = new File (destinationFolder, createKit ? KITS_FOLDER : SYNTHS_FOLDER);
             cardRootFolder = destinationFolder;
         }
         else
@@ -136,7 +153,7 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         this.writeSamples (sampleFolder, createTemporarySource (multisampleSource, zones));
 
         // Create and store the XML document referencing the samples by their card-relative path
-        final Optional<String> metadata = this.createSoundDocument (zones, relativeSampleFolder);
+        final Optional<String> metadata = createKit ? this.createKitDocument (zones, relativeSampleFolder) : this.createSoundDocument (zones, relativeSampleFolder);
         if (metadata.isEmpty ())
             return;
         try (final FileWriter writer = new FileWriter (presetFile, StandardCharsets.UTF_8))
@@ -198,6 +215,25 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
             lastKeyHigh = keyHigh;
         }
         return result;
+    }
+
+
+    /**
+     * Collect all zones of all groups. Each zone becomes its own drum in a kit, so - unlike the
+     * synth mapping - zones are not reduced to one per key. They are ordered by their key so the
+     * drums are laid out low to high.
+     *
+     * @param multisampleSource The multi-sample source
+     * @return All zones ordered by key and velocity
+     */
+    private static List<ISampleZone> getAllZones (final IMultisampleSource multisampleSource)
+    {
+        final List<ISampleZone> allZones = new ArrayList<> ();
+        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
+            allZones.addAll (group.getSampleZones ());
+
+        allZones.sort (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyLow (), 0)).thenComparingInt (zone -> limitToDefault (zone.getVelocityLow (), 0)));
+        return allZones;
     }
 
 
@@ -269,6 +305,62 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         soundElement.setAttribute (DelugeTag.FIRMWARE_VERSION, DelugeTag.FIRMWARE_VERSION_VALUE);
         soundElement.setAttribute (DelugeTag.EARLIEST_COMPATIBLE_FIRMWARE, DelugeTag.EARLIEST_COMPATIBLE_VALUE);
 
+        writeSound (document, soundElement, zones, relativeSampleFolder);
+
+        return this.createXMLString (document);
+    }
+
+
+    /**
+     * Create the XML structure of a drum kit preset. Each zone becomes one drum (a
+     * {@code <sound>} inside {@code <soundSources>}); the Deluge maps the drums to ascending
+     * rows in the order they are written.
+     *
+     * @param zones The zones to write, one drum per zone
+     * @param relativeSampleFolder The card-relative path of the sample folder
+     * @return The XML document as a string
+     */
+    private Optional<String> createKitDocument (final List<ISampleZone> zones, final String relativeSampleFolder)
+    {
+        final Optional<Document> optionalDocument = this.createXMLDocument ();
+        if (optionalDocument.isEmpty ())
+            return Optional.empty ();
+        final Document document = optionalDocument.get ();
+        document.setXmlStandalone (true);
+
+        final Element kitElement = document.createElement (DelugeTag.KIT);
+        document.appendChild (kitElement);
+        kitElement.setAttribute (DelugeTag.FIRMWARE_VERSION, DelugeTag.FIRMWARE_VERSION_VALUE);
+        kitElement.setAttribute (DelugeTag.EARLIEST_COMPATIBLE_FIRMWARE, DelugeTag.EARLIEST_COMPATIBLE_VALUE);
+
+        XMLUtils.addTextElement (document, kitElement, DelugeTag.LPF_MODE, DelugeTag.LPF_MODE_24DB);
+
+        writeKitDefaultParams (document, kitElement);
+
+        final Element soundSources = XMLUtils.addElement (document, kitElement, DelugeTag.SOUND_SOURCES);
+        for (final ISampleZone zone: zones)
+        {
+            final Element drumSound = XMLUtils.addElement (document, soundSources, DelugeTag.SOUND);
+            XMLUtils.addTextElement (document, drumSound, DelugeTag.NAME, createSafeFilename (zone.getName ()));
+            writeSound (document, drumSound, Collections.singletonList (zone), relativeSampleFolder);
+        }
+
+        return this.createXMLString (document);
+    }
+
+
+    /**
+     * Write the body of one sound (a synth preset or one drum of a kit): the sample
+     * oscillator(s), a silent second oscillator and the default parameters.
+     *
+     * @param document The XML document
+     * @param soundElement The sound element (the root sound or a drum's {@code <sound>})
+     * @param zones The zones of this sound (several key ranges for a synth, a single sample for
+     *            a drum)
+     * @param relativeSampleFolder The card-relative path of the sample folder
+     */
+    private static void writeSound (final Document document, final Element soundElement, final List<ISampleZone> zones, final String relativeSampleFolder)
+    {
         final boolean anyLoop = zones.stream ().anyMatch (zone -> !zone.getLoops ().isEmpty ());
         final boolean reversed = zones.stream ().anyMatch (ISampleZone::isReversed);
 
@@ -308,8 +400,36 @@ public class DelugeCreator extends AbstractWavCreator<WavChunkSettingsUI>
         XMLUtils.addTextElement (document, unison, DelugeTag.UNISON_DETUNE, "8");
 
         writeDefaultParams (document, soundElement, zones.get (0));
+    }
 
-        return this.createXMLString (document);
+
+    /**
+     * Write the kit-level default parameters (the master volume, panning, filters and the send
+     * effects). These are left at their neutral values; the per-drum parameters carry the
+     * actual sound.
+     *
+     * @param document The XML document
+     * @param kitElement The kit element
+     */
+    private static void writeKitDefaultParams (final Document document, final Element kitElement)
+    {
+        final Element defaultParams = XMLUtils.addElement (document, kitElement, DelugeTag.DEFAULT_PARAMS);
+
+        final Element delay = XMLUtils.addElement (document, defaultParams, DelugeTag.DELAY);
+        XMLUtils.addTextElement (document, delay, DelugeTag.DELAY_RATE, DelugeValues.formatHex (0));
+        XMLUtils.addTextElement (document, delay, DelugeTag.DELAY_FEEDBACK, DelugeValues.formatHex (DelugeValues.PARAM_MIN));
+
+        XMLUtils.addTextElement (document, defaultParams, DelugeTag.REVERB_AMOUNT, DelugeValues.formatHex (DelugeValues.PARAM_MIN));
+        XMLUtils.addTextElement (document, defaultParams, DelugeTag.VOLUME, DelugeValues.formatHex (DEFAULT_KIT_VOLUME));
+        XMLUtils.addTextElement (document, defaultParams, DelugeTag.PAN, DelugeValues.formatHex (0));
+
+        final Element lpf = XMLUtils.addElement (document, defaultParams, DelugeTag.LPF);
+        XMLUtils.addTextElement (document, lpf, DelugeTag.FREQUENCY, DelugeValues.formatHex (DelugeValues.PARAM_MAX));
+        XMLUtils.addTextElement (document, lpf, DelugeTag.RESONANCE, DelugeValues.formatHex (0));
+
+        final Element hpf = XMLUtils.addElement (document, defaultParams, DelugeTag.HPF);
+        XMLUtils.addTextElement (document, hpf, DelugeTag.FREQUENCY, DelugeValues.formatHex (DelugeValues.PARAM_MIN));
+        XMLUtils.addTextElement (document, hpf, DelugeTag.RESONANCE, DelugeValues.formatHex (DelugeValues.PARAM_MIN));
     }
 
 

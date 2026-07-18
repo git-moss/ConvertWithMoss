@@ -1,5 +1,10 @@
 # Changes
 
+## 19.0.1 (unreleased)
+
+* Synthstrom Deluge (thanks to Douglas Carmichael)
+  * New: Added an Output Type creator option (Synth/Kit, CLI DelugeOutputType) to write a drum kit instead of a synth (sound) preset. A kit writes one drum per sample. The type is chosen explicitly because a one-sample-per-note layout is not necessarily a kit (e.g. a per-note synth bass).
+
 ## 19.0.0
 
 * New: Added support for the Polyend Tracker (PTI) instrument format (thanks to Douglas Carmichael).
