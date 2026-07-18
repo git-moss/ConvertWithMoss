@@ -339,7 +339,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
             // Since we cannot support enabling deactivated groups in any way, simply skip them
             final String groupEnabled = groupElement.getAttribute (DecentSamplerTag.GROUP_ENABLED);
-            if (groupEnabled != null && "0".equals (groupEnabled))
+            if (groupEnabled != null && ("0".equals (groupEnabled) || "false".equalsIgnoreCase (groupEnabled)))
                 continue;
 
             final String k = groupElement.getAttribute (DecentSamplerTag.GROUP_NAME);
