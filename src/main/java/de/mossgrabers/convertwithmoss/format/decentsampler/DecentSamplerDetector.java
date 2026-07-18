@@ -254,6 +254,21 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         final double globalTuningOffset = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.GLOBAL_TUNING, 0);
         final List<IGroup> groups = this.parseGroups (topElement, groupsElement, basePath, isLibrary ? sourceFile : null, globalTuningOffset);
+
+        // Create one multi-sample per group, e.g. for presets which contain several alternative
+        // kits as groups and switch between them via their user interface
+        if (this.settingsConfiguration.isMultisamplePerGroup () && groups.size () > 1)
+        {
+            final List<IMultisampleSource> multisampleSources = new ArrayList<> (groups.size ());
+            for (final IGroup group: groups)
+            {
+                final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, presetName + " - " + group.getName (), Collections.singletonList (group));
+                parseEffects (topElement, multisampleSource);
+                multisampleSources.add (multisampleSource);
+            }
+            return multisampleSources;
+        }
+
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, presetName, groups);
         parseEffects (topElement, multisampleSource);
         return Collections.singletonList (multisampleSource);
@@ -337,10 +352,15 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
             this.checkAttributes (DecentSamplerTag.GROUP, groupElement.getAttributes (), DecentSamplerTag.getAttributes (DecentSamplerTag.GROUP));
 
-            // Since we cannot support enabling deactivated groups in any way, simply skip them
-            final String groupEnabled = groupElement.getAttribute (DecentSamplerTag.GROUP_ENABLED);
-            if (groupEnabled != null && "0".equals (groupEnabled))
-                continue;
+            // Since we cannot support enabling deactivated groups in any way, simply skip them.
+            // Except when each group becomes its own multi-sample: presets which contain several
+            // alternative kits as groups enable only one of them, but all kits are wanted then
+            if (!this.settingsConfiguration.isMultisamplePerGroup ())
+            {
+                final String groupEnabled = groupElement.getAttribute (DecentSamplerTag.GROUP_ENABLED);
+                if (groupEnabled != null && ("0".equals (groupEnabled) || "false".equalsIgnoreCase (groupEnabled)))
+                    continue;
+            }
 
             final String k = groupElement.getAttribute (DecentSamplerTag.GROUP_NAME);
             final String groupName = k == null || k.isBlank () ? "Group " + groupCounter : k;
@@ -469,8 +489,12 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         final int loopEnd = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_END, -1));
         final int loopCrossfade = XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, 0);
 
+        // An explicitly disabled loop also suppresses loops from the sample file chunks
+        final String loopEnabledAttribute = sampleElement.getAttribute (DecentSamplerTag.LOOP_ENABLED);
+        final boolean isLoopDisabled = "0".equals (loopEnabledAttribute) || "false".equalsIgnoreCase (loopEnabledAttribute);
+
         DefaultSampleLoop loop = null;
-        if (loopStart >= 0 || loopEnd > 0 || loopCrossfade > 0)
+        if (!isLoopDisabled && (loopStart >= 0 || loopEnd > 0 || loopCrossfade > 0))
         {
             loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
@@ -483,7 +507,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         {
             final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
             if (sampleData.isPresent ())
-                sampleData.get ().addZoneData (sampleZone, false, loop == null);
+                sampleData.get ().addZoneData (sampleZone, false, !isLoopDisabled && loop == null);
         }
         catch (final IOException ex)
         {
