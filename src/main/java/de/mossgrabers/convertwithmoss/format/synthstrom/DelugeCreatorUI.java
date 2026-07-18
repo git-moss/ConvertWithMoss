@@ -15,6 +15,7 @@ import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.layout.Pane;
 
@@ -37,10 +38,13 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     }
 
 
-    private static final String OUTPUT_TYPE = "OutputType";
+    private static final String OUTPUT_TYPE     = "OutputType";
+    private static final String CONSOLIDATE_KIT = "ConsolidateKit";
 
     private ComboBox<String>    outputTypeBox;
-    private OutputType          outputType  = OutputType.SOUND;
+    private CheckBox            consolidateKitBox;
+    private OutputType          outputType      = OutputType.SOUND;
+    private boolean             consolidateKit;
 
 
     /**
@@ -65,6 +69,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
         this.outputTypeBox.getItems ().addAll (Functions.getText ("@IDS_DELUGE_TYPE_SOUND"), Functions.getText ("@IDS_DELUGE_TYPE_KIT"));
         this.outputTypeBox.setMaxWidth (Double.MAX_VALUE);
         panel.addComponent (this.outputTypeBox);
+        this.consolidateKitBox = panel.createCheckBox ("@IDS_DELUGE_CONSOLIDATE_KIT", "@IDS_DELUGE_CONSOLIDATE_KIT_TOOLTIP");
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
         return panel.getPane ();
@@ -76,6 +81,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     public void loadSettings (final BasicConfig config)
     {
         this.outputTypeBox.getSelectionModel ().select (config.getInteger (this.prefix + OUTPUT_TYPE, 0));
+        this.consolidateKitBox.setSelected (config.getBoolean (this.prefix + CONSOLIDATE_KIT, false));
 
         super.loadSettings (config);
     }
@@ -86,6 +92,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     public void saveSettings (final BasicConfig config)
     {
         config.setInteger (this.prefix + OUTPUT_TYPE, this.outputTypeBox.getSelectionModel ().getSelectedIndex ());
+        config.setBoolean (this.prefix + CONSOLIDATE_KIT, this.consolidateKitBox.isSelected ());
 
         super.saveSettings (config);
     }
@@ -99,6 +106,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
             return false;
 
         this.outputType = indexToType (this.outputTypeBox.getSelectionModel ().getSelectedIndex ());
+        this.consolidateKit = this.consolidateKitBox.isSelected ();
         return true;
     }
 
@@ -111,6 +119,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
             return false;
 
         this.outputType = parseType (parameters.remove (this.prefix + OUTPUT_TYPE));
+        this.consolidateKit = "1".equals (parameters.remove (this.prefix + CONSOLIDATE_KIT));
         return true;
     }
 
@@ -121,6 +130,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     {
         final List<String> parameterNames = new ArrayList<> (Arrays.asList (super.getCLIParameterNames ()));
         parameterNames.add (this.prefix + OUTPUT_TYPE);
+        parameterNames.add (this.prefix + CONSOLIDATE_KIT);
         return parameterNames.toArray (new String [parameterNames.size ()]);
     }
 
@@ -133,6 +143,17 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     public OutputType getOutputType ()
     {
         return this.outputType;
+    }
+
+
+    /**
+     * Should a drum kit be consolidated to one drum per type, ordered by drum role?
+     *
+     * @return True to consolidate
+     */
+    public boolean isConsolidateKit ()
+    {
+        return this.consolidateKit;
     }
 
 
