@@ -469,8 +469,12 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         final int loopEnd = (int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.LOOP_END, -1));
         final int loopCrossfade = XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, 0);
 
+        // An explicitly disabled loop also suppresses loops from the sample file chunks
+        final String loopEnabledAttribute = sampleElement.getAttribute (DecentSamplerTag.LOOP_ENABLED);
+        final boolean isLoopDisabled = "0".equals (loopEnabledAttribute) || "false".equalsIgnoreCase (loopEnabledAttribute);
+
         DefaultSampleLoop loop = null;
-        if (loopStart >= 0 || loopEnd > 0 || loopCrossfade > 0)
+        if (!isLoopDisabled && (loopStart >= 0 || loopEnd > 0 || loopCrossfade > 0))
         {
             loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
@@ -483,7 +487,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         {
             final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
             if (sampleData.isPresent ())
-                sampleData.get ().addZoneData (sampleZone, false, loop == null);
+                sampleData.get ().addZoneData (sampleZone, false, !isLoopDisabled && loop == null);
         }
         catch (final IOException ex)
         {
