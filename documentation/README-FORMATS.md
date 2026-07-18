@@ -61,6 +61,7 @@ The following multi-sample formats are supported:
 * [Native Instruments Maschine](#native-instruments-maschine)
 * [Polyend Tracker](#polyend-tracker)
 * [Propellerhead Reason NN-XT](#propellerhead-reason-nn-xt)
+* [Renoise](#renoise)
 * [Roland MC-707/MC-101](#roland-mc-707mc-101)
 * [Roland MV-8000/MV-8800](#roland-mv-8000mv-8800)
 * [Roland S-50 Series](#roland-s-50-series) - read only
