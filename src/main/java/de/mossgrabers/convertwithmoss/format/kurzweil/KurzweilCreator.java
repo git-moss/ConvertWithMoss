@@ -310,13 +310,13 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
      */
     private PreparedZone prepareZone (final ISampleZone zone) throws IOException
     {
-        if (zone.getSampleData () == null)
+        if (zone.getSampleData () == null || zone.getSampleData ().isEmpty ())
         {
             this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), zone.getName ());
             return null;
         }
 
-        final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData (), DESTINATION_FORMAT);
+        final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData ().get (), DESTINATION_FORMAT);
         final int numChannels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (numChannels > 2)
         {
