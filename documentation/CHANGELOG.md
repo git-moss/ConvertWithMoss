@@ -14,6 +14,10 @@
 * TAL Sampler (thanks to Douglas Carmichael)
   * Fixed: The sample "reverse" flag was never read as enabled: it is stored numerically (0/1) like all other TAL flags but was parsed as a true/false text boolean.
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
+* Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
+  * New: Added a creator option to prefix written preset file names with a 5-digit import number (e.g. 05002-Name.qpat), mirroring the device's own export naming so the device assigns each preset to that number on import.
+* Backend (thanks to Douglas Carmichael)
+  * New: Source folders and files are now processed in a stable alphabetical order instead of the file-system enumeration order, so consecutive runs behave identically (and e.g. the QPAT import numbers are assigned in a predictable order).
 
 ## 19.0.0
 
