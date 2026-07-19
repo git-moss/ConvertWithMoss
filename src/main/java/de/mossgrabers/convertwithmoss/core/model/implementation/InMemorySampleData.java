@@ -14,6 +14,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -71,7 +72,10 @@ public class InMemorySampleData implements ISampleData
     {
         final WaveFile wavFile = new WaveFile (this.audioMetadata);
         final DataChunk dataChunk = wavFile.getDataChunk ();
-        System.arraycopy (this.sampleData, 0, dataChunk.getData (), 0, this.sampleData.length);
+        final byte [] destinationData = dataChunk.getData ();
+        if (destinationData.length < this.sampleData.length)
+            throw new IOException (Functions.getMessage ("IDS_WAV_DATA_BUFFER_TOO_SMALL", Integer.toString (destinationData.length), Integer.toString (this.sampleData.length)));
+        System.arraycopy (this.sampleData, 0, destinationData, 0, this.sampleData.length);
         wavFile.write (outputStream);
     }
 

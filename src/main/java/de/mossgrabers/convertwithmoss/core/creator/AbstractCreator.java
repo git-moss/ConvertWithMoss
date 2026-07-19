@@ -910,10 +910,10 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                     this.progress.notifyFailed ();
                     this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
                 }
-                catch (final IOException ex)
+                catch (final IOException | RuntimeException ex)
                 {
                     this.progress.notifyFailed ();
-                    this.notifier.logError ("IDS_WAV_WRITE_ERROR", ex);
+                    this.notifier.logError ("IDS_WAV_WRITE_ERROR", file.getAbsolutePath (), ex.getLocalizedMessage ());
                 }
             }
         }
