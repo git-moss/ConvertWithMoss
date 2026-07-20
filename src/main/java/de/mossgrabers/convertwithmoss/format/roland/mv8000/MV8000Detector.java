@@ -167,32 +167,40 @@ public class MV8000Detector extends AbstractDetector<MetadataSettingsUI>
         {
             final MV8000Smt slot = partial.getSmtSlot (slotIndex);
             final int sampleId = slot.getSampleId ();
-            if (sampleId != 0)
+
+            // An empty slot is skipped. Note that the index must be increased in every branch
+            // below, otherwise the loop never terminates
+            if (sampleId == 0)
             {
-                final MV8000Sample sample = samplesByID.get (Integer.valueOf (sampleId));
-                if (sample == null)
-                    this.notifier.logError ("IDS_MV8000_SAMPLE_MISSING", Integer.toString (sampleId), partial.getName ());
-                else
-                {
-                    // Combine a left/right mono pair in 2 consecutive slots into 1 stereo zone
-                    MV8000Sample rightSample = null;
-                    if (slotIndex + 1 < MV8000Partial.NUM_SMT_SLOTS && sample.isStereoLeft ())
-                    {
-                        final MV8000Smt nextSlot = partial.getSmtSlot (slotIndex + 1);
-                        final MV8000Sample nextSample = samplesByID.get (Integer.valueOf (nextSlot.getSampleId ()));
-                        if (nextSample != null && nextSample.isStereoRightOf (sample) && nextSlot.getVelocityLow () == slot.getVelocityLow () && nextSlot.getVelocityHigh () == slot.getVelocityHigh ())
-                            rightSample = nextSample;
-                    }
-
-                    final ISampleZone zone = createZone (slot, sample, rightSample, keyLow, keyHigh);
-                    zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
-                    zone.getAmplitudeVelocityModulator ().setDepth (partial.getTvaVelocityCurve () == 0 ? 0 : 1);
-                    createFilter (zone, partial);
-                    groups.get (slotIndex).addSampleZone (zone);
-
-                    slotIndex += rightSample == null ? 1 : 2;
-                }
+                slotIndex++;
+                continue;
             }
+
+            final MV8000Sample sample = samplesByID.get (Integer.valueOf (sampleId));
+            if (sample == null)
+            {
+                this.notifier.logError ("IDS_MV8000_SAMPLE_MISSING", Integer.toString (sampleId), partial.getName ());
+                slotIndex++;
+                continue;
+            }
+
+            // Combine a left/right mono pair in 2 consecutive slots into 1 stereo zone
+            MV8000Sample rightSample = null;
+            if (slotIndex + 1 < MV8000Partial.NUM_SMT_SLOTS && sample.isStereoLeft ())
+            {
+                final MV8000Smt nextSlot = partial.getSmtSlot (slotIndex + 1);
+                final MV8000Sample nextSample = samplesByID.get (Integer.valueOf (nextSlot.getSampleId ()));
+                if (nextSample != null && nextSample.isStereoRightOf (sample) && nextSlot.getVelocityLow () == slot.getVelocityLow () && nextSlot.getVelocityHigh () == slot.getVelocityHigh ())
+                    rightSample = nextSample;
+            }
+
+            final ISampleZone zone = createZone (slot, sample, rightSample, keyLow, keyHigh);
+            zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
+            zone.getAmplitudeVelocityModulator ().setDepth (partial.getTvaVelocityCurve () == 0 ? 0 : 1);
+            createFilter (zone, partial);
+            groups.get (slotIndex).addSampleZone (zone);
+
+            slotIndex += rightSample == null ? 1 : 2;
         }
     }
 
