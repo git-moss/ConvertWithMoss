@@ -14,6 +14,10 @@
 * TAL Sampler (thanks to Douglas Carmichael)
   * Fixed: The sample "reverse" flag was never read as enabled: it is stored numerically (0/1) like all other TAL flags but was parsed as a true/false text boolean.
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
+* AIFF (thanks to Douglas Carmichael)
+  * New: Added support for reading AIFC files with un-compressed PCM sound data, e.g. the little-endian ('sowt') files written by the Elektron Tonverk or the Teenage Engineering OP-1. Compressed AIFC files are still rejected with an error message.
+  * Fixed: Converting an AIFF file with the file ending '.aiff' (instead of '.aif') deleted the source sample file: an internal workaround copies such files to a temporary file but the cleanup deleted the original instead of the temporary copy.
+  * Fixed: Reading the sound data chunk of an AIFF file returned only the first few bytes (the bit resolution was mistaken for the data size), which corrupted the fallback conversion path for AIFF files that the Java sound system cannot read.
 * Reason NN-XT (thanks to Douglas Carmichael)
   * Fixed: All loops were lost when reading a preset: the loop was created but never added to the zone. Writing loops was not affected.
   * Fixed: The pitch key tracking was never read, so zones with a reduced key tracking (e.g. fixed-pitch percussion) were imported as fully tracking.

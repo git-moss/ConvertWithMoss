@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.file.aiff;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
@@ -18,12 +19,17 @@ import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
  */
 public class AiffCommonChunk extends AiffChunk
 {
-    int    numChannels;
-    long   numSampleFrames;
-    int    sampleSize;
-    int    sampleRate;
-    String compressionType = null;
-    String compressionName = null;
+    /** The AIFC compression types which mark plain (un-compressed) PCM sound data. */
+    private static final Set<String> PCM_COMPRESSION_TYPES   = Set.of ("NONE", "twos", "sowt", "in24", "in32", "23ni");
+    /** The AIFC compression types which store the PCM sound data in little-endian order. */
+    private static final Set<String> LITTLE_ENDIAN_TYPES     = Set.of ("sowt", "23ni");
+
+    int                              numChannels;
+    long                             numSampleFrames;
+    int                              sampleSize;
+    int                              sampleRate;
+    String                           compressionType = null;
+    String                           compressionName = null;
 
 
     /**
@@ -128,6 +134,31 @@ public class AiffCommonChunk extends AiffChunk
     public String getCompressionName ()
     {
         return this.compressionName;
+    }
+
+
+    /**
+     * Check if the sound data is plain (un-compressed) PCM. This is the case for AIFF files and
+     * for AIFC files with one of the PCM compression types (e.g. 'sowt' which only marks the data
+     * as little-endian).
+     *
+     * @return True if the sound data is plain PCM
+     */
+    public boolean isPCM ()
+    {
+        return this.compressionType == null || PCM_COMPRESSION_TYPES.contains (this.compressionType);
+    }
+
+
+    /**
+     * Check if the PCM sound data is stored in little-endian order (AIFC compression types 'sowt'
+     * and '23ni').
+     *
+     * @return True if the sound data is little-endian
+     */
+    public boolean isLittleEndian ()
+    {
+        return this.compressionType != null && LITTLE_ENDIAN_TYPES.contains (this.compressionType);
     }
 
 

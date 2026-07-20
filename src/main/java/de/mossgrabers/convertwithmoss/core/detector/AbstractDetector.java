@@ -565,15 +565,12 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             // accept all AIFF files
             if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
             {
-                // Check if it is a compressed (= encrypted) AIFC file and report accordingly
+                // Check if it is a compressed (= encrypted) AIFC file and report accordingly.
+                // AIFC files with plain PCM sound data (e.g. little-endian 'sowt') are supported.
                 final AiffFile aiffFile = new AiffFile (sampleFile);
                 final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
-                if (commonChunk != null)
-                {
-                    final String compressionType = commonChunk.getCompressionType ();
-                    if (compressionType != null)
-                        throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), commonChunk.getCompressionName (), compressionType));
-                }
+                if (commonChunk != null && !commonChunk.isPCM ())
+                    throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), commonChunk.getCompressionName (), commonChunk.getCompressionType ()));
 
                 return new AiffFileSampleData (sampleFile);
             }

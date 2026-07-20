@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -107,44 +108,125 @@ public class AiffFileSampleData extends AbstractFileSampleData
 
     private void readConvertWrite (final InputStream inputStream, final OutputStream outputStream) throws IOException
     {
-        // Read the input AIFF file
-        try (final InputStream in = new BufferedInputStream (inputStream); final AudioInputStream audioIn = AudioSystem.getAudioInputStream (in))
+        try
         {
-            // Obtains the file types that the system can write from the audio input stream
-            // specified. Check if WAV can be written
-            final AudioFileFormat.Type [] supportedTypes = AudioSystem.getAudioFileTypes (audioIn);
-            if (!Arrays.asList (supportedTypes).contains (AudioFileFormat.Type.AIFF))
-                throw new IOException (Functions.getMessage ("IDS_ERR_AIFF_TO_WAV_NOT_SUPPORTED"));
-
-            // Write the output WAV file
-            AudioSystem.write (audioIn, AudioFileFormat.Type.WAVE, outputStream);
-        }
-        catch (final UnsupportedAudioFileException ex)
-        {
-            final String fileEnding = this.sampleFile.getName ().toLowerCase ();
-            if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
+            // The javax.sound SPI cannot read AIFC files; convert their PCM sound data directly
+            // from the parsed chunks
+            AiffCommonChunk commonChunk = null;
+            try
             {
-                final AiffFile replacementAiffFile = new AiffFile (this.sampleFile);
-                final AiffCommonChunk commonChunk = replacementAiffFile.getCommonChunk ();
-                final WaveFile wavFile = new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), (int) commonChunk.getNumSampleFrames ());
-                final DataChunk dataChunk = wavFile.getDataChunk ();
-                dataChunk.setData (replacementAiffFile.getSoundDataChunk ().getData ());
-                wavFile.write (outputStream);
+                commonChunk = this.getAiffFile ().getCommonChunk ();
+            }
+            catch (final IOException _)
+            {
+                // Cannot be parsed - let the SPI below try
+            }
+            if (commonChunk != null && commonChunk.getCompressionType () != null)
+            {
+                this.writeFromChunks (outputStream);
                 return;
             }
 
-            throw new IOException (ex);
+            // Read the input AIFF file
+            try (final InputStream in = new BufferedInputStream (inputStream); final AudioInputStream audioIn = AudioSystem.getAudioInputStream (in))
+            {
+                // Obtains the file types that the system can write from the audio input stream
+                // specified. Check if WAV can be written
+                final AudioFileFormat.Type [] supportedTypes = AudioSystem.getAudioFileTypes (audioIn);
+                if (!Arrays.asList (supportedTypes).contains (AudioFileFormat.Type.AIFF))
+                    throw new IOException (Functions.getMessage ("IDS_ERR_AIFF_TO_WAV_NOT_SUPPORTED"));
+
+                // Write the output WAV file
+                AudioSystem.write (audioIn, AudioFileFormat.Type.WAVE, outputStream);
+            }
+            catch (final UnsupportedAudioFileException ex)
+            {
+                final String fileEnding = this.sampleFile.getName ().toLowerCase ();
+                if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
+                {
+                    this.writeFromChunks (outputStream);
+                    return;
+                }
+
+                throw new IOException (ex);
+            }
         }
         finally
         {
-            // Remove the temporary file after usage
+            // Remove the temporary file after usage and restore the original file
             if (this.sourceFile != null)
             {
-                Files.delete (this.sourceFile.toPath ());
+                Files.delete (this.sampleFile.toPath ());
                 this.sampleFile = this.sourceFile;
                 this.sourceFile = null;
             }
         }
+    }
+
+
+    /**
+     * Write the sample as a WAV file converted directly from the parsed AIFF chunks. Used for
+     * files which the javax.sound SPI cannot read, e.g. AIFC files with plain PCM sound data
+     * ('sowt' marks it as little-endian, 'NONE'/'twos' as big-endian).
+     *
+     * @param outputStream Where to write the WAV file to
+     * @throws IOException Could not convert the sound data
+     */
+    private void writeFromChunks (final OutputStream outputStream) throws IOException
+    {
+        final AiffFile aifFile = this.getAiffFile ();
+        final AiffCommonChunk commonChunk = aifFile.getCommonChunk ();
+        final AiffSoundDataChunk soundDataChunk = aifFile.getSoundDataChunk ();
+        if (commonChunk == null || soundDataChunk == null)
+            throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", this.filename));
+        if (!commonChunk.isPCM ())
+            throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", this.filename, commonChunk.getCompressionName (), commonChunk.getCompressionType ()));
+
+        // WAV stores multi-byte samples in little-endian order and 8-bit samples unsigned
+        byte [] data = soundDataChunk.getSoundData ();
+        final int bytesPerSample = Math.ceilDiv (commonChunk.getSampleSize (), 8);
+        if (bytesPerSample == 1)
+            data = convertSigned8BitToUnsigned (data);
+        else if (!commonChunk.isLittleEndian ())
+            data = swapToLittleEndian (data, bytesPerSample);
+
+        final WaveFile wavFile = new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), (int) commonChunk.getNumSampleFrames ());
+        final DataChunk dataChunk = wavFile.getDataChunk ();
+        dataChunk.setData (data);
+        wavFile.write (outputStream);
+    }
+
+
+    /**
+     * Swap the byte order of all samples from big-endian to little-endian.
+     *
+     * @param data The sample data
+     * @param bytesPerSample The number of bytes of one sample
+     * @return The swapped data in a new array
+     */
+    private static byte [] swapToLittleEndian (final byte [] data, final int bytesPerSample)
+    {
+        final byte [] result = new byte [data.length];
+        final int limit = data.length - bytesPerSample;
+        for (int offset = 0; offset <= limit; offset += bytesPerSample)
+            for (int i = 0; i < bytesPerSample; i++)
+                result[offset + i] = data[offset + bytesPerSample - 1 - i];
+        return result;
+    }
+
+
+    /**
+     * Convert signed 8-bit samples (AIFF) to unsigned ones (WAV).
+     *
+     * @param data The sample data
+     * @return The converted data in a new array
+     */
+    private static byte [] convertSigned8BitToUnsigned (final byte [] data)
+    {
+        final byte [] result = new byte [data.length];
+        for (int i = 0; i < data.length; i++)
+            result[i] = (byte) (data[i] + 128);
+        return result;
     }
 
 
@@ -213,6 +295,33 @@ public class AiffFileSampleData extends AbstractFileSampleData
             loop.setEnd ((int) endMarker.position);
             loops.add (loop);
         }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void createAudioMetadata () throws IOException
+    {
+        // The javax.sound SPI cannot read AIFC files; provide their metadata from the parsed
+        // chunks instead
+        AiffCommonChunk commonChunk = null;
+        try
+        {
+            commonChunk = this.getAiffFile ().getCommonChunk ();
+        }
+        catch (final IOException _)
+        {
+            // Cannot be parsed - let the SPI try
+        }
+        if (commonChunk == null || commonChunk.getCompressionType () == null)
+        {
+            super.createAudioMetadata ();
+            return;
+        }
+
+        if (!commonChunk.isPCM ())
+            throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", this.filename, commonChunk.getCompressionName (), commonChunk.getCompressionType ()));
+        this.audioMetadata = new DefaultAudioMetadata (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), (int) commonChunk.getNumSampleFrames ());
     }
 
 
