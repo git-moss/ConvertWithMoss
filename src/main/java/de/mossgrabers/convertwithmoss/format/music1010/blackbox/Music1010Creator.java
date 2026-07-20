@@ -85,7 +85,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
         EMPTY_PARAM_ATTRIBUTES.put ("samtrigtype", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("polymode", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("polymodeslice", "0");
-        EMPTY_PARAM_ATTRIBUTES.put ("okegrp", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("chokegrp", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("midimode", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("midioutchan", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("padnote", "0");
