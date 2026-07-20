@@ -218,9 +218,11 @@ public interface IGroup
 
 
     /**
-     * If all zones in this group are set to play round-robin.
+     * If all zones in this group are set to select one of its zones, which is either round-robin or
+     * random. Like {@link #hasRoundRobin ()} and unlike the two methods above this does not require
+     * a sequence position, since a randomly selected zone does not have one.
      *
-     * @return True if all sample zones have round-robin enabled
+     * @return True if all sample zones have round-robin or random enabled
      */
     default boolean isFullRoundRobin ()
     {
@@ -229,16 +231,21 @@ public interface IGroup
             return false;
 
         for (final ISampleZone zone: sampleZones)
-            if (zone.getPlayLogic () != PlayLogic.ROUND_ROBIN)
+        {
+            final PlayLogic playLogic = zone.getPlayLogic ();
+            if (playLogic != PlayLogic.ROUND_ROBIN && playLogic != PlayLogic.RANDOM)
                 return false;
+        }
         return true;
     }
 
 
     /**
-     * If at least one zones in this group is set to play round-robin.
+     * If at least one zones in this group is set to select one of its zones, which is either
+     * round-robin or random. In contrast to the three methods above this does not require a
+     * sequence position, since a randomly selected zone does not have one.
      *
-     * @return True if at least one sample zone has round-robin enabled
+     * @return True if at least one sample zone has round-robin or random enabled
      */
     default boolean hasRoundRobin ()
     {
@@ -247,8 +254,11 @@ public interface IGroup
             return false;
 
         for (final ISampleZone zone: sampleZones)
-            if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+        {
+            final PlayLogic playLogic = zone.getPlayLogic ();
+            if (playLogic == PlayLogic.ROUND_ROBIN || playLogic == PlayLogic.RANDOM)
                 return true;
+        }
         return false;
     }
 }

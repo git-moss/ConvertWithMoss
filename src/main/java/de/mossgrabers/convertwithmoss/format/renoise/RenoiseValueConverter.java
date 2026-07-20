@@ -23,6 +23,11 @@ public final class RenoiseValueConverter
     /** The highest playable Renoise note (B-9); Renoise uses a 0..119 keyboard. */
     public static final int     MAX_NOTE              = 119;
 
+    /** The MuteGroupIndex which marks a sample as not being part of any mute group. */
+    public static final int     MUTE_GROUP_NONE       = -1;
+    /** The number of mute groups a Renoise sample can be assigned to. */
+    public static final int     MUTE_GROUP_COUNT      = 15;
+
     /** Maximum sample volume in Renoise: +12 dB which equals a linear gain factor of 4.0. */
     private static final double MAX_VOLUME_LINEAR     = 4.0;
 
@@ -60,6 +65,35 @@ public final class RenoiseValueConverter
     public static int clampNote (final int note)
     {
         return Math.clamp (note, 0, MAX_NOTE);
+    }
+
+
+    /**
+     * Convert a Renoise mute group index into the exclusive group of the model. All sounding notes
+     * of a mute group are stopped when a new note of that mute group starts.
+     *
+     * @param muteGroupIndex The zero-based Renoise mute group index, -1 for no mute group
+     * @return The exclusive group (1..15), 0 if the sample is not part of a mute group
+     */
+    public static int muteGroupToExclusiveGroup (final int muteGroupIndex)
+    {
+        if (muteGroupIndex < 0)
+            return 0;
+        return Math.clamp (muteGroupIndex + 1, 1, MUTE_GROUP_COUNT);
+    }
+
+
+    /**
+     * Convert the exclusive group of the model into a Renoise mute group index.
+     *
+     * @param exclusiveGroup The exclusive group, 0 if the zone is not part of an exclusive group
+     * @return The zero-based Renoise mute group index, -1 if the zone is not part of a mute group
+     */
+    public static int exclusiveGroupToMuteGroup (final int exclusiveGroup)
+    {
+        if (exclusiveGroup <= 0)
+            return MUTE_GROUP_NONE;
+        return Math.clamp (exclusiveGroup, 1, MUTE_GROUP_COUNT) - 1;
     }
 
 

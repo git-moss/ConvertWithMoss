@@ -81,6 +81,8 @@ public class Generator
     public static final int     SAMPLE_MODES             = 54;
     /** The ID of the scale tuning generator. */
     public static final int     SCALE_TUNE               = 56;
+    /** The ID of the exclusive class generator. */
+    public static final int     EXCLUSIVE_CLASS          = 57;
     /** The ID of the overriding root key generator. */
     public static final int     OVERRIDING_ROOT_KEY      = 58;
 

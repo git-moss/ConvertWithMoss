@@ -421,8 +421,15 @@ public interface ISampleZone
      * <code>VOLUME_KEYSCALE</code> and DLS <code>CONN_SRC_KEYNUMBER</code> to
      * <code>CONN_DST_GAIN</code>.
      *
-     * @return The key tracking in the range of [-1..1] representing [-100..100] %. 0 is no
-     *         tracking, positive values increase the volume for higher keys, negative values
+     * The unit is fixed to <b>1 decibel per key</b> relative to the root key, which means that 1.0
+     * raises the volume by 1 dB for each key above the root key (12 dB per octave) and -1.0 lowers
+     * it by the same amount. Fixing the unit is necessary because the value has no natural 1:1
+     * reference like pitch or filter key tracking have; without it every format would pick its own
+     * anchor and the values would not survive a conversion. Formats whose native law is not known
+     * approximate their range linearly and say so at the conversion site.
+     *
+     * @return The key tracking in the range of [-1..1] representing -1 to +1 decibel per key. 0 is
+     *         no tracking, positive values increase the volume for higher keys, negative values
      *         decrease it
      */
     double getAmplitudeKeyTracking ();
@@ -431,9 +438,9 @@ public interface ISampleZone
     /**
      * Set the key tracking of the amplitude.
      *
-     * @param amplitudeKeyTracking The key tracking in the range of [-1..1] representing [-100..100]
-     *            %. 0 is no tracking, positive values increase the volume for higher keys, negative
-     *            values decrease it
+     * @param amplitudeKeyTracking The key tracking in the range of [-1..1] representing -1 to +1
+     *            decibel per key. 0 is no tracking, positive values increase the volume for higher
+     *            keys, negative values decrease it
      */
     void setAmplitudeKeyTracking (double amplitudeKeyTracking);
 

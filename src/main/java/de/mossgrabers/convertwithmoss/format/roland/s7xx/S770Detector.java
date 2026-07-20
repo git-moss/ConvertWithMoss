@@ -299,6 +299,9 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.getAmplitudeEnvelopeModulator ().setSource (ampEnvelope);
         // Unclear how to apply tva.getVelocityCurveRatio ()
         sampleZone.getAmplitudeVelocityModulator ().setDepth (tva.getVelocityCurveType () == 0 ? 0 : 1);
+        // The native range of the level key follow is [-63..63] which maps to the model range of
+        // [-1..1] - identical to the cutoff key follow of the TVF section
+        sampleZone.setAmplitudeKeyTracking (Math.clamp (tva.getLevelKf () / 63.0, -1, 1));
 
         createFilter (sampleZone, partial.getTvf ());
 

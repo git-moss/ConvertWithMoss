@@ -373,6 +373,12 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         instrumentZone.addGenerator (Generator.KEY_RANGE, limitToDefault (sampleZone.getKeyLow (), 0), limitToDefault (sampleZone.getKeyHigh (), 127));
         instrumentZone.addGenerator (Generator.VELOCITY_RANGE, limitToDefault (sampleZone.getVelocityLow (), 1), limitToDefault (sampleZone.getVelocityHigh (), 127));
 
+        // Set the exclusive group. Only written if set since 0 (= no exclusive class) is the
+        // default value of the generator
+        final int exclusiveGroup = sampleZone.getExclusiveGroup ();
+        if (exclusiveGroup > 0)
+            instrumentZone.addGenerator (Generator.EXCLUSIVE_CLASS, Math.clamp (exclusiveGroup, 1, 127));
+
         // Set loop, if any: mode 1 loops continuously, mode 3 is a sustain loop (loops until the
         // key is released and then plays the remainder of the sample)
         instrumentZone.addGenerator (Generator.SAMPLE_MODES, getLoopMode (sampleZone));

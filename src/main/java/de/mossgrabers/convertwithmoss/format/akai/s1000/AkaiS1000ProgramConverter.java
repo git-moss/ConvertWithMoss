@@ -63,12 +63,16 @@ public class AkaiS1000ProgramConverter
         final int pitchBendRange = program.getBendToPitch () & 0xFF;
         final double gain = (program.getVolume () & 0xFF) / 99.0;
         final double velocityToVolume = Math.clamp (program.getVelocityToVolume () / 50.0, -1.0, 1.0);
+        // The native range of the key to volume intensity is [-50..50] which maps to the model
+        // range of [-1..1]
+        final double keyToVolume = Math.clamp (program.getKeyToVolume () / 50.0, -1.0, 1.0);
         for (final ISampleZone zone: group.getSampleZones ())
         {
             zone.setBendUp (pitchBendRange);
             zone.setBendDown (-pitchBendRange);
             zone.setGain (gain);
             zone.getAmplitudeVelocityModulator ().setDepth (velocityToVolume);
+            zone.setAmplitudeKeyTracking (keyToVolume);
         }
 
         return group;

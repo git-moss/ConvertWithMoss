@@ -197,18 +197,31 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
                 if (!roundRobinGroups.containsKey (group))
                 {
                     for (final ISampleZone zone: zones)
-                        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+                    {
+                        // Bliss can only cycle through the zones. A random selection is stored as a
+                        // round-robin as well, since cycling is musically much closer to it than
+                        // playing all zones at once. Randomly selected zones have no sequence
+                        // position, therefore all zones of the group form the sequence.
+                        final PlayLogic playLogic = zone.getPlayLogic ();
+                        if (playLogic == PlayLogic.RANDOM)
+                            sequenceLength = Math.max (sequenceLength, zones.size ());
+                        else if (playLogic == PlayLogic.ROUND_ROBIN)
                             sequenceLength = Math.max (sequenceLength, zone.getSequencePosition ());
+                    }
                     if (sequenceLength > 1)
                         roundRobinGroup++;
                 }
 
-                for (final ISampleZone zone: zones)
+                for (int zonePosition = 0; zonePosition < zones.size (); zonePosition++)
                 {
                     // A program may contain up to 128 zones
                     if (zoneIndex == 128)
                         break;
-                    createSampleZone (document, roundRobinGroup, sequenceLength, zonesElement, zone);
+                    final ISampleZone zone = zones.get (zonePosition);
+                    // Randomly selected zones have no sequence position, therefore it is derived
+                    // from the position of the zone inside of its group
+                    final int sequencePosition = zone.getPlayLogic () == PlayLogic.RANDOM ? zonePosition + 1 : zone.getSequencePosition ();
+                    createSampleZone (document, roundRobinGroup, sequenceLength, sequencePosition, zonesElement, zone);
                     zoneIndex++;
                 }
             }
@@ -223,11 +236,12 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
      * @param document The XML document
      * @param roundRobinGroup The index of the group () if it is used for round-robin
      * @param sequenceLength The sequence length for round-robin
+     * @param sequencePosition The position of the zone in the round-robin sequence
      * @param multisampleElement The element where to add the sample zone information
      * @param zone Where to get the sample zone info from
      * @throws IOException Could not access the sample
      */
-    private static void createSampleZone (final Document document, final int roundRobinGroup, final int sequenceLength, final Element multisampleElement, final ISampleZone zone) throws IOException
+    private static void createSampleZone (final Document document, final int roundRobinGroup, final int sequenceLength, final int sequencePosition, final Element multisampleElement, final ISampleZone zone) throws IOException
     {
         final Element zoneElement = XMLUtils.addElement (document, multisampleElement, BlissTag.ZONE);
         zoneElement.setAttribute ("name", zone.getName () + ".wav");
@@ -247,7 +261,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         if (sequenceLength > 1)
         {
             XMLUtils.setIntegerAttribute (zoneElement, "seq_length", sequenceLength);
-            XMLUtils.setIntegerAttribute (zoneElement, "seq_position", zone.getSequencePosition ());
+            XMLUtils.setIntegerAttribute (zoneElement, "seq_position", sequencePosition);
             XMLUtils.setIntegerAttribute (zoneElement, "res_group", roundRobinGroup);
         }
 

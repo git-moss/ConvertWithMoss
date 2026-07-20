@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -39,6 +40,14 @@ import de.mossgrabers.tools.StringUtils;
  */
 public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
 {
+    /**
+     * The value to use for a fully enabled random sample selection. The exact scaling of the
+     * parameter is unknown, 1000 is used since all other normalized EXS24 parameters use 1000 for
+     * 100%.
+     */
+    private static final int RANDOM_SAMPLE_SELECT_FULL = 1000;
+
+
     /**
      * Constructor.
      *
@@ -84,12 +93,17 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
         final Map<IGroup, Integer> roundRobinGroups = multisampleSource.getRoundRobinGroups ();
+        boolean hasRandomZone = false;
         for (final IGroup group: groups)
         {
             final EXS24Group exsGroup = new EXS24Group ();
             exs24File.addGroup (exsGroup);
             exsGroup.name = group.getName ();
             exsGroup.releaseTrigger = group.getTrigger () == TriggerType.RELEASE;
+
+            // The exclusive group can only be stored on the group level, therefore it can only be
+            // applied if all zones of the group use the same one
+            exsGroup.exclusive = getUniformExclusiveGroup (group);
 
             if (roundRobinGroups.containsKey (group))
             {
@@ -105,6 +119,8 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
             {
                 final EXS24Zone exs24Zone = exs24File.createZone ();
                 final EXS24Sample exs24Sample = exs24File.createSample (exs24Zone);
+
+                hasRandomZone = hasRandomZone || zone.getPlayLogic () == PlayLogic.RANDOM;
 
                 // Fill zone
                 exs24Zone.name = zone.getName ();
@@ -174,6 +190,10 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
 
         exs24File.createInstrument (StringUtils.fixASCII (multisampleSource.getName ()));
 
+        // Random sample selection can only be enabled globally
+        if (hasRandomZone)
+            exs24File.addParameter (EXS24Parameters.RANDOM_SAMPLE_SEL, RANDOM_SAMPLE_SELECT_FULL);
+
         // Fill global parameters from zone 1
         if (!groups.isEmpty ())
         {
@@ -181,6 +201,13 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
             if (!sampleZones.isEmpty ())
             {
                 final ISampleZone zone = sampleZones.get (0);
+
+                // The volume key-scaling uses the same scaling as the filter key-tracking below,
+                // which means 1000 = 100%
+                final double amplitudeKeyTracking = zone.getAmplitudeKeyTracking ();
+                if (amplitudeKeyTracking != 0)
+                    exs24File.addParameter (EXS24Parameters.VOLUME_KEYSCALE, (int) Math.round (Math.clamp (amplitudeKeyTracking, -1, 1) * 1000.0));
+
                 // Pitch bend up/down
                 exs24File.addParameter (EXS24Parameters.PITCH_BEND_UP, Math.clamp (Math.round (zone.getBendDown () / 100.0), 0, 24));
                 exs24File.addParameter (EXS24Parameters.PITCH_BEND_DOWN, Math.clamp (Math.round (zone.getBendDown () / 100.0), -24, 0));
@@ -199,6 +226,29 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
         {
             exs24File.write (out, isBigEndian);
         }
+    }
+
+
+    /**
+     * Get the exclusive group of the zones of the given group. EXS24 can only store this attribute
+     * on the group level, therefore it is only applied if all zones of the group use the same one.
+     *
+     * @param group The group from which to get the exclusive group
+     * @return The exclusive group or 0 if there is none or the zones do not share the same one
+     */
+    private static int getUniformExclusiveGroup (final IGroup group)
+    {
+        int exclusiveGroup = -1;
+        for (final ISampleZone zone: group.getSampleZones ())
+        {
+            final int zoneExclusiveGroup = zone.getExclusiveGroup ();
+            if (exclusiveGroup == -1)
+                exclusiveGroup = zoneExclusiveGroup;
+            else if (exclusiveGroup != zoneExclusiveGroup)
+                return 0;
+        }
+        // The value is stored in one byte
+        return Math.clamp (exclusiveGroup, 0, 255);
     }
 
 

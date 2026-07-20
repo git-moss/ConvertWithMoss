@@ -153,6 +153,10 @@ public class SfzOpcode
     public static final String AMP_RELEASE           = "amp_release";
     /** Amplifier velocity tracking. */
     public static final String AMP_VELOCITY_TRACK    = "amp_veltrack";
+    /** SFZ v1. Amplitude key tracking in decibels per key, relative to the amplitude center key. */
+    public static final String AMP_KEY_TRACK         = "amp_keytrack";
+    /** SFZ v1. The key at which the amplitude key tracking has no effect. */
+    public static final String AMP_KEY_CENTER        = "amp_keycenter";
 
     // -----------------------------------------------------------
     // Filter opcodes

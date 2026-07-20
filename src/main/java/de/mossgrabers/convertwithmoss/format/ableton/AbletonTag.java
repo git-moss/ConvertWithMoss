@@ -51,6 +51,13 @@ public class AbletonTag
     /** The Round-Robin mode tag. */
     public static final String TAG_ROUND_ROBIN_MODE        = "RoundRobinMode";
 
+    /** The Round-Robin mode which cycles through the zones in ascending order. */
+    public static final int    ROUND_ROBIN_MODE_FORWARD    = 0;
+    /** The Round-Robin mode which cycles through the zones in descending order. */
+    public static final int    ROUND_ROBIN_MODE_BACKWARDS  = 1;
+    /** The Round-Robin mode which selects one of the zones randomly. */
+    public static final int    ROUND_ROBIN_MODE_RANDOM     = 3;
+
     /** The name of the sample zone. */
     public static final String TAG_NAME                    = "Name";
     /** The name of the sample reference tag. */

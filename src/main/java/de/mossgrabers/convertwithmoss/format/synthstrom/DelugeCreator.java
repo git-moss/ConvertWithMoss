@@ -676,6 +676,15 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         final int ampModAmount = (int) DelugeValues.modulationDepthToPatchAmount (amplitudeEnvelopeModulator.getDepth ());
         createPatchCable (document, patchCables, DelugeTag.SOURCE_VELOCITY, DelugeTag.DESTINATION_VOLUME, ampModAmount);
 
+        // Amplitude keyboard tracking is the "note" source routed to the volume. There is no
+        // tracking by default, therefore the patch cable is only added if tracking is requested.
+        final double amplitudeKeyTracking = firstZone.getAmplitudeKeyTracking ();
+        if (amplitudeKeyTracking != 0)
+        {
+            final int keyTrackAmount = (int) DelugeValues.modulationDepthToPatchAmount (amplitudeKeyTracking);
+            createPatchCable (document, patchCables, DelugeTag.SOURCE_NOTE, DelugeTag.DESTINATION_VOLUME, keyTrackAmount);
+        }
+
         // ------------------------------------
         // Filter
 

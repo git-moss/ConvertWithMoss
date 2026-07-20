@@ -32,4 +32,6 @@ public class AkaiMPC60Pad
     int         volume;
     /** The panning in [0..127], 64 is center */
     int         panning;
+    /** The exclusive (mute) group in [0..3], 0 = off */
+    int         exclusive;
 }

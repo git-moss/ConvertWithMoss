@@ -273,7 +273,9 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
         final int keyHigh = limitToDefault (zone.getKeyHigh (), 127);
         final String rangeKey = keyLow + "-" + keyHigh;
-        final boolean isSequence = zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
+        // Round robin and random zones are both stacked into 1 key-group: the MPC picks one of the
+        // layers of a key-group, therefore they must not be spread across several key-groups
+        final boolean isSequence = zone.getPlayLogic () != PlayLogic.ALWAYS;
         final List<MPCKeygroup> keygroups = keygroupsMap.computeIfAbsent (rangeKey, _ -> new ArrayList<> ());
 
         final int layerLimit = this.settingsConfiguration.getLayerLimit ();

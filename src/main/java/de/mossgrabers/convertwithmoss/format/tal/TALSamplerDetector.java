@@ -237,6 +237,9 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, -1));
         zone.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, -1));
 
+        // The mute group is the exclusive group, 0 means that the sample is not assigned to one
+        zone.setExclusiveGroup (Math.max (0, XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.MUTE_GROUP, 0)));
+
         // No note and velocity cross-fades
 
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ENABLED, 0) == 1)

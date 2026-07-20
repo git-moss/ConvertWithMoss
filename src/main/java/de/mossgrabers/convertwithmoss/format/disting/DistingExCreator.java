@@ -271,8 +271,12 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
                 sb.append ("_V").append (index.intValue () + 1);
         }
 
+        // The disting EX can only cycle through the round-robin samples. A random selection is
+        // stored as a round-robin as well, since cycling is musically much closer to it than
+        // playing all zones at once. Without the index the zones would also share the same file
+        // name.
         final PlayLogic playLogic = zone.getPlayLogic ();
-        if (playLogic == PlayLogic.ROUND_ROBIN)
+        if (playLogic == PlayLogic.ROUND_ROBIN || playLogic == PlayLogic.RANDOM)
             sb.append ("_RR").append (zoneIndex + 1);
 
         return sb.append (fileEnding).toString ();

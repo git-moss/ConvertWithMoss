@@ -200,6 +200,31 @@ public abstract class AbstractMusic1010Creator extends AbstractWavCreator<Music1
     }
 
 
+    /**
+     * Get the exclusive group which is shared by all sample zones of all groups. The choke group is
+     * only available for the full instrument, therefore it can only be stored if all sample zones
+     * agree on it.
+     *
+     * @param groups The groups which contain the sample zones to test
+     * @return The common exclusive group, 0 if there is none or if the sample zones do not agree
+     */
+    protected static int getCommonExclusiveGroup (final List<IGroup> groups)
+    {
+        boolean hasZones = false;
+        int commonExclusiveGroup = 0;
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final int exclusiveGroup = Math.max (0, zone.getExclusiveGroup ());
+                if (hasZones && commonExclusiveGroup != exclusiveGroup)
+                    return 0;
+                commonExclusiveGroup = exclusiveGroup;
+                hasZones = true;
+            }
+        return commonExclusiveGroup;
+    }
+
+
     protected List<IGroup> cleanGroups (final IMultisampleSource multisampleSource) throws IOException
     {
         List<IGroup> groups = this.combineSplitStereo (multisampleSource);

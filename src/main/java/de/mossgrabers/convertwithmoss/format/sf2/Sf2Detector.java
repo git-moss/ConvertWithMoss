@@ -739,6 +739,9 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             zone.setVelocityLow (velRangeValue.getKey ().intValue ());
             zone.setVelocityHigh (velRangeValue.getValue ().intValue ());
 
+            // Set the exclusive group, 0 means that the zone is not assigned to any group
+            zone.setExclusiveGroup (Math.clamp (generators.getUnsignedValue (Generator.EXCLUSIVE_CLASS).intValue (), 0, 127));
+
             // Set play range
             zone.setStart (0);
             final Integer sampleStartOffset = generators.getSignedValue (Generator.START_ADDRS_OFFSET);

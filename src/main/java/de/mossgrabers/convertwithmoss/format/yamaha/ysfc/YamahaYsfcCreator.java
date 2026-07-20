@@ -37,7 +37,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -471,16 +470,30 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         element.setWaveBank (waveBank);
         element.setWaveformNumber (counters.keygroupCounter);
 
-        setElementParameters (element, sampleZones.get (0));
+        setElementParameters (element, sampleZones);
 
         // Return the wave reference
         return (waveBank << 16) + counters.keygroupCounter;
     }
 
 
-    private static void setElementParameters (final YamahaYsfcPartElement element, final ISampleZone zone)
+    private static void setElementParameters (final YamahaYsfcPartElement element, final List<ISampleZone> zones)
     {
-        element.setXaMode (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN ? 3 : 0);
+        final ISampleZone zone = zones.get (0);
+
+        // Cycle and Random can both be expressed, everything else plays back normally
+        element.setXaMode (switch (zone.getPlayLogic ())
+        {
+            case ROUND_ROBIN -> 3;
+            case RANDOM -> 4;
+            default -> 0;
+        });
+
+        // An element covers a full group, therefore the exclusive group can only be applied if all
+        // zones of the group agree on it. Keep the value of the template if there is none.
+        final int exclusiveGroup = getUniformExclusiveGroup (zones);
+        if (exclusiveGroup > 0)
+            element.setAlternateGroup (exclusiveGroup);
 
         // Ignore note-off events to always play back the sample to its end. Keep the value of the
         // template if it is not a one-shot sample.
@@ -504,6 +517,12 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
         // Range is actually from -64..63 but but it gets already un-playable from 32 onwards...
         element.setLevelVelocitySensitivity (MathUtils.denormalizeIntegerRange (zone.getAmplitudeVelocityModulator ().getDepth (), -32, 32, 64));
+
+        // The model range of [-1..1] is de-normalized to [0..127] with 64 as the neutral center,
+        // which relates to -64..+63. Keep the value of the template if there is no tracking.
+        final double amplitudeKeyTracking = zone.getAmplitudeKeyTracking ();
+        if (amplitudeKeyTracking != 0)
+            element.setLevelKeyFollowSensitivity (MathUtils.denormalizeIntegerRange (amplitudeKeyTracking, -64, 63, 64));
 
         final IEnvelope ampEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         element.setAegAttackTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (ampEnvelope.getAttackTime () * 6.0));
@@ -571,6 +590,22 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
                 element.setFegReleaseLevel (MathUtils.denormalizeIntegerRange (cutoffEnvelope.getEndLevel (), -128, 127, 128));
             }
         }
+    }
+
+
+    /**
+     * Get the exclusive group which is shared by all given zones.
+     *
+     * @param zones The zones to check
+     * @return The exclusive group or 0 if the zones do not all use the same one
+     */
+    private static int getUniformExclusiveGroup (final List<ISampleZone> zones)
+    {
+        final int exclusiveGroup = zones.get (0).getExclusiveGroup ();
+        for (final ISampleZone zone: zones)
+            if (zone.getExclusiveGroup () != exclusiveGroup)
+                return 0;
+        return exclusiveGroup;
     }
 
 

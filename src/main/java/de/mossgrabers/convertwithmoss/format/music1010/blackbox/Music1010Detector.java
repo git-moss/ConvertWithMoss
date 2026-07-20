@@ -234,6 +234,9 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final boolean isOneShot = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0;
         sampleZone.setOneShot (isOneShot);
 
+        // The choke group of the pad, 0 means no choke group
+        sampleZone.setExclusiveGroup (Math.max (0, XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_CHOKE_GROUP, 0)));
+
         final int start = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0);
         sampleZone.setStart (start);
         sampleZone.setStop (start + XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, 0));
@@ -328,6 +331,12 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
             if (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0)
                 for (final ISampleZone zone: group.getSampleZones ())
                     zone.setOneShot (true);
+
+            // The choke group is only available for the full instrument, 0 means no choke group
+            final int exclusiveGroup = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_CHOKE_GROUP, 0);
+            if (exclusiveGroup > 0)
+                for (final ISampleZone zone: group.getSampleZones ())
+                    zone.setExclusiveGroup (exclusiveGroup);
 
             parseEffects (paramsElement, multisampleSource);
         }

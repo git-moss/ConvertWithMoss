@@ -362,10 +362,33 @@ public abstract class AbstractNKIMetadataFileHandler
             groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_RELEASE_TRIGGER%", isReleaseTrigger ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_REVERSE%", isReverse ? "yes" : "no");
+            // The voice group can only be set on the group, therefore all of its zones need to
+            // agree on the exclusive group. The model uses 0 for 'no group' but Kontakt uses a zero
+            // based index with -1 for 'no group', therefore the index is shifted by one
+            final int exclusiveGroup = getUniformExclusiveGroup (zones);
+            groupContent = groupContent.replace ("%GROUP_VOICE_GROUP%", Integer.toString (exclusiveGroup == 0 ? -1 : exclusiveGroup - 1));
             groupsText.append (groupContent);
         }
 
         return groupsText.toString () + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_03_Groups_Zones.xml") + zonesText.toString ();
+    }
+
+
+    /**
+     * Get the exclusive group which is shared by all given zones.
+     *
+     * @param zones The zones to check
+     * @return The exclusive group or 0 if there are no zones or they do not all use the same one
+     */
+    private static int getUniformExclusiveGroup (final List<ISampleZone> zones)
+    {
+        if (zones.isEmpty ())
+            return 0;
+        final int exclusiveGroup = zones.get (0).getExclusiveGroup ();
+        for (final ISampleZone zone: zones)
+            if (zone.getExclusiveGroup () != exclusiveGroup)
+                return 0;
+        return exclusiveGroup;
     }
 
 
@@ -933,6 +956,20 @@ public abstract class AbstractNKIMetadataFileHandler
             final String reversed = groupParameters.get (this.tags.reverseParam ());
             zone.setReversed (reversed.equals (this.tags.yes ()));
         }
+
+        // Kontakt stores the voice group as a zero based index with -1 for 'no group' but the model
+        // uses 0 for 'no group', therefore the index is shifted by one
+        final String voiceGroup = groupParameters.get (this.tags.voiceGroupParam ());
+        if (voiceGroup != null && !voiceGroup.isBlank ())
+            try
+            {
+                final int voiceGroupIndex = Integer.parseInt (voiceGroup.trim ());
+                zone.setExclusiveGroup (voiceGroupIndex < 0 ? 0 : voiceGroupIndex + 1);
+            }
+            catch (final NumberFormatException _)
+            {
+                // Ignore an unparsable voice group
+            }
 
         this.readLoopInformation (zoneElement, zone);
 

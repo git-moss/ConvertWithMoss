@@ -129,6 +129,9 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setVelocityLow (sample.getVelocityRangeLower ());
         sampleZone.setVelocityHigh (sample.getVelocityRangeUpper ());
 
+        // The mute group already uses 0 for 'Off' like the model
+        sampleZone.setExclusiveGroup (Math.clamp (pad.getMuteGroup (), 0, 32));
+
         // Pitch
         sampleZone.setTuning (sample.getTuning () / 100.0);
         sampleZone.setKeyTracking (0);

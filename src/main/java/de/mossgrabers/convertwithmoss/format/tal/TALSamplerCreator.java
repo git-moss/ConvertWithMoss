@@ -237,7 +237,9 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.SLICE, 0);
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.PHASE_INVERSE, 0);
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.STEREO_INVERSE, 1);
-        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.MUTE_GROUP, 0);
+
+        // The mute group is the exclusive group, 0 means that the sample is not assigned to one
+        XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.MUTE_GROUP, Math.max (0, zone.getExclusiveGroup ()));
     }
 
 

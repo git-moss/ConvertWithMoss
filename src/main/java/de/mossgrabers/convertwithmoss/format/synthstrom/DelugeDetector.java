@@ -529,6 +529,8 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         // The Deluge expresses velocity sensitivity of the amplitude as a "velocity" patch cable
         // routed to the post-effects volume.
         final double amplitudeVelocityDepth = readPatchCableDepth (defaultParams, DelugeTag.SOURCE_VELOCITY, DelugeTag.DESTINATION_VOLUME);
+        // Amplitude keyboard tracking is the "note" source routed to the post-effects volume.
+        final double amplitudeKeyTracking = Math.clamp (readPatchCableDepth (defaultParams, DelugeTag.SOURCE_NOTE, DelugeTag.DESTINATION_VOLUME), -1, 1);
 
         for (final ISampleZone zone: zones)
         {
@@ -536,6 +538,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             if (envelope1.isPresent ())
                 readEnvelope (envelope1.get (), amplitudeModulator.getSource ());
             amplitudeModulator.setDepth (amplitudeVelocityDepth);
+            zone.setAmplitudeKeyTracking (amplitudeKeyTracking);
 
             // A fresh filter is read per zone so the zones do not share mutable modulators.
             final Optional<IFilter> filter = readFilter (soundElement, defaultParams);

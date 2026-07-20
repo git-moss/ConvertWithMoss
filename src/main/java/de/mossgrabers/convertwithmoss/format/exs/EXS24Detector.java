@@ -274,12 +274,27 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         final Integer env1Velocity = parameters.get (EXS24Parameters.ENV1_VEL_SENS);
         final double velocityModulation = env1Velocity == null ? 1 : 1 - Math.clamp (env1Velocity.intValue () / -60.0, 0, 1);
 
+        // The volume key-scaling is stored with the same scaling as the filter key-tracking above,
+        // which means 1000 = 100%
+        final Integer volumeKeyScale = parameters.get (EXS24Parameters.VOLUME_KEYSCALE);
+        final double amplitudeKeyTracking = volumeKeyScale == null ? 0 : Math.clamp (volumeKeyScale.intValue () / 1000.0, -1, 1);
+
+        // Random sample selection is a global parameter. If it is enabled one of the matching zones
+        // is picked randomly instead of playing all of them
+        final Integer randomSampleSelect = parameters.get (EXS24Parameters.RANDOM_SAMPLE_SEL);
+        final boolean isRandomSampleSelect = randomSampleSelect != null && randomSampleSelect.intValue () > 0;
+
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 zone.setBendUp (bendUp);
                 zone.setBendDown (bendDown);
                 zone.setTuning (zone.getTuning () + tuneOffset);
+                zone.setAmplitudeKeyTracking (amplitudeKeyTracking);
+
+                // An explicitly set round-robin sequence is more specific, do not overwrite it
+                if (isRandomSampleSelect && zone.getPlayLogic () == PlayLogic.ALWAYS)
+                    zone.setPlayLogic (PlayLogic.RANDOM);
 
                 final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
                 amplitudeModulator.setDepth (1.0);
@@ -439,6 +454,14 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             zone.setGain (exs24Group.volume + zone.getGain ());
         if (exs24Group.pan != 0)
             zone.setPanning (zone.getPanning () + exs24Group.pan);
+
+        // The exclusive group is stored on the group level, apply it to all of its zones
+        if (exs24Group.exclusive > 0)
+            zone.setExclusiveGroup (exs24Group.exclusive);
+
+        // A random sample select offset means that one of the zones of the group is picked randomly
+        if (exs24Group.sampleSelectRandomOffset > 0)
+            zone.setPlayLogic (PlayLogic.RANDOM);
 
         // Zone is completely outside of the groups' velocity range
         if (zone.getVelocityHigh () < exs24Group.minVelocity)

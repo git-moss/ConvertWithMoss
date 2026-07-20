@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -184,7 +185,10 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             text = text.replace ("%FILE_NAME%", filename);
             text = text.replace ("%MULTI_SAMPLE_PARTS%", multisampleParts);
             if (isVersion12)
+            {
                 text = text.replace ("%ROUND_ROBIN%", this.checkRoundRobin (multisampleSource) ? "true" : FALSE);
+                text = text.replace ("%ROUND_ROBIN_MODE%", Integer.toString (getRoundRobinMode (multisampleSource)));
+            }
             text = text.replace ("%PITCHBEND_RANGE%", Integer.toString (pitchBend));
             text = addFilter (multisampleSource.getGlobalFilter (), text);
             return Optional.of (text);
@@ -338,6 +342,24 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         }
 
         return zoneContent;
+    }
+
+
+    /**
+     * Get the round-robin mode to store. Ableton selects one of the overlapping zones either by
+     * cycling through them or randomly. The mode is a setting of the full multi-sample map,
+     * therefore the random mode is already applied if one of the zones requests it.
+     *
+     * @param multisampleSource The multi-sample source from which to read the play logic
+     * @return The Ableton round-robin mode
+     */
+    private static int getRoundRobinMode (final IMultisampleSource multisampleSource)
+    {
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+                if (zone.getPlayLogic () == PlayLogic.RANDOM)
+                    return AbletonTag.ROUND_ROBIN_MODE_RANDOM;
+        return AbletonTag.ROUND_ROBIN_MODE_FORWARD;
     }
 
 

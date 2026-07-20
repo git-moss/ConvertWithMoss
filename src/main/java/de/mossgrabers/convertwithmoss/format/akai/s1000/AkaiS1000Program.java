@@ -54,7 +54,6 @@ public class AkaiS1000Program
     // -50..50
     private byte                 velocityToVolume;
     // -50..50
-    @SuppressWarnings("unused")
     private byte                 keyToVolume;
     // -50..50
     @SuppressWarnings("unused")
@@ -353,6 +352,17 @@ public class AkaiS1000Program
     public byte getVelocityToVolume ()
     {
         return this.velocityToVolume;
+    }
+
+
+    /**
+     * Get the intensity of the played key to modulate the volume.
+     *
+     * @return The intensity in the range of [-50..50]
+     */
+    public byte getKeyToVolume ()
+    {
+        return this.keyToVolume;
     }
 
 

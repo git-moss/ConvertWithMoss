@@ -122,6 +122,11 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             // Only on a group level...
             zone.setReversed (kontaktGroup.isReverse ());
 
+            // Kontakt stores the voice group as a zero based index with -1 for 'no group' but the
+            // model uses 0 for 'no group', therefore the index is shifted by one
+            final int voiceGroupIdx = kontaktGroup.getVoiceGroupIdx ();
+            zone.setExclusiveGroup (voiceGroupIdx < 0 ? 0 : voiceGroupIdx + 1);
+
             // IMPROVE Fill Filter info, when understood where it is stored
             final IFilter filter = null;
 

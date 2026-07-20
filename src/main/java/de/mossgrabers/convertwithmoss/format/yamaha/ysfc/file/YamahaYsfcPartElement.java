@@ -662,6 +662,30 @@ public class YamahaYsfcPartElement
 
 
     /**
+     * Get the alternate group. All currently sounding notes which are assigned to the same
+     * alternate group are stopped when a note of that group is started.
+     *
+     * @return The alternate group in the range of [0..127], 0 = off
+     */
+    public int getAlternateGroup ()
+    {
+        return this.alternateGroup;
+    }
+
+
+    /**
+     * Set the alternate group. All currently sounding notes which are assigned to the same
+     * alternate group are stopped when a note of that group is started.
+     *
+     * @param alternateGroup The alternate group in the range of [0..127], 0 = off
+     */
+    public void setAlternateGroup (final int alternateGroup)
+    {
+        this.alternateGroup = Math.clamp (alternateGroup, 0, 127);
+    }
+
+
+    /**
      * Get the panning.
      *
      * @return The panning in the range of [1..127] which relates to -63..+63, 64 = Center
@@ -836,6 +860,31 @@ public class YamahaYsfcPartElement
     public void setLevelVelocitySensitivity (final int levelVelocitySensitivity)
     {
         this.levelVelocitySensitivity = levelVelocitySensitivity;
+    }
+
+
+    /**
+     * Get the level key follow sensitivity, which is how much the volume changes depending on the
+     * played key relative to the center note.
+     *
+     * @return The value in the range of 0..127 which relates to -64..+63 (0 ~ 64)
+     */
+    public int getLevelKeyFollowSensitivity ()
+    {
+        return this.levelKeyFollowSensitivity;
+    }
+
+
+    /**
+     * Set the level key follow sensitivity, which is how much the volume changes depending on the
+     * played key relative to the center note.
+     *
+     * @param levelKeyFollowSensitivity The value in the range of 0..127 which relates to -64..+63
+     *            (0 ~ 64)
+     */
+    public void setLevelKeyFollowSensitivity (final int levelKeyFollowSensitivity)
+    {
+        this.levelKeyFollowSensitivity = Math.clamp (levelKeyFollowSensitivity, 0, 127);
     }
 
 

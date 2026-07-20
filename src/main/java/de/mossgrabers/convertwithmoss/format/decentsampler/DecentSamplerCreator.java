@@ -303,14 +303,17 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
             final Set<Double> ampVelDepths = new HashSet<> ();
             final List<ISampleZone> zones = group.getSampleZones ();
-            boolean isRoundRobin = false;
+            boolean isSequence = false;
+            boolean isRandom = false;
             int seqLength = 0;
             for (int zoneIndex = 0; zoneIndex < zones.size (); zoneIndex++)
             {
                 final ISampleZone zone = zones.get (zoneIndex);
 
-                isRoundRobin = isRoundRobin || zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
-                if (isRoundRobin && zone.getSequencePosition () >= 1)
+                final PlayLogic playLogic = zone.getPlayLogic ();
+                isSequence = isSequence || playLogic != PlayLogic.ALWAYS;
+                isRandom = isRandom || playLogic == PlayLogic.RANDOM;
+                if (isSequence && zone.getSequencePosition () >= 1)
                     seqLength++;
 
                 ampVelDepths.add (Double.valueOf (zone.getAmplitudeVelocityModulator ().getDepth ()));
@@ -329,9 +332,9 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
             if (ampVelDepths.size () == 1)
                 XMLUtils.setDoubleAttribute (groupElement, DecentSamplerTag.AMP_VELOCITY_TRACK, ampVelDepths.iterator ().next ().doubleValue (), 4);
 
-            if (isRoundRobin)
+            if (isSequence)
             {
-                groupElement.setAttribute (DecentSamplerTag.SEQ_MODE, "round_robin");
+                groupElement.setAttribute (DecentSamplerTag.SEQ_MODE, isRandom ? DecentSamplerTag.SEQ_RANDOM : DecentSamplerTag.SEQ_ROUND_ROBIN);
                 XMLUtils.setIntegerAttribute (groupElement, DecentSamplerTag.SEQ_LENGTH, seqLength);
             }
 
@@ -395,7 +398,9 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
         // No info.isReversed ()
 
-        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+        // A random selection uses the sequence positions as well, therefore they are written for
+        // round-robin and random alike
+        if (zone.getPlayLogic () != PlayLogic.ALWAYS)
         {
             final int seqPos = zone.getSequencePosition ();
             if (seqPos >= 1)

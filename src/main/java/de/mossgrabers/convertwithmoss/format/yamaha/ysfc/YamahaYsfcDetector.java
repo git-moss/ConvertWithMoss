@@ -718,8 +718,13 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
     {
         // Cycle or Random
         final int xaMode = element.getXaMode ();
-        if (xaMode == 3 || xaMode == 4)
+        if (xaMode == 3)
             zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+        else if (xaMode == 4)
+            zone.setPlayLogic (PlayLogic.RANDOM);
+
+        // The alternate group matches the exclusive group, both use 0 for 'off'
+        zone.setExclusiveGroup (Math.clamp (element.getAlternateGroup (), 0, 127));
 
         // If note-off events are ignored the sample is always played back to its end
         if (element.getReceiveNoteOff () == 0)
@@ -736,6 +741,10 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
 
         final double levelDepth = MathUtils.normalizeIntegerRange (element.getLevelVelocitySensitivity (), -64, 63, 64);
         zone.getAmplitudeVelocityModulator ().setDepth (levelDepth);
+
+        // The level key follow sensitivity is stored as [0..127] with 64 as the neutral center,
+        // which relates to -64..+63 and is normalized to the model range of [-1..1]
+        zone.setAmplitudeKeyTracking (MathUtils.normalizeIntegerRange (element.getLevelKeyFollowSensitivity (), -64, 63, 64));
 
         final IEnvelope ampEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         ampEnvelope.setAttackTime (YamahaYsfcPartElement.convertEnvelopeTimeToSeconds (element.getAegAttackTime ()) / 6.0);

@@ -643,7 +643,9 @@ class SxtZone
             this.sampleLoopEnd = loop.getEnd ();
         }
 
-        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+        // NN-XT can only alternate between the zones. A random selection is therefore cycled as
+        // well instead of falling back to playing all zones at once
+        if (zone.getPlayLogic () != PlayLogic.ALWAYS)
             this.alternateMode = 1;
 
         // -----------------------------------------------------------

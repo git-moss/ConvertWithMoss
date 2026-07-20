@@ -144,6 +144,9 @@ public abstract class AbstractTagsAndAttributes
     /** The reverse parameter. */
     private static final String REVERSE_PARAM              = "reverse";
 
+    /** The voice group parameter, which is the Kontakt name for an exclusive group. */
+    private static final String VOICE_GROUP_PARAM          = "voiceGroup";
+
     /** The loops element. */
     private static final String LOOPS_ELEMENT              = "Loops";
 
@@ -778,6 +781,17 @@ public abstract class AbstractTagsAndAttributes
     public String reverseParam ()
     {
         return REVERSE_PARAM;
+    }
+
+
+    /**
+     * Get the voice group parameter tag, which is the Kontakt name for an exclusive group.
+     *
+     * @return The tag
+     */
+    public String voiceGroupParam ()
+    {
+        return VOICE_GROUP_PARAM;
     }
 
 

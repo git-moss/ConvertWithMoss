@@ -58,6 +58,15 @@ public class DecentSamplerTag
     /** The sequence length tag. */
     public static final String                    SEQ_LENGTH         = "seqLength";
 
+    /** The sequence mode value for playing all samples. */
+    public static final String                    SEQ_ALWAYS         = "always";
+    /** The sequence mode value for cycling through all samples. */
+    public static final String                    SEQ_ROUND_ROBIN    = "round_robin";
+    /** The sequence mode value for randomly selecting a sample but never twice in a row. */
+    public static final String                    SEQ_RANDOM         = "random";
+    /** The sequence mode value for randomly selecting a sample, repetitions are possible. */
+    public static final String                    SEQ_TRUE_RANDOM    = "true_random";
+
     /** The global tuning attribute. */
     public static final String                    GROUP_TUNING       = "groupTuning";
     /** The group name tag. */

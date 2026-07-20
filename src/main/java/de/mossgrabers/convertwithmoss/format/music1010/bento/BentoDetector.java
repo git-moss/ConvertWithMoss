@@ -260,6 +260,12 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             for (final ISampleZone zone: group.getSampleZones ())
                 zone.setOneShot (true);
 
+        // The choke group is only available for the full instrument, 0 means no choke group
+        final int exclusiveGroup = XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_CHOKE_GROUP, 0);
+        if (exclusiveGroup > 0)
+            for (final ISampleZone zone: group.getSampleZones ())
+                zone.setExclusiveGroup (exclusiveGroup);
+
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, new File (pathPrefix).getName (), Collections.singletonList (group));
         parseEffects (instParamsElement, multisampleSource);
         readVelocityModulators (instElement, group);

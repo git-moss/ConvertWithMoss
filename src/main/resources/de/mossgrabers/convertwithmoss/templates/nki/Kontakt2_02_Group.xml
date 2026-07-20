@@ -10,7 +10,7 @@
             <V name="rlsTrigCounter" value="0"/>
             <V name="outputMask" value="-1"/>
             <V name="midiChannel" value="-1"/>
-            <V name="voiceGroup" value="-1"/>
+            <V name="voiceGroup" value="%GROUP_VOICE_GROUP%"/>
             <V name="outRouting_1" value="0000000000000000"/>
             <V name="outRouting_2" value="00000000000000000000000000000000"/>
             <V name="outRouting_3" value="000000000000000000000000000000000000000000000000"/>

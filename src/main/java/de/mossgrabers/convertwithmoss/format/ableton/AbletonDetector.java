@@ -614,16 +614,19 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     private static List<IGroup> applyRoundRobin (final Element mapElement, final IGroup group)
     {
         // "0" = forward, "1" = backwards, "2" = other, "3" = random
-        final int roundRobinDirection = getIntegerValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_MODE, 0);
+        final int roundRobinDirection = getIntegerValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_MODE, AbletonTag.ROUND_ROBIN_MODE_FORWARD);
+        // Only the random mode picks a zone randomly, all other modes cycle through the zones
+        final PlayLogic playLogic = roundRobinDirection == AbletonTag.ROUND_ROBIN_MODE_RANDOM ? PlayLogic.RANDOM : PlayLogic.ROUND_ROBIN;
         final List<List<ISampleZone>> splitZones = ZoneSplitter.splitZonesStableOrder (group.getSampleZones ());
         final List<IGroup> groups = new ArrayList<> ();
         for (int i = 0; i < splitZones.size (); i++)
         {
             final List<ISampleZone> sampleZones = splitZones.get (i);
             for (final ISampleZone sampleZone: sampleZones)
-                sampleZone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                sampleZone.setPlayLogic (playLogic);
 
-            if (roundRobinDirection < 2)
+            // A random selection has no play-back order, therefore no sequence is assigned
+            if (roundRobinDirection <= AbletonTag.ROUND_ROBIN_MODE_BACKWARDS)
                 setRoundRobinSequence (sampleZones, roundRobinDirection == 0);
             final IGroup layerGroup = new DefaultGroup ("Group #" + (i + 1));
             layerGroup.setSampleZones (sampleZones);

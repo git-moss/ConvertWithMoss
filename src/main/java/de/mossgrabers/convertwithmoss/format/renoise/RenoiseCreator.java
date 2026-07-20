@@ -150,18 +150,31 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final Element modulationSetsElement = document.createElement (RenoiseTag.MODULATION_SETS);
 
         boolean hasRoundRobin = false;
+        boolean hasRandom = false;
         int zoneIndex = 0;
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 this.createSampleElement (document, samplesElement, zoneIndex, zone);
                 createModulationSet (document, modulationSetsElement, zoneIndex, zone);
-                hasRoundRobin = hasRoundRobin || zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
+                final PlayLogic playLogic = zone.getPlayLogic ();
+                hasRoundRobin = hasRoundRobin || playLogic == PlayLogic.ROUND_ROBIN;
+                hasRandom = hasRandom || playLogic == PlayLogic.RANDOM;
                 zoneIndex++;
             }
 
         sampleGenerator.appendChild (modulationSetsElement);
-        XMLUtils.addTextElement (document, sampleGenerator, RenoiseTag.KEYZONE_OVERLAPPING_MODE, hasRoundRobin ? RenoiseTag.OVERLAP_CYCLE : RenoiseTag.OVERLAP_PLAY_ALL);
+        // The overlapping mode is a global setting of the instrument. If both selection modes are
+        // present the random one wins since it cannot be expressed by cycling but a round-robin can
+        // still be played randomly.
+        final String overlapMode;
+        if (hasRandom)
+            overlapMode = RenoiseTag.OVERLAP_RANDOM;
+        else if (hasRoundRobin)
+            overlapMode = RenoiseTag.OVERLAP_CYCLE;
+        else
+            overlapMode = RenoiseTag.OVERLAP_PLAY_ALL;
+        XMLUtils.addTextElement (document, sampleGenerator, RenoiseTag.KEYZONE_OVERLAPPING_MODE, overlapMode);
 
         return this.createXMLString (document);
     }
@@ -194,6 +207,11 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
             XMLUtils.addTextElement (document, sampleElement, RenoiseTag.ONE_SHOT, "true");
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.NEW_NOTE_ACTION, RenoiseTag.NNA_NOTE_OFF);
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.INTERPOLATION, "Cubic");
+        // 'MuteGroupIndex' is zero-based and defaults to -1 (no mute group), therefore it is only
+        // written if the zone belongs to an exclusive group
+        final int muteGroupIndex = RenoiseValueConverter.exclusiveGroupToMuteGroup (zone.getExclusiveGroup ());
+        if (muteGroupIndex != RenoiseValueConverter.MUTE_GROUP_NONE)
+            XMLUtils.addTextElement (document, sampleElement, RenoiseTag.MUTE_GROUP_INDEX, Integer.toString (muteGroupIndex));
 
         // Loop
         final List<ISampleLoop> loops = zone.getLoops ();

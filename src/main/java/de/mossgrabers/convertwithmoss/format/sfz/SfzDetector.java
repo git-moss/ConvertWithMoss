@@ -691,6 +691,13 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
 
         final double ampVelTrack = this.getDoubleValue (SfzOpcode.AMP_VELOCITY_TRACK, 100);
         sampleZone.getAmplitudeVelocityModulator ().setDepth (ampVelTrack / 100.0);
+
+        // Amplitude key modulation. The opcode is given in decibels per key, 100% key tracking is
+        // defined as 1 dB per key
+        sampleZone.setAmplitudeKeyTracking (Math.clamp (this.getDoubleValue (SfzOpcode.AMP_KEY_TRACK, 0), -1, 1));
+        // The key tracking is always relative to the root key of the zone, therefore the center key
+        // is only marked as processed
+        this.getIntegerValue (SfzOpcode.AMP_KEY_CENTER);
     }
 
 

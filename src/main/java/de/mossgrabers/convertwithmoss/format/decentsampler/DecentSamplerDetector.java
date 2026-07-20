@@ -422,9 +422,9 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
             // Check for sequence e.g. round robin
             final Optional<String> seqModeAttribute = this.getAttribute (DecentSamplerTag.SEQ_MODE);
-            if (seqModeAttribute.isPresent () && !"always".equalsIgnoreCase (seqModeAttribute.get ()))
+            if (seqModeAttribute.isPresent () && !DecentSamplerTag.SEQ_ALWAYS.equalsIgnoreCase (seqModeAttribute.get ()))
             {
-                sampleZone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                sampleZone.setPlayLogic (parsePlayLogic (seqModeAttribute.get ()));
 
                 final int seqPosition = XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.SEQ_POSITION, -1);
                 if (seqPosition >= 1)
@@ -467,8 +467,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         sampleZone.setPanning (groupPanningOffset + XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.PANNING, 0) / 100.0);
         sampleZone.setTuning (tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0));
 
-        final String zoneLogic = this.currentGroupsElement.getAttribute (DecentSamplerTag.SEQ_MODE);
-        sampleZone.setPlayLogic (zoneLogic != null && "round_robin".equals (zoneLogic) ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS);
+        sampleZone.setPlayLogic (parsePlayLogic (this.currentGroupsElement.getAttribute (DecentSamplerTag.SEQ_MODE)));
 
         sampleZone.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.PITCH_KEY_TRACK, 1));
         sampleZone.setKeyRoot (getNoteAttribute (sampleElement, DecentSamplerTag.ROOT_NOTE));
@@ -652,6 +651,24 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         {
             return defaultValue;
         }
+    }
+
+
+    /**
+     * Parse the value of a sequence mode attribute into the matching play logic.
+     *
+     * @param seqMode The value of the sequence mode attribute, may be null
+     * @return The play logic, {@link PlayLogic#ALWAYS} if the value is null or unknown
+     */
+    private static PlayLogic parsePlayLogic (final String seqMode)
+    {
+        if (seqMode == null)
+            return PlayLogic.ALWAYS;
+        if (DecentSamplerTag.SEQ_ROUND_ROBIN.equalsIgnoreCase (seqMode))
+            return PlayLogic.ROUND_ROBIN;
+        if (DecentSamplerTag.SEQ_RANDOM.equalsIgnoreCase (seqMode) || DecentSamplerTag.SEQ_TRUE_RANDOM.equalsIgnoreCase (seqMode))
+            return PlayLogic.RANDOM;
+        return PlayLogic.ALWAYS;
     }
 
 
