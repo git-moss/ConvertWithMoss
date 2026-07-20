@@ -28,6 +28,15 @@ If the format uses WAV files to store the samples, the following options to addi
 * Sample: Contains the root note, fine tuning and loop points.
 * Remove JUNK, junk, FLLR and MD5 chunks: Enable this option to drop these chunks. Junk and filler chunks are only for aligning the following chunks to certain data positions. The MD5 chunk contains a checksum which is currently not updated and therefore should be dropped.
 
+# Common parameters
+
+Some parameters are supported by many formats but need a common reference point or cannot be expressed by every format. They are converted as follows, which is identical for all source and destination formats.
+
+* One-shot playback (a note-off is ignored and the sample is always played back to its end) and the exclusive ('choke') group (all sounding notes of the same group are stopped when a note of that group is started, e.g. a closed hi-hat cutting off an open one) are stored for each sample zone. Formats which keep them on the group, oscillator or instrument level can only write them if all zones of that level agree on the value, otherwise nothing is written.
+* Formats which cannot express a random selection of a zone fall back to round-robin and never to playing all zones at once. The variation is then a fixed cycle instead of a random one.
+* The amplitude keyboard-tracking has no natural 1:1 reference like the pitch and the filter cutoff keyboard-tracking. Its unit is therefore fixed to 1 decibel per key relative to the root key of the sample zone, which means that the maximum raises the volume by 12 dB per octave above the root key. Formats whose own scaling is not documented approximate their range linearly.
+* The envelope time keyboard- and velocity-scaling shortens or lengthens all times of an envelope depending on the played key and velocity (in contrast to the envelope slopes, which describe the curvature of a segment and not its duration). It has no effect at MIDI note 60 and at velocity 64; a positive value shortens the times towards higher keys and velocities, a negative value lengthens them.
+
 # Supported Formats
 
 The following multi-sample formats are supported:
@@ -175,7 +184,7 @@ A project file (*.xpj) contains all track and project settings. All tracks which
 
 ### Destination Restrictions
 
-* A round robin keygroup can only contain up to 4/8 layers (groups). An error is displayed in this case but the file is converted anyway.
+* A round robin or random keygroup can only contain up to 4/8 layers (groups), since the MPC picks one of the layers of a keygroup. An error is displayed in this case but the file is converted anyway.
 * Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
 
 ## Akai MPC60
@@ -233,7 +242,7 @@ There are no metadata fields (category, creator, etc.) specified in the format. 
 ### Destination Options
 
 * Output Format - Create Bundle: Choose to create a bundle (instead of single presets or a library).
-* Make monophonic: Restricts the sound to 1 note, use e.g. for lead sounds.
+* Make monophonic: Restricts the sound to 1 note, use e.g. for lead sounds. If it is disabled, the polyphony of the source is applied instead (if it has one).
 * Add low-pass filter to all groups if none is present: This always adds a low-pass filter on a group level, if no filter is present yet in the source material. Enable it if you want to have controls for a filter envelope in your template.
 * Template and resources folder: Allows to modify the UI and effects section of the presets (see below).
 * Options to write/update [WAV Chunk Information](#wav-chunk-information).
@@ -485,13 +494,14 @@ There are metadata fields for creator and a creator URL.
 
 Renoise is a tracker-based digital audio workstation. Its instrument format (file ending *xrni*) is a ZIP archive which contains an *Instrument.xml* description file and all samples (in FLAC format) in a *SampleData* folder. Both reading and writing are supported. Files saved by Renoise 3.0 up to 3.5 (document version 24 - 34) can be read; created files use document version 33 (Renoise 3.3) so they load in newer Renoise versions as well as in the Renoise Redux plug-in.
 
-The converter maps the key and velocity ranges, root note, tuning (transpose + fine-tune), volume, panning and the loop (off / forward / backward / ping-pong). The amplitude envelope is stored as the AHDSR volume modulation device. A per-sample filter (low-pass, high-pass, band-pass and band-stop) is stored as the native sampler filter inside the modulation set together with its cutoff, resonance and an optional cutoff envelope; a pitch envelope is stored as well. The instrument comment is used as the description metadata. Samples whose velocity ranges are identical are combined into one velocity layer (group); if the keyzone overlapping mode is set to *Cycle* or *Random*, overlapping samples are treated as round-robin.
+The converter maps the key and velocity ranges, root note, tuning (transpose + fine-tune), volume, panning and the loop (off / forward / backward / ping-pong). The amplitude envelope is stored as the AHDSR volume modulation device. A per-sample filter (low-pass, high-pass, band-pass and band-stop) is stored as the native sampler filter inside the modulation set together with its cutoff, resonance and an optional cutoff envelope; a pitch envelope is stored as well. The instrument comment is used as the description metadata. Samples whose velocity ranges are identical are combined into one velocity layer (group); if the keyzone overlapping mode is set to *Cycle* the overlapping samples are treated as round-robin and if it is set to *Random* as a random selection.
 
 Renoise has no loop cross-fade parameter, so by default loops are written exactly as they are (faithful). If the loop cross-fade processing option is enabled, the cross-fade is baked into the sample audio so that looped samples wrap seamlessly - this is useful for source formats whose loops contain a discontinuity (e.g. some SoundFonts).
 
 The following limitations apply:
 
 * Renoise uses a 10 octave keyboard (notes 0 to 119), so notes above B-9 are clamped when writing.
+* The keyzone overlapping mode is a setting of the whole instrument, therefore round-robin and random zones cannot be mixed: if at least one zone uses a random selection, all overlapping zones are played randomly.
 * The filter cutoff frequency mapping is an approximation since Renoise's normalized cutoff to frequency curve is internal and not part of the format.
 * There are no dedicated category, author or keyword fields in the format; only the name and a free-text comment are available.
 * Samples stored as 32-bit FLAC inside a source instrument cannot be transcoded (a limitation of the bundled FLAC decoder) and are skipped with an error.
@@ -582,6 +592,8 @@ WAV file can contain different sample formats. This converter supports (split) s
 "The SFZ format is a file format to define how a collection of samples are arranged for performance. The goal behind the SFZ format is to provide a free, simple, minimalistic and expandable format to arrange, distribute and use audio samples with the highest possible quality and the highest possible performance flexibility" (cited from https://sfzformat.com/).
 
 The SFZ file contains only the description of the multi-sample. The related samples are normally kept in a separate folder. The converter supports samples in WAV, OGG and FLAC format.
+
+SFZ can only mark a sample as a one-shot (`loop_mode=one_shot`) if it has no loop. A looped zone therefore keeps its loop and is not written as a one-shot.
 
 ### Source Options
 
@@ -696,6 +708,7 @@ The Deluge has no loop cross-fade parameter of its own, so - exactly like the Re
 ### Limitations
 
 * A Deluge *sound* has a single sample oscillator with one sample per key, therefore only one velocity layer is written. If a source contains several velocity layers, the loudest zone of each key is kept and the others are ignored.
+* The loop mode belongs to the sample oscillator and not to the individual samples. A one-shot is therefore only written if all zones of the sound are one-shots, otherwise the loop of the source is kept.
 * The amplitude envelope attack, decay and release times are converted using the Deluge's internal rate tables (attack about 0.7 ms .. 3 s, decay/release about 6 ms .. 6 s); times outside that range are clamped. The filter cut-off / resonance are stored as the Deluge's internal 32-bit parameter values and are a musically faithful approximation rather than an exact match.
 * Effects and device-specific modulation are not converted. The Deluge's reverb, delay, chorus / mod-FX, distortion, EQ, sidechain/compressor and arpeggiator are outside the multi-sample model, and modulation sources such as the LFOs are not carried because their parameters (rate ranges, shapes, sync, destinations) differ from one sampler to the next and have no portable representation. A patch that relies on them - for example a pad whose long tail comes from reverb and delay rather than a long amplitude release - therefore sounds drier or shorter after conversion, even though its oscillator, envelopes and filter are translated faithfully.
 
@@ -710,6 +723,8 @@ file and stores all samples in a sub-folder by the same name. The samples of the
 
 This family of Waldorf synthesizers supports the playback of multi-samples. One preset can contain 2 layers. A layer is a complete preset in itself and simply concatenates 2 single presets. Each preset can have up to 3 oscillators of which each oscillator can contain its own multi-sample.
 If this format is used as the source it produces 1 or 2 output presets, one for each layer. If used as the destination format, each group of the source multi-sample is applied to one of the 3 oscillators. If the source contains more than 3 groups, all zones of the additional groups are added to the multi-sample of the 3rd oscillator.
+
+The volume, panning and tuning of an oscillator are offsets on top of the values of its sample map entries, therefore the two are combined when reading instead of the oscillator replacing the sample map. When writing, the volume and panning of a group are stored on its oscillator and only the remainder in its sample map, so they survive a Quantum/Iridium round-trip - previously the oscillator was always written as 0 dB and Center.
 
 ### Destination Options
 

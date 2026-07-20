@@ -25,7 +25,7 @@
   * New: Added support for amplitude keyboard-tracking, the counterpart of the filter cutoff keyboard-tracking: Akai S1000, DLS, Logic EXS24, Roland MV-8000, Roland S-7xx, SFZ, Synthstrom Deluge, Yamaha YSFC.
   * New: Added support for envelope time keyboard- and velocity-scaling, which scales the envelope times by the played key and velocity (as opposed to the already supported slopes, which describe the curvature of a segment): Akai S1000, Ensoniq EPS/ASR, Ensoniq Mirage, Logic EXS24, Reason NN-XT, Roland S-7xx, SoundFont 2, Yamaha YSFC.
   * New: Added support for per-instrument voice settings (polyphony and monophonic legato): Akai S1000, DecentSampler, Disting EX, Ensoniq Mirage, Logic EXS24, Reason NN-XT, Roland S-7xx, SFZ, Synthstrom Deluge, TAL Sampler.
-  * New: Added support for a modulation response curve and for group volume, panning and tuning offsets: Kontakt, DecentSampler, Logic EXS24, Synclavier, TX16Wx, Waldorf Quantum/Iridium.
+  * New: Added support for group volume, panning and tuning offsets: Kontakt, DecentSampler, Logic EXS24, Synclavier, TX16Wx, Waldorf Quantum/Iridium.
   * Fixed: Two filters which differed only in their cutoff envelope were treated as equal, so zones which are not identical could be combined into one; a filter with a cutoff envelope but without a cutoff velocity modulation could additionally throw an exception.
   * Fixed: The two Roland S-7xx envelope time key-follow fields were read as unsigned although they are signed.
 
