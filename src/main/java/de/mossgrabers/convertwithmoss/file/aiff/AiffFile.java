@@ -208,7 +208,7 @@ public class AiffFile
 
                 case AIFF_CHUNK_SOUND_DATA:
                     this.soundDataChunk = new AiffSoundDataChunk (chunk);
-                    this.soundDataChunk.read (chunk, this.commonChunk == null ? -1 : this.commonChunk.sampleSize);
+                    this.soundDataChunk.read (chunk, this.commonChunk == null ? -1 : (int) (this.commonChunk.numSampleFrames * this.commonChunk.numChannels * Math.ceilDiv (this.commonChunk.sampleSize, 8)));
                     break;
 
                 case AIFF_CHUNK_COMMENT:
