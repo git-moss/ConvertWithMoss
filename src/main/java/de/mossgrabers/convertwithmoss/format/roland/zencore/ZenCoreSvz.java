@@ -179,6 +179,8 @@ public final class ZenCoreSvz
         public int     level = 127;
         /** Whether the sample loops (forward) or is a one-shot. */
         public boolean hasLoop;
+        /** Play start frame - the first frame the engine plays on a note-on. */
+        public int     start;
         /** Loop start frame. */
         public int     loopStart;
         /** Loop end / play end frame. */
@@ -577,7 +579,9 @@ public final class ZenCoreSvz
         aRecord[USP_LOOP_MODE] = (byte) (sample.hasLoop ? 0 : 1); // 0 = forward loop, 1 = one-shot
         aRecord[USP_LEVEL] = (byte) (sample.level & 0x7F);
         aRecord[USP_ORIG_KEY] = (byte) (sample.originalKey & 0x7F);
-        ZenCoreUtil.writeUnsigned32 (aRecord, USP_START, 0, false);
+        // The audio is always stored from frame 0, so the zone's play start is an index into the
+        // stored sample just like the loop points
+        ZenCoreUtil.writeUnsigned32 (aRecord, USP_START, sample.start, false);
         ZenCoreUtil.writeUnsigned32 (aRecord, USP_LOOP_START, sample.hasLoop ? sample.loopStart : 0, false);
         ZenCoreUtil.writeUnsigned32 (aRecord, USP_END, sample.end, false);
         // Always 2, matching every device-written file - the device's own sampler writes 2 here
