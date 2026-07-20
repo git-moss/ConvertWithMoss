@@ -253,7 +253,8 @@ values:
 0x14   1  loop mode: 0 = forward loop, 1 = one-shot
 0x15   1  level 0–127
 0x19   1  original (root) key 0–127
-0x1C   4  start point   (frames, LE u32) — 0
+0x1C   4  start point   (frames, LE u32) — the zone's play start; 0 for an untrimmed sample
+          (the stored audio always begins at frame 0, so this indexes it like the loop points)
 0x20   4  loop start    (frames, LE u32)
 0x24   4  end / loop end(frames, LE u32)
 0x2C   1  channels — always 2 in device-written files and conforming packs, even for mono-stored

@@ -261,7 +261,8 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
 
     private static String addZoneData (final ISampleZone zone, final int zoneCount, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples) throws IOException
     {
-        final String zoneFileName = zone.getName () + ".wav";
+        // Must use the same sanitized name which was used for writing the sample file
+        final String zoneFileName = createSafeFilename (zone.getName ()) + ".wav";
 
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
@@ -294,7 +295,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         zoneContent = zoneContent.replace ("%KEY_RANGE_LOW_CROSSFADE%", Integer.toString (Math.max (0, keyLow - zone.getNoteCrossfadeLow ())));
         zoneContent = zoneContent.replace ("%KEY_RANGE_HIGH_CROSSFADE%", Integer.toString (Math.min (127, keyHigh + zone.getNoteCrossfadeHigh ())));
         zoneContent = zoneContent.replace ("%VEL_RANGE_LOW_CROSSFADE%", Integer.toString (Math.max (0, velLow - zone.getVelocityCrossfadeLow ())));
-        zoneContent = zoneContent.replace ("%VEL_RANGE_HIGH_CROSSFADE%", Integer.toString (Math.min (127, velHigh + zone.getVelocityCrossfadeLow ())));
+        zoneContent = zoneContent.replace ("%VEL_RANGE_HIGH_CROSSFADE%", Integer.toString (Math.min (127, velHigh + zone.getVelocityCrossfadeHigh ())));
 
         final double tune = zone.getTuning ();
         int semitones = (int) Math.round (tune);

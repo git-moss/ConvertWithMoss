@@ -308,8 +308,11 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         // Always write an ADSR envelope; a percussive sound is represented with a sustain of 0
         put (preset, prefix + "_amp_mode", "2");
         put (preset, prefix + "_amp_env_attack", TonverkValues.attackTimeToNormalized (envelope.getAttackTime ()));
+        // The hold phase only exists in the AHD mode, therefore the hold parameter is left at zero
+        // and the hold time is added to the decay time instead - the same way all other creators
+        // fold a hold phase into the decay. Otherwise the hold time would be lost.
         put (preset, prefix + "_amp_env_hold", 0.0);
-        put (preset, prefix + "_amp_env_decay", TonverkValues.decayTimeToNormalized (envelope.getDecayTime ()));
+        put (preset, prefix + "_amp_env_decay", TonverkValues.decayTimeToNormalized (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ())));
         final double sustain = envelope.getSustainLevel ();
         put (preset, prefix + "_amp_env_sustain", TonverkValues.clampNormalized (sustain < 0 ? 1.0 : sustain));
         put (preset, prefix + "_amp_env_release", TonverkValues.releaseTimeToNormalized (envelope.getReleaseTime ()));
