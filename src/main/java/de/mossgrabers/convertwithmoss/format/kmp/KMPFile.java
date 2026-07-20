@@ -226,9 +226,9 @@ public class KMPFile
             lowerKey = AbstractCreator.limitToDefault (zone.getKeyHigh (), 127) + 1;
             zone.setTuning (in.readByte () / 100.0);
 
-            // Range is [-99..99] but totally unclear to what that relates in dB.
-            // Let's keep it between [0..6]dB
-            zone.setGain ((Math.clamp (in.readByte (), -99, 99) / 99.0 + 1) / 3.0);
+            // The level is stored in the range of [-99..99] with 0 as the neutral value. It
+            // is unclear to which dB values that relates, [-6..6]dB is used as an approximation.
+            zone.setGain (Math.clamp (in.readByte (), -99, 99) / 99.0 * 6.0);
 
             // Panning - unused in KMP itself, 64 is center
             in.readByte ();
@@ -369,7 +369,7 @@ public class KMPFile
         {
             final ISampleZone zone = this.zones.get (i);
 
-            final int keyLow = AbstractCreator.limitToDefault (zone.getKeyHigh (), 0);
+            final int keyLow = AbstractCreator.limitToDefault (zone.getKeyLow (), 0);
             final int keyHigh = AbstractCreator.limitToDefault (zone.getKeyHigh (), 127);
 
             int originalKey = zone.getKeyRoot ();
@@ -382,9 +382,9 @@ public class KMPFile
             out.write (keyHigh);
             out.writeByte ((byte) Math.round (zone.getTuning () * 100.0));
 
-            // Range is [-99..99] but totally unclear to what that relates in dB.
-            // Let's keep it between [0..6]dB
-            out.writeByte (this.maxVolume ? 99 : (byte) Math.clamp (Math.round (Math.clamp (zone.getGain (), 0, 6) / 3.0 - 1.0) * 99.0, 0, 99));
+            // The level is stored in the range of [-99..99] with 0 as the neutral value. It
+            // is unclear to which dB values that relates, [-6..6]dB is used as an approximation.
+            out.writeByte (this.maxVolume ? 99 : Math.clamp (Math.round (Math.clamp (zone.getGain (), -6, 6) / 6.0 * 99.0), -99, 99));
 
             // Panning - unused in KMP itself, 64 is center
             out.write (64);

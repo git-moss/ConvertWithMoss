@@ -181,8 +181,10 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
             {
                 final ISampleZone zone = sampleZones.get (0);
                 // Pitch bend up/down
-                exs24File.addParameter (EXS24Parameters.PITCH_BEND_UP, Math.clamp (Math.round (zone.getBendDown () / 100.0), 0, 24));
-                exs24File.addParameter (EXS24Parameters.PITCH_BEND_DOWN, Math.clamp (Math.round (zone.getBendDown () / 100.0), -24, 0));
+                exs24File.addParameter (EXS24Parameters.PITCH_BEND_UP, Math.clamp (Math.round (zone.getBendUp () / 100.0), 0, 24));
+                // The down amount is stored as a positive number of semi-tones, -1 is the special
+                // value for 'linked to the up amount'
+                exs24File.addParameter (EXS24Parameters.PITCH_BEND_DOWN, Math.clamp (Math.round (Math.abs (zone.getBendDown ()) / 100.0), 0, 24));
 
                 final double velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
                 final int velocityModulation = (int) Math.round (Math.clamp ((1 - velocityDepth) * -60.0, -60, 0));

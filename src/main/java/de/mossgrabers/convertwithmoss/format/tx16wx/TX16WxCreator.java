@@ -635,14 +635,17 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
                     envElement.setAttribute (TX16WxTag.ENV_LEVEL0, (int) Math.round (filterEnvelope.getStartLevel () * 100.0) + "%");
                     envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (filterEnvelope.getAttackTime ()));
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL1, (int) Math.round (filterEnvelope.getSustainLevel () * 100.0) + "%");
+                    // Level 1 is the level which is reached at the end of the attack phase. The
+                    // model has no explicit peak level, therefore fall back to the full level.
+                    final double filterHoldLevel = filterEnvelope.getHoldLevel ();
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL1, (int) Math.round ((filterHoldLevel < 0 ? 1.0 : filterHoldLevel) * 100.0) + "%");
                     envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (filterEnvelope.getDecayTime ()));
                     envElement.setAttribute (TX16WxTag.ENV_LEVEL2, (int) Math.round (filterEnvelope.getSustainLevel () * 100.0) + "%");
                     envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (filterEnvelope.getReleaseTime ()));
                     envElement.setAttribute (TX16WxTag.ENV_LEVEL3, (int) Math.round (filterEnvelope.getEndLevel () * 100.0) + "%");
-                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, amplitudeEnvelope.getAttackSlope (), 6);
-                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, amplitudeEnvelope.getDecaySlope (), 6);
-                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, amplitudeEnvelope.getReleaseSlope (), 6);
+                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, filterEnvelope.getAttackSlope (), 6);
+                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, filterEnvelope.getDecaySlope (), 6);
+                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, filterEnvelope.getReleaseSlope (), 6);
                     addModulationEntry (document, modulationElement, "ENV1", FILTER_1_FREQ, (int) Math.round (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
                 }
 
@@ -672,9 +675,9 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (0));
                 envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (pitchEnvelope.getReleaseTime ()));
 
-                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, amplitudeEnvelope.getAttackSlope (), 6);
-                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, amplitudeEnvelope.getDecaySlope (), 6);
-                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, amplitudeEnvelope.getReleaseSlope (), 6);
+                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, pitchEnvelope.getAttackSlope (), 6);
+                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, pitchEnvelope.getDecaySlope (), 6);
+                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, pitchEnvelope.getReleaseSlope (), 6);
                 addModulationEntry (document, modulationElement, "ENV2", "Pitch", (int) Math.round (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
             }
         }

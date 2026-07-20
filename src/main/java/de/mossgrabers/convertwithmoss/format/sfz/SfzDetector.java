@@ -408,31 +408,23 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             sampleMetadata.setKeyHigh (key);
         }
 
-        // Lower bounds including cross-fade
-        int lowKey = this.getKeyValue (SfzOpcode.XF_IN_LO_KEY);
-        if (lowKey < 0)
-            lowKey = this.getKeyValue (SfzOpcode.LO_KEY);
-        else
-        {
-            final int xfInHighKey = this.getKeyValue (SfzOpcode.XF_IN_HI_KEY);
-            if (xfInHighKey >= 0)
-                sampleMetadata.setNoteCrossfadeLow (xfInHighKey - lowKey);
-        }
+        // The key range is defined by 'lokey' and 'hikey'. The cross-fade opcodes only describe
+        // the width of the fade and must not modify the range.
+        final int lowKey = this.getKeyValue (SfzOpcode.LO_KEY);
         if (lowKey >= 0)
             sampleMetadata.setKeyLow (lowKey);
+        final int xfInLowKey = this.getKeyValue (SfzOpcode.XF_IN_LO_KEY);
+        final int xfInHighKey = this.getKeyValue (SfzOpcode.XF_IN_HI_KEY);
+        if (xfInLowKey >= 0 && xfInHighKey >= 0)
+            sampleMetadata.setNoteCrossfadeLow (xfInHighKey - xfInLowKey);
 
-        // Upper bounds including cross-fade
-        int highKey = this.getKeyValue (SfzOpcode.XF_OUT_HI_KEY);
-        if (highKey < 0)
-            highKey = this.getKeyValue (SfzOpcode.HI_KEY);
-        else
-        {
-            final int xfOutLowKey = this.getKeyValue (SfzOpcode.XF_OUT_LO_KEY);
-            if (xfOutLowKey >= 0)
-                sampleMetadata.setNoteCrossfadeHigh (highKey - xfOutLowKey);
-        }
+        final int highKey = this.getKeyValue (SfzOpcode.HI_KEY);
         if (highKey >= 0)
             sampleMetadata.setKeyHigh (highKey);
+        final int xfOutLowKey = this.getKeyValue (SfzOpcode.XF_OUT_LO_KEY);
+        final int xfOutHighKey = this.getKeyValue (SfzOpcode.XF_OUT_HI_KEY);
+        if (xfOutLowKey >= 0 && xfOutHighKey >= 0)
+            sampleMetadata.setNoteCrossfadeHigh (xfOutHighKey - xfOutLowKey);
 
         // The center key
         final int pitchKeyCenter = this.getKeyValue (SfzOpcode.PITCH_KEY_CENTER);
@@ -450,7 +442,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         {
             final int xfInHighVel = this.getIntegerValue (SfzOpcode.XF_IN_HI_VEL);
             if (xfInHighVel >= 0)
-                sampleMetadata.setNoteCrossfadeLow (xfInHighVel - lowVel);
+                sampleMetadata.setVelocityCrossfadeLow (xfInHighVel - lowVel);
         }
         if (lowVel >= 0)
             sampleMetadata.setVelocityLow (lowVel);
@@ -463,7 +455,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         {
             final int xfOutLowVel = this.getIntegerValue (SfzOpcode.XF_OUT_LO_VEL);
             if (xfOutLowVel >= 0)
-                sampleMetadata.setNoteCrossfadeHigh (highVel - xfOutLowVel);
+                sampleMetadata.setVelocityCrossfadeHigh (highVel - xfOutLowVel);
         }
         if (highVel >= 0)
             sampleMetadata.setVelocityHigh (highVel);
@@ -587,7 +579,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
 
         final int filterKeyTracking = this.getIntegerValue (SfzOpcode.FIL_KEY_TRACK, 0);
         if (filterKeyTracking != 0)
-            filter.setCutoffKeyTracking (Math.clamp (filterKeyTracking / 1200, 0, 1));
+            filter.setCutoffKeyTracking (Math.clamp (filterKeyTracking / 1200.0, 0, 1));
     }
 
 
