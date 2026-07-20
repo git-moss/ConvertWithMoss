@@ -17,6 +17,11 @@
 * Reason NN-XT (thanks to Douglas Carmichael)
   * Fixed: All loops were lost when reading a preset: the loop was created but never added to the zone. Writing loops was not affected.
   * Fixed: The pitch key tracking was never read, so zones with a reduced key tracking (e.g. fixed-pitch percussion) were imported as fully tracking.
+  * Fixed: The depth of the filter envelope was written into the field of the pitch envelope, so the filter modulation was lost and the pitch modulation was overwritten with it.
+* SFZ (thanks to Douglas Carmichael)
+  * Fixed: The velocity range was taken from the cross-fade opcodes, so it grew by the width of the cross-fade with every conversion (e.g. lovel/hivel 40/100 became 30/110 and then 20/120). The same was already fixed for the key range.
+* TX16Wx (thanks to Douglas Carmichael)
+  * Fixed: Envelope levels which are not set were written as -100%, which is a valid but completely different envelope. They now fall back to the neutral level.
 * Logic EXS24 (thanks to Douglas Carmichael)
   * Fixed: The panning of a group was read as an unsigned value and was not scaled, so a group panned fully left moved all of its zones fully right.
   * Fixed: The attack time at the lowest velocity was never written and stayed at 0, which gave all written presets an instant attack at low velocity.

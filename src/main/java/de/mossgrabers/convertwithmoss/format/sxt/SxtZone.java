@@ -735,7 +735,7 @@ class SxtZone
             final double modEnvDepth = cutoffModulator.getDepth ();
             if (modEnvDepth > 0)
             {
-                this.modEnvToPitch = (int) (modEnvDepth * 1000.0);
+                this.modEnvToFilterFreq = (int) (modEnvDepth * 1000.0);
                 final IEnvelope modEnvelope = cutoffModulator.getSource ();
                 final double delay = modEnvelope.getDelayTime ();
                 if (delay >= 0)

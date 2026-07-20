@@ -434,31 +434,23 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         // -----------------------------------------------------------
         // Velocity
 
-        // Lower bounds including cross-fade
-        int lowVel = this.getIntegerValue (SfzOpcode.XF_IN_LO_VEL);
-        if (lowVel < 0)
-            lowVel = this.getIntegerValue (SfzOpcode.LO_VEL);
-        else
-        {
-            final int xfInHighVel = this.getIntegerValue (SfzOpcode.XF_IN_HI_VEL);
-            if (xfInHighVel >= 0)
-                sampleMetadata.setVelocityCrossfadeLow (xfInHighVel - lowVel);
-        }
+        // Like the key range above, the velocity range is defined by 'lovel' and 'hivel'. The
+        // cross-fade opcodes only describe the width of the fade and must not modify the range.
+        final int lowVel = this.getIntegerValue (SfzOpcode.LO_VEL);
         if (lowVel >= 0)
             sampleMetadata.setVelocityLow (lowVel);
+        final int xfInLowVel = this.getIntegerValue (SfzOpcode.XF_IN_LO_VEL);
+        final int xfInHighVel = this.getIntegerValue (SfzOpcode.XF_IN_HI_VEL);
+        if (xfInLowVel >= 0 && xfInHighVel >= 0)
+            sampleMetadata.setVelocityCrossfadeLow (xfInHighVel - xfInLowVel);
 
-        // Upper bounds including cross-fade
-        int highVel = this.getIntegerValue (SfzOpcode.XF_OUT_HI_VEL);
-        if (highVel < 0)
-            highVel = this.getIntegerValue (SfzOpcode.HI_VEL);
-        else
-        {
-            final int xfOutLowVel = this.getIntegerValue (SfzOpcode.XF_OUT_LO_VEL);
-            if (xfOutLowVel >= 0)
-                sampleMetadata.setVelocityCrossfadeHigh (highVel - xfOutLowVel);
-        }
+        final int highVel = this.getIntegerValue (SfzOpcode.HI_VEL);
         if (highVel >= 0)
             sampleMetadata.setVelocityHigh (highVel);
+        final int xfOutLowVel = this.getIntegerValue (SfzOpcode.XF_OUT_LO_VEL);
+        final int xfOutHighVel = this.getIntegerValue (SfzOpcode.XF_OUT_HI_VEL);
+        if (xfOutLowVel >= 0 && xfOutHighVel >= 0)
+            sampleMetadata.setVelocityCrossfadeHigh (xfOutHighVel - xfOutLowVel);
 
         // -----------------------------------------------------------
         // Sample Loop
