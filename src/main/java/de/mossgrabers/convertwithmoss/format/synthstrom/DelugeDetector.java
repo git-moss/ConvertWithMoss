@@ -520,7 +520,14 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * Read the polyphony mode of a sound and apply it to the multi-sample source. The Deluge does
      * not store a voice count, it only distinguishes polyphonic from monophonic playback, therefore
      * only a monophonic mode sets a polyphony (of 1). The modes 'auto' and 'choke' are not mapped
-     * since neither describes a fixed number of voices.
+     * since neither describes a fixed number of voices: 'auto' is an automatic voice allocation and
+     * 'choke' stops a previous note of the same sound.
+     * <p>
+     * The five values are 'mono', 'auto', 'legato', 'choke' and 'poly' as written by
+     * polyphonyModeToString in src/deluge/util/functions.cpp of the Deluge firmware. Its counterpart
+     * stringToPolyphonyMode additionally reads '0' as 'auto' and '2' as 'choke' for files written
+     * before June 2017, but there is no numeric value for a monophonic mode, so those old files
+     * never need to be handled here. An unknown value falls back to polyphonic on the device.
      *
      * @param soundElement The sound element
      * @param multisampleSource The multi-sample source to fill
