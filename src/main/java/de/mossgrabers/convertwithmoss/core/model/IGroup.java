@@ -50,6 +50,96 @@ public interface IGroup
 
 
     /**
+     * Get the gain of the group. This is an <i>offset</i> which needs to be applied on top of the
+     * gain of each sample zone of the group. It does not replace the gain of a sample zone.
+     * <p>
+     * <b>Important:</b> all detectors flatten the group values into each of their sample zones and
+     * must continue to do so. This attribute is only an additional carrier of the information for
+     * formats which do have a real group layer. Therefore, a creator must apply either the group
+     * value or the (already flattened) zone value but never both, otherwise the gain is applied
+     * twice.
+     * <p>
+     * Known encodings of this attribute are: Kontakt group <code>volume</code>, Logic EXS24 group
+     * offset block, Waldorf Quantum/Iridium <code>Osc&lt;N&gt;Vol</code>, DecentSampler group
+     * <code>volume</code>, TX16Wx <code>tx:soundshape</code> and the volume of a drum of a
+     * Synthstrom Deluge kit.
+     *
+     * @return The gain offset in dB, 0 if there is no offset
+     */
+    double getGain ();
+
+
+    /**
+     * Set the gain of the group. This is an offset which needs to be applied on top of the gain of
+     * each sample zone of the group, it does not replace it.
+     *
+     * @param gain The gain offset in dB, 0 for no offset
+     */
+    void setGain (double gain);
+
+
+    /**
+     * Get the panning of the group. This is an <i>offset</i> which needs to be applied on top of
+     * the panning of each sample zone of the group. It does not replace the panning of a sample
+     * zone.
+     * <p>
+     * <b>Important:</b> all detectors flatten the group values into each of their sample zones and
+     * must continue to do so. This attribute is only an additional carrier of the information for
+     * formats which do have a real group layer. Therefore, a creator must apply either the group
+     * value or the (already flattened) zone value but never both, otherwise the panning is applied
+     * twice.
+     * <p>
+     * Known encodings of this attribute are: Kontakt group <code>pan</code>, Logic EXS24 group
+     * offset block, Waldorf Quantum/Iridium <code>Osc&lt;N&gt;Pan</code>, DecentSampler group
+     * <code>pan</code>, TX16Wx <code>tx:soundshape</code> and the panning of a drum of a Synthstrom
+     * Deluge kit.
+     *
+     * @return The panning offset in the range of [-1..1], -1 is full left, 0 is no offset and 1 is
+     *         full right
+     */
+    double getPanning ();
+
+
+    /**
+     * Set the panning of the group. This is an offset which needs to be applied on top of the
+     * panning of each sample zone of the group, it does not replace it.
+     *
+     * @param panning The panning offset in the range of [-1..1], -1 is full left, 0 is no offset
+     *            and 1 is full right
+     */
+    void setPanning (double panning);
+
+
+    /**
+     * Get the tuning of the group. This is an <i>offset</i> which needs to be applied on top of the
+     * tuning of each sample zone of the group. It does not replace the tuning of a sample zone.
+     * <p>
+     * <b>Important:</b> all detectors flatten the group values into each of their sample zones and
+     * must continue to do so. This attribute is only an additional carrier of the information for
+     * formats which do have a real group layer. Therefore, a creator must apply either the group
+     * value or the (already flattened) zone value but never both, otherwise the tuning is applied
+     * twice.
+     * <p>
+     * Known encodings of this attribute are: Kontakt group <code>tune</code>, Logic EXS24 group
+     * offset block, DecentSampler group <code>tuning</code> and TX16Wx <code>tx:soundshape</code>.
+     *
+     * @return The tuning offset in positive or negative semi-tones, which means that 0.01
+     *         represents 1 cent (1 semi-tone is 100 cent), 0 if there is no offset
+     */
+    double getTuning ();
+
+
+    /**
+     * Set the tuning of the group. This is an offset which needs to be applied on top of the tuning
+     * of each sample zone of the group, it does not replace it.
+     *
+     * @param tuning The tuning offset in positive or negative semi-tones, which means that 0.01
+     *            represents 1 cent (1 semi-tone is 100 cent), 0 for no offset
+     */
+    void setTuning (double tuning);
+
+
+    /**
      * Get the description of the samples zones which belong to the group.
      *
      * @return The zones in an ordered map

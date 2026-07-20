@@ -22,6 +22,9 @@ public class DefaultGroup implements IGroup
     private List<ISampleZone> sampleZones = new ArrayList<> ();
     private String            name;
     protected TriggerType     triggerType = TriggerType.ATTACK;
+    private double            gain        = 0;
+    private double            panning     = 0;
+    private double            tuning      = 0;
 
 
     /**
@@ -108,5 +111,53 @@ public class DefaultGroup implements IGroup
     public void setTrigger (final TriggerType trigger)
     {
         this.triggerType = trigger;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getGain ()
+    {
+        return this.gain;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setGain (final double gain)
+    {
+        this.gain = gain;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getPanning ()
+    {
+        return this.panning;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPanning (final double panning)
+    {
+        this.panning = panning;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getTuning ()
+    {
+        return this.tuning;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setTuning (final double tuning)
+    {
+        this.tuning = tuning;
     }
 }
