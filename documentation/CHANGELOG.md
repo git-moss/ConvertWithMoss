@@ -14,6 +14,22 @@
 * TAL Sampler (thanks to Douglas Carmichael)
   * Fixed: The sample "reverse" flag was never read as enabled: it is stored numerically (0/1) like all other TAL flags but was parsed as a true/false text boolean.
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
+* Reason NN-XT (thanks to Douglas Carmichael)
+  * Fixed: All loops were lost when reading a preset: the loop was created but never added to the zone. Writing loops was not affected.
+  * Fixed: The pitch key tracking was never read, so zones with a reduced key tracking (e.g. fixed-pitch percussion) were imported as fully tracking.
+* Logic EXS24 (thanks to Douglas Carmichael)
+  * Fixed: The panning of a group was read as an unsigned value and was not scaled, so a group panned fully left moved all of its zones fully right.
+  * Fixed: The attack time at the lowest velocity was never written and stayed at 0, which gave all written presets an instant attack at low velocity.
+* DecentSampler (thanks to Douglas Carmichael)
+  * Fixed: The panning of a group was not scaled, so any group with a panning moved all of its zones fully to one side.
+* Bliss (thanks to Douglas Carmichael)
+  * Fixed: The loop mode was only written when a zone had a loop, but a missing loop mode is read back as a forward loop, so zones without a loop turned into fully looped ones.
+* Ableton (thanks to Douglas Carmichael)
+  * Fixed: The warning that the round-robin configuration could not be translated was logged when it could be translated and not when it could not. The written file is not affected.
+* 1010music blackbox (thanks to Douglas Carmichael)
+  * Fixed: The choke group attribute of an unused template slot was written as "okegrp" instead of "chokegrp".
+* Backend (thanks to Douglas Carmichael)
+  * Fixed: Copying a sample zone did not copy the sequence position belonging to the play logic and did not copy the velocity modulator of the amplitude.
 
 ## 19.0.0
 
