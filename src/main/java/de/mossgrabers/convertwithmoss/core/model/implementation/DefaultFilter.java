@@ -148,9 +148,9 @@ public class DefaultFilter implements IFilter
         }
         else if (!this.cutoffVelocityModulator.equals (other.cutoffVelocityModulator))
             return false;
-        if (this.cutoffVelocityModulator == null)
+        if (this.cutoffEnvelopeModulator == null)
         {
-            if (other.cutoffVelocityModulator != null)
+            if (other.cutoffEnvelopeModulator != null)
                 return false;
         }
         else if (!this.cutoffEnvelopeModulator.equals (other.cutoffEnvelopeModulator))

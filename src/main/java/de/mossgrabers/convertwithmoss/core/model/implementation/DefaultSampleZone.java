@@ -29,6 +29,8 @@ public class DefaultSampleZone implements ISampleZone
     protected PlayLogic          playLogic                  = PlayLogic.ALWAYS;
     protected int                sequencePosition           = -1;
     protected TriggerType        triggerType                = TriggerType.ATTACK;
+    protected boolean            isOneShot                  = false;
+    protected int                exclusiveGroup             = 0;
     protected int                start                      = -1;
     protected int                stop                       = -1;
     protected int                keyRoot                    = -1;
@@ -45,6 +47,7 @@ public class DefaultSampleZone implements ISampleZone
     protected double             panning                    = 0;
     protected double             tune                       = 0;
     protected double             keyTracking                = 1.0;
+    protected double             amplitudeKeyTracking       = 0;
     protected int                bendUp                     = 200;
     protected int                bendDown                   = -200;
     protected boolean            isReversed                 = false;
@@ -233,6 +236,38 @@ public class DefaultSampleZone implements ISampleZone
     public void setTrigger (final TriggerType trigger)
     {
         this.triggerType = trigger;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isOneShot ()
+    {
+        return this.isOneShot;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setOneShot (final boolean isOneShot)
+    {
+        this.isOneShot = isOneShot;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getExclusiveGroup ()
+    {
+        return this.exclusiveGroup;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setExclusiveGroup (final int exclusiveGroup)
+    {
+        this.exclusiveGroup = exclusiveGroup;
     }
 
 
@@ -446,6 +481,22 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
+    public double getAmplitudeKeyTracking ()
+    {
+        return this.amplitudeKeyTracking;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setAmplitudeKeyTracking (final double amplitudeKeyTracking)
+    {
+        this.amplitudeKeyTracking = amplitudeKeyTracking;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int getBendUp ()
     {
         return this.bendUp;
@@ -538,6 +589,8 @@ public class DefaultSampleZone implements ISampleZone
     {
         this.playLogic = other.getPlayLogic ();
         this.triggerType = other.getTrigger ();
+        this.isOneShot = other.isOneShot ();
+        this.exclusiveGroup = other.getExclusiveGroup ();
         this.start = other.getStart ();
         this.stop = other.getStop ();
         this.keyRoot = other.getKeyRoot ();
@@ -553,6 +606,7 @@ public class DefaultSampleZone implements ISampleZone
         this.panning = other.getPanning ();
         this.tune = other.getTuning ();
         this.keyTracking = other.getKeyTracking ();
+        this.amplitudeKeyTracking = other.getAmplitudeKeyTracking ();
         this.bendUp = other.getBendUp ();
         this.bendDown = other.getBendDown ();
         this.isReversed = other.isReversed ();
