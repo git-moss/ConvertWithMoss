@@ -346,7 +346,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         if (!multisampleSource.hasRoundRobin ())
             return false;
         final boolean fullRoundRobin = multisampleSource.isFullRoundRobin ();
-        if (fullRoundRobin)
+        if (!fullRoundRobin)
             this.notifier.logError ("IDS_ADV_ROUND_ROBIN_GROUPS_DO_NOT_MATCH");
         return fullRoundRobin;
     }

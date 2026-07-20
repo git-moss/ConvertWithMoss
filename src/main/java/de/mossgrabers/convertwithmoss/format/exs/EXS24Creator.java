@@ -216,6 +216,9 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
         final int release = formatEnvTime (envelope.getReleaseTime ());
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_DELAY_START : EXS24Parameters.ENV2_DELAY_START, delay);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_HI_VEL : EXS24Parameters.ENV2_ATK_HI_VEL, attack);
+        // The attack time at the lowest velocity must be set to the same value, otherwise it stays
+        // at 0 and the attack time gets velocity dependent
+        parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_LO_VEL : EXS24Parameters.ENV2_ATK_LO_VEL, attack);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_HOLD : EXS24Parameters.ENV2_HOLD, hold);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_DECAY : EXS24Parameters.ENV2_DECAY, decay);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_SUSTAIN : EXS24Parameters.ENV2_SUSTAIN, sustain);

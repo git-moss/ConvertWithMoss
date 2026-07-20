@@ -103,7 +103,7 @@ class EXS24Group extends EXS24Object
     protected void read (final InputStream in, final boolean isBigEndian) throws IOException
     {
         this.volume = MathUtils.decodeTwosComplement (in.read ());
-        this.pan = in.read ();
+        this.pan = MathUtils.decodeTwosComplement (in.read ());
         this.polyphony = in.read ();
         final int options = in.read ();
         this.mute = (options & 16) > 0; // 0 = OFF, 1 = ON

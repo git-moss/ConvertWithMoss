@@ -464,6 +464,13 @@ class SxtZone
         zone.setBendUp (this.pitchWheelRange * 100);
         zone.setBendDown (-this.pitchWheelRange * 100);
 
+        // The key tracking (the 'K. Track' knob) is stored as the amount of cents by which the
+        // pitch is shifted per key: 0 = all keys play the same pitch, 100 = one semi-tone per key
+        // (which is the normal setting and matches 100% in the model) and 1200 = one octave per
+        // key. The model supports only [0..1] which represents [0..100] %, therefore exaggerated
+        // tracking of more than one semi-tone per key is clamped.
+        zone.setKeyTracking (Math.clamp (this.keyToPitch / 100.0, 0, 1));
+
         // Backwards
         if (this.playMode == 4)
             zone.setReversed (true);
@@ -474,6 +481,7 @@ class SxtZone
             loop.setLoopUntilRelease (this.playMode == 3);
             loop.setStart ((int) this.sampleLoopStart);
             loop.setEnd ((int) this.sampleLoopEnd);
+            zone.addLoop (loop);
         }
 
         if (this.alternateMode > 0)

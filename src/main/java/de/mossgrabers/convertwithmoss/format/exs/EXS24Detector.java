@@ -437,7 +437,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         if (exs24Group.volume != 0)
             zone.setGain (exs24Group.volume + zone.getGain ());
         if (exs24Group.pan != 0)
-            zone.setPanning (zone.getPanning () + exs24Group.pan);
+            zone.setPanning (Math.clamp (zone.getPanning () + exs24Group.pan / 50.0, -1, 1));
 
         // Zone is completely outside of the groups' velocity range
         if (zone.getVelocityHigh () < exs24Group.minVelocity)
