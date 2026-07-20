@@ -54,6 +54,16 @@
   * Fixed: An envelope hold time was dropped when writing a preset. It is now added to the decay time - the hold phase only exists in the device's AHD mode while the written envelope is always ADSR - the same way all other formats without a separate hold stage handle it.
 * Backend (thanks to Douglas Carmichael)
   * Fixed: Copying a sample zone did not copy the sequence position belonging to the play logic and did not copy the velocity modulator of the amplitude.
+* Ableton (thanks to Douglas Carmichael)
+  * Fixed: The warning that the round-robin configuration could not be translated was logged when it could be translated and not when it could not. The written file is not affected.
+* 1010music blackbox (thanks to Douglas Carmichael)
+  * Fixed: The choke group attribute of an unused template slot was written as "okegrp" instead of "chokegrp".
+* Backend (thanks to Douglas Carmichael)
+  * Fixed: Copying a sample zone did not copy the sequence position belonging to the play logic and did not copy the velocity modulator of the amplitude.
+* Elektron Tonverk Preset (thanks to Douglas Carmichael)
+  * Fixed: Writing a Tonverk preset failed in the packaged application with "Resource '.../tonverk/multi-template.tvpst' not found" (issue #203). The preset template lives in a module package that was not opened - unlike every other template package - and its resource path carried a leading slash that the module class-loader lookup does not accept. The package is now opened and the path corrected.
+* Roland MV-8000/MV-8800 (thanks to Douglas Carmichael)
+  * Fixed: Reading a patch could hang with full CPU load and no output. The loop over the sample slots did not advance on an empty slot, and since a patch rarely uses all of its slots this affected almost every patch.
 
 ## 19.0.0
 

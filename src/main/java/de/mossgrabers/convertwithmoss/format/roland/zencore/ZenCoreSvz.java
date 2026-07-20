@@ -20,8 +20,9 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
  * <i>DIFa</i>, one <i>PATa</i> tone per instrument (ZEN-Core tone, 1632 bytes; its oscillator
  * points at the instrument's multi-sample via the Wave-Number L/R fields), one <i>MSPa</i> 128-key
  * map per instrument, a shared <i>USPa</i> sample-parameter pool (64 byte records) and a shared
- * <i>USDa</i> pool of <i>SMPd</i> sample chunks (a 460 byte header followed by interleaved 16-bit
- * little-endian PCM). All framing carries the per-record CRC32 tables verified from device exports.
+ * <i>USDa</i> pool of <i>SMPd</i> sample chunks (a fixed header - 460 bytes as written by the
+ * FANTOM, 158 bytes in an older generation - followed by interleaved 16-bit little-endian PCM). All
+ * framing carries the per-record CRC32 tables verified from device exports.
  * Byte templates for the constant/opaque parts live next to this class as resources. See
  * {@code documentation/design/ZENCORE_FORMAT.md}.
  *
@@ -33,8 +34,19 @@ public final class ZenCoreSvz
     public static final int      USP_RECORD_SIZE      = 64;
     /** The size of a MSPa multis-ample key-map record. */
     public static final int      MSP_RECORD_SIZE      = 1040;
-    /** The size of the fixed SMPd chunk header (PCM follows at this offset). */
+    /** The size of the FANTOM / KY019 SMPd chunk header (PCM follows at this offset). */
     public static final int      SMPD_HEADER_SIZE     = 0x1CC;
+    /**
+     * The size of the compact SMPd chunk header written by an older sample generation (SVZ file
+     * version 02 01, e.g. third-party sample packs). It carries a shorter waveform preview than the
+     * FANTOM export and stores the channel count as a u16 at {@link #SMPD_CHANNELS_COMPACT} instead
+     * of the byte at {@link #SMPD_CHANNELS_KY019} (whose slot then holds an unrelated value, 0x32).
+     */
+    private static final int     SMPD_HEADER_COMPACT  = 0x9E;
+    /** Channel-count field of a FANTOM / KY019 SMPd header: a byte holding 1 (mono) or 2 (stereo). */
+    private static final int     SMPD_CHANNELS_KY019  = 0x08;
+    /** Channel-count field of a compact SMPd header: a u16 holding 1 (mono) or 2 (stereo). */
+    private static final int     SMPD_CHANNELS_COMPACT = 0x0A;
 
     private static final int     NAME_LENGTH          = 16;
     private static final int     PREVIEW_OFFSET       = 0x60;
@@ -696,18 +708,20 @@ public final class ZenCoreSvz
                 final int chunkOffset = (int) ZenCoreUtil.readUnsigned32 (file, entryOffset + 4, false);
                 final int chunkSize = (int) ZenCoreUtil.readUnsigned32 (file, entryOffset + 8, false);
                 final int chunkStart = usdSectionStart + chunkOffset;
-                if (chunkSize > SMPD_HEADER_SIZE && chunkStart + chunkSize <= file.length)
+                if (chunkStart >= 0 && chunkSize > SMPD_HEADER_COMPACT && chunkStart + chunkSize <= file.length)
                 {
-                    // The storage layout comes from the SMPd chunk: the USPa channel count is 2
-                    // even
-                    // for mono-stored samples (the device's own exports store mono SMPd data).
-                    int channels = file[chunkStart + 8] & 0xFF;
-                    if (channels < 1 || channels > 2)
-                        channels = 2;
-                    final int rate = (int) ZenCoreUtil.readUnsigned32 (file, chunkStart + 0x0C, false);
-                    final int pcmStart = chunkStart + SMPD_HEADER_SIZE;
-                    final int pcmSize = chunkSize - SMPD_HEADER_SIZE;
-                    sample.setSampleData (decodePcm (file, pcmStart, pcmSize, channels, rate < 8000 || rate > 192000 ? 48000 : rate));
+                    // The storage layout comes from the SMPd chunk header, which has two variants
+                    // (see resolveSmpdLayout); an unrecognized chunk leaves the sample without audio.
+                    final int [] layout = resolveSmpdLayout (file, chunkStart, chunkSize);
+                    if (layout != null)
+                    {
+                        final int channels = layout[0];
+                        final int headerSize = layout[1];
+                        final int rate = (int) ZenCoreUtil.readUnsigned32 (file, chunkStart + 0x0C, false);
+                        final int pcmStart = chunkStart + headerSize;
+                        final int pcmSize = chunkSize - headerSize;
+                        sample.setSampleData (decodePcm (file, pcmStart, pcmSize, channels, rate < 8000 || rate > 192000 ? 48000 : rate));
+                    }
                 }
             }
             result.add (sample);
@@ -776,12 +790,72 @@ public final class ZenCoreSvz
     }
 
 
+    /**
+     * Resolve a <i>SMPd</i> chunk's PCM layout. Two header variants exist. The FANTOM / KY019 export
+     * uses a {@link #SMPD_HEADER_SIZE} byte header with the channel count in the byte at
+     * {@link #SMPD_CHANNELS_KY019}. An older generation (SVZ file version 02 01, e.g. third-party
+     * sample packs) uses a {@link #SMPD_HEADER_COMPACT} byte header with the channel count as a u16
+     * at {@link #SMPD_CHANNELS_COMPACT} - there the byte at {@link #SMPD_CHANNELS_KY019} holds an
+     * unrelated value (0x32), which is why reading the channel count from it alone fails on those
+     * files. The matching variant is the one whose PCM region past the header is a whole number of
+     * frames: the two header sizes differ by 302 (2 mod 4), so a stereo chunk's byte count is a
+     * multiple of the 4 byte stereo frame for exactly one of them.
+     *
+     * @param file The file content
+     * @param chunkStart The absolute offset of the SMPd chunk
+     * @param chunkSize The chunk size from the USDa directory
+     * @return {channels, headerSize}, or null if neither variant fits
+     */
+    private static int [] resolveSmpdLayout (final byte [] file, final int chunkStart, final int chunkSize)
+    {
+        final int ky019Channels = file[chunkStart + SMPD_CHANNELS_KY019] & 0xFF;
+        if (smpdFits (chunkSize, SMPD_HEADER_SIZE, ky019Channels))
+            return new int []
+            {
+                ky019Channels,
+                SMPD_HEADER_SIZE
+            };
+        final int compactChannels = ZenCoreUtil.readUnsigned16 (file, chunkStart + SMPD_CHANNELS_COMPACT, false);
+        if (smpdFits (chunkSize, SMPD_HEADER_COMPACT, compactChannels))
+            return new int []
+            {
+                compactChannels,
+                SMPD_HEADER_COMPACT
+            };
+        return null;
+    }
+
+
+    /**
+     * Whether a SMPd header size and channel count are consistent with the chunk: a plausible
+     * channel count (1 or 2) whose PCM region past the header is a whole number of frames. The
+     * declared play length is deliberately not used - device exports may declare a handful of frames
+     * more than they store - so only the frame alignment, together with the channel-count field,
+     * selects the layout.
+     *
+     * @param chunkSize The chunk size
+     * @param headerSize The candidate header size
+     * @param channels The candidate channel count
+     * @return True if the combination fits
+     */
+    private static boolean smpdFits (final int chunkSize, final int headerSize, final int channels)
+    {
+        if (channels < 1 || channels > 2)
+            return false;
+        final int pcmSize = chunkSize - headerSize;
+        return pcmSize > 0 && pcmSize % (channels * 2) == 0;
+    }
+
+
     private static InMemorySampleData decodePcm (final byte [] file, final int offset, final int size, final int channels, final int rate)
     {
-        // SMPd PCM is already 16-bit little-endian, so it can be used verbatim.
-        final byte [] pcm = new byte [size];
-        System.arraycopy (file, offset, pcm, 0, size);
-        final int frames = size / (2 * channels);
+        // SMPd PCM is already 16-bit little-endian, so it can be used verbatim. Copy only whole
+        // frames: a chunk whose stored byte count is not an exact multiple of the frame size would
+        // otherwise hand InMemorySampleData a buffer that does not fit a WAV of that frame count.
+        final int frameBytes = 2 * channels;
+        final int frames = size / frameBytes;
+        final byte [] pcm = new byte [frames * frameBytes];
+        System.arraycopy (file, offset, pcm, 0, pcm.length);
         return new InMemorySampleData (new DefaultAudioMetadata (channels, rate, 16, frames), pcm);
     }
 
