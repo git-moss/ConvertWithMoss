@@ -226,8 +226,9 @@ public class KMPFile
             lowerKey = AbstractCreator.limitToDefault (zone.getKeyHigh (), 127) + 1;
             zone.setTuning (in.readByte () / 100.0);
 
-            // The level is stored in the range of [-99..99] with 0 as the neutral value. It
-            // is unclear to which dB values that relates, [-6..6]dB is used as an approximation.
+            // The level is stored in the range of [-99..99]. The Korg documentation describes 0 as
+            // the unity level and negative and positive values as lowering and raising it, but it
+            // does not relate them to dB, therefore [-6..6]dB is used as an approximation.
             zone.setGain (Math.clamp (in.readByte (), -99, 99) / 99.0 * 6.0);
 
             // Panning - unused in KMP itself, 64 is center
@@ -382,8 +383,9 @@ public class KMPFile
             out.write (keyHigh);
             out.writeByte ((byte) Math.round (zone.getTuning () * 100.0));
 
-            // The level is stored in the range of [-99..99] with 0 as the neutral value. It
-            // is unclear to which dB values that relates, [-6..6]dB is used as an approximation.
+            // The level is stored in the range of [-99..99]. The Korg documentation describes 0 as
+            // the unity level and negative and positive values as lowering and raising it, but it
+            // does not relate them to dB, therefore [-6..6]dB is used as an approximation.
             out.writeByte (this.maxVolume ? 99 : Math.clamp (Math.round (Math.clamp (zone.getGain (), -6, 6) / 6.0 * 99.0), -99, 99));
 
             // Panning - unused in KMP itself, 64 is center
