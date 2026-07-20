@@ -325,6 +325,33 @@ Culture's *SOURCE*): a `"SMPd"` tag with a u16 header size `0x20` at +4 and u8 v
 is byte-identical to the device's. CWM decodes such packs and re-emits device-native raw-PCM
 `SMPd`.
 
+**Compact `SMPd`** (file version `02 01`; seen in third-party sample-pool exports, e.g. a pool
+tagged `Nemly`): follows the same `f04 = 2 × end` law at +4, the same bits at `0x009`, rate at
+`0x00C` and name at `0x010` as the device-native encoding, but uses a shorter **158-byte**
+(`0x9E`) header with a shorter preview, and stores the **channel count as a u16 at `0x00A`** — the
+byte at `0x008` (channels in the device encoding) holds an unrelated `0x32`. Interleaved 16-bit
+LITTLE-endian PCM follows at `0x9E`. CWM reads it; it is not written.
+
+```
+0x000   4  "SMPd"
+0x004   4  u32 f04 = 2 × end
+0x008   1  0x32  (NOT the channel count in this encoding)
+0x009   1  bits (16)
+0x00A   2  u16 channels (2)
+0x00C   4  u32 sample rate  (44100 / 48000)
+0x010  16  sample name
+0x060 ..   shorter preview
+0x09E  ..  interleaved 16-bit LITTLE-endian PCM
+```
+
+**Distinguishing the encodings on read.** The device-native (460) and compact (158) header sizes
+differ by 302 (`2 mod 4`), so a stereo chunk's PCM byte count is a whole number of 4-byte frames
+for exactly one of them. The reader (`ZenCoreSvz.resolveSmpdLayout`) picks the header whose
+channel-count field — the byte at `0x008` for the 460 header, the u16 at `0x00A` for the 158
+header — is 1 or 2 and whose PCM region past the header divides evenly into frames; the declared
+`end` is deliberately not used to size the PCM, since the stored frame count runs a little past or
+short of it.
+
 ---
 
 ## 4. Sample preparation for click-free playback
