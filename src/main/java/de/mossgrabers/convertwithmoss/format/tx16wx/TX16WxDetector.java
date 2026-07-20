@@ -401,6 +401,8 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         final String playMode = groupElement.getAttribute (TX16WxTag.GROUP_PLAYMODE);
         if ("Release".equals (playMode))
             group.setTrigger (TriggerType.RELEASE);
+        // A one-shot ignores a note-off and always plays the sample to its end
+        final boolean isOneShot = "Oneshot".equals (playMode);
 
         Optional<IFilter> filter = Optional.empty ();
         Optional<IEnvelopeModulator> pitchModulator = Optional.empty ();
@@ -453,6 +455,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             if (zone != null)
             {
                 this.parseZone (zone, regionElement, groupVolumeOffset, groupPanningOffset, groupTuningOffset);
+                zone.setOneShot (isOneShot);
                 group.addSampleZone (zone);
 
                 if (pitchModulator.isPresent ())

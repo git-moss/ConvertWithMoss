@@ -222,6 +222,9 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         final int finetune = XMLUtils.getChildElementIntegerContent (sampleElement, RenoiseTag.FINETUNE, 0);
         zone.setTuning (RenoiseValueConverter.toTuning (transpose, finetune));
 
+        // 'OneShotTrigger' ignores a note-off and always plays the sample to its end
+        zone.setOneShot ("true".equalsIgnoreCase (XMLUtils.getChildElementContent (sampleElement, RenoiseTag.ONE_SHOT)));
+
         zone.setStart (0);
         try
         {

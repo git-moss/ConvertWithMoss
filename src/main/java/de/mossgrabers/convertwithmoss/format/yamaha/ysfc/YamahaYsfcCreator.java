@@ -482,6 +482,11 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
     {
         element.setXaMode (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN ? 3 : 0);
 
+        // Ignore note-off events to always play back the sample to its end. Keep the value of the
+        // template if it is not a one-shot sample.
+        if (zone.isOneShot ())
+            element.setReceiveNoteOff (0);
+
         // Tuning
 
         final double tune = zone.getTuning ();

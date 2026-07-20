@@ -171,6 +171,9 @@ public abstract class AbstractTagsAndAttributes
     /** The one-shot value. */
     private static final String ONESHOT_VALUE              = "oneshot";
 
+    /** The note-off-less mode parameter of an envelope. Only present from Kontakt 2 onwards. */
+    private static final String NOTE_OFF_LESS_MODE_PARAM   = "noteOffLessMode";
+
     /** The alternating loop parameter. */
     private static final String ALTERNATING_LOOP_PARAM     = "alternatingLoop";
 
@@ -885,6 +888,18 @@ public abstract class AbstractTagsAndAttributes
     public String oneshotValue ()
     {
         return ONESHOT_VALUE;
+    }
+
+
+    /**
+     * Get the note-off-less mode tag. If the amplitude envelope is set to that mode, note-off
+     * events are ignored and the sample is always played back to its end (one-shot).
+     *
+     * @return The tag
+     */
+    public String noteOffLessModeParam ()
+    {
+        return NOTE_OFF_LESS_MODE_PARAM;
     }
 
 

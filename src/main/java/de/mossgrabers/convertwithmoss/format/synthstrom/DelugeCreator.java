@@ -529,12 +529,16 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
     private static void writeSound (final Document document, final Element soundElement, final List<ISampleZone> zones, final String relativeSampleFolder, final boolean isKit)
     {
         final boolean anyLoop = zones.stream ().anyMatch (zone -> !zone.getLoops ().isEmpty ());
+        // A one-shot ignores a note-off and always plays the sample to its end which is the 'ONCE'
+        // mode. Since the loop mode is a property of the oscillator and not of the individual
+        // samples, it is only applied if all zones of the sound are one-shots.
+        final boolean allOneShot = zones.stream ().allMatch (ISampleZone::isOneShot);
         final boolean reversed = zones.stream ().anyMatch (ISampleZone::isReversed);
 
         // Oscillator 1 with the sample(s)
         final Element osc1 = XMLUtils.addElement (document, soundElement, DelugeTag.OSC1);
         XMLUtils.addTextElement (document, osc1, DelugeTag.TYPE, DelugeTag.TYPE_SAMPLE);
-        XMLUtils.addTextElement (document, osc1, DelugeTag.LOOP_MODE, Integer.toString (anyLoop ? DelugeTag.LOOP_MODE_LOOP : DelugeTag.LOOP_MODE_ONCE));
+        XMLUtils.addTextElement (document, osc1, DelugeTag.LOOP_MODE, Integer.toString (anyLoop && !allOneShot ? DelugeTag.LOOP_MODE_LOOP : DelugeTag.LOOP_MODE_ONCE));
         XMLUtils.addTextElement (document, osc1, DelugeTag.REVERSED, reversed ? "1" : "0");
         XMLUtils.addTextElement (document, osc1, DelugeTag.TIME_STRETCH_ENABLE, "0");
         XMLUtils.addTextElement (document, osc1, DelugeTag.TIME_STRETCH_AMOUNT, "0");

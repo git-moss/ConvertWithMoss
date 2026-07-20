@@ -182,6 +182,9 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
                 final int loopMode = zoneLoop.getMode ();
+                // A one-shot ignores note-off events and has no loop
+                if (loopMode == ZoneLoop.MODE_ONESHOT)
+                    zone.setOneShot (true);
                 if (loopMode == ZoneLoop.MODE_UNTIL_END || loopMode == ZoneLoop.MODE_UNTIL_RELEASE)
                 {
                     loop.setType (zoneLoop.isAlternating () ? LoopType.ALTERNATING : LoopType.FORWARDS);

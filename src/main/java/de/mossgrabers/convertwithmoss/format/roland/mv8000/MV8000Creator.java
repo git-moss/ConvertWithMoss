@@ -206,7 +206,8 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
 
         // Loop and playback range
         final List<ISampleLoop> loops = zone.getLoops ();
-        final boolean isOneShot = loops.isEmpty ();
+        // A one-shot slot ignores a note-off - and the loop - and plays the sample up to its end
+        final boolean isOneShot = zone.isOneShot () || loops.isEmpty ();
         final boolean isKeyTracked = zone.getKeyTracking () != 0;
         int loopStart = 0;
         int endPoint = zone.getStop () > 0 ? Math.min (zone.getStop (), numFrames) : numFrames;

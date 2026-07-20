@@ -232,6 +232,7 @@ public class MV8000Detector extends AbstractDetector<MetadataSettingsUI>
 
         // One-shot modes (uneven) ignore the loop and play the sample until its end
         final int playMode = slot.getPlayMode ();
+        zone.setOneShot (slot.isOneShot ());
         if (playMode % 2 == 0)
         {
             final ISampleLoop sampleLoop = new DefaultSampleLoop ();

@@ -161,20 +161,21 @@ public class AkaiS1000ProgramConverter
                 sampleZone.setStop (sample.getEndMarker ());
 
                 // Loop
-                if (sample.getActiveLoops () > 0)
+                // The key-group sample loop mode 0 (AS_SAMPLE) falls back to the one of the
+                // sample, all others are the sample loop modes shifted by 1
+                final int keygroupSampleLoopMode = keygroupSample.getLoopMode ();
+                final int loopMode = keygroupSampleLoopMode == 0 ? sample.getLoopMode () : keygroupSampleLoopMode - 1;
+                // PLAY_TO_END ignores a note-off and plays the sample up to its end
+                sampleZone.setOneShot (loopMode == AkaiS1000Sample.LOOP_MODE_PLAY_TO_END);
+                if (sample.getActiveLoops () > 0 && loopMode < 2)
                 {
-                    int loopMode = keygroupSample.getLoopMode ();
-                    loopMode = loopMode == 0 ? sample.getLoopMode () : loopMode - 1;
-                    if (loopMode < 2 && sample.getActiveLoops () > 0)
-                    {
-                        final byte firstActiveLoop = sample.getFirstActiveLoop ();
-                        final AkaiS1000SampleLoop loop = sample.getLoops ()[firstActiveLoop];
-                        final int marker = loop.getEndMarker ();
-                        final ISampleLoop sampleLoop = new DefaultSampleLoop ();
-                        sampleLoop.setStart (marker - loop.getCoarseLength ());
-                        sampleLoop.setEnd (marker);
-                        sampleZone.getLoops ().add (sampleLoop);
-                    }
+                    final byte firstActiveLoop = sample.getFirstActiveLoop ();
+                    final AkaiS1000SampleLoop loop = sample.getLoops ()[firstActiveLoop];
+                    final int marker = loop.getEndMarker ();
+                    final ISampleLoop sampleLoop = new DefaultSampleLoop ();
+                    sampleLoop.setStart (marker - loop.getCoarseLength ());
+                    sampleLoop.setEnd (marker);
+                    sampleZone.getLoops ().add (sampleLoop);
                 }
 
                 // Filter

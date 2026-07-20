@@ -152,6 +152,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             zone.setStart (exs24Zone.sampleStart);
             zone.setStop (exs24Zone.sampleEnd);
             zone.setReversed (exs24Zone.reverse);
+            zone.setOneShot (exs24Zone.oneshot);
             zone.setGain (exs24Zone.volumeAdjust);
 
             if (exs24Zone.pitch && (exs24Zone.coarseTuning != 0 || exs24Zone.fineTuning != 0))

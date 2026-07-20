@@ -333,7 +333,7 @@ public class TonverkPresetFile
                         out.add ("sample = " + quote (slot.sample));
                         if (slot.loopMode != null)
                             out.add ("loop-mode = " + quote (slot.loopMode));
-                        if ("Forward".equals (slot.loopMode))
+                        if (TonverkValues.LOOP_MODE_FORWARD.equals (slot.loopMode))
                         {
                             if (slot.loopStart != null && slot.loopStart.intValue () >= 0)
                                 out.add ("loop-start = " + slot.loopStart);

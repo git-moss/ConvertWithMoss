@@ -416,6 +416,11 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         // normal forward loop here. Without this a held STRETCH patch (e.g. a sustained pad) would
         // play its sample once and then drop out, because no loop was created at all.
         final boolean isLoop = loopMode == DelugeTag.LOOP_MODE_LOOP || loopMode == DelugeTag.LOOP_MODE_STRETCH;
+
+        // The 'ONCE' mode always plays the sample to its end and ignores a note-off, in contrast to
+        // 'CUT' which stops the play-back on a note-off
+        zone.setOneShot (loopMode == DelugeTag.LOOP_MODE_ONCE);
+
         final Optional<ISampleLoop> loop = applyZonePositions (getDirectChild (zoneParent, DelugeTag.ZONE), zone, sampleData, isLoop);
 
         try

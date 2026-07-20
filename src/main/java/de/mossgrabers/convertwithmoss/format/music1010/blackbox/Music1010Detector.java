@@ -230,7 +230,9 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final ISampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
 
         // No trigger
+        // The trigger type 'Trigger' (0) plays the full sample and ignores a note-off
         final boolean isOneShot = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0;
+        sampleZone.setOneShot (isOneShot);
 
         final int start = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0);
         sampleZone.setStart (start);
@@ -320,6 +322,12 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
                 if (filename != null && !filename.isBlank ())
                     this.parseSampleData (group, assetElement, previousFolder, basePath, filename, ampEnvAttack, ampEnvDecay, ampEnvSustain, ampEnvRelease);
             }
+
+            // The trigger type is only available for the full instrument. 'Trigger' (0) plays the
+            // full sample and ignores a note-off.
+            if (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0)
+                for (final ISampleZone zone: group.getSampleZones ())
+                    zone.setOneShot (true);
 
             parseEffects (paramsElement, multisampleSource);
         }

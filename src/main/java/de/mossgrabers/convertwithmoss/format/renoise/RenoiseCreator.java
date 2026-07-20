@@ -188,6 +188,10 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final double tuning = zone.getTuning ();
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.TRANSPOSE, Integer.toString (RenoiseValueConverter.tuningToTranspose (tuning)));
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.FINETUNE, Integer.toString (RenoiseValueConverter.tuningToFinetune (tuning)));
+        // 'OneShotTrigger' ignores a note-off and always plays the sample to its end. It defaults to
+        // false, therefore it is only written if it is enabled.
+        if (zone.isOneShot ())
+            XMLUtils.addTextElement (document, sampleElement, RenoiseTag.ONE_SHOT, "true");
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.NEW_NOTE_ACTION, RenoiseTag.NNA_NOTE_OFF);
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.INTERPOLATION, "Cubic");
 

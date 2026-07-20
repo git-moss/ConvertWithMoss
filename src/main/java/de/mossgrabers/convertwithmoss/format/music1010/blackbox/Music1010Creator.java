@@ -124,7 +124,9 @@ public class Music1010Creator extends AbstractMusic1010Creator
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("beatcount", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("fx1send", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("fx2send", "0");
-        // Set this to 0 if one-shots should be supported in the future
+        // Note: this must stay 1, otherwise the cell is not a multi-sample instrument anymore but a
+        // simple sample cell which would lose the key mapping. One-shots are instead written via
+        // the trigger type (see below).
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("multisammode", "1");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("playthru", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("slicerquantsize", "13");
@@ -343,6 +345,11 @@ public class Music1010Creator extends AbstractMusic1010Creator
                 paramsElement.setAttribute (Music1010Tag.ATTR_AMPEG_SUSTAIN, Integer.toString (sustain));
             }
 
+            // The trigger type is only available for the full instrument. 'Trigger' (0) plays the
+            // full sample and ignores a note-off.
+            if (isOneShot (groups))
+                paramsElement.setAttribute (Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, "0");
+
             createFilter (paramsElement, multisampleSource);
         }
 
@@ -455,8 +462,8 @@ public class Music1010Creator extends AbstractMusic1010Creator
 
         // ... are stored in the WAV files
 
-        // Set to one-shot if there are no loops
-        if (zone.getLoops ().isEmpty ())
+        // Set to one-shot ('Trigger') if the zone is a one-shot or if there are no loops
+        if (zone.isOneShot () || zone.getLoops ().isEmpty ())
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 0);
     }
 }

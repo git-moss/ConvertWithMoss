@@ -345,6 +345,11 @@ public class BentoCreator extends AbstractMusic1010Creator
             if (loopReverses.size () == 1)
                 paramsElement.setAttribute (Music1010Tag.ATTR_REVERSE, loopReverses.iterator ().next ());
 
+            // The trigger type is only available for the full instrument. 'Trigger' (0) plays the
+            // full sample and ignores a note-off.
+            if (isOneShot (groups))
+                paramsElement.setAttribute (Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, "0");
+
             createFilter (paramsElement, multisampleSource);
         }
 

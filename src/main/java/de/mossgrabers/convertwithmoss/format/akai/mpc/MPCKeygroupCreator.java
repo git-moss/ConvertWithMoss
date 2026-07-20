@@ -391,7 +391,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 
         if (trigger == TriggerType.RELEASE)
             triggerMode = SamplePlay.NOTE_OFF;
-        else if (amplitudeEnvelope.getSustainLevel () <= 0 && limitToDefault (zone.getKeyLow (), 0) == limitToDefault (zone.getKeyHigh (), 127))
+        else if (zone.isOneShot () || amplitudeEnvelope.getSustainLevel () <= 0 && limitToDefault (zone.getKeyLow (), 0) == limitToDefault (zone.getKeyHigh (), 127))
             triggerMode = SamplePlay.ONE_SHOT;
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, Integer.toString (triggerMode.ordinal ()));

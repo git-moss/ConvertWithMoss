@@ -616,6 +616,30 @@ public class YamahaYsfcPartElement
 
 
     /**
+     * Get the receive note-off switch. If note-off events are not received, the sample is always
+     * played back to its end, which means it is a one-shot sample.
+     *
+     * @return 1 if note-off events are received, 0 if they are ignored
+     */
+    public int getReceiveNoteOff ()
+    {
+        return this.receiveNoteOff;
+    }
+
+
+    /**
+     * Set the receive note-off switch. If note-off events are not received, the sample is always
+     * played back to its end, which means it is a one-shot sample.
+     *
+     * @param receiveNoteOff 1 if note-off events are received, 0 if they are ignored
+     */
+    public void setReceiveNoteOff (final int receiveNoteOff)
+    {
+        this.receiveNoteOff = receiveNoteOff;
+    }
+
+
+    /**
      * Get the wave bank.
      *
      * @return 0=Preset, 1=User, 2-9=Library1-8

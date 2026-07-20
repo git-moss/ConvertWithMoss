@@ -78,7 +78,7 @@
                 <V name="hold" value="%ENVELOPE_HOLD%"/>
                 <V name="release" value="%ENVELOPE_RELEASE%"/>
                 <V name="sustain" value="%ENVELOPE_SUSTAIN%"/>
-                <V name="noteOffLessMode" value="no"/>
+                <V name="noteOffLessMode" value="%GROUP_ONE_SHOT%"/>
               </Envelope>
             </K2_IntMod>
           </IntModulators>

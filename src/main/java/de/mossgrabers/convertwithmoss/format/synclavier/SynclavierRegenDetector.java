@@ -334,6 +334,8 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         // Field 11 are the loop bits: 0 = off, 1 = loop, 3 = loop + cross-fade, 4 = one-shot (no
         // loop), 5 = one-shot + loop
         final int loopBits = parseInt (tokens[11], 0);
+        if (loopBits == 4 || loopBits == 5)
+            zone.setOneShot (true);
         if (loopBits == 1 || loopBits == 3 || loopBits == 5)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();

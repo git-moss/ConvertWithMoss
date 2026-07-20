@@ -721,6 +721,10 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         if (xaMode == 3 || xaMode == 4)
             zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
 
+        // If note-off events are ignored the sample is always played back to its end
+        if (element.getReceiveNoteOff () == 0)
+            zone.setOneShot (true);
+
         final double pitchOffset = element.getCoarseTune () - 64 + (element.getFineTune () - 64) / 100.0;
         zone.setTuning (zone.getTuning () + pitchOffset);
         zone.setKeyTracking (element.getPitchKeyFollowSensitivity () / 100.0);

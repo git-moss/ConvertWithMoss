@@ -605,8 +605,14 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             switch (loopMode.get ())
             {
                 default:
-                case "no_loop", "one_shot":
+                case "no_loop":
                     // No looping
+                    return;
+
+                case "one_shot":
+                    // A note-off is ignored and the sample is always played to its end; there is
+                    // no looping in this mode
+                    sampleMetadata.setOneShot (true);
                     return;
 
                 case "loop_continuous", "loop_sustain":

@@ -314,7 +314,9 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
             lastID = currentID;
         }
 
-        if (!oneShot)
+        if (oneShot)
+            zone.setOneShot (true);
+        else
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);

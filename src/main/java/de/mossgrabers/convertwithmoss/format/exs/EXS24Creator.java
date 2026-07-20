@@ -118,6 +118,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 exs24Zone.sampleStart = zone.getStart ();
                 exs24Zone.sampleEnd = zone.getStop ();
                 exs24Zone.reverse = zone.isReversed ();
+                exs24Zone.oneshot = zone.isOneShot ();
                 exs24Zone.volumeAdjust = (int) Math.round (zone.getGain ());
                 exs24Zone.pitch = true;
                 final double tune = zone.getTuning ();

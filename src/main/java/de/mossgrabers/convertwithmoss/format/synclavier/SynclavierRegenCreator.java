@@ -572,6 +572,11 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
             loopStartFraction = Math.clamp (loop.getStart () / (double) frames, 0, 1);
             loopEndFraction = Math.clamp (loop.getEnd () / (double) frames, 0, 1);
         }
+        // One-shot: note-off is ignored and the sample is always played back to its end. Only the
+        // values 4 (one-shot) and 5 (one-shot + loop) are documented, therefore the cross-fade bit
+        // is not combined with the one-shot bit
+        if (zone.isOneShot ())
+            loopBits = loopBits == 0 ? 4 : 5;
 
         final StringBuilder sb = new StringBuilder ("SynclavierPTPatchListEntry ");
         sb.append (partial).append (' ').append (entry).append (' ');

@@ -259,6 +259,8 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
         // 0 = Forward, 1 = Fwd+R, 2 = Oneshot, 3 = Fwd+One, 4 = Alt, 5 = Rev One, 6 = Rev
         final int loopMode = sample.getLoopMode ();
+        // Oneshot ignores a note-off and plays the sample up to its end
+        sampleZone.setOneShot (loopMode == 2);
         if (loopMode != 2)
         {
             final ISampleLoop sampleLoop = new DefaultSampleLoop ();

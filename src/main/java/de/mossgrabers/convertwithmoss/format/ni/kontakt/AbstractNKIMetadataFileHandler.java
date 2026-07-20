@@ -336,6 +336,9 @@ public abstract class AbstractNKIMetadataFileHandler
 
                     isReverse = loop.getType () == LoopType.BACKWARDS;
                 }
+                // A one-shot which has no loop is described by a loop entry with the one-shot mode
+                if (loops.isEmpty () && zone.isOneShot ())
+                    loopsContent.append (this.addOneShotLoop (loopTemplate));
                 zoneContent = zoneContent.replace ("%ZONE_LOOPS%", loopsContent.toString ());
                 zonesText.append (zoneContent);
 
@@ -349,9 +352,13 @@ public abstract class AbstractNKIMetadataFileHandler
             final double ampVelocityMod = firstZone == null ? 1 : firstZone.getAmplitudeVelocityModulator ().getDepth ();
             final boolean keyTracking = firstZone == null || firstZone.getKeyTracking () > 0;
             final boolean isReleaseTrigger = firstZone != null && firstZone.getTrigger () == TriggerType.RELEASE;
+            // If the amplitude envelope ignores note-off events the sample is always played back to
+            // its end, which means it is a one-shot. Only supported by the Kontakt 2 template.
+            final boolean isOneShot = firstZone != null && firstZone.isOneShot ();
             groupContent = addModulators (firstZone, groupContent);
             groupContent = groupContent.replace ("%AMP_VELOCITY_MOD%", formatDouble (ampVelocityMod));
             groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
+            groupContent = groupContent.replace ("%GROUP_ONE_SHOT%", isOneShot ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_RELEASE_TRIGGER%", isReleaseTrigger ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_REVERSE%", isReverse ? "yes" : "no");
@@ -400,6 +407,27 @@ public abstract class AbstractNKIMetadataFileHandler
         loopContent = loopContent.replace ("%LOOP_ALTERNATING%", loop.getType () == LoopType.ALTERNATING ? "yes" : "no");
         loopContent = loopContent.replace ("%LOOP_TUNING%", Float.toString ((float) Math.pow (2.0, loop.getTuning () / 12.0)));
         return loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
+    }
+
+
+    /**
+     * Creates a loop entry which marks the zone as a one-shot, which means that note-off events are
+     * ignored and the sample is always played back to its end. The loop positions are not used in
+     * that mode.
+     *
+     * @param loopTemplate The template of a loop
+     * @return The filled loop template
+     */
+    private String addOneShotLoop (final String loopTemplate)
+    {
+        String loopContent = loopTemplate.replace ("%LOOP_INDEX%", "0");
+
+        loopContent = loopContent.replace ("%LOOP_START%", "0");
+        loopContent = loopContent.replace ("%LOOP_LENGTH%", "0");
+        loopContent = loopContent.replace ("%LOOP_MODE%", this.tags.oneshotValue ());
+        loopContent = loopContent.replace ("%LOOP_ALTERNATING%", "no");
+        loopContent = loopContent.replace ("%LOOP_TUNING%", Float.toString (1.0f));
+        return loopContent.replace ("%LOOP_XFADE%", "0");
     }
 
 
@@ -713,8 +741,40 @@ public abstract class AbstractNKIMetadataFileHandler
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
         final List<ISampleZone> zones = this.getSampleMetadataFromZones (programParameters, groupParameters, groupInternalModulators, groupElement, groupZones, pitchBend, ampVelocityMod, sourcePath, monolithSamples, filter);
         group.setSampleZones (zones);
+        // The one-shot setting is stored on the group's amplitude envelope but the model keeps it
+        // on the zone
+        if (this.readGroupOneShot (groupElement))
+            for (final ISampleZone zone: zones)
+                zone.setOneShot (true);
         this.parseRoundRobin (groupElement, zones);
         return Optional.of (group);
+    }
+
+
+    /**
+     * Reads the note-off-less mode of the group's amplitude envelope. If it is enabled, note-off
+     * events are ignored and the sample is always played back to its end (one-shot). The parameter
+     * is only present from Kontakt 2 onwards.
+     *
+     * @param groupElement The group element
+     * @return True if the group is played back as a one-shot
+     */
+    private boolean readGroupOneShot (final Element groupElement)
+    {
+        final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.intModulatorsElement ());
+        if (modulatorsElement == null)
+            return false;
+
+        for (final Element modulatorElement: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.intModulatorElement ()))
+        {
+            final Element envElement = XMLUtils.getChildElementByName (modulatorElement, this.tags.envelopeElement ());
+            if (envElement == null || this.hasNameValuePairs (modulatorElement, this.tags.bypassParam (), this.tags.yes ()))
+                continue;
+            final Optional<String> modulationTarget = this.getModulationTarget (modulatorElement);
+            if (modulationTarget.isPresent () && this.tags.targetVolValue ().equals (modulationTarget.get ()) && this.hasNameValuePairs (envElement, this.tags.noteOffLessModeParam (), this.tags.yes ()))
+                return true;
+        }
+        return false;
     }
 
 
@@ -1007,7 +1067,10 @@ public abstract class AbstractNKIMetadataFileHandler
 
             // If it is a one shot then there is no loop
             if (loopMode.equals (this.tags.oneshotValue ()))
+            {
+                sampleMetadata.setOneShot (true);
                 continue;
+            }
 
             LoopType loopType = LoopType.FORWARDS;
             if ((loopMode.equals (this.tags.untilEndValue ()) || loopMode.equals (this.tags.untilReleaseValue ())) && alternatingLoop.equals (this.tags.yes ()))

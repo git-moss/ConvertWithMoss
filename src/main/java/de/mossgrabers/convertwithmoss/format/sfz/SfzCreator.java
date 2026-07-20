@@ -391,8 +391,10 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     private void createLoops (final StringBuilder buffer, final ISampleZone zone)
     {
         final List<ISampleLoop> loops = zone.getLoops ();
+        // A one-shot ignores a note-off and always plays the sample to its end. SFZ supports this
+        // only for samples which are not looped
         if (loops.isEmpty ())
-            addAttribute (buffer, SfzOpcode.LOOP_MODE, "no_loop", false);
+            addAttribute (buffer, SfzOpcode.LOOP_MODE, zone.isOneShot () ? "one_shot" : "no_loop", false);
         else
         {
             final ISampleLoop sampleLoop = loops.get (0);
