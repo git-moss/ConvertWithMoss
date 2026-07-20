@@ -415,7 +415,7 @@ public class S770Partial
             this.resonance = StreamUtils.readUnsigned8 (input);
             this.velocityCurveType = StreamUtils.readUnsigned8 (input);
             this.velocityCurveRatio = StreamUtils.readSigned8 (input);
-            this.timeVelocitySensitivity = StreamUtils.readUnsigned8 (input);
+            this.timeVelocitySensitivity = StreamUtils.readSigned8 (input);
             this.cutoffVelocitySens = StreamUtils.readUnsigned8 (input);
             this.levels = new int [4];
             for (int i = 0; i < 4; i++)
@@ -426,7 +426,7 @@ public class S770Partial
             this.envTvfDepth = StreamUtils.readUnsigned8 (input);
             this.envPitchDepth = StreamUtils.readUnsigned8 (input);
             this.tvfKfPoint = StreamUtils.readUnsigned8 (input);
-            this.envTimeKf = StreamUtils.readUnsigned8 (input);
+            this.envTimeKf = StreamUtils.readSigned8 (input);
             this.envDepthKf = StreamUtils.readUnsigned8 (input);
             this.cutoffKf = StreamUtils.readUnsigned8 (input);
         }
@@ -488,9 +488,11 @@ public class S770Partial
 
 
         /**
-         * Get the time velocity sensitivity.
+         * Get the time velocity sensitivity. A positive value shortens the envelope times towards
+         * higher velocities, a negative value lengthens them.
          *
-         * @return The velocity sensitivity
+         * @return The velocity sensitivity in the range of [-63..63], 0 means that the envelope
+         *         times do not depend on the velocity
          */
         public int getTimeVelocitySensitivity ()
         {
@@ -565,9 +567,11 @@ public class S770Partial
 
 
         /**
-         * Get the envelope time key follow.
+         * Get the envelope time key follow. A positive value shortens the envelope times towards
+         * higher keys, a negative value lengthens them.
          *
-         * @return The envelope time key follow
+         * @return The envelope time key follow in the range of [-63..63], 0 means that the envelope
+         *         times do not depend on the played key
          */
         public int getEnvTimeKf ()
         {
@@ -629,7 +633,7 @@ public class S770Partial
         {
             this.velocityCurveType = StreamUtils.readUnsigned8 (input);
             this.velocityCurveRatio = StreamUtils.readSigned8 (input);
-            this.timeVelocitySensitivity = StreamUtils.readUnsigned8 (input);
+            this.timeVelocitySensitivity = StreamUtils.readSigned8 (input);
             this.levels = new int [4];
             for (int i = 0; i < 4; i++)
                 this.levels[i] = StreamUtils.readUnsigned8 (input);
@@ -638,7 +642,7 @@ public class S770Partial
                 this.times[i] = StreamUtils.readUnsigned8 (input);
             input.skipNBytes (1);
             this.tvaKfPoint = StreamUtils.readUnsigned8 (input);
-            this.envTimeKf = StreamUtils.readUnsigned8 (input);
+            this.envTimeKf = StreamUtils.readSigned8 (input);
             input.skipNBytes (1);
             this.levelKf = StreamUtils.readUnsigned8 (input);
         }
@@ -667,9 +671,11 @@ public class S770Partial
 
 
         /**
-         * Get the time velocity sensitivity.
+         * Get the time velocity sensitivity. A positive value shortens the envelope times towards
+         * higher velocities, a negative value lengthens them.
          *
-         * @return The velocity sensitivity
+         * @return The velocity sensitivity in the range of [-63..63], 0 means that the envelope
+         *         times do not depend on the velocity
          */
         public int getTimeVelocitySensitivity ()
         {
@@ -711,9 +717,11 @@ public class S770Partial
 
 
         /**
-         * Get the envelope time key follow.
+         * Get the envelope time key follow. A positive value shortens the envelope times towards
+         * higher keys, a negative value lengthens them.
          *
-         * @return The envelope time key follow
+         * @return The envelope time key follow in the range of [-63..63], 0 means that the envelope
+         *         times do not depend on the played key
          */
         public int getEnvTimeKf ()
         {

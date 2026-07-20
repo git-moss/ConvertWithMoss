@@ -343,21 +343,37 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
                 createPitchModulator (document, modulatorsElement, zones.get (0).getPitchEnvelopeModulator (), groupIndex);
         }
 
-        this.makeMonophonic (document, multisampleElement, groupsElement);
+        this.applyPolyphony (document, multisampleElement, groupsElement, multisampleSource);
         this.applyTemplate (document, multisampleElement, groupsElement, modulatorsElement);
         return this.createXMLString (document);
     }
 
 
-    private void makeMonophonic (final Document document, final Element multisampleElement, final Element groupsElement)
+    /**
+     * Limit the number of voices of the instrument. DecentSampler can only limit the polyphony of
+     * a tag, therefore a tag is created and assigned to all groups. The option to make the
+     * instrument monophonic always enforces one voice, otherwise the polyphony of the instrument
+     * is applied, if it is set.
+     *
+     * @param document The XML document
+     * @param multisampleElement The top level element
+     * @param groupsElement The groups element
+     * @param multisampleSource The multi-sample source
+     */
+    private void applyPolyphony (final Document document, final Element multisampleElement, final Element groupsElement, final IMultisampleSource multisampleSource)
     {
-        if (!this.settingsConfiguration.makeMonophonic ())
+        int polyphony = multisampleSource.getPolyphony ();
+        if (this.settingsConfiguration.makeMonophonic () || multisampleSource.isMonophonicLegato ())
+            polyphony = 1;
+        if (polyphony <= 0)
             return;
-        groupsElement.setAttribute ("tags", "monophonic");
+
+        final String tagName = polyphony == 1 ? DecentSamplerTag.TAG_MONOPHONIC : DecentSamplerTag.TAG_POLYPHONY;
+        groupsElement.setAttribute (DecentSamplerTag.TAGS_ATTRIBUTE, tagName);
         final Element tagsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.TAGS);
         final Element tagElement = XMLUtils.addElement (document, tagsElement, DecentSamplerTag.TAG);
-        tagElement.setAttribute ("name", "monophonic");
-        tagElement.setAttribute ("polyphony", "1");
+        tagElement.setAttribute (DecentSamplerTag.TAG_NAME, tagName);
+        tagElement.setAttribute (DecentSamplerTag.TAG_POLYPHONY, Integer.toString (polyphony));
     }
 
 

@@ -167,6 +167,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 }
 
             final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groups);
+            multisampleSource.setPolyphony (TALSamplerConstants.denormalizeVoices (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PROGRAM_NUM_VOICES, 1.0)));
             final Optional<IFilter> optFilter = parseModulationAttributes (programElement, multisampleSource);
             if (optFilter.isPresent ())
                 multisampleSource.setGlobalFilter (optFilter.get ());

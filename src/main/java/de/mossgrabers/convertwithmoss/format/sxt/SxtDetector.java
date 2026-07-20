@@ -217,6 +217,11 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
             sxtGroup.read (in, groupsVersion);
             final IGroup group = new DefaultGroup ("Group #" + (i + 1));
             groups.add (group);
+
+            // The voice settings are stored on the group level but the model can only store them
+            // on the instrument level, therefore the values of the first group are applied
+            if (i == 0)
+                applyVoiceSettings (multisampleSource, sxtGroup);
         }
 
         // Zones
@@ -261,6 +266,23 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
         }
 
         multisampleSource.setGroups (groups);
+    }
+
+
+    /**
+     * Apply the voice settings of a SXT group to the multi-sample source. NN-XT stores the number
+     * of voices as a plain count and 'groupMono' as a switch which limits the group to one voice.
+     * The 'keyMode' switch selects if the envelopes are re-triggered with each new note
+     * (Retrigger) or not (Legato). Note that 'portamento' is intentionally not converted, since
+     * the mapping of its 0..127 range to a time in seconds is unknown.
+     *
+     * @param multisampleSource The multi-sample source to fill
+     * @param sxtGroup The SXT group from which to read the settings
+     */
+    private static void applyVoiceSettings (final IMultisampleSource multisampleSource, final SxtGroup sxtGroup)
+    {
+        multisampleSource.setPolyphony (sxtGroup.groupMono > 0 ? 1 : Math.clamp (sxtGroup.keyPolyphony, 1, SxtGroup.MAX_POLYPHONY));
+        multisampleSource.setMonophonicLegato (sxtGroup.keyMode == SxtGroup.KEY_MODE_LEGATO);
     }
 
 

@@ -753,6 +753,7 @@ public abstract class AbstractNKIMetadataFileHandler
         final IGroup group = new DefaultGroup ();
         group.setName (this.getGroupName (groupElement));
         final Map<String, String> groupParameters = this.readParameters (groupElement);
+        this.readGroupValues (group, groupParameters);
         final Optional<IFilter> filter = this.readFilter (groupElement);
 
         final Map<String, IEnvelopeModulator> groupInternalModulators = this.readGroupInternalModulators (groupElement);
@@ -771,6 +772,53 @@ public abstract class AbstractNKIMetadataFileHandler
                 zone.setOneShot (true);
         this.parseRoundRobin (groupElement, zones);
         return Optional.of (group);
+    }
+
+
+    /**
+     * Reads the gain, panning and tuning of a group and stores them on the group. Note that these
+     * values are (and must stay) applied to each of the sample zones of the group as well, see the
+     * reading of a sample zone. A creator must therefore apply either the group or the zone value
+     * but never both.
+     *
+     * @param group The group on which to store the values
+     * @param groupParameters The parameters of the group
+     */
+    private void readGroupValues (final IGroup group, final Map<String, String> groupParameters)
+    {
+        try
+        {
+            // The volume is a linear factor, 1 is the neutral value
+            final double groupVolume = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupVolParam ());
+            if (groupVolume != 1)
+                group.setGain (20.0d * Math.log10 (groupVolume));
+        }
+        catch (final ValueNotAvailableException _)
+        {
+            // The parameter is optional, keep the neutral default
+        }
+
+        try
+        {
+            final double groupPan = this.normalizePanning (AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupPanParam ()));
+            if (groupPan != 0)
+                group.setPanning (Math.clamp (groupPan, -1.0d, 1.0d));
+        }
+        catch (final ValueNotAvailableException _)
+        {
+            // The parameter is optional, keep the neutral default
+        }
+
+        try
+        {
+            final double groupTune = this.tags.calculateGroupTune (AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ()));
+            if (groupTune != 0)
+                group.setTuning (groupTune);
+        }
+        catch (final ValueNotAvailableException _)
+        {
+            // The parameter is optional, keep the neutral default
+        }
     }
 
 

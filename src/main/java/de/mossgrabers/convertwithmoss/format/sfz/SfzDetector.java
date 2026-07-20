@@ -215,7 +215,14 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         }
 
         final Optional<String> globalName = this.getAttribute (SfzOpcode.GLOBAL_LABEL);
-        return Collections.singletonList (this.createMultisampleSource (sourceFile, globalName.isPresent () ? globalName.get () : FileUtils.getNameWithoutType (sourceFile), groups));
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, globalName.isPresent () ? globalName.get () : FileUtils.getNameWithoutType (sourceFile), groups);
+
+        // The polyphony is a plain number of voices, it can be set on all levels
+        final int polyphony = this.getIntegerValue (SfzOpcode.POLYPHONY);
+        if (polyphony > 0)
+            multisampleSource.setPolyphony (polyphony);
+
+        return Collections.singletonList (multisampleSource);
     }
 
 

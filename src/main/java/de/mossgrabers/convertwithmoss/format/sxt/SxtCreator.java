@@ -82,6 +82,7 @@ public class SxtCreator extends AbstractWavCreator<WavChunkSettingsUI>
         {
             final IGroup group = groups.get (groupIndex);
             final SxtGroup sxtGroup = new SxtGroup ();
+            fillVoiceSettings (sxtGroup, multisampleSource);
             sxtGroup.write (groupsOutputStream, SxtChunkConstants.VERSION_2_0_0);
 
             final List<ISampleZone> zones = group.getSampleZones ();
@@ -143,6 +144,30 @@ public class SxtCreator extends AbstractWavCreator<WavChunkSettingsUI>
         {
             IffFile.writeGroupChunk (out, IffFile.FORM, SxtChunkConstants.PATCH, childChunksOutputStream.toByteArray ());
         }
+    }
+
+
+    /**
+     * Fill the voice settings of the multi-sample source into a SXT group. Since the group chunk is
+     * written in version 2.0.0, the 'groupMono' switch is not part of the written data. A
+     * monophonic instrument is therefore expressed by limiting the number of voices to 1. Note that
+     * the portamento time is intentionally not converted, since the mapping of the 0..127 range of
+     * the NN-XT parameter to a time in seconds is unknown.
+     *
+     * @param sxtGroup The SXT group to fill
+     * @param multisampleSource The multi-sample source from which to read the settings
+     */
+    private static void fillVoiceSettings (final SxtGroup sxtGroup, final IMultisampleSource multisampleSource)
+    {
+        final boolean isMonophonicLegato = multisampleSource.isMonophonicLegato ();
+        if (isMonophonicLegato)
+            sxtGroup.keyMode = SxtGroup.KEY_MODE_LEGATO;
+
+        final int polyphony = multisampleSource.getPolyphony ();
+        if (polyphony > 0)
+            sxtGroup.keyPolyphony = Math.clamp (polyphony, 1, SxtGroup.MAX_POLYPHONY);
+        else if (isMonophonicLegato)
+            sxtGroup.keyPolyphony = 1;
     }
 
 

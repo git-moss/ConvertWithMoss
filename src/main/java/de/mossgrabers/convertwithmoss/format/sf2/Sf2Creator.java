@@ -399,6 +399,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         setEnvelopeTime (instrumentZone, Generator.VOL_ENV_DECAY, amplitudeEnvelope.getDecayTime ());
         setEnvelopeTime (instrumentZone, Generator.VOL_ENV_RELEASE, amplitudeEnvelope.getReleaseTime ());
         setEnvelopeLevel (instrumentZone, Generator.VOL_ENV_SUSTAIN, amplitudeEnvelope.getSustainLevel ());
+        setEnvelopeKeyTracking (instrumentZone, Generator.KEYNUM_TO_VOL_ENV_HOLD, Generator.KEYNUM_TO_VOL_ENV_DECAY, amplitudeEnvelope.getTimeKeyTracking ());
 
         // Set the pitch envelope. It might be overwritten in the filter section since Sf2 only
         // supports one modulation envelope
@@ -414,6 +415,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
             setEnvelopeTime (instrumentZone, Generator.MOD_ENV_DECAY, pitchEnvelope.getDecayTime ());
             setEnvelopeTime (instrumentZone, Generator.MOD_ENV_RELEASE, pitchEnvelope.getReleaseTime ());
             setEnvelopeLevel (instrumentZone, Generator.MOD_ENV_SUSTAIN, pitchEnvelope.getSustainLevel ());
+            setEnvelopeKeyTracking (instrumentZone, Generator.KEYNUM_TO_MOD_ENV_HOLD, Generator.KEYNUM_TO_MOD_ENV_DECAY, pitchEnvelope.getTimeKeyTracking ());
         }
 
         // Filter settings
@@ -445,6 +447,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                     setEnvelopeTime (instrumentZone, Generator.MOD_ENV_DECAY, filterEnvelope.getDecayTime ());
                     setEnvelopeTime (instrumentZone, Generator.MOD_ENV_RELEASE, filterEnvelope.getReleaseTime ());
                     setEnvelopeLevel (instrumentZone, Generator.MOD_ENV_SUSTAIN, filterEnvelope.getSustainLevel ());
+                    setEnvelopeKeyTracking (instrumentZone, Generator.KEYNUM_TO_MOD_ENV_HOLD, Generator.KEYNUM_TO_MOD_ENV_DECAY, filterEnvelope.getTimeKeyTracking ());
                 }
 
                 final double cutoffDepth = filter.getCutoffVelocityModulator ().getDepth ();
@@ -629,6 +632,28 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         // This is likely not correct but since there is also no documentation what the percentage
         // volume values mean in dB it is the best we can do...
         return (int) Math.round (Math.clamp ((1.0 - value) * 1000.0, 0, 1000));
+    }
+
+
+    /**
+     * Set the key tracking of the envelope times. SoundFont 2 has a dedicated generator for the
+     * hold and for the decay phase, both are given in time-cents per key number and are specified
+     * in the range of [-1200..1200]. Since the model scales all times of an envelope with one
+     * value, both generators are set to the same amount. Nothing is written if there is no key
+     * tracking, which is the default of both generators.
+     *
+     * @param instrumentZone The zone to which to add the generators
+     * @param holdGenerator The ID of the key number to envelope hold generator
+     * @param decayGenerator The ID of the key number to envelope decay generator
+     * @param keyTracking The key tracking in the range of [-1..1]
+     */
+    private static void setEnvelopeKeyTracking (final Sf2InstrumentZone instrumentZone, final int holdGenerator, final int decayGenerator, final double keyTracking)
+    {
+        if (keyTracking == 0)
+            return;
+        final int value = (int) Math.round (Math.clamp (keyTracking, -1.0, 1.0) * Generator.MAX_KEYNUM_TO_ENV);
+        instrumentZone.addSignedGenerator (holdGenerator, value);
+        instrumentZone.addSignedGenerator (decayGenerator, value);
     }
 
 

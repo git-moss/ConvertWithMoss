@@ -145,4 +145,15 @@ public class NiSSTag extends AbstractTagsAndAttributes
         final double value = 12.0 * Math.log (zoneTune * groupTune * progTune) / Math.log (2);
         return Math.round (value * 100000) / 100000.0;
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double calculateGroupTune (final double groupTune)
+    {
+        // The group tune is stored logarithmically as a frequency ratio, 1 is neutral
+        if (groupTune <= 0)
+            return 0;
+        return Math.round (12.0 * Math.log (groupTune) / Math.log (2) * 100000) / 100000.0;
+    }
 }

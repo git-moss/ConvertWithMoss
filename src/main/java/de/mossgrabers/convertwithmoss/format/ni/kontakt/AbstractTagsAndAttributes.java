@@ -1077,4 +1077,14 @@ public abstract class AbstractTagsAndAttributes
      * @return The tuning [-1..1] which stands for [-100,100] semitones
      */
     public abstract double calculateTune (double zoneTune, double groupTune, double progTune);
+
+
+    /**
+     * Calculate the tuning offset which is contributed by the group alone. This is the value which
+     * needs to be added on top of the tuning of a sample zone.
+     *
+     * @param groupTune The group tuning
+     * @return The tuning offset in semi-tones, 0 if the group does not add any tuning
+     */
+    public abstract double calculateGroupTune (double groupTune);
 }

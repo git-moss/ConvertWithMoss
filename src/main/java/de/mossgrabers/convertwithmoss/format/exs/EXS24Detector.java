@@ -209,6 +209,13 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
                 newGroup.setName (exs24Group.name.replace ((char) 0, ' '));
                 if (exs24Group.releaseTrigger)
                     newGroup.setTrigger (TriggerType.RELEASE);
+
+                // Note: these values are additionally flattened into each zone of the group, see
+                // limitByGroupAttributes. The group volume is already stored in dB (-96 to +24).
+                newGroup.setGain (Math.clamp (exs24Group.volume, -96, 24));
+                // The group panning is stored as a signed byte in the range of [-50..50], which is
+                // the same encoding as the one of the panning of a zone
+                newGroup.setPanning (Math.clamp (MathUtils.decodeTwosComplement (exs24Group.pan) / 50.0, -1.0, 1.0));
             }
             return newGroup;
 
@@ -263,6 +270,16 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         int bendDown = -200;
         if (pitchBendDown != null)
             bendDown = pitchBendDown.intValue () == -1 ? -bendUp : pitchBendDown.intValue () * -100;
+
+        // The polyphony is stored as a plain number of voices, 'Mono Legato' is a simple switch.
+        // Note: the GLIDE parameter is intentionally not converted, since the mapping of its value
+        // to a time in seconds is unknown
+        final Integer polyphonyVoices = parameters.get (EXS24Parameters.POLYPHONY_VOICES);
+        if (polyphonyVoices != null)
+            multisampleSource.setPolyphony (Math.clamp (polyphonyVoices.intValue (), 0, EXS24Parameters.MAX_POLYPHONY_VOICES));
+        final Integer monoLegato = parameters.get (EXS24Parameters.MONO_LEGATO);
+        if (monoLegato != null && monoLegato.intValue () > 0)
+            multisampleSource.setMonophonicLegato (true);
 
         final Integer globalCoarseTune = parameters.get (EXS24Parameters.COARSE_TUNE);
         final int coarseTune = globalCoarseTune == null ? 0 : globalCoarseTune.intValue ();
@@ -326,6 +343,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
     {
         final Integer delay = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_DELAY_START : EXS24Parameters.ENV2_DELAY_START);
         final Integer attack = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_HI_VEL : EXS24Parameters.ENV2_ATK_HI_VEL);
+        final Integer attackLowVelocity = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_LO_VEL : EXS24Parameters.ENV2_ATK_LO_VEL);
         final Integer hold = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_HOLD : EXS24Parameters.ENV2_HOLD);
         final Integer decay = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_DECAY : EXS24Parameters.ENV2_DECAY);
         final Integer sustain = parameters.get (envelopeIndex == 1 ? EXS24Parameters.ENV1_SUSTAIN : EXS24Parameters.ENV2_SUSTAIN);
@@ -339,6 +357,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         envelope.setDecayTime (envelopeTimeToSeconds (decay));
         envelope.setSustainLevel (sustain == null ? 1.0 : sustain.doubleValue () / 127.0);
         envelope.setReleaseTime (envelopeTimeToSeconds (release));
+        envelope.setTimeVelocityTracking (convertVelocityToAttack (attack, attackLowVelocity));
 
         if (attackCurve != null)
         {
@@ -349,6 +368,28 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         }
 
         return envelope;
+    }
+
+
+    /**
+     * Convert the two attack times of an EXS24 envelope into the velocity tracking of the envelope
+     * times. EXS24 stores one attack time which is applied at the highest velocity and a second one
+     * which is applied at the lowest velocity. Both are raw parameters in the range of [0..127],
+     * their difference is therefore normalized by 127. A longer attack at low velocities means that
+     * the times are shortened towards higher velocities, which is a positive value in the model.
+     * <p>
+     * Note that the model scales all times of an envelope while EXS24 only applies this to the
+     * attack phase.
+     *
+     * @param attackHighVelocity The attack time parameter applied at the highest velocity
+     * @param attackLowVelocity The attack time parameter applied at the lowest velocity
+     * @return The velocity tracking in the range of [-1..1], 0 if there is no tracking
+     */
+    private static double convertVelocityToAttack (final Integer attackHighVelocity, final Integer attackLowVelocity)
+    {
+        if (attackHighVelocity == null || attackLowVelocity == null)
+            return 0;
+        return Math.clamp ((attackLowVelocity.intValue () - attackHighVelocity.intValue ()) / 127.0, -1.0, 1.0);
     }
 
 

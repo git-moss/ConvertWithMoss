@@ -171,6 +171,15 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (name != null && !name.isBlank ())
             addAttribute (sb, SfzOpcode.GLOBAL_LABEL, name, true);
 
+        // The polyphony is a plain number of voices. Note: SFZ does not have an opcode for the
+        // portamento time or for playing monophonic with legato, therefore a monophonic instrument
+        // is expressed by limiting the number of voices to 1
+        int polyphony = multisampleSource.getPolyphony ();
+        if (multisampleSource.isMonophonicLegato ())
+            polyphony = 1;
+        if (polyphony > 0)
+            addIntegerAttribute (sb, SfzOpcode.POLYPHONY, polyphony, true);
+
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
         if (groups.isEmpty ())
         {

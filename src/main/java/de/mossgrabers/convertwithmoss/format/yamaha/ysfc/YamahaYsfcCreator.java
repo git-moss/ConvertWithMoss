@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.IntConsumer;
 
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
@@ -533,6 +534,12 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         element.setAegDecay1Level (sustainLevel);
         element.setAegDecay2Level (sustainLevel);
 
+        // The model range of [-1..1] is de-normalized to [0..127] with 64 as the neutral center,
+        // which relates to -64..+63. Keep the value of the template if there is no tracking. The
+        // time key follow center note of the template is left untouched since the model has no
+        // matching attribute.
+        setEnvelopeTimeTracking (ampEnvelope, element::setAegTimeVelocitySensitivity, element::setAegTimeKeyFollowSensitivity);
+
         // Pitch Envelope
 
         final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
@@ -551,6 +558,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             element.setPegDecay1Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (Math.max (0, pitchEnvelope.getHoldTime ()) + Math.max (0, pitchEnvelope.getDecayTime ())));
             element.setPegDecay2Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (0));
             element.setPegReleaseTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (pitchEnvelope.getReleaseTime ()));
+            setEnvelopeTimeTracking (pitchEnvelope, element::setPegTimeVelocitySensitivity, element::setPegTimeKeyFollowSensitivity);
         }
 
         // Filter
@@ -588,8 +596,30 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
                 element.setFegDecay1Level (filterSustainLevel);
                 element.setFegDecay2Level (filterSustainLevel);
                 element.setFegReleaseLevel (MathUtils.denormalizeIntegerRange (cutoffEnvelope.getEndLevel (), -128, 127, 128));
+                setEnvelopeTimeTracking (cutoffEnvelope, element::setFegTimeVelocitySensitivity, element::setFegTimeKeyFollowSensitivity);
             }
         }
+    }
+
+
+    /**
+     * Applies the key and velocity tracking of the envelope times to an element. The model range of
+     * [-1..1] is de-normalized to [0..127] with 64 as the neutral center, which relates to -64..+63.
+     * Nothing is applied if there is no tracking, which keeps the value of the template.
+     *
+     * @param envelope The envelope from which to read the tracking amounts
+     * @param velocitySensitivitySetter Applies the time velocity sensitivity to the element
+     * @param keyFollowSensitivitySetter Applies the time key follow sensitivity to the element
+     */
+    private static void setEnvelopeTimeTracking (final IEnvelope envelope, final IntConsumer velocitySensitivitySetter, final IntConsumer keyFollowSensitivitySetter)
+    {
+        final double timeVelocityTracking = envelope.getTimeVelocityTracking ();
+        if (timeVelocityTracking != 0)
+            velocitySensitivitySetter.accept (MathUtils.denormalizeIntegerRange (timeVelocityTracking, -64, 63, 64));
+
+        final double timeKeyTracking = envelope.getTimeKeyTracking ();
+        if (timeKeyTracking != 0)
+            keyFollowSensitivitySetter.accept (MathUtils.denormalizeIntegerRange (timeKeyTracking, -64, 63, 64));
     }
 
 

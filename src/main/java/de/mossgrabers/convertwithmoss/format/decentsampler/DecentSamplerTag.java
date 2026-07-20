@@ -44,6 +44,14 @@ public class DecentSamplerTag
     public static final String                    TAGS               = "tags";
     /** The tag tag. */
     public static final String                    TAG                = "tag";
+    /** The name attribute of a tag. */
+    public static final String                    TAG_NAME           = "name";
+    /** The polyphony attribute of a tag. */
+    public static final String                    TAG_POLYPHONY      = "polyphony";
+    /** The attribute which assigns tags to all groups or to a single group. */
+    public static final String                    TAGS_ATTRIBUTE     = "tags";
+    /** The name of the tag which is used to limit an instrument to one voice. */
+    public static final String                    TAG_MONOPHONIC     = "monophonic";
 
     /** The groups tag. */
     public static final String                    GROUPS             = "groups";
@@ -136,7 +144,7 @@ public class DecentSamplerTag
     public static final String                    ENV_RELEASE_CURVE  = "releaseCurve";
 
     /** The supported top level tags. */
-    public static final Set<String>               TOP_LEVEL_TAGS     = Set.of (EFFECTS, UI, GROUPS, MODULATORS);
+    public static final Set<String>               TOP_LEVEL_TAGS     = Set.of (EFFECTS, UI, GROUPS, MODULATORS, TAGS);
     /** The supported group tags. */
     public static final Set<String>               GROUP_TAGS         = Set.of (SAMPLE);
     /** The supported sample tags. */
@@ -148,8 +156,8 @@ public class DecentSamplerTag
     static
     {
         ATTRIBUTES.put (DECENTSAMPLER, Set.of (MIN_VERSION));
-        ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE, SEQ_MODE));
-        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_ENABLED, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANNING, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER, SEQ_MODE, SEQ_POSITION, SEQ_LENGTH));
+        ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE, SEQ_MODE, TAGS_ATTRIBUTE));
+        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_ENABLED, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANNING, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER, SEQ_MODE, SEQ_POSITION, SEQ_LENGTH, TAGS_ATTRIBUTE));
         ATTRIBUTES.put (SAMPLE, Set.of (SAMPLE_NAME, PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANNING, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, SEQ_MODE, SEQ_POSITION));
     }
 

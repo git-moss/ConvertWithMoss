@@ -121,7 +121,15 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final Element programsElement = XMLUtils.addElement (document, rootElement, TALSamplerTag.PROGRAMS);
         final Element programElement = XMLUtils.addElement (document, programsElement, TALSamplerTag.PROGRAM);
         programElement.setAttribute (TALSamplerTag.PROGRAM_NAME, multisampleSource.getName ());
-        programElement.setAttribute (TALSamplerTag.PROGRAM_NUM_VOICES, "1.0");
+
+        // If the instrument does not specify a polyphony, all voices are enabled as before
+        int polyphony = multisampleSource.getPolyphony ();
+        if (multisampleSource.isMonophonicLegato ())
+            polyphony = 1;
+        if (polyphony > 0)
+            XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.PROGRAM_NUM_VOICES, TALSamplerConstants.normalizeVoices (polyphony), 6);
+        else
+            programElement.setAttribute (TALSamplerTag.PROGRAM_NUM_VOICES, "1.0");
 
         // Add up to 4 groups
         int groupCounter = 0;

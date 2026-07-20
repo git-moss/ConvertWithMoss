@@ -194,6 +194,19 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
         if (hasRandomZone)
             exs24File.addParameter (EXS24Parameters.RANDOM_SAMPLE_SEL, RANDOM_SAMPLE_SELECT_FULL);
 
+        // The voice settings can only be stored globally. The polyphony is a plain number of
+        // voices and 'Mono Legato' is a simple switch. Note: the portamento time is intentionally
+        // not written to the GLIDE parameter, since the mapping of a time in seconds to its value
+        // is unknown
+        final int polyphony = multisampleSource.getPolyphony ();
+        final boolean isMonophonicLegato = multisampleSource.isMonophonicLegato ();
+        if (polyphony > 0)
+            exs24File.addParameter (EXS24Parameters.POLYPHONY_VOICES, Math.clamp (polyphony, 1, EXS24Parameters.MAX_POLYPHONY_VOICES));
+        else if (isMonophonicLegato)
+            exs24File.addParameter (EXS24Parameters.POLYPHONY_VOICES, 1);
+        if (isMonophonicLegato)
+            exs24File.addParameter (EXS24Parameters.MONO_LEGATO, 1);
+
         // Fill global parameters from zone 1
         if (!groups.isEmpty ())
         {
@@ -271,6 +284,12 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_DECAY : EXS24Parameters.ENV2_DECAY, decay);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_SUSTAIN : EXS24Parameters.ENV2_SUSTAIN, sustain);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_RELEASE : EXS24Parameters.ENV2_RELEASE, release);
+
+        // EXS24 stores a second attack time which is applied at the lowest velocity, see
+        // EXS24Detector.convertVelocityToAttack for the conversion
+        final double timeVelocityTracking = envelope.getTimeVelocityTracking ();
+        if (timeVelocityTracking != 0)
+            parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_LO_VEL : EXS24Parameters.ENV2_ATK_LO_VEL, Math.clamp (Math.round (attack + timeVelocityTracking * 127.0), 0, 127));
 
         final double attackSlope = envelope.getAttackSlope ();
         if (attackSlope != 0)

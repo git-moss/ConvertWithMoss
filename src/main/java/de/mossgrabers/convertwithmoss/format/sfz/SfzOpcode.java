@@ -25,6 +25,12 @@ public class SfzOpcode
     public static final String GLOBAL_LABEL          = "global_label";
 
     // -----------------------------------------------------------
+    // Voice life-cycle opcodes
+
+    /** SFZ v2. The maximum number of voices which can be played at the same time. */
+    public static final String POLYPHONY             = "polyphony";
+
+    // -----------------------------------------------------------
     // Group opcodes
 
     /** ARIA. Sets what is displayed in the default info tab of Sforzando. */

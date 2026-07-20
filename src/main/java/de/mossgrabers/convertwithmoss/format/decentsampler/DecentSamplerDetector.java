@@ -12,10 +12,12 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -254,6 +256,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         final double globalTuningOffset = XMLUtils.getDoubleAttribute (groupsElement, DecentSamplerTag.GLOBAL_TUNING, 0);
         final List<IGroup> groups = this.parseGroups (topElement, groupsElement, basePath, isLibrary ? sourceFile : null, globalTuningOffset);
+        final int polyphony = parsePolyphony (topElement, groupsElement);
 
         // Create one multi-sample per group, e.g. for presets which contain several alternative
         // kits as groups and switch between them via their user interface
@@ -264,6 +267,8 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             {
                 final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, presetName + " - " + group.getName (), Collections.singletonList (group));
                 parseEffects (topElement, multisampleSource);
+                if (polyphony > 0)
+                    multisampleSource.setPolyphony (polyphony);
                 multisampleSources.add (multisampleSource);
             }
             return multisampleSources;
@@ -271,7 +276,62 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, presetName, groups);
         parseEffects (topElement, multisampleSource);
+        if (polyphony > 0)
+            multisampleSource.setPolyphony (polyphony);
         return Collections.singletonList (multisampleSource);
+    }
+
+
+    /**
+     * Parse the polyphony from the tags on the top level. DecentSampler can limit the number of
+     * voices of a tag, which is applied to all groups which reference that tag by their 'tags'
+     * attribute.
+     *
+     * @param topElement The top element
+     * @param groupsElement The groups element
+     * @return The polyphony or 0 if it is not limited
+     */
+    private static int parsePolyphony (final Element topElement, final Element groupsElement)
+    {
+        final Element tagsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.TAGS);
+        if (tagsElement == null)
+            return 0;
+
+        // Collect the names of all tags which are referenced by the groups or by a single group
+        final Set<String> referencedTags = new HashSet<> ();
+        addReferencedTags (referencedTags, groupsElement);
+        for (final Element groupElement: XMLUtils.getChildElementsByName (groupsElement, DecentSamplerTag.GROUP))
+            addReferencedTags (referencedTags, groupElement);
+        if (referencedTags.isEmpty ())
+            return 0;
+
+        // The model can only store one polyphony, therefore the most restrictive one is applied
+        int polyphony = 0;
+        for (final Element tagElement: XMLUtils.getChildElementsByName (tagsElement, DecentSamplerTag.TAG))
+        {
+            if (!referencedTags.contains (tagElement.getAttribute (DecentSamplerTag.TAG_NAME)))
+                continue;
+            final int tagPolyphony = XMLUtils.getIntegerAttribute (tagElement, DecentSamplerTag.TAG_POLYPHONY, 0);
+            if (tagPolyphony > 0 && (polyphony == 0 || tagPolyphony < polyphony))
+                polyphony = tagPolyphony;
+        }
+        return polyphony;
+    }
+
+
+    /**
+     * Add all tag names which are referenced by the 'tags' attribute of the given element.
+     *
+     * @param referencedTags Where to add the referenced tag names
+     * @param element The element from which to read the 'tags' attribute
+     */
+    private static void addReferencedTags (final Set<String> referencedTags, final Element element)
+    {
+        final String tags = element.getAttribute (DecentSamplerTag.TAGS_ATTRIBUTE);
+        if (tags == null || tags.isBlank ())
+            return;
+        for (final String tag: tags.split (","))
+            referencedTags.add (tag.trim ());
     }
 
 
@@ -372,6 +432,17 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             // Actually not in the specification but support it anyway
             if (groupTuningOffset == 0)
                 groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.TUNING, 0);
+
+            // Note: all three values are additionally flattened into each zone of the group below,
+            // which must not be changed. They are stored here as well since DecentSampler does
+            // have a real group layer. The volume is already in dB and the tuning already in
+            // semi-tones, only the panning needs to be normalized from [-100..100] to [-1..1]
+            if (groupVolumeOffset != 0)
+                group.setGain (groupVolumeOffset);
+            if (groupPanningOffset != 0)
+                group.setPanning (Math.clamp (groupPanningOffset / 100.0, -1.0, 1.0));
+            if (groupTuningOffset != 0)
+                group.setTuning (groupTuningOffset);
 
             final String triggerAttribute = groupElement.getAttribute (DecentSamplerTag.TRIGGER);
 

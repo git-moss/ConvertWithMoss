@@ -188,7 +188,12 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
-        return Collections.singletonList (this.createMultisampleSource (file, FileUtils.getNameWithoutType (file), Collections.singletonList (group.get ())));
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (file, FileUtils.getNameWithoutType (file), Collections.singletonList (group.get ()));
+        // The polyphony mode of a kit belongs to one of its drums (= pads) and not to the whole
+        // instrument, therefore it is only read for a synth preset.
+        if (!isKit)
+            applyPolyphony (top, multisampleSource);
+        return Collections.singletonList (multisampleSource);
     }
 
 
@@ -508,6 +513,26 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         }
         zone.addLoop (loop);
         return Optional.of (loop);
+    }
+
+
+    /**
+     * Read the polyphony mode of a sound and apply it to the multi-sample source. The Deluge does
+     * not store a voice count, it only distinguishes polyphonic from monophonic playback, therefore
+     * only a monophonic mode sets a polyphony (of 1). The modes 'auto' and 'choke' are not mapped
+     * since neither describes a fixed number of voices.
+     *
+     * @param soundElement The sound element
+     * @param multisampleSource The multi-sample source to fill
+     */
+    private static void applyPolyphony (final Element soundElement, final IMultisampleSource multisampleSource)
+    {
+        final String polyphonic = getValue (soundElement, DelugeTag.POLYPHONIC);
+        final boolean isLegato = DelugeTag.POLYPHONIC_LEGATO.equals (polyphonic);
+        if (!isLegato && !DelugeTag.POLYPHONIC_MONO.equals (polyphonic))
+            return;
+        multisampleSource.setPolyphony (1);
+        multisampleSource.setMonophonicLegato (isLegato);
     }
 
 

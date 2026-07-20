@@ -30,7 +30,6 @@ public class AkaiS1000Program
     // 0..15, 255=OMNI
     private byte                 midiChannel;
     // 1..16
-    @SuppressWarnings("unused")
     private byte                 polyphony;
     // 0=LOW 1=NORM 2=HIGH 3=HOLD
     @SuppressWarnings("unused")
@@ -286,6 +285,18 @@ public class AkaiS1000Program
     public byte getMidiChannel ()
     {
         return this.midiChannel;
+    }
+
+
+    /**
+     * Get the polyphony of the program, which is the maximum number of voices the program may
+     * allocate.
+     *
+     * @return The polyphony in the range of [1..16]
+     */
+    public int getPolyphony ()
+    {
+        return this.polyphony & 0xFF;
     }
 
 

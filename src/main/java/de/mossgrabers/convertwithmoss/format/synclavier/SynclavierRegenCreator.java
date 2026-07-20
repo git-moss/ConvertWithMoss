@@ -460,7 +460,9 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Computes the representative pan of a partial from the average panning of its zones. The
      * generic model stores panning per zone while a Synclavier partial has a single pan setting, so
-     * the average of the partial's zones is used.
+     * the average of the partial's zones is used. Note that the panning of the group is
+     * deliberately not used: all detectors flatten it into their sample zones, so the average
+     * already contains it - together with the panning contributed by the zones themselves.
      *
      * @param zones The zones of the partial
      * @return The pan in the range [-63..63], 0 if centered

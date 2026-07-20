@@ -1065,6 +1065,57 @@ public class YamahaYsfcPartElement
 
 
     /**
+     * Get the amplitude envelope time velocity sensitivity, which scales the times of the envelope
+     * depending on the played velocity. Note that the segments to which it is applied are selected
+     * by the AEG time velocity segment parameter, which is not interpreted.
+     *
+     * @return The value in the range of 0..127 which relates to -64..+63 (0 ~ 64)
+     */
+    public int getAegTimeVelocitySensitivity ()
+    {
+        return this.aegTimeVelocitySensitivity;
+    }
+
+
+    /**
+     * Set the amplitude envelope time velocity sensitivity, which scales the times of the envelope
+     * depending on the played velocity.
+     *
+     * @param aegTimeVelocitySensitivity The value in the range of 0..127 which relates to -64..+63
+     *            (0 ~ 64)
+     */
+    public void setAegTimeVelocitySensitivity (final int aegTimeVelocitySensitivity)
+    {
+        this.aegTimeVelocitySensitivity = Math.clamp (aegTimeVelocitySensitivity, 0, 127);
+    }
+
+
+    /**
+     * Get the amplitude envelope time key follow sensitivity, which scales the times of the
+     * envelope depending on the played key relative to the AEG time key follow center note.
+     *
+     * @return The value in the range of 0..127 which relates to -64..+63 (0 ~ 64)
+     */
+    public int getAegTimeKeyFollowSensitivity ()
+    {
+        return this.aegTimeKeyFollowSensitivity;
+    }
+
+
+    /**
+     * Set the amplitude envelope time key follow sensitivity, which scales the times of the
+     * envelope depending on the played key relative to the AEG time key follow center note.
+     *
+     * @param aegTimeKeyFollowSensitivity The value in the range of 0..127 which relates to -64..+63
+     *            (0 ~ 64)
+     */
+    public void setAegTimeKeyFollowSensitivity (final int aegTimeKeyFollowSensitivity)
+    {
+        this.aegTimeKeyFollowSensitivity = Math.clamp (aegTimeKeyFollowSensitivity, 0, 127);
+    }
+
+
+    /**
      * Get the coarse tune.
      *
      * @return The value in the range of 16-112 which relates to -48..+48 (64 = center)
@@ -1360,6 +1411,57 @@ public class YamahaYsfcPartElement
     public void setPegDepth (final int pegDepth)
     {
         this.pegDepth = pegDepth;
+    }
+
+
+    /**
+     * Get the pitch envelope time velocity sensitivity, which scales the times of the envelope
+     * depending on the played velocity. Note that the segments to which it is applied are selected
+     * by the PEG time velocity segment parameter, which is not interpreted.
+     *
+     * @return The value in the range of 0..127 which relates to -64..+63 (0 ~ 64)
+     */
+    public int getPegTimeVelocitySensitivity ()
+    {
+        return this.pegTimeVelocitySensitivity;
+    }
+
+
+    /**
+     * Set the pitch envelope time velocity sensitivity, which scales the times of the envelope
+     * depending on the played velocity.
+     *
+     * @param pegTimeVelocitySensitivity The value in the range of 0..127 which relates to -64..+63
+     *            (0 ~ 64)
+     */
+    public void setPegTimeVelocitySensitivity (final int pegTimeVelocitySensitivity)
+    {
+        this.pegTimeVelocitySensitivity = Math.clamp (pegTimeVelocitySensitivity, 0, 127);
+    }
+
+
+    /**
+     * Get the pitch envelope time key follow sensitivity, which scales the times of the envelope
+     * depending on the played key relative to the PEG time key follow center note.
+     *
+     * @return The value in the range of 0..127 which relates to -64..+63 (0 ~ 64)
+     */
+    public int getPegTimeKeyFollowSensitivity ()
+    {
+        return this.pegTimeKeyFollowSensitivity;
+    }
+
+
+    /**
+     * Set the pitch envelope time key follow sensitivity, which scales the times of the envelope
+     * depending on the played key relative to the PEG time key follow center note.
+     *
+     * @param pegTimeKeyFollowSensitivity The value in the range of 0..127 which relates to -64..+63
+     *            (0 ~ 64)
+     */
+    public void setPegTimeKeyFollowSensitivity (final int pegTimeKeyFollowSensitivity)
+    {
+        this.pegTimeKeyFollowSensitivity = Math.clamp (pegTimeKeyFollowSensitivity, 0, 127);
     }
 
 
@@ -1730,6 +1832,57 @@ public class YamahaYsfcPartElement
     public void setFegLevelVelocitySensitivity (final int fegLevelVelocitySensitivity)
     {
         this.fegLevelVelocitySensitivity = fegLevelVelocitySensitivity;
+    }
+
+
+    /**
+     * Get the filter envelope time velocity sensitivity, which scales the times of the envelope
+     * depending on the played velocity. Note that the segments to which it is applied are selected
+     * by the FEG time velocity segment parameter, which is not interpreted.
+     *
+     * @return The value in the range of 0..127 which relates to -64..+63 (0 ~ 64)
+     */
+    public int getFegTimeVelocitySensitivity ()
+    {
+        return this.fegTimeVelocitySensitivity;
+    }
+
+
+    /**
+     * Set the filter envelope time velocity sensitivity, which scales the times of the envelope
+     * depending on the played velocity.
+     *
+     * @param fegTimeVelocitySensitivity The value in the range of 0..127 which relates to -64..+63
+     *            (0 ~ 64)
+     */
+    public void setFegTimeVelocitySensitivity (final int fegTimeVelocitySensitivity)
+    {
+        this.fegTimeVelocitySensitivity = Math.clamp (fegTimeVelocitySensitivity, 0, 127);
+    }
+
+
+    /**
+     * Get the filter envelope time key follow sensitivity, which scales the times of the envelope
+     * depending on the played key relative to the FEG time key follow center note.
+     *
+     * @return The value in the range of 0..127 which relates to -64..+63 (0 ~ 64)
+     */
+    public int getFegTimeKeyFollowSensitivity ()
+    {
+        return this.fegTimeKeyFollowSensitivity;
+    }
+
+
+    /**
+     * Set the filter envelope time key follow sensitivity, which scales the times of the envelope
+     * depending on the played key relative to the FEG time key follow center note.
+     *
+     * @param fegTimeKeyFollowSensitivity The value in the range of 0..127 which relates to -64..+63
+     *            (0 ~ 64)
+     */
+    public void setFegTimeKeyFollowSensitivity (final int fegTimeKeyFollowSensitivity)
+    {
+        this.fegTimeKeyFollowSensitivity = Math.clamp (fegTimeKeyFollowSensitivity, 0, 127);
     }
 
 

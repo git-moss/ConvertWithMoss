@@ -166,7 +166,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         this.writeSamples (sampleFolder, createTemporarySource (multisampleSource, zones));
 
         // Create and store the XML document referencing the samples by their card-relative path
-        final Optional<String> metadata = createKit ? this.createKitDocument (zones, relativeSampleFolder, this.settingsConfiguration.isConsolidateKit ()) : this.createSoundDocument (zones, relativeSampleFolder);
+        final Optional<String> metadata = createKit ? this.createKitDocument (zones, relativeSampleFolder, this.settingsConfiguration.isConsolidateKit ()) : this.createSoundDocument (zones, relativeSampleFolder, getPolyphonyMode (multisampleSource));
         if (metadata.isEmpty ())
             return;
         try (final FileWriter writer = new FileWriter (presetFile, StandardCharsets.UTF_8))
@@ -228,6 +228,24 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             lastKeyHigh = keyHigh;
         }
         return result;
+    }
+
+
+    /**
+     * Get the Deluge polyphony mode of a multi-sample source. The Deluge only distinguishes
+     * polyphonic from monophonic playback, it cannot limit the number of voices to a specific
+     * count. Therefore only a monophonic source (a polyphony of exactly 1) is mapped, everything
+     * else stays polyphonic.
+     *
+     * @param multisampleSource The multi-sample source
+     * @return The value for the polyphonic tag
+     */
+    private static String getPolyphonyMode (final IMultisampleSource multisampleSource)
+    {
+        if (multisampleSource.getPolyphony () != 1)
+            return DelugeTag.POLYPHONIC_POLY;
+        // Legato does not re-trigger the envelopes as long as another key is held down
+        return multisampleSource.isMonophonicLegato () ? DelugeTag.POLYPHONIC_LEGATO : DelugeTag.POLYPHONIC_MONO;
     }
 
 
@@ -452,9 +470,10 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      *
      * @param zones The zones to write
      * @param relativeSampleFolder The card-relative path of the sample folder
+     * @param polyphonyMode The value for the polyphonic tag
      * @return The XML document as a string
      */
-    private Optional<String> createSoundDocument (final List<ISampleZone> zones, final String relativeSampleFolder)
+    private Optional<String> createSoundDocument (final List<ISampleZone> zones, final String relativeSampleFolder, final String polyphonyMode)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -467,7 +486,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         soundElement.setAttribute (DelugeTag.FIRMWARE_VERSION, DelugeTag.FIRMWARE_VERSION_VALUE);
         soundElement.setAttribute (DelugeTag.EARLIEST_COMPATIBLE_FIRMWARE, DelugeTag.EARLIEST_COMPATIBLE_VALUE);
 
-        writeSound (document, soundElement, zones, relativeSampleFolder, false);
+        writeSound (document, soundElement, zones, relativeSampleFolder, false, polyphonyMode);
 
         return this.createXMLString (document);
     }
@@ -509,7 +528,9 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             final DrumRole role = useRoleLabels ? classifyDrum (zone.getName ()) : null;
             final String drumName = role == null ? createSafeFilename (zone.getName ()) : roleLabel (role);
             XMLUtils.addTextElement (document, drumSound, DelugeTag.NAME, drumName);
-            writeSound (document, drumSound, Collections.singletonList (zone), relativeSampleFolder, true);
+            // A drum is one pad of the kit. The polyphony of the source instrument describes the
+            // whole instrument and not a single pad, therefore the drums stay polyphonic.
+            writeSound (document, drumSound, Collections.singletonList (zone), relativeSampleFolder, true, DelugeTag.POLYPHONIC_POLY);
         }
 
         return this.createXMLString (document);
@@ -525,8 +546,10 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      * @param zones The zones of this sound (several key ranges for a synth, a single sample for
      *            a drum)
      * @param relativeSampleFolder The card-relative path of the sample folder
+     * @param isKit True if the sound is one drum of a kit
+     * @param polyphonyMode The value for the polyphonic tag
      */
-    private static void writeSound (final Document document, final Element soundElement, final List<ISampleZone> zones, final String relativeSampleFolder, final boolean isKit)
+    private static void writeSound (final Document document, final Element soundElement, final List<ISampleZone> zones, final String relativeSampleFolder, final boolean isKit, final String polyphonyMode)
     {
         final boolean anyLoop = zones.stream ().anyMatch (zone -> !zone.getLoops ().isEmpty ());
         // A one-shot ignores a note-off and always plays the sample to its end which is the 'ONCE'
@@ -561,7 +584,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         final Element osc2 = XMLUtils.addElement (document, soundElement, DelugeTag.OSC2);
         XMLUtils.addTextElement (document, osc2, DelugeTag.TYPE, DelugeTag.TYPE_SQUARE);
 
-        XMLUtils.addTextElement (document, soundElement, DelugeTag.POLYPHONIC, DelugeTag.POLYPHONIC_POLY);
+        XMLUtils.addTextElement (document, soundElement, DelugeTag.POLYPHONIC, polyphonyMode);
         XMLUtils.addTextElement (document, soundElement, DelugeTag.VOICE_PRIORITY, "1");
         XMLUtils.addTextElement (document, soundElement, DelugeTag.MODE, DelugeTag.MODE_SUBTRACTIVE);
         XMLUtils.addTextElement (document, soundElement, DelugeTag.LPF_MODE, DelugeTag.LPF_MODE_24DB);

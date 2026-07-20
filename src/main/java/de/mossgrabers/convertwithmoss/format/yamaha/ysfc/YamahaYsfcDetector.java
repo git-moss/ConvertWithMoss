@@ -752,6 +752,14 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         ampEnvelope.setReleaseTime (YamahaYsfcPartElement.convertEnvelopeTimeToSeconds (element.getAegReleaseTime ()));
         ampEnvelope.setSustainLevel (element.getAegDecay2Level () / 127.0);
 
+        // The envelope time sensitivities are stored as [0..127] with 64 as the neutral center,
+        // which relates to -64..+63 and is normalized to the model range of [-1..1]. Note that the
+        // model always relates the key tracking to the center key (MIDI note 60) whereas the YSFC
+        // format has a configurable center note (AEG/PEG/FEG time key follow center note), which
+        // cannot be represented and is therefore ignored.
+        ampEnvelope.setTimeVelocityTracking (MathUtils.normalizeIntegerRange (element.getAegTimeVelocitySensitivity (), -64, 63, 64));
+        ampEnvelope.setTimeKeyTracking (MathUtils.normalizeIntegerRange (element.getAegTimeKeyFollowSensitivity (), -64, 63, 64));
+
         // Modulation depth might be non-zero which causes unwanted modulation if not all levels are
         // available on the output format. E.g. SFZ has a fixed value for the attack level.
         // Therefore, check if there really should be a modulation.
@@ -782,6 +790,8 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             pitchEnvelope.setHoldLevel (holdLevel);
             pitchEnvelope.setSustainLevel (decay1Level);
             pitchEnvelope.setEndLevel (decay2Level);
+            pitchEnvelope.setTimeVelocityTracking (MathUtils.normalizeIntegerRange (element.getPegTimeVelocitySensitivity (), -64, 63, 64));
+            pitchEnvelope.setTimeKeyTracking (MathUtils.normalizeIntegerRange (element.getPegTimeKeyFollowSensitivity (), -64, 63, 64));
         }
 
         final Integer filterTypeID = Integer.valueOf (element.getFilterType ());
@@ -805,6 +815,8 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         cutoffEnvelope.setHoldLevel (MathUtils.normalizeIntegerRange (element.getFegAttackLevel (), -128, 127, 128));
         cutoffEnvelope.setSustainLevel (MathUtils.normalizeIntegerRange (element.getFegDecay2Level (), -128, 127, 128));
         cutoffEnvelope.setEndLevel (MathUtils.normalizeIntegerRange (element.getFegReleaseLevel (), -128, 127, 128));
+        cutoffEnvelope.setTimeVelocityTracking (MathUtils.normalizeIntegerRange (element.getFegTimeVelocitySensitivity (), -64, 63, 64));
+        cutoffEnvelope.setTimeKeyTracking (MathUtils.normalizeIntegerRange (element.getFegTimeKeyFollowSensitivity (), -64, 63, 64));
 
         filter.setCutoffKeyTracking (Math.clamp (element.getFilterCutoffKeyFollowSensitivity () / 100.0, -1, 1));
     }

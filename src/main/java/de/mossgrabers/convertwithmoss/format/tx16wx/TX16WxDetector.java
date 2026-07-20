@@ -398,6 +398,17 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         double groupTuningOffset = XMLUtils.getIntegerAttribute (groupElement, TX16WxTag.TUNING_COARSE, 0);
         groupTuningOffset += XMLUtils.getIntegerAttribute (groupElement, TX16WxTag.TUNING_FINE, 0) / 100.0;
 
+        // Note: all three values are additionally flattened into each zone of the group below,
+        // which must not be changed. They are stored here as well since TX16Wx does have a real
+        // group layer. No unit conversion is required: the volume is already in dB, the panning
+        // already in the range of [-1..1] and the tuning already in semi-tones
+        if (Double.isFinite (groupVolumeOffset) && groupVolumeOffset != 0)
+            group.setGain (groupVolumeOffset);
+        if (groupPanningOffset != 0)
+            group.setPanning (Math.clamp (groupPanningOffset, -1.0, 1.0));
+        if (groupTuningOffset != 0)
+            group.setTuning (groupTuningOffset);
+
         final String playMode = groupElement.getAttribute (TX16WxTag.GROUP_PLAYMODE);
         if ("Release".equals (playMode))
             group.setTrigger (TriggerType.RELEASE);
