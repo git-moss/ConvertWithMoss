@@ -61,8 +61,8 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     private static final double                 DEFAULT_VELOCITY       = 0.49411765;
     private static final int                    DRUM_VOICE_COUNT       = 8;
     private static final int                    DEFAULT_DRUM_ROOT      = 60;
-    private static final String                 MULTI_TEMPLATE         = "/de/mossgrabers/convertwithmoss/templates/tonverk/multi-template.tvpst";
-    private static final String                 DRUM_TEMPLATE          = "/de/mossgrabers/convertwithmoss/templates/tonverk/drum-template.tvpst";
+    private static final String                 MULTI_TEMPLATE         = "de/mossgrabers/convertwithmoss/templates/tonverk/multi-template.tvpst";
+    private static final String                 DRUM_TEMPLATE          = "de/mossgrabers/convertwithmoss/templates/tonverk/drum-template.tvpst";
 
     /** The absolute device folder under which a preset references its samples. */
     private static final String                 DEVICE_SAMPLE_FOLDER   = "/mnt/sdcard/User/Multi-sampled Instruments/";
