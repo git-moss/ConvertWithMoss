@@ -624,11 +624,14 @@ class SxtZone
         final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
         this.sampleSize = audioMetadata.getNumberOfSamples ();
 
+        // The tuning is stored in the model in semi-tones but the format splits it up into
+        // octaves, semi-tones and cents
         final double tune = zone.getTuning ();
-        final int semitones = (int) (tune / 100);
-        this.octave = semitones / 12;
-        this.semitone = semitones % 12;
-        this.cent = (int) (tune % 100);
+        final long totalCents = Math.round (tune * 100.0);
+        final long semitones = Math.round (totalCents / 100.0);
+        this.cent = (int) (totalCents - semitones * 100);
+        this.octave = Math.clamp (semitones / 12, -5, 5);
+        this.semitone = Math.clamp (semitones - this.octave * 12L, -12, 12);
 
         this.pitchWheelRange = Math.clamp (Math.abs (Math.round (zone.getBendUp () / 100.0)), 0, 24);
 
@@ -663,22 +666,23 @@ class SxtZone
         {
             this.modEnvToPitch = (int) (depth * 1000.0);
             final IEnvelope modEnvelope = pitchModulator.getSource ();
+            // The 'IsOff' flags must be set to 0 to enable the respective parameter
             final double delay = modEnvelope.getDelayTime ();
             if (delay >= 0)
             {
-                this.modEnvDelayIsOff = 1;
+                this.modEnvDelayIsOff = 0;
                 this.modEnvDelay = envelopeTimeSecondsToCents (delay);
             }
             final double attack = modEnvelope.getAttackTime ();
             if (attack >= 0)
             {
-                this.modEnvAttackIsOff = 1;
+                this.modEnvAttackIsOff = 0;
                 this.modEnvAttack = envelopeTimeSecondsToCents (attack);
             }
             final double hold = modEnvelope.getHoldTime ();
             if (hold >= 0)
             {
-                this.modEnvHoldIsOff = 1;
+                this.modEnvHoldIsOff = 0;
                 this.modEnvHold = envelopeTimeSecondsToCents (hold);
             }
             this.modEnvDecay = envelopeTimeSecondsToCents (modEnvelope.getDecayTime ());
@@ -696,7 +700,8 @@ class SxtZone
             final IFilter filter = optFilter.get ();
             this.filterIsOn = 1;
 
-            this.filterFreq = (int) (Math.log (filter.getCutoff () / 440.0) * 1200 + 6900);
+            // Convert Hertz to cents: cents = 1200 * log2 (frequency / 440) + 6900
+            this.filterFreq = (int) Math.clamp (Math.log (filter.getCutoff () / 440.0) / Math.log (2) * 1200.0 + 6900.0, 0, 14100);
 
             final int poles = filter.getPoles ();
             switch (filter.getType ())
@@ -730,24 +735,24 @@ class SxtZone
             final double modEnvDepth = cutoffModulator.getDepth ();
             if (modEnvDepth > 0)
             {
-                this.modEnvToPitch = (int) (modEnvDepth * 1000.0);
+                this.modEnvToFilterFreq = (int) (modEnvDepth * 1000.0);
                 final IEnvelope modEnvelope = cutoffModulator.getSource ();
                 final double delay = modEnvelope.getDelayTime ();
                 if (delay >= 0)
                 {
-                    this.modEnvDelayIsOff = 1;
+                    this.modEnvDelayIsOff = 0;
                     this.modEnvDelay = envelopeTimeSecondsToCents (delay);
                 }
                 final double attack = modEnvelope.getAttackTime ();
                 if (attack >= 0)
                 {
-                    this.modEnvAttackIsOff = 1;
+                    this.modEnvAttackIsOff = 0;
                     this.modEnvAttack = envelopeTimeSecondsToCents (attack);
                 }
                 final double hold = modEnvelope.getHoldTime ();
                 if (hold >= 0)
                 {
-                    this.modEnvHoldIsOff = 1;
+                    this.modEnvHoldIsOff = 0;
                     this.modEnvHold = envelopeTimeSecondsToCents (hold);
                 }
                 this.modEnvDecay = envelopeTimeSecondsToCents (modEnvelope.getDecayTime ());
@@ -773,19 +778,19 @@ class SxtZone
         final double delay = ampEnvelope.getDelayTime ();
         if (delay >= 0)
         {
-            this.ampEnvDelayIsOff = 1;
+            this.ampEnvDelayIsOff = 0;
             this.ampEnvDelay = envelopeTimeSecondsToCents (delay);
         }
         final double attack = ampEnvelope.getAttackTime ();
         if (attack >= 0)
         {
-            this.ampEnvAttackIsOff = 1;
+            this.ampEnvAttackIsOff = 0;
             this.ampEnvAttack = envelopeTimeSecondsToCents (attack);
         }
         final double hold = ampEnvelope.getHoldTime ();
         if (hold >= 0)
         {
-            this.ampEnvHoldIsOff = 1;
+            this.ampEnvHoldIsOff = 0;
             this.ampEnvHold = envelopeTimeSecondsToCents (hold);
         }
         this.ampEnvDecay = envelopeTimeSecondsToCents (ampEnvelope.getDecayTime ());

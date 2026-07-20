@@ -48,6 +48,15 @@ public class KMPFile
     /** ID for KMP multi-sample number chunk. */
     private static final String     KMP_NUMBER_ID   = "MNO1";
 
+    /**
+     * The level of a multi-sample index is stored in the range of [-99..99]. The Korg
+     * documentation describes 0 as the unity level and negative and positive values as lowering
+     * and raising it, but it does not relate them to dB in any of the parameter guides. This is
+     * therefore an approximation of what the full deflection means: if it is ever measured on a
+     * device, only this constant has to be changed.
+     */
+    private static final double     MAX_LEVEL_DB    = 6.0;
+
     private static final int        KMP_MSP_SIZE    = 18;
     private static final int        KMP_NAME_SIZE   = 24;
     private static final int        KMP_REL1_SIZE   = 18;
@@ -226,9 +235,8 @@ public class KMPFile
             lowerKey = AbstractCreator.limitToDefault (zone.getKeyHigh (), 127) + 1;
             zone.setTuning (in.readByte () / 100.0);
 
-            // Range is [-99..99] but totally unclear to what that relates in dB.
-            // Let's keep it between [0..6]dB
-            zone.setGain ((Math.clamp (in.readByte (), -99, 99) / 99.0 + 1) / 3.0);
+            // See MAX_LEVEL_DB for the scale of the level
+            zone.setGain (Math.clamp (in.readByte (), -99, 99) / 99.0 * MAX_LEVEL_DB);
 
             // Panning - unused in KMP itself, 64 is center
             in.readByte ();
@@ -369,7 +377,7 @@ public class KMPFile
         {
             final ISampleZone zone = this.zones.get (i);
 
-            final int keyLow = AbstractCreator.limitToDefault (zone.getKeyHigh (), 0);
+            final int keyLow = AbstractCreator.limitToDefault (zone.getKeyLow (), 0);
             final int keyHigh = AbstractCreator.limitToDefault (zone.getKeyHigh (), 127);
 
             int originalKey = zone.getKeyRoot ();
@@ -382,9 +390,8 @@ public class KMPFile
             out.write (keyHigh);
             out.writeByte ((byte) Math.round (zone.getTuning () * 100.0));
 
-            // Range is [-99..99] but totally unclear to what that relates in dB.
-            // Let's keep it between [0..6]dB
-            out.writeByte (this.maxVolume ? 99 : (byte) Math.clamp (Math.round (Math.clamp (zone.getGain (), 0, 6) / 3.0 - 1.0) * 99.0, 0, 99));
+            // See MAX_LEVEL_DB for the scale of the level
+            out.writeByte (this.maxVolume ? 99 : Math.clamp (Math.round (Math.clamp (zone.getGain (), -MAX_LEVEL_DB, MAX_LEVEL_DB) / MAX_LEVEL_DB * 99.0), -99, 99));
 
             // Panning - unused in KMP itself, 64 is center
             out.write (64);

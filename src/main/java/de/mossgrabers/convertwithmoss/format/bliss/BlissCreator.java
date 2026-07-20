@@ -352,6 +352,16 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 
     /** {@inheritDoc} */
     @Override
+    protected boolean requiresRewrite (final DestinationAudioFormat destinationFormat)
+    {
+        // Bliss stores all samples in FLAC format, therefore they always need to be re-written by
+        // the rewriteFile method below - which also applies the trimming of the zone start/end.
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
         final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();

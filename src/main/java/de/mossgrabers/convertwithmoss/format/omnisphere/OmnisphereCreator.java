@@ -170,14 +170,14 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
                 text = text.replace ("%FILTER_FREQ%", toHexFloat (OmnisphereFilterUtils.hertzToNormalized (filter.getCutoff ())));
                 text = text.replace ("%FILTER_RES%", toHexFloat (filter.getResonance ()));
 
-                text = text.replace ("%FENV_ATTACK_SEC%", toHexFloat (cutoffEnvelope.getAttackTime () / 100.0));
-                text = text.replace ("%FENV_DECAY_SEC%", toHexFloat ((Math.max (0, cutoffEnvelope.getHoldTime ()) + Math.max (0, cutoffEnvelope.getDecayTime ())) / 100.0));
-                text = text.replace ("%FENV_RELEASE_SEC%", toHexFloat (cutoffEnvelope.getReleaseTime () / 100.0));
+                text = text.replace ("%FENV_ATTACK_SEC%", toSeconds (cutoffEnvelope.getAttackTime ()));
+                text = text.replace ("%FENV_DECAY_SEC%", toSeconds (Math.max (0, cutoffEnvelope.getHoldTime ()) + Math.max (0, cutoffEnvelope.getDecayTime ())));
+                text = text.replace ("%FENV_RELEASE_SEC%", toSeconds (cutoffEnvelope.getReleaseTime ()));
 
                 text = text.replace ("%FENV_ATTACK%", toTime (cutoffEnvelope.getAttackTime ()));
                 text = text.replace ("%FENV_HOLD%", toTime (cutoffEnvelope.getHoldTime ()));
                 text = text.replace ("%FENV_DECAY%", toTime (cutoffEnvelope.getDecayTime ()));
-                text = text.replace ("%FENV_SUSTAIN%", toHexFloat (cutoffEnvelope.getSustainLevel ()));
+                text = text.replace ("%FENV_SUSTAIN%", toSustain (cutoffEnvelope.getSustainLevel ()));
                 text = text.replace ("%FENV_RELEASE%", toTime (cutoffEnvelope.getReleaseTime ()));
                 text = text.replace ("%FENV_ATTACK_SLOPE%", toSlope (cutoffEnvelope.getAttackSlope ()));
                 text = text.replace ("%FENV_DECAY_SLOPE%", toSlope (cutoffEnvelope.getDecaySlope ()));
@@ -194,13 +194,13 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
             // Amplitude envelope
             final IEnvelope ampEnvelope = firstSampleZone.getAmplitudeEnvelopeModulator ().getSource ();
-            text = text.replace ("%AMP_ATTACK_SEC%", toHexFloat (ampEnvelope.getAttackTime () / 100.0));
-            text = text.replace ("%AMP_DECAY_SEC%", toHexFloat ((Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ())) / 100.0));
-            text = text.replace ("%AMP_RELEASE_SEC%", toHexFloat (ampEnvelope.getReleaseTime () / 100.0));
+            text = text.replace ("%AMP_ATTACK_SEC%", toSeconds (ampEnvelope.getAttackTime ()));
+            text = text.replace ("%AMP_DECAY_SEC%", toSeconds (Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ())));
+            text = text.replace ("%AMP_RELEASE_SEC%", toSeconds (ampEnvelope.getReleaseTime ()));
             text = text.replace ("%AMP_ATTACK%", toTime (ampEnvelope.getAttackTime ()));
             text = text.replace ("%AMP_HOLD%", toTime (ampEnvelope.getHoldTime ()));
             text = text.replace ("%AMP_DECAY%", toTime (ampEnvelope.getDecayTime ()));
-            text = text.replace ("%AMP_SUSTAIN%", toHexFloat (ampEnvelope.getSustainLevel ()));
+            text = text.replace ("%AMP_SUSTAIN%", toSustain (ampEnvelope.getSustainLevel ()));
             text = text.replace ("%AMP_RELEASE%", toTime (ampEnvelope.getReleaseTime ()));
             text = text.replace ("%AMP_ATTACK_SLOPE%", toSlope (ampEnvelope.getAttackSlope ()));
             text = text.replace ("%AMP_DECAY_SLOPE%", toSlope (ampEnvelope.getDecaySlope ()));
@@ -219,9 +219,9 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             text = text.replace ("%PITCH_MOD_INTENSITY%", toHexFloat (1.0));
 
             // Stored in MODENV
-            text = text.replace ("%MOD_ATTACK_SEC%", toHexFloat (modEnvelope.getAttackTime () / 100.0));
-            text = text.replace ("%MOD_DECAY_SEC%", toHexFloat ((Math.max (0, modEnvelope.getHoldTime ()) + Math.max (0, modEnvelope.getDecayTime ())) / 100.0));
-            text = text.replace ("%MOD_RELEASE_SEC%", toHexFloat (modEnvelope.getReleaseTime () / 100.0));
+            text = text.replace ("%MOD_ATTACK_SEC%", toSeconds (modEnvelope.getAttackTime ()));
+            text = text.replace ("%MOD_DECAY_SEC%", toSeconds (Math.max (0, modEnvelope.getHoldTime ()) + Math.max (0, modEnvelope.getDecayTime ())));
+            text = text.replace ("%MOD_RELEASE_SEC%", toSeconds (modEnvelope.getReleaseTime ()));
             text = text.replace ("%MOD_ATTACK_SLOPE%", toSlope (modEnvelope.getAttackSlope ()));
             text = text.replace ("%MOD_DECAY_SLOPE%", toSlope (modEnvelope.getDecaySlope ()));
             text = text.replace ("%MOD_RELEASE_SLOPE%", toSlope (modEnvelope.getReleaseSlope ()));
@@ -229,7 +229,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             text = text.replace ("%MOD_ATTACK%", toTime (modEnvelope.getAttackTime ()));
             text = text.replace ("%MOD_HOLD%", toTime (modEnvelope.getHoldTime ()));
             text = text.replace ("%MOD_DECAY%", toTime (modEnvelope.getDecayTime ()));
-            text = text.replace ("%MOD_SUSTAIN%", toHexFloat (modEnvelope.getSustainLevel ()));
+            text = text.replace ("%MOD_SUSTAIN%", toSustain (modEnvelope.getSustainLevel ()));
             text = text.replace ("%MOD_RELEASE%", toTime (modEnvelope.getReleaseTime ()));
 
             final File presetFile = new File (destFolder, filename + ".prt_omn");
@@ -272,7 +272,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             zoneElement.setAttribute ("HitKind", Integer.toString (sampleZone.getKeyRoot ()));
 
             zoneElement.setAttribute ("Volume", toHexFloat (dbToLinear (sampleZone.getGain ())));
-            zoneElement.setAttribute ("Pitch", toHexFloat (fromCents (sampleZone.getTuning ())));
+            zoneElement.setAttribute ("Pitch", toHexFloat (fromSemitones (sampleZone.getTuning ())));
 
             final Element soundGroupElement = XMLUtils.addElement (document, zoneElement, "SoundGroupWithNames");
             soundGroupElement.setAttribute ("UnderKitSession", "0");
@@ -464,7 +464,22 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
 
     private static String toTime (final double seconds)
     {
-        return toHexFloat (Math.sqrt (seconds / 20.0));
+        // An unset envelope time is -1 which would be written as 'not a number'
+        return toHexFloat (seconds < 0 ? 0 : Math.sqrt (seconds / 20.0));
+    }
+
+
+    private static String toSeconds (final double seconds)
+    {
+        // An unset envelope time is -1 which would be written as a negative time
+        return toHexFloat (seconds < 0 ? 0 : seconds / 100.0);
+    }
+
+
+    private static String toSustain (final double level)
+    {
+        // An unset sustain level is -1, use the full level instead
+        return toHexFloat (level < 0 ? 1.0 : level);
     }
 
 
@@ -474,9 +489,9 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
-    private static double fromCents (final double cents)
+    private static double fromSemitones (final double semitones)
     {
-        return Math.pow (2.0, -cents / 1200.0);
+        return Math.pow (2.0, -semitones / 12.0);
     }
 
 

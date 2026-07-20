@@ -72,7 +72,7 @@ public class MultiSampleReducer
     {
         final int initialTotalZones = totalZones (groups);
         if (initialTotalZones <= maxSamples)
-            return initialTotalZones;
+            return 0;
 
         final boolean [] [] originalMask = buildCoverageMask (groups);
         int totalZones;
@@ -162,7 +162,12 @@ public class MultiSampleReducer
         candidate.keep.setVelocityLow (candidate.newVelLow);
         candidate.keep.setVelocityHigh (candidate.newVelHigh);
 
-        candidate.group.getSampleZones ().remove (candidate.remove);
+        // The zones are the live list of the group, therefore the removed zone must be put back at
+        // exactly its previous position - appending it would re-order the zones of the model
+        final List<ISampleZone> zones = candidate.group.getSampleZones ();
+        final int removeIndex = zones.indexOf (candidate.remove);
+        if (removeIndex >= 0)
+            zones.remove (removeIndex);
 
         final boolean [] [] newMask = buildCoverageMask (groups);
 
@@ -172,7 +177,8 @@ public class MultiSampleReducer
         candidate.keep.setVelocityLow (oldVL);
         candidate.keep.setVelocityHigh (oldVH);
 
-        candidate.group.getSampleZones ().add (candidate.remove);
+        if (removeIndex >= 0)
+            zones.add (removeIndex, candidate.remove);
 
         return masksEqual (originalMask, newMask);
     }

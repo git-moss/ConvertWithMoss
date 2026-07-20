@@ -618,14 +618,14 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         if (envelope == null)
             return;
 
-        final int attack = timeToValue (envelope.getAttackTime ());
+        final int attack = ZenCoreUtil.timeToValue (envelope.getAttackTime ());
         final double holdTime = envelope.getHoldTime ();
-        final int hold = holdTime > 0 ? timeToValue (holdTime) : 0;
+        final int hold = holdTime > 0 ? ZenCoreUtil.timeToValue (holdTime) : 0;
         // Same engine family as the FANTOM: an instant TVA decay stage kills the voice, so keep an
         // inaudibly fast floor (see the ZEN-Core creator).
-        final int decay = Math.max (8, timeToValue (envelope.getDecayTime ()));
+        final int decay = Math.max (8, ZenCoreUtil.timeToValue (envelope.getDecayTime ()));
         final double releaseTime = envelope.getReleaseTime ();
-        final int release = releaseTime >= 0 ? timeToValue (releaseTime) : 150;
+        final int release = releaseTime >= 0 ? ZenCoreUtil.timeToValue (releaseTime) : 150;
         final double holdLevelValue = envelope.getHoldLevel ();
         final int holdLevel = holdLevelValue < 0 ? 1023 : Math.clamp ((int) Math.round (holdLevelValue * 1023.0), 0, 1023);
         final double sustainValue = envelope.getSustainLevel ();
@@ -643,21 +643,6 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
             putU16 (toneRecord, offset + 12, sustain); // L3 = sustain
             putU16 (toneRecord, offset + 14, 0); // L4 = silence
         }
-    }
-
-
-    /**
-     * Approximate the ZEN-Core envelope time value (0-1023) from a time in seconds (the same
-     * calibrated log2 curve as the ZEN-Core creator).
-     *
-     * @param seconds The time in seconds
-     * @return The 0-1023 time value
-     */
-    private static int timeToValue (final double seconds)
-    {
-        if (seconds <= 0)
-            return 0;
-        return Math.clamp ((int) Math.round (1023 + 168 * Math.log (seconds / 20.0) / Math.log (2)), 0, 1023);
     }
 
 

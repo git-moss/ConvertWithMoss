@@ -221,8 +221,11 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         final int [] size = StreamUtils.read7bitNumberLE (in);
         final int blockLength = size[0];
 
-        // 0x0A, Offset to key zone data
-        in.readNBytes (2);
+        // 0x0A
+        in.readNBytes (1);
+
+        // Offset to the key zone data
+        final int [] keyZoneOffset = StreamUtils.read7bitNumberLE (in);
 
         checkAscii (in);
         final String sampleFileName = StreamUtils.readAsciiWith1ByteLength (in);
@@ -236,7 +239,7 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
         final ISampleData sampleData = new WavFileSampleData (sampleFile);
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
 
-        int rest = blockLength - 3 - sampleFileName.length () - 1;
+        int rest = blockLength - 2 - keyZoneOffset[1] - sampleFileName.length () - 1;
         rest = parseSampleParameters (zone, in, rest);
         parseKeyZoneParameters (zone, in, rest);
 
