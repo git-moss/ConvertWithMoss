@@ -287,11 +287,12 @@ Furthermore, even this basic setup has some limitations:
 
 ### Preset (.tvpst)
 
-In contrast to the mapping files, a Tonverk preset is a full sound that also contains the synthesizer parameters. All three generator machines are read:
+In contrast to the mapping files, a Tonverk preset is a full sound that also contains the synthesizer parameters. The sample-based generator machines are read:
 
 * **Multi**: a multi-sample mapped to key- and velocity-ranges.
 * **One-Shot**: a single sample mapped across the whole keyboard.
 * **Drum**: a kit of eight drum voices, each on its own key with its own settings.
+* **Grainer**: granular playback of a single sample. Since grains cannot be represented in the multi-sample model, the sample is converted like a One-Shot; the granular engine parameters are not converted.
 
 The amplitude envelope (AHD or ADSR), the multi-mode filter together with its envelope, the sample loops, gain and panning are converted. The remaining, synthesizer-specific parameters (arpeggiator, effects, global LFOs and the modulation matrix) have no equivalent in the multi-sample model and are therefore not converted.
 

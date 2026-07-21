@@ -38,6 +38,8 @@ public class TonverkPresetFile
         MULTI("gen_multi"),
         /** Drum machine: a kit of up to several drum voices. */
         DRUM("gen_drum"),
+        /** Grainer machine: granular playback of a single sample. */
+        GRAINER("gen_granular"),
         /** Unknown/unsupported machine. */
         UNKNOWN("");
 
@@ -65,7 +67,7 @@ public class TonverkPresetFile
         /**
          * Map the value of the 'gen_machine' parameter to a machine.
          *
-         * @param value The 'gen_machine' value ('0', '1' or '2')
+         * @param value The 'gen_machine' value ('0', '1', '2' or '4')
          * @return The machine, {@link #UNKNOWN} if it could not be mapped
          */
         public static Machine fromGenMachine (final String value)
@@ -77,6 +79,7 @@ public class TonverkPresetFile
                 case "0" -> ONESHOT;
                 case "1" -> MULTI;
                 case "2" -> DRUM;
+                case "4" -> GRAINER;
                 default -> UNKNOWN;
             };
         }
@@ -301,9 +304,10 @@ public class TonverkPresetFile
         for (final Map.Entry<String, String> entry: this.parameters.entrySet ())
             out.add (entry.getKey () + " = " + quote (entry.getValue ()));
 
-        // The mapping slot is written last (matches the device's file layout). One-Shot presets
-        // carry their single sample in the parameters block and have no mapping slot.
-        if (!this.keyZones.isEmpty () && this.machine != Machine.UNKNOWN && this.machine != Machine.ONESHOT)
+        // The mapping slot is written last (matches the device's file layout). Only the Multi and
+        // Drum machines have one; the One-Shot and Grainer machines carry their single sample in
+        // the parameters block.
+        if (!this.keyZones.isEmpty () && (this.machine == Machine.MULTI || this.machine == Machine.DRUM))
         {
             final String prefix = "parameters." + this.machine.getParameterPrefix () + "_mapping_slot";
             out.add ("");
