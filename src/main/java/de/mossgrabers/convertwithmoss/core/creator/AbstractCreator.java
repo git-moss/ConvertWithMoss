@@ -871,6 +871,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final String fileEnding, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
         final List<File> writtenFiles = new ArrayList<> ();
+        final Set<String> writtenPaths = new HashSet<> ();
 
         for (final IGroup group: multisampleSource.getGroups ())
         {
@@ -885,6 +886,16 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, fileEnding));
                 if (writtenFiles.contains (file))
                     continue;
+                // Two zone names which differ only in case address the same file on the
+                // case-insensitive file systems of macOS (APFS/HFS+) and Windows (NTFS) - the
+                // second write would silently overwrite the first one. File.equals cannot detect
+                // this since it compares case-sensitively on all Unix-like systems.
+                final String canonicalPath = canonicalPath (file);
+                if (writtenPaths.contains (canonicalPath))
+                {
+                    this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", file.getAbsolutePath ());
+                    continue;
+                }
                 try (final FileOutputStream fos = new FileOutputStream (file))
                 {
                     this.progress.notifyProgress ();
@@ -904,21 +915,43 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                     }
 
                     writtenFiles.add (file);
+                    writtenPaths.add (canonicalPath);
                 }
                 catch (final NoSuchFileException | FileNotFoundException ex)
                 {
                     this.progress.notifyFailed ();
                     this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
                 }
-                catch (final IOException ex)
+                catch (final IOException | RuntimeException ex)
                 {
                     this.progress.notifyFailed ();
-                    this.notifier.logError ("IDS_WAV_WRITE_ERROR", ex);
+                    this.notifier.logError ("IDS_WAV_WRITE_ERROR", file.getAbsolutePath (), ex.getLocalizedMessage ());
                 }
             }
         }
 
         return writtenFiles;
+    }
+
+
+    /**
+     * Get the canonical path of the given file. The canonical path resolves the file name to the
+     * spelling which the file system actually uses, therefore it is identical for two names which
+     * only differ in case if - and only if - the file system is case-insensitive.
+     *
+     * @param file The file
+     * @return The canonical path or the absolute path if it cannot be resolved
+     */
+    private static String canonicalPath (final File file)
+    {
+        try
+        {
+            return file.getCanonicalPath ();
+        }
+        catch (final IOException ex)
+        {
+            return file.getAbsolutePath ();
+        }
     }
 
 
@@ -1070,10 +1103,12 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         // Create the truncated data array
         final DataChunk dataChunk = wavFile.getDataChunk ();
         final byte [] data = dataChunk.getData ();
-        final int start = zone.getStart ();
-        final int stop = zone.getStop ();
-        final int lengthInSamples = stop - start;
         final int numBytesPerSample = formatChunk.calculateBytesPerSample ();
+        // Start and stop are not set by all detectors - an unset value means the full sample
+        final int totalLengthInSamples = data.length / numBytesPerSample;
+        final int start = Math.clamp (limitToDefault (zone.getStart (), 0), 0, totalLengthInSamples);
+        final int stop = Math.clamp (limitToDefault (zone.getStop (), totalLengthInSamples), start, totalLengthInSamples);
+        final int lengthInSamples = stop - start;
         final int startByte = start * numBytesPerSample;
         final int newLength = lengthInSamples * numBytesPerSample;
         final byte [] truncatedData = new byte [newLength];
@@ -1087,12 +1122,13 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         // Update the zone values - necessary for follow-up instrument/sample chunks!
         zone.setStart (0);
         zone.setStop (lengthInSamples);
-        final List<ISampleLoop> loops = zone.getLoops ();
-        if (!loops.isEmpty ())
+        // The audio was cut at the zone start - move all loop points with it
+        for (final ISampleLoop loop: zone.getLoops ())
         {
-            final ISampleLoop loop = loops.get (0);
             loop.setStart (Math.max (loop.getStart () - start, 0));
-            loop.setEnd (Math.min (loop.getEnd () - start, lengthInSamples));
+            // An unset end means 'loop to the end of the sample' and stays unset
+            if (loop.getEnd () > 0)
+                loop.setEnd (Math.min (loop.getEnd () - start, lengthInSamples));
         }
     }
 

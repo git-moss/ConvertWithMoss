@@ -130,14 +130,15 @@ public class AudioSampleReducer
 
     private static void normalizeSample (final List<byte []> newSampleCache) throws IOException, UnsupportedAudioFileException
     {
-        // Find max amplitude
-        double maxAmplitude = 0;
+        // Find the loudest peak across all samples. The peaks are normalized to the range of 0..1,
+        // otherwise samples with different bit depths could not be compared with each other.
+        double maximumPeak = 0;
         for (final byte [] data: newSampleCache)
-            maxAmplitude = Math.max (maxAmplitude, findMaxAmplitude (data));
+            maximumPeak = Math.max (maximumPeak, findMaxAmplitude (data));
         // Normalize if needed
-        if (maxAmplitude > 0)
+        if (maximumPeak > 0)
             for (int i = 0; i < newSampleCache.size (); i++)
-                newSampleCache.set (i, normalize (newSampleCache.get (i), maxAmplitude));
+                newSampleCache.set (i, normalize (newSampleCache.get (i), maximumPeak));
     }
 
 
@@ -319,7 +320,10 @@ public class AudioSampleReducer
                     writeSample (targetData, targetOffset, reduced, targetBits, bigEndian);
                 }
 
-            final AudioFormat targetFormat = new AudioFormat (sourceFormat.getEncoding (), sourceFormat.getSampleRate (), targetBits, channels, targetFrameSize, sourceFormat.getFrameRate (), bigEndian);
+            // WAV stores 8 bit samples as unsigned, which writeSample already applied. The format
+            // must say so as well, otherwise the WAV writer adds the bias a second time.
+            final AudioFormat.Encoding targetEncoding = targetBits == 8 ? AudioFormat.Encoding.PCM_UNSIGNED : sourceFormat.getEncoding ();
+            final AudioFormat targetFormat = new AudioFormat (targetEncoding, sourceFormat.getSampleRate (), targetBits, channels, targetFrameSize, sourceFormat.getFrameRate (), bigEndian);
             return audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (targetData), targetFormat, numFrames));
         }
     }
@@ -391,7 +395,8 @@ public class AudioSampleReducer
      * Find maximum amplitude in audio stream.
      *
      * @param wavData The WAV data structure
-     * @return The maximum value in the stream
+     * @return The maximum value in the stream, normalized to the range of 0..1 which makes it
+     *         comparable across different bit depths
      * @throws IOException Could not read the stream
      * @throws UnsupportedAudioFileException Could not parse the WAV file
      */
@@ -414,8 +419,21 @@ public class AudioSampleReducer
                 final int sample = readSample (data, offset, sampleSizeInBits, bigEndian);
                 max = Math.max (max, Math.abs (sample));
             }
-            return max;
+            return max / maximumPositiveValue (sampleSizeInBits);
         }
+    }
+
+
+    /**
+     * Get the largest positive value which can be stored with the given bit depth. Note that the
+     * negative range extends one step further, e.g. 16 bit covers -32768 to 32767.
+     *
+     * @param sampleSizeInBits The number of bits of one sample
+     * @return The largest positive value
+     */
+    private static int maximumPositiveValue (final int sampleSizeInBits)
+    {
+        return (1 << sampleSizeInBits - 1) - 1;
     }
 
 
@@ -423,16 +441,16 @@ public class AudioSampleReducer
      * Normalize audio to maximum amplitude.
      *
      * @param wavData The WAV data structure
-     * @param maxAmplitude The maximum amplitude to normalize to
+     * @param maximumPeak The loudest peak of all samples, normalized to the range of 0..1
      * @return The updated sample as a WAV audio structure
      * @throws IOException Could not read the sample
      * @throws UnsupportedAudioFileException Could not parse the WAV file
      */
-    private static byte [] normalize (final byte [] wavData, final double maxAmplitude) throws IOException, UnsupportedAudioFileException
+    private static byte [] normalize (final byte [] wavData, final double maximumPeak) throws IOException, UnsupportedAudioFileException
     {
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {
-            if (maxAmplitude == 0)
+            if (maximumPeak == 0)
                 return wavData;
 
             final AudioFormat format = ais.getFormat ();
@@ -442,9 +460,12 @@ public class AudioSampleReducer
             final int numSamples = data.length / bytesPerSample;
             final boolean bigEndian = format.isBigEndian ();
 
-            // Calculate max possible value for this bit depth
-            final int maxValue = 1 << sampleSizeInBits - 1;
-            final double scale = maxValue / maxAmplitude;
+            // Calculate the range of values which can be stored with this bit depth
+            final int positiveLimit = maximumPositiveValue (sampleSizeInBits);
+            final int negativeLimit = -positiveLimit - 1;
+            // The peak is normalized to 0..1, therefore the factor which maps it exactly onto the
+            // positive full scale is the same for all bit depths
+            final double scale = 1.0 / maximumPeak;
             if (scale == 1.0)
                 return wavData;
 
@@ -454,7 +475,7 @@ public class AudioSampleReducer
                 final int offset = i * bytesPerSample;
                 final int sample = readSample (data, offset, sampleSizeInBits, bigEndian);
                 int scaled = (int) Math.round (sample * scale);
-                scaled = Math.clamp (scaled, -maxValue - 1, maxValue);
+                scaled = Math.clamp (scaled, negativeLimit, positiveLimit);
                 writeSample (normalized, offset, scaled, sampleSizeInBits, bigEndian);
             }
 
@@ -466,6 +487,10 @@ public class AudioSampleReducer
     private static int readSample (final byte [] data, final int offset, final int sampleSizeInBits, final boolean bigEndian)
     {
         // Missing handling of 32 bit float values
+
+        // 8-bit WAV samples are unsigned with a bias of 128
+        if (sampleSizeInBits == 8)
+            return (data[offset] & 0xFF) - 128;
 
         int sample = 0;
         final int bytesPerSample = (sampleSizeInBits + 7) / 8;
@@ -507,6 +532,13 @@ public class AudioSampleReducer
 
     private static void writeSample (final byte [] data, final int offset, final int sample, final int sampleSizeInBits, final boolean bigEndian)
     {
+        // 8-bit WAV samples are unsigned with a bias of 128
+        if (sampleSizeInBits == 8)
+        {
+            data[offset] = (byte) (sample + 128);
+            return;
+        }
+
         final int bytesPerSample = (sampleSizeInBits + 7) / 8;
         final int containerBits = bytesPerSample * 8;
 

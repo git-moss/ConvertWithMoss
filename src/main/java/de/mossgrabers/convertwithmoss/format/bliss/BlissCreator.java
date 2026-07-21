@@ -264,9 +264,12 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.setIntegerAttribute (zoneElement, "midi_fine_tune", (int) Math.round ((tune - coarseTuning) * 100.0));
         XMLUtils.setIntegerAttribute (zoneElement, "midi_keycents", (int) Math.round (zone.getKeyTracking () * 100.0));
 
-        // Create loop
+        // Create loop. 'loop_mode' must always be written since a missing attribute is not
+        // interpreted as 'no loop' but as a forward loop.
         final List<ISampleLoop> loops = zone.getLoops ();
-        if (!loops.isEmpty ())
+        if (loops.isEmpty ())
+            XMLUtils.setIntegerAttribute (zoneElement, "loop_mode", 0);
+        else
         {
             int loopMode = 1;
             final ISampleLoop loop = loops.get (0);
@@ -344,6 +347,16 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
                 XMLUtils.setDoubleAttribute (zoneElement, "flt1_kbd_trk", filter.getCutoffKeyTracking (), 2);
             }
         }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected boolean requiresRewrite (final DestinationAudioFormat destinationFormat)
+    {
+        // Bliss stores all samples in FLAC format, therefore they always need to be re-written by
+        // the rewriteFile method below - which also applies the trimming of the zone start/end.
+        return true;
     }
 
 
