@@ -718,6 +718,7 @@ If this format is used as the source it produces 1 or 2 output presets, one for 
 * Re-sample to 16bit/44.1kHz: If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it might impact the performance.
 * Author: Written into the preset's Author field, which the device shows and can group presets by. When left empty, the creator from the source metadata is kept (e.g. the sound designer stored in a SoundFont).
 * Bank: Written into the preset's Bank field. When left empty, the description from the source metadata is kept.
+* Prefix file names with an import number: Prefixes each written preset file with a 5-digit number (e.g. *05002-Name.qpat*), which mirrors the naming of the device's own preset export; on import the device assigns the preset to that number. The *First import number* is used for the first written preset and each further preset increases the number by one; the source presets are converted in alphabetical order.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
 ## Yamaha YSFC
