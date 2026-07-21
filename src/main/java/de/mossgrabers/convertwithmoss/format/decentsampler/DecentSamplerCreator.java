@@ -310,8 +310,10 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
                 final ISampleZone zone = zones.get (zoneIndex);
 
                 isRoundRobin = isRoundRobin || zone.getPlayLogic () == PlayLogic.ROUND_ROBIN;
+                // The sequence length is the number of round-robin positions and not the
+                // number of zones
                 if (isRoundRobin && zone.getSequencePosition () >= 1)
-                    seqLength++;
+                    seqLength = Math.max (seqLength, zone.getSequencePosition ());
 
                 ampVelDepths.add (Double.valueOf (zone.getAmplitudeVelocityModulator ().getDepth ()));
                 final Element sampleElement = createSample (document, folderName, groupElement, zone);

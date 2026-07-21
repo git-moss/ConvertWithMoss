@@ -57,6 +57,8 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
      * dithered 'digital silence'.
      */
     private static final int SILENCE_THRESHOLD = 32;
+    /** The range of the coarse tuning generator in semi-tones as defined by the SoundFont 2 spec. */
+    private static final int MAX_COARSE_TUNE   = 120;
 
 
     /**
@@ -235,12 +237,16 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             if (destinationGenerator == Generator.INITIAL_ATTENUATION)
             {
                 final int amount = sf2Modulator.getModulationAmount ();
-                zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (amount / 960, 0, 1));
+                zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (amount / 960.0, 0, 1));
             }
             else if (destinationGenerator == Generator.INITIAL_FILTER_CUTOFF)
             {
-                final int amount = sf2Modulator.getModulationAmount ();
-                zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (amount / -2400, 0, 1));
+                final Optional<IFilter> filterOpt = zone.getFilter ();
+                if (filterOpt.isPresent ())
+                {
+                    final int amount = sf2Modulator.getModulationAmount ();
+                    filterOpt.get ().getCutoffVelocityModulator ().setDepth (Math.clamp (amount / -2400.0, 0, 1));
+                }
             }
         }
     }
@@ -719,13 +725,17 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             // Set the pitch
             final int overridingRootKey = generators.getUnsignedValue (Generator.OVERRIDING_ROOT_KEY).intValue ();
             final int originalPitch = sample.getOriginalPitch ();
-            int pitch = overridingRootKey < 0 ? originalPitch : overridingRootKey;
-            pitch += generators.getSignedValue (Generator.COARSE_TUNE).intValue ();
-            zone.setKeyRoot (pitch);
+            zone.setKeyRoot (overridingRootKey < 0 ? originalPitch : overridingRootKey);
+            // The coarse tuning is a pitch offset in semi-tones and belongs to the tuning, not to
+            // the root key: a positive value plays the sound higher, while a higher root key would
+            // play it lower. It is added to the fine tuning exactly like the reference
+            // implementation does it (see the GEN_COARSETUNE case in FluidSynth's fluid_voice.c,
+            // which adds 100 times the coarse tuning and the fine tuning to the pitch)
+            final int coarseTune = generators.getSignedValue (Generator.COARSE_TUNE).intValue ();
             final int fineTune = generators.getSignedValue (Generator.FINE_TUNE).intValue ();
             final int pitchCorrection = sample.getPitchCorrection ();
-            final double tune = Math.clamp ((pitchCorrection + (double) fineTune) / 100, -1, 1);
-            zone.setTuning (tune);
+            final double tune = coarseTune + (pitchCorrection + (double) fineTune) / 100;
+            zone.setTuning (Math.clamp (tune, -MAX_COARSE_TUNE, MAX_COARSE_TUNE));
             final int scaleTuning = generators.getSignedValue (Generator.SCALE_TUNE).intValue ();
             zone.setKeyTracking (Math.clamp (scaleTuning / 100.0, 0, 100));
 

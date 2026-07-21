@@ -430,8 +430,12 @@ public class BentoCreator extends AbstractMusic1010Creator
         else
         {
             final ISampleLoop loop = loops.get (0);
-            XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_START, loop.getStart ());
-            XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, loop.getEnd ());
+            // The samples are trimmed to the zone start/end after this description is created,
+            // therefore the loop positions need to be shifted by the zone start as well - the same
+            // way the sample length above is corrected
+            final int offset = trim ? Math.max (0, zone.getStart ()) : 0;
+            XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_START, Math.max (0, loop.getStart () - offset));
+            XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, Math.max (0, loop.getEnd () - offset));
         }
     }
 }
