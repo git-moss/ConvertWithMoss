@@ -9,7 +9,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,8 +18,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -619,25 +616,12 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
      */
     private static void writeSample (final File libraryFolder, final String sampleName, final ISampleZone zone) throws IOException
     {
-        final Path tempFile = Files.createTempFile ("CWM-", ".flac");
-        try
-        {
-            final Optional<ISampleData> sampleData = zone.getSampleData ();
-            if (sampleData.isEmpty ())
-                throw new IOException ("Empty sample data in zone: " + zone.getName ());
-            AudioFileUtils.compressToFLAC (sampleData.get (), FLAC_TARGET_FORMAT, tempFile.toFile ());
-            final byte [] flacData = Files.readAllBytes (tempFile);
-            final byte [] obfuscated = SynclavierRegenCodec.transform (flacData, sampleName);
-            Files.write (new File (libraryFolder, sampleName + ".sflc").toPath (), obfuscated);
-        }
-        catch (final UnsupportedAudioFileException ex)
-        {
-            throw new IOException (ex);
-        }
-        finally
-        {
-            Files.deleteIfExists (tempFile);
-        }
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Empty sample data in zone: " + zone.getName ());
+        final byte [] flacData = AudioFileUtils.compressToFLAC (sampleData.get ());
+        final byte [] obfuscated = SynclavierRegenCodec.transform (flacData, sampleName);
+        Files.write (new File (libraryFolder, sampleName + ".sflc").toPath (), obfuscated);
     }
 
 

@@ -8,15 +8,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.zip.ZipOutputStream;
-
-import javax.sound.sampled.UnsupportedAudioFileException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -368,32 +364,16 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         if (sampleDataOpt.isEmpty ())
             return;
 
-        // Trim and convert to FLAC
+        // Trim sample from zone start to end
         ISampleData sampleData = sampleDataOpt.get ();
-        final Path tempFile = Files.createTempFile ("CWM-", ".flac");
-        try
+        if (zone.getStart () > 0)
         {
-            // Trim sample from zone start to end
-            if (zone.getStart () > 0)
-            {
-                final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
-                trimStartToEnd (waveFile, zone);
-                sampleData = new WavFileSampleData (waveFile);
-            }
+            final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
+            trimStartToEnd (waveFile, zone);
+            sampleData = new WavFileSampleData (waveFile);
+        }
 
-            // It is important to write to a file otherwise the FLAC header is broken!
-            AudioFileUtils.compressToFLAC (sampleData, FLAC_TARGET_FORMAT, tempFile.toFile ());
-
-            Files.copy (tempFile, outputStream);
-        }
-        catch (final UnsupportedAudioFileException ex)
-        {
-            throw new IOException (ex);
-        }
-        finally
-        {
-            Files.deleteIfExists (tempFile);
-        }
+        outputStream.write (AudioFileUtils.compressToFLAC (sampleData));
     }
 
 
