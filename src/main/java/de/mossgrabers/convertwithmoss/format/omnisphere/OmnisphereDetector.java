@@ -394,7 +394,7 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
             sampleZone.setKeyRoot (XMLUtils.getIntegerAttribute (zoneElement, "HitKind", 60));
 
             sampleZone.setGain (linearToDb (parseHexFloat (zoneElement.getAttribute ("Volume"), 1f)));
-            sampleZone.setTuning (toCents (parseHexFloat (zoneElement.getAttribute ("Pitch"), 1f)));
+            sampleZone.setTuning (toSemitones (parseHexFloat (zoneElement.getAttribute ("Pitch"), 1f)));
 
             final Element soundGroupElement = XMLUtils.getChildElementByName (zoneElement, "SoundGroupWithNames");
             if (soundGroupElement == null)
@@ -662,9 +662,9 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
     private static final double LOG2 = Math.log (2.0);
 
 
-    private static double toCents (final double value)
+    private static double toSemitones (final double value)
     {
-        return -1200.0 * (Math.log (value) / LOG2);
+        return -12.0 * (Math.log (value) / LOG2);
     }
 
 

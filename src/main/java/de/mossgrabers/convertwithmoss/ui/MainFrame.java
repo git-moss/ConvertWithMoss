@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
+import de.mossgrabers.tools.ui.AbstractDialog;
 import de.mossgrabers.tools.ui.AbstractFrame;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
@@ -40,6 +41,7 @@ import de.mossgrabers.tools.ui.panel.ButtonPanel;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -49,6 +51,7 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListView;
@@ -66,6 +69,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -166,8 +170,22 @@ public class MainFrame extends AbstractFrame implements INotifier
     {
         super.initialise (stage, baseTitleOptional, true, true, true);
 
-        this.settingsDialog = new SettingsDialog (this.getStage ());
-        this.processingDialog = new ProcessingDialog (this.getStage ());
+        // The dialogs are created without an owner and non-modal. On macOS a dialog that is
+        // owned by (or modally blocking) the main window is repainted by the window manager
+        // whenever the main window is clicked. An independent window is not, so clicking the
+        // main window is an ordinary focus change with nothing to repaint. They are kept on top
+        // so they cannot get lost behind the main window, and the main action buttons are
+        // disabled while a dialog is open (see below) to keep the one-at-a-time behavior.
+        this.settingsDialog = new SettingsDialog (null);
+        this.processingDialog = new ProcessingDialog (null);
+        keepOnTop (this.settingsDialog);
+        keepOnTop (this.processingDialog);
+
+        // An owned dialog inherits the base spacing/padding styles from its owner window; since
+        // these dialogs are unowned they must load the base stylesheet themselves, otherwise
+        // their layout falls back to the tighter default spacing
+        this.addBaseStyles (this.settingsDialog);
+        this.addBaseStyles (this.processingDialog);
 
         // The main button panel
         final ButtonPanel upperButtonPanel = new ButtonPanel (Orientation.VERTICAL);
@@ -182,6 +200,16 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.processingButton.setOnAction (_ -> this.openProcessing ());
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
+
+        // The dialogs are modal, but macOS does not always block a click on the owner window
+        // reliably, so the main action buttons are additionally disabled while either dialog is
+        // open - a disabled button emits no action, so neither dialog can be opened twice or
+        // re-triggered while present (which previously caused a repaint flash)
+        final BooleanBinding anyDialogOpen = this.settingsDialog.showingProperty ().or (this.processingDialog.showingProperty ());
+        this.convertButton.disableProperty ().bind (anyDialogOpen);
+        this.analyseButton.disableProperty ().bind (anyDialogOpen);
+        this.processingButton.disableProperty ().bind (anyDialogOpen);
+        this.settingsButton.disableProperty ().bind (anyDialogOpen);
 
         // Source pane
         //
@@ -370,23 +398,72 @@ public class MainFrame extends AbstractFrame implements INotifier
     }
 
 
+    /**
+     * Keep a dialog window above the main window without making it an owned or modal window (so
+     * the main window is not repainted by the window manager when it is clicked).
+     *
+     * @param dialog The dialog
+     */
+    private static void keepOnTop (final AbstractDialog dialog)
+    {
+        if (dialog.getWindow () instanceof final Stage stage)
+            stage.setAlwaysOnTop (true);
+    }
+
+
+    /**
+     * Add the application's base spacing/padding stylesheet to a dialog's scene. Owned dialogs
+     * inherit this from their owner window; the unowned Settings/Processing dialogs need it
+     * applied directly so their layout matches the rest of the application.
+     *
+     * @param dialog The dialog
+     */
+    private void addBaseStyles (final AbstractDialog dialog)
+    {
+        final Scene scene = dialog.getWindow ().getScene ();
+        if (scene == null)
+            return;
+        final String defaultStyles = this.startPath + "/css/DefaultStyles.css";
+        if (!scene.getStylesheets ().contains (defaultStyles))
+            scene.getStylesheets ().add (defaultStyles);
+    }
+
+
     private void setDarkMode (final boolean isSelected)
     {
-        final ObservableList<String> stylesheets = this.scene.getStylesheets ();
+        this.enableDarkMode = isSelected;
+
+        this.applyWindowTheme (this.scene);
+        this.applyWindowTheme (this.settingsDialog.getWindow ().getScene ());
+        this.applyWindowTheme (this.processingDialog.getWindow ().getScene ());
+
+        this.loggingArea.setBlendMode (isSelected ? BlendMode.OVERLAY : BlendMode.DARKEN);
+    }
+
+
+    /**
+     * Apply the current theme (the dark mode stylesheet and the matching background fill
+     * color) to a scene. Pre-filling the scene prevents the pure white frame which is
+     * otherwise rendered while a window appears for the first time - a sudden bright flash
+     * which is a real risk for photo-sensitive users, especially in dark mode.
+     *
+     * @param sceneToStyle The scene to style, may be null
+     */
+    private void applyWindowTheme (final Scene sceneToStyle)
+    {
+        if (sceneToStyle == null)
+            return;
+
         final String stylesheet = this.startPath + "/css/Darkmode.css";
-        if (isSelected)
+        final ObservableList<String> stylesheets = sceneToStyle.getStylesheets ();
+        if (this.enableDarkMode)
         {
             if (!stylesheets.contains (stylesheet))
-            {
                 stylesheets.add (stylesheet);
-                this.loggingArea.setBlendMode (BlendMode.OVERLAY);
-            }
         }
         else
-        {
             stylesheets.remove (stylesheet);
-            this.loggingArea.setBlendMode (BlendMode.DARKEN);
-        }
+        sceneToStyle.setFill (Color.web (this.enableDarkMode ? "#373E43" : "#ECECEC"));
     }
 
 
@@ -548,6 +625,11 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void openSettings ()
     {
+        // Safety net in case an event was already queued before the button got disabled: never
+        // touch the dialog while it is open (a re-show/reset causes a repaint flash)
+        if (this.settingsDialog.isShowing ())
+            return;
+
         this.settingsDialog.createFolderStructureCheckbox.setSelected (this.detectSettings.createFolderStructure);
         this.settingsDialog.addNewFilesCheckbox.setSelected (this.addNewFiles);
         this.settingsDialog.enableDarkModeCheckbox.setSelected (this.enableDarkMode);
@@ -568,6 +650,11 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void openProcessing ()
     {
+        // Safety net in case an event was already queued before the button got disabled: never
+        // touch the dialog while it is open (a re-show/reset causes a repaint flash)
+        if (this.processingDialog.isShowing ())
+            return;
+
         this.processingDialog.enableProcessingCheckbox.setSelected (this.detectSettings.enableProcessing);
         this.processingDialog.normalizeCheckbox.setSelected (this.detectSettings.enableNormalize);
         this.processingDialog.makeMonoCheckbox.setSelected (this.detectSettings.enableMakeMono);

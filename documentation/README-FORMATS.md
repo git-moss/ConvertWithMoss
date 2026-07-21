@@ -287,11 +287,12 @@ Furthermore, even this basic setup has some limitations:
 
 ### Preset (.tvpst)
 
-In contrast to the mapping files, a Tonverk preset is a full sound that also contains the synthesizer parameters. All three generator machines are read:
+In contrast to the mapping files, a Tonverk preset is a full sound that also contains the synthesizer parameters. The sample-based generator machines are read:
 
 * **Multi**: a multi-sample mapped to key- and velocity-ranges.
 * **One-Shot**: a single sample mapped across the whole keyboard.
 * **Drum**: a kit of eight drum voices, each on its own key with its own settings.
+* **Grainer**: granular playback of a single sample. Since grains cannot be represented in the multi-sample model, the sample is converted like a One-Shot; the granular engine parameters are not converted.
 
 The amplitude envelope (AHD or ADSR), the multi-mode filter together with its envelope, the sample loops, gain and panning are converted. The remaining, synthesizer-specific parameters (arpeggiator, effects, global LFOs and the modulation matrix) have no equivalent in the multi-sample model and are therefore not converted.
 
@@ -691,6 +692,7 @@ The Deluge has no loop cross-fade parameter of its own, so - exactly like the Re
 
 * Output Type: Choose whether to write a *Synth (Sound)* preset (the default) or a *Drum Kit*. A kit writes one drum per sample; use it for drum/percussion sets. CLI: `DelugeOutputType=kit` (or `sound`).
 * Consolidate kit (one drum per type): For a *Drum Kit*, reduce the kit to a single drum per recognized type (kick, snare, hi-hat, tom, ...) and order the drums by drum role - kick on the lowest row - following the factory TR-808 layout, so a beat can be programmed without switching rows. Several drums of the same type are reduced to the first; unrecognized drums are all kept and appended at the end. Each consolidated drum is labelled by its role (Kick, Snare, Hat Closed, ...) for a clean read-out on the device, while the sample files keep their original names. CLI: `DelugeConsolidateKit=1`.
+* Shorten kit name: For a *Drum Kit*, give the kit a short name for the device display - the last separated segment of the name (separators " - ", " / ", " : ", " | "), prefixed with the zero-padded "Kit" number if present (e.g. "80s hits SSS043 - Kit 07 - Full Kit 2" becomes "007 Full Kit 2"), so it does not scroll as much on the OLED. A redundant trailing "Kit NN" segment is dropped in favour of the preceding one, and a trailing date or version suffix ("-20220718", "v2") is removed while model numbers ("TR-808", "R-50") are kept. CLI: `DelugeShortenKitName=1`.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information).
 
 ### Limitations
