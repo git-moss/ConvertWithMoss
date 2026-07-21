@@ -60,6 +60,8 @@ import de.mossgrabers.convertwithmoss.format.kmp.KMPCreator;
 import de.mossgrabers.convertwithmoss.format.kmp.KMPDetector;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.korgmultisample.KorgmultisampleDetector;
+import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilCreator;
+import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.bento.BentoCreator;
 import de.mossgrabers.convertwithmoss.format.music1010.bento.BentoDetector;
 import de.mossgrabers.convertwithmoss.format.music1010.blackbox.Music1010Creator;
@@ -165,6 +167,7 @@ public class ConverterBackend
         this.detectors.add (new IsoDetector (notifier));
         this.detectors.add (new KMPDetector (notifier));
         this.detectors.add (new KorgmultisampleDetector (notifier));
+        this.detectors.add (new KurzweilDetector (notifier));
         this.detectors.add (new EXS24Detector (notifier));
         this.detectors.add (new KontaktDetector (notifier));
         this.detectors.add (new MaschineDetector (notifier));
@@ -200,6 +203,7 @@ public class ConverterBackend
         this.creators.add (new TonverkPresetCreator (notifier));
         this.creators.add (new KMPCreator (notifier));
         this.creators.add (new KorgmultisampleCreator (notifier));
+        this.creators.add (new KurzweilCreator (notifier));
         this.creators.add (new EXS24Creator (notifier));
         this.creators.add (new KontaktCreator (notifier));
         this.creators.add (new MaschineCreator (notifier));
