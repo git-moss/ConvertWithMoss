@@ -191,14 +191,14 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final double tune = zone.getTuning ();
         if (tune != 0)
         {
-            // transpose and de-tune are both +-24 semi-tones, fine tuning is set on the program
-            // with +-100 cent
+            // transpose and de-tune are both +-24 semi-tones and are summed up by the plug-in,
+            // fine tuning is set on the program with +-100 cent
 
-            final int transpose = (int) Math.round (tune);
-            final double fine = tune - transpose;
-            int detune = 0;
-            if (transpose > 24 || transpose < -24)
-                detune = Math.clamp (transpose > 24 ? transpose - 24 : transpose + 24, -24, 24);
+            final int semitones = (int) Math.round (tune);
+            final double fine = tune - semitones;
+            // The amount which does not fit into the transpose range is moved to the de-tune
+            final int transpose = Math.clamp (semitones, -24, 24);
+            final int detune = Math.clamp (semitones - transpose, -24, 24);
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.TRANSPOSE, (transpose + 24.0) / 48.0, 4);
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.DETUNE, (detune + 24.0) / 48.0, 4);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], (fine + 1.0) / 2.0, 4);
@@ -276,9 +276,10 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, amplitudeEnvelope.getSustainLevel (), 0, 1);
         setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, amplitudeEnvelope.getReleaseTime (), 0, maxEnvelopeTime);
 
+        // The modulator is always written since a missing entry cannot be distinguished from a
+        // depth of zero when reading the file back
         final double ampModDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
-        if (ampModDepth != 0)
-            modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_VELOCITY, TALSamplerModulator.DEST_ID_VOLUME_A, ampModDepth));
+        modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_VELOCITY, TALSamplerModulator.DEST_ID_VOLUME_A, ampModDepth));
 
         // -----------------------------------------------------------
         // Filter

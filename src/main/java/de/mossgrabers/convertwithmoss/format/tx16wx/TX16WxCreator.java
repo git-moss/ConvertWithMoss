@@ -640,16 +640,19 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 {
                     final Element envElement = XMLUtils.addElement (document, soundshapeElement, TX16WxTag.ENVELOPE_1);
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL0, (int) Math.round (filterEnvelope.getStartLevel () * 100.0) + "%");
+                    // An envelope starts and ends at zero, and level 1 is the level which is reached
+                    // at the end of the attack phase - the model has no explicit peak level,
+                    // therefore fall back to the full level there
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL0, formatLevel (filterEnvelope.getStartLevel (), 0));
                     envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (filterEnvelope.getAttackTime ()));
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL1, (int) Math.round (filterEnvelope.getSustainLevel () * 100.0) + "%");
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL1, formatLevel (filterEnvelope.getHoldLevel (), 1.0));
                     envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (filterEnvelope.getDecayTime ()));
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL2, (int) Math.round (filterEnvelope.getSustainLevel () * 100.0) + "%");
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL2, formatLevel (filterEnvelope.getSustainLevel (), 1.0));
                     envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (filterEnvelope.getReleaseTime ()));
-                    envElement.setAttribute (TX16WxTag.ENV_LEVEL3, (int) Math.round (filterEnvelope.getEndLevel () * 100.0) + "%");
-                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, amplitudeEnvelope.getAttackSlope (), 6);
-                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, amplitudeEnvelope.getDecaySlope (), 6);
-                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, amplitudeEnvelope.getReleaseSlope (), 6);
+                    envElement.setAttribute (TX16WxTag.ENV_LEVEL3, formatLevel (filterEnvelope.getEndLevel (), 0));
+                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, filterEnvelope.getAttackSlope (), 6);
+                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, filterEnvelope.getDecaySlope (), 6);
+                    XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, filterEnvelope.getReleaseSlope (), 6);
                     addModulationEntry (document, modulationElement, "ENV1", FILTER_1_FREQ, (int) Math.round (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
                 }
 
@@ -670,18 +673,18 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             {
                 final Element envElement = XMLUtils.addElement (document, soundshapeElement, TX16WxTag.ENVELOPE_2);
                 final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-                envElement.setAttribute (TX16WxTag.ENV_LEVEL0, (int) Math.round (pitchEnvelope.getStartLevel () * 100.0) + "%");
-                envElement.setAttribute (TX16WxTag.ENV_LEVEL1, (int) Math.round (pitchEnvelope.getSustainLevel () * 100.0) + "%");
-                envElement.setAttribute (TX16WxTag.ENV_LEVEL2, (int) Math.round (pitchEnvelope.getSustainLevel () * 100.0) + "%");
-                envElement.setAttribute (TX16WxTag.ENV_LEVEL3, (int) Math.round (pitchEnvelope.getEndLevel () * 100.0) + "%");
+                envElement.setAttribute (TX16WxTag.ENV_LEVEL0, formatLevel (pitchEnvelope.getStartLevel (), 0));
+                envElement.setAttribute (TX16WxTag.ENV_LEVEL1, formatLevel (pitchEnvelope.getSustainLevel (), 1.0));
+                envElement.setAttribute (TX16WxTag.ENV_LEVEL2, formatLevel (pitchEnvelope.getSustainLevel (), 1.0));
+                envElement.setAttribute (TX16WxTag.ENV_LEVEL3, formatLevel (pitchEnvelope.getEndLevel (), 0));
 
                 envElement.setAttribute (TX16WxTag.ENV_TIME1, formatTime (pitchEnvelope.getDecayTime ()));
                 envElement.setAttribute (TX16WxTag.ENV_TIME2, formatTime (0));
                 envElement.setAttribute (TX16WxTag.ENV_TIME3, formatTime (pitchEnvelope.getReleaseTime ()));
 
-                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, amplitudeEnvelope.getAttackSlope (), 6);
-                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, amplitudeEnvelope.getDecaySlope (), 6);
-                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, amplitudeEnvelope.getReleaseSlope (), 6);
+                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, pitchEnvelope.getAttackSlope (), 6);
+                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, pitchEnvelope.getDecaySlope (), 6);
+                XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, pitchEnvelope.getReleaseSlope (), 6);
                 addModulationEntry (document, modulationElement, "ENV2", "Pitch", (int) Math.round (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
             }
         }
@@ -712,5 +715,20 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     {
         final double v = valueInMilliSeconds <= 0 ? 0 : Math.round (valueInMilliSeconds * 1000.0);
         return v + " ms";
+    }
+
+
+    /**
+     * Format an envelope level as a percentage. The levels of the model are in the range of [0..1]
+     * and are -1 as long as they are not set. Writing that unset value would result in -100%, which
+     * is a valid but completely different envelope, therefore fall back to the given default.
+     *
+     * @param level The level in the range of [0..1] or -1 if it is not set
+     * @param defaultLevel The level to use if the level is not set
+     * @return The formatted percentage
+     */
+    private static String formatLevel (final double level, final double defaultLevel)
+    {
+        return (int) Math.round ((level < 0 ? defaultLevel : level) * 100.0) + "%";
     }
 }

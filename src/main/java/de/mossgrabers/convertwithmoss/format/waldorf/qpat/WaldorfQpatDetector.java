@@ -543,7 +543,10 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             return;
         final double pitch = Double.parseDouble (params[1]);
         final int coarse = (int) Math.round (pitch);
-        final double fineTune = pitch - coarse;
+        // The tuning is subtracted from the root note when written (the sample plays high if the
+        // root note is lower), therefore it must be subtracted from the root note again to read it
+        // back with the correct sign
+        final double fineTune = coarse - pitch;
         zone.setKeyRoot (coarse);
         zone.setTuning (fineTune);
 

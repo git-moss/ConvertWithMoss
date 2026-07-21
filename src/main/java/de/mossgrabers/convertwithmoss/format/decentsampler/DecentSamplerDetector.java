@@ -427,7 +427,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             final IGroup group = new DefaultGroup (groupName);
 
             final double groupVolumeOffset = parseVolume (groupElement, DecentSamplerTag.VOLUME);
-            final int groupPanningOffset = XMLUtils.getIntegerAttribute (groupElement, DecentSamplerTag.PANNING, 0);
+            final double groupPanningOffset = XMLUtils.getIntegerAttribute (groupElement, DecentSamplerTag.PANNING, 0) / 100.0;
             double groupTuningOffset = XMLUtils.getDoubleAttribute (groupElement, DecentSamplerTag.GROUP_TUNING, 0);
             // Actually not in the specification but support it anyway
             if (groupTuningOffset == 0)
@@ -535,7 +535,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         sampleZone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.START, -1)));
         sampleZone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.END, -1)));
         sampleZone.setGain (groupVolumeOffset + parseVolume (sampleElement, DecentSamplerTag.VOLUME));
-        sampleZone.setPanning (groupPanningOffset + XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.PANNING, 0) / 100.0);
+        sampleZone.setPanning (Math.clamp (groupPanningOffset + XMLUtils.getIntegerAttribute (sampleElement, DecentSamplerTag.PANNING, 0) / 100.0, -1, 1));
         sampleZone.setTuning (tuningOffset + XMLUtils.getDoubleAttribute (sampleElement, DecentSamplerTag.TUNING, 0));
 
         sampleZone.setPlayLogic (parsePlayLogic (this.currentGroupsElement.getAttribute (DecentSamplerTag.SEQ_MODE)));

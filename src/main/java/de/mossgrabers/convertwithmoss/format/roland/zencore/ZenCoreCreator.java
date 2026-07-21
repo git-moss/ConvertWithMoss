@@ -758,12 +758,15 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         // loops).
         pcm = storeWithGuard (pcm, channels, end, hasLoop ? loopStart : -1);
 
+        // The zone's play start: the engine skips to it on every note-on. The stored audio always
+        // begins at frame 0, so this is an index into it just like the loop points.
+        final int start = Math.clamp (zone.getStart (), 0, Math.max (0, end - 1));
         final int rootKey = Math.clamp (zone.getKeyRoot () < 0 ? zone.getKeyLow () : zone.getKeyRoot (), 0, 127);
         final int level = Math.clamp ((int) Math.round (Math.pow (10, zone.getGain () / 20.0) * 127.0), 0, 127);
 
         if (channels == 1)
         {
-            final int index = addPooledSample (pcm, rate, zone.getName (), rootKey, level, hasLoop, loopStart, end, pool, byContent, usedNames);
+            final int index = addPooledSample (pcm, rate, zone.getName (), rootKey, level, hasLoop, start, loopStart, end, pool, byContent, usedNames);
             return Optional.of (new int []
             {
                 index,
@@ -773,7 +776,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         // A stereo instrument splits the zone into two mono samples (left, right); a mono
         // instrument just keeps the left channel. Both mono samples share the loop end computed
         // above.
-        final int left = addPooledSample (extractChannel (pcm, 2, 0), rate, zone.getName () + "_L", rootKey, level, hasLoop, loopStart, end, pool, byContent, usedNames);
+        final int left = addPooledSample (extractChannel (pcm, 2, 0), rate, zone.getName () + "_L", rootKey, level, hasLoop, start, loopStart, end, pool, byContent, usedNames);
         if (!storeStereo)
             return Optional.of (new int []
             {
@@ -783,7 +786,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         return Optional.of (new int []
         {
             left,
-            addPooledSample (extractChannel (pcm, 2, 1), rate, zone.getName () + "_R", rootKey, level, hasLoop, loopStart, end, pool, byContent, usedNames)
+            addPooledSample (extractChannel (pcm, 2, 1), rate, zone.getName () + "_R", rootKey, level, hasLoop, start, loopStart, end, pool, byContent, usedNames)
         });
     }
 
@@ -799,6 +802,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param rootKey The root key of the sample
      * @param level The level of the sample
      * @param hasLoop Is the loop enabled?
+     * @param start The play start frame
      * @param loopStart The loop start frame
      * @param end The end of the sample
      * @param pool The pool with the already created samples
@@ -806,9 +810,9 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param usedNames The sample names used so far
      * @return The 1-based index into the pool
      */
-    private static int addPooledSample (final byte [] pcm, final int rate, final String zoneName, final int rootKey, final int level, final boolean hasLoop, final int loopStart, final int end, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames)
+    private static int addPooledSample (final byte [] pcm, final int rate, final String zoneName, final int rootKey, final int level, final boolean hasLoop, final int start, final int loopStart, final int end, final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames)
     {
-        final Object contentKey = List.of (ByteBuffer.wrap (pcm), Integer.valueOf (loopStart), Integer.valueOf (end), Boolean.valueOf (hasLoop), Integer.valueOf (rootKey), Integer.valueOf (level));
+        final Object contentKey = List.of (ByteBuffer.wrap (pcm), Integer.valueOf (start), Integer.valueOf (loopStart), Integer.valueOf (end), Boolean.valueOf (hasLoop), Integer.valueOf (rootKey), Integer.valueOf (level));
         final Integer existing = byContent.get (contentKey);
         if (existing != null)
             return existing.intValue ();
@@ -817,7 +821,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         // play-back parameters and the writer's layout revision (see SAMPLE_FORMAT_REVISION).
         final ByteBuffer parameters = ByteBuffer.allocate (32);
         parameters.putInt (SAMPLE_FORMAT_REVISION).putInt (loopStart).putInt (end).putInt (hasLoop ? 1 : 0);
-        parameters.putInt (rootKey).putInt (level).putInt (rate);
+        parameters.putInt (rootKey).putInt (level).putInt (rate).putInt (start);
         final CRC32 crc = new CRC32 ();
         crc.update (pcm);
         crc.update (parameters.array ());
@@ -830,6 +834,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         sample.originalKey = rootKey;
         sample.level = level;
         sample.hasLoop = hasLoop;
+        sample.start = start;
         sample.loopStart = loopStart;
         sample.end = end;
         pool.add (sample);
@@ -856,7 +861,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      */
     private static void ensureLoadableSamplePool (final List<SvzSample> pool, final Map<Object, Integer> byContent, final Set<String> usedNames)
     {
-        addPooledSample (new byte [128], SAMPLE_RATE, "Spacer", 60, 0, false, 0, 64, pool, byContent, usedNames);
+        addPooledSample (new byte [128], SAMPLE_RATE, "Spacer", 60, 0, false, 0, 0, 64, pool, byContent, usedNames);
     }
 
 

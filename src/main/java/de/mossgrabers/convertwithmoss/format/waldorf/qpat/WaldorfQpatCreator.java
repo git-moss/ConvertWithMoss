@@ -67,6 +67,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         TYPE_LOOKUP.put (Integer.valueOf (2), WaldorfQpatResourceType.USER_SAMPLE_MAP3);
     }
 
+    private int                                                nextImportNumber       = 0;
+
 
     /**
      * Constructor.
@@ -81,10 +83,30 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     /** {@inheritDoc} */
     @Override
+    public void clearCancelled ()
+    {
+        super.clearCancelled ();
+
+        this.nextImportNumber = this.settingsConfiguration.getNumberPrefixStart ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final String sampleName = createSafeFilename (multisampleSource.getName ());
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "qpat");
+        final String fileName;
+        if (this.settingsConfiguration.addNumberPrefix ())
+        {
+            // Mirrors the naming of the device's own preset export, a 5-digit number (e.g.
+            // '05002-Name.qpat'); on import the device assigns the preset to that number
+            fileName = String.format ("%05d-%s", Integer.valueOf (this.nextImportNumber), sampleName);
+            this.nextImportNumber++;
+        }
+        else
+            fileName = sampleName;
+        final File multiFile = this.createUniqueFilename (destinationFolder, fileName, "qpat");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final String relativeSamplePath = "samples/" + sampleName;
@@ -260,7 +282,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // producing an invalid, doubled path (e.g. "3:2:samples/...") so the samples could
                 // not be backed up. A relative path both loads and exports/backs up cleanly
                 // (confirmed on Iridium OS 4).
-                sb.append ('"').append (relativeSamplePath).append ('/').append (StringUtils.fixASCII (zone.getName ())).append (".wav\"\t");
+                // The name must be sanitized exactly like the sample file which is written for the
+                // zone (see AbstractCreator.createSampleFilename), otherwise the device cannot
+                // resolve the sample and shows the "Find Sample Map" screen. The folder part of the
+                // path is created with the same method as well.
+                sb.append ('"').append (relativeSamplePath).append ('/').append (createSafeFilename (zone.getName ())).append (".wav\"\t");
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
                 // note is lower!

@@ -160,7 +160,7 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
                 }
 
                 sampleBlockOutput.write (0x0A);
-                sampleBlockOutput.write (filename.length () + offset);
+                StreamUtils.write7bitNumberLSB (sampleBlockOutput, filename.length () + offset);
                 writeAscii (sampleBlockOutput, filename, true);
                 sampleBlockOutput.write (sampleByteArray);
 
@@ -169,7 +169,7 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
 
             // Write the sample block
             multisampleOutput.write (KorgmultisampleConstants.ID_SAMPLE);
-            multisampleOutput.write (sbByteArray.length);
+            StreamUtils.write7bitNumberLSB (multisampleOutput, sbByteArray.length);
             multisampleOutput.write (sbByteArray);
         }
     }
@@ -262,7 +262,9 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
         final double gain = zone.getGain ();
         if (gain != 0)
         {
-            final float v = (float) Math.clamp (gain * 1000, -1000, 1000);
+            // The level is a percentage in the range of [-100..100] which relates to
+            // [-12..12]dB
+            final float v = (float) Math.clamp (gain / 12.0 * 100.0, -100, 100);
             sampleOutput.write (KorgmultisampleConstants.ID_LEVEL_LEFT);
             writeFloatLittleEndian (sampleOutput, v);
             sampleOutput.write (KorgmultisampleConstants.ID_LEVEL_RIGHT);

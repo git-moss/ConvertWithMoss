@@ -8,15 +8,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.zip.ZipOutputStream;
-
-import javax.sound.sampled.UnsupportedAudioFileException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -278,9 +274,12 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.setIntegerAttribute (zoneElement, "midi_fine_tune", (int) Math.round ((tune - coarseTuning) * 100.0));
         XMLUtils.setIntegerAttribute (zoneElement, "midi_keycents", (int) Math.round (zone.getKeyTracking () * 100.0));
 
-        // Create loop
+        // Create loop. 'loop_mode' must always be written since a missing attribute is not
+        // interpreted as 'no loop' but as a forward loop.
         final List<ISampleLoop> loops = zone.getLoops ();
-        if (!loops.isEmpty ())
+        if (loops.isEmpty ())
+            XMLUtils.setIntegerAttribute (zoneElement, "loop_mode", 0);
+        else
         {
             int loopMode = 1;
             final ISampleLoop loop = loops.get (0);
@@ -363,38 +362,32 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 
     /** {@inheritDoc} */
     @Override
+    protected boolean requiresRewrite (final DestinationAudioFormat destinationFormat)
+    {
+        // Bliss stores all samples in FLAC format, therefore they always need to be re-written by
+        // the rewriteFile method below - which also applies the trimming of the zone start/end.
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     protected void rewriteFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final OutputStream outputStream, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
         final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
         if (sampleDataOpt.isEmpty ())
             return;
 
-        // Trim and convert to FLAC
+        // Trim sample from zone start to end
         ISampleData sampleData = sampleDataOpt.get ();
-        final Path tempFile = Files.createTempFile ("CWM-", ".flac");
-        try
+        if (zone.getStart () > 0)
         {
-            // Trim sample from zone start to end
-            if (zone.getStart () > 0)
-            {
-                final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
-                trimStartToEnd (waveFile, zone);
-                sampleData = new WavFileSampleData (waveFile);
-            }
+            final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
+            trimStartToEnd (waveFile, zone);
+            sampleData = new WavFileSampleData (waveFile);
+        }
 
-            // It is important to write to a file otherwise the FLAC header is broken!
-            AudioFileUtils.compressToFLAC (sampleData, FLAC_TARGET_FORMAT, tempFile.toFile ());
-
-            Files.copy (tempFile, outputStream);
-        }
-        catch (final UnsupportedAudioFileException ex)
-        {
-            throw new IOException (ex);
-        }
-        finally
-        {
-            Files.deleteIfExists (tempFile);
-        }
+        outputStream.write (AudioFileUtils.compressToFLAC (sampleData));
     }
 
 

@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -76,6 +78,23 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
     /** The maximum number of drums in a kit (one per note from 36 up to 127). */
     private static final int    MAX_KIT_DRUMS            = 92;
+
+    /** Matches a "Kit &lt;number&gt;" occurrence (whole word) used to derive a short kit name. */
+    private static final Pattern KIT_NUMBER_PATTERN      = Pattern.compile ("(?i)\\bkit\\s*(\\d{1,4})");
+    /**
+     * Matches a name segment that carries no identity of its own - a bare "Kit NN", a date
+     * (6-8 digits) or a version ("v2") - so it can be skipped in favour of a more meaningful
+     * segment and is never given a redundant number prefix.
+     */
+    private static final Pattern REDUNDANT_SEGMENT       = Pattern.compile ("(?i)^(?:kit\\s*\\d{1,4}|\\d{6,8}|v(?:er|ersion)?\\.?\\s*\\d+)$");
+    /**
+     * Matches a trailing date (6-8 digits) or version ("v2") suffix, preceded by a separator, so
+     * it can be stripped. A model number like "TR-808" or "R-50" is 1-4 digits and is never
+     * matched, so it is preserved.
+     */
+    private static final Pattern VERSION_DATE_SUFFIX     = Pattern.compile ("(?i)[\\s_-]+(?:v(?:er|ersion)?\\.?\\s*\\d+|\\d{6,8})$");
+    /** Splits a name into segments on the common separators (surrounded by spaces). */
+    private static final Pattern NAME_SEPARATOR          = Pattern.compile ("\\s+[-/:|]\\s+");
 
 
     /**
@@ -154,7 +173,10 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
         // Create a unique preset file inside the preset folder
         safeCreateDirectory (presetFolder);
-        final File presetFile = this.createUniqueFilename (presetFolder, createSafeFilename (multisampleSource.getName ()), "xml");
+        // A kit name can optionally be shortened to "NNN <last name segment>" so it does not
+        // scroll as much on the device display
+        final String outputName = createKit && this.settingsConfiguration.isShortenKitName () ? shortenKitName (multisampleSource.getName ()) : multisampleSource.getName ();
+        final File presetFile = this.createUniqueFilename (presetFolder, createSafeFilename (outputName), "xml");
         final String baseName = FileUtils.getNameWithoutType (presetFile);
         this.notifier.log ("IDS_NOTIFY_STORING", presetFile.getAbsolutePath ());
 
@@ -246,6 +268,55 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             return DelugeTag.POLYPHONIC_POLY;
         // Legato does not re-trigger the envelopes as long as another key is held down
         return multisampleSource.isMonophonicLegato () ? DelugeTag.POLYPHONIC_LEGATO : DelugeTag.POLYPHONIC_MONO;
+    }
+
+
+    /**
+     * Shorten a kit name for the device display: keep the last " - " separated segment and, if the
+     * name contains a "Kit &lt;number&gt;", prefix that number zero-padded to three digits. For
+     * example "80s hits SSS043 - Kit 07 - Full Kit 2" becomes "007 Full Kit 2". If there is no such
+     * number the last segment is used on its own.
+     *
+     * @param name The full name
+     * @return The shortened name
+     */
+    private static String shortenKitName (final String name)
+    {
+        final String [] segments = NAME_SEPARATOR.split (name.trim ());
+        String lastSegment = segments.length == 0 ? name.trim () : segments[segments.length - 1].trim ();
+        // A last segment that carries no identity (a bare "Kit NN", a date or a version) is
+        // skipped in favour of the preceding one (e.g. "Vintage - Kit 12" -> "012 Vintage")
+        if (segments.length >= 2 && REDUNDANT_SEGMENT.matcher (lastSegment).matches ())
+            lastSegment = segments[segments.length - 2].trim ();
+        // Strip a trailing date or version suffix (e.g. "SynthesizerPercussion-20220718")
+        lastSegment = stripVersionSuffix (lastSegment);
+
+        // Prefix the "Kit" number, unless the remaining name is itself only a redundant token
+        // (which would double up the number, e.g. a kit literally named "Kit 2022")
+        final Matcher matcher = KIT_NUMBER_PATTERN.matcher (name);
+        if (matcher.find () && !REDUNDANT_SEGMENT.matcher (lastSegment).matches ())
+            return String.format (Locale.US, "%03d %s", Integer.valueOf (Integer.parseInt (matcher.group (1))), lastSegment);
+        return lastSegment;
+    }
+
+
+    /**
+     * Strip a trailing date (6-8 digits) or version ("v2") suffix from a name segment, keeping the
+     * result non-empty. Shorter runs of digits (model numbers like "808" or "50") are preserved.
+     *
+     * @param segment The name segment
+     * @return The segment without a trailing date/version suffix
+     */
+    private static String stripVersionSuffix (final String segment)
+    {
+        final Matcher matcher = VERSION_DATE_SUFFIX.matcher (segment);
+        if (matcher.find ())
+        {
+            final String stripped = segment.substring (0, matcher.start ()).trim ();
+            if (!stripped.isEmpty ())
+                return stripped;
+        }
+        return segment;
     }
 
 

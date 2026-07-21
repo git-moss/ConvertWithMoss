@@ -38,13 +38,16 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     }
 
 
-    private static final String OUTPUT_TYPE     = "OutputType";
-    private static final String CONSOLIDATE_KIT = "ConsolidateKit";
+    private static final String OUTPUT_TYPE      = "OutputType";
+    private static final String CONSOLIDATE_KIT  = "ConsolidateKit";
+    private static final String SHORTEN_KIT_NAME = "ShortenKitName";
 
     private ComboBox<String>    outputTypeBox;
     private CheckBox            consolidateKitBox;
-    private OutputType          outputType      = OutputType.SOUND;
+    private CheckBox            shortenKitNameBox;
+    private OutputType          outputType       = OutputType.SOUND;
     private boolean             consolidateKit;
+    private boolean             shortenKitName;
 
 
     /**
@@ -70,6 +73,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
         this.outputTypeBox.setMaxWidth (Double.MAX_VALUE);
         panel.addComponent (this.outputTypeBox);
         this.consolidateKitBox = panel.createCheckBox ("@IDS_DELUGE_CONSOLIDATE_KIT", "@IDS_DELUGE_CONSOLIDATE_KIT_TOOLTIP");
+        this.shortenKitNameBox = panel.createCheckBox ("@IDS_DELUGE_SHORTEN_KIT_NAME", "@IDS_DELUGE_SHORTEN_KIT_NAME_TOOLTIP");
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
         return panel.getPane ();
@@ -82,6 +86,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     {
         this.outputTypeBox.getSelectionModel ().select (config.getInteger (this.prefix + OUTPUT_TYPE, 0));
         this.consolidateKitBox.setSelected (config.getBoolean (this.prefix + CONSOLIDATE_KIT, false));
+        this.shortenKitNameBox.setSelected (config.getBoolean (this.prefix + SHORTEN_KIT_NAME, false));
 
         super.loadSettings (config);
     }
@@ -93,6 +98,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     {
         config.setInteger (this.prefix + OUTPUT_TYPE, this.outputTypeBox.getSelectionModel ().getSelectedIndex ());
         config.setBoolean (this.prefix + CONSOLIDATE_KIT, this.consolidateKitBox.isSelected ());
+        config.setBoolean (this.prefix + SHORTEN_KIT_NAME, this.shortenKitNameBox.isSelected ());
 
         super.saveSettings (config);
     }
@@ -107,6 +113,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
 
         this.outputType = indexToType (this.outputTypeBox.getSelectionModel ().getSelectedIndex ());
         this.consolidateKit = this.consolidateKitBox.isSelected ();
+        this.shortenKitName = this.shortenKitNameBox.isSelected ();
         return true;
     }
 
@@ -120,6 +127,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
 
         this.outputType = parseType (parameters.remove (this.prefix + OUTPUT_TYPE));
         this.consolidateKit = "1".equals (parameters.remove (this.prefix + CONSOLIDATE_KIT));
+        this.shortenKitName = "1".equals (parameters.remove (this.prefix + SHORTEN_KIT_NAME));
         return true;
     }
 
@@ -131,6 +139,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
         final List<String> parameterNames = new ArrayList<> (Arrays.asList (super.getCLIParameterNames ()));
         parameterNames.add (this.prefix + OUTPUT_TYPE);
         parameterNames.add (this.prefix + CONSOLIDATE_KIT);
+        parameterNames.add (this.prefix + SHORTEN_KIT_NAME);
         return parameterNames.toArray (new String [parameterNames.size ()]);
     }
 
@@ -154,6 +163,17 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     public boolean isConsolidateKit ()
     {
         return this.consolidateKit;
+    }
+
+
+    /**
+     * Should a kit be given a short name ("NNN &lt;last name segment&gt;") for the device display?
+     *
+     * @return True to shorten the kit name
+     */
+    public boolean isShortenKitName ()
+    {
+        return this.shortenKitName;
     }
 
 

@@ -296,11 +296,12 @@ Furthermore, even this basic setup has some limitations:
 
 ### Preset (.tvpst)
 
-In contrast to the mapping files, a Tonverk preset is a full sound that also contains the synthesizer parameters. All three generator machines are read:
+In contrast to the mapping files, a Tonverk preset is a full sound that also contains the synthesizer parameters. The sample-based generator machines are read:
 
 * **Multi**: a multi-sample mapped to key- and velocity-ranges.
 * **One-Shot**: a single sample mapped across the whole keyboard.
 * **Drum**: a kit of eight drum voices, each on its own key with its own settings.
+* **Grainer**: granular playback of a single sample. Since grains cannot be represented in the multi-sample model, the sample is converted like a One-Shot; the granular engine parameters are not converted.
 
 The amplitude envelope (AHD or ADSR), the multi-mode filter together with its envelope, the sample loops, gain and panning are converted. The remaining, synthesizer-specific parameters (arpeggiator, effects, global LFOs and the modulation matrix) have no equivalent in the multi-sample model and are therefore not converted.
 
@@ -411,6 +412,18 @@ The korgmultisample format is currently used by the Korg wavestate and modwave k
 Since the format is pretty simple all data stored in the file is available for the conversion.
 
 Since the format supports only one group of a multi-sample, multiple destination files are created for each group available in the source. If there is more than one group in the source the name of the created file has the velocity range of the group added. Using that information a multi-sample with up to 4 groups can be created as a Performance in the device.
+
+## Kurzweil K2000/K2500/K2600
+
+The Kurzweil K2000 (1991), K2500 and K2600 samplers/synthesizers share one object file format with the extensions *.krz*, *.k25* and *.k26*. A file is a bank of numbered objects: programs (presets), keymaps (the mapping of sample recordings across the keys and the 8 dynamic velocity levels) and samples, which may contain several recordings (multiple root keys, stereo pairs). The layout was derived from the source code of the GPL tool KurzFiler by Marc Halbruegge (see *documentation/design/KURZWEIL_FORMAT.md*).
+
+When reading, each program becomes one multi-sample: its layers reference keymaps from which the key ranges, velocity levels, root keys, tunings, volume adjusts, loops and the 16-bit sample data are read. Keymaps and samples which are not referenced by any program are converted as multi-samples of their own. Many factory and commercial K-series files map samples from the device ROM which is not present in the file; such zones cannot be converted and are skipped with a note.
+
+When writing, a file is created which uses only K2000 features and therefore loads on all three device families (the current Kurzweil range - K2700, PC4, Forte - imports these files as well). Each multi-sample becomes a program with one layer and a keymap; the velocity layers of the source are quantized onto the 8 dynamic levels of the keymap. One sample object is written per zone (16-bit; the sample rate is kept up to 96kHz, the maximum sample playback rate of the devices) with the zone gain in its volume adjust. Since the device plays a loop until the end of the sample, the data after the loop end is cut off. If any zone is stereo, all samples of the program are written as stereo pairs. The keymap covers MIDI notes 12-127 (C0-G9 in Kurzweil terms), keys below are dropped. Several multi-samples can be written into one file as a library; if the object IDs (200-999 per type) do not suffice, multiple files are created.
+
+#### Destination Options
+
+* Target Device: Selects the device family for which the file is named: *K2000 (krz)*, *K2500 (k25)* or *K2600 (k26)*. Since the written objects use only K2000 features, the selection only sets the file extension.
 
 ## Logic EXS24
 
@@ -703,6 +716,7 @@ The Deluge has no loop cross-fade parameter of its own, so - exactly like the Re
 
 * Output Type: Choose whether to write a *Synth (Sound)* preset (the default) or a *Drum Kit*. A kit writes one drum per sample; use it for drum/percussion sets. CLI: `DelugeOutputType=kit` (or `sound`).
 * Consolidate kit (one drum per type): For a *Drum Kit*, reduce the kit to a single drum per recognized type (kick, snare, hi-hat, tom, ...) and order the drums by drum role - kick on the lowest row - following the factory TR-808 layout, so a beat can be programmed without switching rows. Several drums of the same type are reduced to the first; unrecognized drums are all kept and appended at the end. Each consolidated drum is labelled by its role (Kick, Snare, Hat Closed, ...) for a clean read-out on the device, while the sample files keep their original names. CLI: `DelugeConsolidateKit=1`.
+* Shorten kit name: For a *Drum Kit*, give the kit a short name for the device display - the last separated segment of the name (separators " - ", " / ", " : ", " | "), prefixed with the zero-padded "Kit" number if present (e.g. "80s hits SSS043 - Kit 07 - Full Kit 2" becomes "007 Full Kit 2"), so it does not scroll as much on the OLED. A redundant trailing "Kit NN" segment is dropped in favour of the preceding one, and a trailing date or version suffix ("-20220718", "v2") is removed while model numbers ("TR-808", "R-50") are kept. CLI: `DelugeShortenKitName=1`.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information).
 
 ### Limitations
@@ -731,6 +745,7 @@ The volume, panning and tuning of an oscillator are offsets on top of the values
 * Re-sample to 16bit/44.1kHz: If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it might impact the performance.
 * Author: Written into the preset's Author field, which the device shows and can group presets by. When left empty, the creator from the source metadata is kept (e.g. the sound designer stored in a SoundFont).
 * Bank: Written into the preset's Bank field. When left empty, the description from the source metadata is kept.
+* Prefix file names with an import number: Prefixes each written preset file with a 5-digit number (e.g. *05002-Name.qpat*), which mirrors the naming of the device's own preset export; on import the device assigns the preset to that number. The *First import number* is used for the first written preset and each further preset increases the number by one; the source presets are converted in alphabetical order.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information)
 
 ## Yamaha YSFC

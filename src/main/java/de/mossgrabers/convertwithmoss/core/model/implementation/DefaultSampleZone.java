@@ -588,6 +588,7 @@ public class DefaultSampleZone implements ISampleZone
     public void fillMetadata (final ISampleZone other)
     {
         this.playLogic = other.getPlayLogic ();
+        this.sequencePosition = other.getSequencePosition ();
         this.triggerType = other.getTrigger ();
         this.isOneShot = other.isOneShot ();
         this.exclusiveGroup = other.getExclusiveGroup ();
@@ -610,6 +611,7 @@ public class DefaultSampleZone implements ISampleZone
         this.bendUp = other.getBendUp ();
         this.bendDown = other.getBendDown ();
         this.isReversed = other.isReversed ();
+        this.amplitudeVelocityModulator = other.getAmplitudeVelocityModulator ();
         this.amplitudeEnvelopeModulator = other.getAmplitudeEnvelopeModulator ();
         this.pitchModulator = other.getPitchEnvelopeModulator ();
         final Optional<IFilter> filterOpt = other.getFilter ();

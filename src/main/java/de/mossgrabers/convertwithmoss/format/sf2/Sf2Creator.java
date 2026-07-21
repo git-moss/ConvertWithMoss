@@ -64,6 +64,9 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
     private static final int                    PADDING                  = 46;
 
+    /** The minimum of all envelope time generators of the SoundFont specification. */
+    private static final int                    MIN_ENVELOPE_TIMECENTS   = -12000;
+
     private static final Set<Integer>           SUPPORTED_BIT_DEPTHS     = new HashSet<> ();
     static
     {
@@ -433,7 +436,8 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                 // cents = 1200 * log2 (f1 / f2), f2 = 8.176 => f1 = f2 * 2^(cents / 1200)
                 final double initialCutoff = Math.log (frequency / 8.176) * 1200.0 / Math.log (2);
                 instrumentZone.addGenerator (Generator.INITIAL_FILTER_CUTOFF, (int) Math.clamp (initialCutoff, 1500, 13500));
-                instrumentZone.addSignedGenerator (Generator.INITIAL_FILTER_RESONANCE, (int) (Math.clamp (resonance, 0, 960) * 100.0));
+                // The resonance is stored in centi-bel (dB * 10) in the range of [0..960]
+                instrumentZone.addSignedGenerator (Generator.INITIAL_FILTER_RESONANCE, Math.clamp (Math.round (resonance * 10.0), 0, 960));
 
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                 final double cutoffModDepth = cutoffModulator.getDepth ();
@@ -589,7 +593,11 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         sampleDescriptor.setSampleType (sampleType);
         sampleDescriptor.setSampleRate (formatChunk.getSampleRate ());
         sampleDescriptor.setOriginalPitch (Math.clamp (sampleZone.getKeyRoot (), 0, 127));
-        sampleDescriptor.setPitchCorrection ((int) Math.round (sampleZone.getTuning () * 100));
+        // The tuning is applied by the COARSE_TUNE and FINE_TUNE generators of the instrument
+        // zone. A synthesizer sums up the generators and the pitch correction of the sample,
+        // therefore it must not be applied here a second time. Furthermore, the pitch correction
+        // is only a signed byte and could not store more than +-127 cents anyway.
+        sampleDescriptor.setPitchCorrection (0);
 
         String name = sampleZone.getName ();
         if (name.endsWith ("-") || name.endsWith ("_"))
@@ -620,7 +628,12 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
     private static int convertEnvelopeTime (final double time)
     {
-        return (int) Math.round (Math.log (time) * 1200.0 / Math.log (2));
+        // The logarithm of zero is negative infinity. -12000 time-cents (about 1 millisecond) is
+        // the minimum of all envelope time generators in the SoundFont specification, a value of 0
+        // would mean 1 second!
+        if (time <= 0)
+            return MIN_ENVELOPE_TIMECENTS;
+        return (int) Math.max (MIN_ENVELOPE_TIMECENTS, Math.round (Math.log (time) * 1200.0 / Math.log (2)));
     }
 
 

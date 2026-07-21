@@ -177,13 +177,23 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
                     final Optional<IEnvelopeModulator> modulator = multisampleSource.getGlobalAmplitudeModulator ();
                     if (modulator.isPresent ())
                     {
-                        final IEnvelopeModulator envelopeModulator = modulator.get ();
-                        if (envelopeModulator.hashCode () > 0)
+                        final IEnvelope envelope = modulator.get ().getSource ();
+                        if (envelope.isSet ())
                         {
-                            final IEnvelope envelope = envelopeModulator.getSource ();
-                            parameters[7] = Math.clamp ((int) Math.round (Math.log (envelope.getAttackTime () / 0.001) / 0.0757), 0, 127);
-                            parameters[8] = Math.clamp ((int) Math.round (Math.log ((Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ())) / 0.02) / 0.0521), 0, 127);
-                            parameters[10] = Math.clamp ((int) Math.round (Math.log (envelope.getReleaseTime () / 0.01) / 0.0630), 0, 127);
+                            // Each stage is only written if it is set, otherwise the default value
+                            // of the parameter is kept
+                            final double attackTime = envelope.getAttackTime ();
+                            if (attackTime >= 0)
+                                parameters[7] = Math.clamp ((int) Math.round (Math.log (attackTime / 0.001) / 0.0757), 0, 127);
+                            final double decayTime = Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ());
+                            if (decayTime > 0)
+                                parameters[8] = Math.clamp ((int) Math.round (Math.log (decayTime / 0.02) / 0.0521), 0, 127);
+                            final double sustainLevel = envelope.getSustainLevel ();
+                            if (sustainLevel >= 0)
+                                parameters[9] = Math.clamp ((int) Math.round (sustainLevel * 127.0), 0, 127);
+                            final double releaseTime = envelope.getReleaseTime ();
+                            if (releaseTime >= 0)
+                                parameters[10] = Math.clamp ((int) Math.round (Math.log (releaseTime / 0.01) / 0.0630), 0, 127);
                         }
                     }
                 }

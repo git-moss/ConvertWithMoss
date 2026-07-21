@@ -232,8 +232,11 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
             final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
             if (cutoffModulator.getDepth () != 0)
             {
-                final double cutoff = PolyendTrackerValueConverter.hertzToNormalizedCutoff (filter.getCutoff ());
-                final double amount = Math.clamp (PolyendTrackerValueConverter.hertzToNormalizedCutoff (filter.getCutoff () + cutoffModulator.getDepth ()) - cutoff, 0.0, 1.0);
+                // The modulation depth is a normalized value in the range of [-1..1] and the
+                // envelope amount is a normalized cut-off offset as well. Interpreting the depth as
+                // Hertz would collapse the amount to (nearly) zero and the filter sweep would be
+                // lost.
+                final double amount = Math.clamp (cutoffModulator.getDepth (), 0.0, 1.0);
                 writeEnvelope (buffer, PolyendTrackerConstants.ENV_CUTOFF, cutoffModulator.getSource (), true, amount);
             }
         }

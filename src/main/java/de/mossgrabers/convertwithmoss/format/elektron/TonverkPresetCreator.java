@@ -61,8 +61,8 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     private static final double                 DEFAULT_VELOCITY       = 0.49411765;
     private static final int                    DRUM_VOICE_COUNT       = 8;
     private static final int                    DEFAULT_DRUM_ROOT      = 60;
-    private static final String                 MULTI_TEMPLATE         = "/de/mossgrabers/convertwithmoss/templates/tonverk/multi-template.tvpst";
-    private static final String                 DRUM_TEMPLATE          = "/de/mossgrabers/convertwithmoss/templates/tonverk/drum-template.tvpst";
+    private static final String                 MULTI_TEMPLATE         = "de/mossgrabers/convertwithmoss/templates/tonverk/multi-template.tvpst";
+    private static final String                 DRUM_TEMPLATE          = "de/mossgrabers/convertwithmoss/templates/tonverk/drum-template.tvpst";
 
     /** The absolute device folder under which a preset references its samples. */
     private static final String                 DEVICE_SAMPLE_FOLDER   = "/mnt/sdcard/User/Multi-sampled Instruments/";
@@ -310,8 +310,11 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         // Always write an ADSR envelope; a percussive sound is represented with a sustain of 0
         put (preset, prefix + "_amp_mode", "2");
         put (preset, prefix + "_amp_env_attack", TonverkValues.attackTimeToNormalized (envelope.getAttackTime ()));
+        // The hold phase only exists in the AHD mode, therefore the hold parameter is left at zero
+        // and the hold time is added to the decay time instead - the same way all other creators
+        // fold a hold phase into the decay. Otherwise the hold time would be lost.
         put (preset, prefix + "_amp_env_hold", 0.0);
-        put (preset, prefix + "_amp_env_decay", TonverkValues.decayTimeToNormalized (envelope.getDecayTime ()));
+        put (preset, prefix + "_amp_env_decay", TonverkValues.decayTimeToNormalized (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ())));
         final double sustain = envelope.getSustainLevel ();
         put (preset, prefix + "_amp_env_sustain", TonverkValues.clampNormalized (sustain < 0 ? 1.0 : sustain));
         put (preset, prefix + "_amp_env_release", TonverkValues.releaseTimeToNormalized (envelope.getReleaseTime ()));

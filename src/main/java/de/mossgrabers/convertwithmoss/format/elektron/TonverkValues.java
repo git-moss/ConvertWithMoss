@@ -89,6 +89,11 @@ public final class TonverkValues
     /** Maximum filter cut-off frequency in Hertz (normalized value 1.0). */
     private static final double MAX_CUTOFF_HZ           = 20000.0;
 
+    /** The tune range of the One-Shot (Single Player) machine in semitones (+/- 5 octaves). */
+    public static final double  ONESHOT_TUNE_RANGE      = 60.0;
+    /** The tune range of the Grainer machine in semitones (+/- 2 octaves). */
+    public static final double  GRAINER_TUNE_RANGE      = 24.0;
+
     // The values of the 'loop-mode' field of a sample slot
 
     /** The loop mode which loops the sample forward. */
@@ -249,6 +254,21 @@ public final class TonverkValues
         if (hertz >= MAX_CUTOFF_HZ)
             return 1;
         return Math.log (hertz / MIN_CUTOFF_HZ) / Math.log (MAX_CUTOFF_HZ / MIN_CUTOFF_HZ);
+    }
+
+
+    /**
+     * Convert a normalized bipolar tune value (0.5 = no pitch change) to semitones. The manual
+     * documents the tune range of the sample machines in octaves: +/- 5 octaves for the One-Shot
+     * (Single Player) and Multi Player machines, +/- 2 octaves for the Grainer machine.
+     *
+     * @param normalized The normalized value [0..1]
+     * @param rangeSemitones The tune range in semitones (the offset reached at normalized 0 and 1)
+     * @return The tune offset in semitones [-rangeSemitones..rangeSemitones]
+     */
+    public static double normalizedToTune (final double normalized, final double rangeSemitones)
+    {
+        return (clampNormalized (normalized) - 0.5) * 2.0 * rangeSemitones;
     }
 
 

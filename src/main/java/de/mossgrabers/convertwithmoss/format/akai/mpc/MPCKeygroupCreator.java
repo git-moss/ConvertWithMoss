@@ -221,7 +221,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_TUNE, "0");
         // The root note is strangely one more then the lower upper keys!
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ROOT_NOTE, Integer.toString (limitToDefault (zone.getKeyRoot (), limitToDefault (zone.getKeyLow (), 0)) + 1));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_KEY_TRACK, MPCKeygroupTag.TRUE);
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_KEY_TRACK, zone.getKeyTracking () == 0 ? "False" : "True");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME, zoneName);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
@@ -432,7 +432,9 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
     {
         final double v = 12 + (volumeDB > 6 ? 6 : volumeDB);
         final double result = MPCKeygroupConstants.VALUE_RANGE * v / 18.0;
-        return MPCKeygroupConstants.MINUS_12_DB + result;
+        // Volumes below about -21.8 dB run the linear extrapolation past the bottom of the field,
+        // which must stay in 0..1 (0 = -Inf dB)
+        return Math.clamp (MPCKeygroupConstants.MINUS_12_DB + result, 0, MPCKeygroupConstants.PLUS_6_DB);
     }
 
 

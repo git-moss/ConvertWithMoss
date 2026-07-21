@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -39,22 +38,41 @@ import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Detector for Elektron Tonverk preset files (*.tvpst). Supports all three generator machines:
- * Multi (multi-sample), One-Shot (single sample) and Drum (a kit of up to several voices). The
- * amplitude envelope, the filter and its envelope, sample loops, gain and panning are read into the
- * model. The remaining, synth-specific parameters (arpeggiator, FX, global LFOs, modulation matrix)
- * have no representation in the multi-sample model and are therefore not converted.
+ * Detector for Elektron Tonverk preset files (*.tvpst). Supports the sample based generator
+ * machines: Multi (multi-sample), One-Shot (single sample), Drum (a kit of up to several voices)
+ * and Grainer (granular playback of a single sample, converted like a One-Shot). The amplitude
+ * envelope, the filter and its envelope, sample loops, tuning, gain and panning are read into the
+ * model. The remaining, synth-specific parameters (granular engine settings, arpeggiator, FX,
+ * global LFOs, modulation matrix) have no representation in the multi-sample model and are
+ * therefore not converted.
  *
  * @author Jürgen Moßgraber
  */
 public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 {
     /** The number of poles of the Tonverk multi-mode filter (12 dB/octave). */
-    private static final int    FILTER_POLES        = 2;
-    /** The MIDI note the One-Shot machine is centered on. */
-    private static final int    ONESHOT_ROOT_NOTE   = 60;
+    private static final int           FILTER_POLES            = 2;
+    /** The MIDI note the One-Shot and Grainer machines are centered on. */
+    private static final int           SINGLE_SAMPLE_ROOT_NOTE = 60;
     /** The mount point under which the device stores absolute sample paths. */
-    private static final String DEVICE_MOUNT_PREFIX = "/mnt/sdcard/";
+    private static final String        DEVICE_MOUNT_PREFIX     = "/mnt/sdcard/";
+
+    /**
+     * The filter types of the Grainer machine. In contrast to the continuously morphing multi-mode
+     * filter of the other machines, the type is an index into a fixed list: Low-pass 4, Low-pass 2,
+     * Band-pass 2, High-pass 2, Low-pass notch, Notch 1, Notch 2. The low-pass notch and the two
+     * notch variants are mapped to the closest model type.
+     */
+    private static final FilterType [] GRAINER_FILTER_TYPES    =
+    {
+        FilterType.LOW_PASS,
+        FilterType.LOW_PASS,
+        FilterType.BAND_PASS,
+        FilterType.HIGH_PASS,
+        FilterType.LOW_PASS,
+        FilterType.BAND_REJECTION,
+        FilterType.BAND_REJECTION
+    };
 
 
     /**
@@ -97,7 +115,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         switch (preset.machine)
         {
             case MULTI -> groups = this.buildMultiGroups (sourceFile, preset);
-            case ONESHOT -> groups = this.buildOneShotGroups (sourceFile, preset);
+            case ONESHOT, GRAINER -> groups = this.buildSingleSampleGroups (sourceFile, preset);
             case DRUM -> groups = this.buildDrumGroups (sourceFile, preset);
             default -> {
                 // A file that parsed without any parameters is empty or corrupt (e.g. a zero-filled
@@ -176,18 +194,20 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Build the single group of a One-Shot machine: one sample mapped across the whole keyboard.
-     * The sample start/end and loop points are stored normalized [0..1] and are scaled by the
-     * number of sample frames.
+     * Build the single group of a One-Shot or Grainer machine: one sample mapped across the whole
+     * keyboard. The sample start/end and loop points of the One-Shot machine are stored normalized
+     * [0..1] and are scaled by the number of sample frames. The Grainer machine plays its sample as
+     * grains; since these cannot be represented in the model, the sample is converted with its
+     * tuning, envelope and filter but plain (non-granular) playback.
      *
      * @param sourceFile The source file
      * @param preset The preset
      * @return The converted groups
      * @throws IOException Could not read
      */
-    private List<IGroup> buildOneShotGroups (final File sourceFile, final TonverkPresetFile preset) throws IOException
+    private List<IGroup> buildSingleSampleGroups (final File sourceFile, final TonverkPresetFile preset) throws IOException
     {
-        final String prefix = Machine.ONESHOT.getParameterPrefix ();
+        final String prefix = preset.machine.getParameterPrefix ();
         final Optional<File> sampleFile = resolveSample (sourceFile, preset.param (prefix + "_sample_slot"));
         if (sampleFile.isEmpty ())
         {
@@ -196,7 +216,15 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         final ISampleZone zone = this.createSampleZone (sampleFile.get ());
-        zone.setKeyRoot (ONESHOT_ROOT_NOTE);
+
+        // The bipolar tune (0.5 = no pitch change) spans +/- 5 octaves for the One-Shot but only
+        // +/- 2 octaves for the Grainer machine. Bake the full semitones into the root note (more
+        // portable than a large tuning offset) and keep the sub-semitone remainder as tuning.
+        final double tuneRange = preset.machine == Machine.GRAINER ? TonverkValues.GRAINER_TUNE_RANGE : TonverkValues.ONESHOT_TUNE_RANGE;
+        final double tune = TonverkValues.normalizedToTune (preset.paramDouble (prefix + "_tune", 0.5), tuneRange);
+        final int keyRoot = Math.clamp (SINGLE_SAMPLE_ROOT_NOTE - Math.round (tune), 0, 127);
+        zone.setKeyRoot (keyRoot);
+        zone.setTuning (tune - (SINGLE_SAMPLE_ROOT_NOTE - keyRoot));
         zone.setKeyLow (0);
         zone.setKeyHigh (127);
         zone.setVelocityLow (0);
@@ -342,7 +370,8 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param zone The zone
      * @param preset The preset
-     * @param prefix The parameter prefix ('gen_multi', 'gen_oneshot' or 'gen_drum_voiceN')
+     * @param prefix The parameter prefix ('gen_multi', 'gen_oneshot', 'gen_granular' or
+     *            'gen_drum_voiceN')
      */
     private static void applyAmplitudeEnvelope (final ISampleZone zone, final TonverkPresetFile preset, final String prefix)
     {
@@ -365,19 +394,35 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Apply the Tonverk filter and its DADSR envelope (parameters &lt;prefix&gt;_filter_*) to a
-     * zone.
+     * zone. The Grainer machine has no filter envelope; its absent parameters leave the modulation
+     * depth at zero.
      *
      * @param zone The zone
      * @param preset The preset
-     * @param prefix The parameter prefix ('gen_multi', 'gen_oneshot' or 'gen_drum_voiceN')
+     * @param prefix The parameter prefix ('gen_multi', 'gen_oneshot', 'gen_granular' or
+     *            'gen_drum_voiceN')
      */
     private static void applyFilter (final ISampleZone zone, final TonverkPresetFile preset, final String prefix)
     {
         final double cutoff = TonverkValues.normalizedToCutoff (preset.paramDouble (prefix + "_filter_frequency", 1.0));
         final double resonance = TonverkValues.clampNormalized (preset.paramDouble (prefix + "_filter_resonance", 0));
-        final FilterType type = mapFilterType (preset.paramDouble (prefix + "_filter_type", 0));
 
-        final IFilter filter = new DefaultFilter (type, FILTER_POLES, cutoff, resonance);
+        final FilterType type;
+        final int poles;
+        if (preset.machine == Machine.GRAINER)
+        {
+            final int typeIndex = Math.clamp (preset.paramInt (prefix + "_filter_type", 0), 0, GRAINER_FILTER_TYPES.length - 1);
+            type = GRAINER_FILTER_TYPES[typeIndex];
+            // Only the first Grainer filter type (Low-pass 4) is a 24 dB/octave filter
+            poles = typeIndex == 0 ? 4 : FILTER_POLES;
+        }
+        else
+        {
+            type = mapFilterType (preset.paramDouble (prefix + "_filter_type", 0));
+            poles = FILTER_POLES;
+        }
+
+        final IFilter filter = new DefaultFilter (type, poles, cutoff, resonance);
 
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
@@ -398,7 +443,8 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param zone The zone
      * @param preset The preset
-     * @param prefix The parameter prefix ('gen_multi', 'gen_oneshot' or 'gen_drum_voiceN')
+     * @param prefix The parameter prefix ('gen_multi', 'gen_oneshot', 'gen_granular' or
+     *            'gen_drum_voiceN')
      */
     private static void applyGainAndPanning (final ISampleZone zone, final TonverkPresetFile preset, final String prefix)
     {
@@ -412,11 +458,16 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Resolve a sample referenced by its absolute device path (e.g. '/mnt/sdcard/...') to a file on
      * the local file system. The device mount prefix is stripped and the remaining relative path is
-     * resolved against the preset's folder and its parent folders.
+     * resolved against the preset's folder and all of its ancestors; additionally, leading path
+     * segments are dropped in case the mount maps deeper into the tree. Each path segment which
+     * does not exist locally is matched tolerantly against the folder entries, ignoring
+     * leading/trailing whitespace and case: the FAT file system of the device SD-card does not
+     * allow e.g. trailing spaces in names, so a local folder 'pad 03 ' is referenced as 'pad 03' by
+     * the preset.
      *
      * @param file The preset file
      * @param devicePath The absolute device path of the sample
-     * @return The resolved file or null if it could not be found
+     * @return The resolved file or empty if it could not be found
      */
     private static Optional<File> resolveSample (final File file, final String devicePath)
     {
@@ -434,28 +485,96 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         else if (relative.startsWith ("/"))
             relative = relative.substring (1);
 
-        // Resolve the full relative path against the preset folder and all of its ancestors
-        for (File directory = file.getParentFile (); directory != null; directory = directory.getParentFile ())
-        {
-            final File candidate = new File (directory, relative);
-            if (candidate.exists ())
-                return Optional.of (candidate);
-        }
-
-        // Fall back to dropping leading path segments (in case the mount maps deeper into the tree)
         final String [] segments = relative.split ("/");
-        for (int start = 1; start < segments.length; start++)
-        {
-            final String tail = String.join ("/", Arrays.copyOfRange (segments, start, segments.length));
+        for (int start = 0; start < segments.length; start++)
             for (File directory = file.getParentFile (); directory != null; directory = directory.getParentFile ())
             {
-                final File candidate = new File (directory, tail);
-                if (candidate.exists ())
+                final File candidate = resolveSegments (directory, segments, start);
+                if (candidate != null)
                     return Optional.of (candidate);
             }
-        }
 
         return Optional.empty ();
+    }
+
+
+    /**
+     * Resolve path segments (beginning at the given start index) step-wise against a base folder.
+     * Each segment is first decoded via {@link #decodeSfmCharacters}; a segment which does not
+     * exist is matched tolerantly via {@link #findTolerant}.
+     *
+     * @param baseDirectory The folder to resolve against
+     * @param segments The path segments
+     * @param startIndex The index of the first segment to resolve
+     * @return The resolved file or null if a segment could not be matched
+     */
+    private static File resolveSegments (final File baseDirectory, final String [] segments, final int startIndex)
+    {
+        File current = baseDirectory;
+        for (int i = startIndex; i < segments.length; i++)
+        {
+            final String segment = decodeSfmCharacters (segments[i]);
+            if (segment.isEmpty ())
+                continue;
+            final File exact = new File (current, segment);
+            if (exact.exists ())
+            {
+                current = exact;
+                continue;
+            }
+            current = findTolerant (current, segment);
+            if (current == null)
+                return null;
+        }
+        return current == baseDirectory ? null : current;
+    }
+
+
+    /**
+     * Decode the private-use-area characters with which the device file system stores characters
+     * that FAT does not allow (the 'Services for Macintosh' convention): U+F001-U+F01F map to the
+     * control characters 0x01-0x1F, U+F020-U+F027 to '"', '*', '/', '&lt;', '&gt;', '?', '\' and
+     * '|', a trailing space is stored as U+F028 and a trailing period as U+F029. Copying such a
+     * file to the computer restores the original character (e.g. a folder 'pad 03&lt;U+F028&gt;'
+     * becomes 'pad 03 ' with a trailing space), so the device path needs to be decoded to match.
+     *
+     * @param name The name to decode
+     * @return The decoded name
+     */
+    private static String decodeSfmCharacters (final String name)
+    {
+        final StringBuilder sb = new StringBuilder (name.length ());
+        for (int i = 0; i < name.length (); i++)
+        {
+            final char c = name.charAt (i);
+            if (c >= '\uF001' && c <= '\uF01F')
+                sb.append ((char) (c - '\uF000'));
+            else if (c >= '\uF020' && c <= '\uF029')
+                sb.append ("\"*/<>?\\| .".charAt (c - '\uF020'));
+            else
+                sb.append (c);
+        }
+        return sb.toString ();
+    }
+
+
+    /**
+     * Find an entry of a folder by name, ignoring leading/trailing whitespace and case.
+     *
+     * @param folder The folder to search in
+     * @param name The name to look for
+     * @return The found file/folder or null
+     */
+    private static File findTolerant (final File folder, final String name)
+    {
+        final File [] entries = folder.listFiles ();
+        if (entries == null)
+            return null;
+        final String trimmedName = name.trim ();
+        for (final File entry: entries)
+            if (entry.getName ().trim ().equalsIgnoreCase (trimmedName))
+                return entry;
+        return null;
     }
 
 

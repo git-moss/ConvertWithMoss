@@ -12,7 +12,9 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -314,6 +316,9 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     /**
      * Get all files with specific endings. Recursively, calls detect method on sub-folders.
+     * Sub-folders and files are processed in a stable alphabetical order independent of the file
+     * system enumeration order, so consecutive runs process the presets identically (this also
+     * gives e.g. the import file numbering of the Waldorf QPAT creator a predictable order).
      *
      * @param folder The folder to start searching
      * @param endings The file endings to match, including the dot, e.g. '.wav'
@@ -321,25 +326,35 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     protected File [] listFiles (final File folder, final String... endings)
     {
-        return folder.listFiles ((parent, name) -> {
+        final File [] children = folder.listFiles ();
+        if (children == null)
+            return null;
+        Arrays.sort (children, Comparator.comparing (File::getName, String.CASE_INSENSITIVE_ORDER));
 
+        for (final File child: children)
+        {
             if (this.isCancelled ())
-                return false;
+                break;
+            if (child.isDirectory ())
+                this.detect (child);
+        }
 
-            final File f = new File (parent, name);
-            if (f.isDirectory ())
-            {
-                this.detect (f);
-                return false;
-            }
-
-            final String lower = name.toLowerCase (Locale.US);
+        final List<File> matchingFiles = new ArrayList<> ();
+        for (final File child: children)
+        {
+            if (this.isCancelled ())
+                break;
+            if (child.isDirectory ())
+                continue;
+            final String lower = child.getName ().toLowerCase (Locale.US);
             for (final String ending: endings)
                 if (lower.endsWith (ending))
-                    return true;
-
-            return false;
-        });
+                {
+                    matchingFiles.add (child);
+                    break;
+                }
+        }
+        return matchingFiles.toArray (new File [matchingFiles.size ()]);
     }
 
 
@@ -565,15 +580,12 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             // accept all AIFF files
             if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
             {
-                // Check if it is a compressed (= encrypted) AIFC file and report accordingly
+                // Check if it is a compressed (= encrypted) AIFC file and report accordingly.
+                // AIFC files with plain PCM sound data (e.g. little-endian 'sowt') are supported.
                 final AiffFile aiffFile = new AiffFile (sampleFile);
                 final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
-                if (commonChunk != null)
-                {
-                    final String compressionType = commonChunk.getCompressionType ();
-                    if (compressionType != null)
-                        throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), commonChunk.getCompressionName (), compressionType));
-                }
+                if (commonChunk != null && !commonChunk.isPCM ())
+                    throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), commonChunk.getCompressionName (), commonChunk.getCompressionType ()));
 
                 return new AiffFileSampleData (sampleFile);
             }

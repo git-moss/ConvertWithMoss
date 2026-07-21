@@ -222,8 +222,10 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                     exs24File.addParameter (EXS24Parameters.VOLUME_KEYSCALE, (int) Math.round (Math.clamp (amplitudeKeyTracking, -1, 1) * 1000.0));
 
                 // Pitch bend up/down
-                exs24File.addParameter (EXS24Parameters.PITCH_BEND_UP, Math.clamp (Math.round (zone.getBendDown () / 100.0), 0, 24));
-                exs24File.addParameter (EXS24Parameters.PITCH_BEND_DOWN, Math.clamp (Math.round (zone.getBendDown () / 100.0), -24, 0));
+                exs24File.addParameter (EXS24Parameters.PITCH_BEND_UP, Math.clamp (Math.round (zone.getBendUp () / 100.0), 0, 24));
+                // The down amount is stored as a positive number of semi-tones, -1 is the special
+                // value for 'linked to the up amount'
+                exs24File.addParameter (EXS24Parameters.PITCH_BEND_DOWN, Math.clamp (Math.round (Math.abs (zone.getBendDown ()) / 100.0), 0, 24));
 
                 final double velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
                 final int velocityModulation = (int) Math.round (Math.clamp ((1 - velocityDepth) * -60.0, -60, 0));
@@ -280,6 +282,9 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
         final int release = formatEnvTime (envelope.getReleaseTime ());
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_DELAY_START : EXS24Parameters.ENV2_DELAY_START, delay);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_HI_VEL : EXS24Parameters.ENV2_ATK_HI_VEL, attack);
+        // The attack time at the lowest velocity must be set to the same value, otherwise it stays
+        // at 0 and the attack time gets velocity dependent
+        parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_ATK_LO_VEL : EXS24Parameters.ENV2_ATK_LO_VEL, attack);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_HOLD : EXS24Parameters.ENV2_HOLD, hold);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_DECAY : EXS24Parameters.ENV2_DECAY, decay);
         parameters.put (envelopeIndex == 1 ? EXS24Parameters.ENV1_SUSTAIN : EXS24Parameters.ENV2_SUSTAIN, sustain);

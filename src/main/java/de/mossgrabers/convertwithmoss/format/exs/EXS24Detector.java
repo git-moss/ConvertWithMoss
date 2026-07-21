@@ -494,7 +494,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         if (exs24Group.volume != 0)
             zone.setGain (exs24Group.volume + zone.getGain ());
         if (exs24Group.pan != 0)
-            zone.setPanning (zone.getPanning () + exs24Group.pan);
+            zone.setPanning (Math.clamp (zone.getPanning () + exs24Group.pan / 50.0, -1, 1));
 
         // The exclusive group is stored on the group level, apply it to all of its zones
         if (exs24Group.exclusive > 0)

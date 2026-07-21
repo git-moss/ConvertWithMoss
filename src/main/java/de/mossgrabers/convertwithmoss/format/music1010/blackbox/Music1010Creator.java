@@ -85,7 +85,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
         EMPTY_PARAM_ATTRIBUTES.put ("samtrigtype", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("polymode", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("polymodeslice", "0");
-        EMPTY_PARAM_ATTRIBUTES.put ("okegrp", "0");
+        EMPTY_PARAM_ATTRIBUTES.put ("chokegrp", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("midimode", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("midioutchan", "0");
         EMPTY_PARAM_ATTRIBUTES.put ("padnote", "0");
@@ -292,9 +292,10 @@ public class Music1010Creator extends AbstractMusic1010Creator
             final Element slotElement = activeSlots.get (i);
             final String presetPath = "\\Presets\\" + subFolder + multisampleSource.getName ();
             slotElement.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath);
-            // MIDI-channel 1 acts as the OMNI mode (0 = Off) -> offset all other channels by 1,
-            // channel 16 will be turned off
-            final int midiChannel = (instrumentSource.getMidiChannel () + 2) % 17;
+            // 0 = Off, 1..16 are the MIDI channels 1..16 whereby MIDI-channel 1 acts as the OMNI
+            // mode. Therefore, OMNI (-1) is written as MIDI-channel 1 as well - writing 'Off'
+            // instead would make the instrument not respond to MIDI at all.
+            final int midiChannel = Math.max (0, instrumentSource.getMidiChannel ()) % 16 + 1;
             XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS).setAttribute (Music1010Tag.ATTR_MIDI_MODE, Integer.toString (midiChannel));
 
             createModulators (document, slotElement, multisampleSource);

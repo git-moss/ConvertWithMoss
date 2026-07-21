@@ -268,14 +268,15 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         if (cutoffEnvelope.isPresent ())
         {
             final int base = PolyendTrackerConstants.OFF_ENVELOPES + PolyendTrackerConstants.ENV_CUTOFF * PolyendTrackerConstants.ENVELOPE_SIZE;
+            // The envelope amount is a normalized cut-off offset which matches the normalized
+            // [-1..1] modulation depth of the model. Converting it to Hertz would only be clamped
+            // to 1 when it is set as the depth.
             final double amount = Math.clamp (buffer.getFloat (base + PolyendTrackerConstants.ENV_OFF_AMOUNT), 0.0, 1.0);
-            final double depth = PolyendTrackerValueConverter.normalizedCutoffToHertz (Math.clamp (cutoff + amount, 0.0, 1.0)) - hertz;
-            if (depth != 0)
+            if (amount != 0)
             {
                 final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
                 cutoffEnvelopeModulator.setSource (cutoffEnvelope.get ());
-                IEnvelopeModulator cutoffEnvelopeModulator2 = filter.getCutoffEnvelopeModulator ();
-                cutoffEnvelopeModulator2.setDepth (depth);
+                cutoffEnvelopeModulator.setDepth (amount);
             }
         }
 
