@@ -14,6 +14,8 @@
 * TAL Sampler (thanks to Douglas Carmichael)
   * Fixed: The sample "reverse" flag was never read as enabled: it is stored numerically (0/1) like all other TAL flags but was parsed as a true/false text boolean.
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
+* User Interface (thanks to Douglas Carmichael)
+  * Fixed: The Settings and Processing dialogs opened with a bright white frame and, on macOS, repainted whenever the main window was clicked - both a risk for photo-sensitive (e.g. epileptic) users. The dialog scenes are now pre-filled with the theme background color (no white frame), the dialogs are independent, non-modal, always-on-top windows so clicking the main window no longer repaints them, they carry the base and dark-mode stylesheets directly (previously inherited only by owned dialogs), and the main action buttons are disabled while a dialog is open.
 * AIFF (thanks to Douglas Carmichael)
   * New: Added support for reading AIFC files with un-compressed PCM sound data, e.g. the little-endian ('sowt') files written by the Elektron Tonverk or the Teenage Engineering OP-1. Compressed AIFC files are still rejected with an error message.
   * Fixed: Converting an AIFF file with the file ending '.aiff' (instead of '.aif') deleted the source sample file: an internal workaround copies such files to a temporary file but the cleanup deleted the original instead of the temporary copy.
