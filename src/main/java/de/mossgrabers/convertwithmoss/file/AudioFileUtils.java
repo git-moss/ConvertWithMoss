@@ -31,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.flac.FlacEncoder;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
@@ -43,7 +44,15 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public final class AudioFileUtils
 {
-    private static final String BROKEN_WAV = "IDS_NOTIFY_ERR_BROKEN_WAV";
+    private static final String                 BROKEN_WAV             = "IDS_NOTIFY_ERR_BROKEN_WAV";
+
+    /** FLAC supports at maximum a resolution of 24 bit. */
+    private static final DestinationAudioFormat FLAC_COMPATIBLE_FORMAT = new DestinationAudioFormat (new int []
+    {
+        8,
+        16,
+        24
+    }, -1, false);
 
 
     /**
@@ -415,31 +424,66 @@ public final class AudioFileUtils
 
 
     /**
-     * Compresses the given sample data contained in the sampleData object into a specific file
-     * format (e.g. FLAC).
+     * Compresses the given sample data contained in the sampleData object into a FLAC file. Since
+     * FLAC supports at maximum a resolution of 24 bit, 32 bit samples are reduced (16 bit for
+     * 32-bit float).
      *
      * @param sampleData The sample data
-     * @param targetFormat The target format
      * @param file The file to write to
      * @throws IOException Could not read/write
-     * @throws UnsupportedAudioFileException The target audio format is not supported
      */
-    public static void compressToFLAC (final ISampleData sampleData, final AudioFileFormat.Type targetFormat, final File file) throws IOException, UnsupportedAudioFileException
+    public static void compressToFLAC (final ISampleData sampleData, final File file) throws IOException
     {
-        final byte [] wavData = convertToWavData (sampleData, new DestinationAudioFormat ());
+        Files.write (file.toPath (), compressToFLAC (sampleData));
+    }
 
-        // Create a ByteArrayInputStream from the input data array
-        try (final ByteArrayInputStream bais = new ByteArrayInputStream (wavData); AudioInputStream ais = AudioSystem.getAudioInputStream (bais))
-        {
-            final AudioFormat sourceFormat = ais.getFormat ();
-            final AudioFormat targetAudioFormat = new AudioFormat (sourceFormat.getSampleRate (), sourceFormat.getSampleSizeInBits (), sourceFormat.getChannels (), true, sourceFormat.isBigEndian ());
-            try (final AudioInputStream convertedAIS = AudioSystem.getAudioInputStream (targetAudioFormat, ais))
+
+    /**
+     * Compresses the given sample data contained in the sampleData object into FLAC. Since FLAC
+     * supports at maximum a resolution of 24 bit, 32 bit samples are reduced (16 bit for 32-bit
+     * float).
+     *
+     * @param sampleData The sample data
+     * @return The FLAC data
+     * @throws IOException Could not read the sample data
+     */
+    public static byte [] compressToFLAC (final ISampleData sampleData) throws IOException
+    {
+        final WaveFile waveFile = convertToWav (sampleData, FLAC_COMPATIBLE_FORMAT);
+        final FormatChunk formatChunk = waveFile.getFormatChunk ();
+        final int numberOfChannels = formatChunk.getNumberOfChannels ();
+        final int bitsPerSample = formatChunk.getSignificantBitsPerSample ();
+        final int bytesPerSample = bitsPerSample / 8;
+        final byte [] data = waveFile.getDataChunk ().getData ();
+
+        // De-interleave the samples of the channels; 8 bit WAV data is unsigned and therefore
+        // converted to the signed form required by FLAC
+        final int numberOfSamples = data.length / (numberOfChannels * bytesPerSample);
+        final int [] [] channels = new int [numberOfChannels] [numberOfSamples];
+        int position = 0;
+        for (int i = 0; i < numberOfSamples; i++)
+            for (int channel = 0; channel < numberOfChannels; channel++)
             {
-                // IMPORTANT: we must write to a file not a stream since with a stream the FLAC
-                // header is not updated!
-                AudioSystem.write (convertedAIS, targetFormat, file);
+                final int value;
+                switch (bytesPerSample)
+                {
+                    case 1:
+                        value = (data[position] & 0xFF) - 128;
+                        break;
+                    case 2:
+                        value = data[position] & 0xFF | data[position + 1] << 8;
+                        break;
+                    case 3:
+                        value = data[position] & 0xFF | (data[position + 1] & 0xFF) << 8 | data[position + 2] << 16;
+                        break;
+                    default:
+                        throw new IOException ("FLAC: Unsupported bit resolution: " + bitsPerSample);
+                }
+                channels[channel][i] = value;
+                position += bytesPerSample;
             }
-        }
+
+        return FlacEncoder.encode (channels, formatChunk.getSampleRate (), bitsPerSample);
     }
 
 

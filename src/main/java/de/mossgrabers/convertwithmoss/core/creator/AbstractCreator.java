@@ -30,8 +30,6 @@ import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
@@ -68,7 +66,6 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public abstract class AbstractCreator<T extends ICoreTaskSettings> extends AbstractCoreTask<T> implements ICreator<T>
 {
-    protected static final AudioFileFormat.Type   FLAC_TARGET_FORMAT                 = new AudioFileFormat.Type ("FLAC", "flac");
     /** The post-fix to use for the samples folder. */
     protected static final String                 FOLDER_POSTFIX                     = " Samples";
 
@@ -436,18 +433,16 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
-     * Writes all samples in the given audio file format from all groups into the given folder.
+     * Writes all samples in FLAC format from all groups into the given folder.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multi-sample
      * @return The written files
      * @throws IOException Could not store the samples
-     * @throws UnsupportedAudioFileException The audio format is not supported
      */
-    protected List<File> writeFlacSamples (final File sampleFolder, final IMultisampleSource multisampleSource) throws IOException, UnsupportedAudioFileException
+    protected List<File> writeFlacSamples (final File sampleFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final List<File> writtenFiles = new ArrayList<> ();
-        final String extension = "." + FLAC_TARGET_FORMAT.getExtension ();
 
         for (final IGroup group: multisampleSource.getGroups ())
         {
@@ -459,14 +454,14 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
                 final ISampleZone zone = sampleZones.get (zoneIndex);
 
-                final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, extension));
+                final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, ".flac"));
                 this.progress.notifyProgress ();
                 final Optional<ISampleData> sampleData = zone.getSampleData ();
                 if (sampleData.isEmpty ())
                     this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
                 else
                 {
-                    AudioFileUtils.compressToFLAC (sampleData.get (), FLAC_TARGET_FORMAT, file);
+                    AudioFileUtils.compressToFLAC (sampleData.get (), file);
                     writtenFiles.add (file);
                 }
             }

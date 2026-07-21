@@ -19,8 +19,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.ParameterLevel;
@@ -124,14 +122,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         safeCreateDirectory (sampleFolder);
 
         if (this.settingsConfiguration.convertToFlac ())
-            try
-            {
-                this.writeFlacSamples (sampleFolder, multisampleSource);
-            }
-            catch (final UnsupportedAudioFileException ex)
-            {
-                throw new IOException (ex);
-            }
+            this.writeFlacSamples (sampleFolder, multisampleSource);
         else
             this.writeSamples (sampleFolder, multisampleSource);
 
