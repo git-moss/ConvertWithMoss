@@ -79,9 +79,7 @@ public class ProcessingDialog extends AbstractDialog
      */
     protected ProcessingDialog (final Window owner)
     {
-        // Non-modal and (via a null owner from the caller) independent, so the main window is
-        // not repainted by macOS when it is clicked while this dialog is open
-        super (owner, "@IDS_PROCESSING_DIALOG", false, true, 400, 340);
+        super (owner, "@IDS_PROCESSING_DIALOG", true, true, 400, 340);
 
         this.setResizable (false);
 
