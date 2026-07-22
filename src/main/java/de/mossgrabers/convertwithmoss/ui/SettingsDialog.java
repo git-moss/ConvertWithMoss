@@ -35,11 +35,12 @@ public class SettingsDialog extends AbstractDialog
     /**
      * Constructor.
      *
-     * @param owner The owner of the dialog
+     * @param owner The owner of the dialog, may be null
+     * @param isModal Should the dialog be modal?
      */
-    protected SettingsDialog (final Window owner)
+    protected SettingsDialog (final Window owner, final boolean isModal)
     {
-        super (owner, "@IDS_SETTINGS_DIALOG", true, true, 400, 140);
+        super (owner, "@IDS_SETTINGS_DIALOG", isModal, true, 400, 140);
 
         this.setResizable (false);
 

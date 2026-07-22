@@ -75,11 +75,12 @@ public class ProcessingDialog extends AbstractDialog
     /**
      * Constructor.
      *
-     * @param owner The owner of the dialog
+     * @param owner The owner of the dialog, may be null
+     * @param isModal Should the dialog be modal?
      */
-    protected ProcessingDialog (final Window owner)
+    protected ProcessingDialog (final Window owner, final boolean isModal)
     {
-        super (owner, "@IDS_PROCESSING_DIALOG", true, true, 400, 340);
+        super (owner, "@IDS_PROCESSING_DIALOG", isModal, true, 400, 340);
 
         this.setResizable (false);
 
