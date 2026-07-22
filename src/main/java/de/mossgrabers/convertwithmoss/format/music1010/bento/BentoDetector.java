@@ -254,6 +254,18 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
                 this.parseSampleData (group, paramsElement, basePath, filename, ampEnvAttack, ampEnvDecay, ampEnvSustain, ampEnvRelease, defaultLoop, isReversed);
         }
 
+        // The trigger type is only available for the full instrument. 'Trigger' (0) plays the full
+        // sample and ignores a note-off.
+        if (XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0)
+            for (final ISampleZone zone: group.getSampleZones ())
+                zone.setOneShot (true);
+
+        // The choke group is only available for the full instrument, 0 means no choke group
+        final int exclusiveGroup = XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_CHOKE_GROUP, 0);
+        if (exclusiveGroup > 0)
+            for (final ISampleZone zone: group.getSampleZones ())
+                zone.setExclusiveGroup (exclusiveGroup);
+
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, new File (pathPrefix).getName (), Collections.singletonList (group));
         parseEffects (instParamsElement, multisampleSource);
         readVelocityModulators (instElement, group);

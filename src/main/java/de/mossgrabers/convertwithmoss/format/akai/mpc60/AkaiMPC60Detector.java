@@ -218,6 +218,9 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setGain (MathUtils.valueToDb (pad.volume / 127.0));
         sampleZone.setPanning (pad.panning / 127.0 * 2.0 - 1.0);
 
+        // The exclusive group already uses 0 for 'off' like the model
+        sampleZone.setExclusiveGroup (Math.clamp (pad.exclusive, 0, 3));
+
         final IAudioMetadata audioMetadata = pad.sampleData.getAudioMetadata ();
         final int sampleLength = audioMetadata.getNumberOfSamples ();
         final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();

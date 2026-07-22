@@ -25,6 +25,12 @@ public class SfzOpcode
     public static final String GLOBAL_LABEL          = "global_label";
 
     // -----------------------------------------------------------
+    // Voice life-cycle opcodes
+
+    /** SFZ v2. The maximum number of voices which can be played at the same time. */
+    public static final String POLYPHONY             = "polyphony";
+
+    // -----------------------------------------------------------
     // Group opcodes
 
     /** ARIA. Sets what is displayed in the default info tab of Sforzando. */
@@ -153,6 +159,10 @@ public class SfzOpcode
     public static final String AMP_RELEASE           = "amp_release";
     /** Amplifier velocity tracking. */
     public static final String AMP_VELOCITY_TRACK    = "amp_veltrack";
+    /** SFZ v1. Amplitude key tracking in decibels per key, relative to the amplitude center key. */
+    public static final String AMP_KEY_TRACK         = "amp_keytrack";
+    /** SFZ v1. The key at which the amplitude key tracking has no effect. */
+    public static final String AMP_KEY_CENTER        = "amp_keycenter";
 
     // -----------------------------------------------------------
     // Filter opcodes

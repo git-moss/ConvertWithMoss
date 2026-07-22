@@ -199,8 +199,7 @@ public class AkaiMPC60Set
         final int unknownByte14 = input.read ();
 
         // Values: 0,1,2,3 -> the three available HiHat settings?
-        @SuppressWarnings("unused")
-        final int exclusive = input.read ();
+        pad.exclusive = input.read ();
 
         return pad;
     }

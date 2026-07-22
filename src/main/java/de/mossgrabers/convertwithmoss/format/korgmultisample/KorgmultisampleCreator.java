@@ -210,7 +210,8 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
             StreamUtils.write7bitNumberLSB (sampleOutput, end);
         }
 
-        if (loops.isEmpty ())
+        // A sample without a loop is always played back to its end as well
+        if (zone.isOneShot () || loops.isEmpty ())
         {
             sampleOutput.write (KorgmultisampleConstants.ID_ONE_SHOT);
             sampleOutput.write (1);

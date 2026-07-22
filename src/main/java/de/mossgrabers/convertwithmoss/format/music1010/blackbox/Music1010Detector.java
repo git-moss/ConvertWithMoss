@@ -230,7 +230,12 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         final ISampleZone sampleZone = new DefaultSampleZone (zoneName, sampleData);
 
         // No trigger
+        // The trigger type 'Trigger' (0) plays the full sample and ignores a note-off
         final boolean isOneShot = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0;
+        sampleZone.setOneShot (isOneShot);
+
+        // The choke group of the pad, 0 means no choke group
+        sampleZone.setExclusiveGroup (Math.max (0, XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_CHOKE_GROUP, 0)));
 
         final int start = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0);
         sampleZone.setStart (start);
@@ -320,6 +325,18 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
                 if (filename != null && !filename.isBlank ())
                     this.parseSampleData (group, assetElement, previousFolder, basePath, filename, ampEnvAttack, ampEnvDecay, ampEnvSustain, ampEnvRelease);
             }
+
+            // The trigger type is only available for the full instrument. 'Trigger' (0) plays the
+            // full sample and ignores a note-off.
+            if (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 1) == 0)
+                for (final ISampleZone zone: group.getSampleZones ())
+                    zone.setOneShot (true);
+
+            // The choke group is only available for the full instrument, 0 means no choke group
+            final int exclusiveGroup = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_CHOKE_GROUP, 0);
+            if (exclusiveGroup > 0)
+                for (final ISampleZone zone: group.getSampleZones ())
+                    zone.setExclusiveGroup (exclusiveGroup);
 
             parseEffects (paramsElement, multisampleSource);
         }

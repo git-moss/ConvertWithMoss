@@ -18,6 +18,9 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class AkaiS900Keygroup
 {
+    /** The key-group flag which enables the one-shot trigger mode. */
+    public static final int        FLAG_ONE_SHOT = 0x08;
+
     private final int              keyHigh;
     private final int              keyLow;
     private final int              velocitySwitchValue;

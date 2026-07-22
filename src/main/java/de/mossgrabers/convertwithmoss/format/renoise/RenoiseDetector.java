@@ -153,7 +153,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         final List<ModulationSet> modulationSets = parseModulationSets (sampleGenerator);
 
         final String overlapMode = XMLUtils.getChildElementContent (sampleGenerator, RenoiseTag.KEYZONE_OVERLAPPING_MODE);
-        final boolean roundRobin = RenoiseTag.OVERLAP_CYCLE.equals (overlapMode) || RenoiseTag.OVERLAP_RANDOM.equals (overlapMode);
+        final PlayLogic overlapPlayLogic = toPlayLogic (overlapMode);
 
         // Collect all audio files in the SampleData folder for positional matching
         final List<String> sampleEntries = collectSampleEntries (zipFile);
@@ -178,7 +178,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         String name = XMLUtils.getChildElementContent (top, RenoiseTag.NAME);
         if (name == null || name.isBlank ())
             name = FileUtils.getNameWithoutType (sourceFile);
-        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groupByVelocity (zones, roundRobin));
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groupByVelocity (zones, overlapPlayLogic));
 
         final Optional<String> comments = readComments (top);
         if (comments.isPresent ())
@@ -221,6 +221,13 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         final int transpose = XMLUtils.getChildElementIntegerContent (sampleElement, RenoiseTag.TRANSPOSE, 0);
         final int finetune = XMLUtils.getChildElementIntegerContent (sampleElement, RenoiseTag.FINETUNE, 0);
         zone.setTuning (RenoiseValueConverter.toTuning (transpose, finetune));
+
+        // 'OneShotTrigger' ignores a note-off and always plays the sample to its end
+        zone.setOneShot ("true".equalsIgnoreCase (XMLUtils.getChildElementContent (sampleElement, RenoiseTag.ONE_SHOT)));
+
+        // 'MuteGroupIndex' is zero-based, -1 marks a sample which is not part of a mute group
+        final int muteGroupIndex = XMLUtils.getChildElementIntegerContent (sampleElement, RenoiseTag.MUTE_GROUP_INDEX, RenoiseValueConverter.MUTE_GROUP_NONE);
+        zone.setExclusiveGroup (RenoiseValueConverter.muteGroupToExclusiveGroup (muteGroupIndex));
 
         zone.setStart (0);
         try
@@ -510,10 +517,11 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      * velocity range becomes one group / velocity layer).
      *
      * @param zones The parsed zones
-     * @param roundRobin True to additionally flag overlapping same-range zones as round-robin
+     * @param overlapPlayLogic The play logic to apply to overlapping same-range zones,
+     *            {@link PlayLogic#ALWAYS} if all overlapping zones are played simultaneously
      * @return The groups
      */
-    private static List<IGroup> groupByVelocity (final List<ISampleZone> zones, final boolean roundRobin)
+    private static List<IGroup> groupByVelocity (final List<ISampleZone> zones, final PlayLogic overlapPlayLogic)
     {
         final Map<String, IGroup> groups = new LinkedHashMap<> ();
         for (final ISampleZone zone: zones)
@@ -522,7 +530,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             groups.computeIfAbsent (key, k -> new DefaultGroup ("Velocity " + k)).addSampleZone (zone);
         }
 
-        if (roundRobin)
+        if (overlapPlayLogic != PlayLogic.ALWAYS)
             for (final IGroup group: groups.values ())
             {
                 // Zones that share an identical key and velocity range form a round-robin set
@@ -536,13 +544,31 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                     final String key = rangeKey (zone);
                     if (counts.get (key).intValue () > 1)
                     {
-                        zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                        zone.setPlayLogic (overlapPlayLogic);
                         zone.setSequencePosition (positions.merge (key, Integer.valueOf (1), Integer::sum).intValue ());
                     }
                 }
             }
 
         return new ArrayList<> (groups.values ());
+    }
+
+
+    /**
+     * Convert the keyzone overlapping mode of the instrument into the play logic to apply to
+     * overlapping zones.
+     *
+     * @param overlapMode The keyzone overlapping mode as stored in the instrument
+     * @return The matching play logic, {@link PlayLogic#ALWAYS} if all overlapping zones are played
+     *         simultaneously
+     */
+    private static PlayLogic toPlayLogic (final String overlapMode)
+    {
+        if (RenoiseTag.OVERLAP_CYCLE.equals (overlapMode))
+            return PlayLogic.ROUND_ROBIN;
+        if (RenoiseTag.OVERLAP_RANDOM.equals (overlapMode))
+            return PlayLogic.RANDOM;
+        return PlayLogic.ALWAYS;
     }
 
 

@@ -22,7 +22,6 @@ public class AkaiMPC1000Pad
     @SuppressWarnings("unused")
     private final int                     voiceOverlap;
     /** 0="Off", 1 to 32 */
-    @SuppressWarnings("unused")
     private final int                     muteGroup;
     private final int                     attack;
     private final int                     decay;
@@ -132,6 +131,18 @@ public class AkaiMPC1000Pad
     public List<AkaiMPC1000Sample> getSamples ()
     {
         return this.samples;
+    }
+
+
+    /**
+     * Get the mute group. All sounding notes of the same group are stopped when a note of that
+     * group is started.
+     *
+     * @return The mute group: 0 = Off, 1 to 32
+     */
+    public int getMuteGroup ()
+    {
+        return this.muteGroup;
     }
 
 

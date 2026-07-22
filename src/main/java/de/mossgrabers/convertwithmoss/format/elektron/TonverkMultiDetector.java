@@ -115,7 +115,7 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
             sampleZone.setStart (sampleSlot.trimStart != null && sampleSlot.trimStart.intValue () >= 0 ? sampleSlot.trimStart.intValue () : 0);
             sampleZone.setStop (sampleSlot.trimEnd != null && sampleSlot.trimEnd.intValue () >= 0 ? sampleSlot.trimEnd.intValue () : frames);
 
-            if ("Forward".equals (sampleSlot.loopMode))
+            if (TonverkValues.LOOP_MODE_FORWARD.equals (sampleSlot.loopMode))
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
                 loop.setType (LoopType.FORWARDS);
@@ -128,6 +128,10 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
                 loop.setLoopUntilRelease (sampleSlot.keepLoopingOnRelease == null || !sampleSlot.keepLoopingOnRelease.booleanValue ());
                 sampleZone.getLoops ().add (loop);
             }
+
+            // Note: a loop mode of 'Off' must not be read back as a one-shot. It is also what is
+            // written for every sample which simply has no loop, therefore it is no evidence that
+            // a note-off should be ignored.
 
             sampleZones.add (sampleZone);
         }

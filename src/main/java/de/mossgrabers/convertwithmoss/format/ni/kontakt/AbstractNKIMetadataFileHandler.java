@@ -336,6 +336,9 @@ public abstract class AbstractNKIMetadataFileHandler
 
                     isReverse = loop.getType () == LoopType.BACKWARDS;
                 }
+                // A one-shot which has no loop is described by a loop entry with the one-shot mode
+                if (loops.isEmpty () && zone.isOneShot ())
+                    loopsContent.append (this.addOneShotLoop (loopTemplate));
                 zoneContent = zoneContent.replace ("%ZONE_LOOPS%", loopsContent.toString ());
                 zonesText.append (zoneContent);
 
@@ -349,16 +352,43 @@ public abstract class AbstractNKIMetadataFileHandler
             final double ampVelocityMod = firstZone == null ? 1 : firstZone.getAmplitudeVelocityModulator ().getDepth ();
             final boolean keyTracking = firstZone == null || firstZone.getKeyTracking () > 0;
             final boolean isReleaseTrigger = firstZone != null && firstZone.getTrigger () == TriggerType.RELEASE;
+            // If the amplitude envelope ignores note-off events the sample is always played back to
+            // its end, which means it is a one-shot. Only supported by the Kontakt 2 template.
+            final boolean isOneShot = firstZone != null && firstZone.isOneShot ();
             groupContent = addModulators (firstZone, groupContent);
             groupContent = groupContent.replace ("%AMP_VELOCITY_MOD%", formatDouble (ampVelocityMod));
             groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
+            groupContent = groupContent.replace ("%GROUP_ONE_SHOT%", isOneShot ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_KEY_TRACKING%", keyTracking ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_RELEASE_TRIGGER%", isReleaseTrigger ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_REVERSE%", isReverse ? "yes" : "no");
+            // The voice group can only be set on the group, therefore all of its zones need to
+            // agree on the exclusive group. The model uses 0 for 'no group' but Kontakt uses a zero
+            // based index with -1 for 'no group', therefore the index is shifted by one
+            final int exclusiveGroup = getUniformExclusiveGroup (zones);
+            groupContent = groupContent.replace ("%GROUP_VOICE_GROUP%", Integer.toString (exclusiveGroup == 0 ? -1 : exclusiveGroup - 1));
             groupsText.append (groupContent);
         }
 
         return groupsText.toString () + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_03_Groups_Zones.xml") + zonesText.toString ();
+    }
+
+
+    /**
+     * Get the exclusive group which is shared by all given zones.
+     *
+     * @param zones The zones to check
+     * @return The exclusive group or 0 if there are no zones or they do not all use the same one
+     */
+    private static int getUniformExclusiveGroup (final List<ISampleZone> zones)
+    {
+        if (zones.isEmpty ())
+            return 0;
+        final int exclusiveGroup = zones.get (0).getExclusiveGroup ();
+        for (final ISampleZone zone: zones)
+            if (zone.getExclusiveGroup () != exclusiveGroup)
+                return 0;
+        return exclusiveGroup;
     }
 
 
@@ -400,6 +430,27 @@ public abstract class AbstractNKIMetadataFileHandler
         loopContent = loopContent.replace ("%LOOP_ALTERNATING%", loop.getType () == LoopType.ALTERNATING ? "yes" : "no");
         loopContent = loopContent.replace ("%LOOP_TUNING%", Float.toString ((float) Math.pow (2.0, loop.getTuning () / 12.0)));
         return loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
+    }
+
+
+    /**
+     * Creates a loop entry which marks the zone as a one-shot, which means that note-off events are
+     * ignored and the sample is always played back to its end. The loop positions are not used in
+     * that mode.
+     *
+     * @param loopTemplate The template of a loop
+     * @return The filled loop template
+     */
+    private String addOneShotLoop (final String loopTemplate)
+    {
+        String loopContent = loopTemplate.replace ("%LOOP_INDEX%", "0");
+
+        loopContent = loopContent.replace ("%LOOP_START%", "0");
+        loopContent = loopContent.replace ("%LOOP_LENGTH%", "0");
+        loopContent = loopContent.replace ("%LOOP_MODE%", this.tags.oneshotValue ());
+        loopContent = loopContent.replace ("%LOOP_ALTERNATING%", "no");
+        loopContent = loopContent.replace ("%LOOP_TUNING%", Float.toString (1.0f));
+        return loopContent.replace ("%LOOP_XFADE%", "0");
     }
 
 
@@ -702,6 +753,7 @@ public abstract class AbstractNKIMetadataFileHandler
         final IGroup group = new DefaultGroup ();
         group.setName (this.getGroupName (groupElement));
         final Map<String, String> groupParameters = this.readParameters (groupElement);
+        this.readGroupValues (group, groupParameters);
         final Optional<IFilter> filter = this.readFilter (groupElement);
 
         final Map<String, IEnvelopeModulator> groupInternalModulators = this.readGroupInternalModulators (groupElement);
@@ -713,8 +765,87 @@ public abstract class AbstractNKIMetadataFileHandler
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
         final List<ISampleZone> zones = this.getSampleMetadataFromZones (programParameters, groupParameters, groupInternalModulators, groupElement, groupZones, pitchBend, ampVelocityMod, sourcePath, monolithSamples, filter);
         group.setSampleZones (zones);
+        // The one-shot setting is stored on the group's amplitude envelope but the model keeps it
+        // on the zone
+        if (this.readGroupOneShot (groupElement))
+            for (final ISampleZone zone: zones)
+                zone.setOneShot (true);
         this.parseRoundRobin (groupElement, zones);
         return Optional.of (group);
+    }
+
+
+    /**
+     * Reads the gain, panning and tuning of a group and stores them on the group. Note that these
+     * values are (and must stay) applied to each of the sample zones of the group as well, see the
+     * reading of a sample zone. A creator must therefore apply either the group or the zone value
+     * but never both.
+     *
+     * @param group The group on which to store the values
+     * @param groupParameters The parameters of the group
+     */
+    private void readGroupValues (final IGroup group, final Map<String, String> groupParameters)
+    {
+        try
+        {
+            // The volume is a linear factor, 1 is the neutral value
+            final double groupVolume = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupVolParam ());
+            if (groupVolume != 1)
+                group.setGain (20.0d * Math.log10 (groupVolume));
+        }
+        catch (final ValueNotAvailableException _)
+        {
+            // The parameter is optional, keep the neutral default
+        }
+
+        try
+        {
+            final double groupPan = this.normalizePanning (AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupPanParam ()));
+            if (groupPan != 0)
+                group.setPanning (Math.clamp (groupPan, -1.0d, 1.0d));
+        }
+        catch (final ValueNotAvailableException _)
+        {
+            // The parameter is optional, keep the neutral default
+        }
+
+        try
+        {
+            final double groupTune = this.tags.calculateGroupTune (AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ()));
+            if (groupTune != 0)
+                group.setTuning (groupTune);
+        }
+        catch (final ValueNotAvailableException _)
+        {
+            // The parameter is optional, keep the neutral default
+        }
+    }
+
+
+    /**
+     * Reads the note-off-less mode of the group's amplitude envelope. If it is enabled, note-off
+     * events are ignored and the sample is always played back to its end (one-shot). The parameter
+     * is only present from Kontakt 2 onwards.
+     *
+     * @param groupElement The group element
+     * @return True if the group is played back as a one-shot
+     */
+    private boolean readGroupOneShot (final Element groupElement)
+    {
+        final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.intModulatorsElement ());
+        if (modulatorsElement == null)
+            return false;
+
+        for (final Element modulatorElement: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.intModulatorElement ()))
+        {
+            final Element envElement = XMLUtils.getChildElementByName (modulatorElement, this.tags.envelopeElement ());
+            if (envElement == null || this.hasNameValuePairs (modulatorElement, this.tags.bypassParam (), this.tags.yes ()))
+                continue;
+            final Optional<String> modulationTarget = this.getModulationTarget (modulatorElement);
+            if (modulationTarget.isPresent () && this.tags.targetVolValue ().equals (modulationTarget.get ()) && this.hasNameValuePairs (envElement, this.tags.noteOffLessModeParam (), this.tags.yes ()))
+                return true;
+        }
+        return false;
     }
 
 
@@ -874,6 +1005,20 @@ public abstract class AbstractNKIMetadataFileHandler
             zone.setReversed (reversed.equals (this.tags.yes ()));
         }
 
+        // Kontakt stores the voice group as a zero based index with -1 for 'no group' but the model
+        // uses 0 for 'no group', therefore the index is shifted by one
+        final String voiceGroup = groupParameters.get (this.tags.voiceGroupParam ());
+        if (voiceGroup != null && !voiceGroup.isBlank ())
+            try
+            {
+                final int voiceGroupIndex = Integer.parseInt (voiceGroup.trim ());
+                zone.setExclusiveGroup (voiceGroupIndex < 0 ? 0 : voiceGroupIndex + 1);
+            }
+            catch (final NumberFormatException _)
+            {
+                // Ignore an unparsable voice group
+            }
+
         this.readLoopInformation (zoneElement, zone);
 
         sampleMetadataList.add (zone);
@@ -1007,7 +1152,10 @@ public abstract class AbstractNKIMetadataFileHandler
 
             // If it is a one shot then there is no loop
             if (loopMode.equals (this.tags.oneshotValue ()))
+            {
+                sampleMetadata.setOneShot (true);
                 continue;
+            }
 
             LoopType loopType = LoopType.FORWARDS;
             if ((loopMode.equals (this.tags.untilEndValue ()) || loopMode.equals (this.tags.untilReleaseValue ())) && alternatingLoop.equals (this.tags.yes ()))

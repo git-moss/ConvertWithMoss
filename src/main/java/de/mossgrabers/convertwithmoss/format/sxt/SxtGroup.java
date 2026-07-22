@@ -18,20 +18,28 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 class SxtGroup
 {
+    /** The value of 'keyMode' for playing legato, the envelopes are not re-triggered. */
+    public static final int KEY_MODE_LEGATO    = 46;
+    /** The value of 'keyMode' for re-triggering the envelopes with each new note. */
+    public static final int KEY_MODE_RETRIGGER = 47;
+
+    /** The maximum value of the 'keyPolyphony' parameter. */
+    public static final int MAX_POLYPHONY      = 99;
+
     /** MinValue = 1, MaxValue = 99, Default = 8. */
-    int keyPolyphony = 8;
+    int                     keyPolyphony       = 8;
 
     /** Legato = 46, Retrigger = 47, Default = 47. */
-    int keyMode      = 47;
+    int                     keyMode            = KEY_MODE_RETRIGGER;
 
     /** MinValue = 0, MaxValue = 1, Default = 0 */
-    int groupMono    = 0;
+    int                     groupMono          = 0;
 
     /** MinValue = 0, MaxValue = 127, Default = 0 */
-    int portamento   = 0;
+    int                     portamento         = 0;
 
     /** MinValue = -9700, MaxValue = 4500, Default = -536 */
-    int lfo1Freq     = -536;
+    int                     lfo1Freq           = -536;
 
 
     /**

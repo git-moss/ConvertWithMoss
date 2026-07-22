@@ -167,6 +167,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 }
 
             final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groups);
+            multisampleSource.setPolyphony (TALSamplerConstants.denormalizeVoices (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PROGRAM_NUM_VOICES, 1.0)));
             final Optional<IFilter> optFilter = parseModulationAttributes (programElement, multisampleSource);
             if (optFilter.isPresent ())
                 multisampleSource.setGlobalFilter (optFilter.get ());
@@ -236,6 +237,9 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setKeyHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, -1));
         zone.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, -1));
         zone.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, -1));
+
+        // The mute group is the exclusive group, 0 means that the sample is not assigned to one
+        zone.setExclusiveGroup (Math.max (0, XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.MUTE_GROUP, 0)));
 
         // No note and velocity cross-fades
 

@@ -504,6 +504,7 @@ class SxtZone
             modEnvelope.setDecayTime (envelopeTimeCentsToSeconds (this.modEnvDecay));
             modEnvelope.setSustainLevel (this.modEnvSustain / 1000.0);
             modEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.modEnvRelease));
+            modEnvelope.setTimeKeyTracking (keyToDecayToKeyTracking (this.modEnvKeyToDecay));
         }
 
         // -----------------------------------------------------------
@@ -567,6 +568,7 @@ class SxtZone
                 modEnvelope.setDecayTime (envelopeTimeCentsToSeconds (this.modEnvDecay));
                 modEnvelope.setSustainLevel (this.modEnvSustain / 1000.0);
                 modEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.modEnvRelease));
+                modEnvelope.setTimeKeyTracking (keyToDecayToKeyTracking (this.modEnvKeyToDecay));
             }
 
             if (this.velocityToFilterFreq != 0)
@@ -593,6 +595,7 @@ class SxtZone
         ampEnvelope.setDecayTime (envelopeTimeCentsToSeconds (this.ampEnvDecay));
         ampEnvelope.setSustainLevel (this.ampEnvSustain / 1000.0);
         ampEnvelope.setReleaseTime (envelopeTimeCentsToSeconds (this.ampEnvRelease));
+        ampEnvelope.setTimeKeyTracking (keyToDecayToKeyTracking (this.ampEnvKeyToDecay));
 
         // Set gain and panning
         zone.setGain (20 * Math.log10 (Math.pow ((this.ampEnvGain + 1440) / 1440.0, 3)));
@@ -654,7 +657,9 @@ class SxtZone
             this.sampleLoopEnd = loop.getEnd ();
         }
 
-        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+        // NN-XT can only alternate between the zones. A random selection is therefore cycled as
+        // well instead of falling back to playing all zones at once
+        if (zone.getPlayLogic () != PlayLogic.ALWAYS)
             this.alternateMode = 1;
 
         // -----------------------------------------------------------
@@ -689,6 +694,7 @@ class SxtZone
             final double sustain = modEnvelope.getSustainLevel ();
             this.modEnvSustain = sustain < 0 ? 1000 : (int) (sustain * 1000);
             this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getReleaseTime ());
+            this.modEnvKeyToDecay = keyTrackingToKeyToDecay (modEnvelope.getTimeKeyTracking ());
         }
 
         // -----------------------------------------------------------
@@ -759,6 +765,7 @@ class SxtZone
                 final double sustain = modEnvelope.getSustainLevel ();
                 this.modEnvSustain = sustain < 0 ? 1000 : (int) (sustain * 1000);
                 this.modEnvRelease = envelopeTimeSecondsToCents (modEnvelope.getReleaseTime ());
+                this.modEnvKeyToDecay = keyTrackingToKeyToDecay (modEnvelope.getTimeKeyTracking ());
             }
 
             final double cutoffVelocityAmount = filter.getCutoffVelocityModulator ().getDepth ();
@@ -797,6 +804,7 @@ class SxtZone
         final double sustain = ampEnvelope.getSustainLevel ();
         this.ampEnvSustain = sustain < 0 ? 1000 : (int) (sustain * 1000);
         this.ampEnvRelease = envelopeTimeSecondsToCents (ampEnvelope.getReleaseTime ());
+        this.ampEnvKeyToDecay = keyTrackingToKeyToDecay (ampEnvelope.getTimeKeyTracking ());
 
         final double ampVelocityAmount = zone.getAmplitudeVelocityModulator ().getDepth ();
         if (ampVelocityAmount != 0)
@@ -808,6 +816,38 @@ class SxtZone
         this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3.0) * 1440.0 - 1440);
 
         this.pan = (int) (zone.getPanning () * 1000.0);
+    }
+
+
+    /**
+     * Convert the 'Key to Decay' parameter of a NN-XT envelope into the key tracking of the
+     * envelope times.
+     * <p>
+     * The scaling of the parameter is not documented. 1000 is used for the full amount, since all
+     * other normalized parameters of a NN-XT zone (e.g. the panning, the envelope sustain levels,
+     * the filter resonance and all modulation amounts) use 1000 for 100%. A positive value is
+     * assumed to shorten the envelope times towards higher keys, which is the same direction as the
+     * one of the model.
+     *
+     * @param keyToDecay The 'Key to Decay' parameter
+     * @return The key tracking in the range of [-1..1]
+     */
+    private static double keyToDecayToKeyTracking (final int keyToDecay)
+    {
+        return Math.clamp (keyToDecay / 1000.0, -1.0, 1.0);
+    }
+
+
+    /**
+     * Convert the key tracking of the envelope times into the 'Key to Decay' parameter of a NN-XT
+     * envelope. See {@link #keyToDecayToKeyTracking(int)} for the scaling.
+     *
+     * @param keyTracking The key tracking in the range of [-1..1]
+     * @return The 'Key to Decay' parameter
+     */
+    private static int keyTrackingToKeyToDecay (final double keyTracking)
+    {
+        return (int) Math.round (Math.clamp (keyTracking, -1.0, 1.0) * 1000.0);
     }
 
 

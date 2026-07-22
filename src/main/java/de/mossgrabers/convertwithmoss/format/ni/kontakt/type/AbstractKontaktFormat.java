@@ -122,6 +122,11 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             // Only on a group level...
             zone.setReversed (kontaktGroup.isReverse ());
 
+            // Kontakt stores the voice group as a zero based index with -1 for 'no group' but the
+            // model uses 0 for 'no group', therefore the index is shifted by one
+            final int voiceGroupIdx = kontaktGroup.getVoiceGroupIdx ();
+            zone.setExclusiveGroup (voiceGroupIdx < 0 ? 0 : voiceGroupIdx + 1);
+
             // IMPROVE Fill Filter info, when understood where it is stored
             final IFilter filter = null;
 
@@ -182,6 +187,9 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
                 final int loopMode = zoneLoop.getMode ();
+                // A one-shot ignores note-off events and has no loop
+                if (loopMode == ZoneLoop.MODE_ONESHOT)
+                    zone.setOneShot (true);
                 if (loopMode == ZoneLoop.MODE_UNTIL_END || loopMode == ZoneLoop.MODE_UNTIL_RELEASE)
                 {
                     loop.setType (zoneLoop.isAlternating () ? LoopType.ALTERNATING : LoopType.FORWARDS);
@@ -234,6 +242,22 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             group.setName (kontaktGroup.getName ());
             if (kontaktGroup.isReleaseTrigger ())
                 group.setTrigger (TriggerType.RELEASE);
+
+            // Additionally record the group values on the group. Note that they are (and must stay)
+            // multiplied into each of the sample zones as well, see fillInto. A creator must
+            // therefore apply either the group or the zone value but never both.
+            final double groupVolume = kontaktGroup.getVolume ();
+            if (groupVolume != 1)
+                group.setGain (MathUtils.valueToDb (groupVolume));
+            // The panning is already stored in the range of [-1..1]
+            final double groupPan = kontaktGroup.getPan ();
+            if (groupPan != 0)
+                group.setPanning (Math.clamp (groupPan, -1, 1));
+            // The tuning is stored logarithmically as a frequency ratio, 1 is the neutral value
+            final double groupTune = kontaktGroup.getTune ();
+            if (groupTune > 0 && groupTune != 1)
+                group.setTuning (Math.round (12.0 * Math.log (groupTune) / Math.log (2) * 100000) / 100000.0);
+
             map.put (Integer.valueOf (i), new Pair<> (group, kontaktGroup));
         }
         return map;

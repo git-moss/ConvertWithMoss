@@ -205,6 +205,8 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setGain (MathUtils.valueToDb (Math.max (sample.getLevel (), 1) / 127.0) + sample.getGain ());
         zone.setTuning (sample.getFineTune () / 100.0);
 
+        // A one-shot ignores a note-off and plays the sample up to its end
+        zone.setOneShot (sample.getLoopMode () == ZenCoreSample.LOOP_MODE_ONE_SHOT);
         if (sample.getLoopMode () != ZenCoreSample.LOOP_MODE_ONE_SHOT && sample.getEndPoint () > sample.getLoopStart ())
         {
             final ISampleLoop loop = new DefaultSampleLoop ();

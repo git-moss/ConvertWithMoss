@@ -172,6 +172,9 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setStart (PolyendTrackerValueConverter.normalizedToFrame (buffer.getShort (PolyendTrackerConstants.OFF_START) & 0xFFFF, frames));
         zone.setStop (PolyendTrackerValueConverter.normalizedToFrame (buffer.getShort (PolyendTrackerConstants.OFF_END) & 0xFFFF, frames));
 
+        // A one-shot ignores a note-off and always plays the sample to its end
+        zone.setOneShot (playmode == PolyendTrackerConstants.PLAYMODE_ONESHOT);
+
         final LoopType loopType = switch (playmode)
         {
             case PolyendTrackerConstants.PLAYMODE_FORWARD_LOOP -> LoopType.FORWARDS;

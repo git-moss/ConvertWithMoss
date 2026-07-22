@@ -179,6 +179,8 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
         // 0 = Forward, 1 = Alternating, 2 = One-Shot, 3 = Reverse
         final int loopMode = tone.getLoopMode ();
         sampleZone.setReversed (loopMode == 3);
+        // One-Shot ignores a note-off and plays the sample up to its end
+        sampleZone.setOneShot (loopMode == 2);
         if (loopMode < 2)
         {
             final ISampleLoop sampleLoop = new DefaultSampleLoop ();

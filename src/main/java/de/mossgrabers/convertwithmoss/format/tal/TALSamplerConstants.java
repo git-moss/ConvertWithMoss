@@ -32,6 +32,16 @@ public class TALSamplerConstants
 
     /** The current file format version to set. */
     public static final String       CURRENT_VERSION = "9";
+
+    /**
+     * The maximum number of voices which can be played. Like all other parameters of the format,
+     * the number of voices is not stored as a plain count but normalized into the range of [0..1].
+     * It selects one of 12 discrete steps, therefore the normalized value is
+     * <code>(voices - 1) / 11</code>. This was confirmed with the factory presets, which only
+     * contain the values 0.0 (1 voice, used by the monophonic bass and lead presets), 1/11, 4/11,
+     * 5/11 and 7/11 (8 voices, which is the most frequently used value).
+     */
+    public static final int          MAX_VOICES      = 12;
     /** The IDs to for the 4 layers. */
     protected static final String [] LAYERS          = new String []
     {
@@ -52,6 +62,30 @@ public class TALSamplerConstants
         2,
         1
     };
+
+
+    /**
+     * Convert a number of voices into the normalized value of the number of voices parameter.
+     *
+     * @param voices The number of voices
+     * @return The normalized value in the range of [0..1]
+     */
+    public static double normalizeVoices (final int voices)
+    {
+        return (Math.clamp (voices, 1, MAX_VOICES) - 1) / (double) (MAX_VOICES - 1);
+    }
+
+
+    /**
+     * Convert the normalized value of the number of voices parameter into a number of voices.
+     *
+     * @param normalizedVoices The normalized value in the range of [0..1]
+     * @return The number of voices in the range of [1..12]
+     */
+    public static int denormalizeVoices (final double normalizedVoices)
+    {
+        return (int) Math.round (Math.clamp (normalizedVoices, 0.0, 1.0) * (MAX_VOICES - 1)) + 1;
+    }
 
 
     /**

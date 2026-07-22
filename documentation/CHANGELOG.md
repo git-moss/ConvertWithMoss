@@ -18,8 +18,20 @@
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
 * Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
   * New: Added a creator option to prefix written preset file names with a 5-digit import number (e.g. 05002-Name.qpat), mirroring the device's own export naming so the device assigns each preset to that number on import.
+  * New: The oscillator volume and panning are now preserved instead of always being written as 0 dB / Center, so a Quantum/Iridium round-trip keeps them.
+  * Fixed: The oscillator volume and panning overwrote the volume and panning of the sample map entries instead of being combined with them, which is what made a round-trip lose them.
+  * Fixed: A preset without an oscillator panning panned all of its samples half right, because the converted [-1..1] panning was initialized with a value of the raw [0..1] range.
 * Backend (thanks to Douglas Carmichael)
   * New: Source folders and files are now processed in a stable alphabetical order instead of the file-system enumeration order, so consecutive runs behave identically (and e.g. the QPAT import numbers are assigned in a predictable order).
+  * New: Added support for the one-shot playback mode (a note-off is ignored and the sample is always played back to its end): Ableton, Akai AKP, Akai MPC, Akai MPC1000, Akai S900, Akai S1000, Kontakt, Korg multisample, Logic EXS24, 1010music blackbox/bento, Polyend Tracker, Renoise, Roland MV-8000, Roland S-5xx, Roland S-7xx, Roland ZEN-Core, SFZ, Synclavier, Synthstrom Deluge, Tonverk, TX16Wx, Yamaha YSFC. Formats previously collapsed this into "has no loop" or guessed it from the envelope.
+  * New: Added support for exclusive ('choke') groups, which stop all sounding notes of the same group when a note of that group starts, e.g. a closed hi-hat cutting off an open one: Akai MPC1000, Akai MPC60, DLS, Kontakt, Logic EXS24, 1010music blackbox/bento, Renoise, Roland MV-8000, SoundFont 2, TAL Sampler, Yamaha YSFC.
+  * New: Added support for a random play logic next to round-robin: Ableton, Akai MPC, DecentSampler, Logic EXS24, Renoise, Yamaha YSFC. Formats which cannot express a random selection now fall back to round-robin instead of playing all layers at once.
+  * New: Added support for amplitude keyboard-tracking, the counterpart of the filter cutoff keyboard-tracking: Akai S1000, DLS, Logic EXS24, Roland MV-8000, Roland S-7xx, SFZ, Synthstrom Deluge, Yamaha YSFC.
+  * New: Added support for envelope time keyboard- and velocity-scaling, which scales the envelope times by the played key and velocity (as opposed to the already supported slopes, which describe the curvature of a segment): Akai S1000, Ensoniq EPS/ASR, Ensoniq Mirage, Logic EXS24, Reason NN-XT, Roland S-7xx, SoundFont 2, Yamaha YSFC.
+  * New: Added support for per-instrument voice settings (polyphony and monophonic legato): Akai S1000, DecentSampler, Disting EX, Ensoniq Mirage, Logic EXS24, Reason NN-XT, Roland S-7xx, SFZ, Synthstrom Deluge, TAL Sampler.
+  * New: Added support for group volume, panning and tuning offsets: Kontakt, DecentSampler, Logic EXS24, Synclavier, TX16Wx, Waldorf Quantum/Iridium.
+  * Fixed: Two filters which differed only in their cutoff envelope were treated as equal, so zones which are not identical could be combined into one; a filter with a cutoff envelope but without a cutoff velocity modulation could additionally throw an exception.
+  * Fixed: The two Roland S-7xx envelope time key-follow fields were read as unsigned although they are signed.
 * Elektron Tonverk Preset (thanks to Douglas Carmichael)
   * New: Read the Grainer generator machine (granular playback of a single sample). Since grains cannot be represented in the multi-sample model, the sample is converted like a One-Shot and the granular engine parameters are not converted.
 * User Interface (thanks to Douglas Carmichael)

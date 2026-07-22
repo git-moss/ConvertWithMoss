@@ -169,4 +169,14 @@ public class K2Tag extends AbstractTagsAndAttributes
         final double value = 12.0 * (Math.log (zoneTune) / Math.log (2) + groupTune + progTune);
         return Math.round (value * 100000) / 100000.0;
     }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double calculateGroupTune (final double groupTune)
+    {
+        // The group tune is simply in the range of [-3..3] where 1 equals a full octave, 0 is
+        // neutral
+        return Math.round (12.0 * groupTune * 100000) / 100000.0;
+    }
 }

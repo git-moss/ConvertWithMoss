@@ -28,7 +28,11 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
 {
     private File         sourceFile;
     private String []    subPath;
-    private List<IGroup> groups = Collections.emptyList ();
+    private List<IGroup> groups             = Collections.emptyList ();
+
+    private int          polyphony          = 0;
+    private boolean      isMonophonicLegato = false;
+    private double       portamentoTime     = 0;
 
 
     /**
@@ -291,5 +295,53 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
                 if (zone.getKeyHigh () > highestKey)
                     highestKey = zone.getKeyHigh ();
         return highestKey;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getPolyphony ()
+    {
+        return this.polyphony;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPolyphony (final int polyphony)
+    {
+        this.polyphony = polyphony;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isMonophonicLegato ()
+    {
+        return this.isMonophonicLegato;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setMonophonicLegato (final boolean isMonophonicLegato)
+    {
+        this.isMonophonicLegato = isMonophonicLegato;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getPortamentoTime ()
+    {
+        return this.portamentoTime;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPortamentoTime (final double portamentoTime)
+    {
+        this.portamentoTime = portamentoTime;
     }
 }

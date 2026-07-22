@@ -41,7 +41,12 @@ public enum ZonePlay
      */
     public static ZonePlay from (final PlayLogic playLogic)
     {
-        return playLogic == PlayLogic.ROUND_ROBIN ? CYCLE : VELOCITY;
+        return switch (playLogic)
+        {
+            case ROUND_ROBIN -> CYCLE;
+            case RANDOM -> ZonePlay.RANDOM;
+            default -> VELOCITY;
+        };
     }
 
 
@@ -52,6 +57,11 @@ public enum ZonePlay
      */
     public PlayLogic to ()
     {
-        return this == CYCLE ? PlayLogic.ROUND_ROBIN : PlayLogic.ALWAYS;
+        return switch (this)
+        {
+            case CYCLE -> PlayLogic.ROUND_ROBIN;
+            case RANDOM -> PlayLogic.RANDOM;
+            default -> PlayLogic.ALWAYS;
+        };
     }
 }

@@ -236,6 +236,8 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
                 // 0 = NO LOOPING, 1 = ONE SHOT, 2 = LOOP IN REL, 3 = LOOP UNTIL REL, 4 = AS SAMPLE
                 final int loopType = this.getUnsignedValue (zonePosition + 0x30);
+                // ONE SHOT ignores a note-off and always plays the sample up to its end
+                sampleZone.setOneShot (loopType == 1);
                 if (loopType > 1)
                     sampleZone.getLoops ().add (new DefaultSampleLoop ());
 

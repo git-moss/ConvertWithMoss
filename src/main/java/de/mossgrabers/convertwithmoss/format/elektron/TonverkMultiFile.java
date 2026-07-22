@@ -258,7 +258,7 @@ public class TonverkMultiFile
                         out.add ("trim-end = " + sampleSlot.trimEnd);
                     if (sampleSlot.loopMode != null)
                         out.add ("loop-mode = " + quote (sampleSlot.loopMode));
-                    if ("Forward".equals (sampleSlot.loopMode))
+                    if (TonverkValues.LOOP_MODE_FORWARD.equals (sampleSlot.loopMode))
                     {
                         if (sampleSlot.loopStart != null && sampleSlot.loopStart.intValue () >= 0)
                             out.add ("loop-start = " + sampleSlot.loopStart);

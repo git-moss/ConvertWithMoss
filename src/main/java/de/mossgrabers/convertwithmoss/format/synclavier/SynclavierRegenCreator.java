@@ -457,7 +457,9 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Computes the representative pan of a partial from the average panning of its zones. The
      * generic model stores panning per zone while a Synclavier partial has a single pan setting, so
-     * the average of the partial's zones is used.
+     * the average of the partial's zones is used. Note that the panning of the group is
+     * deliberately not used: all detectors flatten it into their sample zones, so the average
+     * already contains it - together with the panning contributed by the zones themselves.
      *
      * @param zones The zones of the partial
      * @return The pan in the range [-63..63], 0 if centered
@@ -569,6 +571,11 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
             loopStartFraction = Math.clamp (loop.getStart () / (double) frames, 0, 1);
             loopEndFraction = Math.clamp (loop.getEnd () / (double) frames, 0, 1);
         }
+        // One-shot: note-off is ignored and the sample is always played back to its end. Only the
+        // values 4 (one-shot) and 5 (one-shot + loop) are documented, therefore the cross-fade bit
+        // is not combined with the one-shot bit
+        if (zone.isOneShot ())
+            loopBits = loopBits == 0 ? 4 : 5;
 
         final StringBuilder sb = new StringBuilder ("SynclavierPTPatchListEntry ");
         sb.append (partial).append (' ').append (entry).append (' ');

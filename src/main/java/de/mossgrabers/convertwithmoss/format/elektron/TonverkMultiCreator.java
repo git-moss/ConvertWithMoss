@@ -236,8 +236,11 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
                     // Note: 'trim-start'/'trim-end' must not be set! They are only supported for
                     // single-file multi-samples. The WAV files are physically trimmed instead.
 
-                    final boolean isLooped = hasLoop (sampleZone);
-                    sampleSlot.loopMode = isLooped ? "Forward" : "Off";
+                    // A one-shot ignores a note-off and always plays the sample to its end which is
+                    // the loop mode 'Off'. It has priority over a loop since the Tonverk can only
+                    // store one of both.
+                    final boolean isLooped = hasLoop (sampleZone) && !sampleZone.isOneShot ();
+                    sampleSlot.loopMode = isLooped ? TonverkValues.LOOP_MODE_FORWARD : TonverkValues.LOOP_MODE_OFF;
                     if (isLooped)
                     {
                         final ISampleLoop sampleLoop = sampleZone.getLoops ().get (0);

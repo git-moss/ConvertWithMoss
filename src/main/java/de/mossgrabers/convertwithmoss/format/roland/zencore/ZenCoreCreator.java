@@ -691,7 +691,9 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         // altering the sample.
         // The loop preparation runs on the interleaved audio so both channels share one loop end.
         final List<ISampleLoop> loops = zone.getLoops ();
-        final boolean hasLoop = !loops.isEmpty ();
+        // The USPa loop mode is either a forward loop or a one-shot, so a one-shot zone is stored
+        // like a loop-less one: no loop points, no guard frames and the full played range
+        final boolean hasLoop = !zone.isOneShot () && !loops.isEmpty ();
         int loopStart = 0;
         int end = zone.getStop () > 0 ? Math.min (zone.getStop (), frames) : frames;
         if (hasLoop)

@@ -48,6 +48,9 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final Pattern FILE_NAME_QUERY = Pattern.compile ("(.*)_(?<note>[A-Ga-g]#?\\d)(_SW(?<switch>\\d+))?(_V(?<velocity>\\d+))?(_R(?<roundrobin>\\d+))?");
 
+    /** The number of voices of the disting EX, see its 8 'Voice N detune' parameters. */
+    private static final int     MAX_VOICES      = 8;
+
 
     /**
      * Constructor.
@@ -96,8 +99,16 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
     {
         final String name = this.readHeader (in);
         final List<IGroup> groups = this.readSamples (sourceFile.getParentFile (), in);
-        applyParameters (groups, readParameters (in));
-        return this.createMultisampleSource (sourceFile, name.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : name, groups);
+        final int [] parameters = readParameters (in);
+        applyParameters (groups, parameters);
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : name, groups);
+
+        // Max voices - the disting EX has 8 voices, see its 8 'Voice N detune' parameters
+        final int maxVoices = parameters[17];
+        if (maxVoices > 0)
+            multisampleSource.setPolyphony (Math.clamp (maxVoices, 1, MAX_VOICES));
+
+        return multisampleSource;
     }
 
 

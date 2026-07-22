@@ -242,6 +242,12 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                     sampleZone.setTuning (sampleZone.getTuning () + octaveShift);
                 }
 
+        // The assign type is stored per key, only a patch whose used keys are all set to Mono is
+        // monophonic. The S-7xx has neither a legato nor a portamento parameter, the patch priority
+        // only steers the voice stealing and therefore has no representation in the model.
+        if (patch.isMonophonic ())
+            multisampleSource.setPolyphony (1);
+
         multisampleSource.getMetadata ().setDescription (metadataDescription);
         return multisampleSource;
     }
@@ -259,6 +265,8 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
         // 0 = Forward, 1 = Fwd+R, 2 = Oneshot, 3 = Fwd+One, 4 = Alt, 5 = Rev One, 6 = Rev
         final int loopMode = sample.getLoopMode ();
+        // Oneshot ignores a note-off and plays the sample up to its end
+        sampleZone.setOneShot (loopMode == 2);
         if (loopMode != 2)
         {
             final ISampleLoop sampleLoop = new DefaultSampleLoop ();
@@ -293,10 +301,13 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setPanning (pan);
 
         final TvaSection tva = partial.getTva ();
-        final IEnvelope ampEnvelope = createEnvelope (tva.getLevels (), tva.getTimes ());
+        final IEnvelope ampEnvelope = createEnvelope (tva.getLevels (), tva.getTimes (), tva.getEnvTimeKf (), tva.getTimeVelocitySensitivity ());
         sampleZone.getAmplitudeEnvelopeModulator ().setSource (ampEnvelope);
         // Unclear how to apply tva.getVelocityCurveRatio ()
         sampleZone.getAmplitudeVelocityModulator ().setDepth (tva.getVelocityCurveType () == 0 ? 0 : 1);
+        // The native range of the level key follow is [-63..63] which maps to the model range of
+        // [-1..1] - identical to the cutoff key follow of the TVF section
+        sampleZone.setAmplitudeKeyTracking (Math.clamp (tva.getLevelKf () / 63.0, -1, 1));
 
         createFilter (sampleZone, partial.getTvf ());
 
@@ -316,7 +327,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
     private static void createFilter (final ISampleZone sampleZone, final TvfSection tvf)
     {
-        final IEnvelope envelope = createEnvelope (tvf.getLevels (), tvf.getTimes ());
+        final IEnvelope envelope = createEnvelope (tvf.getLevels (), tvf.getTimes (), tvf.getEnvTimeKf (), tvf.getTimeVelocitySensitivity ());
 
         final int filterMode = tvf.getFilterMode ();
         if (filterMode >= 0 && filterMode <= 2)
@@ -364,7 +375,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static IEnvelope createEnvelope (final int [] levels, final int [] times)
+    private static IEnvelope createEnvelope (final int [] levels, final int [] times, final int envTimeKeyFollow, final int timeVelocitySensitivity)
     {
         final IEnvelope envelope = new DefaultEnvelope ();
 
@@ -377,6 +388,12 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         envelope.setAttackTime (calculateTime (times[1]));
         envelope.setDecayTime (calculateTime (times[2]));
         envelope.setReleaseTime (calculateTime (times[3]));
+
+        // Both are stored in the native range of [-63..63] with 0 for no scaling, which maps to the
+        // model range of [-1..1]. The polarity of both is identical to the model: a positive value
+        // shortens the envelope times towards higher keys resp. higher velocities
+        envelope.setTimeKeyTracking (Math.clamp (envTimeKeyFollow / 63.0, -1, 1));
+        envelope.setTimeVelocityTracking (Math.clamp (timeVelocitySensitivity / 63.0, -1, 1));
 
         return envelope;
     }

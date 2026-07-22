@@ -25,8 +25,11 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
  */
 public class AkaiS1000Sample
 {
+    /** The loop mode PLAY_TO_END (= one-shot): a note-off is ignored, no loops are played. */
+    public static final int              LOOP_MODE_PLAY_TO_END = 3;
+
     /** ID for a sample structure. */
-    private static final int             AKAI_SAMPLE_ID = 3;
+    private static final int             AKAI_SAMPLE_ID        = 3;
 
     /** Position in the image where the sample starts. */
     private int                          imageOffset;
@@ -50,7 +53,7 @@ public class AkaiS1000Sample
     @SuppressWarnings("unused")
     private byte                         loopTuneOffset;
 
-    private final AkaiS1000SampleLoop [] loops          = new AkaiS1000SampleLoop [8];
+    private final AkaiS1000SampleLoop [] loops                 = new AkaiS1000SampleLoop [8];
 
     private int                          samplingFrequency;
     private int                          numberOfSamples;

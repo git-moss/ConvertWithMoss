@@ -149,6 +149,8 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
                     partial.setName (zone.getName ());
                     writeAmplitudeEnvelope (partial, zone);
                     writeFilter (partial, zone);
+                    writeMuteGroup (partial, zone);
+                    writeAmplitudeKeyTracking (partial, zone);
                     for (int note = keyLow; note <= keyHigh; note++)
                         if (noteTable[note - MV8000Patch.NOTE_BASE] < 0)
                             noteTable[note - MV8000Patch.NOTE_BASE] = partialIndex.intValue ();
@@ -206,7 +208,8 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
 
         // Loop and playback range
         final List<ISampleLoop> loops = zone.getLoops ();
-        final boolean isOneShot = loops.isEmpty ();
+        // A one-shot slot ignores a note-off - and the loop - and plays the sample up to its end
+        final boolean isOneShot = zone.isOneShot () || loops.isEmpty ();
         final boolean isKeyTracked = zone.getKeyTracking () != 0;
         int loopStart = 0;
         int endPoint = zone.getStop () > 0 ? Math.min (zone.getStop (), numFrames) : numFrames;
@@ -310,6 +313,41 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
         final double sustainLevel = envelope.getSustainLevel ();
         if (sustainLevel >= 0)
             partial.setTvaEnvelopeLevel (2, Math.clamp ((int) Math.round (sustainLevel * 127), 0, 127));
+    }
+
+
+    /**
+     * Write the exclusive group of the zone into the mute group of the partial. The MV-8000 stores
+     * the mute group biased by 1: 1 = Off and 2-17 for the groups 1-16. The initialized partial
+     * already contains 'Off', therefore nothing is written for a zone without an exclusive group.
+     *
+     * @param partial The partial to update
+     * @param zone The zone from which to get the exclusive group
+     */
+    private static void writeMuteGroup (final MV8000Partial partial, final ISampleZone zone)
+    {
+        final int exclusiveGroup = zone.getExclusiveGroup ();
+        if (exclusiveGroup <= 0)
+            return;
+        partial.setMuteGroup (MV8000Partial.MUTE_GROUP_OFF + Math.clamp (exclusiveGroup, 1, MV8000Partial.NUM_MUTE_GROUPS));
+    }
+
+
+    /**
+     * Write the amplitude key tracking of the zone into the TVA level key follow of the partial.
+     * The model range of [-1..1] maps to the stored range of 1..127 with 64 = no key follow. The
+     * initialized partial already contains 64, therefore nothing is written for a zone without key
+     * tracking.
+     *
+     * @param partial The partial to update
+     * @param zone The zone from which to get the amplitude key tracking
+     */
+    private static void writeAmplitudeKeyTracking (final MV8000Partial partial, final ISampleZone zone)
+    {
+        final double amplitudeKeyTracking = zone.getAmplitudeKeyTracking ();
+        if (amplitudeKeyTracking == 0)
+            return;
+        partial.setTvaLevelKeyFollow (Math.clamp (64 + Math.round (amplitudeKeyTracking * 63), 1, 127));
     }
 
 

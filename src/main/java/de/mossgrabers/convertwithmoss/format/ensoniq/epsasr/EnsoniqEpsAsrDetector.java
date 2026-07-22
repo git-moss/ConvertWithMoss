@@ -470,6 +470,15 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
         envelope.setHoldLevel (parseVolume (amplitudeEnvelope.getHardLevel1 ()));
         envelope.setSustainLevel (parseVolume (amplitudeEnvelope.getHardLevel4 ()));
 
+        // Both are unipolar parameters which are edited in the range of [0..99] on the device (like
+        // all envelope times, see parseTime) and are therefore normalized to the model range of
+        // [0..1]. 0 means no scaling and higher values shorten the times towards higher keys
+        // respectively higher velocities, which matches the positive direction of the model.
+        envelope.setTimeKeyTracking (Math.clamp (amplitudeEnvelope.getKbTimeScaling () / 99.0, 0, 1));
+        // The velocity sensitivity only applies to time 1 (the attack) whereas the model scales all
+        // times of the envelope
+        envelope.setTimeVelocityTracking (Math.clamp (amplitudeEnvelope.getTime1VelSens () / 99.0, 0, 1));
+
         return envelope;
     }
 

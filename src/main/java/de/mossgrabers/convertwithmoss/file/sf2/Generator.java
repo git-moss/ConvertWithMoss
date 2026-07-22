@@ -49,6 +49,10 @@ public class Generator
     public static final int     MOD_ENV_SUSTAIN          = 29;
     /** The ID of the modulation envelope release generator. */
     public static final int     MOD_ENV_RELEASE          = 30;
+    /** The ID of the key number to modulation envelope hold generator. */
+    public static final int     KEYNUM_TO_MOD_ENV_HOLD   = 31;
+    /** The ID of the key number to modulation envelope decay generator. */
+    public static final int     KEYNUM_TO_MOD_ENV_DECAY  = 32;
 
     /** The ID of the volume envelope delay generator. */
     public static final int     VOL_ENV_DELAY            = 33;
@@ -62,6 +66,17 @@ public class Generator
     public static final int     VOL_ENV_SUSTAIN          = 37;
     /** The ID of the volume envelope release generator. */
     public static final int     VOL_ENV_RELEASE          = 38;
+    /** The ID of the key number to volume envelope hold generator. */
+    public static final int     KEYNUM_TO_VOL_ENV_HOLD   = 39;
+    /** The ID of the key number to volume envelope decay generator. */
+    public static final int     KEYNUM_TO_VOL_ENV_DECAY  = 40;
+
+    /**
+     * The maximum absolute value of the key number to envelope hold and decay generators. The
+     * generators are stored in time-cents per key number and their specified range is
+     * [-1200..1200].
+     */
+    public static final int     MAX_KEYNUM_TO_ENV        = 1200;
 
     /** The ID of the instrument generator. */
     public static final int     INSTRUMENT               = 41;
@@ -81,6 +96,8 @@ public class Generator
     public static final int     SAMPLE_MODES             = 54;
     /** The ID of the scale tuning generator. */
     public static final int     SCALE_TUNE               = 56;
+    /** The ID of the exclusive class generator. */
+    public static final int     EXCLUSIVE_CLASS          = 57;
     /** The ID of the overriding root key generator. */
     public static final int     OVERRIDING_ROOT_KEY      = 58;
 

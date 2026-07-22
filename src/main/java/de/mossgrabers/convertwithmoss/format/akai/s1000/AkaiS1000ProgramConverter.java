@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.akai.s1000;
 import java.util.List;
 import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -33,7 +34,10 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
  */
 public class AkaiS1000ProgramConverter
 {
-    private final INotifier notifier;
+    /** The number of voices of an Akai S1000/S3000. */
+    private static final int MAX_POLYPHONY = 16;
+
+    private final INotifier  notifier;
 
 
     /**
@@ -63,15 +67,39 @@ public class AkaiS1000ProgramConverter
         final int pitchBendRange = program.getBendToPitch () & 0xFF;
         final double gain = (program.getVolume () & 0xFF) / 99.0;
         final double velocityToVolume = Math.clamp (program.getVelocityToVolume () / 50.0, -1.0, 1.0);
+        // The native range of the key to volume intensity is [-50..50] which maps to the model
+        // range of [-1..1]
+        final double keyToVolume = Math.clamp (program.getKeyToVolume () / 50.0, -1.0, 1.0);
         for (final ISampleZone zone: group.getSampleZones ())
         {
             zone.setBendUp (pitchBendRange);
             zone.setBendDown (-pitchBendRange);
             zone.setGain (gain);
             zone.getAmplitudeVelocityModulator ().setDepth (velocityToVolume);
+            zone.setAmplitudeKeyTracking (keyToVolume);
         }
 
         return group;
+    }
+
+
+    /**
+     * Apply the voice settings of the program which are stored on the level of the whole program
+     * and not on the level of a key-group.
+     *
+     * @param multisampleSource The multi-sample source to which to apply the settings
+     * @param program The program from which to read the settings
+     */
+    public static void applyVoiceSettings (final IMultisampleSource multisampleSource, final AkaiS1000Program program)
+    {
+        // The program limits itself to 1-16 of the 16 voices of the sampler
+        final int polyphony = program.getPolyphony ();
+        if (polyphony > 0)
+            multisampleSource.setPolyphony (Math.clamp (polyphony, 1, MAX_POLYPHONY));
+
+        // The voice priority (LOW/NORM/HIGH/HOLD) and the voice re-assign method (OLDEST/QUIETEST)
+        // only steer the voice stealing and have no representation in the model. There is neither a
+        // legato nor a portamento parameter in an Akai S1000/S3000 program.
     }
 
 
@@ -161,20 +189,21 @@ public class AkaiS1000ProgramConverter
                 sampleZone.setStop (sample.getEndMarker ());
 
                 // Loop
-                if (sample.getActiveLoops () > 0)
+                // The key-group sample loop mode 0 (AS_SAMPLE) falls back to the one of the
+                // sample, all others are the sample loop modes shifted by 1
+                final int keygroupSampleLoopMode = keygroupSample.getLoopMode ();
+                final int loopMode = keygroupSampleLoopMode == 0 ? sample.getLoopMode () : keygroupSampleLoopMode - 1;
+                // PLAY_TO_END ignores a note-off and plays the sample up to its end
+                sampleZone.setOneShot (loopMode == AkaiS1000Sample.LOOP_MODE_PLAY_TO_END);
+                if (sample.getActiveLoops () > 0 && loopMode < 2)
                 {
-                    int loopMode = keygroupSample.getLoopMode ();
-                    loopMode = loopMode == 0 ? sample.getLoopMode () : loopMode - 1;
-                    if (loopMode < 2 && sample.getActiveLoops () > 0)
-                    {
-                        final byte firstActiveLoop = sample.getFirstActiveLoop ();
-                        final AkaiS1000SampleLoop loop = sample.getLoops ()[firstActiveLoop];
-                        final int marker = loop.getEndMarker ();
-                        final ISampleLoop sampleLoop = new DefaultSampleLoop ();
-                        sampleLoop.setStart (marker - loop.getCoarseLength ());
-                        sampleLoop.setEnd (marker);
-                        sampleZone.getLoops ().add (sampleLoop);
-                    }
+                    final byte firstActiveLoop = sample.getFirstActiveLoop ();
+                    final AkaiS1000SampleLoop loop = sample.getLoops ()[firstActiveLoop];
+                    final int marker = loop.getEndMarker ();
+                    final ISampleLoop sampleLoop = new DefaultSampleLoop ();
+                    sampleLoop.setStart (marker - loop.getCoarseLength ());
+                    sampleLoop.setEnd (marker);
+                    sampleZone.getLoops ().add (sampleLoop);
                 }
 
                 // Filter
@@ -235,6 +264,17 @@ public class AkaiS1000ProgramConverter
         envelope.setDecayTime (toSeconds (akaiEnvelope.getDecay (), true));
         envelope.setSustainLevel (akaiEnvelope.getSustain () / 99.0);
         envelope.setReleaseTime (toSeconds (akaiEnvelope.getRelease (), false));
+
+        // The native range of both intensities is [-50..50] which maps to the model range of
+        // [-1..1]. The polarity is inverted: the Akai adds the intensity to the envelope time
+        // parameters, a positive value therefore lengthens the times towards higher velocities
+        // resp. higher keys ("Setting this to a negative value means that the higher the note
+        // played on the keyboard, the shorter the decay and release times"), while a positive value
+        // of the model shortens them. The model has only one intensity for all times of an
+        // envelope, therefore the separate 'velocity to release' and 'off velocity to release'
+        // intensities of the Akai cannot be represented.
+        envelope.setTimeVelocityTracking (Math.clamp (-akaiEnvelope.getVelocityToAttack () / 50.0, -1, 1));
+        envelope.setTimeKeyTracking (Math.clamp (-akaiEnvelope.getKeyToDecayAndRelease () / 50.0, -1, 1));
         return envelope;
     }
 

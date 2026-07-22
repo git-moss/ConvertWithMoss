@@ -250,4 +250,73 @@ public interface IMultisampleSource extends ISource
      * @return The highest playing key (0-127)
      */
     int getHighestKey ();
+
+
+    /**
+     * Get the polyphony of the instrument, which is the maximum number of voices which can sound at
+     * the same time. A value of 1 means that the instrument is monophonic.
+     * <p>
+     * Known encodings of this attribute are: TAL Sampler <code>PROGRAM_NUM_VOICES</code>, Reason
+     * SXT <code>keyPolyphony</code>, Logic EXS24 <code>POLYPHONY_VOICES</code>, DecentSampler
+     * <code>polyphony</code>, the maximum number of voices of the Expert Sleepers Disting EX,
+     * 1010music <code>polymode</code> and Ableton <code>NumVoices</code>.
+     *
+     * @return The maximum number of simultaneous voices, 0 if the polyphony is not specified
+     */
+    int getPolyphony ();
+
+
+    /**
+     * Set the polyphony of the instrument, which is the maximum number of voices which can sound at
+     * the same time.
+     *
+     * @param polyphony The maximum number of simultaneous voices, 0 if the polyphony is not
+     *            specified
+     */
+    void setPolyphony (int polyphony);
+
+
+    /**
+     * Check if the instrument is played monophonic with legato, which means that the envelopes are
+     * not re-triggered as long as another key is already held down. This is only relevant if the
+     * instrument is monophonic.
+     * <p>
+     * Known encodings of this attribute are: Reason SXT <code>keyMode</code> and
+     * <code>groupMono</code>, Logic EXS24 <code>MONO_LEGATO</code>, DecentSampler
+     * <code>&lt;monophonic&gt;</code>, Synthstrom Deluge <code>polyphonic</code>, 1010music
+     * <code>legatomode</code> and Ableton <code>PortamentoMode</code>.
+     *
+     * @return True if the instrument is played monophonic with legato
+     */
+    boolean isMonophonicLegato ();
+
+
+    /**
+     * Set the instrument to be played monophonic with legato, which means that the envelopes are
+     * not re-triggered as long as another key is already held down.
+     *
+     * @param isMonophonicLegato True to play the instrument monophonic with legato
+     */
+    void setMonophonicLegato (boolean isMonophonicLegato);
+
+
+    /**
+     * Get the portamento time of the instrument, which is the time it takes to glide from the pitch
+     * of the previously played key to the pitch of the currently played key.
+     * <p>
+     * Known encodings of this attribute are: Reason SXT <code>portamento</code>, Logic EXS24
+     * <code>GLIDE</code> and Ableton <code>PortamentoTime</code>.
+     *
+     * @return The portamento time in seconds, 0 if there is no portamento
+     */
+    double getPortamentoTime ();
+
+
+    /**
+     * Set the portamento time of the instrument, which is the time it takes to glide from the pitch
+     * of the previously played key to the pitch of the currently played key.
+     *
+     * @param portamentoTime The portamento time in seconds, 0 for no portamento
+     */
+    void setPortamentoTime (double portamentoTime);
 }

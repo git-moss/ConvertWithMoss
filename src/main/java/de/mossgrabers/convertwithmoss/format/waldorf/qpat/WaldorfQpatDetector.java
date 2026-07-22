@@ -281,8 +281,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                     this.notifier.logError ("IDS_QPAT_OSC_SILENCED", Integer.toString (groupIndex));
             }
 
-            // Osc1Pan: [0..1] ~ [L..R]
-            double panning = 0.5;
+            // Osc1Pan: [0..1] ~ [L..R], 0.5 is the center which is 0 in the model
+            double panning = 0;
             final WaldorfQpatParameter panningParameter = parameters.get ("Osc" + groupIndex + "Pan");
             if (panningParameter != null)
                 panning = panningParameter.value * 2.0 - 1.0;
@@ -301,14 +301,23 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
             final Optional<IEnvelopeModulator> modulator = findPitchEnvelopeModMatrixEntry (parameters, i + 1);
 
+            // The oscillator volume, panning and tuning belong to the whole oscillator, which is
+            // one group. Record them as the group offsets - the values are additionally flattened
+            // into each zone below, as required by IGroup#getGain.
+            group.setGain (volume);
+            group.setPanning (panning);
+            group.setTuning (tune);
+
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 zone.setTuning (zone.getTuning () + tune);
                 zone.setKeyTracking (keyTracking);
                 zone.setBendUp (pitchbend);
                 zone.setBendDown (-pitchbend);
-                zone.setGain (volume);
-                zone.setPanning (panning);
+                // The oscillator volume and panning are offsets on top of the gain and panning of
+                // the sample map entry, therefore they must be added and not replace them.
+                zone.setGain (zone.getGain () + volume);
+                zone.setPanning (Math.clamp (zone.getPanning () + panning, -1.0, 1.0));
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVeloAmount);
                 zone.getAmplitudeEnvelopeModulator ().setSource (ampEnvelope);
                 if (filter.isPresent ())

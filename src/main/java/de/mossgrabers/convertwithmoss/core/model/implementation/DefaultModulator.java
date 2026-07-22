@@ -15,6 +15,7 @@ import de.mossgrabers.convertwithmoss.core.model.IModulator;
 public class DefaultModulator implements IModulator
 {
     protected double depth = 0;
+    protected double curve = 0;
 
 
     /**
@@ -46,12 +47,30 @@ public class DefaultModulator implements IModulator
 
     /** {@inheritDoc} */
     @Override
+    public double getCurve ()
+    {
+        return this.curve;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setCurve (final double curve)
+    {
+        this.curve = Math.clamp (curve, -1.0, 1.0);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int hashCode ()
     {
         final int prime = 31;
         int result = 1;
         long temp;
         temp = Double.doubleToLongBits (this.depth);
+        result = prime * result + (int) (temp ^ temp >>> 32);
+        temp = Double.doubleToLongBits (this.curve);
         result = prime * result + (int) (temp ^ temp >>> 32);
         return result;
     }
@@ -66,6 +85,6 @@ public class DefaultModulator implements IModulator
         if (obj == null || this.getClass () != obj.getClass ())
             return false;
         final DefaultModulator other = (DefaultModulator) obj;
-        return Double.doubleToLongBits (this.depth) == Double.doubleToLongBits (other.depth);
+        return Double.doubleToLongBits (this.depth) == Double.doubleToLongBits (other.depth) && Double.doubleToLongBits (this.curve) == Double.doubleToLongBits (other.curve);
     }
 }

@@ -141,6 +141,8 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setSampleData (new WavFileSampleData (waveFile.get ()));
 
         sampleZone.setReversed (sample.getDirection () == 'R');
+        // The one-shot trigger mode ignores a note-off and plays the sample up to its end
+        sampleZone.setOneShot ((keygroup.getFlags () & AkaiS900Keygroup.FLAG_ONE_SHOT) > 0);
 
         // Pitch
         final double nominalPitch = sample.getNominalPitch () / 16.0;

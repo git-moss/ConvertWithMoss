@@ -18,11 +18,14 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class S770Patch
 {
-    private static final String        LFO_TVF_DEPTH  = ", lfoTvfDepth=";
-    private static final String        LFO_TVA_DEPTH  = ", lfoTvaDepth=";
-    private static final String        LFO_PITCH_CTRL = ", lfoPitchCtrl=";
-    private static final String        TVF_CTRL       = ", tvfCtrl=";
-    private static final String        TVA_CTRL       = ", tvaCtrl=";
+    /** The key assign type which plays the notes of the key monophonic. */
+    private static final int           ASSIGN_TYPE_MONO = 1;
+
+    private static final String        LFO_TVF_DEPTH    = ", lfoTvfDepth=";
+    private static final String        LFO_TVA_DEPTH    = ", lfoTvaDepth=";
+    private static final String        LFO_PITCH_CTRL   = ", lfoPitchCtrl=";
+    private static final String        TVF_CTRL         = ", tvfCtrl=";
+    private static final String        TVA_CTRL         = ", tvaCtrl=";
 
     private final String               patchName;
     private final int                  programChangeNumber;
@@ -299,6 +302,29 @@ public class S770Patch
     public int [] getKeysAssignType ()
     {
         return this.keysAssignType;
+    }
+
+
+    /**
+     * Test if the patch is played monophonic. The assign type is stored for each key individually,
+     * therefore the patch is only considered to be monophonic if all of the keys which do play a
+     * partial are set to Mono.
+     *
+     * @return True if all used keys are set to be played monophonic
+     */
+    public boolean isMonophonic ()
+    {
+        boolean hasUsedKey = false;
+        for (int i = 0; i < this.keysAssignType.length; i++)
+        {
+            // Keys without a partial are not played at all
+            if (this.keysPartialSelection[i] < 0)
+                continue;
+            if (this.keysAssignType[i] != ASSIGN_TYPE_MONO)
+                return false;
+            hasUsedKey = true;
+        }
+        return hasUsedKey;
     }
 
 
