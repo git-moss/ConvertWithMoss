@@ -94,6 +94,8 @@ public class Music1010Tag
     public static final String ATTR_SAMPLE_LENGTH         = "samlen";
     /** The attribute for the sample trigger type: 0 (Trigger), 1 (Normal), 2 (Toggle). */
     public static final String ATTR_SAMPLE_TRIGGER_TYPE   = "samtrigtype";
+    /** The attribute for the choke group: 0 (no choke group), 1 and above (choke group). */
+    public static final String ATTR_CHOKE_GROUP           = "chokegrp";
 
     /** The attribute for the sample pitch. */
     public static final String ATTR_PITCH                 = "pitch";

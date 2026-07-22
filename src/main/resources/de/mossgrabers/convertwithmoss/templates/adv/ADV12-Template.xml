@@ -54,7 +54,7 @@
 				<LayerCrossfade Value="0" />
 				<SourceContext />
 				<RoundRobin Value="%ROUND_ROBIN%" />
-				<RoundRobinMode Value="0" />
+				<RoundRobinMode Value="%ROUND_ROBIN_MODE%" />
 				<RoundRobinResetPeriod Value="0" />
 				<RoundRobinRandomSeed Value="1175476661" />
 			</MultiSampleMap>

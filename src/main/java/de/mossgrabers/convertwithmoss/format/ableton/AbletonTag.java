@@ -51,6 +51,13 @@ public class AbletonTag
     /** The Round-Robin mode tag. */
     public static final String TAG_ROUND_ROBIN_MODE        = "RoundRobinMode";
 
+    /** The Round-Robin mode which cycles through the zones in ascending order. */
+    public static final int    ROUND_ROBIN_MODE_FORWARD    = 0;
+    /** The Round-Robin mode which cycles through the zones in descending order. */
+    public static final int    ROUND_ROBIN_MODE_BACKWARDS  = 1;
+    /** The Round-Robin mode which selects one of the zones randomly. */
+    public static final int    ROUND_ROBIN_MODE_RANDOM     = 3;
+
     /** The name of the sample zone. */
     public static final String TAG_NAME                    = "Name";
     /** The name of the sample reference tag. */
@@ -169,6 +176,20 @@ public class AbletonTag
 
     /** The envelope tag. */
     public static final String TAG_ENVELOPE                = "Envelope";
+
+    /** The global settings tag. */
+    public static final String TAG_GLOBALS                 = "Globals";
+    /** The play-back mode tag: 0 (Classic), 1 (One-Shot), 2 (Slicing). */
+    public static final String TAG_PLAYBACK_MODE           = "PlaybackMode";
+    /** The one-shot envelope tag. */
+    public static final String TAG_ONE_SHOT_ENVELOPE       = "OneShotEnvelope";
+    /** The one-shot sustain mode tag: 0 (Trigger), 1 (Gate). */
+    public static final String TAG_SUSTAIN_MODE            = "SustainMode";
+
+    /** The play-back mode value which plays the sample as a one-shot. */
+    public static final int    PLAYBACK_MODE_ONE_SHOT      = 1;
+    /** The one-shot sustain mode value which ignores a note-off. */
+    public static final int    SUSTAIN_MODE_TRIGGER        = 0;
 
     /** The creator attribute. */
     public static final String ATTR_CREATOR                = "Creator";

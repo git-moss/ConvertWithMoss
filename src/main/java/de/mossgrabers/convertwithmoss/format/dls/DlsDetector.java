@@ -180,6 +180,10 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setVelocityLow (dlsRegion.getVelocityRangeLow ());
         zone.setVelocityHigh (dlsRegion.getVelocityRangeHigh ());
 
+        // The DLS key group is the exclusive group, 0 means that the region is not assigned to any
+        // group, valid groups are 1 to 15
+        zone.setExclusiveGroup (Math.clamp (dlsRegion.getKeyGroup (), 0, 15));
+
         zone.setGain (dlsRegion.getGain ());
 
         final double fineTuning = dlsRegion.getFineTune ();
@@ -210,6 +214,11 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         final Optional<DlsArticulation> velocityModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_KEYONVELOCITY, DlsArticulation.CONN_DST_GAIN);
         if (velocityModulation.isPresent ())
             zone.getAmplitudeVelocityModulator ().setDepth (gainToLinear (velocityModulation.get ().getScale ()));
+
+        // Amplitude key tracking
+        final Optional<DlsArticulation> keyModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_KEYNUMBER, DlsArticulation.CONN_DST_GAIN);
+        if (keyModulation.isPresent ())
+            zone.setAmplitudeKeyTracking (normalizeKeyNumberToGain (keyModulation.get ().getScale ()));
 
         // Pitch bend up/down
         final Optional<DlsArticulation> pitchBendModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_PITCHWHEEL, DlsArticulation.CONN_DST_PITCH);
@@ -320,6 +329,22 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
     private static double gainToLinear (final int value)
     {
         return Math.pow (10.0, value / (200.0 * 65536.0));
+    }
+
+
+    /**
+     * Converts the scale value of a DLS key-number to gain connection into the normalized amplitude
+     * key tracking range [-1..1]. The key-number source is normalized across the full MIDI range,
+     * therefore the scale is the gain change from key 0 to key 127. Like all DLS gain values it is
+     * given in units of 1/655360 dB (see {@link #gainToLinear(int)}). 100% key tracking is defined
+     * as 1 dB per key which equals 127 dB across the full range.
+     *
+     * @param scale The raw 32-bit signed gain value
+     * @return The amplitude key tracking in the range [-1.0, 1.0]
+     */
+    private static double normalizeKeyNumberToGain (final int scale)
+    {
+        return Math.clamp (scale / (655360.0 * 127.0), -1, 1);
     }
 
 

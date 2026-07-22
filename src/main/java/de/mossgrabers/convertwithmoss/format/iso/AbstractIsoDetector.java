@@ -86,7 +86,9 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
                             if (volumeName != null && !volumeName.isBlank ())
                                 programName = volumeName.trim () + " " + programName;
                             final IGroup group = converter.createGroup (program, samples);
-                            multiSampleSources.add (this.createMultisampleSource (sourceFile, parts, programName, Collections.singletonList (group)));
+                            final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, parts, programName, Collections.singletonList (group));
+                            AkaiS1000ProgramConverter.applyVoiceSettings (multisampleSource, program);
+                            multiSampleSources.add (multisampleSource);
                         }
                     }
             }

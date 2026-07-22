@@ -97,7 +97,7 @@ public class TALSamplerTag
     public static final String PHASE_INVERSE           = "phaseinverse";
     /** Invert stereo: 1 -> normal; 0 -> inverted stereo output. */
     public static final String STEREO_INVERSE          = "stereoinverse";
-    /** Is the group muted? */
+    /** The mute (= exclusive) group of the sample, 0 means that it is not assigned to one. */
     public static final String MUTE_GROUP              = "mutegroup";
 
     /** The global amplitude envelope attack attribute. */

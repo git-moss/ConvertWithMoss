@@ -188,7 +188,12 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
-        return Collections.singletonList (this.createMultisampleSource (file, FileUtils.getNameWithoutType (file), Collections.singletonList (group.get ())));
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (file, FileUtils.getNameWithoutType (file), Collections.singletonList (group.get ()));
+        // The polyphony mode of a kit belongs to one of its drums (= pads) and not to the whole
+        // instrument, therefore it is only read for a synth preset.
+        if (!isKit)
+            applyPolyphony (top, multisampleSource);
+        return Collections.singletonList (multisampleSource);
     }
 
 
@@ -416,6 +421,11 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         // normal forward loop here. Without this a held STRETCH patch (e.g. a sustained pad) would
         // play its sample once and then drop out, because no loop was created at all.
         final boolean isLoop = loopMode == DelugeTag.LOOP_MODE_LOOP || loopMode == DelugeTag.LOOP_MODE_STRETCH;
+
+        // The 'ONCE' mode always plays the sample to its end and ignores a note-off, in contrast to
+        // 'CUT' which stops the play-back on a note-off
+        zone.setOneShot (loopMode == DelugeTag.LOOP_MODE_ONCE);
+
         final Optional<ISampleLoop> loop = applyZonePositions (getDirectChild (zoneParent, DelugeTag.ZONE), zone, sampleData, isLoop);
 
         try
@@ -507,6 +517,33 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Read the polyphony mode of a sound and apply it to the multi-sample source. The Deluge does
+     * not store a voice count, it only distinguishes polyphonic from monophonic playback, therefore
+     * only a monophonic mode sets a polyphony (of 1). The modes 'auto' and 'choke' are not mapped
+     * since neither describes a fixed number of voices: 'auto' is an automatic voice allocation and
+     * 'choke' stops a previous note of the same sound.
+     * <p>
+     * The five values are 'mono', 'auto', 'legato', 'choke' and 'poly' as written by
+     * polyphonyModeToString in src/deluge/util/functions.cpp of the Deluge firmware. Its counterpart
+     * stringToPolyphonyMode additionally reads '0' as 'auto' and '2' as 'choke' for files written
+     * before June 2017, but there is no numeric value for a monophonic mode, so those old files
+     * never need to be handled here. An unknown value falls back to polyphonic on the device.
+     *
+     * @param soundElement The sound element
+     * @param multisampleSource The multi-sample source to fill
+     */
+    private static void applyPolyphony (final Element soundElement, final IMultisampleSource multisampleSource)
+    {
+        final String polyphonic = getValue (soundElement, DelugeTag.POLYPHONIC);
+        final boolean isLegato = DelugeTag.POLYPHONIC_LEGATO.equals (polyphonic);
+        if (!isLegato && !DelugeTag.POLYPHONIC_MONO.equals (polyphonic))
+            return;
+        multisampleSource.setPolyphony (1);
+        multisampleSource.setMonophonicLegato (isLegato);
+    }
+
+
+    /**
      * Read the amplitude envelope and filter from the default parameters of a sound and apply them
      * to all given zones.
      *
@@ -524,6 +561,8 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         // The Deluge expresses velocity sensitivity of the amplitude as a "velocity" patch cable
         // routed to the post-effects volume.
         final double amplitudeVelocityDepth = readPatchCableDepth (defaultParams, DelugeTag.SOURCE_VELOCITY, DelugeTag.DESTINATION_VOLUME);
+        // Amplitude keyboard tracking is the "note" source routed to the post-effects volume.
+        final double amplitudeKeyTracking = Math.clamp (readPatchCableDepth (defaultParams, DelugeTag.SOURCE_NOTE, DelugeTag.DESTINATION_VOLUME), -1, 1);
 
         for (final ISampleZone zone: zones)
         {
@@ -531,6 +570,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             if (envelope1.isPresent ())
                 readEnvelope (envelope1.get (), amplitudeModulator.getSource ());
             amplitudeModulator.setDepth (amplitudeVelocityDepth);
+            zone.setAmplitudeKeyTracking (amplitudeKeyTracking);
 
             // A fresh filter is read per zone so the zones do not share mutable modulators.
             final Optional<IFilter> filter = readFilter (soundElement, defaultParams);

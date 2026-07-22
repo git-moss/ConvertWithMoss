@@ -246,6 +246,18 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             final Double partialPan = partialPans.get (partialEntry.getKey ());
             final Double partialVolume = partialVolumes.get (partialEntry.getKey ());
             final double pitchOffset = partialPitchOffset (partialEntry.getKey (), partialTunes, partialTrans, partialOctaves);
+
+            // Additionally record the per-partial settings on the group. Note that they are (and
+            // must stay) applied to each of the zones below as well, therefore a creator must apply
+            // either the group or the zone value but never both. The pan is normalized from the
+            // Regen range of [-63..63] to the model range of [-1..1], the volume is already a dB
+            // attenuation and the pitch offset is already in semi-tones.
+            if (partialPan != null)
+                group.setPanning (Math.clamp (partialPan.doubleValue () / PAN_RANGE, -1, 1));
+            if (partialVolume != null)
+                group.setGain (partialVolume.doubleValue ());
+            if (pitchOffset != 0)
+                group.setTuning (pitchOffset);
             for (final String [] tokens: partialEntry.getValue ())
             {
                 final Optional<ISampleZone> zoneOpt = this.createZone (folder, sampleIndex, tokens);
@@ -334,6 +346,8 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         // Field 11 are the loop bits: 0 = off, 1 = loop, 3 = loop + cross-fade, 4 = one-shot (no
         // loop), 5 = one-shot + loop
         final int loopBits = parseInt (tokens[11], 0);
+        if (loopBits == 4 || loopBits == 5)
+            zone.setOneShot (true);
         if (loopBits == 1 || loopBits == 3 || loopBits == 5)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();

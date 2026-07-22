@@ -30,7 +30,6 @@ public class AkaiS1000Program
     // 0..15, 255=OMNI
     private byte                 midiChannel;
     // 1..16
-    @SuppressWarnings("unused")
     private byte                 polyphony;
     // 0=LOW 1=NORM 2=HIGH 3=HOLD
     @SuppressWarnings("unused")
@@ -54,7 +53,6 @@ public class AkaiS1000Program
     // -50..50
     private byte                 velocityToVolume;
     // -50..50
-    @SuppressWarnings("unused")
     private byte                 keyToVolume;
     // -50..50
     @SuppressWarnings("unused")
@@ -291,6 +289,18 @@ public class AkaiS1000Program
 
 
     /**
+     * Get the polyphony of the program, which is the maximum number of voices the program may
+     * allocate.
+     *
+     * @return The polyphony in the range of [1..16]
+     */
+    public int getPolyphony ()
+    {
+        return this.polyphony & 0xFF;
+    }
+
+
+    /**
      * Get the low key range for the whole program.
      *
      * @return The low key range
@@ -353,6 +363,17 @@ public class AkaiS1000Program
     public byte getVelocityToVolume ()
     {
         return this.velocityToVolume;
+    }
+
+
+    /**
+     * Get the intensity of the played key to modulate the volume.
+     *
+     * @return The intensity in the range of [-50..50]
+     */
+    public byte getKeyToVolume ()
+    {
+        return this.keyToVolume;
     }
 
 

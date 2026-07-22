@@ -60,20 +60,23 @@ public class DefaultEnvelope implements IEnvelope
         DEFAULT_ENVELOPES.put (TagDetector.CATEGORY_WORLD, ENVELOPE_KEYS);
     }
 
-    private double delayTime    = -1;
-    private double attackTime   = -1;
-    private double holdTime     = -1;
-    private double decayTime    = -1;
-    private double releaseTime  = -1;
+    private double delayTime            = -1;
+    private double attackTime           = -1;
+    private double holdTime             = -1;
+    private double decayTime            = -1;
+    private double releaseTime          = -1;
 
-    private double startLevel   = -1;
-    private double holdLevel    = -1;
-    private double sustainLevel = -1;
-    private double endLevel     = -1;
+    private double startLevel           = -1;
+    private double holdLevel            = -1;
+    private double sustainLevel         = -1;
+    private double endLevel             = -1;
 
-    private double attackSlope  = 0;
-    private double decaySlope   = 0;
-    private double releaseSlope = 0;
+    private double attackSlope          = 0;
+    private double decaySlope           = 0;
+    private double releaseSlope         = 0;
+
+    private double timeKeyTracking      = 0;
+    private double timeVelocityTracking = 0;
 
 
     /**
@@ -328,6 +331,38 @@ public class DefaultEnvelope implements IEnvelope
 
     /** {@inheritDoc} */
     @Override
+    public double getTimeKeyTracking ()
+    {
+        return this.timeKeyTracking;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setTimeKeyTracking (final double timeKeyTracking)
+    {
+        this.timeKeyTracking = Math.clamp (timeKeyTracking, -1, 1);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getTimeVelocityTracking ()
+    {
+        return this.timeVelocityTracking;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setTimeVelocityTracking (final double timeVelocityTracking)
+    {
+        this.timeVelocityTracking = Math.clamp (timeVelocityTracking, -1, 1);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int hashCode ()
     {
         final int prime = 31;
@@ -355,6 +390,10 @@ public class DefaultEnvelope implements IEnvelope
         temp = Double.doubleToLongBits (this.decaySlope);
         result = prime * result + (int) (temp ^ temp >>> 32);
         temp = Double.doubleToLongBits (this.releaseSlope);
+        result = prime * result + (int) (temp ^ temp >>> 32);
+        temp = Double.doubleToLongBits (this.timeKeyTracking);
+        result = prime * result + (int) (temp ^ temp >>> 32);
+        temp = Double.doubleToLongBits (this.timeVelocityTracking);
         return prime * result + (int) (temp ^ temp >>> 32);
     }
 
@@ -373,6 +412,8 @@ public class DefaultEnvelope implements IEnvelope
         if (Double.doubleToLongBits (this.releaseTime) != Double.doubleToLongBits (other.releaseTime) || Double.doubleToLongBits (this.startLevel) != Double.doubleToLongBits (other.startLevel) || Double.doubleToLongBits (this.holdLevel) != Double.doubleToLongBits (other.holdLevel) || Double.doubleToLongBits (this.sustainLevel) != Double.doubleToLongBits (other.sustainLevel))
             return false;
         if (Double.doubleToLongBits (this.attackSlope) != Double.doubleToLongBits (other.attackSlope) || Double.doubleToLongBits (this.decaySlope) != Double.doubleToLongBits (other.decaySlope) || Double.doubleToLongBits (this.releaseSlope) != Double.doubleToLongBits (other.releaseSlope))
+            return false;
+        if (Double.doubleToLongBits (this.timeKeyTracking) != Double.doubleToLongBits (other.timeKeyTracking) || Double.doubleToLongBits (this.timeVelocityTracking) != Double.doubleToLongBits (other.timeVelocityTracking))
             return false;
         return Double.doubleToLongBits (this.endLevel) == Double.doubleToLongBits (other.endLevel);
     }
@@ -396,6 +437,9 @@ public class DefaultEnvelope implements IEnvelope
         this.attackSlope = sourceEnvelope.getAttackSlope ();
         this.decaySlope = sourceEnvelope.getDecaySlope ();
         this.releaseSlope = sourceEnvelope.getReleaseSlope ();
+
+        this.timeKeyTracking = sourceEnvelope.getTimeKeyTracking ();
+        this.timeVelocityTracking = sourceEnvelope.getTimeVelocityTracking ();
     }
 
 
@@ -403,6 +447,6 @@ public class DefaultEnvelope implements IEnvelope
     @Override
     public boolean isSet ()
     {
-        return this.delayTime != -1 || this.startLevel != -1 || this.attackTime != -1 || this.holdLevel != -1 || this.holdTime != -1 || this.decayTime != -1 || this.sustainLevel != -1 || this.releaseTime != -1 || this.endLevel != -1 || this.attackSlope != 0 || this.decaySlope != 0 || this.releaseSlope != 0;
+        return this.delayTime != -1 || this.startLevel != -1 || this.attackTime != -1 || this.holdLevel != -1 || this.holdTime != -1 || this.decayTime != -1 || this.sustainLevel != -1 || this.releaseTime != -1 || this.endLevel != -1 || this.attackSlope != 0 || this.decaySlope != 0 || this.releaseSlope != 0 || this.timeKeyTracking != 0 || this.timeVelocityTracking != 0;
     }
 }

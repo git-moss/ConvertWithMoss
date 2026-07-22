@@ -14,7 +14,7 @@
         <V name="rlsTrigCounter" value="0"/>
         <V name="output" value="0"/>
         <V name="midiChannel" value="0"/>
-        <V name="voiceGroup" value="-1"/>
+        <V name="voiceGroup" value="%GROUP_VOICE_GROUP%"/>
         <V name="selectedForEdit" value="yes"/>
       </Parameters>
       <PlayPosOffset version="0.50"/>

@@ -25,7 +25,6 @@ public class AkaiS1000Envelope
     // 0..99
     private final byte release;
     // -50..50
-    @SuppressWarnings("unused")
     private final byte velocityToAttack;
     // -50..50
     @SuppressWarnings("unused")
@@ -34,7 +33,6 @@ public class AkaiS1000Envelope
     @SuppressWarnings("unused")
     private final byte offVelocityToRelease;
     // -50..50
-    @SuppressWarnings("unused")
     private final byte keyToDecayAndRelease;
 
 
@@ -98,5 +96,31 @@ public class AkaiS1000Envelope
     public byte getRelease ()
     {
         return this.release;
+    }
+
+
+    /**
+     * Get the intensity with which the key velocity modulates the attack time. The modulation is
+     * added to the attack parameter, which is a time: a positive value therefore lengthens the
+     * attack towards higher velocities.
+     *
+     * @return The intensity in the range of [-50..50]
+     */
+    public byte getVelocityToAttack ()
+    {
+        return this.velocityToAttack;
+    }
+
+
+    /**
+     * Get the intensity with which the played key modulates the decay and the release time. The
+     * modulation is added to the decay and release parameters, which are times: a positive value
+     * therefore lengthens both towards higher keys.
+     *
+     * @return The intensity in the range of [-50..50]
+     */
+    public byte getKeyToDecayAndRelease ()
+    {
+        return this.keyToDecayAndRelease;
     }
 }

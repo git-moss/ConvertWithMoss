@@ -151,7 +151,21 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
                     final MirageProgram mirageProgramUpper = mirageLayerUpper.programs.get (programIndex);
                     final String multiSampleName = programNames[layerIndex / 2] + " Program " + (programIndex + 1);
                     final List<IGroup> groups = createSampleZones (multiSampleName, mirageProgramLower, mirageLayerLower.waveSamples, sampleDataLower, mirageProgramUpper, mirageLayerUpper.waveSamples, sampleDataUpper);
-                    multiSampleSources.add (this.createMultisampleSource (sourceFile, parts, multiSampleName, groups));
+                    final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, parts, multiSampleName, groups);
+
+                    // The mono mode switch assigns one voice to each keyboard half and does not
+                    // re-trigger the envelope when a voice is stolen, which is exactly the
+                    // monophonic legato mode of the model. A multi-sample source combines both
+                    // keyboard halves, therefore only apply it if both of them agree. Otherwise the
+                    // polyphony is left unspecified since the 8 voices of the Mirage are a property
+                    // of the hardware and not of the program.
+                    if (mirageProgramLower.monoModeSwitch > 0 && mirageProgramUpper.monoModeSwitch > 0)
+                    {
+                        multisampleSource.setPolyphony (1);
+                        multisampleSource.setMonophonicLegato (true);
+                    }
+
+                    multiSampleSources.add (multisampleSource);
                 }
             }
 
@@ -244,7 +258,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
 
             final MirageProgram program = sampleCounter < 8 ? mirageProgramLower : mirageProgramUpper;
 
-            final IEnvelopeModulator ampEnvelopeModulation = createEnvelopeModulation (program.ampEnvelopeAttack, program.ampEnvelopeDecay, program.ampEnvelopeSustain, program.ampEnvelopeRelease, program.ampEnvelopeSustainVelocity);
+            final IEnvelopeModulator ampEnvelopeModulation = createEnvelopeModulation (program.ampEnvelopeAttack, program.ampEnvelopeDecay, program.ampEnvelopeSustain, program.ampEnvelopeRelease, program.ampEnvelopeSustainVelocity, program.ampEnvelopeAttackVelocity, program.ampEnvelopeDecayVelocity);
             final IEnvelopeModulator amplitudeEnvelopeModulator = osc1SampleZone.getAmplitudeEnvelopeModulator ();
             amplitudeEnvelopeModulator.setDepth (ampEnvelopeModulation.getDepth ());
             amplitudeEnvelopeModulator.setSource (ampEnvelopeModulation.getSource ());
@@ -252,7 +266,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             final double resonance = Math.clamp (program.resonance, 0, 160) / 160.0;
             final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 4, valueToFrequency (program.filterCutoffFreq + mirageWaveSample.relativeFilterFreq), resonance);
             final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
-            final IEnvelopeModulator filterEnvelopeModulation = createEnvelopeModulation (program.filterEnvelopeAttack, program.filterEnvelopeDecay, program.filterEnvelopeSustain, program.filterEnvelopeRelease, program.filterEnvelopeSustainVelocity);
+            final IEnvelopeModulator filterEnvelopeModulation = createEnvelopeModulation (program.filterEnvelopeAttack, program.filterEnvelopeDecay, program.filterEnvelopeSustain, program.filterEnvelopeRelease, program.filterEnvelopeSustainVelocity, program.filterEnvelopeAttackVelocity, program.filterEnvelopeDecayVelocity);
             cutoffEnvelopeModulator.setDepth (filterEnvelopeModulation.getDepth ());
             cutoffEnvelopeModulator.setSource (filterEnvelopeModulation.getSource ());
 
@@ -353,7 +367,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static IEnvelopeModulator createEnvelopeModulation (final int attack, final int decay, final int sustain, final int release, final int sustainVelocity)
+    private static IEnvelopeModulator createEnvelopeModulation (final int attack, final int decay, final int sustain, final int release, final int sustainVelocity, final int attackVelocity, final int decayKeyScaling)
     {
         final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (sustainVelocity / 124.0);
         final IEnvelope envelope = modulator.getSource ();
@@ -361,6 +375,18 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
         envelope.setDecayTime (parseTime (decay));
         envelope.setSustainLevel (parseVolume (sustain));
         envelope.setReleaseTime (parseTime (release));
+
+        // Both parameters are unipolar in the range of [0..124] and are normalized to the model
+        // range of [0..1]. 0 means no scaling and higher values shorten the times, which matches
+        // the positive direction of the model.
+        // The velocity sensitive attack rate only applies to the attack whereas the model scales
+        // all times of the envelope
+        envelope.setTimeVelocityTracking (Math.clamp (attackVelocity / 124.0, 0, 1));
+        // Despite its name the 'decay velocity' parameter depends on the location of the played key
+        // and not on the velocity - it shortens the decay time of higher notes. It only applies to
+        // the decay whereas the model scales all times of the envelope.
+        envelope.setTimeKeyTracking (Math.clamp (decayKeyScaling / 124.0, 0, 1));
+
         return modulator;
     }
 

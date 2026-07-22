@@ -150,7 +150,9 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
 
         final List<ISampleLoop> loops = zone.getLoops ();
         final ISampleLoop loop = loops.isEmpty () ? null : loops.get (0);
-        if (loop != null && loop.getEnd () > loop.getStart ())
+        // A one-shot ignores a note-off and always plays the sample to its end which has priority
+        // over a loop since the Tracker can only store one of both in the play-mode
+        if (!zone.isOneShot () && loop != null && loop.getEnd () > loop.getStart ())
         {
             buffer.put (PolyendTrackerConstants.OFF_PLAYMODE, (byte) loopPlaymode (loop));
             buffer.putShort (PolyendTrackerConstants.OFF_LOOP1, (short) PolyendTrackerValueConverter.frameToNormalized (Math.max (0, loop.getStart ()), totalFrames));

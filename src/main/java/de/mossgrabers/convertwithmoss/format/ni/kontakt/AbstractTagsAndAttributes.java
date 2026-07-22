@@ -144,6 +144,9 @@ public abstract class AbstractTagsAndAttributes
     /** The reverse parameter. */
     private static final String REVERSE_PARAM              = "reverse";
 
+    /** The voice group parameter, which is the Kontakt name for an exclusive group. */
+    private static final String VOICE_GROUP_PARAM          = "voiceGroup";
+
     /** The loops element. */
     private static final String LOOPS_ELEMENT              = "Loops";
 
@@ -170,6 +173,9 @@ public abstract class AbstractTagsAndAttributes
 
     /** The one-shot value. */
     private static final String ONESHOT_VALUE              = "oneshot";
+
+    /** The note-off-less mode parameter of an envelope. Only present from Kontakt 2 onwards. */
+    private static final String NOTE_OFF_LESS_MODE_PARAM   = "noteOffLessMode";
 
     /** The alternating loop parameter. */
     private static final String ALTERNATING_LOOP_PARAM     = "alternatingLoop";
@@ -779,6 +785,17 @@ public abstract class AbstractTagsAndAttributes
 
 
     /**
+     * Get the voice group parameter tag, which is the Kontakt name for an exclusive group.
+     *
+     * @return The tag
+     */
+    public String voiceGroupParam ()
+    {
+        return VOICE_GROUP_PARAM;
+    }
+
+
+    /**
      * Get the loops element tag.
      *
      * @return The tag
@@ -885,6 +902,18 @@ public abstract class AbstractTagsAndAttributes
     public String oneshotValue ()
     {
         return ONESHOT_VALUE;
+    }
+
+
+    /**
+     * Get the note-off-less mode tag. If the amplitude envelope is set to that mode, note-off
+     * events are ignored and the sample is always played back to its end (one-shot).
+     *
+     * @return The tag
+     */
+    public String noteOffLessModeParam ()
+    {
+        return NOTE_OFF_LESS_MODE_PARAM;
     }
 
 
@@ -1048,4 +1077,14 @@ public abstract class AbstractTagsAndAttributes
      * @return The tuning [-1..1] which stands for [-100,100] semitones
      */
     public abstract double calculateTune (double zoneTune, double groupTune, double progTune);
+
+
+    /**
+     * Calculate the tuning offset which is contributed by the group alone. This is the value which
+     * needs to be added on top of the tuning of a sample zone.
+     *
+     * @param groupTune The group tuning
+     * @return The tuning offset in semi-tones, 0 if the group does not add any tuning
+     */
+    public abstract double calculateGroupTune (double groupTune);
 }

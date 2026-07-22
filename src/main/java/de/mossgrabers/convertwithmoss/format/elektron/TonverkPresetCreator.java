@@ -284,10 +284,12 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
 
         final TonverkSampleSlot sampleSlot = new TonverkSampleSlot ();
         sampleSlot.sample = createSafeFilename (zone.getName ()) + ".wav";
-        if (TonverkMultiCreator.hasLoop (zone))
+        // A one-shot ignores a note-off and always plays the sample to its end which is the loop
+        // mode 'Off'. It has priority over a loop since the Tonverk can only store one of both.
+        if (TonverkMultiCreator.hasLoop (zone) && !zone.isOneShot ())
         {
             final ISampleLoop loop = zone.getLoops ().get (0);
-            sampleSlot.loopMode = "Forward";
+            sampleSlot.loopMode = TonverkValues.LOOP_MODE_FORWARD;
             sampleSlot.loopStart = Integer.valueOf (Math.max (0, loop.getStart ()));
             sampleSlot.loopEnd = Integer.valueOf (loop.getEnd ());
             final int crossfade = loop.getCrossfadeInSamples ();
@@ -297,7 +299,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
             sampleSlot.keepLoopingOnRelease = Boolean.valueOf (!loop.isLoopUntilRelease ());
         }
         else
-            sampleSlot.loopMode = "Off";
+            sampleSlot.loopMode = TonverkValues.LOOP_MODE_OFF;
         velocityLayer.sampleSlots.add (sampleSlot);
         return keyZone;
     }

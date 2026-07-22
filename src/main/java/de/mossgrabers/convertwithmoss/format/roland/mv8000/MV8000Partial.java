@@ -31,10 +31,16 @@ public class MV8000Partial
     /** TVF filter type: high-pass. */
     public static final int      FILTER_HPF        = 3;
 
+    /** The stored mute group value for 'Off'. The groups 1-16 are stored as 2-17. */
+    public static final int      MUTE_GROUP_OFF    = 1;
+    /** The number of available mute groups. */
+    public static final int      NUM_MUTE_GROUPS   = 16;
+
     private static final int     NAME_LENGTH       = 12;
     private static final int     OFFSET_SLOT_1     = 146;
     private static final int     USED_TAG_OFFSET   = 84;
     private static final int     USED_TAG_VALUE    = 0x27;
+    private static final int     OFFSET_MUTE_GROUP = 105;
 
     // The TVF (filter) and TVA (amplifier) block, decoded from the parameter descriptor tables of
     // the MV-8000 firmware (see documentation/design/MV8000_FORMAT.md)
@@ -47,6 +53,7 @@ public class MV8000Partial
     private static final int     OFFSET_TVA_CURVE  = 1136;
     private static final int     OFFSET_TVA_LEVELS = 1159;
     private static final int     OFFSET_TVA_TIMES  = 1180;
+    private static final int     OFFSET_TVA_LVL_KF = 1226;
 
     /** An unused partial record ('Init Partial') as found in the factory patches. */
     private static final byte [] INIT_PARTIAL      = HexFormat.of ().parseHex ("93bb4f441430f2e9a70ec01fe007fe4c9020400000107f810200101fc000000000000000000000000000000008000004" + "1fe040800407f00000000000000000000000000000000200000107f810200101fc000000000000000000000000000000" + "0080000041fe040800407f000000000000000000000000000000002007f00c0810207ffffc0000505004080f20406040" + "81fffff000a0a0a79020066000102040810000");
@@ -125,6 +132,31 @@ public class MV8000Partial
 
 
     /**
+     * Get the mute group. All sounding notes of the same group are stopped when a note of that
+     * group is started.
+     *
+     * @return The stored mute group in the range of 1..17, {@link #MUTE_GROUP_OFF} = Off, 2 = group
+     *         1
+     */
+    public int getMuteGroup ()
+    {
+        return this.bits.getBits (OFFSET_MUTE_GROUP, 5);
+    }
+
+
+    /**
+     * Set the mute group.
+     *
+     * @param muteGroup The stored mute group in the range of 1..17, {@link #MUTE_GROUP_OFF} = Off,
+     *            2 = group 1
+     */
+    public void setMuteGroup (final int muteGroup)
+    {
+        this.bits.setBits (OFFSET_MUTE_GROUP, 5, muteGroup);
+    }
+
+
+    /**
      * Get the TVA velocity curve.
      *
      * @return The curve in the range of 0..3, 0 means velocity does not affect the volume
@@ -132,6 +164,29 @@ public class MV8000Partial
     public int getTvaVelocityCurve ()
     {
         return this.bits.getBits (OFFSET_TVA_CURVE, 2);
+    }
+
+
+    /**
+     * Get the TVA level key follow. The volume changes with the played key relative to the key
+     * follow point of the partial.
+     *
+     * @return The key follow in the range of 1..127, 64 is no key follow
+     */
+    public int getTvaLevelKeyFollow ()
+    {
+        return this.bits.getBits (OFFSET_TVA_LVL_KF, 7);
+    }
+
+
+    /**
+     * Set the TVA level key follow.
+     *
+     * @param keyFollow The key follow in the range of 1..127, 64 is no key follow
+     */
+    public void setTvaLevelKeyFollow (final int keyFollow)
+    {
+        this.bits.setBits (OFFSET_TVA_LVL_KF, 7, keyFollow);
     }
 
 

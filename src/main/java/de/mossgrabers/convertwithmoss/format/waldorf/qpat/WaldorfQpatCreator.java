@@ -257,6 +257,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         {
             final StringBuilder sb = new StringBuilder ();
 
+            // The detectors flatten the group gain and panning into each of their zones (see
+            // IGroup#getGain). Since these offsets are written to the oscillator volume and panning
+            // (see createParameters), they must be removed here again, otherwise the device applies
+            // them a second time.
+            final double gainOffset = getGroupGainOffset (group);
+            final double panningOffset = getGroupPanningOffset (group);
+
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 if (!sb.isEmpty ())
@@ -289,14 +296,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 sb.append (zone.getKeyLow ()).append ('\t').append (zone.getKeyHigh ()).append ('\t');
 
                 // Gain
-                final double v = Math.clamp (zone.getGain (), Double.NEGATIVE_INFINITY, 20);
+                final double v = Math.clamp (zone.getGain () - gainOffset, Double.NEGATIVE_INFINITY, 20);
                 sb.append (formatMapDouble (Math.pow (10, v / 20) * gainFactor)).append ('\t');
 
                 // FromVelo / ToVelo
                 sb.append (zone.getVelocityLow ()).append ('\t').append (zone.getVelocityHigh ()).append ('\t');
 
                 // Pan - CURRENTLY IGNORED
-                sb.append (formatMapDouble ((zone.getPanning () + 1.0) / 2.0)).append ('\t');
+                sb.append (formatMapDouble (Math.clamp ((zone.getPanning () - panningOffset + 1.0) / 2.0, 0, 1))).append ('\t');
 
                 // Start / End - a zone whose start/stop was never set keeps the model default of
                 // -1, which would otherwise be written as a negative position (the device then
@@ -353,6 +360,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         {
             // Add all sample zones of groups 4..last to group 3
             final IGroup lastGroup = groups.get (2);
+            // The added zones already carry the (flattened) offsets of their own group, which
+            // differ from the ones of the target group. Clear the offsets of the target group so
+            // that gain and panning are stored completely per zone in the sample map.
+            lastGroup.setGain (0);
+            lastGroup.setPanning (0);
+            lastGroup.setTuning (0);
             for (int i = 3; i < groups.size (); i++)
                 for (final ISampleZone zone: groups.get (i).getSampleZones ())
                     lastGroup.addSampleZone (zone);
@@ -390,6 +403,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             {
                 final DefaultGroup layerGroup = new DefaultGroup (group.getName ());
                 layerGroup.setTrigger (group.getTrigger ());
+                // All zones of a layer stem from the same group, therefore they all carry the same
+                // flattened offsets and the group offsets stay valid for each layer.
+                layerGroup.setGain (group.getGain ());
+                layerGroup.setPanning (group.getPanning ());
+                layerGroup.setTuning (group.getTuning ());
                 for (final ISampleZone zone: layer)
                     layerGroup.addSampleZone (zone);
                 result.add (layerGroup);
@@ -490,12 +508,18 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // Osc1Keytrack: [0..1] ~ [-200..200] - already set in the sample maps
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Keytrack", "+100.0", 0.75f));
 
-            // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB] - already set in the sample maps
-            final String volumeStr = "+" + StringUtils.formatDouble (0, 3, " dB");
-            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Vol", volumeStr, (float) convertFromDecibels (0)));
+            // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB]. The oscillator is the group, so the group's
+            // gain offset is stored here and the remainder per zone in the sample map. A source
+            // without a group gain keeps the neutral 0 dB and stores everything in the sample map.
+            final double gainOffset = getGroupGainOffset (groups.get (i));
+            final String volumeStr = (gainOffset < 0 ? "" : "+") + StringUtils.formatDouble (gainOffset, 3, " dB");
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Vol", volumeStr, (float) convertFromDecibels (gainOffset)));
 
-            // Osc1Pan: [0..1] ~ [L..R] - already set in the sample maps
-            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Pan", "Center", 0.5f));
+            // Osc1Pan: [0..1] ~ [L..R]. Same as the volume above: the group's panning offset is
+            // stored here, the remainder per zone in the sample map.
+            final double panningOffset = getGroupPanningOffset (groups.get (i));
+            final String panningStr = panningOffset == 0 ? "Center" : StringUtils.formatPercent (panningOffset, 2);
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Pan", panningStr, (float) ((panningOffset + 1.0) / 2.0)));
 
             createPitchEnvelopeModulator (parameters, firstZone.getPitchEnvelopeModulator (), i + 1);
 
@@ -754,6 +778,34 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             categories.add ("");
         for (int i = 0; i < 4; i++)
             StreamUtils.writeAscii (out, StringUtils.fixASCII (categories.get (i)), WaldorfQpatConstants.MAX_STRING_LENGTH);
+    }
+
+
+    /**
+     * Get the gain offset of a group which is stored in the volume of the respective oscillator.
+     * The offset is not applied for a fully silenced group, since subtracting negative infinity
+     * from the (equally infinite) zone gain would result in a NaN which cannot be written.
+     *
+     * @param group The group
+     * @return The gain offset in dB, 0 if there is none
+     */
+    private static double getGroupGainOffset (final IGroup group)
+    {
+        final double gain = group.getGain ();
+        return Double.isFinite (gain) ? gain : 0;
+    }
+
+
+    /**
+     * Get the panning offset of a group which is stored in the panning of the respective
+     * oscillator.
+     *
+     * @param group The group
+     * @return The panning offset in the range of [-1..1], 0 if there is none
+     */
+    private static double getGroupPanningOffset (final IGroup group)
+    {
+        return Math.clamp (group.getPanning (), -1.0, 1.0);
     }
 
 

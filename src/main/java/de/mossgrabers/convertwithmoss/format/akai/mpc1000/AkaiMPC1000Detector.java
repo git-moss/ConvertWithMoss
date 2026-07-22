@@ -129,6 +129,9 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setVelocityLow (sample.getVelocityRangeLower ());
         sampleZone.setVelocityHigh (sample.getVelocityRangeUpper ());
 
+        // The mute group already uses 0 for 'Off' like the model
+        sampleZone.setExclusiveGroup (Math.clamp (pad.getMuteGroup (), 0, 32));
+
         // Pitch
         sampleZone.setTuning (sample.getTuning () / 100.0);
         sampleZone.setKeyTracking (0);
@@ -137,14 +140,18 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setGain (MathUtils.valueToDb ((pad.getMixerLevel () + sample.getLevel ()) / 200.0));
         sampleZone.setPanning ((pad.getMixerPan () - 50) / 50.0);
 
+        // Play mode 0 = One Shot: a note-off is ignored and the sample is played up to its end
+        final boolean isOneShot = sample.getPlayMode () == 0;
+
         final IAudioMetadata audioMetadata = sampleData.getAudioMetadata ();
         final int sampleLength = audioMetadata.getNumberOfSamples ();
         final int sampleLengthAsSeconds = sampleLength / audioMetadata.getSampleRate ();
         final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();
-        amplitudeEnvelopeModulator.setSource (convertEnvelope (pad, sample.getPlayMode () == 0, sampleLengthAsSeconds));
+        amplitudeEnvelopeModulator.setSource (convertEnvelope (pad, isOneShot, sampleLengthAsSeconds));
         amplitudeEnvelopeModulator.setDepth (pad.getVelocityToLevel () / 100.0);
 
         // Play-back
+        sampleZone.setOneShot (isOneShot);
         sampleZone.setStart (0);
         sampleZone.setStop (sampleLength);
 

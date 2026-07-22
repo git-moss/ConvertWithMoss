@@ -20,6 +20,7 @@ import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
@@ -175,6 +176,52 @@ public abstract class AbstractMusic1010Creator extends AbstractWavCreator<Music1
         sessionElement.setAttribute (Music1010Tag.ATTR_VERSION, "1");
 
         return Optional.of (new Pair<> (document, sessionElement));
+    }
+
+
+    /**
+     * Test if all sample zones of all groups are one-shots, which means that a note-off is ignored
+     * and the sample is always played to its end.
+     *
+     * @param groups The groups which contain the sample zones to test
+     * @return True if there is at least one sample zone and all of them are one-shots
+     */
+    protected static boolean isOneShot (final List<IGroup> groups)
+    {
+        boolean hasZones = false;
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                if (!zone.isOneShot ())
+                    return false;
+                hasZones = true;
+            }
+        return hasZones;
+    }
+
+
+    /**
+     * Get the exclusive group which is shared by all sample zones of all groups. The choke group is
+     * only available for the full instrument, therefore it can only be stored if all sample zones
+     * agree on it.
+     *
+     * @param groups The groups which contain the sample zones to test
+     * @return The common exclusive group, 0 if there is none or if the sample zones do not agree
+     */
+    protected static int getCommonExclusiveGroup (final List<IGroup> groups)
+    {
+        boolean hasZones = false;
+        int commonExclusiveGroup = 0;
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final int exclusiveGroup = Math.max (0, zone.getExclusiveGroup ());
+                if (hasZones && commonExclusiveGroup != exclusiveGroup)
+                    return 0;
+                commonExclusiveGroup = exclusiveGroup;
+                hasZones = true;
+            }
+        return commonExclusiveGroup;
     }
 
 

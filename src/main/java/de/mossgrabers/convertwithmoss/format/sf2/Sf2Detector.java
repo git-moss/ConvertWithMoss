@@ -749,6 +749,9 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             zone.setVelocityLow (velRangeValue.getKey ().intValue ());
             zone.setVelocityHigh (velRangeValue.getValue ().intValue ());
 
+            // Set the exclusive group, 0 means that the zone is not assigned to any group
+            zone.setExclusiveGroup (Math.clamp (generators.getUnsignedValue (Generator.EXCLUSIVE_CLASS).intValue (), 0, 127));
+
             // Set play range
             zone.setStart (0);
             final Integer sampleStartOffset = generators.getSignedValue (Generator.START_ADDRS_OFFSET);
@@ -788,6 +791,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             amplitudeEnvelope.setDecayTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_DECAY)));
             amplitudeEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.VOL_ENV_RELEASE)));
             amplitudeEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.VOL_ENV_SUSTAIN)));
+            amplitudeEnvelope.setTimeKeyTracking (convertEnvelopeKeyTracking (generators.getSignedValue (Generator.KEYNUM_TO_VOL_ENV_DECAY), generators.getSignedValue (Generator.KEYNUM_TO_VOL_ENV_HOLD)));
 
             // Filter settings
             final Integer initialCutoffValue = generators.getSignedValue (Generator.INITIAL_FILTER_CUTOFF);
@@ -823,6 +827,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                         filterEnvelope.setDecayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
                         filterEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
                         filterEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
+                        filterEnvelope.setTimeKeyTracking (convertEnvelopeKeyTracking (generators.getSignedValue (Generator.KEYNUM_TO_MOD_ENV_DECAY), generators.getSignedValue (Generator.KEYNUM_TO_MOD_ENV_HOLD)));
                     }
 
                     zone.setFilter (filter);
@@ -841,6 +846,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 pitchEnvelope.setDecayTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_DECAY)));
                 pitchEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
                 pitchEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
+                pitchEnvelope.setTimeKeyTracking (convertEnvelopeKeyTracking (generators.getSignedValue (Generator.KEYNUM_TO_MOD_ENV_DECAY), generators.getSignedValue (Generator.KEYNUM_TO_MOD_ENV_HOLD)));
             }
 
             return Optional.of (zone);
@@ -861,6 +867,29 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         final double v = Math.pow (2, value.doubleValue () / 1200.0);
         // Ignore times less than 1 millisecond
         return v < 0.001 ? -1 : v;
+    }
+
+
+    /**
+     * Convert the key number to envelope hold and decay generators into the key tracking of the
+     * envelope times. The generators are given in time-cents per key number and are specified in
+     * the range of [-1200..1200], therefore they are normalized by 1200. The value is the amount by
+     * which the time is decreased for each key above the center key 60. A positive value shortens
+     * the times towards higher keys, which is the same direction as the one of the model.
+     * <p>
+     * The model can only store one value for all times of an envelope. The decay generator is
+     * therefore preferred and the hold generator is only used if the decay one is not set.
+     *
+     * @param decayValue The value of the key number to envelope decay generator, might be null
+     * @param holdValue The value of the key number to envelope hold generator, might be null
+     * @return The key tracking in the range of [-1..1]
+     */
+    private static double convertEnvelopeKeyTracking (final Integer decayValue, final Integer holdValue)
+    {
+        int value = decayValue == null ? 0 : decayValue.intValue ();
+        if (value == 0 && holdValue != null)
+            value = holdValue.intValue ();
+        return Math.clamp (value / (double) Generator.MAX_KEYNUM_TO_ENV, -1.0, 1.0);
     }
 
 

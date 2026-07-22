@@ -147,6 +147,59 @@ public interface ISampleZone
 
 
     /**
+     * Check if the sample is played back as a one-shot, which means that a note-off event is
+     * ignored and the sample is always played back to its end (or until the amplitude envelope has
+     * finished). This is different to the trigger type, which describes what starts the playback,
+     * and different to a loop which is only played until the key is released
+     * ({@link ISampleLoop#isLoopUntilRelease ()}).
+     * <p>
+     * Known encodings of this attribute are: Akai AKP loop type 1, Akai MPC <code>OneShot</code>,
+     * Akai S900 flag 0x08, SFZ <code>loop_mode=one_shot</code>, Logic EXS24 zone flag
+     * <code>oneshot</code>, Renoise <code>OneShotTrigger</code>, 1010music
+     * <code>samtrigtype</code>, Roland ZenCore USPa loop mode 1, Roland S7xx loop mode 2, Yamaha
+     * YSFC <code>receiveNoteOff=off</code> and Synclavier loop bits 4 and 5.
+     *
+     * @return True if the sample is played back as a one-shot
+     */
+    boolean isOneShot ();
+
+
+    /**
+     * Set the sample to be played back as a one-shot, which means that a note-off event is ignored
+     * and the sample is always played back to its end.
+     *
+     * @param isOneShot True to play back the sample as a one-shot
+     */
+    void setOneShot (boolean isOneShot);
+
+
+    /**
+     * Get the exclusive group of the sample. All currently sounding notes which are assigned to the
+     * same exclusive group are stopped when a note of that group is started. This is typically used
+     * to model a closed hi-hat cutting off an open one.
+     * <p>
+     * Known encodings of this attribute are: SoundFont 2 generator 57 <code>exclusiveClass</code>,
+     * DLS <code>keyGroup</code>, Akai MPC1000 <code>muteGroup</code>, Akai MPC60
+     * <code>exclusive</code>, Yamaha YSFC <code>alternateGroup</code>, Kontakt
+     * <code>voiceGroupIdx</code>, Logic EXS24 group <code>exclusive</code>, Renoise
+     * <code>MuteGroupIndex</code>, TAL Sampler <code>mutegroup</code> and 1010music
+     * <code>chokegrp</code>.
+     *
+     * @return The exclusive group or 0 if the sample is not assigned to any exclusive group
+     */
+    int getExclusiveGroup ();
+
+
+    /**
+     * Set the exclusive group of the sample.
+     *
+     * @param exclusiveGroup The exclusive group or 0 if the sample should not be assigned to any
+     *            exclusive group
+     */
+    void setExclusiveGroup (int exclusiveGroup);
+
+
+    /**
      * Get the lowest key of the key-range to which the sample is mapped.
      *
      * @return The lowest key of the key-range to which the sample is mapped
@@ -356,6 +409,40 @@ public interface ISampleZone
      *            full tracking, 0% is no tracking
      */
     void setKeyTracking (double keyTracking);
+
+
+    /**
+     * Get the key tracking of the amplitude, which means how much the volume of the sample changes
+     * depending on the played key relative to the root key. This is the amplitude counterpart of
+     * {@link IFilter#getCutoffKeyTracking ()}.
+     * <p>
+     * Known encodings of this attribute are: Akai S1000 <code>keyToVolume</code>, Yamaha YSFC
+     * <code>levelKeyFollowSensitivity</code>, Roland S7xx <code>levelKf</code>, Logic EXS24
+     * <code>VOLUME_KEYSCALE</code> and DLS <code>CONN_SRC_KEYNUMBER</code> to
+     * <code>CONN_DST_GAIN</code>.
+     *
+     * The unit is fixed to <b>1 decibel per key</b> relative to the root key, which means that 1.0
+     * raises the volume by 1 dB for each key above the root key (12 dB per octave) and -1.0 lowers
+     * it by the same amount. Fixing the unit is necessary because the value has no natural 1:1
+     * reference like pitch or filter key tracking have; without it every format would pick its own
+     * anchor and the values would not survive a conversion. Formats whose native law is not known
+     * approximate their range linearly and say so at the conversion site.
+     *
+     * @return The key tracking in the range of [-1..1] representing -1 to +1 decibel per key. 0 is
+     *         no tracking, positive values increase the volume for higher keys, negative values
+     *         decrease it
+     */
+    double getAmplitudeKeyTracking ();
+
+
+    /**
+     * Set the key tracking of the amplitude.
+     *
+     * @param amplitudeKeyTracking The key tracking in the range of [-1..1] representing -1 to +1
+     *            decibel per key. 0 is no tracking, positive values increase the volume for higher
+     *            keys, negative values decrease it
+     */
+    void setAmplitudeKeyTracking (double amplitudeKeyTracking);
 
 
     /**

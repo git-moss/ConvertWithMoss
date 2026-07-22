@@ -289,6 +289,34 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             multisampleSource.setGlobalFilter (filter.get ());
 
         applyGlobalEnvelopes (deviceElement, multisampleSource);
+        applyOneShot (deviceElement, multisampleSource);
+    }
+
+
+    /**
+     * Read the one-shot play-back mode and apply it to all zones. It is a global setting of the
+     * device and only available for a Simpler: the mode 'One-Shot' plays the sample to its end and
+     * ignores a note-off as long as the sustain mode is set to 'Trigger' and not to 'Gate'.
+     *
+     * @param deviceElement The device element
+     * @param multisampleSource The multi-sample source which contains the zones to update
+     */
+    private static void applyOneShot (final Element deviceElement, final IMultisampleSource multisampleSource)
+    {
+        final Element globalsElement = XMLUtils.getChildElementByName (deviceElement, AbletonTag.TAG_GLOBALS);
+        if (globalsElement == null || getIntegerValueAttribute (globalsElement, AbletonTag.TAG_PLAYBACK_MODE, 0) != AbletonTag.PLAYBACK_MODE_ONE_SHOT)
+            return;
+
+        // 'Gate' stops the play-back on a note-off, therefore only 'Trigger' is a real one-shot
+        final Element volumeAndPanElement = XMLUtils.getChildElementByName (deviceElement, AbletonTag.TAG_VOLUME_AND_PAN);
+        final Element oneShotEnvelopeElement = volumeAndPanElement == null ? null : XMLUtils.getChildElementByName (volumeAndPanElement, AbletonTag.TAG_ONE_SHOT_ENVELOPE);
+        final Element sustainModeElement = oneShotEnvelopeElement == null ? null : XMLUtils.getChildElementByName (oneShotEnvelopeElement, AbletonTag.TAG_SUSTAIN_MODE);
+        if (sustainModeElement != null && getIntegerValueAttribute (sustainModeElement, AbletonTag.TAG_MANUAL, AbletonTag.SUSTAIN_MODE_TRIGGER) != AbletonTag.SUSTAIN_MODE_TRIGGER)
+            return;
+
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+                zone.setOneShot (true);
     }
 
 
@@ -586,16 +614,19 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     private static List<IGroup> applyRoundRobin (final Element mapElement, final IGroup group)
     {
         // "0" = forward, "1" = backwards, "2" = other, "3" = random
-        final int roundRobinDirection = getIntegerValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_MODE, 0);
+        final int roundRobinDirection = getIntegerValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_MODE, AbletonTag.ROUND_ROBIN_MODE_FORWARD);
+        // Only the random mode picks a zone randomly, all other modes cycle through the zones
+        final PlayLogic playLogic = roundRobinDirection == AbletonTag.ROUND_ROBIN_MODE_RANDOM ? PlayLogic.RANDOM : PlayLogic.ROUND_ROBIN;
         final List<List<ISampleZone>> splitZones = ZoneSplitter.splitZonesStableOrder (group.getSampleZones ());
         final List<IGroup> groups = new ArrayList<> ();
         for (int i = 0; i < splitZones.size (); i++)
         {
             final List<ISampleZone> sampleZones = splitZones.get (i);
             for (final ISampleZone sampleZone: sampleZones)
-                sampleZone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                sampleZone.setPlayLogic (playLogic);
 
-            if (roundRobinDirection < 2)
+            // A random selection has no play-back order, therefore no sequence is assigned
+            if (roundRobinDirection <= AbletonTag.ROUND_ROBIN_MODE_BACKWARDS)
                 setRoundRobinSequence (sampleZones, roundRobinDirection == 0);
             final IGroup layerGroup = new DefaultGroup ("Group #" + (i + 1));
             layerGroup.setSampleZones (sampleZones);

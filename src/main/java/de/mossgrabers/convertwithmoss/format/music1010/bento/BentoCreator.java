@@ -345,6 +345,17 @@ public class BentoCreator extends AbstractMusic1010Creator
             if (loopReverses.size () == 1)
                 paramsElement.setAttribute (Music1010Tag.ATTR_REVERSE, loopReverses.iterator ().next ());
 
+            // The trigger type is only available for the full instrument. 'Trigger' (0) plays the
+            // full sample and ignores a note-off.
+            if (isOneShot (groups))
+                paramsElement.setAttribute (Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, "0");
+
+            // The choke group is only available for the full instrument. It defaults to 0 (no choke
+            // group), therefore it is only written if all sample zones share an exclusive group.
+            final int exclusiveGroup = getCommonExclusiveGroup (groups);
+            if (exclusiveGroup > 0)
+                paramsElement.setAttribute (Music1010Tag.ATTR_CHOKE_GROUP, Integer.toString (exclusiveGroup));
+
             createFilter (paramsElement, multisampleSource);
         }
 

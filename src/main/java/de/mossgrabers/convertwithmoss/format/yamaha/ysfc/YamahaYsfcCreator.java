@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.IntConsumer;
 
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
@@ -37,7 +38,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -471,16 +471,35 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         element.setWaveBank (waveBank);
         element.setWaveformNumber (counters.keygroupCounter);
 
-        setElementParameters (element, sampleZones.get (0));
+        setElementParameters (element, sampleZones);
 
         // Return the wave reference
         return (waveBank << 16) + counters.keygroupCounter;
     }
 
 
-    private static void setElementParameters (final YamahaYsfcPartElement element, final ISampleZone zone)
+    private static void setElementParameters (final YamahaYsfcPartElement element, final List<ISampleZone> zones)
     {
-        element.setXaMode (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN ? 3 : 0);
+        final ISampleZone zone = zones.get (0);
+
+        // Cycle and Random can both be expressed, everything else plays back normally
+        element.setXaMode (switch (zone.getPlayLogic ())
+        {
+            case ROUND_ROBIN -> 3;
+            case RANDOM -> 4;
+            default -> 0;
+        });
+
+        // An element covers a full group, therefore the exclusive group can only be applied if all
+        // zones of the group agree on it. Keep the value of the template if there is none.
+        final int exclusiveGroup = getUniformExclusiveGroup (zones);
+        if (exclusiveGroup > 0)
+            element.setAlternateGroup (exclusiveGroup);
+
+        // Ignore note-off events to always play back the sample to its end. Keep the value of the
+        // template if it is not a one-shot sample.
+        if (zone.isOneShot ())
+            element.setReceiveNoteOff (0);
 
         // Tuning
 
@@ -500,6 +519,12 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         // Range is actually from -64..63 but but it gets already un-playable from 32 onwards...
         element.setLevelVelocitySensitivity (MathUtils.denormalizeIntegerRange (zone.getAmplitudeVelocityModulator ().getDepth (), -32, 32, 64));
 
+        // The model range of [-1..1] is de-normalized to [0..127] with 64 as the neutral center,
+        // which relates to -64..+63. Keep the value of the template if there is no tracking.
+        final double amplitudeKeyTracking = zone.getAmplitudeKeyTracking ();
+        if (amplitudeKeyTracking != 0)
+            element.setLevelKeyFollowSensitivity (MathUtils.denormalizeIntegerRange (amplitudeKeyTracking, -64, 63, 64));
+
         final IEnvelope ampEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         element.setAegAttackTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (ampEnvelope.getAttackTime () * 6.0));
         element.setAegDecay1Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ())));
@@ -508,6 +533,12 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final int sustainLevel = (int) Math.round (ampEnvelope.getSustainLevel () * 127.0);
         element.setAegDecay1Level (sustainLevel);
         element.setAegDecay2Level (sustainLevel);
+
+        // The model range of [-1..1] is de-normalized to [0..127] with 64 as the neutral center,
+        // which relates to -64..+63. Keep the value of the template if there is no tracking. The
+        // time key follow center note of the template is left untouched since the model has no
+        // matching attribute.
+        setEnvelopeTimeTracking (ampEnvelope, element::setAegTimeVelocitySensitivity, element::setAegTimeKeyFollowSensitivity);
 
         // Pitch Envelope
 
@@ -527,6 +558,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             element.setPegDecay1Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (Math.max (0, pitchEnvelope.getHoldTime ()) + Math.max (0, pitchEnvelope.getDecayTime ())));
             element.setPegDecay2Time (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (0));
             element.setPegReleaseTime (YamahaYsfcPartElement.convertSecondsToEnvelopeTime (pitchEnvelope.getReleaseTime ()));
+            setEnvelopeTimeTracking (pitchEnvelope, element::setPegTimeVelocitySensitivity, element::setPegTimeKeyFollowSensitivity);
         }
 
         // Filter
@@ -564,8 +596,46 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
                 element.setFegDecay1Level (filterSustainLevel);
                 element.setFegDecay2Level (filterSustainLevel);
                 element.setFegReleaseLevel (MathUtils.denormalizeIntegerRange (cutoffEnvelope.getEndLevel (), -128, 127, 128));
+                setEnvelopeTimeTracking (cutoffEnvelope, element::setFegTimeVelocitySensitivity, element::setFegTimeKeyFollowSensitivity);
             }
         }
+    }
+
+
+    /**
+     * Applies the key and velocity tracking of the envelope times to an element. The model range of
+     * [-1..1] is de-normalized to [0..127] with 64 as the neutral center, which relates to -64..+63.
+     * Nothing is applied if there is no tracking, which keeps the value of the template.
+     *
+     * @param envelope The envelope from which to read the tracking amounts
+     * @param velocitySensitivitySetter Applies the time velocity sensitivity to the element
+     * @param keyFollowSensitivitySetter Applies the time key follow sensitivity to the element
+     */
+    private static void setEnvelopeTimeTracking (final IEnvelope envelope, final IntConsumer velocitySensitivitySetter, final IntConsumer keyFollowSensitivitySetter)
+    {
+        final double timeVelocityTracking = envelope.getTimeVelocityTracking ();
+        if (timeVelocityTracking != 0)
+            velocitySensitivitySetter.accept (MathUtils.denormalizeIntegerRange (timeVelocityTracking, -64, 63, 64));
+
+        final double timeKeyTracking = envelope.getTimeKeyTracking ();
+        if (timeKeyTracking != 0)
+            keyFollowSensitivitySetter.accept (MathUtils.denormalizeIntegerRange (timeKeyTracking, -64, 63, 64));
+    }
+
+
+    /**
+     * Get the exclusive group which is shared by all given zones.
+     *
+     * @param zones The zones to check
+     * @return The exclusive group or 0 if the zones do not all use the same one
+     */
+    private static int getUniformExclusiveGroup (final List<ISampleZone> zones)
+    {
+        final int exclusiveGroup = zones.get (0).getExclusiveGroup ();
+        for (final ISampleZone zone: zones)
+            if (zone.getExclusiveGroup () != exclusiveGroup)
+                return 0;
+        return exclusiveGroup;
     }
 
 

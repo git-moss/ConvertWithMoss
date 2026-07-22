@@ -228,6 +228,60 @@ public interface IEnvelope
 
 
     /**
+     * Get the key tracking of the envelope times. This scales all times (rates) of the envelope
+     * depending on the played key: a positive value shortens the times towards higher keys and
+     * lengthens them towards lower keys, a negative value does the opposite. The times are
+     * unchanged at the center key (MIDI note 60). This is different to the attack, decay and
+     * release slopes, which describe the curvature of a segment and not its duration.
+     * <p>
+     * Known encodings of this attribute are: Akai S1000 <code>keyToDecayAndRelease</code>, Yamaha
+     * YSFC <code>aegTimeKeyFollowSensitivity</code>, Ensoniq EPS/ASR <code>kbTimeScaling</code>,
+     * Roland S7xx <code>envTimeKf</code>, SoundFont 2 generators 31 and 32
+     * (<code>keynumToModEnvHold</code> and <code>keynumToModEnvDecay</code>) as well as 39 and 40
+     * (<code>keynumToVolEnvHold</code> and <code>keynumToVolEnvDecay</code>) and Reason SXT
+     * <code>ampEnvKeyToDecay</code>.
+     *
+     * @return The amount of scaling in the range of [-1..1], 0 means that the envelope times do not
+     *         depend on the played key
+     */
+    double getTimeKeyTracking ();
+
+
+    /**
+     * Set the key tracking of the envelope times.
+     *
+     * @param timeKeyTracking The amount of scaling in the range of [-1..1], 0 for no scaling
+     */
+    void setTimeKeyTracking (double timeKeyTracking);
+
+
+    /**
+     * Get the velocity tracking of the envelope times. This scales all times (rates) of the
+     * envelope depending on the velocity of the played note: a positive value shortens the times
+     * towards higher velocities and lengthens them towards lower velocities, a negative value does
+     * the opposite. The times are unchanged at the center velocity (64). This is different to the
+     * attack, decay and release slopes, which describe the curvature of a segment and not its
+     * duration.
+     * <p>
+     * Known encodings of this attribute are: Akai S1000 <code>velocityToAttack</code>, Yamaha YSFC
+     * <code>aegTimeVelocitySensitivity</code>, Ensoniq EPS/ASR <code>time1VelSens</code> and Roland
+     * S7xx <code>timeVelocitySensitivity</code>.
+     *
+     * @return The amount of scaling in the range of [-1..1], 0 means that the envelope times do not
+     *         depend on the velocity
+     */
+    double getTimeVelocityTracking ();
+
+
+    /**
+     * Set the velocity tracking of the envelope times.
+     *
+     * @param timeVelocityTracking The amount of scaling in the range of [-1..1], 0 for no scaling
+     */
+    void setTimeVelocityTracking (double timeVelocityTracking);
+
+
+    /**
      * Copies all values from the source envelope to this envelope.
      *
      * @param sourceEnvelope The source envelope

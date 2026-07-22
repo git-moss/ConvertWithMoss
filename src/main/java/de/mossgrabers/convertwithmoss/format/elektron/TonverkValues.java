@@ -94,6 +94,13 @@ public final class TonverkValues
     /** The tune range of the Grainer machine in semitones (+/- 2 octaves). */
     public static final double  GRAINER_TUNE_RANGE      = 24.0;
 
+    // The values of the 'loop-mode' field of a sample slot
+
+    /** The loop mode which loops the sample forward. */
+    public static final String  LOOP_MODE_FORWARD       = "Forward";
+    /** The loop mode which does not loop the sample but plays it as a one-shot. */
+    public static final String  LOOP_MODE_OFF           = "Off";
+
 
     private TonverkValues ()
     {

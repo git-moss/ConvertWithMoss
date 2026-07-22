@@ -192,8 +192,12 @@ public class DelugeTag
 
     /** The synthesis mode value for a subtractive (sample) synth. */
     public static final String MODE_SUBTRACTIVE             = "subtractive";
-    /** The polyphony mode value to write. */
+    /** The polyphony mode value for a polyphonic sound. */
     public static final String POLYPHONIC_POLY              = "poly";
+    /** The polyphony mode value for a monophonic sound which re-triggers the envelopes. */
+    public static final String POLYPHONIC_MONO              = "mono";
+    /** The polyphony mode value for a monophonic sound which does not re-trigger the envelopes. */
+    public static final String POLYPHONIC_LEGATO            = "legato";
     /** The oscillator type value for a silent second oscillator. */
     public static final String TYPE_SQUARE                  = "square";
     /** The default low-pass filter mode value to write. */

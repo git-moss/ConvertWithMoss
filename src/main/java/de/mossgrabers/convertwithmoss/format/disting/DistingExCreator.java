@@ -46,6 +46,9 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
     }, 44100, true);
     private static final DestinationAudioFormat DEFEAULT_AUDIO_FORMAT  = new DestinationAudioFormat ();
 
+    /** The number of voices of the disting EX, see its 8 'Voice N detune' parameters. */
+    private static final int                    MAX_VOICES             = 8;
+
     private final Map<Integer, Integer>         velocityLayerIndices   = new HashMap<> ();
     private String                              filenamePrefix;
 
@@ -141,6 +144,13 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
 
             // Fill parameters
             final int [] parameters = createDefaultParameters ();
+
+            // Max voices - the disting EX has 8 voices, see its 8 'Voice N detune' parameters. A
+            // source which does not specify its polyphony keeps the default of all 8 voices.
+            final int polyphony = multisampleSource.getPolyphony ();
+            if (polyphony > 0)
+                parameters[17] = Math.clamp (polyphony, 1, MAX_VOICES);
+
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
             if (!groups.isEmpty ())
             {
@@ -281,8 +291,12 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
                 sb.append ("_V").append (index.intValue () + 1);
         }
 
+        // The disting EX can only cycle through the round-robin samples. A random selection is
+        // stored as a round-robin as well, since cycling is musically much closer to it than
+        // playing all zones at once. Without the index the zones would also share the same file
+        // name.
         final PlayLogic playLogic = zone.getPlayLogic ();
-        if (playLogic == PlayLogic.ROUND_ROBIN)
+        if (playLogic == PlayLogic.ROUND_ROBIN || playLogic == PlayLogic.RANDOM)
             sb.append ("_RR").append (zoneIndex + 1);
 
         return sb.append (fileEnding).toString ();

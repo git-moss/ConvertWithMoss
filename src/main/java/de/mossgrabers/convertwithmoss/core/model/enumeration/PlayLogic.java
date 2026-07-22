@@ -14,5 +14,11 @@ public enum PlayLogic
     /** The layer does always play. */
     ALWAYS,
     /** Layers play one after the other in sequential order. */
-    ROUND_ROBIN
+    ROUND_ROBIN,
+    /**
+     * One of the layers is chosen randomly. Formats which cannot express a random selection should
+     * fall back to {@link #ROUND_ROBIN} and not to {@link #ALWAYS}, since playing all layers at
+     * once is musically much further away from the intended result than cycling through them.
+     */
+    RANDOM
 }

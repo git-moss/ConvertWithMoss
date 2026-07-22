@@ -162,6 +162,15 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (name != null && !name.isBlank ())
             addAttribute (sb, SfzOpcode.GLOBAL_LABEL, name, true);
 
+        // The polyphony is a plain number of voices. Note: SFZ does not have an opcode for the
+        // portamento time or for playing monophonic with legato, therefore a monophonic instrument
+        // is expressed by limiting the number of voices to 1
+        int polyphony = multisampleSource.getPolyphony ();
+        if (multisampleSource.isMonophonicLegato ())
+            polyphony = 1;
+        if (polyphony > 0)
+            addIntegerAttribute (sb, SfzOpcode.POLYPHONY, polyphony, true);
+
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
         if (groups.isEmpty ())
         {
@@ -184,9 +193,10 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             int maxSequence = -1;
             final boolean isNotRoundRobinGroup = !roundRobinGroups.containsKey (group);
             if (isNotRoundRobinGroup)
-                // Check for any sample which play round-robin
+                // Check for any sample which does not always play. SFZ cannot express a random
+                // selection, therefore such zones are cycled like round-robin ones
                 for (final ISampleZone zone: zones)
-                    if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN)
+                    if (zone.getPlayLogic () != PlayLogic.ALWAYS)
                         maxSequence = Math.max (maxSequence, zone.getSequencePosition ());
 
             sb.append (LINE_FEED).append ('<').append (SfzHeader.GROUP).append (">").append (LINE_FEED);
@@ -244,7 +254,9 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         if (zone.isReversed ())
             addAttribute (buffer, SfzOpcode.DIRECTION, "reverse", true);
-        if (zone.getPlayLogic () == PlayLogic.ROUND_ROBIN && isNotRoundRobinGroup)
+        // SFZ cannot express a random selection, therefore such zones are cycled like round-robin
+        // ones instead of falling back to playing all of them at once
+        if (zone.getPlayLogic () != PlayLogic.ALWAYS && isNotRoundRobinGroup)
             addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
 
         // -----------------------------------------------------------
@@ -382,8 +394,10 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     private void createLoops (final StringBuilder buffer, final ISampleZone zone)
     {
         final List<ISampleLoop> loops = zone.getLoops ();
+        // A one-shot ignores a note-off and always plays the sample to its end. SFZ supports this
+        // only for samples which are not looped
         if (loops.isEmpty ())
-            addAttribute (buffer, SfzOpcode.LOOP_MODE, "no_loop", false);
+            addAttribute (buffer, SfzOpcode.LOOP_MODE, zone.isOneShot () ? "one_shot" : "no_loop", false);
         else
         {
             final ISampleLoop sampleLoop = loops.get (0);
@@ -442,6 +456,15 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addAttribute (buffer, SfzOpcode.VOLUME, formatDouble (volume, 2), velAmpDepth == 1);
         if (velAmpDepth < 1)
             addAttribute (buffer, SfzOpcode.AMP_VELOCITY_TRACK, formatDouble (velAmpDepth * 100.0, 2), true);
+
+        // The opcode is given in decibels per key, 100% key tracking is defined as 1 dB per key.
+        // The center key is the root key of the zone and defaults to 60 in SFZ
+        final double ampKeyTracking = zone.getAmplitudeKeyTracking ();
+        if (ampKeyTracking != 0)
+        {
+            addAttribute (buffer, SfzOpcode.AMP_KEY_TRACK, formatDouble (Math.clamp (ampKeyTracking, -1, 1), 3), false);
+            addIntegerAttribute (buffer, SfzOpcode.AMP_KEY_CENTER, limitToDefault (zone.getKeyRoot (), 60), true);
+        }
 
         final double pan = zone.getPanning ();
         if (pan != 0)

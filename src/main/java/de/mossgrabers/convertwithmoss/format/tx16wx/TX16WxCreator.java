@@ -398,11 +398,18 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             soundshapeElement.setAttribute (TX16WxTag.SOUND_SHAPE_ID, uuid);
 
             groupElement.setAttribute (TX16WxTag.NAME, group.getName ());
-            if (group.getTrigger () == TriggerType.RELEASE)
-                groupElement.setAttribute (TX16WxTag.GROUP_PLAYMODE, "Release");
-            groupElement.setAttribute (TX16WxTag.OUTPUT, "--");
 
             final List<ISampleZone> zones = group.getSampleZones ();
+
+            // The play mode is a group attribute, therefore a one-shot can only be applied if all
+            // zones of the group are one-shots. A release trigger takes precedence since it is
+            // stored in the same attribute
+            if (group.getTrigger () == TriggerType.RELEASE)
+                groupElement.setAttribute (TX16WxTag.GROUP_PLAYMODE, "Release");
+            else if (!zones.isEmpty () && zones.stream ().allMatch (ISampleZone::isOneShot))
+                groupElement.setAttribute (TX16WxTag.GROUP_PLAYMODE, "Oneshot");
+            groupElement.setAttribute (TX16WxTag.OUTPUT, "--");
+
             for (int i = 0; i < zones.size (); i++)
                 createSample (document, folderName, programElement, groupElement, zones.get (i), i);
 

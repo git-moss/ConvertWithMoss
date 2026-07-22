@@ -40,6 +40,8 @@ public class EXS24Parameters extends EXS24Object
     public static final int                    MIDI_MONO_MODE_PITCH_RANGE = 0x11a;
 
     public static final int                    POLYPHONY_VOICES           = 0x05;
+    /** The maximum number of voices found in the parameter, it is stored as a plain count. */
+    public static final int                    MAX_POLYPHONY_VOICES       = 99;
     public static final int                    TRANSPOSE                  = 0x2d;
     public static final int                    COARSE_TUNE                = 0x0e;
     public static final int                    FINE_TUNE                  = 0x0f;
