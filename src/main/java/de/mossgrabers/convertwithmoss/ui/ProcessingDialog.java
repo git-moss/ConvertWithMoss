@@ -8,20 +8,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import de.mossgrabers.tools.ui.AbstractDialog;
 import de.mossgrabers.tools.ui.ControlFunctions;
-import de.mossgrabers.tools.ui.TraversalManager;
+import de.mossgrabers.tools.ui.PseudoModalDialog;
 import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import de.mossgrabers.tools.ui.panel.TwoColsPanel;
 import javafx.geometry.Orientation;
+import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 
 
 /**
@@ -29,7 +28,7 @@ import javafx.stage.Window;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class ProcessingDialog extends AbstractDialog
+public class ProcessingDialog extends PseudoModalDialog
 {
     private static final List<String> BIT_DEPTH       = new ArrayList<> ();
     private static final List<String> FREQ_RESOLUTiON = new ArrayList<> ();
@@ -46,30 +45,28 @@ public class ProcessingDialog extends AbstractDialog
         Collections.addAll (LOOP_CROSSFADES, "Off", "0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "8%", "9%", "10%", "11%", "12%", "13%", "14%", "15%", "16%", "17%", "18%", "19%", "20%", "21%", "22%", "23%", "24%", "25%", "26%", "27%", "28%", "29%", "30%", "31%", "32%", "33%", "34%", "35%", "36%", "37%", "38%", "39%", "40%", "41%", "42%", "43%", "44%", "45%", "46%", "47%", "48%", "49%", "50%", "51%", "52%", "53%", "54%", "55%", "56%", "57%", "58%", "59%", "60%", "61%", "62%", "63%", "64%", "65%", "66%", "67%", "68%", "69%", "70%", "71%", "72%", "73%", "74%", "75%", "76%", "77%", "78%", "79%", "80%", "81%", "82%", "83%", "84%", "85%", "86%", "87%", "88%", "89%", "90%", "91%", "92%", "93%", "94%", "95%", "96%", "97%", "98%", "99%", "100%");
     }
 
-    private final TraversalManager traversalManager = new TraversalManager ();
-
     /** Check-box to enable processing globally. */
-    public CheckBox                enableProcessingCheckbox;
+    public CheckBox         enableProcessingCheckbox;
     /** Check-box to enable normalizing samples. */
-    public CheckBox                normalizeCheckbox;
+    public CheckBox         normalizeCheckbox;
     /** Check-box for enabling making all samples mono. */
-    public CheckBox                makeMonoCheckbox;
+    public CheckBox         makeMonoCheckbox;
     /** Check-box for enabling the trim start/end option. */
-    public CheckBox                trimSample;
+    public CheckBox         trimSample;
     /** Text field for the maximum number of samples. */
-    public TextField               maxSamplesField;
+    public TextField        maxSamplesField;
     /** Combo-box for the target bit-depth. */
-    public ComboBox<String>        reduceBitDepthCombobox;
+    public ComboBox<String> reduceBitDepthCombobox;
     /** Combo-box for the target sample frequency. */
-    public ComboBox<String>        reduceFrequencyCombobox;
+    public ComboBox<String> reduceFrequencyCombobox;
     /** Check-box to enable always re-sample option. */
-    public CheckBox                alwaysResampleCheckbox;
+    public CheckBox         alwaysResampleCheckbox;
     /** Combo-box for the loop cross-fades. */
-    public ComboBox<String>        loopCrossfadesCombobox;
+    public ComboBox<String> loopCrossfadesCombobox;
     /** Check-box to snap forward loop boundaries to zero-crossings. */
-    public CheckBox                snapLoopsCheckbox;
-    /** Combo-box for transposing playback by semitones. */
-    public ComboBox<String>        transposeCombobox;
+    public CheckBox         snapLoopsCheckbox;
+    /** Combo-box for transposing play-back by semi-tones. */
+    public ComboBox<String> transposeCombobox;
 
 
     /**
@@ -77,13 +74,9 @@ public class ProcessingDialog extends AbstractDialog
      *
      * @param owner The owner of the dialog
      */
-    protected ProcessingDialog (final Window owner)
+    protected ProcessingDialog (final Stage owner)
     {
-        super (owner, "@IDS_PROCESSING_DIALOG", true, true, 400, 340);
-
-        this.setResizable (false);
-
-        this.basicInit ();
+        super (owner, "@IDS_PROCESSING_DIALOG");
 
         ControlFunctions.setFocusOn (this.normalizeCheckbox);
     }
@@ -279,11 +272,9 @@ public class ProcessingDialog extends AbstractDialog
         this.traversalManager.add (this.loopCrossfadesCombobox);
         this.traversalManager.add (this.snapLoopsCheckbox);
         this.traversalManager.add (this.transposeCombobox);
-        this.traversalManager.add (this.getOKButton ());
+        this.traversalManager.add (this.getOkButton ());
         this.traversalManager.add (this.getCancelButton ());
-
-        final Stage stage = (Stage) this.getDialogPane ().getScene ().getWindow ();
-        this.traversalManager.register (stage);
+        this.traversalManager.register (this.owner);
 
         return panel.getPane ();
     }
@@ -302,6 +293,14 @@ public class ProcessingDialog extends AbstractDialog
         final TitledPane titledPane = panel.wrapInTitledPane (label);
         titledPane.setExpanded (true);
         titledPane.setCollapsible (false);
+
+        // Prevent hover effect
+        titledPane.skinProperty ().addListener ((_, _, _) -> {
+            final Node title = titledPane.lookup (".title");
+            if (title != null)
+                title.setMouseTransparent (true);
+        });
+
         return titledPane;
     }
 }

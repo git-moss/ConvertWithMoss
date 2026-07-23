@@ -1,28 +1,13 @@
 # Changes
 
-## 19.0.1 (unreleased)
+## 19.1.0 (unreleased)
 
-* New: Improved logging if WAV file could not be written.
-* New: Added support for the Kurzweil K2000/K2500/K2600 format (KRZ, K25, K26) (thanks to Douglas Carmichael).
-* Synthstrom Deluge (thanks to Douglas Carmichael)
-  * New: Added an Output Type creator option (Synth/Kit, CLI DelugeOutputType) to write a drum kit instead of a synth (sound) preset. A kit writes one drum per note, consolidating velocity layers and round-robins to the loudest layer (a Deluge drum is a single sample). The type is chosen explicitly because a one-sample-per-note layout is not necessarily a kit (e.g. a per-note synth bass).
-  * New: Added a "Consolidate kit" option (CLI DelugeConsolidateKit) which reduces a drum kit to one drum per type (kick, snare, hi-hat, ...) ordered by drum role following the factory TR-808 layout (kick on the lowest row), so a beat can be programmed without switching rows. The consolidated drums are labelled by their role for a clean read-out on the device.
-  * New: Added a "Shorten kit name" option (CLI DelugeShortenKitName) which names a kit "NNN <last name segment>" (e.g. "80s hits SSS043 - Kit 07 - Full Kit 2" becomes "007 Full Kit 2") so it scrolls less on the device display; a trailing date/version suffix is removed while model numbers like TR-808 are kept.
-  * Fixed: Kit drums were pitched by their keyboard mapping note, so a drum mapped to e.g. note 35 played 25 semitones too low (audible on toms). Kit drums now play at their natural pitch (transpose 0), like the factory kits; only an explicit detune is kept.
-* DecentSampler (thanks to Douglas Carmichael)
-  * New: Added a source option "Create one multi-sample per group": creates a separate multi-sample for each group (disabled groups included), e.g. for presets which contain several alternative kits as groups and switch between them via their user interface.
-  * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
-  * Fixed: A loop which is explicitly disabled with loopEnabled="false" was still created when loop points were present; loops from the sample file chunks were imported as well in this case. Presets without the loopEnabled attribute are not affected.
-* TAL Sampler (thanks to Douglas Carmichael)
-  * Fixed: The sample "reverse" flag was never read as enabled: it is stored numerically (0/1) like all other TAL flags but was parsed as a true/false text boolean.
-  * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
-* Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
-  * New: Added a creator option to prefix written preset file names with a 5-digit import number (e.g. 05002-Name.qpat), mirroring the device's own export naming so the device assigns each preset to that number on import.
-  * New: The oscillator volume and panning are now preserved instead of always being written as 0 dB / Center, so a Quantum/Iridium round-trip keeps them.
-  * Fixed: The oscillator volume and panning overwrote the volume and panning of the sample map entries instead of being combined with them, which is what made a round-trip lose them.
-  * Fixed: A preset without an oscillator panning panned all of its samples half right, because the converted [-1..1] panning was initialized with a value of the raw [0..1] range.
-* Backend (thanks to Douglas Carmichael)
-  * New: Source folders and files are now processed in a stable alphabetical order instead of the file-system enumeration order, so consecutive runs behave identically (and e.g. the QPAT import numbers are assigned in a predictable order).
+* Many thanks to Douglas Carmichael for many contributions and fixes!
+* New: Added support for the Kurzweil K2000/K2500/K2600 format (KRZ, K25, K26).
+* User Interface
+  * New: The Settings and Processing dialogs opened with a bright white frame and, on macOS, repainted whenever the main window was clicked. Since there is no nice fix for this, the dialogs have now been replaced with pseudo dialogs which are part of the main window.
+  * New: Removed the hover highlighting from the titles in the Processing dialog.
+* Backend
   * New: Added support for the one-shot playback mode (a note-off is ignored and the sample is always played back to its end): Ableton, Akai AKP, Akai MPC, Akai MPC1000, Akai S900, Akai S1000, Kontakt, Korg multisample, Logic EXS24, 1010music blackbox/bento, Polyend Tracker, Renoise, Roland MV-8000, Roland S-5xx, Roland S-7xx, Roland ZEN-Core, SFZ, Synclavier, Synthstrom Deluge, Tonverk, TX16Wx, Yamaha YSFC. Formats previously collapsed this into "has no loop" or guessed it from the envelope.
   * New: Added support for exclusive ('choke') groups, which stop all sounding notes of the same group when a note of that group starts, e.g. a closed hi-hat cutting off an open one: Akai MPC1000, Akai MPC60, DLS, Kontakt, Logic EXS24, 1010music blackbox/bento, Renoise, Roland MV-8000, SoundFont 2, TAL Sampler, Yamaha YSFC.
   * New: Added support for a random play logic next to round-robin: Ableton, Akai MPC, DecentSampler, Logic EXS24, Renoise, Yamaha YSFC. Formats which cannot express a random selection now fall back to round-robin instead of playing all layers at once.
@@ -30,66 +15,74 @@
   * New: Added support for envelope time keyboard- and velocity-scaling, which scales the envelope times by the played key and velocity (as opposed to the already supported slopes, which describe the curvature of a segment): Akai S1000, Ensoniq EPS/ASR, Ensoniq Mirage, Logic EXS24, Reason NN-XT, Roland S-7xx, SoundFont 2, Yamaha YSFC.
   * New: Added support for per-instrument voice settings (polyphony and monophonic legato): Akai S1000, DecentSampler, Disting EX, Ensoniq Mirage, Logic EXS24, Reason NN-XT, Roland S-7xx, SFZ, Synthstrom Deluge, TAL Sampler.
   * New: Added support for group volume, panning and tuning offsets: Kontakt, DecentSampler, Logic EXS24, Synclavier, TX16Wx, Waldorf Quantum/Iridium.
+  * New: Source folders and files are now processed in a stable alphabetical order instead of the file-system enumeration order, so consecutive runs behave identically (and e.g. the QPAT import numbers are assigned in a predictable order).
+  * New: Improved logging if WAV file could not be written.
   * Fixed: Two filters which differed only in their cutoff envelope were treated as equal, so zones which are not identical could be combined into one; a filter with a cutoff envelope but without a cutoff velocity modulation could additionally throw an exception.
-  * Fixed: The two Roland S-7xx envelope time key-follow fields were read as unsigned although they are signed.
-* Elektron Tonverk Preset (thanks to Douglas Carmichael)
-  * New: Read the Grainer generator machine (granular playback of a single sample). Since grains cannot be represented in the multi-sample model, the sample is converted like a One-Shot and the granular engine parameters are not converted.
-* User Interface (thanks to Douglas Carmichael)
-  * Fixed: The Settings and Processing dialogs opened with a bright white frame and, on macOS, repainted whenever the main window was clicked - both a risk for photo-sensitive (e.g. epileptic) users. The dialog scenes are now pre-filled with the theme background color (no white frame), the dialogs are independent, non-modal, always-on-top windows so clicking the main window no longer repaints them, they carry the base and dark-mode stylesheets directly (previously inherited only by owned dialogs), and the main action buttons are disabled while a dialog is open.
-* AIFF (thanks to Douglas Carmichael)
-  * New: Added support for reading AIFC files with un-compressed PCM sound data, e.g. the little-endian ('sowt') files written by the Elektron Tonverk or the Teenage Engineering OP-1. Compressed AIFC files are still rejected with an error message.
-  * Fixed: Converting an AIFF file with the file ending '.aiff' (instead of '.aif') deleted the source sample file: an internal workaround copies such files to a temporary file but the cleanup deleted the original instead of the temporary copy.
-  * Fixed: Reading the sound data chunk of an AIFF file returned only the first few bytes (the bit resolution was mistaken for the data size), which corrupted the fallback conversion path for AIFF files that the Java sound system cannot read.
-* Reason NN-XT (thanks to Douglas Carmichael)
-  * Fixed: All loops were lost when reading a preset: the loop was created but never added to the zone. Writing loops was not affected.
-  * Fixed: The pitch key tracking was never read, so zones with a reduced key tracking (e.g. fixed-pitch percussion) were imported as fully tracking.
-  * Fixed: The depth of the filter envelope was written into the field of the pitch envelope, so the filter modulation was lost and the pitch modulation was overwritten with it.
-* SFZ (thanks to Douglas Carmichael)
-  * Fixed: The velocity range was taken from the cross-fade opcodes, so it grew by the width of the cross-fade with every conversion (e.g. lovel/hivel 40/100 became 30/110 and then 20/120). The same was already fixed for the key range.
-* TX16Wx (thanks to Douglas Carmichael)
-  * Fixed: Envelope levels which are not set were written as -100%, which is a valid but completely different envelope. They now fall back to the neutral level.
-* Logic EXS24 (thanks to Douglas Carmichael)
-  * Fixed: The panning of a group was read as an unsigned value and was not scaled, so a group panned fully left moved all of its zones fully right.
-  * Fixed: The attack time at the lowest velocity was never written and stayed at 0, which gave all written presets an instant attack at low velocity.
-* DecentSampler (thanks to Douglas Carmichael)
-  * Fixed: The panning of a group was not scaled, so any group with a panning moved all of its zones fully to one side.
-* Bliss (thanks to Douglas Carmichael)
-  * Fixed: The loop mode was only written when a zone had a loop, but a missing loop mode is read back as a forward loop, so zones without a loop turned into fully looped ones.
-  * Fixed: The samples in a written preset or bank (.zbp/.zbb) were stored as raw source audio under a ".flac" name instead of being FLAC encoded, so neither Bliss nor ConvertWithMoss itself could read back a written file. The zone start/end trimming was skipped for the same reason.
-* Ableton (thanks to Douglas Carmichael)
+  * Fixed: Copying a sample zone did not copy the sequence position belonging to the play logic and did not copy the velocity modulator of the amplitude.
+* 1010music bento
+  * Fixed: With the "Trim start and end" processing option enabled the loop points were left at their untrimmed positions - the sample length was already corrected - so a trimmed sample with a non-zero start got a displaced loop.
+* 1010music blackbox
+  * Fixed: The choke group attribute of an unused template slot was written as "okegrp" instead of "chokegrp".
+  * Fixed: The MIDI channel of a performance was written one channel too high and MIDI channel 16 was turned into "Off". The value is the MIDI channel 1-16 (where channel 1 doubles as the OMNI mode) and not an additionally offset one; OMNI is now written as channel 1 instead of switching MIDI input off.
+* Ableton
   * Fixed: The warning that the round-robin configuration could not be translated was logged when it could be translated and not when it could not. The written file is not affected.
   * Fixed: No preset was written at all (the conversion failed with a "sample file not found" error) when a zone name contained one of the characters & . ' : / \ * ? " < > | - the sample file is written with those characters replaced by an underscore, but the preset looked it up and referenced it under the unchanged name.
   * Fixed: The upper velocity crossfade was calculated from the lower velocity crossfade value.
-* 1010music blackbox (thanks to Douglas Carmichael)
-  * Fixed: The choke group attribute of an unused template slot was written as "okegrp" instead of "chokegrp".
-  * Fixed: The MIDI channel of a performance was written one channel too high and MIDI channel 16 was turned into "Off". The value is the MIDI channel 1-16 (where channel 1 doubles as the OMNI mode) and not an additionally offset one; OMNI is now written as channel 1 instead of switching MIDI input off.
-* 1010music bento (thanks to Douglas Carmichael)
-  * Fixed: With the "Trim start and end" processing option enabled the loop points were left at their untrimmed positions - the sample length was already corrected - so a trimmed sample with a non-zero start got a displaced loop.
-* Expert Sleepers Disting EX (thanks to Douglas Carmichael)
+* AIFF
+  * New: Added support for reading AIFC files with un-compressed PCM sound data, e.g. the little-endian ('sowt') files written by the Elektron Tonverk or the Teenage Engineering OP-1. Compressed AIFC files are still rejected with an error message.
+  * Fixed: Converting an AIFF file with the file ending '.aiff' (instead of '.aif') deleted the source sample file: an internal workaround copies such files to a temporary file but the cleanup deleted the original instead of the temporary copy.
+  * Fixed: Reading the sound data chunk of an AIFF file returned only the first few bytes (the bit resolution was mistaken for the data size), which corrupted the fallback conversion path for AIFF files that the Java sound system cannot read.
+* Bliss
+  * Fixed: The loop mode was only written when a zone had a loop, but a missing loop mode is read back as a forward loop, so zones without a loop turned into fully looped ones.
+  * Fixed: The samples in a written preset or bank (.zbp/.zbb) were stored as raw source audio under a ".flac" name instead of being FLAC encoded, so neither Bliss nor ConvertWithMoss itself could read back a written file. The zone start/end trimming was skipped for the same reason.
+* DecentSampler
+  * New: Added a source option "Create one multi-sample per group": creates a separate multi-sample for each group (disabled groups included), e.g. for presets which contain several alternative kits as groups and switch between them via their user interface.
+  * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
+  * Fixed: A loop which is explicitly disabled with loopEnabled="false" was still created when loop points were present; loops from the sample file chunks were imported as well in this case. Presets without the loopEnabled attribute are not affected.
+  * Fixed: The panning of a group was not scaled, so any group with a panning moved all of its zones fully to one side.
+* Elektron Tonverk Preset
+  * New: Read the Grainer generator machine (granular playback of a single sample). Since grains cannot be represented in the multi-sample model, the sample is converted like a One-Shot and the granular engine parameters are not converted.
+  * Fixed: An envelope hold time was dropped when writing a preset. It is now added to the decay time - the hold phase only exists in the device's AHD mode while the written envelope is always ADSR - the same way all other formats without a separate hold stage handle it.
+  * Fixed: Writing a Tonverk preset failed in the packaged application with "Resource '.../tonverk/multi-template.tvpst' not found.
+* Expert Sleepers Disting EX
   * Fixed: The amplitude envelope was only written when the internal hash code of the envelope value happened to be positive, so about half of all converted presets silently kept the factory default envelope instead.
   * Fixed: The envelope sustain level was never written and stayed at its maximum, so a percussive source (sustain 0) held at full level forever.
-* Spectrasonics Omnisphere 3 (thanks to Douglas Carmichael)
+* Logic EXS24
+  * Fixed: The panning of a group was read as an unsigned value and was not scaled, so a group panned fully left moved all of its zones fully right.
+  * Fixed: The attack time at the lowest velocity was never written and stayed at 0, which gave all written presets an instant attack at low velocity.
+* Polyend Tracker
+  * Fixed: The filter cut-off envelope amount was written from - and read back into - the modulation depth as if that depth were a frequency in Hertz, but it is a normalized [-1..1] value. The written amount collapsed to nearly zero, so the filter sweep disappeared; both directions now use the normalized value.
+* Reason NN-XT
+  * Fixed: All loops were lost when reading a preset: the loop was created but never added to the zone. Writing loops was not affected.
+  * Fixed: The pitch key tracking was never read, so zones with a reduced key tracking (e.g. fixed-pitch percussion) were imported as fully tracking.
+  * Fixed: The depth of the filter envelope was written into the field of the pitch envelope, so the filter modulation was lost and the pitch modulation was overwritten with it.
+* SFZ
+  * Fixed: The velocity range was taken from the cross-fade opcodes, so it grew by the width of the cross-fade with every conversion (e.g. lovel/hivel 40/100 became 30/110 and then 20/120). The same was already fixed for the key range.
+* Spectrasonics Omnisphere 3
   * Fixed: Envelope stages which are not set were written as "not a number" (attack, hold, decay and release) or as a negative sustain level. Unset times are now written as zero and an unset sustain level as the full level.
   * Fixed: The zone tuning was written and read as cents although the model value is in semi-tones, so the tuning was off by a factor of 100 against every other format (an Omnisphere-to-Omnisphere conversion was not affected since both directions had the same error).
-* Polyend Tracker (thanks to Douglas Carmichael)
-  * Fixed: The filter cut-off envelope amount was written from - and read back into - the modulation depth as if that depth were a frequency in Hertz, but it is a normalized [-1..1] value. The written amount collapsed to nearly zero, so the filter sweep disappeared; both directions now use the normalized value.
-* Waldorf Quantum/Iridium (thanks to Douglas Carmichael)
+* Synthstrom Deluge
+  * New: Added an Output Type creator option (Synth/Kit, CLI DelugeOutputType) to write a drum kit instead of a synth (sound) preset. A kit writes one drum per note, consolidating velocity layers and round-robins to the loudest layer (a Deluge drum is a single sample). The type is chosen explicitly because a one-sample-per-note layout is not necessarily a kit (e.g. a per-note synth bass).
+  * New: Added a "Consolidate kit" option (CLI DelugeConsolidateKit) which reduces a drum kit to one drum per type (kick, snare, hi-hat, ...) ordered by drum role following the factory TR-808 layout (kick on the lowest row), so a beat can be programmed without switching rows. The consolidated drums are labelled by their role for a clean read-out on the device.
+  * New: Added a "Shorten kit name" option (CLI DelugeShortenKitName) which names a kit "NNN &lt;last name segment&gt;" (e.g. "80s hits SSS043 - Kit 07 - Full Kit 2" becomes "007 Full Kit 2") so it scrolls less on the device display; a trailing date/version suffix is removed while model numbers like TR-808 are kept.
+  * Fixed: Kit drums were pitched by their keyboard mapping note, so a drum mapped to e.g. note 35 played 25 semitones too low (audible on toms). Kit drums now play at their natural pitch (transpose 0), like the factory kits; only an explicit detune is kept.
+* TAL Sampler
+  * Fixed: The sample "reverse" flag was never read as enabled: it is stored numerically (0/1) like all other TAL flags but was parsed as a true/false text boolean.
+  * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
+* TX16Wx
+  * Fixed: Envelope levels which are not set were written as -100%, which is a valid but completely different envelope. They now fall back to the neutral level.
+* Waldorf Quantum/Iridium
+  * New: Added a creator option to prefix written preset file names with a 5-digit import number (e.g. 05002-Name.qpat), mirroring the device's own export naming so the device assigns each preset to that number on import.
+  * New: The oscillator volume and panning are now preserved instead of always being written as 0 dB / Center, so a Quantum/Iridium round-trip keeps them.
+  * Fixed: The oscillator volume and panning overwrote the volume and panning of the sample map entries instead of being combined with them, which is what made a round-trip lose them.
+  * Fixed: A preset without an oscillator panning panned all of its samples half right, because the converted [-1..1] panning was initialized with a value of the raw [0..1] range.
   * Fixed: The sample map referenced the samples with a different name sanitizing than the one used to write the sample files - an umlaut was transliterated in the map but kept in the file name, an '&' was kept in the map but replaced in the file name - so the device could not resolve the samples and showed the "Find Sample Map" screen.
   * Fixed: The sign of the fine tuning was inverted when reading a preset, so a Quantum/Iridium preset converted back to a Quantum/Iridium preset detuned its samples in the wrong direction.
-* Elektron Tonverk Preset (thanks to Douglas Carmichael)
-  * Fixed: An envelope hold time was dropped when writing a preset. It is now added to the decay time - the hold phase only exists in the device's AHD mode while the written envelope is always ADSR - the same way all other formats without a separate hold stage handle it.
-* Backend (thanks to Douglas Carmichael)
-  * Fixed: Copying a sample zone did not copy the sequence position belonging to the play logic and did not copy the velocity modulator of the amplitude.
-* Ableton (thanks to Douglas Carmichael)
-  * Fixed: The warning that the round-robin configuration could not be translated was logged when it could be translated and not when it could not. The written file is not affected.
-* 1010music blackbox (thanks to Douglas Carmichael)
-  * Fixed: The choke group attribute of an unused template slot was written as "okegrp" instead of "chokegrp".
-* Backend (thanks to Douglas Carmichael)
-  * Fixed: Copying a sample zone did not copy the sequence position belonging to the play logic and did not copy the velocity modulator of the amplitude.
-* Elektron Tonverk Preset (thanks to Douglas Carmichael)
-  * Fixed: Writing a Tonverk preset failed in the packaged application with "Resource '.../tonverk/multi-template.tvpst' not found" (issue #203). The preset template lives in a module package that was not opened - unlike every other template package - and its resource path carried a leading slash that the module class-loader lookup does not accept. The package is now opened and the path corrected.
-* Roland MV-8000/MV-8800 (thanks to Douglas Carmichael)
+* Roland MV-8000/MV-8800
   * Fixed: Reading a patch could hang with full CPU load and no output. The loop over the sample slots did not advance on an empty slot, and since a patch rarely uses all of its slots this affected almost every patch.
+* Roland S-7xx
+  * Fixed: The two envelope time key-follow fields were read as unsigned although they are signed.
+
 
 ## 19.0.0
 

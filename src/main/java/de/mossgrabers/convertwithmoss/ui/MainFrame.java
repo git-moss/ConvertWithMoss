@@ -27,7 +27,6 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
-import de.mossgrabers.tools.OperatingSystem;
 import de.mossgrabers.tools.ui.AbstractFrame;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
@@ -41,7 +40,6 @@ import de.mossgrabers.tools.ui.panel.ButtonPanel;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -185,20 +183,6 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.processingButton.setOnAction (_ -> this.openProcessing ());
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
-
-        // The dialogs are modal, but macOS does not always block a click on the owner window
-        // reliably, so the main action buttons are additionally disabled while either dialog is
-        // open - a disabled button emits no action, so neither dialog can be opened twice or
-        // re-triggered while present (which previously caused a repaint flash)
-        // TODO test
-        if (OperatingSystem.isMacOS ())
-        {
-            final BooleanBinding anyDialogOpen = this.settingsDialog.showingProperty ().or (this.processingDialog.showingProperty ());
-            this.convertButton.disableProperty ().bind (anyDialogOpen);
-            this.analyseButton.disableProperty ().bind (anyDialogOpen);
-            this.processingButton.disableProperty ().bind (anyDialogOpen);
-            this.settingsButton.disableProperty ().bind (anyDialogOpen);
-        }
 
         // Source pane
         //
@@ -565,23 +549,20 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void openSettings ()
     {
-        // Safety net in case an event was already queued before the button got disabled: never
-        // touch the dialog while it is open (a re-show/reset causes a repaint flash)
-        if (this.settingsDialog.isShowing ())
-            return;
-
         this.settingsDialog.createFolderStructureCheckbox.setSelected (this.detectSettings.createFolderStructure);
         this.settingsDialog.addNewFilesCheckbox.setSelected (this.addNewFiles);
         this.settingsDialog.enableDarkModeCheckbox.setSelected (this.enableDarkMode);
 
-        if (this.settingsDialog.display ())
-        {
-            this.detectSettings.createFolderStructure = this.settingsDialog.createFolderStructureCheckbox.isSelected ();
-            this.addNewFiles = this.settingsDialog.addNewFilesCheckbox.isSelected ();
-            this.enableDarkMode = this.settingsDialog.enableDarkModeCheckbox.isSelected ();
+        this.settingsDialog.display ().thenAccept (result -> {
+            if (result.booleanValue ())
+            {
+                this.detectSettings.createFolderStructure = this.settingsDialog.createFolderStructureCheckbox.isSelected ();
+                this.addNewFiles = this.settingsDialog.addNewFilesCheckbox.isSelected ();
+                this.enableDarkMode = this.settingsDialog.enableDarkModeCheckbox.isSelected ();
 
-            this.setDarkMode (this.enableDarkMode);
-        }
+                this.setDarkMode (this.enableDarkMode);
+            }
+        });
     }
 
 
@@ -590,11 +571,6 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void openProcessing ()
     {
-        // Safety net in case an event was already queued before the button got disabled: never
-        // touch the dialog while it is open (a re-show/reset causes a repaint flash)
-        if (this.processingDialog.isShowing ())
-            return;
-
         this.processingDialog.enableProcessingCheckbox.setSelected (this.detectSettings.enableProcessing);
         this.processingDialog.normalizeCheckbox.setSelected (this.detectSettings.enableNormalize);
         this.processingDialog.makeMonoCheckbox.setSelected (this.detectSettings.enableMakeMono);
@@ -607,21 +583,23 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.processingDialog.snapLoopsCheckbox.setSelected (this.detectSettings.snapLoopsToZero);
         this.processingDialog.selectTranspose (this.detectSettings.transposeSemitones);
 
-        if (this.processingDialog.display ())
-        {
-            this.detectSettings.enableProcessing = this.processingDialog.enableProcessingCheckbox.isSelected ();
-            this.detectSettings.enableNormalize = this.processingDialog.normalizeCheckbox.isSelected ();
-            this.detectSettings.enableMakeMono = this.processingDialog.makeMonoCheckbox.isSelected ();
-            this.detectSettings.enableTrimSample = this.processingDialog.trimSample.isSelected ();
-            final String maxNumberText = this.processingDialog.maxSamplesField.getText ();
-            this.detectSettings.maxNumberOfSamples = maxNumberText.isEmpty () || maxNumberText.isBlank () ? -1 : Integer.parseInt (maxNumberText);
-            this.detectSettings.reduceBitDepth = this.processingDialog.getBitDepth ();
-            this.detectSettings.reduceFrequency = this.processingDialog.getFrequency ();
-            this.detectSettings.alwaysResample = this.processingDialog.alwaysResampleCheckbox.isSelected ();
-            this.detectSettings.loopCrossfades = this.processingDialog.getLoopCrossfades ();
-            this.detectSettings.snapLoopsToZero = this.processingDialog.snapLoopsCheckbox.isSelected ();
-            this.detectSettings.transposeSemitones = this.processingDialog.getTranspose ();
-        }
+        this.processingDialog.display ().thenAccept (result -> {
+            if (result.booleanValue ())
+            {
+                this.detectSettings.enableProcessing = this.processingDialog.enableProcessingCheckbox.isSelected ();
+                this.detectSettings.enableNormalize = this.processingDialog.normalizeCheckbox.isSelected ();
+                this.detectSettings.enableMakeMono = this.processingDialog.makeMonoCheckbox.isSelected ();
+                this.detectSettings.enableTrimSample = this.processingDialog.trimSample.isSelected ();
+                final String maxNumberText = this.processingDialog.maxSamplesField.getText ();
+                this.detectSettings.maxNumberOfSamples = maxNumberText.isEmpty () || maxNumberText.isBlank () ? -1 : Integer.parseInt (maxNumberText);
+                this.detectSettings.reduceBitDepth = this.processingDialog.getBitDepth ();
+                this.detectSettings.reduceFrequency = this.processingDialog.getFrequency ();
+                this.detectSettings.alwaysResample = this.processingDialog.alwaysResampleCheckbox.isSelected ();
+                this.detectSettings.loopCrossfades = this.processingDialog.getLoopCrossfades ();
+                this.detectSettings.snapLoopsToZero = this.processingDialog.snapLoopsCheckbox.isSelected ();
+                this.detectSettings.transposeSemitones = this.processingDialog.getTranspose ();
+            }
+        });
     }
 
 

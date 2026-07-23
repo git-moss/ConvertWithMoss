@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.mossgrabers</groupId>
 	<artifactId>convertwithmoss</artifactId>
-	<version>19.0.0</version>
+	<version>19.1.0</version>
 	<packaging>jar</packaging>
 	<name>ConvertWithMoss</name>
 	<organization>
@@ -107,7 +107,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.5.0</version>
+				<version>3.5.1</version>
 				<configuration>
 					<outputDirectory>target/lib</outputDirectory>
 					<archive>
