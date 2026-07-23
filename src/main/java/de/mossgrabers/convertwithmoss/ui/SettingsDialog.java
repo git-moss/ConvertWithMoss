@@ -4,15 +4,13 @@
 
 package de.mossgrabers.convertwithmoss.ui;
 
-import de.mossgrabers.tools.ui.AbstractDialog;
 import de.mossgrabers.tools.ui.ControlFunctions;
-import de.mossgrabers.tools.ui.TraversalManager;
+import de.mossgrabers.tools.ui.PseudoModalDialog;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.scene.control.CheckBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 
 
 /**
@@ -20,16 +18,14 @@ import javafx.stage.Window;
  *
  * @author J&uuml;rgen Mo&szlig;graber
  */
-public class SettingsDialog extends AbstractDialog
+public class SettingsDialog extends PseudoModalDialog
 {
-    private final TraversalManager traversalManager = new TraversalManager ();
-
     /** Check-box for creating a folder structure option. */
-    public CheckBox                createFolderStructureCheckbox;
+    public CheckBox createFolderStructureCheckbox;
     /** Check-box for only adding new files option. */
-    public CheckBox                addNewFilesCheckbox;
+    public CheckBox addNewFilesCheckbox;
     /** Check-box for enabling the dark mode option. */
-    public CheckBox                enableDarkModeCheckbox;
+    public CheckBox enableDarkModeCheckbox;
 
 
     /**
@@ -37,13 +33,9 @@ public class SettingsDialog extends AbstractDialog
      *
      * @param owner The owner of the dialog
      */
-    protected SettingsDialog (final Window owner)
+    protected SettingsDialog (final Stage owner)
     {
-        super (owner, "@IDS_SETTINGS_DIALOG", true, true, 400, 140);
-
-        this.setResizable (false);
-
-        this.basicInit ();
+        super (owner, "@IDS_SETTINGS_DIALOG");
 
         ControlFunctions.setFocusOn (this.createFolderStructureCheckbox);
     }
@@ -64,20 +56,10 @@ public class SettingsDialog extends AbstractDialog
         this.traversalManager.add (this.createFolderStructureCheckbox);
         this.traversalManager.add (this.addNewFilesCheckbox);
         this.traversalManager.add (this.enableDarkModeCheckbox);
-        this.traversalManager.add (this.getOKButton ());
+        this.traversalManager.add (this.getOkButton ());
         this.traversalManager.add (this.getCancelButton ());
-
-        final Stage stage = (Stage) this.getDialogPane ().getScene ().getWindow ();
-        this.traversalManager.register (stage);
+        this.traversalManager.register (this.owner);
 
         return panel.getPane ();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    protected boolean onOk ()
-    {
-        return true;
     }
 }
