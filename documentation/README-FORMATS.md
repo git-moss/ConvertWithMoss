@@ -276,6 +276,8 @@ Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipp
 The DLS format (*.dls) is a standardized file format developed for storing and distributing collections of digital musical instrument sounds, enabling their use in software synthesizers and hardware devices compatible with the MIDI protocol. It encapsulates audio samples, instrument definitions, articulations, and performance parameters into a single file. Developed in the 1990s initially by the Interactive Audio Special Interest Group (IASIG) and later standardized by the MIDI Manufacturers Association (MMA), with the first formal specification released in 1999.
 There is no write support.
 
+The amplitude and pitch envelopes, the sample loops and a pitch LFO (vibrato) are read. The vibrato's depth, its frequency (converted from absolute pitch cents to Hertz) and its start delay are carried over to the pitch LFO.
+
 ## Elektron Tonverk
 
 The Elektron Tonverk is a dedicated hardware sampler that marks an important milestone for Elektron as its first instrument to support multi-samples. This allows users to map multiple sampled sounds across keys or velocity ranges, creating more expressive and realistic instruments than single-sample playback alone.
