@@ -1,5 +1,9 @@
 # Changes
 
+## 19.2.0
+
+* New: Added support for the E-mu Emulator IV bank format (E4B). Written banks have not been tested on real hardware yet.
+
 ## 19.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
