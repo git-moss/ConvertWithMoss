@@ -19,12 +19,17 @@ import java.util.Set;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -253,13 +258,16 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
             if (lowLevel < 0)
                 continue;
 
+            // The velocity window of the layer further limits the range of the table
+            final int velocityLow = Math.max (Math.max (1, lowLevel * 16), layer.getVelocityLow ());
+            final int velocityHigh = Math.min (highLevel * 16 + 15, layer.getVelocityHigh ());
+            if (velocityLow > velocityHigh)
+                continue;
+
             String groupName = keymap.getName ();
             if (entryTables.size () > 1)
                 groupName += " " + KurzweilKeymap.formatLevels (lowLevel, highLevel);
             final IGroup group = new DefaultGroup (groupName);
-
-            final int velocityLow = Math.max (1, lowLevel * 16);
-            final int velocityHigh = highLevel * 16 + 15;
 
             // Combine runs of identical entries into one zone
             final KurzweilKeymapEntry [] entries = entryTables.get (tableIndex);
@@ -349,7 +357,36 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setStart (0);
         zone.setStop (header.getNumberOfFrames ());
         addLoop (zone, header);
+        applyLayerSettings (zone, layer);
         return zone;
+    }
+
+
+    /**
+     * Apply the amplitude envelope, the filter and the filter envelope of the program layer to the
+     * zone.
+     *
+     * @param zone The zone
+     * @param layer The program layer
+     */
+    private static void applyLayerSettings (final ISampleZone zone, final KurzweilProgram.Layer layer)
+    {
+        final KurzweilEnvelope amplitudeEnvelope = layer.getAmplitudeEnvelope ();
+        if (amplitudeEnvelope != null)
+            amplitudeEnvelope.toEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource ());
+
+        final FilterType filterType = layer.getFilterType ();
+        if (filterType == null)
+            return;
+        final IFilter filter = new DefaultFilter (filterType, layer.getFilterPoles (), layer.getCutoffFrequency (), layer.getResonance ());
+        final KurzweilEnvelope filterEnvelope = layer.getFilterEnvelope ();
+        if (filterEnvelope != null)
+        {
+            final IEnvelopeModulator modulator = filter.getCutoffEnvelopeModulator ();
+            modulator.setDepth (Math.clamp (layer.getFilterEnvelopeDepth () / (double) IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1));
+            filterEnvelope.toEnvelope (modulator.getSource ());
+        }
+        zone.setFilter (filter);
     }
 
 
