@@ -235,7 +235,10 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         {
             final IEnvelope pitchEnvelope = createEnvelope (dlsInstrument, dlsRegion, true);
             final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
-            pitchEnvelopeModulator.setDepth (normalizeEG2ToPitch (pitchModulation.get ().getScale ()));
+            // The scale is a relative pitch in cent, stored as a 32-bit fixed point number with
+            // 65536 representing one cent
+            final double depthCents = pitchModulation.get ().getScale () / 65536.0;
+            pitchEnvelopeModulator.setDepth (Math.clamp (depthCents, -IEnvelope.MAX_ENVELOPE_DEPTH, IEnvelope.MAX_ENVELOPE_DEPTH) / IEnvelope.MAX_ENVELOPE_DEPTH);
             pitchEnvelopeModulator.setSource (pitchEnvelope);
         }
 
@@ -243,7 +246,8 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         final Optional<DlsArticulation> pitchTuning = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_PITCH);
         if (pitchTuning.isPresent ())
         {
-            final double tuning = normalizeEG2ToPitch (pitchTuning.get ().getScale ());
+            // The scale is a relative pitch in cent (65536 per cent), the tuning is in semi-tones
+            final double tuning = pitchTuning.get ().getScale () / 65536.0 / 100.0;
             zone.setTuning (zone.getTuning () + tuning);
         }
 
@@ -281,10 +285,7 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         if (isEnvelope1)
             sustain = getLevel (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_EG1_SUSTAINLEVEL);
         else
-        {
-            final Optional<DlsArticulation> articulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_EG2_SUSTAINLEVEL);
-            sustain = articulation.isEmpty () ? -1 : normalizeEG2ToPitch (articulation.get ().getScale ());
-        }
+            sustain = getLevel (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_EG2_SUSTAINLEVEL);
 
         final IEnvelope envelope = new DefaultEnvelope ();
         if (delay >= 0)
@@ -345,17 +346,5 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
     private static double normalizeKeyNumberToGain (final int scale)
     {
         return Math.clamp (scale / (655360.0 * 127.0), -1, 1);
-    }
-
-
-    /**
-     * Normalizes a DLS Modulation EG to Pitch lScale value to the range 0.0..1.0.
-     *
-     * @param cents The raw 32-bit signed relative pitch value
-     * @return Normalized value in range [0.0, 1.0]
-     */
-    public static double normalizeEG2ToPitch (final int cents)
-    {
-        return Math.clamp (cents, -1200, 1200) / 1200.0;
     }
 }
