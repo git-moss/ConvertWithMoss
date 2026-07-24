@@ -194,7 +194,8 @@ doubles it silently).
   which keeps the per-zone tuning, volume, filter and envelopes (hardware
   banks typically map many zones into one voice; both layouts are valid).
   Stereo samples are mixed down to mono (the stereo variant of the sample
-  struct is not covered by the mpc2emu reverse-engineering). Samples are
+  struct is not covered by the mpc2emu reverse-engineering); sample rates
+  above 48 kHz, the EOS maximum, are down-sampled. Samples are
   de-duplicated by content. Trims (zone start/stop) are not applied; use the
   trim processing option instead.
 * Bank limits: 1000 presets and 1000 samples (S000-S999/P000-P999 per the EOS
