@@ -4,7 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.roland.zencore;
 
-import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 
 
 /**
@@ -27,7 +27,7 @@ public class ZenCoreSample
     private int                startPoint         = 0;
     private int                loopStart          = 0;
     private int                endPoint           = 0;
-    private InMemorySampleData sampleData;
+    private ISampleData sampleData;
 
 
     /**
@@ -233,7 +233,7 @@ public class ZenCoreSample
      *
      * @return The sample data (or null if not resolved)
      */
-    public InMemorySampleData getSampleData ()
+    public ISampleData getSampleData ()
     {
         return this.sampleData;
     }
@@ -244,7 +244,7 @@ public class ZenCoreSample
      *
      * @param sampleData The sample data
      */
-    public void setSampleData (final InMemorySampleData sampleData)
+    public void setSampleData (final ISampleData sampleData)
     {
         this.sampleData = sampleData;
     }

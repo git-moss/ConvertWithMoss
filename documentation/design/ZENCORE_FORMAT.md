@@ -318,13 +318,15 @@ computes `frames = f04 >> 1` regardless of the channel count, then allocates
 in 512-byte blocks with a fixed 64-frame allocation margin past the declared extent for the
 voice engine's read-ahead.
 
-**Roland SF2→SVZ converter `SMPd`** (reference only; not written by CWM): the output format of
-Roland's own SF2→SVZ converter, as shipped in commercial third-party packs (e.g. Vulture
-Culture's *SOURCE*): a `"SMPd"` tag with a u16 header size `0x20` at +4 and u8 version `1` at
-+6 (the device firmware validates exactly these fields), followed by a complete embedded
-`RIFF`/`WAVE` file at 0x20 (44100 Hz), and the `USDa` directory CRCs are 0. The `USPa` record
-is byte-identical to the device's. CWM decodes such packs and re-emits device-native raw-PCM
-`SMPd`.
+**Roland SF2→SVZ converter `SMPd`** (read by CWM; not written): the output of Roland's own
+SF2→SVZ converter, as shipped in commercial third-party packs (e.g. Vulture Culture's *SOURCE*,
+"ARP Solina Strings"). The header is 0x20 bytes - the sample name at 0x10, the rate at 0x0C, and
+the byte at 0x08 holding an unrelated `0x32` (NOT the channel count, which is the trap that made
+these files read as "50 channels") - followed by a **complete embedded `RIFF`/`WAVE` file at
+0x20** (PCM, 44100 Hz) rather than raw PCM, and the `USDa` directory CRCs are 0. The `USPa`
+record is byte-identical to the device's. CWM detects the variant by the `RIFF`/`WAVE` signature
+at 0x20 and reads the audio with the standard WAV reader (see `ZenCoreSvz.isEmbeddedWaveChunk` /
+`readEmbeddedWave`); it always writes the device-native raw-PCM `SMPd`.
 
 **Compact `SMPd`** (file version `02 01`; seen in third-party sample-pool exports, e.g. a pool
 tagged `Nemly`): follows the same `f04 = 2 × end` law at +4, the same bits at `0x009`, rate at

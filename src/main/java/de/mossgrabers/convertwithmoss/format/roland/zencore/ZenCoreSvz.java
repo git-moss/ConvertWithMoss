@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.roland.zencore;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,8 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.Pair;
 
 
@@ -50,6 +53,11 @@ public final class ZenCoreSvz
     private static final int     SMPD_CHANNELS_KY019   = 0x08;
     /** Channel-count field of a compact SMPd header: a u16 holding 1 (mono) or 2 (stereo). */
     private static final int     SMPD_CHANNELS_COMPACT = 0x0A;
+    /**
+     * Offset of the embedded RIFF/WAVE file in a SF2-to-SVZ converter SMPd chunk: a 0x20 byte header
+     * followed by a complete WAV file rather than raw PCM.
+     */
+    private static final int     SMPD_EMBEDDED_WAVE    = 0x20;
 
     private static final int     NAME_LENGTH           = 16;
     private static final int     PREVIEW_OFFSET        = 0x60;
@@ -717,19 +725,36 @@ public final class ZenCoreSvz
                 final int chunkStart = usdSectionStart + chunkOffset;
                 if (chunkStart >= 0 && chunkSize > SMPD_HEADER_COMPACT && chunkStart + chunkSize <= file.length)
                 {
-                    // The storage layout comes from the SMPd chunk header, which has two variants
-                    // (see resolveSmpdLayout); an unrecognized chunk leaves the sample without
-                    // audio.
-                    final Optional<Pair<Integer, Integer>> layout = resolveSmpdLayout (file, chunkStart, chunkSize);
-                    if (layout.isPresent ())
+                    // A third SMPd variant - the output of Roland's SF2-to-SVZ converter, used by
+                    // some commercial packs - embeds a complete RIFF/WAVE file after a 0x20 byte
+                    // header instead of raw PCM (its byte at 0x08 is an unrelated 0x32, so the
+                    // raw-PCM channel detection cannot be used); it is read with the standard WAV
+                    // reader. Otherwise the header is one of the two raw-PCM variants (see
+                    // resolveSmpdLayout); an unrecognized chunk leaves the sample without audio.
+                    if (isEmbeddedWaveChunk (file, chunkStart))
                     {
-                        final Pair<Integer, Integer> pair = layout.get ();
-                        final int channels = pair.getKey ().intValue ();
-                        final int headerSize = pair.getValue ().intValue ();
-                        final int rate = (int) ZenCoreUtil.readUnsigned32 (file, chunkStart + 0x0C, false);
-                        final int pcmStart = chunkStart + headerSize;
-                        final int pcmSize = chunkSize - headerSize;
-                        sample.setSampleData (decodePcm (file, pcmStart, pcmSize, channels, rate < 8000 || rate > 192000 ? 48000 : rate));
+                        try
+                        {
+                            sample.setSampleData (readEmbeddedWave (file, chunkStart, chunkSize));
+                        }
+                        catch (final IOException ex)
+                        {
+                            // A malformed embedded WAV leaves the sample without audio.
+                        }
+                    }
+                    else
+                    {
+                        final Optional<Pair<Integer, Integer>> layout = resolveSmpdLayout (file, chunkStart, chunkSize);
+                        if (layout.isPresent ())
+                        {
+                            final Pair<Integer, Integer> pair = layout.get ();
+                            final int channels = pair.getKey ().intValue ();
+                            final int headerSize = pair.getValue ().intValue ();
+                            final int rate = (int) ZenCoreUtil.readUnsigned32 (file, chunkStart + 0x0C, false);
+                            final int pcmStart = chunkStart + headerSize;
+                            final int pcmSize = chunkSize - headerSize;
+                            sample.setSampleData (decodePcm (file, pcmStart, pcmSize, channels, rate < 8000 || rate > 192000 ? 48000 : rate));
+                        }
                     }
                 }
             }
@@ -796,6 +821,41 @@ public final class ZenCoreSvz
         for (int i = 0; i < count; i++)
             values[i] = ZenCoreUtil.readUnsigned16 (file, offset + i * 2, false);
         return values;
+    }
+
+
+    /**
+     * Whether a SMPd chunk is the SF2-to-SVZ converter variant, which embeds a complete RIFF/WAVE
+     * file after a {@link #SMPD_EMBEDDED_WAVE} byte header instead of raw PCM. Detected by the
+     * RIFF/WAVE signature at that offset.
+     *
+     * @param file The file content
+     * @param chunkStart The absolute offset of the SMPd chunk
+     * @return True if the chunk embeds a RIFF/WAVE file
+     */
+    private static boolean isEmbeddedWaveChunk (final byte [] file, final int chunkStart)
+    {
+        final int riff = chunkStart + SMPD_EMBEDDED_WAVE;
+        return riff + 12 <= file.length && file[riff] == 'R' && file[riff + 1] == 'I' && file[riff + 2] == 'F' && file[riff + 3] == 'F' && file[riff + 8] == 'W' && file[riff + 9] == 'A' && file[riff + 10] == 'V' && file[riff + 11] == 'E';
+    }
+
+
+    /**
+     * Read the embedded RIFF/WAVE file of a SF2-to-SVZ converter SMPd chunk (the audio follows the
+     * {@link #SMPD_EMBEDDED_WAVE} byte header) with the standard WAV reader.
+     *
+     * @param file The file content
+     * @param chunkStart The absolute offset of the SMPd chunk
+     * @param chunkSize The chunk size from the USDa directory
+     * @return The sample data
+     * @throws IOException The embedded WAV could not be read
+     */
+    private static ISampleData readEmbeddedWave (final byte [] file, final int chunkStart, final int chunkSize) throws IOException
+    {
+        final int waveStart = chunkStart + SMPD_EMBEDDED_WAVE;
+        final byte [] wave = new byte [chunkStart + chunkSize - waveStart];
+        System.arraycopy (file, waveStart, wave, 0, wave.length);
+        return new WavFileSampleData (new ByteArrayInputStream (wave));
     }
 
 
