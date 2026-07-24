@@ -51,6 +51,8 @@
   * Fixed: The envelope sustain level was never written and stayed at its maximum, so a percussive source (sustain 0) held at full level forever.
 * Korg KMP
   * Fixed: Detector did hang on first found KMP file.
+* Kurzweil K2x00
+  * Fixed: References to sample data not contained in the file (device ROM, or a sample stored in a different file of a multi-file sound set) were reported as errors. A bank whose program converted fine still produced a wall of red "sample not found" / "references device ROM" errors from its other, leftover objects. Such expected references are now logged as information, and leftover keymaps whose samples are missing are skipped silently.
 * Logic EXS24
   * New: Implemented Velocity -> Filter Cutoff Modulation (read/write)
   * Fixed: The panning of a group was read as an unsigned value and was not scaled, so a group panned fully left moved all of its zones fully right.
