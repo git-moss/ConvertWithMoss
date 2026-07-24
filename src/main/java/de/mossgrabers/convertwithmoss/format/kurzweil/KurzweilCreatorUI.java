@@ -25,17 +25,17 @@ import javafx.scene.layout.Pane;
 public class KurzweilCreatorUI implements ICoreTaskSettings
 {
     /**
-     * The target device family. Since the created files use only K2000 features, the selection
-     * only sets the matching file extension.
+     * The target device family. Since the created files use only K2000 features, the selection only
+     * sets the matching file extension.
      */
     public enum TargetDevice
     {
         /** Kurzweil K2000. */
-        K2000 ("krz"),
+        K2000("krz"),
         /** Kurzweil K2500. */
-        K2500 ("k25"),
+        K2500("k25"),
         /** Kurzweil K2600. */
-        K2600 ("k26");
+        K2600("k26");
 
 
         private final String extension;

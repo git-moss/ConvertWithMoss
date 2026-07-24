@@ -59,8 +59,8 @@ public class KurzweilKeymap
     /** The number of entries of a standard keymap (1 per semitone). */
     public static final int                    NUM_ENTRIES       = 128;
 
-    private int                                id;
-    private String                             name;
+    private final int                          id;
+    private final String                       name;
     private int                                sampleId;
     private int                                method            = METHOD_DEFAULT;
     private int                                basePitch;
@@ -322,7 +322,7 @@ public class KurzweilKeymap
 
     /**
      * Format the levels as a string.
-     * 
+     *
      * @param lowLevel The low level
      * @param highLevel The high level
      * @return The formatted levels as text

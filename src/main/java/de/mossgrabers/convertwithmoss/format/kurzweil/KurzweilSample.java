@@ -22,10 +22,10 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class KurzweilSample
 {
-    private static final int          FLAG_STEREO      = 1;
+    private static final int                 FLAG_STEREO      = 1;
 
     /** The default natural envelope which KurzFiler writes: 2 records of 6 signed 16-bit values. */
-    private static final int [][]     DEFAULT_ENVELOPE =
+    private static final int [] []           DEFAULT_ENVELOPE =
     {
         {
             -1,
@@ -45,13 +45,13 @@ public class KurzweilSample
         }
     };
 
-    private int                       id;
-    private String                    name;
-    private int                       baseID           = 1;
-    private int                       flags            = 0;
-    private int                       copyID           = 0;
+    private final int                        id;
+    private final String                     name;
+    private int                              baseID           = 1;
+    private int                              flags            = 0;
+    private int                              copyID           = 0;
 
-    private final List<KurzweilSampleHeader> headers   = new ArrayList<> ();
+    private final List<KurzweilSampleHeader> headers          = new ArrayList<> ();
 
 
     /**
@@ -101,8 +101,8 @@ public class KurzweilSample
     /**
      * Write the object data (the part after the object name) to the stream.
      *
-     * @param wordOffset The word offset in the sample data region at which the sample data of
-     *            this object will be placed
+     * @param wordOffset The word offset in the sample data region at which the sample data of this
+     *            object will be placed
      * @return The object data
      * @throws IOException Could not write the object
      */
@@ -200,8 +200,8 @@ public class KurzweilSample
      * Add a sample header.
      *
      * @param header The header to add
-     * @return The 1-based index of the added header (= the sub-sample number to reference it from
-     *         a keymap entry)
+     * @return The 1-based index of the added header (= the sub-sample number to reference it from a
+     *         keymap entry)
      */
     public int addHeader (final KurzweilSampleHeader header)
     {

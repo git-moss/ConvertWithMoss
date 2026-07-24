@@ -54,8 +54,8 @@ public final class ZenCoreSvz
     /** Channel-count field of a compact SMPd header: a u16 holding 1 (mono) or 2 (stereo). */
     private static final int     SMPD_CHANNELS_COMPACT = 0x0A;
     /**
-     * Offset of the embedded RIFF/WAVE file in a SF2-to-SVZ converter SMPd chunk: a 0x20 byte header
-     * followed by a complete WAV file rather than raw PCM.
+     * Offset of the embedded RIFF/WAVE file in a SF2-to-SVZ converter SMPd chunk: a 0x20 byte
+     * header followed by a complete WAV file rather than raw PCM.
      */
     private static final int     SMPD_EMBEDDED_WAVE    = 0x20;
 
@@ -737,7 +737,7 @@ public final class ZenCoreSvz
                         {
                             sample.setSampleData (readEmbeddedWave (file, chunkStart, chunkSize));
                         }
-                        catch (final IOException ex)
+                        catch (final IOException _)
                         {
                             // A malformed embedded WAV leaves the sample without audio.
                         }

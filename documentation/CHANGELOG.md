@@ -1,6 +1,6 @@
 # Changes
 
-## 19.1.0 (unreleased)
+## 19.1.0
 
 * Many thanks to Douglas Carmichael for many contributions and fixes!
 * New: Added support for the Kurzweil K2000/K2500/K2600 format (KRZ, K25, K26).
@@ -51,10 +51,6 @@
   * Fixed: The envelope sustain level was never written and stayed at its maximum, so a percussive source (sustain 0) held at full level forever.
 * Korg KMP
   * Fixed: Detector did hang on first found KMP file.
-* Kurzweil K2x00
-  * New: The DSP parameters of the program layers are now converted, based on the hardware reverse-engineering of the mpc2emu project: reading gets the layer velocity window, the amplitude envelope (unless the layer plays the 'natural' envelope of its samples), the filter with its cutoff and resonance and the filter envelope with its modulation depth; writing stores the global amplitude envelope, filter and filter envelope of the multi-sample.
-  * Fixed: The keymap object ID was written into both keymap slots of a layer (as KurzFiler does). The device then claims two keymaps per layer, which overflows its limit at 4 or more layers and mutes the whole program.
-  * Fixed: References to sample data not contained in the file (device ROM, or a sample stored in a different file of a multi-file sound set) were reported as errors. A bank whose program converted fine still produced a wall of red "sample not found" / "references device ROM" errors from its other, leftover objects. Such expected references are now logged as information, and leftover keymaps whose samples are missing are skipped silently.
 * Logic EXS24
   * New: Implemented Velocity -> Filter Cutoff Modulation (read/write)
   * Fixed: The panning of a group was read as an unsigned value and was not scaled, so a group panned fully left moved all of its zones fully right.

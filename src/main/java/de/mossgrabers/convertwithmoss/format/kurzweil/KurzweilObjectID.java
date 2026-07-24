@@ -6,9 +6,9 @@ package de.mossgrabers.convertwithmoss.format.kurzweil;
 
 /**
  * Object type constants and hash calculations for Kurzweil K2000/K2500/K2600 objects. The 16-bit
- * hash of an object combines its type and ID: for the types up to 42 it is (type &lt;&lt; 10) |
- * ID with IDs from 0 to 1023 (usable on the device are 1 to 999). Other types use an 8-bit type
- * with a mangled ID which is not interpreted here.
+ * hash of an object combines its type and ID: for the types up to 42 it is (type &lt;&lt; 10) | ID
+ * with IDs from 0 to 1023 (usable on the device are 1 to 999). Other types use an 8-bit type with a
+ * mangled ID which is not interpreted here.
  *
  * @author Jürgen Moßgraber
  */

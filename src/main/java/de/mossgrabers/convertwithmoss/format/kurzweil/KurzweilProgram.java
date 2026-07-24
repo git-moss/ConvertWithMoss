@@ -69,7 +69,9 @@ public class KurzweilProgram
     private static final int BAND_PASS_DEFAULT_WIDTH = 64;
 
 
-    /** One layer of a program: a keymap mapped to a key and velocity range with its DSP settings. */
+    /**
+     * One layer of a program: a keymap mapped to a key and velocity range with its DSP settings.
+     */
     public static class Layer
     {
         private int              keymapID;
@@ -368,6 +370,23 @@ public class KurzweilProgram
                 this.f2Value = BAND_PASS_DEFAULT_WIDTH;
             else if (hasResonance (this.filterType))
                 this.f2Value = Math.clamp ((int) Math.round (resonance * 80), 0, 48);
+        }
+
+
+        /**
+         * Check if the F1 DSP function is a filter with a resonance on its F2 page. The 1-pole
+         * low-pass has a fixed resonance and the F2 page of the 2-pole bandpass holds the width.
+         *
+         * @param filterType The DSP function type of the F1 page
+         * @return True if the F2 page holds the resonance
+         */
+        private static boolean hasResonance (final int filterType)
+        {
+            return switch (filterType)
+            {
+                case FILTER_LOW_PASS_2P, FILTER_LOW_PASS_4P, FILTER_HIGH_PASS_4P, FILTER_BAND_PASS_4P, FILTER_NOTCH_4P -> true;
+                default -> false;
+            };
         }
     }
 
@@ -722,26 +741,9 @@ public class KurzweilProgram
 
 
     /**
-     * Check if the F1 DSP function is a filter with a resonance on its F2 page. The 1-pole
-     * low-pass has a fixed resonance and the F2 page of the 2-pole bandpass holds the width.
-     *
-     * @param filterType The DSP function type of the F1 page
-     * @return True if the F2 page holds the resonance
-     */
-    private static boolean hasResonance (final int filterType)
-    {
-        return switch (filterType)
-        {
-            case FILTER_LOW_PASS_2P, FILTER_LOW_PASS_4P, FILTER_HIGH_PASS_4P, FILTER_BAND_PASS_4P, FILTER_NOTCH_4P -> true;
-            default -> false;
-        };
-    }
-
-
-    /**
-     * Encode a MIDI velocity range into the packed velocity window byte of a layer segment: the
-     * low and high velocity as 0..7 dynamic marks (ppp..fff), the high mark stored inverted. A
-     * full range therefore encodes as 0.
+     * Encode a MIDI velocity range into the packed velocity window byte of a layer segment: the low
+     * and high velocity as 0..7 dynamic marks (ppp..fff), the high mark stored inverted. A full
+     * range therefore encodes as 0.
      *
      * @param velocityLow The lowest MIDI velocity
      * @param velocityHigh The highest MIDI velocity
@@ -756,8 +758,8 @@ public class KurzweilProgram
 
 
     /**
-     * Decode the cutoff frequency of a filter function. The byte holds signed semi-tones; 9 is
-     * 440 Hertz (A4), the device range is -48 (16 Hertz) to 79 (25088 Hertz).
+     * Decode the cutoff frequency of a filter function. The byte holds signed semi-tones; 9 is 440
+     * Hertz (A4), the device range is -48 (16 Hertz) to 79 (25088 Hertz).
      *
      * @param cutoffSemitones The cutoff in semi-tones
      * @return The cutoff frequency in Hertz
@@ -783,8 +785,8 @@ public class KurzweilProgram
 
 
     /**
-     * Decode the modulation depth of the filter envelope into cents. Piece-wise linear through
-     * the calibration points measured on the device: 0 = 0 cents, 40 = 1200 cents and 127 = 10800
+     * Decode the modulation depth of the filter envelope into cents. Piece-wise linear through the
+     * calibration points measured on the device: 0 = 0 cents, 40 = 1200 cents and 127 = 10800
      * cents.
      *
      * @param depthByte The signed depth byte

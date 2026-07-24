@@ -109,8 +109,8 @@ public class KurzweilKeymapEntry
 
 
     /**
-     * Get the 1-based index of the referenced header in the sample object. 0 marks an unused
-     * entry. For stereo samples this references the left channel header (1, 3, 5, ...).
+     * Get the 1-based index of the referenced header in the sample object. 0 marks an unused entry.
+     * For stereo samples this references the left channel header (1, 3, 5, ...).
      *
      * @return The sub-sample number
      */

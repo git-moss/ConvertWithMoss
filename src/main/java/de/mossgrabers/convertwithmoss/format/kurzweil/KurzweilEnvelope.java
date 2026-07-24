@@ -18,14 +18,14 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
  */
 public class KurzweilEnvelope
 {
-    private static final int         NUM_STAGES  = 7;
-    private static final int         STAGE_DECAY = 3;
+    private static final int          NUM_STAGES  = 7;
+    private static final int          STAGE_DECAY = 3;
 
     /**
      * The non-linear grid on which the device edits envelope times. Each row is one section: up to
      * the given number of seconds one editor step lengthens the time by the step size.
      */
-    private static final double [][] TIME_GRID   =
+    private static final double [] [] TIME_GRID   =
     {
         {
             2,
@@ -53,8 +53,8 @@ public class KurzweilEnvelope
         }
     };
 
-    private final double []          times       = new double [NUM_STAGES];
-    private final int []             levels      = new int [NUM_STAGES];
+    private final double []           times       = new double [NUM_STAGES];
+    private final int []              levels      = new int [NUM_STAGES];
 
 
     /**
@@ -141,8 +141,8 @@ public class KurzweilEnvelope
     /**
      * Fill a model envelope from the stages: leading attack stages which stay at level 0 form the
      * delay, the following stages up to the peak level the attack and the remaining attack stages
-     * the hold. The decay stage sets the decay time and sustain level, the release stages up to
-     * the first which reaches level 0 sum to the release time.
+     * the hold. The decay stage sets the decay time and sustain level, the release stages up to the
+     * first which reaches level 0 sum to the release time.
      *
      * @param envelope The envelope to fill
      */
@@ -237,6 +237,6 @@ public class KurzweilEnvelope
                 break;
             sectionStart = section[0];
         }
-        return Math.clamp ((int) Math.round (steps) + 3, 3, 255);
+        return Math.clamp ((int) Math.round (steps) + 3L, 3, 255);
     }
 }
