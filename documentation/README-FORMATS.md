@@ -234,6 +234,8 @@ A dspreset file contains a single preset and the description of the multi-sample
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
+A pitch LFO (vibrato) is converted as an `<lfo>` bound to the group tuning, carrying its rate (in Hertz), depth and delay. The oscillator's fade-in has no equivalent and is dropped, and the waveform is mapped to the nearest of sine, square and saw.
+
 ### Source Options
 
 * Create one multi-sample per group: Creates a separate multi-sample for each group instead of one multi-sample which contains all groups. Intended for presets which contain several alternative kits or articulations as groups and switch between them via their user interface (only one group is enabled at a time). Disabled groups are converted as well when this option is enabled; when it is off, only the enabled groups are converted.
@@ -608,6 +610,8 @@ The SFZ file contains only the description of the multi-sample. The related samp
 
 SFZ can only mark a sample as a one-shot (`loop_mode=one_shot`) if it has no loop. A looped zone therefore keeps its loop and is not written as a one-shot.
 
+A pitch LFO (vibrato) is read and written via the `pitchlfo_freq` (Hertz), `pitchlfo_depth` (cent), `pitchlfo_delay` and `pitchlfo_fade` (seconds) opcodes.
+
 ### Source Options
 
 * Log unsupported SFZ opcodes: If enabled, opcodes which are found in the source but are not used (not supported) as input for the conversion are logged.
@@ -625,6 +629,8 @@ A SoundFont can contain several presets grouped into banks. Presets refer to one
 The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
 
 There are metadata fields for creator and some description specified in the format. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+
+The vibrato low frequency oscillator (generators `vibLfoToPitch`, `freqVibLFO` and `delayVibLFO`) is converted to and from the pitch LFO, carrying its depth, rate and delay. The waveform is always a triangle in this format and there is no fade-in.
 
 ### Source Options
 

@@ -15,6 +15,7 @@
   * New: Added support for envelope time keyboard- and velocity-scaling, which scales the envelope times by the played key and velocity (as opposed to the already supported slopes, which describe the curvature of a segment): Akai S1000, Ensoniq EPS/ASR, Ensoniq Mirage, Logic EXS24, Reason NN-XT, Roland S-7xx, SoundFont 2, Yamaha YSFC.
   * New: Added support for per-instrument voice settings (polyphony and monophonic legato): Akai S1000, DecentSampler, Disting EX, Ensoniq Mirage, Logic EXS24, Reason NN-XT, Roland S-7xx, SFZ, Synthstrom Deluge, TAL Sampler.
   * New: Added support for group volume, panning and tuning offsets: Kontakt, DecentSampler, Logic EXS24, Synclavier, TX16Wx, Waldorf Quantum/Iridium.
+  * New: Added support for a pitch low frequency oscillator (vibrato) with its rate, depth and delay: DecentSampler, SFZ, SoundFont 2. Previously any vibrato was dropped on conversion.
   * New: Source folders and files are now processed in a stable alphabetical order instead of the file-system enumeration order, so consecutive runs behave identically (and e.g. the QPAT import numbers are assigned in a predictable order).
   * New: Improved logging if WAV file could not be written.
   * Fixed: Two filters which differed only in their cutoff envelope were treated as equal, so zones which are not identical could be combined into one; a filter with a cutoff envelope but without a cutoff velocity modulation could additionally throw an exception.
