@@ -367,6 +367,18 @@ public class DlsArticulation
 
 
     /**
+     * Get the controller which modulates the connection, e.g. the modulation wheel. A value of
+     * CONN_SRC_NONE means that the connection is always fully applied.
+     *
+     * @return The control, see the CONN_SRC_* constants
+     */
+    public int getControl ()
+    {
+        return this.control;
+    }
+
+
+    /**
      * Get the destination.
      *
      * @return The source, see the CONN_DST_* constants

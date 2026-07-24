@@ -277,7 +277,7 @@ Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipp
 The DLS format (*.dls) is a standardized file format developed for storing and distributing collections of digital musical instrument sounds, enabling their use in software synthesizers and hardware devices compatible with the MIDI protocol. It encapsulates audio samples, instrument definitions, articulations, and performance parameters into a single file. Developed in the 1990s initially by the Interactive Audio Special Interest Group (IASIG) and later standardized by the MIDI Manufacturers Association (MMA), with the first formal specification released in 1999.
 There is no write support.
 
-The amplitude and pitch envelopes, the sample loops and a pitch LFO (vibrato) are read. The vibrato's depth, its frequency (converted from absolute pitch cents to Hertz) and its start delay are carried over to the pitch LFO.
+The amplitude and pitch envelopes, the sample loops and a pitch LFO (vibrato) are read. The vibrato's depth, its frequency (converted from absolute pitch cents to Hertz) and its start delay are carried over to the pitch LFO. Only a connection which is not modulated by a controller is read as the vibrato; the format normally contains a second one controlled by the modulation wheel, which is the amount the wheel can dial in and would sound permanently if it were converted.
 
 ## Elektron Tonverk
 
