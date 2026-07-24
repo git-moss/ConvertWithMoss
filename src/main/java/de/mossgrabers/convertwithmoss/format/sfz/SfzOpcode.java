@@ -261,6 +261,15 @@ public class SfzOpcode
     /** ARIA. The pitch EG release slope time. */
     public static final String PITCHEG_RELEASE_SHAPE = "pitcheg_release_shape";
 
+    /** SFZ v1. The pitch LFO (vibrato) frequency in Hertz. */
+    public static final String PITCHLFO_FREQ         = "pitchlfo_freq";
+    /** SFZ v1. The pitch LFO (vibrato) depth in cent. */
+    public static final String PITCHLFO_DEPTH        = "pitchlfo_depth";
+    /** SFZ v1. The pitch LFO (vibrato) delay time in seconds. */
+    public static final String PITCHLFO_DELAY        = "pitchlfo_delay";
+    /** SFZ v1. The pitch LFO (vibrato) fade-in time in seconds. */
+    public static final String PITCHLFO_FADE         = "pitchlfo_fade";
+
 
     /**
      * Private constructor for utility class.

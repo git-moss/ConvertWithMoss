@@ -22,6 +22,8 @@ import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -419,6 +421,26 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
             setEnvelopeTime (instrumentZone, Generator.MOD_ENV_RELEASE, pitchEnvelope.getReleaseTime ());
             setEnvelopeLevel (instrumentZone, Generator.MOD_ENV_SUSTAIN, pitchEnvelope.getSustainLevel ());
             setEnvelopeKeyTracking (instrumentZone, Generator.KEYNUM_TO_MOD_ENV_HOLD, Generator.KEYNUM_TO_MOD_ENV_DECAY, pitchEnvelope.getTimeKeyTracking ());
+        }
+
+        // Set the vibrato low frequency oscillator from the pitch modulation. The depth is given in
+        // cent like the pitch envelope, the fade-in and the waveform have no equivalent in Sf2.
+        final ILfoModulator pitchLfoModulator = sampleZone.getPitchLfoModulator ();
+        final double vibLfoDepth = pitchLfoModulator.getDepth ();
+        if (vibLfoDepth != 0)
+        {
+            instrumentZone.addSignedGenerator (Generator.VIB_LFO_TO_PITCH, (int) Math.round (vibLfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
+            final ILfo pitchLfo = pitchLfoModulator.getSource ();
+            final double rate = pitchLfo.getRate ();
+            if (rate > 0)
+            {
+                // The frequency is stored in absolute cents, see the filter cutoff below
+                final double frequencyCents = Math.log (rate / 8.176) * 1200.0 / Math.log (2);
+                instrumentZone.addSignedGenerator (Generator.FREQ_VIB_LFO, (int) Math.round (frequencyCents));
+            }
+            final double delay = pitchLfo.getDelay ();
+            if (delay >= 0)
+                instrumentZone.addSignedGenerator (Generator.DELAY_VIB_LFO, convertEnvelopeTime (delay));
         }
 
         // Filter settings
