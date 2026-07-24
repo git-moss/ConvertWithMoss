@@ -50,10 +50,13 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
  */
 public class Emulator4Creator extends AbstractCreator<EmptySettingsUI>
 {
+    /** The maximum sample playback rate of the EOS samplers. */
+    private static final int                    MAX_SAMPLE_RATE    = 48000;
+
     private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (new int []
     {
         16
-    }, -1, false);
+    }, MAX_SAMPLE_RATE, false);
 
 
     /** Holds one de-duplicated sample to be written as an E3S1 chunk. */
@@ -131,6 +134,9 @@ public class Emulator4Creator extends AbstractCreator<EmptySettingsUI>
                 this.notifier.logError ("IDS_E4B_TOO_MANY_PRESETS", multisampleSource.getName ());
                 break;
             }
+
+            // Samples above the maximum EOS rate are down-sampled - move the positions with them
+            recalculateAllSamplePositions (multisampleSource, MAX_SAMPLE_RATE, true);
 
             final List<ISampleZone> zones = new ArrayList<> ();
             for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
