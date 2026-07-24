@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -21,6 +22,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
@@ -30,8 +32,8 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 /**
  * Creator for Kurzweil K2000/K2500/K2600 files. The written files use only K2000 features and
  * therefore load on all three device families; the selected target device sets the file extension
- * (.krz, .k25 or .k26). Each multi-sample becomes a program with one layer, a keymap and one
- * sample object per zone; the velocity layers are mapped onto the 8 dynamic levels of the keymap.
+ * (.krz, .k25 or .k26). Each multi-sample becomes a program with one layer, a keymap and one sample
+ * object per zone; the velocity layers are mapped onto the 8 dynamic levels of the keymap.
  *
  * @author Jürgen Moßgraber
  */
@@ -55,7 +57,7 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
     private static class PreparedZone
     {
         ISampleZone zone;
-        byte [][]   channelData;
+        byte [] []  channelData;
         int         sampleRate;
         int         rootKey;
         int         loopStart;
@@ -310,13 +312,14 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
      */
     private PreparedZone prepareZone (final ISampleZone zone) throws IOException
     {
-        if (zone.getSampleData () == null || zone.getSampleData ().isEmpty ())
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
         {
             this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), zone.getName ());
             return null;
         }
 
-        final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData ().get (), DESTINATION_FORMAT);
+        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
         final int numChannels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (numChannels > 2)
         {
@@ -348,7 +351,7 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
             {
                 endInclusive = loopEnd;
                 preparedZone.isLooped = true;
-                preparedZone.loopStart = Math.clamp (loop.getStart () - start, 0, loopEnd - start);
+                preparedZone.loopStart = Math.clamp (loop.getStart () - (long) start, 0, loopEnd - start);
             }
         }
         if (endInclusive < start)

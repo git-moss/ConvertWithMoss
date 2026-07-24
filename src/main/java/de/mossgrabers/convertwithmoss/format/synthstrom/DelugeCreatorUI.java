@@ -185,8 +185,6 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
 
     private static OutputType parseType (final String value)
     {
-        if (value == null)
-            return OutputType.SOUND;
-        return "kit".equals (value.trim ().toLowerCase ()) ? OutputType.KIT : OutputType.SOUND;
+        return value != null && "kit".equalsIgnoreCase (value.trim ()) ? OutputType.KIT : OutputType.SOUND;
     }
 }

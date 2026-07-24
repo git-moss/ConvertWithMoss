@@ -8,16 +8,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
- * A Kurzweil program object (type 36). Consists of a sequence of segments, each a tag byte
- * followed by a fixed length data block. Only the segments needed to map layers to keymaps are
- * interpreted; when creating a program the same segment values are written which KurzFiler uses
- * for its generated instrument programs (verified to load on the devices).
+ * A Kurzweil program object (type 36). Consists of a sequence of segments, each a tag byte followed
+ * by a fixed length data block. Only the segments needed to map layers to keymaps are interpreted;
+ * when creating a program the same segment values are written which KurzFiler uses for its
+ * generated instrument programs (verified to load on the devices).
  *
  * @author Jürgen Moßgraber
  */
@@ -88,15 +90,50 @@ public class KurzweilProgram
     }
 
 
-    /** One segment: a tag with its fixed length data. */
+    /**
+     * One segment: a tag with its fixed length data.
+     *
+     * @param tag The tag
+     * @param data The data
+     */
     private record Segment (int tag, byte [] data)
     {
-        // Intentionally empty
+        /** {@inheritDoc} */
+        @Override
+        public int hashCode ()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + Arrays.hashCode (this.data);
+            result = prime * result + Objects.hash (Integer.valueOf (this.tag));
+            return result;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean equals (final Object obj)
+        {
+            if (this == obj)
+                return true;
+            if ((obj == null) || (this.getClass () != obj.getClass ()))
+                return false;
+            final Segment other = (Segment) obj;
+            return Arrays.equals (this.data, other.data) && this.tag == other.tag;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString ()
+        {
+            return "Segment [tag=" + this.tag + ", data=" + Arrays.toString (this.data) + "]";
+        }
     }
 
 
-    private int                 id;
-    private String              name;
+    private final int           id;
+    private final String        name;
     private final List<Segment> segments = new ArrayList<> ();
 
 
@@ -262,9 +299,9 @@ public class KurzweilProgram
 
 
     /**
-     * Add a layer which plays the given keymap on the full key and velocity range. Writes the
-     * same segment sequence as KurzFiler: layer, envelope control, amplitude envelope,
-     * calibration and the four output blocks.
+     * Add a layer which plays the given keymap on the full key and velocity range. Writes the same
+     * segment sequence as KurzFiler: layer, envelope control, amplitude envelope, calibration and
+     * the four output blocks.
      *
      * @param keymapID The ID of the keymap object of the layer
      * @param isStereo True if the keymap references stereo samples

@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -33,15 +34,17 @@ import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Detects recursively Kurzweil K2000/K2500/K2600 files in folders. Files must end with
- * <i>.krz</i>, <i>.k25</i> or <i>.k26</i>. Each program in a file becomes one multi-sample;
- * keymaps and samples which are not referenced by a program are added as multi-samples of their
- * own.
+ * Detects recursively Kurzweil K2000/K2500/K2600 files in folders. Files must end with <i>.krz</i>,
+ * <i>.k25</i> or <i>.k26</i>. Each program in a file becomes one multi-sample; keymaps and samples
+ * which are not referenced by a program are added as multi-samples of their own.
  *
  * @author Jürgen Moßgraber
  */
 public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    private static final String IDS_KURZWEIL_READING = "IDS_KURZWEIL_READING";
+
+
     /**
      * Constructor.
      *
@@ -81,7 +84,7 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
         for (final KurzweilProgram program: kurzweilFile.getPrograms ())
         {
             final String name = program.getName ().isBlank () ? FileUtils.getNameWithoutType (sourceFile) : program.getName ();
-            this.notifier.log ("IDS_KURZWEIL_READING", "program", name);
+            this.notifier.log (IDS_KURZWEIL_READING, "program", name);
 
             final List<IGroup> groups = new ArrayList<> ();
             final Set<Integer> reportedMissingKeymapIDs = new HashSet<> ();
@@ -107,7 +110,7 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
             if (usedKeymapIDs.contains (Integer.valueOf (keymap.getId ())))
                 continue;
             final String name = keymap.getName ().isBlank () ? FileUtils.getNameWithoutType (sourceFile) : keymap.getName ();
-            this.notifier.log ("IDS_KURZWEIL_READING", "keymap", name);
+            this.notifier.log (IDS_KURZWEIL_READING, "keymap", name);
             final List<IGroup> groups = new ArrayList<> ();
             this.createGroupsFromKeymap (kurzweilFile, keymap, new KurzweilProgram.Layer (), groups, sampleDataCache, usedSampleIDs, reportedRomSampleIDs);
             this.addSource (sources, sourceFile, name, groups);
@@ -119,7 +122,7 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
             if (usedSampleIDs.contains (Integer.valueOf (sample.getId ())))
                 continue;
             final String name = sample.getName ().isBlank () ? FileUtils.getNameWithoutType (sourceFile) : sample.getName ();
-            this.notifier.log ("IDS_KURZWEIL_READING", "sample", name);
+            this.notifier.log (IDS_KURZWEIL_READING, "sample", name);
             this.addSource (sources, sourceFile, name, this.createGroupsFromSample (sample, sampleDataCache, reportedRomSampleIDs));
         }
 
@@ -145,8 +148,8 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * A zone which appears identically on several velocity levels (e.g. a full velocity pad
-     * combined with velocity split zones on other keys) is read as one zone per level. Merge
-     * such zones when their velocity ranges are adjacent.
+     * combined with velocity split zones on other keys) is read as one zone per level. Merge such
+     * zones when their velocity ranges are adjacent.
      *
      * @param groups The groups with the zones to merge
      */
@@ -160,9 +163,10 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
                 for (final ISampleZone zone: groups.get (i).getSampleZones ())
                     for (int j = i + 1; j < groups.size (); j++)
                     {
-                        final ISampleZone other = findAdjacentZone (groups.get (j), zone);
-                        if (other != null)
+                        final Optional<ISampleZone> otherOpt = findAdjacentZone (groups.get (j), zone);
+                        if (otherOpt.isPresent ())
                         {
+                            final ISampleZone other = otherOpt.get ();
                             zone.setVelocityLow (Math.min (zone.getVelocityLow (), other.getVelocityLow ()));
                             zone.setVelocityHigh (Math.max (zone.getVelocityHigh (), other.getVelocityHigh ()));
                             groups.get (j).getSampleZones ().remove (other);
@@ -173,12 +177,24 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static ISampleZone findAdjacentZone (final IGroup group, final ISampleZone zone)
+    private static Optional<ISampleZone> findAdjacentZone (final IGroup group, final ISampleZone zone)
     {
+        final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
+        if (sampleDataOpt.isEmpty ())
+            return Optional.empty ();
+
+        final ISampleData sampleData = sampleDataOpt.get ();
         for (final ISampleZone other: group.getSampleZones ())
-            if (other.getSampleData () == zone.getSampleData () && other.getKeyLow () == zone.getKeyLow () && other.getKeyHigh () == zone.getKeyHigh () && other.getKeyRoot () == zone.getKeyRoot () && other.getTuning () == zone.getTuning () && (other.getVelocityLow () == zone.getVelocityHigh () + 1 || other.getVelocityHigh () + 1 == zone.getVelocityLow ()))
-                return other;
-        return null;
+        {
+            final Optional<ISampleData> otherSampleDataOpt = other.getSampleData ();
+            if (otherSampleDataOpt.isEmpty ())
+                continue;
+            final ISampleData otherSampleData = otherSampleDataOpt.get ();
+
+            if (sampleData.equals (otherSampleData) && other.getKeyLow () == zone.getKeyLow () && other.getKeyHigh () == zone.getKeyHigh () && other.getKeyRoot () == zone.getKeyRoot () && other.getTuning () == zone.getTuning () && (other.getVelocityLow () == zone.getVelocityHigh () + 1 || other.getVelocityHigh () + 1 == zone.getVelocityLow ()))
+                return Optional.of (other);
+        }
+        return Optional.empty ();
     }
 
 
@@ -214,7 +230,7 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
 
             String groupName = keymap.getName ();
             if (entryTables.size () > 1)
-                groupName += " " + KurzweilKeymap.LEVEL_NAMES[lowLevel] + (highLevel > lowLevel ? "-" + KurzweilKeymap.LEVEL_NAMES[highLevel] : "");
+                groupName += " " + KurzweilKeymap.formatLevels (lowLevel, highLevel);
             final IGroup group = new DefaultGroup (groupName);
 
             final int velocityLow = Math.max (1, lowLevel * 16);
@@ -310,8 +326,8 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Create one group with one zone per sample header for a sample object which is not
-     * referenced by any keymap. The key ranges are spread around the root keys of the headers.
+     * Create one group with one zone per sample header for a sample object which is not referenced
+     * by any keymap. The key ranges are spread around the root keys of the headers.
      *
      * @param sample The sample object
      * @param sampleDataCache Cache of the already converted sample data
@@ -371,8 +387,8 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Convert the 16-bit big-endian PCM data of a sample header (or a stereo pair of headers)
-     * into sample data for a zone.
+     * Convert the 16-bit big-endian PCM data of a sample header (or a stereo pair of headers) into
+     * sample data for a zone.
      *
      * @param header The (left) sample header
      * @param rightHeader The right channel header of a stereo pair or null for mono

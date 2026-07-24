@@ -392,18 +392,18 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
         {
             final ISampleZone sampleZone = sampleZones.get (zonePosition);
             final Element sampleWaveformElement = XMLUtils.addElement (document, hitVelocityElement, "SampleWaveform");
+
             // Omnisphere can only cycle through the round-robin samples. A random selection is
             // stored as a round-robin as well, since cycling is musically much closer to it than
             // playing all zones at once. Randomly selected zones have no sequence position,
             // therefore it is derived from the position of the zone.
-            final PlayLogic playLogic = sampleZone.getPlayLogic ();
-            final String roundRobinIndex;
-            if (playLogic == PlayLogic.ROUND_ROBIN)
-                roundRobinIndex = Integer.toString (sampleZone.getSequencePosition () - 1);
-            else if (playLogic == PlayLogic.RANDOM)
-                roundRobinIndex = Integer.toString (zonePosition);
-            else
-                roundRobinIndex = "0";
+            final String roundRobinIndex = switch (sampleZone.getPlayLogic ())
+            {
+                case PlayLogic.ROUND_ROBIN -> Integer.toString (sampleZone.getSequencePosition () - 1);
+                case PlayLogic.RANDOM -> Integer.toString (zonePosition);
+                default -> "0";
+            };
+
             sampleWaveformElement.setAttribute ("RoundRobinSequenceNum", roundRobinIndex);
             sampleWaveformElement.setAttribute ("BaseNote", Integer.toString (sampleZone.getKeyRoot ()));
             sampleWaveformElement.setAttribute ("AudioFilePath", this.createSampleFilename (sampleZone, -1, ".wav"));

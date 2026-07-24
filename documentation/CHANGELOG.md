@@ -32,6 +32,8 @@
   * New: Added support for reading AIFC files with un-compressed PCM sound data, e.g. the little-endian ('sowt') files written by the Elektron Tonverk or the Teenage Engineering OP-1. Compressed AIFC files are still rejected with an error message.
   * Fixed: Converting an AIFF file with the file ending '.aiff' (instead of '.aif') deleted the source sample file: an internal workaround copies such files to a temporary file but the cleanup deleted the original instead of the temporary copy.
   * Fixed: Reading the sound data chunk of an AIFF file returned only the first few bytes (the bit resolution was mistaken for the data size), which corrupted the fallback conversion path for AIFF files that the Java sound system cannot read.
+* Akai MPC500/1000/2000(XL)/2500/3000
+  * New: Always create filter, even when cutoff is at maximum.
 * Bliss
   * Fixed: The loop mode was only written when a zone had a loop, but a missing loop mode is read back as a forward loop, so zones without a loop turned into fully looped ones.
   * Fixed: The samples in a written preset or bank (.zbp/.zbb) were stored as raw source audio under a ".flac" name instead of being FLAC encoded, so neither Bliss nor ConvertWithMoss itself could read back a written file. The zone start/end trimming was skipped for the same reason.
@@ -47,7 +49,10 @@
 * Expert Sleepers Disting EX
   * Fixed: The amplitude envelope was only written when the internal hash code of the envelope value happened to be positive, so about half of all converted presets silently kept the factory default envelope instead.
   * Fixed: The envelope sustain level was never written and stayed at its maximum, so a percussive source (sustain 0) held at full level forever.
+* Korg KMP
+  * Fixed: Detector did hang on first found KMP file.
 * Logic EXS24
+  * New: Implemented Velocity -> Filter Cutoff Modulation (read/write)
   * Fixed: The panning of a group was read as an unsigned value and was not scaled, so a group panned fully left moved all of its zones fully right.
   * Fixed: The attack time at the lowest velocity was never written and stayed at 0, which gave all written presets an instant attack at low velocity.
 * Polyend Tracker
@@ -82,7 +87,6 @@
   * Fixed: Reading a patch could hang with full CPU load and no output. The loop over the sample slots did not advance on an empty slot, and since a patch rarely uses all of its slots this affected almost every patch.
 * Roland S-7xx
   * Fixed: The two envelope time key-follow fields were read as unsigned although they are signed.
-
 
 ## 19.0.0
 

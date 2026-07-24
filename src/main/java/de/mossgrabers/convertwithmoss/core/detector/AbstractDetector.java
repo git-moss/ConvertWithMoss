@@ -188,13 +188,13 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         if (this.waitForDelivery ())
             return;
 
-        final File [] listFiles = this.listFiles (folder, this.fileEndings);
-        if (listFiles == null)
+        final Optional<List<File>> listFiles = this.listFiles (folder, this.fileEndings);
+        if (listFiles.isEmpty ())
         {
             this.notifier.log ("IDS_NOT_A_DIRECTORY", folder.getAbsolutePath ());
             return;
         }
-        for (final File file: listFiles)
+        for (final File file: listFiles.get ())
             // Ignore MacOS crap
             if (!file.getName ().startsWith ("._"))
             {
@@ -324,11 +324,11 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param endings The file endings to match, including the dot, e.g. '.wav'
      * @return All found files
      */
-    protected File [] listFiles (final File folder, final String... endings)
+    protected Optional<List<File>> listFiles (final File folder, final String... endings)
     {
         final File [] children = folder.listFiles ();
         if (children == null)
-            return null;
+            return Optional.empty ();
         Arrays.sort (children, Comparator.comparing (File::getName, String.CASE_INSENSITIVE_ORDER));
 
         for (final File child: children)
@@ -354,7 +354,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                     break;
                 }
         }
-        return matchingFiles.toArray (new File [matchingFiles.size ()]);
+        return Optional.of (matchingFiles);
     }
 
 

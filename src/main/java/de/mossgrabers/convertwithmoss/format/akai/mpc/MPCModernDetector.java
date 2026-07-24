@@ -257,17 +257,12 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             }
 
             boolean isOneShot = false;
-            // A missing attribute is treated as a one-shot for the loop handling below but is too
-            // weak an evidence to store it in the model: a wrongly set one-shot means that a
-            // note-off is ignored in the destination format and therefore notes never stop
-            boolean hasExplicitOneShot = false;
             final int triggerMode = XMLUtils.getChildElementIntegerContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, -1);
             TriggerType triggerType = TriggerType.ATTACK;
             if (triggerMode < 0)
             {
                 final String oneShotStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_ONE_SHOT);
-                isOneShot = oneShotStr == null || MPCKeygroupTag.TRUE.equalsIgnoreCase (oneShotStr);
-                hasExplicitOneShot = oneShotStr != null && isOneShot;
+                isOneShot = oneShotStr != null && MPCKeygroupTag.TRUE.equalsIgnoreCase (oneShotStr);
             }
             else
                 switch (triggerMode)
@@ -275,7 +270,6 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                     // One-Shot
                     case 0:
                         isOneShot = true;
-                        hasExplicitOneShot = true;
                         break;
                     case 1:
                         triggerType = TriggerType.RELEASE;
@@ -316,7 +310,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             final ISampleZone zone = zoneOpt.get ();
             zones.add (zone);
 
-            //
+            // -----------------------------------------------------------
             // Amplitude
 
             final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
@@ -327,7 +321,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             if (ampVelocityAmount > 0)
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityAmount);
 
-            //
+            // -----------------------------------------------------------
             // Pitch
 
             final double pitchEnvAmount = XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_PITCH_ENV_AMOUNT, 0.5);

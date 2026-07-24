@@ -198,7 +198,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
             final double fine = tune - semitones;
             // The amount which does not fit into the transpose range is moved to the de-tune
             final int transpose = Math.clamp (semitones, -24, 24);
-            final int detune = Math.clamp (semitones - transpose, -24, 24);
+            final int detune = Math.clamp (semitones - (long) transpose, -24, 24);
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.TRANSPOSE, (transpose + 24.0) / 48.0, 4);
             XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.DETUNE, (detune + 24.0) / 48.0, 4);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], (fine + 1.0) / 2.0, 4);

@@ -15,25 +15,25 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  * One sample header ('soundfile head') of a Kurzweil sample object. Describes one recording: its
  * root key, loop and the position of its 16-bit big-endian PCM words in the sample data region of
  * the file. A sample object contains one header per root key and for stereo samples one pair of
- * headers (left/right) per root key. All positions are counted in 16-bit words; the end position
- * is inclusive.
+ * headers (left/right) per root key. All positions are counted in 16-bit words; the end position is
+ * inclusive.
  *
  * @author Jürgen Moßgraber
  */
 public class KurzweilSampleHeader
 {
     /** The length of a sample header in bytes. */
-    public static final int   LENGTH                 = 32;
+    public static final int   LENGTH            = 32;
 
-    private static final int  FLAG_NOT_LOOPED        = 0x80;
-    private static final int  FLAG_DATA_PRESENT      = 0x40;
+    private static final int  FLAG_NOT_LOOPED   = 0x80;
+    private static final int  FLAG_DATA_PRESENT = 0x40;
     /** Loop on, data present, RAM based - the flags KurzFiler writes for imported samples. */
-    private static final int  FLAGS_IMPORTED         = 0x70;
+    private static final int  FLAGS_IMPORTED    = 0x70;
 
     /** The maximum playback rate of the device in Hertz, limits the upward transposition. */
-    private static final long MAX_PLAYBACK_RATE      = 96000;
+    private static final long MAX_PLAYBACK_RATE = 96000;
 
-    private static final long NANOS_PER_SECOND       = 1000000000L;
+    private static final long NANOS_PER_SECOND  = 1000000000L;
 
     private int               rootKey;
     private int               flags;
@@ -86,8 +86,8 @@ public class KurzweilSampleHeader
 
 
     /**
-     * Extract the sample data of this header from the sample data region of the file and
-     * normalize all positions to be relative to the extracted data.
+     * Extract the sample data of this header from the sample data region of the file and normalize
+     * all positions to be relative to the extracted data.
      *
      * @param fileData The content of the whole file
      * @param dataOffset The offset of the sample data region in the file
@@ -107,7 +107,7 @@ public class KurzweilSampleHeader
         System.arraycopy (fileData, (int) startByte, this.sampleData, 0, this.sampleData.length);
 
         this.sampleEnd -= this.sampleStart;
-        this.loopStart = Math.clamp (this.loopStart - this.sampleStart, 0, this.sampleEnd);
+        this.loopStart = Math.clamp (this.loopStart - (long) this.sampleStart, 0, this.sampleEnd);
         this.altSampleStart -= this.sampleStart;
         if (this.altSampleStart < 0 || this.altSampleStart > this.sampleEnd)
             this.altSampleStart = 0;
@@ -236,7 +236,7 @@ public class KurzweilSampleHeader
      */
     public void setVolumeAdjust (final double volumeAdjustDB)
     {
-        this.volumeAdjust = (int) Math.clamp (Math.round (volumeAdjustDB * 2.0), -128, 127);
+        this.volumeAdjust = Math.clamp (Math.round (volumeAdjustDB * 2.0), -128, 127);
     }
 
 
@@ -252,8 +252,8 @@ public class KurzweilSampleHeader
 
 
     /**
-     * Set the root key. Updates the maximum pitch which depends on it (the sample can be
-     * transposed upwards until the playback rate reaches 96kHz). Set the sample rate first!
+     * Set the root key. Updates the maximum pitch which depends on it (the sample can be transposed
+     * upwards until the playback rate reaches 96kHz). Set the sample rate first!
      *
      * @param rootKey The MIDI note of the recorded pitch
      */

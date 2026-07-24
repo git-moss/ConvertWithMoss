@@ -156,14 +156,12 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setStop (sampleLength);
 
         // Filter
-        final int filterCutoff = pad.getFilter1Freq ();
         final FilterType filterType = FILTER_MAP.get (Integer.valueOf (pad.getFilter1Type ()));
-        IFilter filter = null;
-        if (filterType != null && filterCutoff < 100)
+        if (filterType != null)
         {
-            final double cutoff = filterCutoff / 99.0 * IFilter.MAX_FREQUENCY;
+            final double cutoff = pad.getFilter1Freq () / 100.0 * IFilter.MAX_FREQUENCY;
             // Poles are unknown, let's go with 4
-            filter = new DefaultFilter (filterType, 4, cutoff, pad.getFilter1Res () / 100.0);
+            final IFilter filter = new DefaultFilter (filterType, 4, cutoff, pad.getFilter1Res () / 100.0);
 
             // There is a filter envelope with +/- intensity in the unknown data
 

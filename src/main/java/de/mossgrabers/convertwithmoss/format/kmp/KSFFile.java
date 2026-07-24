@@ -95,7 +95,7 @@ public class KSFFile
         byte [] data = null;
         String combinedName = "";
 
-        while (true)
+        while (in.available () > 0)
         {
             final String id = new String (in.readNBytes (4));
             final int dataSize = in.readInt ();
@@ -190,9 +190,6 @@ public class KSFFile
                 default:
                     throw new ParseException (Functions.getMessage ("IDS_KMP_UNKNOWN_CHUNK", id));
             }
-
-            if (in.available () == 0)
-                break;
         }
 
         final IAudioMetadata audioMetadata = new DefaultAudioMetadata (channels, sampleRate, sampleResolution, numberOfSamples);

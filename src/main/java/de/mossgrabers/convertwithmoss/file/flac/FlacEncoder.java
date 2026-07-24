@@ -14,10 +14,10 @@ import java.security.NoSuchAlgorithmException;
  * Encoder for the Free Lossless Audio Codec (FLAC) format as specified in RFC 9639. Writes a fixed
  * block size stream using constant, verbatim, fixed prediction and linear prediction (LPC)
  * sub-frames with Rice coded residuals; stereo blocks additionally choose the smallest of the
- * independent and de-correlated (left/side, side/right, mid/side) channel codings. Only features
- * of the original FLAC specification are emitted (4-bit Rice parameters, no escape codes),
- * therefore the output is readable by old decoders as well. All block sizes are handled correctly,
- * including a trailing block which is shorter than the prediction order.
+ * independent and de-correlated (left/side, side/right, mid/side) channel codings. Only features of
+ * the original FLAC specification are emitted (4-bit Rice parameters, no escape codes), therefore
+ * the output is readable by old decoders as well. All block sizes are handled correctly, including
+ * a trailing block which is shorter than the prediction order.
  *
  * @author Jürgen Moßgraber
  */
@@ -31,8 +31,8 @@ public class FlacEncoder
     private static final int    MAX_PARTITION_ORDER = 6;
     private static final int    PADDING_LENGTH      = 40;
 
-    private static final int [] CRC8_TABLE         = new int [256];
-    private static final int [] CRC16_TABLE        = new int [256];
+    private static final int [] CRC8_TABLE          = new int [256];
+    private static final int [] CRC16_TABLE         = new int [256];
 
     static
     {
@@ -331,7 +331,8 @@ public class FlacEncoder
         final long lpcBits = lpc == null ? Long.MAX_VALUE : lpc.order * (long) (bitsPerSample + LPC_PRECISION) + 9 + 6 + lpc.riceBits;
         final long verbatimBits = (long) blockSize * bitsPerSample;
 
-        if (lpcBits < fixedBits && lpcBits < verbatimBits)
+        // Null-check is redundant but makes Eclipse happy...
+        if (lpc != null && lpcBits < fixedBits && lpcBits < verbatimBits)
         {
             writer.writeBits (0b100000 | lpc.order - 1, 6);
             writer.writeBits (0, 1);
@@ -360,8 +361,8 @@ public class FlacEncoder
 
 
     /**
-     * Finds the fixed predictor order (0-4) with the smallest absolute residual sum and
-     * calculates its residuals and Rice parameter.
+     * Finds the fixed predictor order (0-4) with the smallest absolute residual sum and calculates
+     * its residuals and Rice parameter.
      *
      * @param samples The samples of the channel
      * @param offset The index of the first sample of the block
@@ -486,8 +487,8 @@ public class FlacEncoder
             long rounded = Math.round (scaled);
             if (rounded > limit)
                 rounded = limit;
-            else if (rounded < -limit - 1)
-                rounded = -limit - 1;
+            else if (rounded < -limit - 1L)
+                rounded = -limit - 1L;
             quantizationError = scaled - rounded;
             quantized[i] = (int) rounded;
         }
@@ -557,49 +558,6 @@ public class FlacEncoder
         writer.writeBits (0, 1);
         for (int i = 0; i < blockSize; i++)
             writer.writeBits (samples[offset + i], bitsPerSample);
-    }
-
-
-    /**
-     * Finds the Rice parameter with the smallest encoded size for the given residual range.
-     *
-     * @param residuals The residuals of the block
-     * @param from The index of the first residual
-     * @param to The index after the last residual
-     * @return The Rice parameter in the range of [0, MAX_RICE_PARAMETER]
-     */
-    private static int findRiceParameter (final int [] residuals, final int from, final int to)
-    {
-        int bestParameter = 0;
-        long bestCost = Long.MAX_VALUE;
-        for (int parameter = 0; parameter <= MAX_RICE_PARAMETER; parameter++)
-        {
-            final long cost = calcRiceCost (residuals, from, to, parameter);
-            if (cost < bestCost)
-            {
-                bestCost = cost;
-                bestParameter = parameter;
-            }
-        }
-        return bestParameter;
-    }
-
-
-    /**
-     * Calculates the number of bits needed to Rice code the given residual range.
-     *
-     * @param residuals The residuals of the block
-     * @param from The index of the first residual
-     * @param to The index after the last residual
-     * @param parameter The Rice parameter
-     * @return The number of bits
-     */
-    private static long calcRiceCost (final int [] residuals, final int from, final int to, final int parameter)
-    {
-        long cost = 0;
-        for (int i = from; i < to; i++)
-            cost += (zigzagEncode (residuals[i]) >>> parameter) + 1L + parameter;
-        return cost;
     }
 
 
@@ -705,8 +663,7 @@ public class FlacEncoder
 
     /**
      * Gets the 4-bit code for the sample rate. Common rates have a direct code, other rates are
-     * stored explicitly at the end of the frame header or are only present in the STREAMINFO
-     * block.
+     * stored explicitly at the end of the frame header or are only present in the STREAMINFO block.
      *
      * @param sampleRate The sample rate in Hertz
      * @return The code
@@ -893,6 +850,49 @@ public class FlacEncoder
                     this.riceParameters = parameters;
                 }
             }
+        }
+
+
+        /**
+         * Finds the Rice parameter with the smallest encoded size for the given residual range.
+         *
+         * @param residuals The residuals of the block
+         * @param from The index of the first residual
+         * @param to The index after the last residual
+         * @return The Rice parameter in the range of [0, MAX_RICE_PARAMETER]
+         */
+        private static int findRiceParameter (final int [] residuals, final int from, final int to)
+        {
+            int bestParameter = 0;
+            long bestCost = Long.MAX_VALUE;
+            for (int parameter = 0; parameter <= MAX_RICE_PARAMETER; parameter++)
+            {
+                final long cost = calcRiceCost (residuals, from, to, parameter);
+                if (cost < bestCost)
+                {
+                    bestCost = cost;
+                    bestParameter = parameter;
+                }
+            }
+            return bestParameter;
+        }
+
+
+        /**
+         * Calculates the number of bits needed to Rice code the given residual range.
+         *
+         * @param residuals The residuals of the block
+         * @param from The index of the first residual
+         * @param to The index after the last residual
+         * @param parameter The Rice parameter
+         * @return The number of bits
+         */
+        private static long calcRiceCost (final int [] residuals, final int from, final int to, final int parameter)
+        {
+            long cost = 0;
+            for (int i = from; i < to; i++)
+                cost += (zigzagEncode (residuals[i]) >>> parameter) + 1L + parameter;
+            return cost;
         }
     }
 
