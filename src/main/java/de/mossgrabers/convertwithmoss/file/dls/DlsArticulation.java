@@ -402,6 +402,33 @@ public class DlsArticulation
 
 
     /**
+     * Convert a relative pitch connection value to cent. The value is stored as a 32-bit fixed point
+     * number with 65536 representing one cent.
+     *
+     * @param value The raw 32-bit relative pitch value
+     * @return The pitch in cent
+     */
+    public static double relativePitchToCents (final int value)
+    {
+        return value / 65536.0;
+    }
+
+
+    /**
+     * Convert an absolute pitch connection value to a frequency in Hertz. The value is stored as a
+     * 32-bit fixed point number with 65536 representing one cent, where 6900 cent equal 440 Hertz
+     * (which puts 0 cent at about 8.176 Hertz, the same reference as SoundFont).
+     *
+     * @param value The raw 32-bit absolute pitch value
+     * @return The frequency in Hertz
+     */
+    public static double absolutePitchToHertz (final int value)
+    {
+        return 440.0 * Math.pow (2.0, (value / 65536.0 - 6900.0) / 1200.0);
+    }
+
+
+    /**
      * Normalizes a DLS EG Sustain Level lScale value to the range 0.0..1.0.
      *
      * Per Section 1.7.2.7: Sustain is defined as a percentage of the envelope peak in 0.1%

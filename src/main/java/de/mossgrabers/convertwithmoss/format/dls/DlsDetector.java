@@ -19,6 +19,8 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
@@ -237,6 +239,25 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
             pitchEnvelopeModulator.setDepth (normalizeEG2ToPitch (pitchModulation.get ().getScale ()));
             pitchEnvelopeModulator.setSource (pitchEnvelope);
+        }
+
+        // Pitch LFO (vibrato). The low frequency oscillator which modulates the pitch is the
+        // vibrato; its frequency and delay are set by their own connections.
+        final Optional<DlsArticulation> pitchLfoModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_LFO, DlsArticulation.CONN_DST_PITCH);
+        if (pitchLfoModulation.isPresent ())
+        {
+            final double depthCents = DlsArticulation.relativePitchToCents (pitchLfoModulation.get ().getScale ());
+            if (depthCents != 0)
+            {
+                final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+                pitchLfoModulator.setDepth (Math.clamp (depthCents, -IEnvelope.MAX_ENVELOPE_DEPTH, IEnvelope.MAX_ENVELOPE_DEPTH) / IEnvelope.MAX_ENVELOPE_DEPTH);
+
+                final ILfo pitchLfo = pitchLfoModulator.getSource ();
+                final Optional<DlsArticulation> lfoFrequency = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_LFO_FREQUENCY);
+                if (lfoFrequency.isPresent ())
+                    pitchLfo.setRate (DlsArticulation.absolutePitchToHertz (lfoFrequency.get ().getScale ()));
+                pitchLfo.setDelay (getTime (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_LFO_STARTDELAY));
+            }
         }
 
         // Pitch tuning
