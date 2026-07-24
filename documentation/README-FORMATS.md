@@ -65,6 +65,7 @@ The following multi-sample formats are supported:
 * [ISO/IMG Files](#isoimg-files)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
+* [Kurzweil K2000/K2500/K2600](#kurzweil-k2000k2500k2600)
 * [Logic EXS24](#logic-exs24)
 * [Native Instruments Kontakt](#native-instruments-kontakt)
 * [Native Instruments Maschine](#native-instruments-maschine)
