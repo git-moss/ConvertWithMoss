@@ -87,6 +87,8 @@
   * Fixed: Reading a patch could hang with full CPU load and no output. The loop over the sample slots did not advance on an empty slot, and since a patch rarely uses all of its slots this affected almost every patch.
 * Roland S-7xx
   * Fixed: The two envelope time key-follow fields were read as unsigned although they are signed.
+* Roland ZEN-Core
+  * Fixed: SVZ sample packs produced by Roland's own SF2-to-SVZ converter (e.g. the commercial "ARP Solina Strings" / Vulture Culture SOURCE packs) could not be read - their samples were detected as "50 channels" and the length calculation failed. These chunks embed a complete WAV file rather than raw PCM; the embedded WAV is now read directly.
 
 ## 19.0.0
 
