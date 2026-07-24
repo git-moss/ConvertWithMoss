@@ -21,6 +21,9 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -33,7 +36,8 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
  * Creator for Kurzweil K2000/K2500/K2600 files. The written files use only K2000 features and
  * therefore load on all three device families; the selected target device sets the file extension
  * (.krz, .k25 or .k26). Each multi-sample becomes a program with one layer, a keymap and one sample
- * object per zone; the velocity layers are mapped onto the 8 dynamic levels of the keymap.
+ * object per zone; the velocity layers are mapped onto the 8 dynamic levels of the keymap. The
+ * layer carries the global amplitude envelope, filter and filter envelope of the multi-sample.
  *
  * @author Jürgen Moßgraber
  */
@@ -254,8 +258,54 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
         final int programID = KurzweilObjectID.FIRST_ID + kurzweilFile.getPrograms ().size ();
         final KurzweilProgram program = new KurzweilProgram (programID, shortenName (name));
         program.addProgramBlock ();
-        program.addLayer (keymapID, isStereo);
+        program.addLayer (createLayer (multisampleSource, keymapID), isStereo);
         kurzweilFile.getPrograms ().add (program);
+    }
+
+
+    /**
+     * Create the layer of the program: it plays the keymap on the full key and velocity range and
+     * carries the global amplitude envelope, filter and filter envelope of the multi-sample if
+     * present.
+     *
+     * @param multisampleSource The multi-sample source
+     * @param keymapID The ID of the keymap object of the layer
+     * @return The layer
+     */
+    private static KurzweilProgram.Layer createLayer (final IMultisampleSource multisampleSource, final int keymapID)
+    {
+        final KurzweilProgram.Layer layer = new KurzweilProgram.Layer ();
+        layer.setKeymapID (keymapID);
+
+        final Optional<IEnvelopeModulator> amplitudeModulator = multisampleSource.getGlobalAmplitudeModulator ();
+        if (amplitudeModulator.isPresent () && amplitudeModulator.get ().getDepth () > 0)
+        {
+            final IEnvelope source = amplitudeModulator.get ().getSource ();
+            if (source.isSet ())
+            {
+                final KurzweilEnvelope envelope = new KurzweilEnvelope ();
+                envelope.fromEnvelope (source);
+                layer.setAmplitudeEnvelope (envelope);
+            }
+        }
+
+        final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
+        if (globalFilter.isPresent ())
+        {
+            final IFilter filter = globalFilter.get ();
+            layer.setFilter (filter.getType (), filter.getPoles (), filter.getCutoff (), filter.getResonance ());
+
+            final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
+            final int depth = (int) Math.round (cutoffModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH);
+            if (depth != 0 && cutoffModulator.getSource ().isSet ())
+            {
+                final KurzweilEnvelope envelope = new KurzweilEnvelope ();
+                envelope.fromEnvelope (cutoffModulator.getSource ());
+                layer.setFilterEnvelope (envelope, depth);
+            }
+        }
+
+        return layer;
     }
 
 
