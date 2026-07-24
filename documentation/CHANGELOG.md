@@ -4,6 +4,7 @@
 
 * New: Added support for the E-mu Emulator IV bank format (E4B). Written banks have not been tested on real hardware yet.
 * New: E-mu Emulator IV banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format.
+* New: The E-mu Emulator IV destination can write the bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7.
 
 ## 19.1.0
 
