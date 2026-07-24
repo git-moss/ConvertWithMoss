@@ -80,7 +80,8 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
         final Set<Integer> usedSampleIDs = new HashSet<> ();
         final Set<Integer> reportedRomSampleIDs = new HashSet<> ();
 
-        // Each program becomes one multi-sample
+        // Each program becomes one multi-sample. A program is a sound the user explicitly wants,
+        // so problems (missing keymaps, missing or ROM samples) are reported for it.
         for (final KurzweilProgram program: kurzweilFile.getPrograms ())
         {
             final String name = program.getName ().isBlank () ? FileUtils.getNameWithoutType (sourceFile) : program.getName ();
@@ -95,42 +96,60 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
                 if (keymap == null)
                 {
                     if (reportedMissingKeymapIDs.add (keymapID))
-                        this.notifier.logError ("IDS_KURZWEIL_KEYMAP_MISSING", keymapID.toString (), name);
+                        this.notifier.log ("IDS_KURZWEIL_KEYMAP_MISSING", keymapID.toString (), name);
                     continue;
                 }
                 usedKeymapIDs.add (keymapID);
-                this.createGroupsFromKeymap (kurzweilFile, keymap, layer, groups, sampleDataCache, usedSampleIDs, reportedRomSampleIDs);
+                this.createGroupsFromKeymap (kurzweilFile, keymap, layer, groups, sampleDataCache, usedSampleIDs, reportedRomSampleIDs, true);
             }
-            this.addSource (sources, sourceFile, name, groups);
+            this.addSource (sources, sourceFile, name, groups, true);
         }
 
-        // Keymaps which are not referenced by a program become multi-samples of their own
+        // Keymaps which are not referenced by a program are leftover objects of the bank; in a
+        // multi-file sound set their samples usually live in a different file. Convert them if
+        // their samples happen to be present in this file but stay silent about the (expected)
+        // references to samples which are not - otherwise a bank with one usable program spews an
+        // error per orphaned keymap.
         for (final KurzweilKeymap keymap: kurzweilFile.getKeymaps ().values ())
         {
             if (usedKeymapIDs.contains (Integer.valueOf (keymap.getId ())))
                 continue;
-            final String name = keymap.getName ().isBlank () ? FileUtils.getNameWithoutType (sourceFile) : keymap.getName ();
-            this.notifier.log (IDS_KURZWEIL_READING, "keymap", name);
             final List<IGroup> groups = new ArrayList<> ();
-            this.createGroupsFromKeymap (kurzweilFile, keymap, new KurzweilProgram.Layer (), groups, sampleDataCache, usedSampleIDs, reportedRomSampleIDs);
-            this.addSource (sources, sourceFile, name, groups);
+            this.createGroupsFromKeymap (kurzweilFile, keymap, new KurzweilProgram.Layer (), groups, sampleDataCache, usedSampleIDs, reportedRomSampleIDs, false);
+            final String name = keymap.getName ().isBlank () ? FileUtils.getNameWithoutType (sourceFile) : keymap.getName ();
+            if (this.addSource (sources, sourceFile, name, groups, false))
+                this.notifier.log (IDS_KURZWEIL_READING, "keymap", name);
         }
 
-        // Samples which are not referenced by a keymap as well
+        // Samples which are not referenced by a keymap as well. These are the actual content of a
+        // sample-only bank, so a deduplicated note is logged for the ones which only reference
+        // device ROM.
         for (final KurzweilSample sample: kurzweilFile.getSamples ().values ())
         {
             if (usedSampleIDs.contains (Integer.valueOf (sample.getId ())))
                 continue;
             final String name = sample.getName ().isBlank () ? FileUtils.getNameWithoutType (sourceFile) : sample.getName ();
-            this.notifier.log (IDS_KURZWEIL_READING, "sample", name);
-            this.addSource (sources, sourceFile, name, this.createGroupsFromSample (sample, sampleDataCache, reportedRomSampleIDs));
+            final List<IGroup> groups = this.createGroupsFromSample (sample, sampleDataCache, reportedRomSampleIDs, true);
+            if (this.addSource (sources, sourceFile, name, groups, false))
+                this.notifier.log (IDS_KURZWEIL_READING, "sample", name);
         }
 
         return sources;
     }
 
 
-    private void addSource (final List<IMultisampleSource> sources, final File sourceFile, final String name, final List<IGroup> groups)
+    /**
+     * Merge adjacent velocity zones, drop empty groups and, if any zones remain, add the resulting
+     * multi-sample to the list.
+     *
+     * @param sources Where to add the created multi-sample
+     * @param sourceFile The source file
+     * @param name The name of the multi-sample
+     * @param groups The groups with the zones
+     * @param reportProblems If true, a note is logged when there are no convertible zones
+     * @return True if a multi-sample was added
+     */
+    private boolean addSource (final List<IMultisampleSource> sources, final File sourceFile, final String name, final List<IGroup> groups, final boolean reportProblems)
     {
         mergeAdjacentVelocityZones (groups);
 
@@ -140,9 +159,14 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
                 filledGroups.add (group);
 
         if (filledGroups.isEmpty ())
-            this.notifier.logError ("IDS_KURZWEIL_NO_ZONES", name);
-        else
-            sources.add (this.createMultisampleSource (sourceFile, name, filledGroups));
+        {
+            if (reportProblems)
+                this.notifier.log ("IDS_KURZWEIL_NO_ZONES", name);
+            return false;
+        }
+
+        sources.add (this.createMultisampleSource (sourceFile, name, filledGroups));
+        return true;
     }
 
 
@@ -209,8 +233,9 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
      * @param sampleDataCache Cache of the already converted sample data
      * @param usedSampleIDs All sample IDs referenced from keymaps are added to this set
      * @param reportedRomSampleIDs The IDs of the ROM samples which were already reported
+     * @param reportProblems If true, missing or ROM sample references are logged
      */
-    private void createGroupsFromKeymap (final KurzweilFile kurzweilFile, final KurzweilKeymap keymap, final KurzweilProgram.Layer layer, final List<IGroup> groups, final Map<Long, ISampleData> sampleDataCache, final Set<Integer> usedSampleIDs, final Set<Integer> reportedRomSampleIDs)
+    private void createGroupsFromKeymap (final KurzweilFile kurzweilFile, final KurzweilKeymap keymap, final KurzweilProgram.Layer layer, final List<IGroup> groups, final Map<Long, ISampleData> sampleDataCache, final Set<Integer> usedSampleIDs, final Set<Integer> reportedRomSampleIDs, final boolean reportProblems)
     {
         final List<KurzweilKeymapEntry []> entryTables = keymap.getEntryTables ();
         for (int tableIndex = 0; tableIndex < entryTables.size (); tableIndex++)
@@ -250,7 +275,7 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
                 while (lastIndex + 1 < entries.length && entries[lastIndex + 1].isIdentical (entries[index]))
                     lastIndex++;
 
-                final ISampleZone zone = this.createZone (kurzweilFile, keymap, entries[index], index, lastIndex, layer, sampleDataCache, usedSampleIDs, reportedRomSampleIDs);
+                final ISampleZone zone = this.createZone (kurzweilFile, keymap, entries[index], index, lastIndex, layer, sampleDataCache, usedSampleIDs, reportedRomSampleIDs, reportProblems);
                 if (zone != null)
                 {
                     zone.setVelocityLow (velocityLow);
@@ -278,15 +303,17 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
      * @param sampleDataCache Cache of the already converted sample data
      * @param usedSampleIDs All sample IDs referenced from keymaps are added to this set
      * @param reportedRomSampleIDs The IDs of the ROM samples which were already reported
+     * @param reportProblems If true, missing or ROM sample references are logged
      * @return The zone or null if it cannot be created
      */
-    private ISampleZone createZone (final KurzweilFile kurzweilFile, final KurzweilKeymap keymap, final KurzweilKeymapEntry entry, final int firstIndex, final int lastIndex, final KurzweilProgram.Layer layer, final Map<Long, ISampleData> sampleDataCache, final Set<Integer> usedSampleIDs, final Set<Integer> reportedRomSampleIDs)
+    private ISampleZone createZone (final KurzweilFile kurzweilFile, final KurzweilKeymap keymap, final KurzweilKeymapEntry entry, final int firstIndex, final int lastIndex, final KurzweilProgram.Layer layer, final Map<Long, ISampleData> sampleDataCache, final Set<Integer> usedSampleIDs, final Set<Integer> reportedRomSampleIDs, final boolean reportProblems)
     {
         final Integer sampleID = Integer.valueOf (entry.getSampleID ());
         final KurzweilSample sample = kurzweilFile.getSamples ().get (sampleID);
         if (sample == null)
         {
-            this.notifier.logError ("IDS_KURZWEIL_SAMPLE_MISSING", sampleID.toString (), keymap.getName ());
+            if (reportProblems)
+                this.notifier.log ("IDS_KURZWEIL_SAMPLE_MISSING", sampleID.toString (), keymap.getName ());
             return null;
         }
         usedSampleIDs.add (sampleID);
@@ -303,13 +330,14 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
         final KurzweilSampleHeader rightHeader = sample.isStereo () && headerIndex + 1 < headers.size () ? headers.get (headerIndex + 1) : null;
         if (header == null || sample.isStereo () && rightHeader == null)
         {
-            this.notifier.logError ("IDS_KURZWEIL_BAD_SUB_SAMPLE", Integer.toString (entry.getSubSampleNumber ()), sample.getName ());
+            if (reportProblems)
+                this.notifier.log ("IDS_KURZWEIL_BAD_SUB_SAMPLE", Integer.toString (entry.getSubSampleNumber ()), sample.getName ());
             return null;
         }
         if (!header.hasSampleData () || rightHeader != null && !rightHeader.hasSampleData ())
         {
-            if (reportedRomSampleIDs.add (sampleID))
-                this.notifier.logError ("IDS_KURZWEIL_ROM_SAMPLE", sample.getName ());
+            if (reportProblems && reportedRomSampleIDs.add (sampleID))
+                this.notifier.log ("IDS_KURZWEIL_ROM_SAMPLE", sample.getName ());
             return null;
         }
 
@@ -332,9 +360,10 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
      * @param sample The sample object
      * @param sampleDataCache Cache of the already converted sample data
      * @param reportedRomSampleIDs The IDs of the ROM samples which were already reported
+     * @param reportProblems If true, a note is logged when a header only references device ROM
      * @return The created group
      */
-    private List<IGroup> createGroupsFromSample (final KurzweilSample sample, final Map<Long, ISampleData> sampleDataCache, final Set<Integer> reportedRomSampleIDs)
+    private List<IGroup> createGroupsFromSample (final KurzweilSample sample, final Map<Long, ISampleData> sampleDataCache, final Set<Integer> reportedRomSampleIDs, final boolean reportProblems)
     {
         final int headerStep = sample.isStereo () ? 2 : 1;
         final List<KurzweilSampleHeader> headers = sample.getHeaders ();
@@ -344,8 +373,8 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
         for (int i = 0; i + headerStep - 1 < headers.size (); i += headerStep)
             if (headers.get (i).hasSampleData () && (headerStep == 1 || headers.get (i + 1).hasSampleData ()))
                 headerIndices.add (Integer.valueOf (i));
-            else if (reportedRomSampleIDs.add (Integer.valueOf (sample.getId ())))
-                this.notifier.logError ("IDS_KURZWEIL_ROM_SAMPLE", sample.getName ());
+            else if (reportProblems && reportedRomSampleIDs.add (Integer.valueOf (sample.getId ())))
+                this.notifier.log ("IDS_KURZWEIL_ROM_SAMPLE", sample.getName ());
         headerIndices.sort ((i1, i2) -> Integer.compare (headers.get (i1.intValue ()).getRootKey (), headers.get (i2.intValue ()).getRootKey ()));
 
         final IGroup group = new DefaultGroup (sample.getName ());
