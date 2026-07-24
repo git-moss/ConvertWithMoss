@@ -19,8 +19,8 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 /**
  * A Kurzweil K2000/K2500/K2600 object file (.krz, .k25, .k26). The file starts with a 32 byte
  * header ('PRAM' magic) followed by the object blocks and the raw sample data region. Each object
- * block is prefixed with its negative length; a non-negative value terminates the object list.
- * All values are big-endian.
+ * block is prefixed with its negative length; a non-negative value terminates the object list. All
+ * values are big-endian.
  *
  * The format was derived from the source code of the KurzFiler tool by Marc Halbruegge, see
  * documentation/design/KURZWEIL_FORMAT.md for the details.
@@ -29,14 +29,14 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class KurzweilFile
 {
-    private static final byte []             MAGIC      = "PRAM".getBytes ();
+    private static final byte []               MAGIC      = "PRAM".getBytes ();
 
     /** The OS version to write into the header (3.53, the value KurzFiler writes). */
-    private static final int                 OS_VERSION = 353;
+    private static final int                   OS_VERSION = 353;
 
-    private final Map<Integer, KurzweilSample> samples  = new LinkedHashMap<> ();
-    private final Map<Integer, KurzweilKeymap> keymaps  = new LinkedHashMap<> ();
-    private final List<KurzweilProgram>      programs   = new ArrayList<> ();
+    private final Map<Integer, KurzweilSample> samples    = new LinkedHashMap<> ();
+    private final Map<Integer, KurzweilKeymap> keymaps    = new LinkedHashMap<> ();
+    private final List<KurzweilProgram>        programs   = new ArrayList<> ();
 
 
     /**

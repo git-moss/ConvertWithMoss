@@ -79,7 +79,7 @@ public final class RenoiseValueConverter
     {
         if (muteGroupIndex < 0)
             return 0;
-        return Math.clamp (muteGroupIndex + 1, 1, MUTE_GROUP_COUNT);
+        return Math.clamp (muteGroupIndex + 1L, 1, MUTE_GROUP_COUNT);
     }
 
 

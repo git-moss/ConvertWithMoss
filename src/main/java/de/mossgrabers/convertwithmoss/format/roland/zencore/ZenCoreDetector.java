@@ -96,7 +96,11 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
             buildZonesFromKeyMap (group, samples, keyMap.get ());
 
         if (group.getSampleZones ().isEmpty ())
+        {
+            this.notifier.logError ("IDS_ZENCORE_NO_USER_SAMPLES", svzFile.getName ());
             return Collections.emptyList ();
+        }
+
         // Carry the first tone's shaping back into the model, so ZEN-Core sources convert with
         // their filter and envelopes instead of pipeline defaults - the times through the same
         // hardware-calibrated law the writer uses.

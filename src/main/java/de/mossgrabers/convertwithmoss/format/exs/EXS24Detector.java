@@ -484,6 +484,10 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
                 filter.setCutoffKeyTracking (keyModulator.get ().lowValue / 1000.0);
         }
 
+        final Optional<EXSModulator> velocityModulator = exs24File.getModulator (EXSModulator.SOURCE_VELOCITY, EXSModulator.DESTINATION_FILTER_1_CUTOFF);
+        if (velocityModulator.isPresent ())
+            filter.getCutoffVelocityModulator ().setDepth (velocityModulator.get ().lowValue / 1000.0);
+
         multisampleSource.setGlobalFilter (filter);
     }
 

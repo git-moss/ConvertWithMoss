@@ -237,6 +237,7 @@ public class TagDetector
             "Drum-Set",
             "Drumset",
             "Cymbal",
+            "CR78",
             "Gong",
             "Ride",
             "Kit",

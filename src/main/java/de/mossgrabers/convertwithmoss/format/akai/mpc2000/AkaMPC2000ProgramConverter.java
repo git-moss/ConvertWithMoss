@@ -184,18 +184,14 @@ public class AkaMPC2000ProgramConverter
 
         // Filter
         final int filterCutoff = pad.getFilterFreq ();
-        IFilter filter = null;
-        if (filterCutoff < 100)
-        {
-            final double cutoff = filterCutoff / 99.0 * IFilter.MAX_FREQUENCY;
-            // Poles are unknown, let's go with 4
-            filter = new DefaultFilter (FilterType.LOW_PASS, 4, cutoff, pad.getFilterRes () / 100.0);
+        final double cutoff = filterCutoff / 100.0 * IFilter.MAX_FREQUENCY;
+        // Poles are unknown, let's go with 4
+        final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 4, cutoff, pad.getFilterRes () / 100.0);
 
-            // There is a filter envelope with +/- intensity in the unknown data
+        // There is a filter envelope with +/- intensity in the unknown data
 
-            filter.getCutoffVelocityModulator ().setDepth (pad.getFilterVelocityToFrequency () / 100.0);
-            sampleZone.setFilter (filter);
-        }
+        filter.getCutoffVelocityModulator ().setDepth (pad.getFilterVelocityToFrequency () / 100.0);
+        sampleZone.setFilter (filter);
 
         return Optional.of (sampleZone);
     }

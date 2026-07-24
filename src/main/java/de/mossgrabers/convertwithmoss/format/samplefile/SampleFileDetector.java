@@ -86,14 +86,17 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
         {
             this.fileEndings = sampleFileType.getFileEndings ();
 
-            final File [] files = this.listFiles (folderWithSamples, this.fileEndings);
-            if (files.length == 0)
+            final Optional<List<File>> filesOpt = this.listFiles (folderWithSamples, this.fileEndings);
+            if (filesOpt.isEmpty ())
                 continue;
 
-            this.notifier.log ("IDS_NOTIFY_FOUND_RAW_FILES", Integer.toString (files.length), sampleFileType.getName ());
+            final List<File> files = filesOpt.get ();
+            final int length = files.size ();
+
+            this.notifier.log ("IDS_NOTIFY_FOUND_RAW_FILES", Integer.toString (length), sampleFileType.getName ());
 
             // Analyze all files
-            final List<IFileBasedSampleData> sampleData = new ArrayList<> (files.length);
+            final List<IFileBasedSampleData> sampleData = new ArrayList<> (length);
             for (final File file: files)
             {
                 // Check for task cancellation

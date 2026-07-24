@@ -162,7 +162,7 @@ public class MV8000Detector extends AbstractDetector<MetadataSettingsUI>
         final MV8000Partial partial = patch.getPartial (partialIndex);
         final IEnvelope amplitudeEnvelope = createAmplitudeEnvelope (partial);
         // The mute group is stored biased by 1: 1 = Off, 2 = group 1. The model uses 0 = none
-        final int exclusiveGroup = Math.clamp (partial.getMuteGroup () - MV8000Partial.MUTE_GROUP_OFF, 0, MV8000Partial.NUM_MUTE_GROUPS);
+        final int exclusiveGroup = Math.clamp (partial.getMuteGroup () - (long) MV8000Partial.MUTE_GROUP_OFF, 0, MV8000Partial.NUM_MUTE_GROUPS);
         // The level key follow is stored as 1..127 with 64 = no key follow (+/-63) which maps to
         // the model range of [-1..1]
         final double amplitudeKeyTracking = Math.clamp ((partial.getTvaLevelKeyFollow () - 64) / 63.0, -1, 1);

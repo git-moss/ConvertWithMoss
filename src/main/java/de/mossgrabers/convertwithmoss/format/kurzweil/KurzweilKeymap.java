@@ -15,24 +15,24 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
- * A Kurzweil keymap object (type 37). Maps sample recordings across the key range: entry i
- * responds to the MIDI note 12 + (basePitch + i * centsPerEntry) / 100. The 8 dynamic levels
- * (ppp..fff, mapped linearly onto the MIDI velocity range) each reference one of the entry
- * tables; several levels may share a table.
+ * A Kurzweil keymap object (type 37). Maps sample recordings across the key range: entry i responds
+ * to the MIDI note 12 + (basePitch + i * centsPerEntry) / 100. The 8 dynamic levels (ppp..fff,
+ * mapped linearly onto the MIDI velocity range) each reference one of the entry tables; several
+ * levels may share a table.
  *
- * The method bits define which fields are stored per entry: 0x10 tuning as 16-bit (else 0x08
- * tuning as 8-bit), 0x04 volume adjust, 0x02 sample ID, 0x01 sub-sample number. Without the
- * per-entry sample ID bit all entries use the sample ID of the keymap ('compacted' keymap).
+ * The method bits define which fields are stored per entry: 0x10 tuning as 16-bit (else 0x08 tuning
+ * as 8-bit), 0x04 volume adjust, 0x02 sample ID, 0x01 sub-sample number. Without the per-entry
+ * sample ID bit all entries use the sample ID of the keymap ('compacted' keymap).
  *
  * @author Jürgen Moßgraber
  */
 public class KurzweilKeymap
 {
     /** The number of dynamic levels. */
-    public static final int              NUM_LEVELS         = 8;
+    public static final int                    NUM_LEVELS        = 8;
 
     /** The names of the 8 dynamic levels. */
-    public static final String []        LEVEL_NAMES        =
+    private static final String []             LEVEL_NAMES       =
     {
         "ppp",
         "pp",
@@ -44,31 +44,31 @@ public class KurzweilKeymap
         "fff"
     };
 
-    private static final int             METHOD_TUNING_16   = 0x10;
-    private static final int             METHOD_TUNING_8    = 0x08;
-    private static final int             METHOD_VOLUME      = 0x04;
-    private static final int             METHOD_SAMPLE_ID   = 0x02;
-    private static final int             METHOD_SUB_SAMPLE  = 0x01;
+    private static final int                   METHOD_TUNING_16  = 0x10;
+    private static final int                   METHOD_TUNING_8   = 0x08;
+    private static final int                   METHOD_VOLUME     = 0x04;
+    private static final int                   METHOD_SAMPLE_ID  = 0x02;
+    private static final int                   METHOD_SUB_SAMPLE = 0x01;
 
     /** 16-bit tuning, sample ID and sub-sample number per entry (5 bytes). */
-    public static final int              METHOD_DEFAULT     = METHOD_TUNING_16 | METHOD_SAMPLE_ID | METHOD_SUB_SAMPLE;
+    public static final int                    METHOD_DEFAULT    = METHOD_TUNING_16 | METHOD_SAMPLE_ID | METHOD_SUB_SAMPLE;
 
     /** The lowest MIDI note of a keymap with base pitch 0. */
-    public static final int              BASE_NOTE          = 12;
+    public static final int                    BASE_NOTE         = 12;
 
     /** The number of entries of a standard keymap (1 per semitone). */
-    public static final int              NUM_ENTRIES        = 128;
+    public static final int                    NUM_ENTRIES       = 128;
 
-    private int                          id;
-    private String                       name;
-    private int                          sampleId;
-    private int                          method             = METHOD_DEFAULT;
-    private int                          basePitch;
-    private int                          centsPerEntry      = 100;
-    private int                          numEntries         = NUM_ENTRIES;
+    private int                                id;
+    private String                             name;
+    private int                                sampleId;
+    private int                                method            = METHOD_DEFAULT;
+    private int                                basePitch;
+    private int                                centsPerEntry     = 100;
+    private int                                numEntries        = NUM_ENTRIES;
 
-    private final int []                 levelTableIndices  = new int [NUM_LEVELS];
-    private final List<KurzweilKeymapEntry []> entryTables  = new ArrayList<> ();
+    private final int []                       levelTableIndices = new int [NUM_LEVELS];
+    private final List<KurzweilKeymapEntry []> entryTables       = new ArrayList<> ();
 
 
     /**
@@ -317,5 +317,18 @@ public class KurzweilKeymap
     public void setTableIndexOfLevel (final int level, final int tableIndex)
     {
         this.levelTableIndices[level] = tableIndex;
+    }
+
+
+    /**
+     * Format the levels as a string.
+     * 
+     * @param lowLevel The low level
+     * @param highLevel The high level
+     * @return The formatted levels as text
+     */
+    public static String formatLevels (final int lowLevel, final int highLevel)
+    {
+        return KurzweilKeymap.LEVEL_NAMES[lowLevel] + (highLevel > lowLevel ? "-" + KurzweilKeymap.LEVEL_NAMES[highLevel] : "");
     }
 }

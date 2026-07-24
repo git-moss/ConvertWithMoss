@@ -66,35 +66,35 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 {
-    private static final String SYNTHS_FOLDER            = "SYNTHS";
-    private static final String KITS_FOLDER              = "KITS";
-    private static final String SAMPLES_FOLDER           = "SAMPLES";
+    private static final String  SYNTHS_FOLDER            = "SYNTHS";
+    private static final String  KITS_FOLDER              = "KITS";
+    private static final String  SAMPLES_FOLDER           = "SAMPLES";
 
     /** The Deluge's decay/release rate table tops out at about 5.9 seconds. */
-    private static final double MAX_DELUGE_DECAY_SECONDS = 5.9;
+    private static final double  MAX_DELUGE_DECAY_SECONDS = 5.9;
 
     /** The Deluge's default kit master volume (unity gain). */
-    private static final int    DEFAULT_KIT_VOLUME       = 0x3504F334;
+    private static final int     DEFAULT_KIT_VOLUME       = 0x3504F334;
 
     /** The maximum number of drums in a kit (one per note from 36 up to 127). */
-    private static final int    MAX_KIT_DRUMS            = 92;
+    private static final int     MAX_KIT_DRUMS            = 92;
 
     /** Matches a "Kit &lt;number&gt;" occurrence (whole word) used to derive a short kit name. */
-    private static final Pattern KIT_NUMBER_PATTERN      = Pattern.compile ("(?i)\\bkit\\s*(\\d{1,4})");
+    private static final Pattern KIT_NUMBER_PATTERN       = Pattern.compile ("(?i)\\bkit\\s*(\\d{1,4})");
     /**
-     * Matches a name segment that carries no identity of its own - a bare "Kit NN", a date
-     * (6-8 digits) or a version ("v2") - so it can be skipped in favour of a more meaningful
-     * segment and is never given a redundant number prefix.
+     * Matches a name segment that carries no identity of its own - a bare "Kit NN", a date (6-8
+     * digits) or a version ("v2") - so it can be skipped in favour of a more meaningful segment and
+     * is never given a redundant number prefix.
      */
-    private static final Pattern REDUNDANT_SEGMENT       = Pattern.compile ("(?i)^(?:kit\\s*\\d{1,4}|\\d{6,8}|v(?:er|ersion)?\\.?\\s*\\d+)$");
+    private static final Pattern REDUNDANT_SEGMENT        = Pattern.compile ("(?i)^(?:kit\\s*\\d{1,4}|\\d{6,8}|v(?:er|ersion)?\\.?\\s*\\d+)$");
     /**
-     * Matches a trailing date (6-8 digits) or version ("v2") suffix, preceded by a separator, so
-     * it can be stripped. A model number like "TR-808" or "R-50" is 1-4 digits and is never
-     * matched, so it is preserved.
+     * Matches a trailing date (6-8 digits) or version ("v2") suffix, preceded by a separator, so it
+     * can be stripped. A model number like "TR-808" or "R-50" is 1-4 digits and is never matched,
+     * so it is preserved.
      */
-    private static final Pattern VERSION_DATE_SUFFIX     = Pattern.compile ("(?i)[\\s_-]+(?:v(?:er|ersion)?\\.?\\s*\\d+|\\d{6,8})$");
+    private static final Pattern VERSION_DATE_SUFFIX      = Pattern.compile ("(?i)[\\s_-]+(?:v(?:er|ersion)?\\.?\\s*\\d+|\\d{6,8})$");
     /** Splits a name into segments on the common separators (surrounded by spaces). */
-    private static final Pattern NAME_SEPARATOR          = Pattern.compile ("\\s+[-/:|]\\s+");
+    private static final Pattern NAME_SEPARATOR           = Pattern.compile ("\\s+[-/:|]\\s+");
 
 
     /**
@@ -322,12 +322,36 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
     /**
      * The role of a drum in a kit. The declaration order is the order in which the drums are
-     * written, i.e. the row order on the device (kick on the lowest row), following the layout
-     * of the factory TR-808 kit.
+     * written, i.e. the row order on the device (kick on the lowest row), following the layout of
+     * the factory TR-808 kit.
      */
     private enum DrumRole
     {
-        KICK, SNARE, TOM, HAT_CLOSED, HAT_OPEN, CLAP, RIM, COWBELL, CLAVE, CONGA, BONGO, TIMBALE, MARACA, SHAKER, CABASA, TAMBOURINE, GUIRO, TRIANGLE, BLOCK, BELL, CRASH, SPLASH, CHINA, RIDE, CYMBAL
+        KICK,
+        SNARE,
+        TOM,
+        HAT_CLOSED,
+        HAT_OPEN,
+        CLAP,
+        RIM,
+        COWBELL,
+        CLAVE,
+        CONGA,
+        BONGO,
+        TIMBALE,
+        MARACA,
+        SHAKER,
+        CABASA,
+        TAMBOURINE,
+        GUIRO,
+        TRIANGLE,
+        BLOCK,
+        BELL,
+        CRASH,
+        SPLASH,
+        CHINA,
+        RIDE,
+        CYMBAL
     }
 
 
@@ -564,12 +588,13 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
 
     /**
-     * Create the XML structure of a drum kit preset. Each zone becomes one drum (a
-     * {@code <sound>} inside {@code <soundSources>}); the Deluge maps the drums to ascending
-     * rows in the order they are written.
+     * Create the XML structure of a drum kit preset. Each zone becomes one drum (a {@code <sound>}
+     * inside {@code <soundSources>}); the Deluge maps the drums to ascending rows in the order they
+     * are written.
      *
      * @param zones The zones to write, one drum per zone
      * @param relativeSampleFolder The card-relative path of the sample folder
+     * @param useRoleLabels True to use role labels
      * @return The XML document as a string
      */
     private Optional<String> createKitDocument (final List<ISampleZone> zones, final String relativeSampleFolder, final boolean useRoleLabels)
@@ -609,13 +634,13 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
 
     /**
-     * Write the body of one sound (a synth preset or one drum of a kit): the sample
-     * oscillator(s), a silent second oscillator and the default parameters.
+     * Write the body of one sound (a synth preset or one drum of a kit): the sample oscillator(s),
+     * a silent second oscillator and the default parameters.
      *
      * @param document The XML document
      * @param soundElement The sound element (the root sound or a drum's {@code <sound>})
-     * @param zones The zones of this sound (several key ranges for a synth, a single sample for
-     *            a drum)
+     * @param zones The zones of this sound (several key ranges for a synth, a single sample for a
+     *            drum)
      * @param relativeSampleFolder The card-relative path of the sample folder
      * @param isKit True if the sound is one drum of a kit
      * @param polyphonyMode The value for the polyphonic tag
@@ -670,8 +695,8 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
     /**
      * Write the kit-level default parameters (the master volume, panning, filters and the send
-     * effects). These are left at their neutral values; the per-drum parameters carry the
-     * actual sound.
+     * effects). These are left at their neutral values; the per-drum parameters carry the actual
+     * sound.
      *
      * @param document The XML document
      * @param kitElement The kit element
@@ -706,6 +731,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      * @param zone The zone
      * @param relativeSampleFolder The card-relative path of the sample folder
      * @param topNote The top note of the range or -1 if it should not be written
+     * @param isKit True if the sound is one drum of a kit
      */
     private static void writeZone (final Document document, final Element parent, final ISampleZone zone, final String relativeSampleFolder, final int topNote, final boolean isKit)
     {
@@ -718,7 +744,11 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         // kit drum is triggered by its own pad and must play at its natural pitch (like the
         // factory kits, which use transpose 0), so the keyboard mapping note is ignored and only
         // an explicit detune is kept
-        final double rootNote = isKit ? DelugeValues.REFERENCE_NOTE + zone.getTuning () : (zone.getKeyRoot () < 0 ? limitToDefault (zone.getKeyHigh (), DelugeValues.REFERENCE_NOTE) : zone.getKeyRoot ()) + zone.getTuning ();
+        double rootNote = zone.getTuning ();
+        if (isKit)
+            rootNote += DelugeValues.REFERENCE_NOTE;
+        else
+            rootNote += zone.getKeyRoot () < 0 ? limitToDefault (zone.getKeyHigh (), DelugeValues.REFERENCE_NOTE) : zone.getKeyRoot ();
         final int [] transposeCents = DelugeValues.transposeCentsFromRootNote (rootNote);
         XMLUtils.addTextElement (document, parent, DelugeTag.TRANSPOSE_OSC, Integer.toString (transposeCents[0]));
         XMLUtils.addTextElement (document, parent, DelugeTag.CENTS, Integer.toString (transposeCents[1]));

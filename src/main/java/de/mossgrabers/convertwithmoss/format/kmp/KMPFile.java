@@ -49,11 +49,11 @@ public class KMPFile
     private static final String     KMP_NUMBER_ID   = "MNO1";
 
     /**
-     * The level of a multi-sample index is stored in the range of [-99..99]. The Korg
-     * documentation describes 0 as the unity level and negative and positive values as lowering
-     * and raising it, but it does not relate them to dB in any of the parameter guides. This is
-     * therefore an approximation of what the full deflection means: if it is ever measured on a
-     * device, only this constant has to be changed.
+     * The level of a multi-sample index is stored in the range of [-99..99]. The Korg documentation
+     * describes 0 as the unity level and negative and positive values as lowering and raising it,
+     * but it does not relate them to dB in any of the parameter guides. This is therefore an
+     * approximation of what the full deflection means: if it is ever measured on a device, only
+     * this constant has to be changed.
      */
     private static final double     MAX_LEVEL_DB    = 6.0;
 
@@ -149,8 +149,7 @@ public class KMPFile
     public void read (final InputStream inputStream) throws IOException, ParseException
     {
         final DataInputStream in = new DataInputStream (inputStream);
-
-        while (true)
+        while (in.available () > 0)
         {
             final String id = new String (in.readNBytes (4));
             final int dataSize = in.readInt ();
@@ -193,9 +192,6 @@ public class KMPFile
                 default:
                     throw new ParseException (Functions.getMessage ("IDS_KMP_UNKNOWN_CHUNK", id));
             }
-
-            if (in.available () == 0)
-                break;
         }
 
         // Remove all 'skipped sample' zones
@@ -267,8 +263,7 @@ public class KMPFile
                     }
 
                 final Optional<String> ksfZone = this.readKSFZone (zone, sampleFilename);
-                if (ksfZone.isPresent ())
-                    sampleFilename = ksfZone.get ();
+                sampleFilename = ksfZone.isPresent () ? ksfZone.get () : null;
             }
         }
     }

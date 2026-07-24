@@ -943,7 +943,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         {
             return file.getCanonicalPath ();
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             return file.getAbsolutePath ();
         }

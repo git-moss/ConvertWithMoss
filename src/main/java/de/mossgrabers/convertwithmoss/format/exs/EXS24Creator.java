@@ -366,6 +366,14 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
         parameters.put (EXS24Parameters.FILTER1_CUTOFF, (int) Math.round (MathUtils.normalize (filter.getCutoff (), 0, IFilter.MAX_FREQUENCY) * 1000.0));
         parameters.put (EXS24Parameters.FILTER1_RESO, (int) Math.round (filter.getResonance () * 1000));
         parameters.put (EXS24Parameters.FILTER1_KEYTRACK, (int) Math.round (filter.getCutoffKeyTracking () * 1000.0));
+
+        final double velocityModDepth = filter.getCutoffVelocityModulator ().getDepth ();
+        if (velocityModDepth > 0)
+        {
+            final EXSModulator velocityModulator = new EXSModulator (EXSModulator.SOURCE_VELOCITY, EXSModulator.DESTINATION_FILTER_1_CUTOFF);
+            velocityModulator.lowValue = (int) Math.round (velocityModDepth * 1000.0);
+            velocityModulator.highValue = velocityModulator.lowValue < 0 ? 0 : 1000;
+        }
     }
 
 

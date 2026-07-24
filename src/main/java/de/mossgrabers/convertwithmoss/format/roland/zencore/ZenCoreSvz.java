@@ -13,6 +13,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
+import de.mossgrabers.tools.Pair;
 
 
 /**
@@ -22,8 +23,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
  * map per instrument, a shared <i>USPa</i> sample-parameter pool (64 byte records) and a shared
  * <i>USDa</i> pool of <i>SMPd</i> sample chunks (a fixed header - 460 bytes as written by the
  * FANTOM, 158 bytes in an older generation - followed by interleaved 16-bit little-endian PCM). All
- * framing carries the per-record CRC32 tables verified from device exports.
- * Byte templates for the constant/opaque parts live next to this class as resources. See
+ * framing carries the per-record CRC32 tables verified from device exports. Byte templates for the
+ * constant/opaque parts live next to this class as resources. See
  * {@code documentation/design/ZENCORE_FORMAT.md}.
  *
  * @author Jürgen Moßgraber
@@ -31,35 +32,37 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
 public final class ZenCoreSvz
 {
     /** The size of a USPa sample-parameter record. */
-    public static final int      USP_RECORD_SIZE      = 64;
+    public static final int      USP_RECORD_SIZE       = 64;
     /** The size of a MSPa multis-ample key-map record. */
-    public static final int      MSP_RECORD_SIZE      = 1040;
+    public static final int      MSP_RECORD_SIZE       = 1040;
     /** The size of the FANTOM / KY019 SMPd chunk header (PCM follows at this offset). */
-    public static final int      SMPD_HEADER_SIZE     = 0x1CC;
+    public static final int      SMPD_HEADER_SIZE      = 0x1CC;
     /**
      * The size of the compact SMPd chunk header written by an older sample generation (SVZ file
      * version 02 01, e.g. third-party sample packs). It carries a shorter waveform preview than the
      * FANTOM export and stores the channel count as a u16 at {@link #SMPD_CHANNELS_COMPACT} instead
      * of the byte at {@link #SMPD_CHANNELS_KY019} (whose slot then holds an unrelated value, 0x32).
      */
-    private static final int     SMPD_HEADER_COMPACT  = 0x9E;
-    /** Channel-count field of a FANTOM / KY019 SMPd header: a byte holding 1 (mono) or 2 (stereo). */
-    private static final int     SMPD_CHANNELS_KY019  = 0x08;
+    private static final int     SMPD_HEADER_COMPACT   = 0x9E;
+    /**
+     * Channel-count field of a FANTOM / KY019 SMPd header: a byte holding 1 (mono) or 2 (stereo).
+     */
+    private static final int     SMPD_CHANNELS_KY019   = 0x08;
     /** Channel-count field of a compact SMPd header: a u16 holding 1 (mono) or 2 (stereo). */
     private static final int     SMPD_CHANNELS_COMPACT = 0x0A;
 
-    private static final int     NAME_LENGTH          = 16;
-    private static final int     PREVIEW_OFFSET       = 0x60;
-    private static final int     PREVIEW_VALUES       = 182;
+    private static final int     NAME_LENGTH           = 16;
+    private static final int     PREVIEW_OFFSET        = 0x60;
+    private static final int     PREVIEW_VALUES        = 182;
 
     // USPa record field offsets (device-confirmed).
-    private static final int     USP_LOOP_MODE        = 0x14;
-    private static final int     USP_LEVEL            = 0x15;
-    private static final int     USP_ORIG_KEY         = 0x19;
-    private static final int     USP_START            = 0x1C;
-    private static final int     USP_LOOP_START       = 0x20;
-    private static final int     USP_END              = 0x24;
-    private static final int     USP_CHANNELS         = 0x2C;
+    private static final int     USP_LOOP_MODE         = 0x14;
+    private static final int     USP_LEVEL             = 0x15;
+    private static final int     USP_ORIG_KEY          = 0x19;
+    private static final int     USP_START             = 0x1C;
+    private static final int     USP_LOOP_START        = 0x20;
+    private static final int     USP_END               = 0x24;
+    private static final int     USP_CHANNELS          = 0x2C;
 
     // PATa oscillator Wave-Number fields (device-confirmed): the 1-based multi-sample the partial's
     // oscillator plays. A mono tone plays one multi-sample on both sides (Wave R = Wave L on
@@ -69,90 +72,94 @@ public final class ZenCoreSvz
     // panned hard left, Partial 2 plays the right multi-sample panned hard right - each a mono
     // loop,
     // so neither has the loop-wrap click that an interleaved-stereo sample suffers.
-    private static final int     PAT_WAVE_L           = 0xE2;                         // Partial 1
-                                                                                      // wave number
-                                                                                      // (left)
-    private static final int     PAT_WAVE_R           = 0xE4;                         // Partial 1
-                                                                                      // right wave
-                                                                                      // (mono tone)
-    private static final int     PAT_PARTIAL_STRIDE   = 0x7C;                         // OSC/filter
-                                                                                      // block
-                                                                                      // stride
-                                                                                      // per partial
-    private static final int     PAT_P2_WAVE          = 0xE2 + PAT_PARTIAL_STRIDE;    // Partial 2
-                                                                                      // wave number
+    private static final int     PAT_WAVE_L            = 0xE2;                         // Partial 1
+                                                                                       // wave
+                                                                                       // number
+                                                                                       // (left)
+    private static final int     PAT_WAVE_R            = 0xE4;                         // Partial 1
+                                                                                       // right wave
+                                                                                       // (mono
+                                                                                       // tone)
+    private static final int     PAT_PARTIAL_STRIDE    = 0x7C;                         // OSC/filter
+                                                                                       // block
+                                                                                       // stride
+                                                                                       // per
+                                                                                       // partial
+    private static final int     PAT_P2_WAVE           = 0xE2 + PAT_PARTIAL_STRIDE;    // Partial 2
+                                                                                       // wave
+                                                                                       // number
 
     // Partial-1 TVF filter + TVA amplitude-envelope offsets - validated against 2048 factory tones.
     // All values are u16 LE, 0-1023. Filter type is a small index times 0x100. The filter block
     // repeats per partial at PAT_PARTIAL_STRIDE; the TVA envelope block repeats at PAT_ENV_STRIDE.
 
     /** 1=LPF(0x100), 2=BPF(0x200), =HPF(0x300). */
-    private static final int     PAT_FILTER_TYPE      = 0xEC;
-    private static final int     PAT_CUTOFF           = 0xF0;
-    private static final int     PAT_RESONANCE        = 0xF6;
+    private static final int     PAT_FILTER_TYPE       = 0xEC;
+    private static final int     PAT_CUTOFF            = 0xF0;
+    private static final int     PAT_RESONANCE         = 0xF6;
     /** T1,T2,T3,T4 at +0,+2,+4,+6. */
-    private static final int     PAT_TVA_TIME         = 0x37A;
+    private static final int     PAT_TVA_TIME          = 0x37A;
     /** L1,L2,L3,L4 at +0,+2,+4,+6. */
-    private static final int     PAT_TVA_LEVEL        = 0x382;
+    private static final int     PAT_TVA_LEVEL         = 0x382;
     /**
      * Per-partial stride of the TVA amplitude-envelope block: the four partials' TVA envelopes sit
      * back-to-back (P1 @0x37A, P2 @0x38A, ...). Hardware-verified: writing Partial 2's envelope at
      * the wrong stride left it at the template default (a short release), so the right channel cut
      * off well before the left.
      */
-    private static final int     PAT_ENV_STRIDE       = 0x10;
+    private static final int     PAT_ENV_STRIDE        = 0x10;
 
     // Pitch and TVF (filter) modulation envelopes - dedicated per-partial blocks (not the mod
     // matrix), offsets mapped from a ZENOLOGY tone with distinctive per-partial values. Each block
     // is a signed-byte Env Depth, then four u16 times {T1..T4}, then five signed levels {L0..L4};
     // the blocks repeat at PAT_MOD_ENV_STRIDE per partial.
-    private static final int     PAT_PITCH_ENV_DEPTH  = 0x2B8;
-    private static final int     PAT_PITCH_ENV_TIME   = 0x2BC;
-    private static final int     PAT_PITCH_ENV_LEVEL  = 0x2C4;
-    private static final int     PAT_FILTER_ENV_DEPTH = 0x318;
-    private static final int     PAT_FILTER_ENV_TIME  = 0x31E;
-    private static final int     PAT_FILTER_ENV_LEVEL = 0x326;
-    private static final int     PAT_MOD_ENV_STRIDE   = 0x18;
+    private static final int     PAT_PITCH_ENV_DEPTH   = 0x2B8;
+    private static final int     PAT_PITCH_ENV_TIME    = 0x2BC;
+    private static final int     PAT_PITCH_ENV_LEVEL   = 0x2C4;
+    private static final int     PAT_FILTER_ENV_DEPTH  = 0x318;
+    private static final int     PAT_FILTER_ENV_TIME   = 0x31E;
+    private static final int     PAT_FILTER_ENV_LEVEL  = 0x326;
+    private static final int     PAT_MOD_ENV_STRIDE    = 0x18;
 
     // Per-partial keyboard/OSC fields used to build multi-partial (velocity-layered) tones. Mapped
     // by an edit-diff of ZENOLOGY-authored tones with distinctive per-partial velocity ranges and
     // pans (a 4-partial and a 2-partial probe), then cross-checked against the verified templates.
     /** Wave group: 3 = user multi-sample (partial active), 0 = partial off. OSC stride. */
-    private static final int     PAT_WAVE_GROUP       = 0xDF;
+    private static final int     PAT_WAVE_GROUP        = 0xDF;
     /** Partial pan: signed byte, -64 = hard left, 0 = centre, +63 = hard right. OSC stride. */
-    private static final int     PAT_PAN              = 0xCE;
+    private static final int     PAT_PAN               = 0xCE;
     /** Velocity range lower (1-127). Keyboard-table stride. */
-    private static final int     PAT_VEL_LOW          = 0xA0;
+    private static final int     PAT_VEL_LOW           = 0xA0;
     /** Velocity range upper (1-127). Keyboard-table stride. */
-    private static final int     PAT_VEL_HIGH         = 0xA1;
+    private static final int     PAT_VEL_HIGH          = 0xA1;
     /**
      * Partial switch: 1 = the partial sounds, 0 = off. Keyboard-table +0x04. Hardware-proven: a
      * cloned partial with the correct wave group, wave, pan and velocity still stayed silent until
      * this byte was set - it is the per-partial on/off the device's own partial page toggles.
      */
-    private static final int     PAT_PARTIAL_SWITCH   = 0xA4;
+    private static final int     PAT_PARTIAL_SWITCH    = 0xA4;
     /** Per-partial stride of the keyboard/range table (velocity + key range). */
-    private static final int     PAT_KBD_STRIDE       = 0x0C;
+    private static final int     PAT_KBD_STRIDE        = 0x0C;
     /** Wave-group value marking an active user-multi-sample partial. */
-    private static final int     WAVE_GROUP_ACTIVE    = 3;
+    private static final int     WAVE_GROUP_ACTIVE     = 3;
 
     // -------------------------------------------------------------------------------
     // Loaded byte templates (constant or opaque device data).
 
     /** 32 byte constant record. */
-    private static final byte [] DIFA                 = load ("difa.bin");
+    private static final byte [] DIFA                  = load ("difa.bin");
     /** 1632 byte device multi-sample tone (mono: one partial). */
-    private static final byte [] PATA_TEMPLATE        = load ("pata_multisample.bin");
+    private static final byte [] PATA_TEMPLATE         = load ("pata_multisample.bin");
     /**
      * 1632 byte device two-partial hard-panned stereo tone. Partial 1 is panned hard left, Partial
      * 2 hard right; each plays its own mono multi-sample (see {@link #PAT_WAVE_L} /
      * {@link #PAT_P2_WAVE}).
      */
-    private static final byte [] PATA_STEREO          = load ("pata_stereo.bin");
+    private static final byte [] PATA_STEREO           = load ("pata_stereo.bin");
     /** 460 byte SMPd header. */
-    private static final byte [] SMPD_HEADER          = load ("smpd_header.bin");
+    private static final byte [] SMPD_HEADER           = load ("smpd_header.bin");
     /** 64 byte device USPa record. */
-    private static final byte [] USPA_TEMPLATE        = load ("uspa.bin");
+    private static final byte [] USPA_TEMPLATE         = load ("uspa.bin");
     /**
      * 16 byte <i>.svz</i> file header: magic "SVZa", version 05 04, model tag "KY019", flag 0x24
      * and four reserved bytes. KY019 is the shared ZEN-Core interchange tag of the sample-capable
@@ -162,7 +169,7 @@ public final class ZenCoreSvz
      * sampler at all - its manual's IMPORT loads only tones - and ZENOLOGY imports only the tone),
      * so a multi-sample would play silent there.
      */
-    private static final byte [] SVZ_HEADER           = load ("svz_header.bin");
+    private static final byte [] SVZ_HEADER            = load ("svz_header.bin");
 
 
     /**
@@ -711,12 +718,14 @@ public final class ZenCoreSvz
                 if (chunkStart >= 0 && chunkSize > SMPD_HEADER_COMPACT && chunkStart + chunkSize <= file.length)
                 {
                     // The storage layout comes from the SMPd chunk header, which has two variants
-                    // (see resolveSmpdLayout); an unrecognized chunk leaves the sample without audio.
-                    final int [] layout = resolveSmpdLayout (file, chunkStart, chunkSize);
-                    if (layout != null)
+                    // (see resolveSmpdLayout); an unrecognized chunk leaves the sample without
+                    // audio.
+                    final Optional<Pair<Integer, Integer>> layout = resolveSmpdLayout (file, chunkStart, chunkSize);
+                    if (layout.isPresent ())
                     {
-                        final int channels = layout[0];
-                        final int headerSize = layout[1];
+                        final Pair<Integer, Integer> pair = layout.get ();
+                        final int channels = pair.getKey ().intValue ();
+                        final int headerSize = pair.getValue ().intValue ();
                         final int rate = (int) ZenCoreUtil.readUnsigned32 (file, chunkStart + 0x0C, false);
                         final int pcmStart = chunkStart + headerSize;
                         final int pcmSize = chunkSize - headerSize;
@@ -791,8 +800,8 @@ public final class ZenCoreSvz
 
 
     /**
-     * Resolve a <i>SMPd</i> chunk's PCM layout. Two header variants exist. The FANTOM / KY019 export
-     * uses a {@link #SMPD_HEADER_SIZE} byte header with the channel count in the byte at
+     * Resolve a <i>SMPd</i> chunk's PCM layout. Two header variants exist. The FANTOM / KY019
+     * export uses a {@link #SMPD_HEADER_SIZE} byte header with the channel count in the byte at
      * {@link #SMPD_CHANNELS_KY019}. An older generation (SVZ file version 02 01, e.g. third-party
      * sample packs) uses a {@link #SMPD_HEADER_COMPACT} byte header with the channel count as a u16
      * at {@link #SMPD_CHANNELS_COMPACT} - there the byte at {@link #SMPD_CHANNELS_KY019} holds an
@@ -806,32 +815,26 @@ public final class ZenCoreSvz
      * @param chunkSize The chunk size from the USDa directory
      * @return {channels, headerSize}, or null if neither variant fits
      */
-    private static int [] resolveSmpdLayout (final byte [] file, final int chunkStart, final int chunkSize)
+    private static Optional<Pair<Integer, Integer>> resolveSmpdLayout (final byte [] file, final int chunkStart, final int chunkSize)
     {
         final int ky019Channels = file[chunkStart + SMPD_CHANNELS_KY019] & 0xFF;
         if (smpdFits (chunkSize, SMPD_HEADER_SIZE, ky019Channels))
-            return new int []
-            {
-                ky019Channels,
-                SMPD_HEADER_SIZE
-            };
+            return Optional.of (new Pair<> (Integer.valueOf (ky019Channels), Integer.valueOf (SMPD_HEADER_SIZE)));
+
         final int compactChannels = ZenCoreUtil.readUnsigned16 (file, chunkStart + SMPD_CHANNELS_COMPACT, false);
         if (smpdFits (chunkSize, SMPD_HEADER_COMPACT, compactChannels))
-            return new int []
-            {
-                compactChannels,
-                SMPD_HEADER_COMPACT
-            };
-        return null;
+            return Optional.of (new Pair<> (Integer.valueOf (compactChannels), Integer.valueOf (SMPD_HEADER_COMPACT)));
+
+        return Optional.empty ();
     }
 
 
     /**
      * Whether a SMPd header size and channel count are consistent with the chunk: a plausible
      * channel count (1 or 2) whose PCM region past the header is a whole number of frames. The
-     * declared play length is deliberately not used - device exports may declare a handful of frames
-     * more than they store - so only the frame alignment, together with the channel-count field,
-     * selects the layout.
+     * declared play length is deliberately not used - device exports may declare a handful of
+     * frames more than they store - so only the frame alignment, together with the channel-count
+     * field, selects the layout.
      *
      * @param chunkSize The chunk size
      * @param headerSize The candidate header size
