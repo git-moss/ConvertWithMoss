@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.emu.emulator4;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,7 +32,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
-import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
@@ -48,7 +48,7 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
  *
  * @author Jürgen Moßgraber
  */
-public class Emulator4Creator extends AbstractCreator<EmptySettingsUI>
+public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
 {
     /** The maximum sample playback rate of the EOS samplers. */
     private static final int                    MAX_SAMPLE_RATE    = 48000;
@@ -79,7 +79,7 @@ public class Emulator4Creator extends AbstractCreator<EmptySettingsUI>
      */
     public Emulator4Creator (final INotifier notifier)
     {
-        super ("E-mu Emulator IV", "E4B", notifier, EmptySettingsUI.INSTANCE);
+        super ("E-mu Emulator IV", "E4B", notifier, new Emulator4CreatorUI ("E4B"));
     }
 
 
@@ -118,7 +118,9 @@ public class Emulator4Creator extends AbstractCreator<EmptySettingsUI>
      */
     private void writeBank (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name) throws IOException
     {
-        final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (name), "e4b");
+        final boolean writeCdImage = this.settingsConfiguration.writeCdImage ();
+        final String safeName = createSafeFilename (name);
+        final File outputFile = this.createUniqueFilename (destinationFolder, safeName, writeCdImage ? "iso" : "e4b");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 
         final List<Sample> samples = new ArrayList<> ();
@@ -167,7 +169,18 @@ public class Emulator4Creator extends AbstractCreator<EmptySettingsUI>
 
         if (presetBodies.isEmpty ())
             return;
-        this.writeFile (outputFile, presetBodies, presetNames, samples);
+
+        if (writeCdImage)
+        {
+            final ByteArrayOutputStream bankData = new ByteArrayOutputStream ();
+            this.writeFile (bankData, presetBodies, presetNames, samples);
+            Emu3DiskImage.writeImage (outputFile, List.of (new Emu3DiskImage.ImageFile (safeName, bankData.toByteArray ())));
+        }
+        else
+            try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))
+            {
+                this.writeFile (out, presetBodies, presetNames, samples);
+            }
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
@@ -542,15 +555,15 @@ public class Emulator4Creator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Assemble and write the bank file.
+     * Assemble and write the bank.
      *
-     * @param outputFile The file to write
+     * @param outputStream Where to write the bank to
      * @param presetBodies The bodies of the preset chunks
      * @param presetNames The names of the presets, for the table of contents
      * @param samples The samples
-     * @throws IOException Could not write the file
+     * @throws IOException Could not write the bank
      */
-    private void writeFile (final File outputFile, final List<byte []> presetBodies, final List<String> presetNames, final List<Sample> samples) throws IOException
+    private void writeFile (final OutputStream outputStream, final List<byte []> presetBodies, final List<String> presetNames, final List<Sample> samples) throws IOException
     {
         // Calculate the chunk offsets. Chunks are word aligned; only sample chunks can have an
         // odd size since all other chunk sizes are even
@@ -596,33 +609,31 @@ public class Emulator4Creator extends AbstractCreator<EmptySettingsUI>
         for (int i = 0; i < Emulator4Constants.E4MA_SIZE; i++)
             multimap[i] = Emulator4Constants.E4MA_ENTRY[i % Emulator4Constants.E4MA_ENTRY.length];
 
-        try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))
-        {
-            out.write (Emulator4Constants.FORM_MAGIC);
-            writeU32BE (out, formSize);
-            out.write (Emulator4Constants.FORM_TYPE);
+        final OutputStream out = outputStream;
+        out.write (Emulator4Constants.FORM_MAGIC);
+        writeU32BE (out, formSize);
+        out.write (Emulator4Constants.FORM_TYPE);
 
-            writeChunkHeader (out, Emulator4Constants.TOC_TAG, toc.length);
-            out.write (toc);
-            writeChunkHeader (out, Emulator4Constants.E4MA_TAG, multimap.length);
-            out.write (multimap);
-            for (final byte [] presetBody: presetBodies)
-            {
-                writeChunkHeader (out, Emulator4Constants.PRESET_TAG, presetBody.length);
-                out.write (presetBody);
-            }
-            for (int i = 0; i < samples.size (); i++)
-            {
-                final Sample sample = samples.get (i);
-                writeChunkHeader (out, Emulator4Constants.SAMPLE_TAG, sampleBodySizes[i]);
-                out.write (createSampleHeader (sample, i + 1));
-                out.write (sample.pcm);
-                if (sampleBodySizes[i] % 2 == 1)
-                    out.write (0);
-            }
-            writeChunkHeader (out, Emulator4Constants.EMST_TAG, masterSetup.length);
-            out.write (masterSetup);
+        writeChunkHeader (out, Emulator4Constants.TOC_TAG, toc.length);
+        out.write (toc);
+        writeChunkHeader (out, Emulator4Constants.E4MA_TAG, multimap.length);
+        out.write (multimap);
+        for (final byte [] presetBody: presetBodies)
+        {
+            writeChunkHeader (out, Emulator4Constants.PRESET_TAG, presetBody.length);
+            out.write (presetBody);
         }
+        for (int i = 0; i < samples.size (); i++)
+        {
+            final Sample sample = samples.get (i);
+            writeChunkHeader (out, Emulator4Constants.SAMPLE_TAG, sampleBodySizes[i]);
+            out.write (createSampleHeader (sample, i + 1));
+            out.write (sample.pcm);
+            if (sampleBodySizes[i] % 2 == 1)
+                out.write (0);
+        }
+        writeChunkHeader (out, Emulator4Constants.EMST_TAG, masterSetup.length);
+        out.write (masterSetup);
     }
 
 

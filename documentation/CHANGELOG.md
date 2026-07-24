@@ -6,6 +6,7 @@
 * New: Added support for the Kurzweil K2000/K2500/K2600 format (KRZ, K25, K26).
 * New: Added support for the E-mu Emulator IV bank format (E4B). Written banks have not been tested on real hardware yet.
 * New: E-mu Emulator IV banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format.
+* New: The E-mu Emulator IV destination can write the bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7.
 * User Interface
   * New: The Settings and Processing dialogs opened with a bright white frame and, on macOS, repainted whenever the main window was clicked. Since there is no nice fix for this, the dialogs have now been replaced with pseudo dialogs which are part of the main window.
   * New: Removed the hover highlighting from the titles in the Processing dialog.

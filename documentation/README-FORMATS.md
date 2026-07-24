@@ -284,6 +284,10 @@ When reading, every preset of a bank becomes one multi-sample and every voice be
 
 When writing, each multi-sample becomes one preset; a library collects all multi-samples into a single bank (up to 1000 presets and 1000 samples). Every zone is written as its own voice, which keeps all per-zone settings. Samples are stored as 16-bit mono PCM with their original sample rate (rates above 48kHz, the EOS maximum, are down-sampled); stereo samples are mixed down to mono. Identical samples mapped to multiple zones are stored only once. Since EOS only has a sample-level forward loop, alternating loops are written as forward loops and only the first loop of a zone is kept. Written banks validate against the reference parser of the mpc2emu project but have not been verified on real hardware yet.
 
+#### Destination Options
+
+* Create CD-ROM image (.iso) for SCSI CD-ROM emulators: The bank is wrapped into a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem. Copy the image to the SD card of a SCSI emulator (e.g. rename it to *CD1.iso* for a ZuluSCSI in CD-ROM mode) and load the bank on the sampler from the emulated CD-ROM drive. This works on all EOS versions and on units which cannot read FAT hard disks (EOS before 4.7); a plain bank file instead requires a FAT formatted hard disk and EOS 4.7 or later.
+
 ## Elektron Tonverk
 
 The Elektron Tonverk is a dedicated hardware sampler that marks an important milestone for Elektron as its first instrument to support multi-samples. This allows users to map multiple sampled sounds across keys or velocity ranges, creating more expressive and realistic instruments than single-sample playback alone.
