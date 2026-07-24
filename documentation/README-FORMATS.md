@@ -278,6 +278,8 @@ There is no write support.
 
 The E-mu Emulator IV series (Emulator 4, E4X, E4XT, E4K, e-Synth, e-6400 and the other EOS samplers, 1994-2002) stores its banks in single *.e4b* files which contain all presets, their parameters and the sample data. A preset layers several voices; each voice maps a set of zones (a key/velocity range referencing a sample) and carries the tuning, volume, filter, envelope and modulation settings for them. The format is not documented by E-mu, the layout was reverse-engineered by the mpc2emu project from hardware-saved E4XT banks and commercial EOS CD-ROMs (see *documentation/design/E4B_FORMAT.md*).
 
+Banks can be read from single *.e4b* files and also directly from CD-ROM and hard disk images of the EOS samplers (*.iso*, *.img*, *.hda* - e.g. images for SCSI emulators like the ZuluSCSI or dumps of commercial E-mu CD-ROMs), which use the proprietary E-mu disk filesystem. All banks of an image are read; files of the older EIII samplers, which use the same filesystem for their banks, are skipped.
+
 When reading, every preset of a bank becomes one multi-sample and every voice becomes a group. Names, key and velocity ranges, root keys, tuning, volume, loops, the amplitude envelope with its velocity modulation, the filter (type, cutoff, resonance, key tracking and envelope with its depth) and the 16-bit sample data are read. The EOS effect filter types (phasers, flangers, vocal formants, EQ morphs) have no model equivalent, such voices are converted without a filter.
 
 When writing, each multi-sample becomes one preset; a library collects all multi-samples into a single bank (up to 1000 presets and 1000 samples). Every zone is written as its own voice, which keeps all per-zone settings. Samples are stored as 16-bit mono PCM with their original sample rate (rates above 48kHz, the EOS maximum, are down-sampled); stereo samples are mixed down to mono. Identical samples mapped to multiple zones are stored only once. Since EOS only has a sample-level forward loop, alternating loops are written as forward loops and only the first loop of a zone is kept. Written banks validate against the reference parser of the mpc2emu project but have not been verified on real hardware yet.
@@ -372,9 +374,10 @@ Note that this will not work with IIx or earlier versions despite the same VC fi
 
 ## ISO/IMG Files
 
-Searches for files ending with *.ISO or *.IMG. Currently, the following formats can be handled:
+Searches for files ending with *.ISO, *.IMG or *.HDA. Currently, the following formats can be handled:
 
 * [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
 * [Roland S-50 series](#roland-s-50-series)

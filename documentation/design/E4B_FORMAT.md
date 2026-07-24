@@ -183,6 +183,41 @@ EOS has exactly one loop type (forward, on/off at the sample level). A forward
 loop shorter than ~84 frames plays an octave low on the hardware (the E4XT
 doubles it silently).
 
+## EOS disk filesystem (CD-ROM and hard disk images)
+
+The EOS samplers do not read standard filesystems from CD-ROM (and only EOS
+4.7+ reads FAT hard disks); their media use E-mu's own filesystem, known from
+the emu3fs Linux kernel module and reverse-engineered for the Emulator IV by
+the mpc2emu project (`docs/EMU3_ISO_FORMAT.md` and
+`docs/re_procedures/emu_hdd_fs.md` in its source tree). All values are
+little-endian; everything is addressed in 512 byte blocks:
+
+```
+Block 0:  superblock - magic 'EMU3', then u32 fields: total blocks - 1,
+          root start/blocks, dir-content start/blocks, cluster list ('FAT')
+          start/blocks, data start block, total clusters; byte 0x28 = cluster
+          size (bytes = 1 << (15 + value)); checksum at 0x1FE = sum of the
+          255 u16 words of bytes 0x000-0x1FD (checked by the firmware!)
+Block 1:  byte 0 = next free dir-content block
+FAT:      u16 per cluster: next cluster of the chain, 0x7FFF = last,
+          entry 0 = 0x8000 (reserved)
+Root:     32-byte folder entries: name[16], 0, type (0x40 = user folder,
+          0x80 = hard disk 'Default Folder'), 7 x u16 dir-content block
+          indices (0xFFFF = unused)
+Dircon:   16 x 32-byte file entries per block: name[16], 0, id, u16 start
+          cluster (1-based), u16 clusters, u16 blocks used in the last
+          cluster (a partial block counts as a whole one!), u16 bytes used
+          in the last block, type (0x81), 5 bytes props (0x00 'E4B0')
+Data:     cluster c starts at block 'data start' + (c - 1) * blocks/cluster
+```
+
+The CD variant uses the fixed geometry FAT=2+5, root=7+4, dircon=11+125,
+data=136 with cluster sizes of 512 KB/1 MB/2 MB (the smallest which keeps the
+cluster count under the 1279 the 5 FAT blocks can hold; 512 KB is preferred as
+larger clusters caused read errors on hardware); the hard disk variant uses
+FAT=2+4, root=6+7, dircon=13+169, data=182. The reader takes all geometry
+from the superblock and therefore reads both.
+
 ## Mapping decisions of the converter
 
 * **Reading:** every preset becomes one multi-sample source, every voice one

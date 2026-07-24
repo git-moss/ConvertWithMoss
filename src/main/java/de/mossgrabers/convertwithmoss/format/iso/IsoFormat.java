@@ -23,6 +23,8 @@ public enum IsoFormat
     AKAI_S1000_S1100,
     /** The format used by Akai S3000. */
     AKAI_S3000,
+    /** The format used by the E-mu EOS samplers (Emulator IV series). */
+    EMU3,
     /** Ensoniq EPS16+/ASR */
     ENSONIQ,
     /** The ISO 9660 format. */
@@ -42,6 +44,7 @@ public enum IsoFormat
         NAMES.put (AKAI_MPC2000XL, "Akai MPC2000XL");
         NAMES.put (AKAI_S1000_S1100, "Akai S1000/S1100 series");
         NAMES.put (AKAI_S3000, "Akai S3000/MPC2000 series");
+        NAMES.put (EMU3, "E-mu EOS");
         NAMES.put (ENSONIQ, "Ensoniq");
         NAMES.put (ISO_9660, "ISO 9660");
         NAMES.put (ROLAND_S5XX, "Roland S5xx");

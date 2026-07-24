@@ -6,12 +6,14 @@ package de.mossgrabers.convertwithmoss.format.emu.emulator4;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -40,11 +42,13 @@ import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Detects E-mu Emulator IV bank files (*.e4b). A bank contains up to 1000 presets and 1000
- * samples; every preset becomes one multi-sample source. A preset is a list of voices, each of
- * which maps a set of zones (key/velocity ranges referencing a sample) and carries the tuning,
- * volume, filter and envelope settings for them; every voice becomes one group. The format was
- * reverse-engineered by the mpc2emu project, see documentation/design/E4B_FORMAT.md.
+ * Detects E-mu Emulator IV bank files (*.e4b) as well as CD-ROM and hard disk images of the EOS
+ * samplers (*.iso, *.img, *.hda) which use the proprietary E-mu disk filesystem and contain such
+ * banks. A bank contains up to 1000 presets and 1000 samples; every preset becomes one
+ * multi-sample source. A preset is a list of voices, each of which maps a set of zones
+ * (key/velocity ranges referencing a sample) and carries the tuning, volume, filter and envelope
+ * settings for them; every voice becomes one group. The format was reverse-engineered by the
+ * mpc2emu project, see documentation/design/E4B_FORMAT.md.
  *
  * @author Jürgen Moßgraber
  */
@@ -73,7 +77,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public Emulator4Detector (final INotifier notifier)
     {
-        super ("E-mu Emulator IV", "E4B", notifier, new MetadataSettingsUI ("E4B"), ".e4b");
+        super ("E-mu Emulator IV", "E4B", notifier, new MetadataSettingsUI ("E4B"), ".e4b", ".iso", ".img", ".hda");
     }
 
 
@@ -86,8 +90,20 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
         try
         {
+            final byte [] magic = readMagic (sourceFile);
+            if (Emu3DiskImage.isEmu3Image (magic))
+                return this.parseImage (sourceFile);
+
+            if (!Emulator4Constants.hasMagic (magic, 0, Emulator4Constants.FORM_MAGIC))
+            {
+                // Images of other formats are silently ignored, they belong to other detectors
+                if (sourceFile.getName ().toLowerCase (Locale.US).endsWith (".e4b"))
+                    this.notifier.logError ("IDS_E4B_NOT_A_BANK", sourceFile.getName ());
+                return Collections.emptyList ();
+            }
+
             final byte [] data = Files.readAllBytes (sourceFile.toPath ());
-            return this.parseBank (sourceFile, data);
+            return this.parseBank (sourceFile, sourceFile.getName (), data);
         }
         catch (final IOException ex)
         {
@@ -98,17 +114,63 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Parse a bank file and create one multi-sample source per preset.
+     * Parse all banks of an EOS disk image and create one multi-sample source per preset.
      *
-     * @param sourceFile The bank file
-     * @param data The content of the file
+     * @param sourceFile The image file
+     * @return The multi-sample sources
+     * @throws IOException Could not read the image
+     */
+    private List<IMultisampleSource> parseImage (final File sourceFile) throws IOException
+    {
+        final List<IMultisampleSource> results = new ArrayList<> ();
+        int numBanks = 0;
+        for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
+        {
+            // Skip files which are not Emulator IV banks, e.g. the banks of the older EIII
+            // samplers which use the same filesystem
+            final byte [] content = imageFile.getContent ();
+            if (!Emulator4Constants.hasMagic (content, 0, Emulator4Constants.FORM_MAGIC) || !Emulator4Constants.hasMagic (content, 8, Emulator4Constants.FORM_TYPE))
+                continue;
+            numBanks++;
+            results.addAll (this.parseBank (sourceFile, imageFile.getName (), content));
+        }
+        if (numBanks == 0)
+            this.notifier.logError ("IDS_E4B_NO_BANKS_IN_IMAGE", sourceFile.getName ());
+        else
+            this.notifier.log ("IDS_E4B_READING_IMAGE", sourceFile.getName (), Integer.toString (numBanks));
+        return results;
+    }
+
+
+    /**
+     * Read the first bytes of a file to identify its type.
+     *
+     * @param sourceFile The file to read from
+     * @return The first 4 bytes
+     * @throws IOException Could not read the file
+     */
+    private static byte [] readMagic (final File sourceFile) throws IOException
+    {
+        try (final InputStream in = Files.newInputStream (sourceFile.toPath ()))
+        {
+            return in.readNBytes (4);
+        }
+    }
+
+
+    /**
+     * Parse a bank and create one multi-sample source per preset.
+     *
+     * @param sourceFile The file which contains the bank (the bank file itself or a disk image)
+     * @param sourceName The name of the bank for logging
+     * @param data The content of the bank
      * @return The multi-sample sources
      */
-    private List<IMultisampleSource> parseBank (final File sourceFile, final byte [] data)
+    private List<IMultisampleSource> parseBank (final File sourceFile, final String sourceName, final byte [] data)
     {
         if (data.length < 12 || !Emulator4Constants.hasMagic (data, 0, Emulator4Constants.FORM_MAGIC) || !Emulator4Constants.hasMagic (data, 8, Emulator4Constants.FORM_TYPE))
         {
-            this.notifier.logError ("IDS_E4B_NOT_A_BANK", sourceFile.getName ());
+            this.notifier.logError ("IDS_E4B_NOT_A_BANK", sourceName);
             return Collections.emptyList ();
         }
 
@@ -145,9 +207,9 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
                 results.add (multisampleSource);
         }
         if (results.isEmpty ())
-            this.notifier.logError ("IDS_E4B_NO_PRESETS", sourceFile.getName ());
+            this.notifier.logError ("IDS_E4B_NO_PRESETS", sourceName);
         else
-            this.notifier.log ("IDS_E4B_READING_BANK", sourceFile.getName (), Integer.toString (results.size ()), Integer.toString (samplesByIndex.size ()));
+            this.notifier.log ("IDS_E4B_READING_BANK", sourceName, Integer.toString (results.size ()), Integer.toString (samplesByIndex.size ()));
         return results;
     }
 
