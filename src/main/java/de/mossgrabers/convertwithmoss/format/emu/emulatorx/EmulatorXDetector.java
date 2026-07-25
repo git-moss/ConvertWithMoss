@@ -540,8 +540,10 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Create the filter of a voice. A bypassed filter and a low-pass which is fully open create no
-     * filter.
+     * Create the filter of a voice. The 'No Filter' setting and a fully open low-pass, which is
+     * sonically the same, create no filter. The effect and morph filter types of the E-mu (phasers,
+     * flangers, vowel formants, EQ morphs, distortions) have no model equivalent and create no
+     * filter either.
      *
      * @param voice The voice chunk
      * @return The filter or null if the voice does not use one
@@ -551,10 +553,51 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         final EmulatorXChunk chunk = voice.getChild (EmulatorXConstants.FILTER_TAG);
         if (chunk == null)
             return null;
-        final int type = chunk.getByte (EmulatorXConstants.FILTER_TYPE);
+
+        final FilterType type;
+        final int poles;
+        switch (chunk.getByte (EmulatorXConstants.FILTER_TYPE))
+        {
+            case EmulatorXConstants.FILTER_TYPE_LOWPASS_4:
+                type = FilterType.LOW_PASS;
+                poles = 4;
+                break;
+            case EmulatorXConstants.FILTER_TYPE_LOWPASS_2:
+                type = FilterType.LOW_PASS;
+                poles = 2;
+                break;
+            case EmulatorXConstants.FILTER_TYPE_LOWPASS_6:
+                type = FilterType.LOW_PASS;
+                poles = 6;
+                break;
+            case EmulatorXConstants.FILTER_TYPE_HIGHPASS_2:
+                type = FilterType.HIGH_PASS;
+                poles = 2;
+                break;
+            case EmulatorXConstants.FILTER_TYPE_HIGHPASS_4:
+                type = FilterType.HIGH_PASS;
+                poles = 4;
+                break;
+            case EmulatorXConstants.FILTER_TYPE_BANDPASS_2:
+                type = FilterType.BAND_PASS;
+                poles = 2;
+                break;
+            case EmulatorXConstants.FILTER_TYPE_BANDPASS_4:
+                type = FilterType.BAND_PASS;
+                poles = 4;
+                break;
+            case EmulatorXConstants.FILTER_TYPE_CONTRARY:
+                type = FilterType.BAND_REJECTION;
+                poles = 6;
+                break;
+            default:
+                return null;
+        }
+
+        // A wide open low-pass is what the factory banks use instead of switching the filter off
         final double cutoff = chunk.getFloat (EmulatorXConstants.FILTER_CUTOFF);
-        if (type == EmulatorXConstants.FILTER_TYPE_BYPASS || cutoff >= 1)
+        if (type == FilterType.LOW_PASS && cutoff >= 1)
             return null;
-        return new DefaultFilter (FilterType.LOW_PASS, 4, EmulatorXConstants.cutoffToHertz (cutoff), 0);
+        return new DefaultFilter (type, poles, EmulatorXConstants.cutoffToHertz (cutoff), 0);
     }
 }

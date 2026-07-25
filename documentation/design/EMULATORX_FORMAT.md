@@ -6,6 +6,11 @@ Emulator X2 and Emulator X3, 2004-2008). It was reverse-engineered from the fact
 from the `ebl2wav` tool of the [e-mu-soundbanks](https://github.com/mattetti/e-mu-soundbanks)
 project, which decodes the sample files. E-mu never published the layout.
 
+The meaning and the value ranges of the parameters come from the *Emulator X* and *Emulator X3*
+reference manuals, which document the user interface but not the file format. Where this document
+says that the manual confirms something, the manual states the range or the default and the factory
+banks agree with it.
+
 A sound bank consists of
 
 * one **`*.exb`** file which holds all presets of the bank and a list of the samples it uses, and
@@ -162,23 +167,60 @@ zone per voice, so a voice is effectively one sample zone; a keyboard map is bui
 
 A window chunk `ETW ` is `version(4) low(1) lowFade(1) highFade(1) high(1)`. The first window of the
 `TWL ` list is the key range, the second the velocity range and the third the real-time range. The
-fade values are the crossfade widths in keys respectively velocity steps.
+fade values are the crossfade widths, which the manual confirms are given in number of keys
+respectively velocity steps.
 
-`E5Oc` carries the tuning: byte 14 is the coarse tuning in semitones and byte 15 the fine tuning in
-cents, both signed. The float at offset 16 and the float at offset 27 are chorus parameters.
+The `CrdL` list holds 36 modulation cords, which matches the 'Cord 1-36 Amount' modulation
+destination of the manual. A cord is `version(4) source(1) destination(1) amount(float, 4)` with the
+amount in percent. The numeric codes of the sources and destinations are not documented; the cord
+which routes velocity (source 0x0C) to the amplifier volume (destination 0x40) is the first cord of
+every factory voice and carries the velocity sensitivity.
 
-`E5Am` is `version(4) volume(float, 4) pan(1) reserved(3)`. The volume is 10.0 in every voice of
-every factory bank, so it is treated as the neutral level; the pan is a signed byte from -64 (full
-left) to 63 (full right).
+`E5Oc` carries the tuning: byte 14 is the transpose and byte 15 the coarse tuning, both signed and
+in semitones, and the float at offset 16 is the fine tuning in cents. The manual gives the ranges as
+-36..+36 semitones, -72..+24 semitones and ±100 cents, which the factory banks stay inside; the fine
+tuning is always a multiple of 100/64 cents because the E-mu tunes in 1/64 semitone steps. Transpose
+shifts the keyboard position of the voice while coarse tuning stretches its samples - for a voice
+with a single zone, which is what the factory banks use throughout, both simply offset the playback
+pitch. The float at offset 27 is a chorus parameter.
 
-`E5Fl` is `version(4) type(1) cutoff(float, 4) reserved(53)`. The cutoff is normalized to 0..1. Only
-three types occur in the factory banks: 127 and 0 always come with a fully open cutoff and are the
-bypass state, 1 is a low-pass. Resonance is zero everywhere.
+`E5Am` is `version(4) volume(float, 4) pan(1) reserved(3)`. The manual gives the volume as -96 dB to
++10 dB with a **default of 0 dB**, and every voice of every factory bank stores 10.0 - so the field
+is the volume in dB offset by +10, and 10.0 is the neutral level. The pan is a signed byte, which
+the manual confirms as -64 for hard left to +63 for hard right.
+
+`E5Fl` is `version(4) type(1) cutoff(float, 4) reserved(53)`. The cutoff is normalized to 0..1;
+resonance is zero in every factory voice and its position in the chunk is unknown. Type 127 is the
+'No Filter' setting which bypasses the filter section - it cannot be an index into the filter list,
+which has only 55 entries. The other two types which occur are 0 (always with a fully open cutoff)
+and 1. The numeric codes of the remaining types are *not* documented and are *not* the position in
+the list the manual prints: the Emulator X3 inserted the 'Morph Designer' filter in the middle of
+that list, which would have renumbered every filter behind it and broken older banks. The codes are
+therefore assumed to be the ones the EOS hardware samplers use, which the Emulator X inherited
+together with the filter set itself:
+
+| Code | Filter                                                                   |
+|------|--------------------------------------------------------------------------|
+| 0    | 4-pole low-pass, the standard filter                                     |
+| 1    | 2-pole low-pass                                                          |
+| 2    | 6-pole low-pass                                                          |
+| 8    | 2-pole high-pass                                                         |
+| 9    | 4-pole high-pass                                                         |
+| 16   | 2-pole band-pass                                                         |
+| 17   | 4-pole band-pass                                                         |
+| 18   | Contrary band-pass, the closest type to a notch                          |
+| 127  | No Filter                                                                |
+
+The remaining 47 types are swept EQs, phasers, flangers, vowel formant filters, distortions and the
+programmable morph filters.
 
 An envelope chunk `E5Ev` is `version(4) reserved(6)` followed by six stages of
-`time(float, 4) level(float, 4) curve(1)`. The stages are attack 1, attack 2, decay 1, decay 2,
-release 1 and release 2. The time is in seconds, the level is a percentage. The level reached by
-decay 2 is the sustain level; the release stages run after the note is released.
+`time(float, 4) level(float, 4) curve(1)`. The time is in seconds, the level is a percentage. The
+manual describes the stages as attack 1, attack 2, decay 1, decay 2, release 1 and release 2: the
+envelope runs from zero towards the level of each stage in turn, holds at the level of decay 2 until
+the note is released - that level is therefore the sustain level - and then runs through the two
+release stages. Every voice has three of them, the amplitude, the filter and the auxiliary envelope;
+the modulation cords give the latter two no depth in any factory bank.
 
 ## Zone list (`LIST E5ZL`)
 

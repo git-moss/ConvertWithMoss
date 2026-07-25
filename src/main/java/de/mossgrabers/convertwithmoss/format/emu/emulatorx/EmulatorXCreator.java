@@ -459,8 +459,8 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Create the filter chunk of a zone. Only a low-pass can be expressed, every other filter type
-     * is written as the bypassed default.
+     * Create the filter chunk of a zone. A filter type without an E-mu equivalent is written as the
+     * bypassed 'No Filter' default.
      *
      * @param zone The zone
      * @return The payload of the chunk
@@ -469,15 +469,42 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
     {
         final byte [] data = createVersionedChunk (EmulatorXConstants.FILTER_SIZE, EmulatorXConstants.VERSION_1);
         final IFilter filter = zone.getFilter ().orElse (null);
-        if (filter == null || filter.getType () != FilterType.LOW_PASS)
+        final int filterType = filter == null ? EmulatorXConstants.FILTER_TYPE_BYPASS : getFilterTypeCode (filter);
+        data[EmulatorXConstants.FILTER_TYPE] = (byte) filterType;
+        if (filterType == EmulatorXConstants.FILTER_TYPE_BYPASS)
         {
-            data[EmulatorXConstants.FILTER_TYPE] = (byte) EmulatorXConstants.FILTER_TYPE_BYPASS;
             EmulatorXConstants.putFloatBE (data, EmulatorXConstants.FILTER_CUTOFF, 1.0f);
             return data;
         }
-        data[EmulatorXConstants.FILTER_TYPE] = (byte) EmulatorXConstants.FILTER_TYPE_LOWPASS;
         EmulatorXConstants.putFloatBE (data, EmulatorXConstants.FILTER_CUTOFF, (float) EmulatorXConstants.hertzToCutoff (filter.getCutoff ()));
         return data;
+    }
+
+
+    /**
+     * Get the E-mu filter type which is closest to the given filter.
+     *
+     * @param filter The filter
+     * @return The filter type, the bypass type if the filter has no E-mu equivalent
+     */
+    private static int getFilterTypeCode (final IFilter filter)
+    {
+        final int poles = filter.getPoles ();
+        switch (filter.getType ())
+        {
+            case LOW_PASS:
+                if (poles <= 2)
+                    return EmulatorXConstants.FILTER_TYPE_LOWPASS_2;
+                return poles >= 6 ? EmulatorXConstants.FILTER_TYPE_LOWPASS_6 : EmulatorXConstants.FILTER_TYPE_LOWPASS_4;
+            case HIGH_PASS:
+                return poles <= 2 ? EmulatorXConstants.FILTER_TYPE_HIGHPASS_2 : EmulatorXConstants.FILTER_TYPE_HIGHPASS_4;
+            case BAND_PASS:
+                return poles <= 2 ? EmulatorXConstants.FILTER_TYPE_BANDPASS_2 : EmulatorXConstants.FILTER_TYPE_BANDPASS_4;
+            case BAND_REJECTION:
+                return EmulatorXConstants.FILTER_TYPE_CONTRARY;
+            default:
+                return EmulatorXConstants.FILTER_TYPE_BYPASS;
+        }
     }
 
 

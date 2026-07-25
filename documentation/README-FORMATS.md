@@ -324,13 +324,13 @@ A sound bank consists of a *.exb* file, which holds all presets of the bank, and
 
 A preset is a list of voices. Every voice has a key range and a velocity range (both with crossfades), references a sample and carries its own tuning, panning, filter and envelopes. Since a voice normally maps exactly one sample, a keyboard map is built from many voices; ConvertWithMoss collects all voices which cover the same velocity range into one group.
 
-The format is not documented by E-mu, the layout was reverse-engineered from the factory banks (see *documentation/design/EMULATORX_FORMAT.md*). Reading and writing are supported, but written banks have not been verified with the Emulator X itself yet.
+The file format is not documented by E-mu, the layout was reverse-engineered from the factory banks; the meaning and the ranges of the parameters come from the Emulator X and Emulator X3 reference manuals (see *documentation/design/EMULATORX_FORMAT.md*). Reading and writing are supported, but written banks have not been verified with the Emulator X itself yet.
 
 ### Issues and Workarounds
 
-1. Only the parameters which have a counterpart in the model are converted: key and velocity ranges with their crossfades, the original key, tuning, panning, the loop, the amplitude envelope, the velocity to volume modulation and a low-pass filter cutoff. The LFOs, function generators, arpeggiator and the remaining modulation cords are written with the defaults of the factory banks.
-2. The volume of a voice is +10 dB in every factory bank, therefore this value is treated as the neutral level and a gain is written relative to it.
-3. Only a low-pass can be written; the filter resonance is not stored by the format.
+1. Only the parameters which have a counterpart in the model are converted: key and velocity ranges with their crossfades, the original key, tuning, volume, panning, the loop, the amplitude envelope, the velocity to volume modulation and the filter type and cutoff. The LFOs, function generators, arpeggiator and the remaining modulation cords are written with the defaults of the factory banks.
+2. The voice volume is stored as decibels offset by +10, so the neutral level of 0 dB - which is the default of every factory voice - is stored as 10.0. A gain is written relative to that.
+3. Of the 55 filter types, only the low-pass, high-pass and band-pass filters have a model equivalent; the swept EQs, phasers, flangers, vowel formant filters, distortions and morph filters are read as 'no filter'. A wide open low-pass, which is how the factory banks express an unfiltered voice, is read as 'no filter' as well and is written back as the 'No Filter' type. The filter resonance is not stored by the format.
 4. Sample files (*.ebl*) can also be read on their own, which gives one multi-sample per sample and is useful for a sample pool without its bank. Sample files which belong to a bank in the same folder are skipped, because they are already read through that bank.
 
 ## Ensoniq EPS/EPS16+/ASR-10

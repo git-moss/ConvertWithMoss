@@ -140,10 +140,24 @@ public class EmulatorXConstants
     /** The modulation destination of the amplifier volume. */
     public static final int     CORD_DEST_VOLUME        = 0x40;
 
-    /** The filter type which bypasses the filter. */
+    /** The filter type of the 'No Filter' setting, which bypasses the filter section. */
     public static final int     FILTER_TYPE_BYPASS      = 127;
-    /** The filter type of the 4-pole low-pass. */
-    public static final int     FILTER_TYPE_LOWPASS     = 1;
+    /** The filter type of the 4-pole low-pass, the standard filter. */
+    public static final int     FILTER_TYPE_LOWPASS_4   = 0;
+    /** The filter type of the 2-pole low-pass. */
+    public static final int     FILTER_TYPE_LOWPASS_2   = 1;
+    /** The filter type of the 6-pole low-pass. */
+    public static final int     FILTER_TYPE_LOWPASS_6   = 2;
+    /** The filter type of the 2-pole high-pass. */
+    public static final int     FILTER_TYPE_HIGHPASS_2  = 8;
+    /** The filter type of the 4-pole high-pass. */
+    public static final int     FILTER_TYPE_HIGHPASS_4  = 9;
+    /** The filter type of the 2-pole band-pass. */
+    public static final int     FILTER_TYPE_BANDPASS_2  = 16;
+    /** The filter type of the 4-pole band-pass. */
+    public static final int     FILTER_TYPE_BANDPASS_4  = 17;
+    /** The filter type of the contrary band-pass, the closest type to a notch. */
+    public static final int     FILTER_TYPE_CONTRARY    = 18;
     /** The lowest filter cutoff frequency (normalized cutoff 0). */
     public static final double  CUTOFF_MIN_HERTZ        = 57.0;
     /** The highest filter cutoff frequency (normalized cutoff 1). */
