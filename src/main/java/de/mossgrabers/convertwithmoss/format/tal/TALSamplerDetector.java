@@ -341,7 +341,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         // Envelope 3 needs to be set to modulate the global pitch
         double globalPitchEnvelopeDepth = -1;
         for (final TALSamplerModulator modulator: modulators)
-            if (modulator.isSource (TALSamplerModulator.SOURCE_ID_ENV3) || modulator.isDestination (TALSamplerModulator.DEST_ID_TUNE_A, TALSamplerModulator.DEST_ID_MASTER_TUNE))
+            if (modulator.isSource (TALSamplerModulator.SOURCE_ID_ENV3) && modulator.isDestination (TALSamplerModulator.DEST_ID_TUNE_A, TALSamplerModulator.DEST_ID_MASTER_TUNE))
             {
                 globalPitchEnvelopeDepth = modulator.getModAmount ();
                 break;
