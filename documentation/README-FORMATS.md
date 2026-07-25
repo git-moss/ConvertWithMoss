@@ -405,6 +405,7 @@ The .PCM format belongs to the KORG Family of PA Models. It is used in combinati
 
 * Enable the +12dB option: Increases the volume of each sample by +12dB. Use for low volume samples.
 * Set sample volume to +99: If enabled, sets all sample volumes to +99. Use for very low volume samples.
+* Shorten the name for the device display: Keeps only the last separated part of the name (after " - ", " / ", " : " or " | "), e.g. *Greek Bazouki - Dark Tremolo* becomes *Dark Tremolo*. The multi-sample name of this format holds only 24 characters, so a source whose name is qualified with the bank it comes from otherwise loses exactly the part which tells its presets apart. The file and folder names are not affected. The dropped part is not written anywhere else, therefore this is disabled by default. CLI: `KMPShortenName=1`.
 
 ## Korg wavestate/modwave
 
