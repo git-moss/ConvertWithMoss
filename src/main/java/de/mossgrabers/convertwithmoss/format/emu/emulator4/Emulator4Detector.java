@@ -65,6 +65,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         InMemorySampleData  sampleData;
         int                 numFrames;
         int                 rootKey;
+        double              tuning;
         boolean             hasLoop;
         int                 loopStart;
         int                 loopEnd;
@@ -78,7 +79,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public Emulator4Detector (final INotifier notifier)
     {
-        super ("E-mu Emulator IV", "E4B", notifier, new MetadataSettingsUI ("E4B"), ".e4b", ".iso", ".img", ".hda");
+        super ("E-mu Emulator IV", "E4B", notifier, new Emulator4DetectorUI ("E4B"), ".e4b", ".iso", ".img", ".hda");
     }
 
 
@@ -239,6 +240,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         final long loopStartOffset = Emulator4Constants.getU32LE (data, offset + 38);
         final long loopEndOffset = Emulator4Constants.getU32LE (data, offset + 46);
         final int sampleRate = (int) Emulator4Constants.getU32LE (data, offset + 54);
+        final int pitchOffset = (short) Emulator4Constants.getU16LE (data, offset + 58);
         final int options = Emulator4Constants.getU16LE (data, offset + 60);
 
         final int pcmLength = (size - Emulator4Constants.SAMPLE_HEADER_SIZE) / 2 * 2;
@@ -254,6 +256,14 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         final Sample sample = new Sample ();
         sample.sampleData = new InMemorySampleData (new DefaultAudioMetadata (1, sampleRate, 16, numFrames), pcm);
         sample.numFrames = numFrames;
+
+        // The sampler always plays a sample back at 44.1 kHz and compensates a different sample
+        // rate with the pitch offset, which the sample data itself already does here. Whatever the
+        // offset holds beyond that compensation is a fine tuning of the sample. A larger deviation
+        // means that the bank was written without maintaining the field at all (which makes the
+        // sample play transposed on the hardware) and is ignored instead of transposing the sample
+        final double pitchDeviation = (pitchOffset - Emulator4Constants.calculatePitchOffset (sampleRate)) / 64.0;
+        sample.tuning = Math.abs (pitchDeviation) <= 1.0 ? pitchDeviation : 0;
 
         // The root note is conventionally appended to the name, e.g. 'Piano_C3' for MIDI note 60.
         // The zone entries carry the authoritative root key, this one is only the fallback
@@ -351,11 +361,19 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         for (final Integer missingSampleIndex: missingSampleIndices)
             this.notifier.logError ("IDS_E4B_SAMPLE_MISSING", missingSampleIndex.toString (), presetName);
 
-        final String name = createInstrumentName (bankName, presetName.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : presetName);
-        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groups);
-        // Keep the presets of a bank together if the folder structure of the source is created
+        // The generic ISO detector runs this detector with its own settings, which have no option
+        // of this format; prepending the bank name is the default there as well
+        final boolean prependBankName = !(this.settingsConfiguration instanceof final Emulator4DetectorUI settings) || settings.prependBankName ();
+        final String name = presetName.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : presetName;
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, createInstrumentName (bankName, name, prependBankName), groups);
+        // Formats which have a field of their own for the bank (e.g. the Waldorf Quantum/Iridium,
+        // which shows it next to the preset name) take it from the description
         if (!bankName.isBlank ())
+        {
+            multisampleSource.getMetadata ().setDescription (bankName);
+            // Keep the presets of a bank together if the folder structure of the source is created
             multisampleSource.setSubPath (addBankFolder (multisampleSource.getSubPath (), bankName));
+        }
         return multisampleSource;
     }
 
@@ -368,11 +386,12 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param bankName The name of the bank
      * @param presetName The name of the preset
+     * @param prependBankName True to prepend the name of the bank
      * @return The name to use for the multi-sample source
      */
-    private static String createInstrumentName (final String bankName, final String presetName)
+    private static String createInstrumentName (final String bankName, final String presetName, final boolean prependBankName)
     {
-        if (bankName.isBlank ())
+        if (!prependBankName || bankName.isBlank ())
             return presetName;
         return reduceToLettersAndDigits (presetName).startsWith (reduceToLettersAndDigits (bankName)) ? presetName : bankName + " - " + presetName;
     }
@@ -501,8 +520,14 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             zone.setKeyRoot (rootKey > 0 && rootKey < 128 ? rootKey : sample.rootKey);
             zone.setStart (0);
             zone.setStop (sample.numFrames);
-            zone.setTuning (tuning);
-            zone.setGain (volume);
+
+            // The per-zone offsets on top of the settings of the voice: the fine tuning corrects
+            // the recorded pitch of the individual sample, the volume balances the zones against
+            // each other and the panning places them in the stereo field
+            final int zoneFineTune = (short) Emulator4Constants.getU16BE (body, entryOffset + 12);
+            zone.setTuning (tuning + zoneFineTune / 64.0 + sample.tuning);
+            zone.setGain (volume + body[entryOffset + 15]);
+            zone.setPanning (Math.clamp (body[entryOffset + 16] / 64.0, -1, 1));
             if (isFixedPitch)
                 zone.setKeyTracking (0);
 

@@ -371,6 +371,8 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         voice[entryOffset + 9] = (byte) velocityHigh;
         Emulator4Constants.putU16BE (voice, entryOffset + 10, sampleIndex);
         voice[entryOffset + 14] = (byte) Math.clamp (zone.getKeyRoot () < 0 ? keyLow : zone.getKeyRoot (), 0, 127);
+        // The panning has no voice level counterpart, it only exists per zone
+        voice[entryOffset + 16] = (byte) Math.clamp (Math.round (zone.getPanning () * 64.0), -64, 63);
 
         return voice;
     }

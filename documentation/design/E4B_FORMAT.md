@@ -159,7 +159,28 @@ by the hardware, so the creator always writes the factory default set.
 | 6  | low velocity |
 | 9  | high velocity |
 | 10:12 | sample index (u16, 1-based) |
+| 12:14 | fine tune (signed **big-endian** u16, 1/64 semitone units) |
 | 14 | root key |
+| 15 | volume (signed dB, like the voice volume) |
+| 16 | panning (signed, -64 = full left ... 0 = centre ... +63 = full right) |
+
+The three offset fields at 12, 15 and 16 apply on top of the settings of the
+voice and are not decoded by mpc2emu (which writes zeros for them). They were
+recovered from the E-mu Producer Series CD-ROMs (76057 zones):
+
+* The two bytes at 12:14 only ever hold 0x00 or 0xFF in the high byte, exactly
+  matching the sign of the low byte, which identifies them as one signed
+  big-endian value (observed range -59..+48). Measuring the recorded pitch of
+  the samples against the root key of their zone shows the field to be a
+  correction of that deviation: applying it as 1/64 semitones reduces the
+  average pitch error of a bank from 12.3 to 7.7 cents (as cents it would only
+  reach 8.7), which also matches the 1/64 semitone resolution the rest of the
+  format uses for tuning.
+* Byte 15 has the small signed range -17..+10 of a level trim and is used by the
+  mixed instrument presets ('Percussion Section') which balance their zones.
+* Byte 16 spans the full signed -64..+63 and its extremes dominate; the presets
+  which use it are the stereo spreads ('Wide', 'Percussion Section',
+  'Congas/Bongos') while the plain single instrument presets leave it at 0.
 
 ## Sample (E3S1)
 
