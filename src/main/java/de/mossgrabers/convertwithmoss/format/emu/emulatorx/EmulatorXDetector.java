@@ -19,6 +19,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -51,6 +52,10 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    /** Below this normalized cutoff a filter is considered to be closed. */
+    private static final double MINIMUM_STATIC_CUTOFF = 0.01;
+
+
     /** The velocity range of a group of voices. */
     private record VelocityRange (int low, int high)
     {
@@ -337,7 +342,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         final double panning = amplifier == null ? 0 : Math.clamp (amplifier.getSignedByte (EmulatorXConstants.AMPLIFIER_PAN) / EmulatorXConstants.PAN_RANGE, -1, 1);
         final double gain = amplifier == null ? 0 : Math.clamp (amplifier.getFloat (EmulatorXConstants.AMPLIFIER_VOLUME), EmulatorXConstants.MIN_VOLUME_DB, EmulatorXConstants.MAX_VOLUME_DB);
 
-        final IEnvelope amplitudeEnvelope = readAmplitudeEnvelope (voice);
+        final IEnvelope amplitudeEnvelope = readEnvelope (voice, EmulatorXConstants.ENVELOPE_AMPLITUDE);
         final double velocityDepth = readVelocityToVolume (voice);
         final IFilter filter = createFilter (voice);
 
@@ -482,19 +487,26 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Read the amplitude envelope of a voice, which is the first of its three envelopes; the other
-     * two are the filter and the auxiliary envelope, whose depths are always zero in the factory
-     * banks.
+     * Read one of the three envelopes of a voice: the amplitude, the filter and the auxiliary
+     * envelope.
      *
      * @param voice The voice chunk
-     * @return The envelope or null if the voice has none
+     * @param index The index of the envelope
+     * @return The envelope or null if the voice does not have it
      */
-    private static IEnvelope readAmplitudeEnvelope (final EmulatorXChunk voice)
+    private static IEnvelope readEnvelope (final EmulatorXChunk voice, final int index)
     {
         final EmulatorXChunk envelopeList = voice.getList (EmulatorXConstants.ENVELOPE_LIST_TYPE);
         if (envelopeList == null)
             return null;
-        final EmulatorXChunk chunk = envelopeList.getChild (EmulatorXConstants.ENVELOPE_TAG);
+        EmulatorXChunk chunk = null;
+        int position = 0;
+        for (final EmulatorXChunk child: envelopeList.getChildren ())
+            if (child.is (EmulatorXConstants.ENVELOPE_TAG) && position++ == index)
+            {
+                chunk = child;
+                break;
+            }
         if (chunk == null)
             return null;
 
@@ -536,6 +548,47 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
             if (cord.is (EmulatorXConstants.CORD_TAG) && cord.getByte (4) == EmulatorXConstants.CORD_SOURCE_VELOCITY && cord.getByte (5) == EmulatorXConstants.CORD_DEST_VOLUME)
                 return Math.clamp (Math.abs (cord.getFloat (6)) / EmulatorXConstants.FULL_CORD_AMOUNT, 0, 1);
         return 0;
+    }
+
+
+    /**
+     * Read the depth of the modulation cord which routes the filter envelope to the filter cutoff.
+     *
+     * @param voice The voice chunk
+     * @return The depth in the range of -1..1
+     */
+    private static double readFilterEnvelopeDepth (final EmulatorXChunk voice)
+    {
+        final EmulatorXChunk cordList = voice.getList (EmulatorXConstants.CORD_LIST_TYPE);
+        if (cordList == null)
+            return 0;
+        for (final EmulatorXChunk cord: cordList.getChildren ())
+        {
+            if (!cord.is (EmulatorXConstants.CORD_TAG) || cord.getByte (5) != EmulatorXConstants.CORD_DEST_CUTOFF)
+                continue;
+            final int source = cord.getByte (4);
+            if (source == EmulatorXConstants.CORD_SOURCE_FILTER_ENV || source == EmulatorXConstants.CORD_SOURCE_FILTER_ENV2)
+                return Math.clamp (cord.getFloat (6) / EmulatorXConstants.FULL_CORD_AMOUNT, -1, 1);
+        }
+        return 0;
+    }
+
+
+    /**
+     * Test whether any modulation cord routes something into the filter cutoff.
+     *
+     * @param voice The voice chunk
+     * @return True if the cutoff is modulated
+     */
+    private static boolean isCutoffModulated (final EmulatorXChunk voice)
+    {
+        final EmulatorXChunk cordList = voice.getList (EmulatorXConstants.CORD_LIST_TYPE);
+        if (cordList == null)
+            return false;
+        for (final EmulatorXChunk cord: cordList.getChildren ())
+            if (cord.is (EmulatorXConstants.CORD_TAG) && cord.getByte (5) == EmulatorXConstants.CORD_DEST_CUTOFF && cord.getFloat (6) != 0)
+                return true;
+        return false;
     }
 
 
@@ -598,6 +651,25 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         final double cutoff = chunk.getFloat (EmulatorXConstants.FILTER_CUTOFF);
         if (type == FilterType.LOW_PASS && cutoff >= 1)
             return null;
-        return new DefaultFilter (type, poles, EmulatorXConstants.cutoffToHertz (cutoff), 0);
+
+        // Many presets park the cutoff at the bottom and open it with the filter envelope. If that
+        // modulation cannot be converted, the static cutoff alone would turn the voice into
+        // silence, which is much further from the original than leaving the filter out
+        final double envelopeDepth = readFilterEnvelopeDepth (voice);
+        if (cutoff < MINIMUM_STATIC_CUTOFF && envelopeDepth == 0 && isCutoffModulated (voice))
+            return null;
+
+        final IFilter filter = new DefaultFilter (type, poles, EmulatorXConstants.cutoffToHertz (cutoff), 0);
+        if (envelopeDepth != 0)
+        {
+            final IEnvelope envelope = readEnvelope (voice, EmulatorXConstants.ENVELOPE_FILTER);
+            if (envelope != null)
+            {
+                final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
+                cutoffModulator.setSource (envelope);
+                cutoffModulator.setDepth (envelopeDepth);
+            }
+        }
+        return filter;
     }
 }

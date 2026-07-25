@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -69,8 +70,8 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
             new Cord (0x60, 0x30, 0),
             new Cord (0x68, 0x30, 0),
             new Cord (0x16, 0x08, EmulatorXConstants.FULL_CORD_AMOUNT),
-            new Cord (0x51, 0x38, 0),
-            new Cord (EmulatorXConstants.CORD_SOURCE_VELOCITY, 0x38, 0));
+            new Cord (EmulatorXConstants.CORD_SOURCE_FILTER_ENV2, EmulatorXConstants.CORD_DEST_CUTOFF, 0),
+            new Cord (EmulatorXConstants.CORD_SOURCE_VELOCITY, EmulatorXConstants.CORD_DEST_CUTOFF, 0));
 
 
     /** Holds one de-duplicated sample of the sample pool. */
@@ -414,7 +415,7 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
         out.write (EmulatorXChunk.create (EmulatorXConstants.OSCILLATOR_TAG, createOscillator (zone)));
         out.write (EmulatorXChunk.create (EmulatorXConstants.AMPLIFIER_TAG, createAmplifier (zone)));
         out.write (EmulatorXChunk.create (EmulatorXConstants.FILTER_TAG, createFilter (zone)));
-        out.write (EmulatorXChunk.createList (EmulatorXConstants.ENVELOPE_LIST_TYPE, List.of (createEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource ()), createEnvelope (null), createEnvelope (null))));
+        out.write (EmulatorXChunk.createList (EmulatorXConstants.ENVELOPE_LIST_TYPE, List.of (createEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource ()), createEnvelope (getFilterEnvelope (zone)), createEnvelope (null))));
         out.write (EmulatorXChunk.createList ("LFOL", createLFOs ()));
         out.write (EmulatorXChunk.createList ("FuGL", createFunctionGenerators ()));
         out.write (EmulatorXChunk.createList (EmulatorXConstants.CORD_LIST_TYPE, createCords (zone)));
@@ -571,6 +572,7 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
     private static List<byte []> createCords (final ISampleZone zone) throws IOException
     {
         final float velocityAmount = (float) (Math.clamp (zone.getAmplitudeVelocityModulator ().getDepth (), 0, 1) * EmulatorXConstants.FULL_CORD_AMOUNT);
+        final float cutoffAmount = (float) (getFilterEnvelopeDepth (zone) * EmulatorXConstants.FULL_CORD_AMOUNT);
         final List<byte []> cords = new ArrayList<> ();
         for (int i = 0; i < EmulatorXConstants.VOICE_NUM_CORDS; i++)
         {
@@ -580,12 +582,45 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
                 final Cord cord = DEFAULT_CORDS.get (i);
                 data[4] = (byte) cord.source ();
                 data[5] = (byte) cord.destination ();
-                final boolean isVelocityToVolume = cord.source () == EmulatorXConstants.CORD_SOURCE_VELOCITY && cord.destination () == EmulatorXConstants.CORD_DEST_VOLUME;
-                EmulatorXConstants.putFloatBE (data, 6, isVelocityToVolume ? velocityAmount : cord.amount ());
+                float amount = cord.amount ();
+                if (cord.source () == EmulatorXConstants.CORD_SOURCE_VELOCITY && cord.destination () == EmulatorXConstants.CORD_DEST_VOLUME)
+                    amount = velocityAmount;
+                else if (cord.source () == EmulatorXConstants.CORD_SOURCE_FILTER_ENV2 && cord.destination () == EmulatorXConstants.CORD_DEST_CUTOFF)
+                    amount = cutoffAmount;
+                EmulatorXConstants.putFloatBE (data, 6, amount);
             }
             cords.add (EmulatorXChunk.create (EmulatorXConstants.CORD_TAG, data));
         }
         return cords;
+    }
+
+
+    /**
+     * Get the filter cutoff envelope of a zone.
+     *
+     * @param zone The zone
+     * @return The envelope or null if the zone has no filter or no cutoff envelope
+     */
+    private static IEnvelope getFilterEnvelope (final ISampleZone zone)
+    {
+        final IFilter filter = zone.getFilter ().orElse (null);
+        return filter == null ? null : filter.getCutoffEnvelopeModulator ().getSource ();
+    }
+
+
+    /**
+     * Get the depth of the filter cutoff envelope of a zone.
+     *
+     * @param zone The zone
+     * @return The depth in the range of -1..1, 0 if the zone has no filter or no cutoff envelope
+     */
+    private static double getFilterEnvelopeDepth (final ISampleZone zone)
+    {
+        final IFilter filter = zone.getFilter ().orElse (null);
+        if (filter == null)
+            return 0;
+        final IEnvelopeModulator modulator = filter.getCutoffEnvelopeModulator ();
+        return modulator.getSource () == null ? 0 : Math.clamp (modulator.getDepth (), -1, 1);
     }
 
 

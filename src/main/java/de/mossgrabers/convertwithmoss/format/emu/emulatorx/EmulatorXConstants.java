@@ -137,8 +137,19 @@ public class EmulatorXConstants
 
     /** The modulation source of the velocity, which adds to the destination. */
     public static final int     CORD_SOURCE_VELOCITY    = 0x0C;
+    /** The modulation source of the filter envelope. */
+    public static final int     CORD_SOURCE_FILTER_ENV  = 0x50;
+    /** The second variant of the modulation source of the filter envelope. */
+    public static final int     CORD_SOURCE_FILTER_ENV2 = 0x51;
     /** The modulation destination of the amplifier volume. */
     public static final int     CORD_DEST_VOLUME        = 0x40;
+    /** The modulation destination of the filter cutoff. */
+    public static final int     CORD_DEST_CUTOFF        = 0x38;
+
+    /** The index of the amplitude envelope in the envelope list of a voice. */
+    public static final int     ENVELOPE_AMPLITUDE      = 0;
+    /** The index of the filter envelope in the envelope list of a voice. */
+    public static final int     ENVELOPE_FILTER         = 1;
 
     /** The filter type of the 'No Filter' setting, which bypasses the filter section. */
     public static final int     FILTER_TYPE_BYPASS      = 127;

@@ -328,11 +328,12 @@ The file format is not documented by E-mu, the layout was reverse-engineered fro
 
 ### Issues and Workarounds
 
-1. Only the parameters which have a counterpart in the model are converted: key and velocity ranges with their crossfades, the original key, tuning, volume, panning, the loop, the amplitude envelope, the velocity to volume modulation and the filter type and cutoff. The LFOs, function generators, arpeggiator and the remaining modulation cords are written with the defaults of the factory banks.
+1. Only the parameters which have a counterpart in the model are converted: key and velocity ranges with their crossfades, the original key, tuning, volume, panning, the loop, the amplitude envelope, the velocity to volume modulation, the filter type and cutoff and the filter envelope. The LFOs, function generators, arpeggiator and the remaining modulation cords are written with the defaults of the factory banks.
 2. The chunks of the format are versioned and several generations exist. All of them can be read; sample files are always written in the newer of the two layouts, which is what the Emulator X3 uses.
 3. Of the 55 filter types, only the low-pass, high-pass and band-pass filters have a model equivalent; the swept EQs, phasers, flangers, vowel formant filters, distortions and morph filters are read as 'no filter'. A wide open low-pass, which is how the factory banks express an unfiltered voice, is read as 'no filter' as well and is written back as the 'No Filter' type. The filter resonance is not stored by the format.
-4. The E-mu factory banks set the volume of every voice to the maximum of +10 dB, so converting them applies that gain. Reduce it with the processing options if the result clips.
-5. Sample files (*.ebl*) can also be read on their own, which gives one multi-sample per sample and is useful for a sample pool without its bank. Sample files which belong to a bank in the same folder are skipped, because they are already read through that bank.
+4. Many presets park the filter cutoff at the bottom and open it again with a modulation cord, most often the filter envelope. That envelope is converted. If the cutoff is parked but is opened by one of the modulation sources which cannot be converted, no filter is written at all, because a filter at 57 Hz without its modulation would turn the voice into silence.
+5. The E-mu factory banks set the volume of every voice to the maximum of +10 dB, so converting them applies that gain. Reduce it with the processing options if the result clips.
+6. Sample files (*.ebl*) can also be read on their own, which gives one multi-sample per sample and is useful for a sample pool without its bank. Sample files which belong to a bank in the same folder are skipped, because they are already read through that bank.
 
 ## Ensoniq EPS/EPS16+/ASR-10
 

@@ -222,30 +222,43 @@ The pan is a signed byte, which the manual confirms as -64 for hard left to +63 
 E-mu banks stay inside that range but banks written by third party converters use up to ±127, so a
 reader has to clamp.
 
-`E5Fl` is `version(4) type(1) cutoff(float, 4) reserved(53)`. The cutoff is normalized to 0..1;
-resonance is zero in every factory voice and its position in the chunk is unknown. Type 127 is the
-'No Filter' setting which bypasses the filter section - it cannot be an index into the filter list,
-which has only 55 entries. The other two types which occur are 0 (always with a fully open cutoff)
-and 1. The numeric codes of the remaining types are *not* documented and are *not* the position in
-the list the manual prints: the Emulator X3 inserted the 'Morph Designer' filter in the middle of
-that list, which would have renumbered every filter behind it and broken older banks. The codes are
-therefore assumed to be the ones the EOS hardware samplers use, which the Emulator X inherited
-together with the filter set itself:
+`E5Fl` is `version(4) type(1) cutoff(float, 4) reserved(53)`, always version 1 and 62 bytes long.
+The cutoff is normalized to 0..1; the resonance is zero in every voice of the corpus and its
+position in the chunk is unknown.
 
-| Code | Filter                                                                   |
-|------|--------------------------------------------------------------------------|
-| 0    | 4-pole low-pass, the standard filter                                     |
-| 1    | 2-pole low-pass                                                          |
-| 2    | 6-pole low-pass                                                          |
-| 8    | 2-pole high-pass                                                         |
-| 9    | 4-pole high-pass                                                         |
-| 16   | 2-pole band-pass                                                         |
-| 17   | 4-pole band-pass                                                         |
-| 18   | Contrary band-pass, the closest type to a notch                          |
-| 127  | No Filter                                                                |
+The filter type is **not** an index into the list of 55 filters the manual prints - the Emulator X3
+inserted the 'Morph Designer' filter in the middle of that list, which would have renumbered every
+filter behind it and broken older banks. It is the `group | variant` encoding of the EOS hardware
+samplers, which the Emulator X inherited together with the filter set itself, with the variant in
+the low three bits. All 226274 voices of the collection confirm this: the codes which occur are
+exactly the group boundaries and there is not a single code in the gaps between them, in particular
+none at 3..7, 10..15 or 19..31.
 
-The remaining 47 types are swept EQs, phasers, flangers, vowel formant filters, distortions and the
-programmable morph filters.
+| Code       | Filter                                                             |
+|------------|--------------------------------------------------------------------|
+| 0, 1, 2    | Low-pass 4-pole (the standard filter), 2-pole, 6-pole              |
+| 8, 9       | High-pass 2-pole, 4-pole                                           |
+| 16, 17, 18 | Band-pass 2-pole, 4-pole, contrary band-pass (the closest to a notch) |
+| 32..34     | Swept EQs                                                          |
+| 64..66, 72 | Phasers, flanger                                                   |
+| 80, 81     | Vowel formant filters                                              |
+| 96, 97, 104| Programmable morph filters                                         |
+| 131..163   | The 12th order filters which the Emulator X added beyond the EOS set |
+| 127        | No Filter                                                          |
+
+Only the low-pass, high-pass and band-pass groups have an equivalent outside the E-mu world.
+
+### The cutoff is often parked at the bottom
+
+A static cutoff read on its own is misleading. Of the 78619 voices which use a filter, 39321 have
+the cutoff at or near zero, and 96.7% of those route a modulation cord into the filter frequency
+(destination 0x38) which opens it again - the Proteus 2000 family of banks does this almost
+everywhere. Reading such a voice as a filter at 57 Hz without its modulation turns it into silence.
+
+The sources which drive the filter frequency are, in order of frequency, 0x14 (50497 cords), 0x0C
+(velocity), 0x11, 0x50 and 0x51. 0x50 is the filter envelope in the EOS documentation and 0x51 sits
+in the same slot of the default cord table of a voice, so both are read as the filter envelope
+depth; the meaning of 0x14 is unknown.
 
 An envelope chunk `E5Ev` is `version(4) reserved(6)` followed by six stages of
 `time(float, 4) level(float, 4) curve(1)`. The time is in seconds, the level is a percentage. The
