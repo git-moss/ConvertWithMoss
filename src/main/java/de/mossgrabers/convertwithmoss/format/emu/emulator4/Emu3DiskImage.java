@@ -430,10 +430,14 @@ public class Emu3DiskImage
             final long size = file.getContent ().length;
             final int numClusters = (int) ((size + clusterBytes - 1) / clusterBytes);
             final long lastClusterBytes = size - (numClusters - 1L) * clusterBytes;
-            final int lastBlockBytes = (int) (lastClusterBytes % BLOCK_SIZE);
             // A partially filled last block counts as a whole block, otherwise the firmware
             // does not read the tail of the file
-            final int lastClusterBlocks = (int) (lastClusterBytes / BLOCK_SIZE) + (lastBlockBytes > 0 ? 1 : 0);
+            final int lastClusterBlocks = (int) ((lastClusterBytes + BLOCK_SIZE - 1) / BLOCK_SIZE);
+            // The bytes used in the last block are derived from that block count and are therefore
+            // always 1..BLOCK_SIZE. A plain remainder would be 0 for a file whose last cluster is
+            // an exact multiple of the block size, which makes the firmware read one block too
+            // few and abort the load of that file with an end of file error
+            final int lastBlockBytes = (int) (lastClusterBytes - (lastClusterBlocks - 1L) * BLOCK_SIZE);
 
             Emulator4Constants.encodeName (block, offset, file.getName ());
             block[offset + 17] = (byte) i;
