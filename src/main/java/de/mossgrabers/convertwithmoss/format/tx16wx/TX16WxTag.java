@@ -185,6 +185,8 @@ public class TX16WxTag
     public static final String MODULATION_DESTINATION = "tx:destination";
     /** The modulation amount attribute. */
     public static final String MODULATION_AMOUNT      = "tx:amount";
+    /** The modulation enabled attribute. */
+    public static final String MODULATION_ENABLED     = "tx:enabled";
     /** The modulation source curve tag. */
     public static final String MODULATION_SRC_CURVE   = "tx:src-curve";
     /** The modulation via curve tag. */

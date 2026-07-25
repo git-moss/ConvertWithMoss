@@ -16,9 +16,10 @@ import org.w3c.dom.Element;
  */
 public class TX16WxModulator
 {
-    private final String source;
-    private final String destination;
-    private final String amount;
+    private final String  source;
+    private final String  destination;
+    private final String  amount;
+    private final boolean isEnabled;
 
 
     /**
@@ -31,6 +32,35 @@ public class TX16WxModulator
         this.source = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_SOURCE);
         this.destination = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_DESTINATION);
         this.amount = modulationEntryElement.getAttribute (TX16WxTag.MODULATION_AMOUNT);
+        this.isEnabled = parseEnabled (modulationEntryElement.getAttribute (TX16WxTag.MODULATION_ENABLED));
+    }
+
+
+    /**
+     * Check if the modulation slot is enabled. A disabled slot is not applied by the sampler.
+     *
+     * @return True if it is enabled
+     */
+    public boolean isEnabled ()
+    {
+        return this.isEnabled;
+    }
+
+
+    /**
+     * Parse the enabled attribute. It is optional, a missing one means that the slot is enabled.
+     * The value is a XML schema boolean, which is written as either 'false' or '0' when the slot is
+     * switched off.
+     *
+     * @param value The attribute value, might be empty
+     * @return True if the slot is enabled
+     */
+    private static boolean parseEnabled (final String value)
+    {
+        if (value == null || value.isBlank ())
+            return true;
+        final String trimmed = value.trim ();
+        return !("false".equalsIgnoreCase (trimmed) || "0".equals (trimmed));
     }
 
 
