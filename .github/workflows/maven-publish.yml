@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Create output folder
         run: mkdir -p output
@@ -27,7 +27,7 @@ jobs:
           pandoc --standalone --toc -V geometry:margin=2.5cm --number-sections --output=output/ConvertWithMoss-Manual.pdf documentation/README.md documentation/README-FORMATS.md documentation/CHANGELOG.md
       
       - name: Publish result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ConvertWithMoss-Installers-Manual
           path: output/ConvertWithMoss-Manual.pdf
@@ -58,8 +58,8 @@ jobs:
     name: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
+    - uses: actions/checkout@v7
+    - uses: actions/setup-java@v5
       with:
         # Temurin crashes with: Error: /usr/lib/jvm/temurin-25-jdk-amd64/lib/ct.sym has been modified
         # also there is no Windows ARM build
@@ -73,7 +73,7 @@ jobs:
     - name: Build and jpackage with Maven
       run: mvn -B package jpackage::jpackage@${{ matrix.build_name }} --file pom.xml
     - name: Publish jpackage result
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ConvertWithMoss-Installers-${{ matrix.os }}
         path: target/release/${{ matrix.artifact_name }}
