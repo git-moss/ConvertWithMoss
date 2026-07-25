@@ -137,6 +137,19 @@ public class EmulatorXConstants
 
     /** The modulation source of the velocity, which adds to the destination. */
     public static final int     CORD_SOURCE_VELOCITY    = 0x0C;
+    /** The modulation source of the first of the 16 assignable MIDI controllers A to P. */
+    public static final int     CORD_SOURCE_MIDI_A      = 0x14;
+    /** The number of assignable MIDI controllers. */
+    public static final int     NUM_MIDI_CONTROLLERS    = 16;
+    /** The offset of the initial controller values inside the initial controller chunk. */
+    public static final int     INITIAL_CONTROLLERS     = 4;
+    /** The initial value of a controller which is not set. */
+    public static final int     CONTROLLER_UNSET        = 0xFF;
+    /** The highest value of a MIDI controller. */
+    public static final double  CONTROLLER_RANGE        = 127.0;
+    /** The tag of the initial controller chunk of a preset. */
+    public static final String  INITIAL_CONTROLLER_TAG  = "E5IC";
+
     /** The modulation source of the filter envelope. */
     public static final int     CORD_SOURCE_FILTER_ENV  = 0x50;
     /** The second variant of the modulation source of the filter envelope. */

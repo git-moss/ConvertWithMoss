@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -266,6 +267,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         final EmulatorXChunk voiceList = preset.getList (EmulatorXConstants.VOICE_LIST_TYPE);
         if (voiceList == null)
             return null;
+        final int [] initialControllers = readInitialControllers (preset);
 
         // A group of the model is a velocity layer, therefore all voices which cover the same
         // velocity range go into one group. Voices which additionally overlap on the keyboard are
@@ -276,7 +278,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         {
             if (!voice.is (EmulatorXConstants.VOICE_TAG))
                 continue;
-            for (final ISampleZone zone: this.parseVoice (voice, presetName, samples))
+            for (final ISampleZone zone: this.parseVoice (voice, presetName, samples, initialControllers))
             {
                 final VelocityRange velocityRange = new VelocityRange (zone.getVelocityLow (), zone.getVelocityHigh ());
                 final List<IGroup> candidates = groupsByVelocity.computeIfAbsent (velocityRange, key -> new ArrayList<> ());
@@ -326,9 +328,10 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
      * @param voice The voice chunk
      * @param presetName The name of the preset, for error messages
      * @param samples The samples of the bank by their 1-based index
+     * @param initialControllers The initial values of the assignable MIDI controllers of the preset
      * @return The zones of the voice
      */
-    private List<ISampleZone> parseVoice (final EmulatorXChunk voice, final String presetName, final Map<Integer, EmulatorXSampleFile> samples)
+    private List<ISampleZone> parseVoice (final EmulatorXChunk voice, final String presetName, final Map<Integer, EmulatorXSampleFile> samples, final int [] initialControllers)
     {
         final EmulatorXChunk windowList = voice.getList (EmulatorXConstants.WINDOW_LIST_TYPE);
         final List<EmulatorXChunk> windows = windowList == null ? Collections.emptyList () : windowList.getChildren ();
@@ -344,7 +347,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
         final IEnvelope amplitudeEnvelope = readEnvelope (voice, EmulatorXConstants.ENVELOPE_AMPLITUDE);
         final double velocityDepth = readVelocityToVolume (voice);
-        final IFilter filter = createFilter (voice);
+        final IFilter filter = createFilter (voice, initialControllers);
 
         final List<ISampleZone> zones = new ArrayList<> ();
         final EmulatorXChunk zoneList = voice.getList (EmulatorXConstants.ZONE_LIST_TYPE);
@@ -575,6 +578,58 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Read the initial values of the 16 assignable MIDI controllers A to P of a preset. The
+     * modulation cords which use one of them start at that value, so it decides where a cutoff
+     * which is modulated by a controller actually sits when a note starts.
+     *
+     * @param preset The preset chunk
+     * @return The values in the range of 0..127, -1 for a controller which is not set
+     */
+    private static int [] readInitialControllers (final EmulatorXChunk preset)
+    {
+        final int [] controllers = new int [EmulatorXConstants.NUM_MIDI_CONTROLLERS];
+        Arrays.fill (controllers, -1);
+        final EmulatorXChunk chunk = preset.getChild (EmulatorXConstants.INITIAL_CONTROLLER_TAG);
+        if (chunk == null)
+            return controllers;
+        for (int i = 0; i < controllers.length; i++)
+        {
+            final int value = chunk.getByte (EmulatorXConstants.INITIAL_CONTROLLERS + i);
+            if (value != EmulatorXConstants.CONTROLLER_UNSET)
+                controllers[i] = value;
+        }
+        return controllers;
+    }
+
+
+    /**
+     * Calculate how far the assignable MIDI controllers of the preset open the filter cutoff when a
+     * note starts. A controller which is not set contributes nothing.
+     *
+     * @param voice The voice chunk
+     * @param initialControllers The initial values of the controllers of the preset
+     * @return The offset to add to the normalized cutoff
+     */
+    private static double controllerCutoffOffset (final EmulatorXChunk voice, final int [] initialControllers)
+    {
+        final EmulatorXChunk cordList = voice.getList (EmulatorXConstants.CORD_LIST_TYPE);
+        if (cordList == null)
+            return 0;
+        double offset = 0;
+        for (final EmulatorXChunk cord: cordList.getChildren ())
+        {
+            if (!cord.is (EmulatorXConstants.CORD_TAG) || cord.getByte (5) != EmulatorXConstants.CORD_DEST_CUTOFF)
+                continue;
+            final int controller = cord.getByte (4) - EmulatorXConstants.CORD_SOURCE_MIDI_A;
+            if (controller < 0 || controller >= initialControllers.length || initialControllers[controller] < 0)
+                continue;
+            offset += initialControllers[controller] / EmulatorXConstants.CONTROLLER_RANGE * (cord.getFloat (6) / EmulatorXConstants.FULL_CORD_AMOUNT);
+        }
+        return offset;
+    }
+
+
+    /**
      * Test whether any modulation cord routes something into the filter cutoff.
      *
      * @param voice The voice chunk
@@ -599,9 +654,10 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
      * filter either.
      *
      * @param voice The voice chunk
+     * @param initialControllers The initial values of the assignable MIDI controllers of the preset
      * @return The filter or null if the voice does not use one
      */
-    private static IFilter createFilter (final EmulatorXChunk voice)
+    private static IFilter createFilter (final EmulatorXChunk voice, final int [] initialControllers)
     {
         final EmulatorXChunk chunk = voice.getChild (EmulatorXConstants.FILTER_TAG);
         if (chunk == null)
@@ -647,19 +703,23 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
                 return null;
         }
 
-        // A wide open low-pass is what the factory banks use instead of switching the filter off
         final double cutoff = chunk.getFloat (EmulatorXConstants.FILTER_CUTOFF);
-        if (type == FilterType.LOW_PASS && cutoff >= 1)
-            return null;
 
-        // Many presets park the cutoff at the bottom and open it with the filter envelope. If that
-        // modulation cannot be converted, the static cutoff alone would turn the voice into
-        // silence, which is much further from the original than leaving the filter out
+        // Many presets park the cutoff at the bottom and open it again with a modulation cord. The
+        // most common one routes an assignable MIDI controller to the cutoff and gives that
+        // controller an initial value in the preset, so the position it starts at can be
+        // calculated. What is left over is modulation which cannot be converted; the static cutoff
+        // alone would then turn the voice into silence, which is much further from the original
+        // than leaving the filter out
         final double envelopeDepth = readFilterEnvelopeDepth (voice);
-        if (cutoff < MINIMUM_STATIC_CUTOFF && envelopeDepth == 0 && isCutoffModulated (voice))
+        final double startCutoff = Math.clamp (cutoff + controllerCutoffOffset (voice, initialControllers), 0, 1);
+        if (startCutoff < MINIMUM_STATIC_CUTOFF && envelopeDepth == 0 && isCutoffModulated (voice))
+            return null;
+        // A wide open low-pass is what the banks use instead of switching the filter off
+        if (type == FilterType.LOW_PASS && startCutoff >= 1)
             return null;
 
-        final IFilter filter = new DefaultFilter (type, poles, EmulatorXConstants.cutoffToHertz (cutoff), 0);
+        final IFilter filter = new DefaultFilter (type, poles, EmulatorXConstants.cutoffToHertz (startCutoff), 0);
         if (envelopeDepth != 0)
         {
             final IEnvelope envelope = readEnvelope (voice, EmulatorXConstants.ENVELOPE_FILTER);

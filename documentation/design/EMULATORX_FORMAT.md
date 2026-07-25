@@ -256,9 +256,46 @@ the cutoff at or near zero, and 96.7% of those route a modulation cord into the 
 everywhere. Reading such a voice as a filter at 57 Hz without its modulation turns it into silence.
 
 The sources which drive the filter frequency are, in order of frequency, 0x14 (50497 cords), 0x0C
-(velocity), 0x11, 0x50 and 0x51. 0x50 is the filter envelope in the EOS documentation and 0x51 sits
-in the same slot of the default cord table of a voice, so both are read as the filter envelope
-depth; the meaning of 0x14 is unknown.
+(velocity), 0x11, 0x50 and 0x51.
+
+## Modulation cord sources and destinations
+
+The manual lists both in a fixed order but without their numbers. The numbers are not consecutive;
+like the filter types they are grouped, which is what let the Emulator X3 add sources and
+destinations without renumbering the existing ones. The following are established, the first three
+from the EOS documentation of the E4B format and the rest from this collection:
+
+| Code        | Source                                                              |
+|-------------|---------------------------------------------------------------------|
+| 0x08, 0x09  | Key, in the two polarities the manual lists as `+` and `~`          |
+| 0x0A..0x0C  | Velocity, in the three polarities `+`, `~` and `<`                  |
+| 0x14..0x23  | The 16 assignable MIDI controllers A to P                           |
+| 0x50, 0x51  | Filter envelope                                                     |
+
+| Code  | Destination                                                               |
+|-------|---------------------------------------------------------------------------|
+| 0x38  | Filter frequency                                                          |
+| 0x39  | Realtime resonance                                                        |
+| 0x40  | Amplifier volume                                                          |
+
+That 0x14..0x23 are the controllers A to P is established by the `E5IC` chunk, which holds their 16
+initial values with 0xFF for 'not set'. Of the 5404 presets which use source 0x14, **every single
+one** sets the initial value of controller A, while 7355 of the 7911 presets which do not use it
+leave it unset; the same holds for 0x15 and controller B and for 0x20..0x23 and the controllers M to
+P. It also matches the manual, which gives the standard function of controller A as 'Controls Filter
+Frequency' and of controller B as 'Controls Filter Resonance' - and indeed 0x14 drives destination
+0x38 in 50497 cords and 0x15 drives destination 0x39 in 48897.
+
+So the cutoff a voice actually starts at can be calculated:
+
+```
+start = static cutoff + sum over the cords into 0x38 of (initial value / 127) * (cord amount / 100)
+```
+
+In 3354 of the 5376 presets which route a controller to the cutoff that initial value is between 96
+and 127, which opens the filter almost completely; the rest start anywhere between closed and open.
+The meaning of the remaining sources, in particular of the ones which are neither a controller nor
+the filter envelope, is still unknown.
 
 An envelope chunk `E5Ev` is `version(4) reserved(6)` followed by six stages of
 `time(float, 4) level(float, 4) curve(1)`. The time is in seconds, the level is a percentage. The
