@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -103,7 +104,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             }
 
             final byte [] data = Files.readAllBytes (sourceFile.toPath ());
-            return this.parseBank (sourceFile, sourceFile.getName (), data);
+            return this.parseBank (sourceFile, FileUtils.getNameWithoutType (sourceFile), data);
         }
         catch (final IOException ex)
         {
@@ -162,15 +163,15 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      * Parse a bank and create one multi-sample source per preset.
      *
      * @param sourceFile The file which contains the bank (the bank file itself or a disk image)
-     * @param sourceName The name of the bank for logging
+     * @param bankName The name of the bank
      * @param data The content of the bank
      * @return The multi-sample sources
      */
-    private List<IMultisampleSource> parseBank (final File sourceFile, final String sourceName, final byte [] data)
+    private List<IMultisampleSource> parseBank (final File sourceFile, final String bankName, final byte [] data)
     {
         if (data.length < 12 || !Emulator4Constants.hasMagic (data, 0, Emulator4Constants.FORM_MAGIC) || !Emulator4Constants.hasMagic (data, 8, Emulator4Constants.FORM_TYPE))
         {
-            this.notifier.logError ("IDS_E4B_NOT_A_BANK", sourceName);
+            this.notifier.logError ("IDS_E4B_NOT_A_BANK", bankName);
             return Collections.emptyList ();
         }
 
@@ -202,14 +203,14 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         final List<IMultisampleSource> results = new ArrayList<> ();
         for (final byte [] presetChunk: presetChunks)
         {
-            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, presetChunk, samplesByIndex);
+            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, presetChunk, samplesByIndex);
             if (multisampleSource != null)
                 results.add (multisampleSource);
         }
         if (results.isEmpty ())
-            this.notifier.logError ("IDS_E4B_NO_PRESETS", sourceName);
+            this.notifier.logError ("IDS_E4B_NO_PRESETS", bankName);
         else
-            this.notifier.log ("IDS_E4B_READING_BANK", sourceName, Integer.toString (results.size ()), Integer.toString (samplesByIndex.size ()));
+            this.notifier.log ("IDS_E4B_READING_BANK", bankName, Integer.toString (results.size ()), Integer.toString (samplesByIndex.size ()));
         return results;
     }
 
@@ -299,11 +300,12 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      * applied to all zones of the voice.
      *
      * @param sourceFile The bank file
+     * @param bankName The name of the bank which contains the preset
      * @param body The content of the preset chunk
      * @param samplesByIndex The samples of the bank by their 1-based index
      * @return The multi-sample source or null if the preset contains no usable zones
      */
-    private IMultisampleSource parsePreset (final File sourceFile, final byte [] body, final Map<Integer, Sample> samplesByIndex)
+    private IMultisampleSource parsePreset (final File sourceFile, final String bankName, final byte [] body, final Map<Integer, Sample> samplesByIndex)
     {
         if (body.length < Emulator4Constants.PRESET_HEADER_SIZE)
             return null;
@@ -311,6 +313,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         final String presetName = Emulator4Constants.decodeName (body, 2);
         final int numVoices = Emulator4Constants.getU16BE (body, 20);
 
+        final Set<Integer> missingSampleIndices = new TreeSet<> ();
         final List<IGroup> groups = new ArrayList<> ();
         int offset = Emulator4Constants.PRESET_HEADER_SIZE;
         for (int voiceIndex = 0; voiceIndex < numVoices; voiceIndex++)
@@ -332,7 +335,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             }
 
             final IGroup group = new DefaultGroup ("Voice " + (voiceIndex + 1));
-            this.parseVoice (body, offset, numZones, presetName, samplesByIndex, group);
+            parseVoice (body, offset, numZones, samplesByIndex, missingSampleIndices, group);
             if (!group.getSampleZones ().isEmpty ())
                 groups.add (group);
 
@@ -340,9 +343,76 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             // Only the last voice is followed by 2 trailing zero bytes but they do not matter here
         }
 
+        // Every bank of the commercial EOS libraries ends with an unusable placeholder preset
+        // which references a sample that is not in the bank. Such a preset is simply dropped;
+        // only a preset which does contribute zones is worth a warning about its lost ones
         if (groups.isEmpty ())
             return null;
-        return this.createMultisampleSource (sourceFile, presetName.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : presetName, groups);
+        for (final Integer missingSampleIndex: missingSampleIndices)
+            this.notifier.logError ("IDS_E4B_SAMPLE_MISSING", missingSampleIndex.toString (), presetName);
+
+        final String name = createInstrumentName (bankName, presetName.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : presetName);
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groups);
+        // Keep the presets of a bank together if the folder structure of the source is created
+        if (!bankName.isBlank ())
+            multisampleSource.setSubPath (addBankFolder (multisampleSource.getSubPath (), bankName));
+        return multisampleSource;
+    }
+
+
+    /**
+     * Create the name of the multi-sample source of a preset. The presets of the EOS libraries are
+     * named after the articulation or the variation they provide ('Dark Tremolo', 'Long Release',
+     * ...) while the instrument they actually play is only given by the name of their bank. The
+     * bank name is therefore prepended, except when the preset name already starts with it.
+     *
+     * @param bankName The name of the bank
+     * @param presetName The name of the preset
+     * @return The name to use for the multi-sample source
+     */
+    private static String createInstrumentName (final String bankName, final String presetName)
+    {
+        if (bankName.isBlank ())
+            return presetName;
+        return reduceToLettersAndDigits (presetName).startsWith (reduceToLettersAndDigits (bankName)) ? presetName : bankName + " - " + presetName;
+    }
+
+
+    /**
+     * Reduce a name to its lower case letters and digits, which allows to match names which only
+     * differ in their spaces and punctuation, e.g. 'GreekBazoukiMute' and 'Greek Bazouki'.
+     *
+     * @param text The text to reduce
+     * @return The reduced text
+     */
+    private static String reduceToLettersAndDigits (final String text)
+    {
+        final StringBuilder sb = new StringBuilder (text.length ());
+        for (int i = 0; i < text.length (); i++)
+        {
+            final char c = text.charAt (i);
+            if (Character.isLetterOrDigit (c))
+                sb.append (Character.toLowerCase (c));
+        }
+        return sb.toString ();
+    }
+
+
+    /**
+     * Add the bank as the innermost sub-folder of the path parts. The first entry of the array is
+     * the name of the multi-sample and not part of the path.
+     *
+     * @param parts The path parts
+     * @param bankName The name of the bank
+     * @return The extended path parts
+     */
+    private static String [] addBankFolder (final String [] parts, final String bankName)
+    {
+        final String [] result = new String [parts.length + 1];
+        result[0] = parts[0];
+        result[1] = bankName;
+        System.arraycopy (parts, 1, result, 2, parts.length - 1);
+        return result;
     }
 
 
@@ -352,11 +422,11 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      * @param body The content of the preset chunk
      * @param offset The offset of the voice block
      * @param numZones The number of zone entries of the voice
-     * @param presetName The name of the preset, for error messages
      * @param samplesByIndex The samples of the bank by their 1-based index
+     * @param missingSampleIndices Where to collect the indices of referenced but absent samples
      * @param group Where to add the created zones
      */
-    private void parseVoice (final byte [] body, final int offset, final int numZones, final String presetName, final Map<Integer, Sample> samplesByIndex, final IGroup group)
+    private static void parseVoice (final byte [] body, final int offset, final int numZones, final Map<Integer, Sample> samplesByIndex, final Set<Integer> missingSampleIndices, final IGroup group)
     {
         // Per-voice tuning: key transpose and coarse tune in semitones, fine tune in 1/64
         // semitone units. All three simply offset the playback pitch of the zones
@@ -403,11 +473,14 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         for (int zoneIndex = 0; zoneIndex < numZones; zoneIndex++)
         {
             final int entryOffset = offset + Emulator4Constants.VOICE_SIZE + zoneIndex * Emulator4Constants.ZONE_ENTRY_SIZE;
+            // The sample indices are 1-based, index 0 means that the zone has no sample assigned
             final int sampleIndex = Emulator4Constants.getU16BE (body, entryOffset + 10);
+            if (sampleIndex == 0)
+                continue;
             final Sample sample = samplesByIndex.get (Integer.valueOf (sampleIndex));
             if (sample == null)
             {
-                this.notifier.logError ("IDS_E4B_SAMPLE_MISSING", Integer.toString (sampleIndex), presetName);
+                missingSampleIndices.add (Integer.valueOf (sampleIndex));
                 continue;
             }
 

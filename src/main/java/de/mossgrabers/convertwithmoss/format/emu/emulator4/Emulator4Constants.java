@@ -433,7 +433,8 @@ public class Emulator4Constants
 
 
     /**
-     * Decode a 16 character space padded ASCII name field.
+     * Decode a 16 character space padded ASCII name field. The name fields of the disk filesystem
+     * are padded with zero bytes instead of spaces, therefore the name ends at the first one.
      *
      * @param data The data to read from
      * @param offset The offset of the name field
@@ -445,6 +446,8 @@ public class Emulator4Constants
         for (int i = 0; i < NAME_LENGTH; i++)
         {
             final int c = data[offset + i] & 0xFF;
+            if (c == 0)
+                break;
             sb.append (c >= 0x20 && c < 0x7F ? (char) c : '?');
         }
         return sb.toString ().trim ();
