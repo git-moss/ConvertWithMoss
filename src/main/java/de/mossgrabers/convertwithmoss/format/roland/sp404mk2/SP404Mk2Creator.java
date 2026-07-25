@@ -157,7 +157,7 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
             if (padconf[NAME_START + i * SP404Mk2Constants.NAME_SIZE] != ' ')
                 written++;
 
-        final File padconfFile = new File (projectFolder, "PADCONF.BIN");
+        final File padconfFile = new File (projectFolder, SP404Mk2Constants.PADCONF_FILE_NAME);
         try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (padconfFile.toPath ())))
         {
             out.write (padconf);

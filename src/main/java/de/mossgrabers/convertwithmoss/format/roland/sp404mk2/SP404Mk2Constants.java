@@ -26,6 +26,12 @@ public final class SP404Mk2Constants
     public static final int    PAD_COUNT         = BANK_COUNT * PADS_PER_BANK;
 
     // PADCONF.BIN layout
+    /** The fixed file name of the pad configuration of a project. */
+    public static final String PADCONF_FILE_NAME = "PADCONF.BIN";
+    /** The lower-case file name the detector scans for (see {@link #PADCONF_FILE_NAME}). */
+    public static final String PADCONF_ENDING    = "padconf.bin";
+    /** The ending of the sample files, e.g. <i>SMPL/BANK1-01.SMP</i>. */
+    public static final String SAMPLE_ENDING     = ".smp";
     /** The magic bytes of a pad configuration file. */
     public static final byte [] RFPD_MAGIC       = { 'R', 'F', 'P', 'D' };
     /** The size of an exported PADCONF.BIN (EXPORT/IMPORT PROJECT form). */

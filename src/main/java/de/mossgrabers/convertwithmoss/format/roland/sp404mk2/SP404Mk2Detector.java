@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -52,7 +53,18 @@ public class SP404Mk2Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public SP404Mk2Detector (final INotifier notifier)
     {
-        super ("Roland SP-404MK2", "SP404MK2", notifier, new MetadataSettingsUI ("SP404MK2"), "padconf.bin");
+        super ("Roland SP-404MK2", "SP404MK2", notifier, new MetadataSettingsUI ("SP404MK2"), SP404Mk2Constants.PADCONF_ENDING);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public Set<String> getFileEndings ()
+    {
+        // The detector scans for the pad configuration (PADCONF.BIN, see the constructor) since it
+        // holds the pad mapping. For the format list the SMP sample ending is shown instead: it is
+        // the extension unique to the SP-404MK2 and the one users recognize.
+        return Set.of (SP404Mk2Constants.SAMPLE_ENDING);
     }
 
 
