@@ -789,7 +789,12 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
         final Element modulationElement = XMLUtils.getChildElementByName (soundShapeElement, TX16WxTag.MODULATION);
         if (modulationElement != null)
             for (final Element modulationEntryElement: XMLUtils.getChildElementsByName (modulationElement, TX16WxTag.MODULATION_ENTRY, false))
-                modulators.add (new TX16WxModulator (modulationEntryElement));
+            {
+                // A slot which is switched off is not applied by the sampler either
+                final TX16WxModulator modulator = new TX16WxModulator (modulationEntryElement);
+                if (modulator.isEnabled ())
+                    modulators.add (modulator);
+            }
         return modulators;
     }
 
