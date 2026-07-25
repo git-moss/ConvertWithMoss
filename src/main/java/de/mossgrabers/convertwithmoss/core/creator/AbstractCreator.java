@@ -213,7 +213,10 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         // Replace invalid filename characters
         // Windows forbidden: \ / : * ? " < > |
         // Also remove Unix path separator /
-        sanitized = sanitized.replaceAll ("[\\\\/:*?\"<>|&\\.']", "_");
+        // A dot is kept - it is a valid file name character (e.g. "My.Sample") and formats which
+        // use the name as a display label, like the Roland SP-404MK2 pad name, would otherwise
+        // lose it; only leading/trailing dots are stripped below.
+        sanitized = sanitized.replaceAll ("[\\\\/:*?\"<>|&']", "_");
 
         // Remove leading/trailing spaces and dots (Windows issue)
         sanitized = sanitized.replaceAll ("^[ .]+", "");
