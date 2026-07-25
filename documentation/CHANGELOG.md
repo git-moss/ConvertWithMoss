@@ -2,8 +2,8 @@
 
 ## 19.1.0
 
-* Many thanks to Douglas Carmichael for many contributions and fixes!
-* New: Added support for the Kurzweil K2000/K2500/K2600 format (KRZ, K25, K26).
+* Many thanks to Douglas Carmichael for plenty of contributions and fixes!
+* New: Added support for the Kurzweil K2000/K2500/K2600 format (KRZ, K25, K26). Known issue: Envelopes are not always read correctly.
 * User Interface
   * New: The Settings and Processing dialogs opened with a bright white frame and, on macOS, repainted whenever the main window was clicked. Since there is no nice fix for this, the dialogs have now been replaced with pseudo dialogs which are part of the main window.
   * New: Removed the hover highlighting from the titles in the Processing dialog.
@@ -17,6 +17,7 @@
   * New: Added support for group volume, panning and tuning offsets: Kontakt, DecentSampler, Logic EXS24, Synclavier, TX16Wx, Waldorf Quantum/Iridium.
   * New: Source folders and files are now processed in a stable alphabetical order instead of the file-system enumeration order, so consecutive runs behave identically (and e.g. the QPAT import numbers are assigned in a predictable order).
   * New: Improved logging if WAV file could not be written.
+  * New: Keep dots when making file names safe.
   * Fixed: Two filters which differed only in their cutoff envelope were treated as equal, so zones which are not identical could be combined into one; a filter with a cutoff envelope but without a cutoff velocity modulation could additionally throw an exception.
   * Fixed: Copying a sample zone did not copy the sequence position belonging to the play logic and did not copy the velocity modulator of the amplitude.
 * 1010music bento
@@ -37,6 +38,8 @@
 * Bliss
   * Fixed: The loop mode was only written when a zone had a loop, but a missing loop mode is read back as a forward loop, so zones without a loop turned into fully looped ones.
   * Fixed: The samples in a written preset or bank (.zbp/.zbb) were stored as raw source audio under a ".flac" name instead of being FLAC encoded, so neither Bliss nor ConvertWithMoss itself could read back a written file. The zone start/end trimming was skipped for the same reason.
+* CWITEC TX16Wx
+  * Fixed: Ignore modulation slots which are switched off.
 * DecentSampler
   * New: Added a source option "Create one multi-sample per group": creates a separate multi-sample for each group (disabled groups included), e.g. for presets which contain several alternative kits as groups and switch between them via their user interface.
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
@@ -72,6 +75,7 @@
   * New: Added a "Shorten kit name" option (CLI DelugeShortenKitName) which names a kit "NNN &lt;last name segment&gt;" (e.g. "80s hits SSS043 - Kit 07 - Full Kit 2" becomes "007 Full Kit 2") so it scrolls less on the device display; a trailing date/version suffix is removed while model numbers like TR-808 are kept.
   * Fixed: Kit drums were pitched by their keyboard mapping note, so a drum mapped to e.g. note 35 played 25 semitones too low (audible on toms). Kit drums now play at their natural pitch (transpose 0), like the factory kits; only an explicit detune is kept.
 * TAL Sampler
+  * Fixed: Read the pitch envelope depth from the correct matrix row.
   * Fixed: The sample "reverse" flag was never read as enabled: it is stored numerically (0/1) like all other TAL flags but was parsed as a true/false text boolean.
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
 * TX16Wx
