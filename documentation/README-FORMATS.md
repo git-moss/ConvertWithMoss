@@ -287,9 +287,11 @@ The name of the bank is passed on as the description of the multi-sample, which 
 
 The presets of the commercial EOS libraries are named after the articulation or the variation they provide (*Dark Tremolo*, *Long Release*, ...) while the instrument they actually play is only given by the name of their bank. The name of the bank is therefore prepended to the name of the preset as well, except when the preset name already starts with it - the *Dark Tremolo* preset of the *Greek Bazouki* bank becomes *Greek Bazouki - Dark Tremolo* while *Greek Bazouki XS* is kept unchanged. This also keeps the presets of different banks apart, which would otherwise overwrite each other since a name like *Natural Range* is used in many banks. If the folder structure of the source is created, each bank additionally gets a folder of its own.
 
+A written bank does not repeat this in its preset names, since the file itself is that bank and its preset names hold only 16 characters - which the bank alone would fill. The file name of the bank keeps the full name.
+
 #### Source Options
 
-* Prepend the bank name to the preset name: Enabled by default, see above. Disable it to keep the preset names unchanged, which is useful for devices with little room for a name - the bank is then only carried in the description.
+* Prepend the bank name to the preset name: Enabled by default, see above. Disable it to keep the preset names exactly as they are in the bank - the bank is then only carried in the description, and the written file names are the bare preset names.
 
 When writing, each multi-sample becomes one preset; a library collects all multi-samples into a single bank (up to 1000 presets and 1000 samples). Every zone is written as its own voice, which keeps all per-zone settings; the panning, which only exists per zone, is written into the zone entry. Samples are stored as 16-bit mono PCM with their original sample rate (rates above 48kHz, the EOS maximum, are down-sampled); stereo samples are mixed down to mono. Identical samples mapped to multiple zones are stored only once. Since EOS only has a sample-level forward loop, alternating loops are written as forward loops and only the first loop of a zone is kept. Written banks validate against the reference parser of the mpc2emu project but have not been verified on real hardware yet.
 

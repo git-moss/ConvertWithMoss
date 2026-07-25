@@ -163,8 +163,11 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
                 continue;
             }
 
-            presetBodies.add (createPresetBody (presetBodies.size (), multisampleSource.getName (), voices));
-            presetNames.add (multisampleSource.getName ());
+            // The written file is the bank, so its 16 character preset names do not need to repeat
+            // the bank a source came from - which would only leave room for the bank itself
+            final String presetName = createPresetName (multisampleSource);
+            presetBodies.add (createPresetBody (presetBodies.size (), presetName, voices));
+            presetNames.add (presetName);
         }
 
         if (presetBodies.isEmpty ())
@@ -182,6 +185,26 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
                 this.writeFile (out, presetBodies, presetNames, samples);
             }
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
+    /**
+     * Get the name to write for a preset. The detector puts the bank of a source in front of its
+     * name, so that a preset which is only named after its articulation ('Dark Tremolo') stays
+     * identifiable and unique. The written file is that bank, so its preset names do not need to
+     * repeat it - and could not: they hold 16 characters, which the bank alone would fill.
+     *
+     * @param multisampleSource The multi-sample source
+     * @return The name of the preset
+     */
+    private static String createPresetName (final IMultisampleSource multisampleSource)
+    {
+        final String name = multisampleSource.getName ();
+        final String bank = multisampleSource.getMetadata ().getDescription ();
+        if (name == null || bank == null || bank.isBlank ())
+            return name;
+        final String prefix = bank + " - ";
+        return name.startsWith (prefix) && name.length () > prefix.length () ? name.substring (prefix.length ()) : name;
     }
 
 
