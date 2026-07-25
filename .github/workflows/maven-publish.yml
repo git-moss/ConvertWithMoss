@@ -83,7 +83,7 @@ jobs:
     needs: build
     steps:
     - name: Merge Artifacts
-      uses: actions/upload-artifact/merge@v4
+      uses: actions/upload-artifact/merge@v7
       with:
         name: ConvertWithMoss-Installers
         pattern: ConvertWithMoss-Installers-*
