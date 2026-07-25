@@ -51,6 +51,8 @@ import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiCreator;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiDetector;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetCreator;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetDetector;
+import de.mossgrabers.convertwithmoss.format.emu.emulatorx.EmulatorXCreator;
+import de.mossgrabers.convertwithmoss.format.emu.emulatorx.EmulatorXDetector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.mirage.MirageDetector;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Creator;
@@ -161,6 +163,7 @@ public class ConverterBackend
         this.detectors.add (new DistingExDetector (notifier));
         this.detectors.add (new TonverkMultiDetector (notifier));
         this.detectors.add (new TonverkPresetDetector (notifier));
+        this.detectors.add (new EmulatorXDetector (notifier));
         this.detectors.add (new EnsoniqEpsAsrDetector (notifier));
         this.detectors.add (new MirageDetector (notifier));
         this.detectors.add (new FairlightCmi3Detector (notifier));
@@ -201,6 +204,7 @@ public class ConverterBackend
         this.creators.add (new DistingExCreator (notifier));
         this.creators.add (new TonverkMultiCreator (notifier));
         this.creators.add (new TonverkPresetCreator (notifier));
+        this.creators.add (new EmulatorXCreator (notifier));
         this.creators.add (new KMPCreator (notifier));
         this.creators.add (new KorgmultisampleCreator (notifier));
         this.creators.add (new KurzweilCreator (notifier));

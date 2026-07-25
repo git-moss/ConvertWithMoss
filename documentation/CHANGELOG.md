@@ -1,5 +1,9 @@
 # Changes
 
+## 19.2.0
+
+* New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
+
 ## 19.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
