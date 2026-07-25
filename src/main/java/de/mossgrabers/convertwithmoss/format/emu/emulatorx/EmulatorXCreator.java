@@ -451,7 +451,7 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
     private static byte [] createAmplifier (final ISampleZone zone)
     {
         final byte [] data = createVersionedChunk (EmulatorXConstants.AMPLIFIER_SIZE, EmulatorXConstants.VERSION_1);
-        final double volume = Math.clamp (zone.getGain (), EmulatorXConstants.MIN_VOLUME_DB, 0) + EmulatorXConstants.NEUTRAL_VOLUME;
+        final double volume = Math.clamp (zone.getGain (), EmulatorXConstants.MIN_VOLUME_DB, EmulatorXConstants.MAX_VOLUME_DB);
         EmulatorXConstants.putFloatBE (data, EmulatorXConstants.AMPLIFIER_VOLUME, (float) volume);
         data[EmulatorXConstants.AMPLIFIER_PAN] = (byte) Math.clamp (Math.round (zone.getPanning () * EmulatorXConstants.PAN_RANGE), -64, 63);
         return data;

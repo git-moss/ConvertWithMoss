@@ -163,10 +163,10 @@ public class EmulatorXConstants
     /** The highest filter cutoff frequency (normalized cutoff 1). */
     public static final double  CUTOFF_MAX_HERTZ        = 20000.0;
 
-    /** The amplifier volume of all factory voices, which is treated as the neutral level. */
-    public static final float   NEUTRAL_VOLUME          = 10.0f;
-    /** The lowest amplifier volume in decibel. */
+    /** The lowest amplifier volume in decibel, which is silence. */
     public static final double  MIN_VOLUME_DB           = -96.0;
+    /** The highest amplifier volume in decibel. */
+    public static final double  MAX_VOLUME_DB           = 10.0;
     /** The full deflection of the panning of a voice. */
     public static final double  PAN_RANGE               = 64.0;
     /** The level of a fully open envelope stage in percent. */
@@ -217,10 +217,12 @@ public class EmulatorXConstants
     public static final int     SAMPLE_RATE             = 104;
     /** The offset of the loop flag inside the sample payload. */
     public static final int     SAMPLE_LOOP_FLAG        = 110;
-    /** The offset of the unknown flags inside the sample payload. */
+    /** The offset of the four flag bytes inside the sample payload. */
     public static final int     SAMPLE_FLAGS            = 112;
-    /** The value of the unknown flags of the factory banks. */
-    public static final long    SAMPLE_FLAGS_VALUE      = 0x02010001L;
+    /** The offset of the number of channels minus one inside the sample payload. */
+    public static final int     SAMPLE_EXTRA_CHANNELS   = 113;
+    /** The offset of the mask of the used channels inside the sample payload. */
+    public static final int     SAMPLE_CHANNEL_MASK     = 114;
     /** The offset of the comment inside the sample payload. */
     public static final int     SAMPLE_COMMENT          = 116;
     /** The offset of the trailer pointer inside the sample payload of a version 2 header. */
@@ -229,6 +231,8 @@ public class EmulatorXConstants
     public static final int     SAMPLE_DATA_OFFSET      = 188;
     /** The number of bytes which follow the audio data before the optional trailer. */
     public static final int     SAMPLE_DATA_POSTFIX     = 2;
+    /** The alignment of the start of the right channel of a stereo sample. */
+    public static final int     SAMPLE_CHANNEL_GAP      = 4;
     /** The size of the trailer chunk of a sample. */
     public static final int     SAMPLE_TRAILER_SIZE     = 32;
     /** The number of bytes of one 16 bit sample frame of one channel. */

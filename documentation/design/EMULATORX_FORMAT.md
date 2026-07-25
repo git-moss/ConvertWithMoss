@@ -1,10 +1,12 @@
 # E-mu Emulator X bank format (EXB / EBL)
 
 This document describes the file format of the E-mu Emulator X software sampler (Emulator X,
-Emulator X2 and Emulator X3, 2004-2008). It was reverse-engineered from the factory banks
-*PROcussion*, *SP-1200* and *Vintage Keys* (780 presets, 4567 voices and 1252 samples in total) and
-from the `ebl2wav` tool of the [e-mu-soundbanks](https://github.com/mattetti/e-mu-soundbanks)
-project, which decodes the sample files. E-mu never published the layout.
+Emulator X2 and Emulator X3, 2004-2008). It was reverse-engineered from 14 banks - the E-mu factory
+banks *PROcussion*, *SP-1200*, *Vintage Keys*, *Proteus 1*, *Orbit 8080* and *Production Set* as
+well as the third party libraries *Halion Synth Kit*, *Saint Thomas Strings* and the six banks of
+*Wizoo Electric Pianos*, together 1704 presets, 18670 voices and 2988 samples - and from the
+`ebl2wav` tool of the [e-mu-soundbanks](https://github.com/mattetti/e-mu-soundbanks) project, which
+decodes the sample files. E-mu never published the layout.
 
 The meaning and the value ranges of the parameters come from the *Emulator X* and *Emulator X3*
 reference manuals, which document the user interface but not the file format. Where this document
@@ -46,6 +48,26 @@ A table of contents entry is:
 | 8      | 4    | Offset of the chunk from the start of the file                     |
 | 12     | 2    | Index of the chunk (0-based for presets, 1-based for samples)      |
 | 14     | 64   | Name                                                               |
+
+## Format generations
+
+The chunks are versioned and grew over the lifetime of the product, so a reader must take their
+size from the chunk header instead of assuming it. The observed generations are:
+
+| Chunk                | Old                         | New                                   |
+|----------------------|-----------------------------|---------------------------------------|
+| `Phdr` preset header | version 1, 142 bytes        | version 2, 148 bytes; version 3, 154  |
+| `Zhdr` zone header   | version 1, 16 bytes         | version 2, 28 bytes                   |
+| `E5Vs` voice settings| 12 bytes                    | 14 bytes                              |
+| `E5Oc` oscillator    | version 2, 40 bytes         | version 3, 50 bytes                   |
+| `LIST FuGL`          | absent                      | 1279 bytes, three function generators |
+| Sample header        | version 1, audio at 184     | version 2, audio at 188, `EXLZ` trailer |
+
+Fields were appended rather than inserted: the chorus float at offset 27 of `E5Oc` sits at the same
+place in both the 40 and the 50 byte version, and the sample index and original key of `Zhdr` are at
+the same offsets in both of its versions.
+
+## Chunks
 
 A chunk the table of contents points to starts with its tag, a big-endian size, and a 2 byte index
 which repeats the index of the table of contents entry. The size covers the index and the payload,
@@ -89,9 +111,12 @@ payload; `108 + offset` is the position in the file.
 | 96     | 4    | LE     | Loop end of the left channel (the last sample of the loop)     |
 | 100    | 4    | LE     | Loop end of the right channel                                  |
 | 104    | 4    | LE     | Sample rate in Hz                                              |
-| 108    | 2    | LE     | Unknown, 94 in the SP-1200 bank and 0 everywhere else          |
+| 108    | 2    | LE     | Unknown, 94 or 95 in some banks and 0 in the others            |
 | 110    | 2    | LE     | 1 if the sample is looped, otherwise 0                         |
-| 112    | 4    | LE     | Unknown, `01 00 01 02` (`01 01 01 02` in the SP-1200 bank)     |
+| 112    | 1    |        | Always 1                                                       |
+| 113    | 1    |        | Number of channels minus one: 0 for mono, 1 for stereo         |
+| 114    | 1    |        | Mask of the used channels: 1 for mono, 3 for stereo            |
+| 115    | 1    |        | Always 2                                                       |
 | 116    | 64   |        | Comment                                                        |
 | 180    | 1    |        | Zero                                                           |
 | 181    | 4    | LE     | Offset of the trailer, 0 if there is none (version 2 only)     |
@@ -104,7 +129,9 @@ a WAV data chunk.
 The two channels are stored one after the other, not interleaved. A sample is mono if the right
 channel is empty, which the factory banks express in two ways: version 1 sets the right channel
 start behind its end, version 2 gives both channels the same start and end. A stereo sample stores
-the right channel directly behind the left one, so its start equals the end of the left channel.
+the right channel behind the left one, starting at the next 4 byte boundary *behind* the end of the
+left channel - so the gap between the two is 4 bytes if the left channel already ends on such a
+boundary and 2 bytes if it does not. This holds for all 153 stereo samples of the corpus.
 
 Two zero bytes follow the audio data. Version 2 files may then carry a trailer, an `EXLZ` chunk with
 a little-endian size which contains further little-endian chunks:
@@ -184,10 +211,16 @@ shifts the keyboard position of the voice while coarse tuning stretches its samp
 with a single zone, which is what the factory banks use throughout, both simply offset the playback
 pitch. The float at offset 27 is a chorus parameter.
 
-`E5Am` is `version(4) volume(float, 4) pan(1) reserved(3)`. The manual gives the volume as -96 dB to
-+10 dB with a **default of 0 dB**, and every voice of every factory bank stores 10.0 - so the field
-is the volume in dB offset by +10, and 10.0 is the neutral level. The pan is a signed byte, which
-the manual confirms as -64 for hard left to +63 for hard right.
+`E5Am` is `version(4) volume(float, 4) pan(1) reserved(3)`. The volume is the value in decibels, the
+range the manual gives is -96 dB to +10 dB with a default of 0 dB. Across all 18670 voices no value
+ever exceeds 10.0, which is that maximum; the third party banks, whose authors never touched the
+control, store 0.0 throughout, which is the default; and the E-mu factory banks store 10.0
+throughout, which is E-mu turning their ROM conversions up to the maximum. Values in between are
+hand set levels such as 8.981 or -20.577.
+
+The pan is a signed byte, which the manual confirms as -64 for hard left to +63 for hard right. The
+E-mu banks stay inside that range but banks written by third party converters use up to ±127, so a
+reader has to clamp.
 
 `E5Fl` is `version(4) type(1) cutoff(float, 4) reserved(53)`. The cutoff is normalized to 0..1;
 resonance is zero in every factory voice and its position in the chunk is unknown. Type 127 is the
@@ -225,8 +258,13 @@ the modulation cords give the latter two no depth in any factory bank.
 ## Zone list (`LIST E5ZL`)
 
 Per zone a `Zhdr` chunk followed by a `LIST TWL ` with two `ETW ` windows, the key range and the
-velocity range of the zone. They are relative to the ranges of the voice; the factory banks leave
-them fully open and put the mapping into the voice.
+velocity range of the zone. They are relative to the ranges of the voice. A voice with a single zone
+leaves them fully open and puts the mapping into the voice; a multisample voice, of which the corpus
+has 91 with up to 33 zones each, puts the mapping into the zones instead.
+
+Velocity layers are built with the zone windows, not with the voice window: the voice velocity
+window is fully open in all 18670 voices of the corpus, while the zones of the electric piano
+libraries split the velocity range into three or four layers such as 0..65, 66..115 and 116..127.
 
 `Zhdr` is:
 

@@ -114,9 +114,15 @@ public class EmulatorXSampleFile
         if (this.pcm == null || this.numFrames <= 0)
             throw new IOException ("IDS_EXB_MALFORMED_SAMPLE");
 
+        // A stereo sample stores the two channels one after the other, the right one starting at
+        // the next 4 byte boundary behind the left one
         final int channelLength = this.numFrames * EmulatorXConstants.BYTES_PER_FRAME;
-        final int dataLength = channelLength * this.numChannels;
-        final int trailerOffset = EmulatorXConstants.SAMPLE_DATA_OFFSET + dataLength + EmulatorXConstants.SAMPLE_DATA_POSTFIX;
+        final boolean isStereo = this.numChannels == 2;
+        final int leftStart = EmulatorXConstants.SAMPLE_DATA_OFFSET;
+        final int leftEnd = leftStart + channelLength;
+        final int rightStart = isStereo ? alignChannelStart (leftEnd) : leftStart;
+        final int rightEnd = isStereo ? rightStart + channelLength : leftEnd;
+        final int trailerOffset = Math.max (leftEnd, rightEnd) + EmulatorXConstants.SAMPLE_DATA_POSTFIX;
         final int trailerLength = this.hasLoop ? EmulatorXConstants.SAMPLE_TRAILER_SIZE + 8 : 0;
         final int payloadSize = trailerOffset + trailerLength;
 
@@ -140,11 +146,6 @@ public class EmulatorXSampleFile
         EmulatorXConstants.encodeName (fileData, payload + EmulatorXConstants.SAMPLE_NAME, this.name);
         EmulatorXConstants.putU32BE (fileData, payload + EmulatorXConstants.SAMPLE_MARKER, EmulatorXConstants.SAMPLE_MARKER_VALUE);
 
-        final int leftStart = EmulatorXConstants.SAMPLE_DATA_OFFSET;
-        final int leftEnd = leftStart + channelLength;
-        final boolean isStereo = this.numChannels == 2;
-        final int rightStart = isStereo ? leftEnd : leftStart;
-        final int rightEnd = isStereo ? leftEnd + channelLength : leftEnd;
         EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_START, leftStart);
         EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_RIGHT_START, rightStart);
         EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_END, leftEnd);
@@ -160,7 +161,12 @@ public class EmulatorXSampleFile
 
         EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_RATE, this.sampleRate);
         EmulatorXConstants.putU16LE (fileData, payload + EmulatorXConstants.SAMPLE_LOOP_FLAG, this.hasLoop ? 1 : 0);
-        EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_FLAGS, EmulatorXConstants.SAMPLE_FLAGS_VALUE);
+        // The four flag bytes: the first and the last are constant, the other two describe the
+        // channels - a mono sample uses only the left one, a stereo sample both
+        fileData[payload + EmulatorXConstants.SAMPLE_FLAGS] = 1;
+        fileData[payload + EmulatorXConstants.SAMPLE_EXTRA_CHANNELS] = (byte) (this.numChannels - 1);
+        fileData[payload + EmulatorXConstants.SAMPLE_CHANNEL_MASK] = (byte) ((1 << this.numChannels) - 1);
+        fileData[payload + EmulatorXConstants.SAMPLE_FLAGS + 3] = 2;
         EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_TRAILER_POINTER, this.hasLoop ? trailerOffset : 0);
 
         deinterleave (this.pcm, fileData, payload + leftStart, payload + rightStart, this.numFrames, this.numChannels);
@@ -183,6 +189,20 @@ public class EmulatorXSampleFile
         }
 
         return fileData;
+    }
+
+
+    /**
+     * Calculate the start of the right channel, which is the next 4 byte boundary behind the end of
+     * the left channel. This leaves a gap of 4 bytes if the left channel already ends on such a
+     * boundary and a gap of 2 bytes if it does not.
+     *
+     * @param leftEnd The end of the left channel
+     * @return The start of the right channel
+     */
+    private static int alignChannelStart (final int leftEnd)
+    {
+        return (leftEnd / EmulatorXConstants.SAMPLE_CHANNEL_GAP + 1) * EmulatorXConstants.SAMPLE_CHANNEL_GAP;
     }
 
 

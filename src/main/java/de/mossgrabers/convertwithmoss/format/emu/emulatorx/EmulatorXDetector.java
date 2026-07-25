@@ -333,9 +333,9 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         final EmulatorXChunk oscillator = voice.getChild (EmulatorXConstants.OSCILLATOR_TAG);
         final EmulatorXChunk amplifier = voice.getChild (EmulatorXConstants.AMPLIFIER_TAG);
         final double tuning = oscillator == null ? 0 : oscillator.getSignedByte (EmulatorXConstants.OSCILLATOR_TRANSPOSE) + oscillator.getSignedByte (EmulatorXConstants.OSCILLATOR_COARSE_TUNE) + oscillator.getFloat (EmulatorXConstants.OSCILLATOR_FINE_TUNE) / 100.0;
+        // Banks written by third party converters exceed the documented panning range, clamp them
         final double panning = amplifier == null ? 0 : Math.clamp (amplifier.getSignedByte (EmulatorXConstants.AMPLIFIER_PAN) / EmulatorXConstants.PAN_RANGE, -1, 1);
-        // The amplifier volume of every factory voice is the neutral level, so it is the reference
-        final double gain = amplifier == null ? 0 : Math.clamp (amplifier.getFloat (EmulatorXConstants.AMPLIFIER_VOLUME) - EmulatorXConstants.NEUTRAL_VOLUME, EmulatorXConstants.MIN_VOLUME_DB, 0);
+        final double gain = amplifier == null ? 0 : Math.clamp (amplifier.getFloat (EmulatorXConstants.AMPLIFIER_VOLUME), EmulatorXConstants.MIN_VOLUME_DB, EmulatorXConstants.MAX_VOLUME_DB);
 
         final IEnvelope amplitudeEnvelope = readAmplitudeEnvelope (voice);
         final double velocityDepth = readVelocityToVolume (voice);
