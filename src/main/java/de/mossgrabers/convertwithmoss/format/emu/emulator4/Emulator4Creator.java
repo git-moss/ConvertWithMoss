@@ -548,6 +548,10 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
             Emulator4Constants.putU32LE (header, 46, endOffset);
         }
         Emulator4Constants.putU32LE (header, 54, sample.sampleRate);
+        // The playback pitch is not taken from the sample rate field above, which is
+        // informational only - it is this signed offset in 1/64 semitones relative to the 44100 Hz
+        // playback rate of the sampler
+        Emulator4Constants.putU16LE (header, 58, Emulator4Constants.calculatePitchOffset (sample.sampleRate));
         Emulator4Constants.putU16LE (header, 60, sample.hasLoop ? Emulator4Constants.OPTIONS_MONO_LOOP : Emulator4Constants.OPTIONS_MONO);
         Emulator4Constants.putU32LE (header, 62, structSize);
         return header;

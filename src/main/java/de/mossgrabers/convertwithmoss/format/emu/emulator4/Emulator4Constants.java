@@ -81,6 +81,11 @@ public class Emulator4Constants
     /** The filter cutoff key tracking of a +100% Key-to-FilterFreq cord in octaves per octave. */
     public static final double   FULL_KEY_TRACKING       = 0.713;
 
+    /** The fixed sample playback rate of the EOS samplers, the reference of the pitch offset. */
+    public static final int      PLAYBACK_RATE           = 44100;
+    /** The resolution of the sample pitch offset: 1/64 semitones, therefore 768 per octave. */
+    private static final double  PITCH_UNITS_PER_OCTAVE  = 768.0;
+
     // The envelope rate to time law was calibrated on E4XT hardware by the mpc2emu project:
     // seconds = 0.0310 * e^(0.0581 * rate) with rate 0 = instant and rate 127 = ~47 seconds
     private static final double  ENV_RATE_FACTOR    = 0.0310;
@@ -230,6 +235,24 @@ public class Emulator4Constants
     {
         final double limited = Math.clamp (frequency, CUTOFF_MIN_HERTZ, CUTOFF_MAX_HERTZ);
         return Math.clamp ((int) Math.round (255.0 * Math.log (limited / CUTOFF_MIN_HERTZ) / Math.log (CUTOFF_MAX_HERTZ / CUTOFF_MIN_HERTZ)), 0, 255);
+    }
+
+
+    /**
+     * Calculate the sample pitch offset which sets the playback pitch of a sample. The sampler
+     * always plays a sample back at {@link #PLAYBACK_RATE}, therefore a sample stored at any other
+     * rate needs to be transposed by the ratio of the two rates - a sample rate of half the
+     * playback rate would otherwise sound one octave too high. The sample rate field of the sample
+     * struct is informational only and is not used for this by the sampler.
+     *
+     * @param sampleRate The sample rate of the sample in Hertz
+     * @return The offset in 1/64 semitones, signed, to be written as a 16 bit value
+     */
+    public static int calculatePitchOffset (final int sampleRate)
+    {
+        if (sampleRate <= 0)
+            return 0;
+        return (int) Math.round (PITCH_UNITS_PER_OCTAVE * Math.log ((double) sampleRate / PLAYBACK_RATE) / Math.log (2));
     }
 
 

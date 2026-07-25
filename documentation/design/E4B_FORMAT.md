@@ -175,13 +175,27 @@ are byte offsets relative to the struct start (i.e. 92 = first PCM byte):
 | 30 | 4 | end = 92 + PCM bytes - 2 |
 | 38 | 4 | loop start |
 | 46 | 4 | loop end |
-| 54 | 4 | sample rate |
+| 54 | 4 | sample rate - informational only, inherited from the EOS 3 struct |
+| 58 | 2 | pitch offset in 1/64 semitones (signed) |
 | 60 | 2 | options: 0x0020 = mono, 0x0031 = mono with forward loop |
 | 62 | 4 | data offset = 92 |
 
 EOS has exactly one loop type (forward, on/off at the sample level). A forward
 loop shorter than ~84 frames plays an octave low on the hardware (the E4XT
 doubles it silently).
+
+The sampler always plays a sample back at 44100 Hz; the playback pitch of a
+sample stored at a different rate is set by the pitch offset at 58 and *not*
+by the sample rate field at 54, which the firmware ignores for this. The
+offset was reverse-engineered by the mpc2emu project from E4XT hardware
+captures (the Sample-Rate-Convert function applied to a set of known rates,
+the resulting banks diffed against an untouched one) as
+
+    offset = round (768 * log2 (rate / 44100))
+
+which holds within ±2 units over 11025-48000 Hz. A sample written with an
+offset of 0 therefore plays back transposed by the ratio of its rate to
+44100 Hz - a 22050 Hz sample sounds one octave too high.
 
 ## EOS disk filesystem (CD-ROM and hard disk images)
 
