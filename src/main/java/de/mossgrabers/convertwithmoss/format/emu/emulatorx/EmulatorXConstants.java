@@ -13,7 +13,8 @@ import java.nio.charset.StandardCharsets;
  * sibling folder named 'SamplePool' which holds one *.ebl file per sample. Both file types use the
  * same IFF-like 'FORM E5B0TOC2' container with a table of contents of 78 byte entries. All numbers
  * are big-endian except the numeric fields of the sample header. The layout was reverse-engineered
- * from the E-mu factory banks; see documentation/design/EMULATORX_FORMAT.md for the details.
+ * from 14 banks and the meaning and ranges of the parameters come from the Emulator X and Emulator
+ * X3 manuals; see documentation/design/EMULATORX_FORMAT.md for the details.
  *
  * @author Jürgen Moßgraber
  */

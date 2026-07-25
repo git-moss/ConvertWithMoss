@@ -42,12 +42,16 @@ import de.mossgrabers.tools.FileUtils;
 /**
  * Detects E-mu Emulator X bank files (*.exb) and the sample files (*.ebl) of their sample pool.
  * Every preset of a bank becomes one multi-sample source. A preset is a list of voices; each voice
- * has a key and a velocity range, references a sample through a zone and carries the tuning,
- * panning, filter and envelope settings for it. Voices which share a velocity range are collected
- * into one group. The samples are not stored in the bank but in a sibling folder named 'SamplePool'
- * which holds one *.ebl file per sample. A single *.ebl file is read as a multi-sample source with
- * one zone, which makes the sample pool of a bank usable on its own. The format was
- * reverse-engineered from the E-mu factory banks, see documentation/design/EMULATORX_FORMAT.md.
+ * has a key and a velocity range, references its samples through one or more zones and carries the
+ * tuning, volume, panning, filter and envelope settings for them. A voice usually holds a single
+ * zone, so the keyboard map is built from many voices while velocity layers are built from the
+ * zones; all zones which cover the same velocity range are collected into one group. The samples
+ * are not stored in the bank but in a sibling folder named 'SamplePool' which holds one *.ebl file
+ * per sample. A single *.ebl file is read as a multi-sample source with one zone, which makes the
+ * sample pool of a bank usable on its own. The chunks of the format are versioned and several
+ * generations exist, so their size is always taken from the chunk header. The layout was
+ * reverse-engineered from 14 banks and the parameter ranges come from the Emulator X manuals, see
+ * documentation/design/EMULATORX_FORMAT.md.
  *
  * @author Jürgen Moßgraber
  */

@@ -39,12 +39,14 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 /**
  * Creator for E-mu Emulator X banks. Every multi-sample source becomes one preset of the bank and
  * every sample zone becomes one voice with a single zone, which keeps the per-zone key and velocity
- * range, tuning, panning, filter and amplitude envelope. The samples are not stored in the bank
- * itself but as one *.ebl file per sample in a folder named 'SamplePool' next to it, which is how
- * the Emulator X finds them; identical samples are written only once. All other parameters are
- * written with the defaults of the E-mu factory banks. The format was reverse-engineered from those
- * banks, see documentation/design/EMULATORX_FORMAT.md; written banks have not been verified with
- * the Emulator X itself yet but round-trip through {@link EmulatorXDetector}.
+ * range, tuning, volume, panning, filter and the amplitude and filter envelopes. The samples are
+ * not stored in the bank itself but as one *.ebl file per sample in a folder named 'SamplePool'
+ * next to it, which is how the Emulator X finds them; identical samples are written only once and
+ * always use the newer of the two sample header layouts. All other parameters are written with the
+ * defaults of the E-mu factory banks. The format was reverse-engineered from 14 banks, see
+ * documentation/design/EMULATORX_FORMAT.md. The written sample files are byte-identical to the ones
+ * the Emulator X writes; the banks themselves have not been verified with the Emulator X yet but
+ * round-trip through {@link EmulatorXDetector}.
  *
  * @author Jürgen Moßgraber
  */
