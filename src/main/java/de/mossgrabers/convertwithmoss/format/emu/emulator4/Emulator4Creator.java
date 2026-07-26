@@ -351,7 +351,12 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         voice[36] = (byte) Math.clamp (Math.round ((tuning - semitones) * 64.0), -64, 63);
         voice[38] = (byte) (zone.getKeyTracking () == 0 ? 1 : 0);
         voice[51] = (byte) 0x80;
+        // The fine tuning above, the volume and the panning belong to the voice as long as it has
+        // only a single zone, which is always the case here; the matching fields of the zone entry
+        // are only used by a voice with several zones and must stay zero (E4XT hardware confirmed,
+        // see git-moss/ConvertWithMoss#220)
         voice[54] = (byte) Math.clamp (Math.round (zone.getGain ()), -96, 24);
+        voice[55] = (byte) Math.clamp (Math.round (zone.getPanning () * 64.0), -64, 63);
 
         // The filter setting; without a filter write the EOS bypass state (4-pole low-pass,
         // fully open, no resonance)
@@ -394,8 +399,6 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         voice[entryOffset + 9] = (byte) velocityHigh;
         Emulator4Constants.putU16BE (voice, entryOffset + 10, sampleIndex);
         voice[entryOffset + 14] = (byte) Math.clamp (zone.getKeyRoot () < 0 ? keyLow : zone.getKeyRoot (), 0, 127);
-        // The panning has no voice level counterpart, it only exists per zone
-        voice[entryOffset + 16] = (byte) Math.clamp (Math.round (zone.getPanning () * 64.0), -64, 63);
 
         return voice;
     }

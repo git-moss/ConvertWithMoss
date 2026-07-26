@@ -103,11 +103,12 @@ Used voice parameters (all single bytes unless noted):
 | 25  | 0x7F constant |
 | 34  | key transpose (signed semitones) |
 | 35  | coarse tune (signed semitones) |
-| 36  | fine tune (signed, 1/64 semitone units) |
+| 36  | fine tune (signed, 1/64 semitone units) - only used by a voice with a single zone, see below |
 | 38  | 1 = non-transpose (fixed pitch); such a voice needs a populated cord table to be valid |
 | 42  | chorus amount (0-127) |
 | 51  | 0x80 constant |
-| 54  | voice volume (signed dB) |
+| 54  | voice volume (signed dB) - only used by a voice with a single zone, see below |
+| 55  | voice panning (signed, -64 = full left ... 0 = centre ... +63 = full right) - only used by a voice with a single zone, see below |
 | 58  | filter type (see below) |
 | 60  | filter cutoff: 0 = ~57 Hz ... 255 = 20 kHz, exponential |
 | 61  | filter resonance 0-127 |
@@ -159,14 +160,30 @@ by the hardware, so the creator always writes the factory default set.
 | 6  | low velocity |
 | 9  | high velocity |
 | 10:12 | sample index (u16, 1-based) |
-| 12:14 | fine tune (signed **big-endian** u16, 1/64 semitone units) |
+| 12:14 | fine tune (signed **big-endian** u16, 1/64 semitone units) - only used by a voice with several zones, see below |
 | 14 | root key |
-| 15 | volume (signed dB, like the voice volume) |
-| 16 | panning (signed, -64 = full left ... 0 = centre ... +63 = full right) |
+| 15 | volume (signed dB, like the voice volume) - only used by a voice with several zones, see below |
+| 16 | panning (signed, -64 = full left ... 0 = centre ... +63 = full right) - only used by a voice with several zones, see below |
 
-The three offset fields at 12, 15 and 16 apply on top of the settings of the
-voice and are not decoded by mpc2emu (which writes zeros for them). They were
-recovered from the E-mu Producer Series CD-ROMs (76057 zones):
+The fields at 12, 15 and 16 are the fine tuning, the volume and the panning of
+the zone. They are **not** offsets on top of the voice fields 36, 54 and 55 but
+the alternative to them, and the two are never combined:
+
+* a voice with a **single** zone stores the three values in its voice
+  parameters 36/54/55 and leaves the zone entry fields at zero,
+* a voice with **several** zones stores the absolute value of each zone in its
+  own zone entry and leaves the voice parameters 36/54/55 at zero.
+
+Editing the aggregated volume, panning or fine tuning of a multi-zone voice on
+the front panel only changes the voice parameters and never the zone entries,
+so both really are independent.
+
+The three fields were recovered from the E-mu Producer Series CD-ROMs (76057
+zones) and then confirmed on E4XT hardware by the mpc2emu project (see
+git-moss/ConvertWithMoss#220 and the `E4B_FORMAT.md` of mpc2emu), which also
+disproved the offset interpretation they were first read with: a bank written
+with the zone entries holding offsets shows the raw offsets on the front panel
+instead of the intended sums.
 
 * The two bytes at 12:14 only ever hold 0x00 or 0xFF in the high byte, exactly
   matching the sign of the low byte, which identifies them as one signed
@@ -265,13 +282,18 @@ it.
 ## Mapping decisions of the converter
 
 * **Reading:** every preset becomes one multi-sample source, every voice one
-  group. The voice tuning (transpose + coarse + fine) and volume are applied
-  to its zones; a non-transpose voice sets key tracking 0. A fully open
+  group. The voice transpose and coarse tune are applied to all its zones,
+  while the fine tuning, the volume and the panning are taken from the voice
+  for a single-zone voice and from the zone entry for a multi-zone voice (see
+  above); a non-transpose voice sets key tracking 0. A fully open
   4-pole low-pass without resonance, envelope depth and key tracking is the
   EOS bypass state and creates no filter.
 * **Writing:** every zone becomes its own voice with a single zone entry,
-  which keeps the per-zone tuning, volume, filter and envelopes (hardware
-  banks typically map many zones into one voice; both layouts are valid).
+  which keeps the per-zone tuning, volume, panning, filter and envelopes
+  (hardware banks typically map many zones into one voice; both layouts are
+  valid). Since every written voice has exactly one zone, the fine tuning, the
+  volume and the panning go into the voice parameters 36/54/55 and the
+  matching zone entry fields stay zero.
   Stereo samples are mixed down to mono (the stereo variant of the sample
   struct is not covered by the mpc2emu reverse-engineering); sample rates
   above 48 kHz, the EOS maximum, are down-sampled. Samples are
@@ -285,4 +307,6 @@ it.
 Read and write are validated against the mpc2emu reference parser and against
 hardware-created third-party banks (Ian Wilson's free EOS banks: 198 presets,
 1980 zones, 317 samples - all sample PCM byte-identical, all zones resolved).
-Written banks have **not** been loaded on real hardware yet.
+The voice and zone entry fine tuning, volume and panning were additionally
+confirmed on an E4XT by the mpc2emu project. Written banks have **not** been
+loaded on real hardware yet.

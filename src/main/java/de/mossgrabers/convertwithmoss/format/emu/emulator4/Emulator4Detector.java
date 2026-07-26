@@ -447,11 +447,20 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      */
     private static void parseVoice (final byte [] body, final int offset, final int numZones, final Map<Integer, Sample> samplesByIndex, final Set<Integer> missingSampleIndices, final IGroup group)
     {
-        // Per-voice tuning: key transpose and coarse tune in semitones, fine tune in 1/64
-        // semitone units. All three simply offset the playback pitch of the zones
-        final double tuning = body[offset + 34] + body[offset + 35] + body[offset + 36] / 64.0;
+        // Per-voice tuning: key transpose and coarse tune in semitones. Both always apply to all
+        // zones of the voice, there is no per-zone counterpart for them
+        final double coarseTuning = body[offset + 34] + body[offset + 35];
         final boolean isFixedPitch = body[offset + 38] == 1;
-        final int volume = body[offset + 54];
+
+        // Fine tuning, volume and panning exist twice: at the voice level and in every zone entry.
+        // The two are alternatives and are never combined - a voice with a single zone stores them
+        // in its voice parameters and leaves the zone entry at zero, a voice with several zones
+        // stores the absolute value of each zone in its zone entry and leaves the voice parameters
+        // at zero (confirmed on E4XT hardware, see git-moss/ConvertWithMoss#220)
+        final boolean isMultiZone = numZones > 1;
+        final double voiceFineTune = body[offset + 36] / 64.0;
+        final int voiceVolume = body[offset + 54];
+        final double voicePanning = Math.clamp (body[offset + 55] / 64.0, -1, 1);
 
         // The modulation cord table provides the depths of the fixed routings
         final int modOffset = offset + Emulator4Constants.VOICE_MOD_OFFSET;
@@ -521,13 +530,14 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             zone.setStart (0);
             zone.setStop (sample.numFrames);
 
-            // The per-zone offsets on top of the settings of the voice: the fine tuning corrects
-            // the recorded pitch of the individual sample, the volume balances the zones against
-            // each other and the panning places them in the stereo field
-            final int zoneFineTune = (short) Emulator4Constants.getU16BE (body, entryOffset + 12);
-            zone.setTuning (tuning + zoneFineTune / 64.0 + sample.tuning);
-            zone.setGain (volume + body[entryOffset + 15]);
-            zone.setPanning (Math.clamp (body[entryOffset + 16] / 64.0, -1, 1));
+            // Fine tuning, volume and panning: for a voice with several zones they are the
+            // absolute values of the zone, which corrects the recorded pitch of the individual
+            // sample, balances the zones against each other and places them in the stereo field;
+            // a voice with a single zone has them in its voice parameters instead
+            final double fineTune = isMultiZone ? (short) Emulator4Constants.getU16BE (body, entryOffset + 12) / 64.0 : voiceFineTune;
+            zone.setTuning (coarseTuning + fineTune + sample.tuning);
+            zone.setGain (isMultiZone ? body[entryOffset + 15] : voiceVolume);
+            zone.setPanning (isMultiZone ? Math.clamp (body[entryOffset + 16] / 64.0, -1, 1) : voicePanning);
             if (isFixedPitch)
                 zone.setKeyTracking (0);
 
