@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.emu.emulator3;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,12 +36,14 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
+import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emu3DiskImage;
 import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Detects E-mu EIII bank files (*.e3x, *.e3b, *.esi) of the Emulator III, Emulator IIIX and ESI
- * samplers. A bank holds up to 256 presets and 999 samples. Every preset becomes one
+ * Detects E-mu EIII bank files (*.e3x, *.e3b, *.esi) as well as CD-ROM and hard disk images of the
+ * EIII, EIIIX and ESI samplers (*.iso, *.img, *.hda) which use the proprietary E-mu disk filesystem
+ * and contain such banks. A bank holds up to 256 presets and 999 samples. Every preset becomes one
  * multi-sample source: it maps each of the 88 keys to a note zone, which references up to two
  * zones - the primary and the secondary layer - and every layer becomes one group. A preset which
  * links to another one collects the layers of the whole chain, which is how the samplers build more
@@ -74,7 +77,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      */
     public Emulator3Detector (final INotifier notifier)
     {
-        super ("E-mu Emulator III", "EIII", notifier, new Emulator3DetectorUI ("EIII"), ".e3x", ".e3b", ".esi");
+        super ("E-mu Emulator III", "EIII", notifier, new Emulator3DetectorUI ("EIII"), ".e3x", ".e3b", ".esi", ".iso", ".img", ".hda");
     }
 
 
@@ -87,11 +90,14 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
 
         try
         {
+            if (Emu3DiskImage.isEmu3Image (readMagic (sourceFile)))
+                return this.parseImage (sourceFile);
+
             final byte [] data = Files.readAllBytes (sourceFile.toPath ());
             final Emulator3BankFormat bankFormat = Emulator3BankFormat.get (data);
             if (bankFormat == null)
             {
-                // Files of other formats are silently ignored, they belong to other detectors
+                // Images of other formats are silently ignored, they belong to other detectors
                 final String lowerCaseName = sourceFile.getName ().toLowerCase (Locale.US);
                 if (lowerCaseName.endsWith (".e3x") || lowerCaseName.endsWith (".e3b") || lowerCaseName.endsWith (".esi"))
                     this.notifier.logError ("IDS_EIII_NOT_A_BANK", sourceFile.getName ());
@@ -104,6 +110,55 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
             return Collections.emptyList ();
         }
+    }
+
+
+    /**
+     * Read the first bytes of a file to identify its type.
+     *
+     * @param sourceFile The file to read from
+     * @return The first 4 bytes
+     * @throws IOException Could not read the file
+     */
+    private static byte [] readMagic (final File sourceFile) throws IOException
+    {
+        try (final InputStream in = Files.newInputStream (sourceFile.toPath ()))
+        {
+            return in.readNBytes (4);
+        }
+    }
+
+
+    /**
+     * Parse all banks of an E-mu disk image and create one multi-sample source per preset.
+     *
+     * @param sourceFile The image file
+     * @return The multi-sample sources
+     * @throws IOException Could not read the image
+     */
+    private List<IMultisampleSource> parseImage (final File sourceFile) throws IOException
+    {
+        final List<IMultisampleSource> results = new ArrayList<> ();
+        int numBanks = 0;
+        for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
+        {
+            // Skip the files which are not EIII banks, e.g. the operating system of the sampler or
+            // the banks of the newer EOS samplers, which share the filesystem but not the format
+            final byte [] content = imageFile.getContent ();
+            final Emulator3BankFormat bankFormat = Emulator3BankFormat.get (content);
+            if (bankFormat == null)
+                continue;
+            numBanks++;
+            results.addAll (this.parseBank (sourceFile, imageFile.getName (), content, bankFormat));
+
+            if (this.waitForDelivery ())
+                break;
+        }
+        if (numBanks == 0)
+            this.notifier.logError ("IDS_EIII_NO_BANKS_IN_IMAGE", sourceFile.getName ());
+        else
+            this.notifier.log ("IDS_EIII_READING_IMAGE", sourceFile.getName (), Integer.toString (numBanks));
+        return results;
     }
 
 
