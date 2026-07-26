@@ -462,6 +462,12 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         final int voiceVolume = body[offset + 54];
         final double voicePanning = Math.clamp (body[offset + 55] / 64.0, -1, 1);
 
+        // The key and velocity window of the voice, which restrict all of its zones
+        final int voiceKeyLow = body[offset + 14] & 0xFF;
+        final int voiceKeyHigh = body[offset + 17] & 0xFF;
+        final int voiceVelocityLow = body[offset + 18] & 0xFF;
+        final int voiceVelocityHigh = body[offset + 21] & 0xFF;
+
         // The modulation cord table provides the depths of the fixed routings
         final int modOffset = offset + Emulator4Constants.VOICE_MOD_OFFSET;
         double velocityToAmplitude = 0;
@@ -512,13 +518,19 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
                 continue;
             }
 
-            final int keyLow = body[entryOffset + 2] & 0xFF;
-            final int keyHigh = body[entryOffset + 5] & 0xFF;
+            // The zone entry and the voice each carry a key and a velocity window and the range
+            // which sounds is their intersection. Many presets leave the zone entry wide open at
+            // 0-127 and do the whole key split on the voice, so ignoring the voice window maps
+            // every sample across the keyboard and they all sound together on any note
+            final int keyLow = Math.max (body[entryOffset + 2] & 0xFF, voiceKeyLow);
+            final int keyHigh = Math.min (body[entryOffset + 5] & 0xFF, voiceKeyHigh);
+            if (keyLow > keyHigh)
+                continue;
             final ISampleZone zone = new DefaultSampleZone (sample.name, Math.min (keyLow, 127), Math.min (keyHigh, 127));
             zone.setSampleData (sample.sampleData);
 
-            final int velocityLow = body[entryOffset + 6] & 0xFF;
-            final int velocityHigh = body[entryOffset + 9] & 0xFF;
+            final int velocityLow = Math.max (body[entryOffset + 6] & 0xFF, voiceVelocityLow);
+            final int velocityHigh = Math.min (body[entryOffset + 9] & 0xFF, voiceVelocityHigh);
             if (velocityLow <= velocityHigh && velocityHigh > 0)
             {
                 zone.setVelocityLow (Math.max (1, velocityLow));
