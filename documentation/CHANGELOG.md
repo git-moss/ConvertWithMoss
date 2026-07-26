@@ -1,5 +1,9 @@
 # Changes
 
+## 19.2.0
+
+* New: Added support for the E-mu Emulator III/IIIX/ESI bank format (E3B, E3X, ESI).
+
 ## 19.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!

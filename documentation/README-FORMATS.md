@@ -58,6 +58,7 @@ The following multi-sample formats are supported:
 * [discoDSP Bliss](#discodsp-bliss)
 * [Downloadable Sounds (DLS)](#downloadable-sounds-dls) - read only
 * [Elektron Tonverk Multisample & Preset](#elektron-tonverk)
+* [E-mu Emulator III/IIIX/ESI](#e-mu-emulator-iiiiiixesi)
 * [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
@@ -314,6 +315,24 @@ Note: the Tonverk stores envelope times and the filter cut-off frequency as norm
 
 * Output Engine: Selects which machine to write. *Multi-Sample* and *Drum Kit* force that machine; *Auto (from source)* writes a Drum machine when the source looks like a drum kit (a percussion category or up to eight single-key zones) and a Multi machine otherwise.
 * Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
+
+## E-mu Emulator III/IIIX/ESI
+
+The E-mu Emulator III (1987) and its successors - the Emulator IIIX and the ESI-32, ESI-2000 and ESI-4000 - store a sound as a *bank*, a single file which contains both the presets and their 16-bit sample data. The samplers keep such banks on their own disk format, so the files usually carry no extension; when they are written to a DOS/FAT disk the E-mu tools name them *.e3b* (Emulator III), *.e3x* (Emulator IIIX) and *.esi* (ESI series). All three variants use the same structures and differ only in where their address tables sit and how many objects they hold (100 presets and 99 samples for the Emulator III, 256 and 999 for the later ones). The layout was derived from the source code of the GPL tool emu3bm by David García Goñi and verified against the EIIIX and ESI-4000 library CD-ROMs (see *documentation/design/EIII_FORMAT.md*).
+
+When reading, each preset becomes one multi-sample. A preset maps each of the 88 keys of the sampler (MIDI notes 21-108) to a note zone, and every note zone references up to two zones - the primary and the secondary layer - which become the groups of the multi-sample; the velocity ranges the preset assigns to its two layers are applied to them. Presets can be chained with the preset link, which is how the samplers build more than two velocity layers; such a chain is collected into a single multi-sample so that its layers stay together instead of appearing as separate presets. From each zone the root key, key range, tuning, level, panorama, amplitude envelope, velocity-to-level amount, filter (cutoff, resonance, key tracking and filter envelope) and the auxiliary envelope (when it modulates the pitch) are read, as well as the loop of its sample. Only the ESI samplers store a filter type; for the Emulator III and IIIX the single low-pass filter of the device is used. Filters which have no counterpart in other formats (phasers, flangers, vocal formant filters and the swept EQs of the ESI) are dropped. Banks whose presets were partly deleted are handled: an empty preset or sample slot is skipped instead of ending the search, so the objects behind it are still converted.
+
+When writing, all groups of a source become presets which are chained with the preset link, one preset per group, and several sources can be collected into one bank as a library. The samples are stored in the bank as 16-bit mono or stereo and are de-duplicated by their content, so a sample which several zones share is only written once. The first and last two frames of every sample are silenced and loop positions are moved away from the sample ends, both of which the samplers require. Note that the key range of the devices is limited to MIDI notes 21-108 and that a bank cannot exceed the 128 MB sample memory of the samplers.
+
+Note: written banks have not been verified on hardware yet. They round-trip through the reader and match the structure of the E-mu library CD-ROMs.
+
+#### Source Options
+
+* Prepend the bank name to the preset name: The presets of the E-mu libraries are often named after their articulation or variation ('Dark Tremolo') while the instrument they play is only given by the name of their bank. If enabled (the default), the bank name is put in front of the preset name unless the preset name already starts with it.
+
+#### Destination Options
+
+* Target Device: Selects the bank format to write: *Emulator IIIX (e3x)* or *ESI-32/2000/4000 (esi)*. The Emulator IIIX format is the more compatible one since the ESI samplers read it as well; the ESI format additionally enables the real-time control of the filter Q, which is what the ESI factory banks do.
 
 ## Ensoniq EPS/EPS16+/ASR-10
 
