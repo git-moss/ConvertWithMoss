@@ -30,16 +30,19 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
@@ -272,7 +275,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             zone.addLoop (loop);
         }
 
-        // Envelopes (amplitude/pitch) and the sampler filter from the referenced modulation set
+        // Envelopes (amplitude/pitch), the pitch LFO and the sampler filter from the referenced
+        // modulation set
         final int modulationSetIndex = XMLUtils.getChildElementIntegerContent (sampleElement, RenoiseTag.MODULATION_SET_INDEX, -1);
         final ModulationSet modulationSet = modulationSetIndex >= 0 && modulationSetIndex < modulationSets.size () ? modulationSets.get (modulationSetIndex) : null;
         if (modulationSet != null)
@@ -283,6 +287,11 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             {
                 zone.getPitchEnvelopeModulator ().setSource (modulationSet.pitchEnvelope);
                 zone.getPitchEnvelopeModulator ().setDepth (1.0);
+            }
+            if (modulationSet.pitchLfo != null && modulationSet.pitchLfoDepth > 0)
+            {
+                zone.getPitchLfoModulator ().setSource (modulationSet.pitchLfo);
+                zone.getPitchLfoModulator ().setDepth (modulationSet.pitchLfoDepth);
             }
             final Optional<IFilter> filter = modulationSet.createFilter ();
             if (filter.isPresent ())
@@ -402,7 +411,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Parse all modulation sets into an indexed list. Each set carries the optional amplitude
-     * (Volume), pitch and filter (Cutoff) envelopes from its AHDSR devices.
+     * (Volume), pitch and filter (Cutoff) envelopes from its AHDSR devices as well as the pitch
+     * LFO (vibrato) from a LFO device.
      *
      * @param sampleGenerator The sample generator element
      * @return The indexed list of modulation sets
@@ -434,18 +444,76 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                         modulationSet.volumeEnvelope = envelope;
                 }
 
-                // The base cutoff/resonance of the sampler filter are stored in the mixer device
+                // The base cutoff/resonance of the sampler filter and the pitch modulation range
+                // are stored in the mixer device
+                int pitchModulationRange = RenoiseValueConverter.PITCH_MODULATION_RANGE;
                 final Element mixerElement = XMLUtils.getChildElementByName (devicesElement, RenoiseTag.MIXER_DEVICE);
                 if (mixerElement != null)
                 {
                     modulationSet.cutoffValue = paramValue (mixerElement, RenoiseTag.CUTOFF, -1);
                     modulationSet.resonanceValue = paramValue (mixerElement, RenoiseTag.RESONANCE, -1);
+                    pitchModulationRange = XMLUtils.getChildElementIntegerContent (mixerElement, RenoiseTag.PITCH_MODULATION_RANGE, RenoiseValueConverter.PITCH_MODULATION_RANGE);
                 }
+
+                readPitchLfo (devicesElement, modulationSet, pitchModulationRange);
             }
 
             result.add (modulationSet);
         }
         return result;
+    }
+
+
+    /**
+     * Read the first active LFO device which modulates the pitch (vibrato) into the modulation
+     * set.
+     *
+     * @param devicesElement The devices element of the modulation set
+     * @param modulationSet The modulation set to fill
+     * @param pitchModulationRange The pitch modulation range of the mixer device in semitones
+     */
+    private static void readPitchLfo (final Element devicesElement, final ModulationSet modulationSet, final int pitchModulationRange)
+    {
+        for (final Element deviceElement: XMLUtils.getChildElementsByName (devicesElement, RenoiseTag.LFO_DEVICE, false))
+        {
+            if (!RenoiseTag.TARGET_PITCH.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0)
+                continue;
+
+            final double depth = RenoiseValueConverter.amplitudeToLfoDepth (paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0), pitchModulationRange);
+            if (depth == 0)
+                continue;
+
+            final ILfo lfo = new DefaultLfo ();
+            lfo.setWaveform (modeToWaveform (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.LFO_MODE)));
+            lfo.setRate (RenoiseValueConverter.lfoRateToHertz (paramValue (deviceElement, RenoiseTag.LFO_FREQUENCY, 0)));
+            final double delaySeconds = RenoiseValueConverter.lfoDelayToSeconds (paramValue (deviceElement, RenoiseTag.LFO_DELAY, 0));
+            if (delaySeconds > 0)
+                lfo.setDelay (delaySeconds);
+            final double dephase = paramValue (deviceElement, RenoiseTag.LFO_DEPHASE, 0);
+            if (dephase > 0)
+                lfo.setStartPhase (Math.clamp (dephase / 360.0, 0, 1));
+            modulationSet.pitchLfo = lfo;
+            modulationSet.pitchLfoDepth = depth;
+            return;
+        }
+    }
+
+
+    /**
+     * Get the waveform of the model for a Renoise LFO mode.
+     *
+     * @param mode The Renoise LFO mode
+     * @return The waveform
+     */
+    private static LfoWaveform modeToWaveform (final String mode)
+    {
+        if (RenoiseTag.LFO_MODE_SAW.equals (mode))
+            return LfoWaveform.SAWTOOTH_UP;
+        if (RenoiseTag.LFO_MODE_PULSE.equals (mode))
+            return LfoWaveform.SQUARE;
+        if (RenoiseTag.LFO_MODE_RANDOM.equals (mode))
+            return LfoWaveform.RANDOM;
+        return LfoWaveform.SINE;
     }
 
 
@@ -604,7 +672,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Holds the envelopes and the sampler filter of one Renoise modulation set.
+     * Holds the envelopes, the pitch LFO and the sampler filter of one Renoise modulation set.
      */
     private static class ModulationSet
     {
@@ -624,6 +692,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         IEnvelope                   volumeEnvelope;
         IEnvelope                   pitchEnvelope;
         IEnvelope                   cutoffEnvelope;
+        ILfo                        pitchLfo;
+        double                      pitchLfoDepth;
         int                         filterTypeIndex                 = RenoiseFilterType.INDEX_NONE;
         double                      cutoffValue                     = -1;
         double                      resonanceValue                  = -1;
