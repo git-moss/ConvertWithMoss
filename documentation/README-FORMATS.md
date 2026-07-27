@@ -58,6 +58,7 @@ The following multi-sample formats are supported:
 * [discoDSP Bliss](#discodsp-bliss)
 * [Downloadable Sounds (DLS)](#downloadable-sounds-dls) - read only
 * [Elektron Tonverk Multisample & Preset](#elektron-tonverk)
+* [E-mu Emulator X](#e-mu-emulator-x)
 * [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
@@ -342,6 +343,27 @@ Note: the Tonverk stores envelope times and the filter cut-off frequency as norm
 
 * Output Engine: Selects which machine to write. *Multi-Sample* and *Drum Kit* force that machine; *Auto (from source)* writes a Drum machine when the source looks like a drum kit (a percussion category or up to eight single-key zones) and a Multi machine otherwise.
 * Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
+
+## E-mu Emulator X
+
+The Emulator X (2004), Emulator X2 (2005) and Emulator X3 (2008) were the software samplers with which E-mu moved its Emulator line from hardware to the PC. They kept the Z-plane filters and the modulation cord architecture of the EOS hardware samplers and were sold both on their own and bundled with E-mu sound cards, together with a large library of sound banks - many of which are conversions of the classic E-mu ROM modules like Vintage Keys, PROcussion and the SP-1200 library.
+
+A sound bank consists of a *.exb* file, which holds all presets of the bank, and a folder named *SamplePool* next to it, which holds one *.ebl* file per sample. The two are linked by the file names: a sample file is called *&lt;bank name&gt;SL&lt;index&gt;.ebl*, e.g. *PROcussionSL018.ebl*. Keep the bank and its sample pool together, otherwise the samples cannot be found.
+
+A preset is a list of voices. Every voice has a key range and a velocity range (both with crossfades), references one or more samples through its zones and carries its own tuning, volume, panning, filter and envelopes. A voice usually maps exactly one sample, so a keyboard map is built from many voices, while velocity layers are built inside the voices. ConvertWithMoss collects all zones which cover the same velocity range into one group.
+
+The file format is not documented by E-mu, the layout was reverse-engineered from 14 banks; the meaning and the ranges of the parameters come from the Emulator X and Emulator X3 reference manuals (see *documentation/design/EMULATORX_FORMAT.md*). Reading and writing are supported. Written sample files are byte-identical to the ones the Emulator X writes, but the banks themselves have not been verified with the Emulator X yet.
+
+### Issues and Workarounds
+
+1. Only the parameters which have a counterpart in the model are converted: key and velocity ranges with their crossfades, the original key, tuning, volume, panning, the loop, the amplitude envelope, the velocity to volume modulation, the filter type and cutoff, the filter envelope and the category of the preset. The LFOs, function generators, arpeggiator and the remaining modulation cords are written with the defaults of the factory banks.
+2. The chunks of the format are versioned and several generations exist. All of them can be read; sample files are always written in the newer of the two layouts, which is what the Emulator X3 uses.
+3. Of the 55 filter types, only the low-pass (2, 4 and 6 poles), high-pass (2 and 4), band-pass (2 and 4) and the contrary band-pass, which is the closest the format has to a notch, have a model equivalent; the swept EQs, phasers, flangers, vowel formant filters, distortions and morph filters are read as 'no filter'. A wide open low-pass, which is how the factory banks express an unfiltered voice, is read as 'no filter' as well and is written back as the 'No Filter' type. The filter resonance is not stored by the format.
+4. Many presets park the filter cutoff at the bottom and open it again with a modulation cord. Two cases are converted: an assignable MIDI controller, whose initial value the preset stores and which therefore gives the cutoff the voice actually starts at, and the filter envelope. If the cutoff is parked but is opened by a modulation source which cannot be converted, no filter is written at all, because a filter at 57 Hz without its modulation would turn the voice into silence.
+5. The E-mu factory banks set the volume of every voice to the maximum of +10 dB, so converting them applies that gain. Reduce it with the processing options if the result clips.
+6. Sample files (*.ebl*) can also be read on their own, which gives one multi-sample per sample and is useful for a sample pool without its bank. Sample files which belong to a bank in the same folder are skipped, because they are already read through that bank.
+7. The category which the sound designer gave a preset ('Synthesizer', 'Keyboard - GM') is read and written. Since the model has a fixed set of categories, the category is mapped onto the closest one of those, so a bank written back from an Emulator X source carries the mapped name and not the original wording.
+8. A written bank is not byte-identical to the bank it was read from, even though its audio data is: two per-sample fields are not reproduced. One is a value which is a constant in some banks but differs per sample in others, where it looks like a check sum; the other is a comment which names the sound set a sample was originally taken from. Neither can be derived from the converted data. The sample names themselves are kept.
 
 ## Ensoniq EPS/EPS16+/ASR-10
 
