@@ -3,7 +3,9 @@
 ## 19.2.0
 
 * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, SFZ, SoundFont 2. Previously any vibrato was dropped on conversion.
-
+* New: Added support for the E-mu Emulator IV bank format (E4B). The name of the bank is passed on as the description and - switchable - prepended to the name of a read preset, since the presets of the EOS libraries are only named after their articulation ('Dark Tremolo') and not after the instrument they play. Written banks have not been tested on real hardware yet.
+* New: E-mu Emulator IV banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format.
+* New: The E-mu Emulator IV destination can write the bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7.
 * Kurzweil K2x00
   * Fixed: An envelope stage with both a zero time and a zero level is unused on the device and keeps the level of the previous stage, but was read literally. A program which leaves its decay stage unused - like the reported FM basses, which sustain at the attack level and only fade out with a long release - was therefore converted to a silent preset. Additionally, the attack velocity is now converted as a cutoff modulation source of the F1 slot in both directions; the same programs open their nearly closed cutoff by velocity and converted very dull without it.
 
