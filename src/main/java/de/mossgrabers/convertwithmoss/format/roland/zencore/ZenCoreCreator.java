@@ -413,17 +413,6 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
 
 
     /**
-     * Shorten each source name to the 16 characters the PATa name field holds (the name the device
-     * displays), keeping the names recognizable: a name whose plain truncation is unique keeps it,
-     * and names that would truncate identically - e.g. "082_RTW2_106_BASS_SAW" and "..._SQR", whose
-     * distinguishing part is cut off - get part of the shared head elided with a '~' and keep their
-     * distinctive tail instead ("082_RTW2_106~SAW" / "082_RTW2_106~SQR"). Whatever still collides
-     * (identical source names) falls back to a ~2, ~3, ... counter.
-     *
-     * @param sourceNames The source names in bank order
-     * @return One unique tone name (at most 16 characters) per source, in the same order
-     */
-    /**
      * Get the name of a source to use for its tone, optionally shortened to its last segment for
      * the 16 character name field which the device displays.
      *
@@ -437,6 +426,17 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
     }
 
 
+    /**
+     * Shorten each source name to the 16 characters the PATa name field holds (the name the device
+     * displays), keeping the names recognizable: a name whose plain truncation is unique keeps it,
+     * and names that would truncate identically - e.g. "082_RTW2_106_BASS_SAW" and "..._SQR", whose
+     * distinguishing part is cut off - get part of the shared head elided with a '~' and keep their
+     * distinctive tail instead ("082_RTW2_106~SAW" / "082_RTW2_106~SQR"). Whatever still collides
+     * (identical source names) falls back to a ~2, ~3, ... counter.
+     *
+     * @param sourceNames The source names in bank order
+     * @return One unique tone name (at most 16 characters) per source, in the same order
+     */
     private static List<String> assignToneNames (final List<String> sourceNames)
     {
         final List<String> bases = new ArrayList<> ();

@@ -29,12 +29,11 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.format.TagDetector;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 
 
 /**
@@ -58,7 +57,14 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
         16
     }, -1, false);
 
-    /** One modulation cord of a voice. */
+
+    /**
+     * One modulation cord of a voice.
+     *
+     * @param source The source of the cord
+     * @param destination The destination of the cord
+     * @param amount The modulation amount
+     */
     private record Cord (int source, int destination, float amount)
     {
         // Intentionally empty
@@ -66,15 +72,9 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /** The modulation cords which every voice of the E-mu factory banks starts with. */
-    private static final List<Cord>             DEFAULT_CORDS      = List.of (
+    private static final List<Cord> DEFAULT_CORDS = List.of (
             // Velocity to volume, the amount of which is taken from the zone
-            new Cord (EmulatorXConstants.CORD_SOURCE_VELOCITY, EmulatorXConstants.CORD_DEST_VOLUME, EmulatorXConstants.FULL_CORD_AMOUNT),
-            new Cord (0x11, 0xAA, 6.0f),
-            new Cord (0x60, 0x30, 0),
-            new Cord (0x68, 0x30, 0),
-            new Cord (0x16, 0x08, EmulatorXConstants.FULL_CORD_AMOUNT),
-            new Cord (EmulatorXConstants.CORD_SOURCE_FILTER_ENV2, EmulatorXConstants.CORD_DEST_CUTOFF, 0),
-            new Cord (EmulatorXConstants.CORD_SOURCE_VELOCITY, EmulatorXConstants.CORD_DEST_CUTOFF, 0));
+            new Cord (EmulatorXConstants.CORD_SOURCE_VELOCITY, EmulatorXConstants.CORD_DEST_VOLUME, EmulatorXConstants.FULL_CORD_AMOUNT), new Cord (0x11, 0xAA, 6.0f), new Cord (0x60, 0x30, 0), new Cord (0x68, 0x30, 0), new Cord (0x16, 0x08, EmulatorXConstants.FULL_CORD_AMOUNT), new Cord (EmulatorXConstants.CORD_SOURCE_FILTER_ENV2, EmulatorXConstants.CORD_DEST_CUTOFF, 0), new Cord (EmulatorXConstants.CORD_SOURCE_VELOCITY, EmulatorXConstants.CORD_DEST_CUTOFF, 0));
 
 
     /** Holds one de-duplicated sample of the sample pool. */
@@ -350,6 +350,7 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
      * Create the payload of a preset chunk.
      *
      * @param name The name of the preset
+     * @param category The name of the category to set
      * @param voices The assembled voice chunks
      * @return The payload
      * @throws IOException Could not assemble the preset
@@ -476,15 +477,10 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
     private static byte [] createFilter (final ISampleZone zone)
     {
         final byte [] data = createVersionedChunk (EmulatorXConstants.FILTER_SIZE, EmulatorXConstants.VERSION_1);
-        final IFilter filter = zone.getFilter ().orElse (null);
-        final int filterType = filter == null ? EmulatorXConstants.FILTER_TYPE_BYPASS : getFilterTypeCode (filter);
+        final Optional<IFilter> filterOpt = zone.getFilter ();
+        final int filterType = getFilterTypeCode (filterOpt);
         data[EmulatorXConstants.FILTER_TYPE] = (byte) filterType;
-        if (filterType == EmulatorXConstants.FILTER_TYPE_BYPASS)
-        {
-            EmulatorXConstants.putFloatBE (data, EmulatorXConstants.FILTER_CUTOFF, 1.0f);
-            return data;
-        }
-        EmulatorXConstants.putFloatBE (data, EmulatorXConstants.FILTER_CUTOFF, (float) EmulatorXConstants.hertzToCutoff (filter.getCutoff ()));
+        EmulatorXConstants.putFloatBE (data, EmulatorXConstants.FILTER_CUTOFF, EmulatorXConstants.hertzToCutoff (filterOpt, filterType));
         return data;
     }
 
@@ -492,11 +488,16 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Get the E-mu filter type which is closest to the given filter.
      *
-     * @param filter The filter
+     * @param filterOpt The filter
      * @return The filter type, the bypass type if the filter has no E-mu equivalent
      */
-    private static int getFilterTypeCode (final IFilter filter)
+    private static int getFilterTypeCode (final Optional<IFilter> filterOpt)
     {
+        if (filterOpt.isEmpty ())
+            return EmulatorXConstants.FILTER_TYPE_BYPASS;
+
+        final IFilter filter = filterOpt.get ();
+
         final int poles = filter.getPoles ();
         switch (filter.getType ())
         {
@@ -517,9 +518,9 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Create one envelope chunk. The six stages of the E-mu envelope are attack 1, attack 2,
-     * decay 1, decay 2, release 1 and release 2; the attack of the model becomes attack 2, its hold
-     * decay 1, its decay and sustain decay 2 and its release becomes release 1.
+     * Create one envelope chunk. The six stages of the E-mu envelope are attack 1, attack 2, decay
+     * 1, decay 2, release 1 and release 2; the attack of the model becomes attack 2, its hold decay
+     * 1, its decay and sustain decay 2 and its release becomes release 1.
      *
      * @param envelope The envelope or null to write an empty one, which is what the factory banks
      *            use for the filter and the auxiliary envelope; those two have no effect because

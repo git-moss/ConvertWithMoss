@@ -30,7 +30,6 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -68,7 +67,6 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         boolean hasLoop;
         int     loopStart;
         int     loopEnd;
-        int     rootKey;
     }
 
 
@@ -176,13 +174,13 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         if (writeCdImage)
         {
             final ByteArrayOutputStream bankData = new ByteArrayOutputStream ();
-            this.writeFile (bankData, presetBodies, presetNames, samples);
+            writeFile (bankData, presetBodies, presetNames, samples);
             Emu3DiskImage.writeImage (outputFile, List.of (new Emu3DiskImage.ImageFile (safeName, bankData.toByteArray ())));
         }
         else
             try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))
             {
-                this.writeFile (out, presetBodies, presetNames, samples);
+                writeFile (out, presetBodies, presetNames, samples);
             }
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -284,7 +282,6 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         sample.hasLoop = hasLoop;
         sample.loopStart = loopStart;
         sample.loopEnd = loopEnd;
-        sample.rootKey = rootKey;
         samples.add (sample);
 
         final int index = samples.size ();
@@ -548,8 +545,8 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
 
 
     /**
-     * Create the header of an E3S1 sample chunk. All offsets are byte offsets relative to the
-     * start of the 92 byte EOS sample struct, which begins after the 2 byte sample index.
+     * Create the header of an E3S1 sample chunk. All offsets are byte offsets relative to the start
+     * of the 92 byte EOS sample struct, which begins after the 2 byte sample index.
      *
      * @param sample The sample
      * @param sampleIndex The 1-based index of the sample in the bank
@@ -595,27 +592,30 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
      * @param samples The samples
      * @throws IOException Could not write the bank
      */
-    private void writeFile (final OutputStream outputStream, final List<byte []> presetBodies, final List<String> presetNames, final List<Sample> samples) throws IOException
+    private static void writeFile (final OutputStream outputStream, final List<byte []> presetBodies, final List<String> presetNames, final List<Sample> samples) throws IOException
     {
+        final int sampleCount = samples.size ();
+        final int presetBodiesSize = presetBodies.size ();
+
         // Calculate the chunk offsets. Chunks are word aligned; only sample chunks can have an
         // odd size since all other chunk sizes are even
-        final int numTocEntries = 1 + presetBodies.size () + samples.size ();
+        final int numTocEntries = 1 + presetBodiesSize + sampleCount;
         final int tocChunkSize = 8 + numTocEntries * Emulator4Constants.TOC_ENTRY_SIZE;
 
         int position = 12 + tocChunkSize;
         final int e4maOffset = position;
         position += 8 + Emulator4Constants.E4MA_SIZE;
 
-        final int [] presetOffsets = new int [presetBodies.size ()];
-        for (int i = 0; i < presetBodies.size (); i++)
+        final int [] presetOffsets = new int [presetBodiesSize];
+        for (int i = 0; i < presetBodiesSize; i++)
         {
             presetOffsets[i] = position;
             position += 8 + presetBodies.get (i).length;
         }
 
-        final int [] sampleOffsets = new int [samples.size ()];
-        final int [] sampleBodySizes = new int [samples.size ()];
-        for (int i = 0; i < samples.size (); i++)
+        final int [] sampleOffsets = new int [sampleCount];
+        final int [] sampleBodySizes = new int [sampleCount];
+        for (int i = 0; i < sampleCount; i++)
         {
             sampleOffsets[i] = position;
             sampleBodySizes[i] = Emulator4Constants.SAMPLE_HEADER_SIZE + samples.get (i).pcm.length;
@@ -632,10 +632,10 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         // The table of contents lists all chunks except the trailing EMSt
         final byte [] toc = new byte [numTocEntries * Emulator4Constants.TOC_ENTRY_SIZE];
         createTocEntry (toc, 0, Emulator4Constants.E4MA_TAG, Emulator4Constants.E4MA_SIZE, e4maOffset, 0, "Multimap");
-        for (int i = 0; i < presetBodies.size (); i++)
+        for (int i = 0; i < presetBodiesSize; i++)
             createTocEntry (toc, 1 + i, Emulator4Constants.PRESET_TAG, presetBodies.get (i).length, presetOffsets[i], i, presetNames.get (i));
-        for (int i = 0; i < samples.size (); i++)
-            createTocEntry (toc, 1 + presetBodies.size () + i, Emulator4Constants.SAMPLE_TAG, sampleBodySizes[i], sampleOffsets[i], i + 1, samples.get (i).name);
+        for (int i = 0; i < sampleCount; i++)
+            createTocEntry (toc, 1 + presetBodiesSize + i, Emulator4Constants.SAMPLE_TAG, sampleBodySizes[i], sampleOffsets[i], i + 1, samples.get (i).name);
 
         final byte [] multimap = new byte [Emulator4Constants.E4MA_SIZE];
         for (int i = 0; i < Emulator4Constants.E4MA_SIZE; i++)
@@ -655,7 +655,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
             writeChunkHeader (out, Emulator4Constants.PRESET_TAG, presetBody.length);
             out.write (presetBody);
         }
-        for (int i = 0; i < samples.size (); i++)
+        for (int i = 0; i < sampleCount; i++)
         {
             final Sample sample = samples.get (i);
             writeChunkHeader (out, Emulator4Constants.SAMPLE_TAG, sampleBodySizes[i]);

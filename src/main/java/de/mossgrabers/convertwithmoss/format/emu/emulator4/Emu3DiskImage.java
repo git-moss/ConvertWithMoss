@@ -18,12 +18,12 @@ import java.util.Set;
 
 /**
  * Reads the proprietary E-mu disk filesystem which the EOS samplers use on their CD-ROMs and hard
- * disks (and which their CD-ROM/SCSI emulators like the ZuluSCSI serve from raw image files). It
- * is a simple FAT-like filesystem of 512 byte blocks: a superblock, a cluster chain list, a root
+ * disks (and which their CD-ROM/SCSI emulators like the ZuluSCSI serve from raw image files). It is
+ * a simple FAT-like filesystem of 512 byte blocks: a superblock, a cluster chain list, a root
  * directory of folders and dir-content blocks with the file entries. The layout was
  * reverse-engineered by the mpc2emu project from commercial E-mu CD-ROMs and EOS formatted disks,
- * cross-checked against the emu3fs Linux kernel module; see documentation/design/E4B_FORMAT.md.
- * All geometry is read from the superblock, so both the CD-ROM and the hard disk variant of the
+ * cross-checked against the emu3fs Linux kernel module; see documentation/design/E4B_FORMAT.md. All
+ * geometry is read from the superblock, so both the CD-ROM and the hard disk variant of the
  * filesystem are supported.
  *
  * @author Jürgen Moßgraber
@@ -31,17 +31,17 @@ import java.util.Set;
 public class Emu3DiskImage
 {
     /** The magic bytes of the superblock. */
-    public static final byte []  MAGIC             = "EMU3".getBytes ();
+    public static final byte [] MAGIC               = "EMU3".getBytes ();
 
-    private static final int     BLOCK_SIZE        = 512;
-    private static final int     ENTRY_SIZE        = 32;
+    private static final int    BLOCK_SIZE          = 512;
+    private static final int    ENTRY_SIZE          = 32;
     /** The number of dir-content block references of a folder entry. */
-    private static final int     FOLDER_BLOCK_LIST = 7;
+    private static final int    FOLDER_BLOCK_LIST   = 7;
     /** The end-of-chain marker in the cluster list. */
-    private static final int     LAST_CLUSTER      = 0x7FFF;
+    private static final int    LAST_CLUSTER        = 0x7FFF;
     /** The folder markers: 0x40 = user folder (CD), 0x80 = 'Default Folder' (hard disk). */
-    private static final int     FOLDER_TYPE_USER  = 0x40;
-    private static final int     FOLDER_TYPE_DEFAULT = 0x80;
+    private static final int    FOLDER_TYPE_USER    = 0x40;
+    private static final int    FOLDER_TYPE_DEFAULT = 0x80;
 
 
     /** A file read from the image. */
@@ -250,28 +250,28 @@ public class Emu3DiskImage
         return data;
     }
 
-
-    ////////////////////////////////////////////////////////////////////////////////////
+    // -----------------------------------------------------------
     // Writing - the CD-ROM variant of the filesystem with its fixed geometry, which is
     // what the firmware expects of a CD-ROM volume (a computed 'tighter' layout is not
     // mountable). Matches the hardware-verified reference builder of the mpc2emu project.
 
-    private static final int FAT_START             = 2;
-    private static final int FAT_BLOCKS            = 5;
-    private static final int ROOT_START            = 7;
-    private static final int ROOT_BLOCKS           = 4;
-    private static final int DIRCON_START          = 11;
-    private static final int DIRCON_BLOCKS         = 125;
-    private static final int DATA_START            = 136;
+
+    private static final int FAT_START     = 2;
+    private static final int FAT_BLOCKS    = 5;
+    private static final int ROOT_START    = 7;
+    private static final int ROOT_BLOCKS   = 4;
+    private static final int DIRCON_START  = 11;
+    private static final int DIRCON_BLOCKS = 125;
+    private static final int DATA_START    = 136;
     /** 5 FAT blocks hold 1280 entries of which entry 0 is reserved. */
-    private static final int MAX_CLUSTERS          = FAT_BLOCKS * (BLOCK_SIZE / 2) - 1;
+    private static final int MAX_CLUSTERS  = FAT_BLOCKS * (BLOCK_SIZE / 2) - 1;
     /** The number of files the written single dir-content block can hold. */
-    public static final int  MAX_FILES             = BLOCK_SIZE / ENTRY_SIZE;
+    public static final int  MAX_FILES     = BLOCK_SIZE / ENTRY_SIZE;
 
 
     /**
-     * Write a CD-ROM image containing the given files. The image can be renamed to e.g. CD1.iso
-     * on the SD card of a SCSI emulator like the ZuluSCSI to be served as a CD-ROM.
+     * Write a CD-ROM image containing the given files. The image can be renamed to e.g. CD1.iso on
+     * the SD card of a SCSI emulator like the ZuluSCSI to be served as a CD-ROM.
      *
      * @param outputFile The image file to write
      * @param files The files to store, at most {@link #MAX_FILES}
@@ -368,8 +368,8 @@ public class Emu3DiskImage
 
 
     /**
-     * Create the cluster chain list. Every file occupies a sequential run of clusters, starting
-     * at cluster 1.
+     * Create the cluster chain list. Every file occupies a sequential run of clusters, starting at
+     * cluster 1.
      *
      * @param files The files
      * @param clusterBytes The size of a cluster in bytes

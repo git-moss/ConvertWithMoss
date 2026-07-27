@@ -102,10 +102,10 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
     /** Holds one preset to be written into the bank; it carries the zones of one group. */
     private static class Preset
     {
-        String            name;
-        byte []           data;
+        String  name;
+        byte [] data;
         /** The 1-based number of the preset which is layered on top of this one, 0 for none. */
-        int               link;
+        int     link;
     }
 
 
@@ -195,12 +195,12 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         if (presets.isEmpty ())
             return;
 
-        final byte [] bank = this.createBank (bankFormat, safeName, presets, samples);
-        if (bank == null)
+        final Optional<byte []> bank = this.createBank (bankFormat, safeName, presets, samples);
+        if (bank.isEmpty ())
             return;
         try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))
         {
-            out.write (bank);
+            out.write (bank.get ());
         }
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -327,7 +327,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
     {
         String name = multisampleSource.getName ();
         final String bank = multisampleSource.getMetadata ().getDescription ();
-        if (name != null && bank != null && !bank.isBlank ())
+        if (bank != null && !bank.isBlank ())
         {
             final String prefix = bank + " - ";
             if (name.startsWith (prefix) && name.length () > prefix.length ())
@@ -342,10 +342,10 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
 
 
     /**
-     * Get the pitch bend range in semitones which the zones of a preset use.
+     * Get the pitch bend range in semi-tones which the zones of a preset use.
      *
      * @param zones The zones
-     * @return The range in semitones
+     * @return The range in semi-tones
      */
     private static int getPitchBendRange (final List<ISampleZone> zones)
     {
@@ -400,7 +400,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         {
             final IFilter filter = optionalFilter.get ();
             data[offset + Emulator3Constants.ZONE_VCF_CUTOFF] = (byte) Emulator3Constants.getCutoffValue (filter.getCutoff ());
-            final int resonance = (int) Math.clamp (Math.round (filter.getResonance () * 127), 0, 127);
+            final int resonance = Math.clamp (Math.round (filter.getResonance () * 127), 0, 127);
             data[offset + Emulator3Constants.ZONE_VCF_Q] = (byte) (resonance | (isEsi ? Emulator3Constants.Q_REALTIME_ENABLE : 0));
             data[offset + Emulator3Constants.ZONE_VCF_TYPE_LFO_SHAPE] = (byte) (Emulator3Constants.getFilterTypeValue (filter.getType (), filter.getPoles (), bankFormat) << 3);
             data[offset + Emulator3Constants.ZONE_VCF_TRACKING] = (byte) Math.clamp (Math.round (filter.getCutoffKeyTracking () * 127 / 2.0), -127, 127);
@@ -473,8 +473,8 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
 
 
     /**
-     * Convert the sample of a zone and add it to the samples of the bank, re-using an already
-     * added sample with identical content.
+     * Convert the sample of a zone and add it to the samples of the bank, re-using an already added
+     * sample with identical content.
      *
      * @param zone The zone
      * @param bankFormat The format of the bank
@@ -594,7 +594,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
      * @param samples The samples
      * @return The content of the bank or null if it does not fit into the sample memory
      */
-    private byte [] createBank (final Emulator3BankFormat bankFormat, final String name, final List<Preset> presets, final List<Sample> samples)
+    private Optional<byte []> createBank (final Emulator3BankFormat bankFormat, final String name, final List<Preset> presets, final List<Sample> samples)
     {
         int presetAreaSize = 0;
         for (final Preset preset: presets)
@@ -605,7 +605,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         if (size > MAX_BANK_SIZE)
         {
             this.notifier.logError ("IDS_EIII_BANK_TOO_LARGE", Long.toString (size / (1024 * 1024)));
-            return null;
+            return Optional.empty ();
         }
 
         final byte [] data = new byte [(int) size];
@@ -618,7 +618,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         for (int i = 0; i < presets.size (); i++)
         {
             final Preset preset = presets.get (i);
-            Emulator3Constants.putU32 (data, presetTable + i * 4, offset - presetAreaOffset);
+            Emulator3Constants.putU32 (data, presetTable + i * 4, offset - (long) presetAreaOffset);
             System.arraycopy (preset.data, 0, data, offset, preset.data.length);
             if (preset.link > 0)
                 Emulator3Constants.putU16 (data, offset + Emulator3Constants.PRESET_LINK, preset.link);
@@ -636,12 +636,12 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         for (int i = 0; i < samples.size (); i++)
         {
             final Sample sample = samples.get (i);
-            Emulator3Constants.putU32 (data, sampleTable + i * 4, offset - sampleAreaOffset + Emulator3Constants.SAMPLE_ADDRESS_OFFSET);
+            Emulator3Constants.putU32 (data, sampleTable + i * 4, offset - sampleAreaOffset + (long) Emulator3Constants.SAMPLE_ADDRESS_OFFSET);
             writeSample (data, offset, sample, offset - sampleAreaOffset);
             offset += sample.getSize ();
         }
         // The last entry of the table points behind the last sample
-        Emulator3Constants.putU32 (data, sampleTable + bankFormat.getMaxSamples () * 4, offset - sampleAreaOffset + Emulator3Constants.SAMPLE_ADDRESS_OFFSET);
+        Emulator3Constants.putU32 (data, sampleTable + bankFormat.getMaxSamples () * 4, offset - sampleAreaOffset + (long) Emulator3Constants.SAMPLE_ADDRESS_OFFSET);
 
         Emulator3Constants.putU32 (data, Emulator3Constants.BANK_OBJECTS, presets.size () + (long) samples.size ());
         Emulator3Constants.putU32 (data, Emulator3Constants.BANK_NEXT_PRESET, Emulator3Constants.getU32 (data, Emulator3Constants.BANK_NEXT_PRESET) + presetAreaSize);
@@ -654,7 +654,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         Emulator3Constants.putU32 (data, Emulator3Constants.BANK_PRESET_BLOCKS, presetBlocks);
         Emulator3Constants.putU32 (data, Emulator3Constants.BANK_SAMPLE_BLOCKS, totalBlocks - (long) presetBlocks);
         Emulator3Constants.putU32 (data, Emulator3Constants.BANK_TOTAL_BLOCKS, totalBlocks);
-        return data;
+        return Optional.of (data);
     }
 
 
