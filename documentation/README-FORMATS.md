@@ -338,6 +338,7 @@ The file format is not documented by E-mu, the layout was reverse-engineered fro
 4. Many presets park the filter cutoff at the bottom and open it again with a modulation cord. Two cases are converted: an assignable MIDI controller, whose initial value the preset stores and which therefore gives the cutoff the voice actually starts at, and the filter envelope. If the cutoff is parked but is opened by a modulation source which cannot be converted, no filter is written at all, because a filter at 57 Hz without its modulation would turn the voice into silence.
 5. The E-mu factory banks set the volume of every voice to the maximum of +10 dB, so converting them applies that gain. Reduce it with the processing options if the result clips.
 6. Sample files (*.ebl*) can also be read on their own, which gives one multi-sample per sample and is useful for a sample pool without its bank. Sample files which belong to a bank in the same folder are skipped, because they are already read through that bank.
+7. A written bank is not byte-identical to the bank it was read from, even though its audio data is: two per-sample fields are not reproduced. One is a value which is a constant in some banks but differs per sample in others, where it looks like a check sum; the other is a comment which names the sound set a sample was originally taken from. Neither can be derived from the converted data. The sample names themselves are kept.
 
 ## Ensoniq EPS/EPS16+/ASR-10
 

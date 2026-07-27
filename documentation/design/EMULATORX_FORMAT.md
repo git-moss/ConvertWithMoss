@@ -101,7 +101,7 @@ payload; `108 + offset` is the position in the file.
 | 0      | 2    |        | Zero                                                           |
 | 2      | 2    | LE     | Header version, 1 or 2                                         |
 | 4      | 64   |        | Name                                                           |
-| 68     | 4    | BE     | Always 301, a format marker                                    |
+| 68     | 4    | BE     | 301 in some banks, per-sample and check-sum-like in others (see below) |
 | 72     | 4    | LE     | Start of the left channel data                                 |
 | 76     | 4    | LE     | Start of the right channel data                                |
 | 80     | 4    | LE     | End of the left channel data                                   |
@@ -117,10 +117,22 @@ payload; `108 + offset` is the position in the file.
 | 113    | 1    |        | Number of channels minus one: 0 for mono, 1 for stereo         |
 | 114    | 1    |        | Mask of the used channels: 1 for mono, 3 for stereo            |
 | 115    | 1    |        | Always 2                                                       |
-| 116    | 64   |        | Comment                                                        |
+| 116    | 64   |        | Comment, UTF-16; names the sound set a sample was taken from   |
 | 180    | 1    |        | Zero                                                           |
 | 181    | 4    | LE     | Offset of the trailer, 0 if there is none (version 2 only)     |
 | 185    | 3    |        | Zero (version 2 only, version 1 pads with 3 bytes to offset 184)|
+
+Two of these fields are not reproduced when writing, which is why a written bank is not
+byte-identical to its source even though the audio data is:
+
+* The value at offset 68 is 301 in the PROcussion bank and zero in the Halion Synth Kit, which is
+  where the 'format marker' reading came from. In the E-mu General MIDI and the DSF Classic
+  Synthesizers banks it differs for every single sample, so it is far more likely a check sum or an
+  identifier. The creator writes 301.
+* The comment at offset 116 names the sound set a sample was taken from ('Mini Moog - Xboard',
+  'Keyboard - GM') and is filled in three of the four banks measured. It is provenance of the
+  original authoring, cannot be derived from the converted data and the model has nowhere to carry
+  it, so the creator leaves it empty.
 
 The audio data follows at the offset given by the start of the left channel, which is 184 for
 version 1 and 188 for version 2. It is 16-bit signed little-endian PCM, that is, the raw content of
@@ -164,7 +176,7 @@ The payload is a sequence of chunks:
 |--------|------|--------------------------------------------------------------------|
 | 0      | 4    | Version, 3                                                         |
 | 4      | 64   | Preset name                                                        |
-| 68     | 64   | Second name field, always empty                                    |
+| 68     | 64   | Category of the preset ('Synthesizer', 'Keyboard - GM'); empty in some banks |
 | 132    | 4    | Number of voices                                                   |
 | 136    | 8    | Zero                                                               |
 | 144    | 4    | `0xFFFFFFFF`                                                       |
