@@ -486,6 +486,15 @@ public interface ISampleZone
 
 
     /**
+     * Get the low frequency oscillator modulator for the pitch, which is commonly called vibrato. A
+     * depth of zero means that there is no vibrato.
+     *
+     * @return The modulator, never null
+     */
+    ILfoModulator getPitchLfoModulator ();
+
+
+    /**
      * Get pitch bend up value.
      *
      * @return The cents to bend down (if negative) or up in cents (-9600 to 9600)

@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -87,24 +88,29 @@ public class S5xxDiskImageParser
      * Parse the disk image.
      *
      * @return Fully parsed {@link S5xxDiskImage}
-     * @throws IOException on insufficient data, unknown type, or S770 (rejected)
+     * @throws IOException On insufficient data, unknown type, or S770 (rejected)
      */
-    public S5xxDiskImage parse () throws IOException
+    public List<S5xxDiskImage> parse () throws IOException
     {
         this.requireMinSize (HDR_MIN_SIZE, "header region");
 
         final InputStream input = new ByteArrayInputStream (this.data);
-
         final S5xxDiskImageHeader header = new S5xxDiskImageHeader (input);
+
         final S5xxSamplerType samplerType = header.getSamplerType ();
         if (samplerType == S5xxSamplerType.LAND)
         {
+            // TODO
+            final List<S5xxDiskImage> result = new ArrayList<> ();
             @SuppressWarnings("unused")
             final List<S5xxDirectoryEntry> landDirectory = this.parseLandDirectory (header);
-            throw new IOException ("HD / CD-Roms currently not supported.");
+            // throw new IOException ("HD / CD-Roms currently not supported.");
+            for (final S5xxDirectoryEntry entry: landDirectory)
+                result.add (new S5xxDiskImage (header, this.parsePatches (samplerType, 0x10400), this.parseTones (), this.parseDiskLabel (), this.readWaveData ()));
+            return result;
         }
 
-        return new S5xxDiskImage (header, this.parsePatches (samplerType), this.parseTones (), this.parseDiskLabel (), this.readWaveData ());
+        return Collections.singletonList (new S5xxDiskImage (header, this.parsePatches (samplerType, 0), this.parseTones (), this.parseDiskLabel (), this.readWaveData ()));
     }
 
 
@@ -118,7 +124,7 @@ public class S5xxDiskImageParser
     }
 
 
-    private List<S5xxPatch> parsePatches (final S5xxSamplerType type) throws IOException
+    private List<S5xxPatch> parsePatches (final S5xxSamplerType type, final int slotOffset) throws IOException
     {
         final int blockSize = type.patchBlockSize ();
         final int patchCount = type.patchCount ();
@@ -127,11 +133,11 @@ public class S5xxDiskImageParser
 
         // Bank 1 - first 8 patches
         final int bank1Count = type.isS50 () ? patchCount : Math.min (8, patchCount);
-        this.parsePatchBank (patches, PATCH_BANK1_START, blockSize, bank1Count, 0, type);
+        this.parsePatchBank (patches, slotOffset + PATCH_BANK1_START, blockSize, bank1Count, 0, type);
 
         // Bank 2 — second 8 patches for S-550 / W-30 / S-330 only
         if (!type.isS50 () && patchCount > 8)
-            this.parsePatchBank (patches, PATCH_BANK2_START, blockSize, patchCount - 8, 8, type);
+            this.parsePatchBank (patches, slotOffset + PATCH_BANK2_START, blockSize, patchCount - 8, 8, type);
         return patches;
     }
 
