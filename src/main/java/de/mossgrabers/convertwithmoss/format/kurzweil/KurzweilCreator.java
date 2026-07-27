@@ -164,7 +164,9 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
      */
     private void addMultisample (final KurzweilFile kurzweilFile, final IMultisampleSource multisampleSource, final Set<String> usedNames) throws IOException
     {
-        final String name = multisampleSource.getName ();
+        // The object names hold 16 characters, which the device displays
+        final String sourceName = multisampleSource.getName ();
+        final String name = this.settingsConfiguration.isShortenName () ? createShortName (sourceName) : sourceName;
 
         // Samples above the maximum playback rate of the devices are down-sampled
         recalculateAllSamplePositions (multisampleSource, MAX_SAMPLE_RATE, true);

@@ -34,7 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
+import de.mossgrabers.convertwithmoss.core.settings.ShortNameSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzInstrument;
@@ -59,7 +59,7 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample
  *
  * @author Jürgen Moßgraber
  */
-public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
+public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
 {
     private static final String                 IDS_ZENCORE_EMPTY_SOURCE = "IDS_ZENCORE_EMPTY_SOURCE";
 
@@ -121,7 +121,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      */
     public ZenCoreCreator (final INotifier notifier)
     {
-        super ("Roland ZEN-Core", "ZenCore", notifier, EmptySettingsUI.INSTANCE);
+        super ("Roland ZEN-Core", "ZenCore", notifier, new ShortNameSettingsUI ("ZenCore"));
     }
 
 
@@ -132,7 +132,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final List<SvzSample> pool = new ArrayList<> ();
         final Map<Object, Integer> byContent = new HashMap<> ();
         final Set<String> usedNames = new HashSet<> ();
-        final Optional<SvzInstrument> instrument = this.buildInstrument (multisampleSource, pool, byContent, usedNames, assignToneNames (Collections.singletonList (multisampleSource.getName ())).get (0));
+        final Optional<SvzInstrument> instrument = this.buildInstrument (multisampleSource, pool, byContent, usedNames, assignToneNames (Collections.singletonList (this.createToneName (multisampleSource))).get (0));
         if (instrument.isEmpty ())
             return;
         ensureLoadableSamplePool (pool, byContent, usedNames);
@@ -172,7 +172,7 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
         final List<SvzInstrument> instruments = new ArrayList<> ();
         final List<String> sourceNames = new ArrayList<> ();
         for (final IMultisampleSource source: multisampleSources)
-            sourceNames.add (source.getName ());
+            sourceNames.add (this.createToneName (source));
         final List<String> toneNames = assignToneNames (sourceNames);
         // One broken source (e.g. an unreadable sample file) must not lose the whole library -
         // report it and continue with the remaining sources.
@@ -423,6 +423,20 @@ public class ZenCoreCreator extends AbstractCreator<EmptySettingsUI>
      * @param sourceNames The source names in bank order
      * @return One unique tone name (at most 16 characters) per source, in the same order
      */
+    /**
+     * Get the name of a source to use for its tone, optionally shortened to its last segment for
+     * the 16 character name field which the device displays.
+     *
+     * @param multisampleSource The multi-sample source
+     * @return The name of the tone
+     */
+    private String createToneName (final IMultisampleSource multisampleSource)
+    {
+        final String name = multisampleSource.getName ();
+        return this.settingsConfiguration.isShortenName () ? createShortName (name) : name;
+    }
+
+
     private static List<String> assignToneNames (final List<String> sourceNames)
     {
         final List<String> bases = new ArrayList<> ();

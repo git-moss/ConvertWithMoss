@@ -81,6 +81,10 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
             AbstractCreator.recalculateAllSamplePositions (multisampleSource, 48000, true);
 
             final String multiSampleName = createSafeFilename (multisampleSource.getName ());
+            // The DOS file names and the sub-folder keep the full name; only the 24 character
+            // name which the device displays can optionally be shortened
+            final String sourceName = multisampleSource.getName ();
+            final String displayName = this.settingsConfiguration.isShortenName () ? createShortName (sourceName) : sourceName;
 
             // Create a sub-folder for the KMP file(s) and all samples
             final File subFolder = new File (destinationFolder, createUniqueDOSFileName (destinationFolder, multiSampleName, "", new HashSet<> (), true));
@@ -98,7 +102,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
 
             final List<ISampleZone> sampleZones = multisampleSource.getAllSampleZones (false);
             for (final List<ISampleZone> velocityLayer: LayerSplitter.splitVelocityLayers (sampleZones).values ())
-                kmpIndex = this.storeKMP (subFolder, multiSampleName, velocityLayer, zoneChannels, kmpIndex, createdKMPNames);
+                kmpIndex = this.storeKMP (subFolder, multiSampleName, displayName, velocityLayer, zoneChannels, kmpIndex, createdKMPNames);
         }
 
         // Write a KSC file with all created KMP files
@@ -133,7 +137,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
      * @return The increased KMP index to use for the next one
      * @throws IOException Could not store the file
      */
-    private int storeKMP (final File subFolder, final String sampleName, final List<ISampleZone> sampleZones, final ZoneChannels zoneChannels, final int kmpIndex, final Collection<String> createdKMPNames) throws IOException
+    private int storeKMP (final File subFolder, final String sampleName, final String displayName, final List<ISampleZone> sampleZones, final ZoneChannels zoneChannels, final int kmpIndex, final Collection<String> createdKMPNames) throws IOException
     {
         final boolean gain12dB = this.settingsConfiguration.gainPlus12 ();
         final boolean maxVolume = this.settingsConfiguration.maximizeVolume ();
@@ -143,13 +147,13 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
         {
             default:
             case MONO:
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex, KMPChannel.MONO, sampleZones, gain12dB, maxVolume, createdKMPNames);
+                this.storeKMPChannel (subFolder, filename, displayName, kmpIndex, KMPChannel.MONO, sampleZones, gain12dB, maxVolume, createdKMPNames);
                 return kmpIndex + 1;
 
             case STEREO, MIXED:
                 // Write 2 KMP files for left/right
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex, KMPChannel.LEFT, sampleZones, gain12dB, maxVolume, createdKMPNames);
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex + 1, KMPChannel.RIGHT, sampleZones, gain12dB, maxVolume, createdKMPNames);
+                this.storeKMPChannel (subFolder, filename, displayName, kmpIndex, KMPChannel.LEFT, sampleZones, gain12dB, maxVolume, createdKMPNames);
+                this.storeKMPChannel (subFolder, filename, displayName, kmpIndex + 1, KMPChannel.RIGHT, sampleZones, gain12dB, maxVolume, createdKMPNames);
                 return kmpIndex + 2;
 
             case SPLIT_STEREO:
@@ -161,8 +165,8 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
                         leftSampleZones.add (zone);
                     else
                         rightSampleZones.add (zone);
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex, KMPChannel.LEFT, leftSampleZones, gain12dB, maxVolume, createdKMPNames);
-                this.storeKMPChannel (subFolder, filename, sampleName, kmpIndex + 1, KMPChannel.RIGHT, rightSampleZones, gain12dB, maxVolume, createdKMPNames);
+                this.storeKMPChannel (subFolder, filename, displayName, kmpIndex, KMPChannel.LEFT, leftSampleZones, gain12dB, maxVolume, createdKMPNames);
+                this.storeKMPChannel (subFolder, filename, displayName, kmpIndex + 1, KMPChannel.RIGHT, rightSampleZones, gain12dB, maxVolume, createdKMPNames);
                 return kmpIndex + 2;
         }
     }

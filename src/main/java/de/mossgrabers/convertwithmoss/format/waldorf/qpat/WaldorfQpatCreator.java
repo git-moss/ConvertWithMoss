@@ -152,13 +152,19 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final String author = this.settingsConfiguration.getAuthor ();
         if (author != null && !author.isBlank ())
             metadata.setCreator (author);
+        // The device has a field of its own for the bank, so the preset name does not need to
+        // repeat it - only the file name keeps it, for the user to tell the files apart. An
+        // explicit bank from the settings replaces the source's one, which is then no longer
+        // written anywhere, so in that case the name keeps it
         final String bank = this.settingsConfiguration.getBank ();
-        if (bank != null && !bank.isBlank ())
+        final boolean replacesSourceBank = bank != null && !bank.isBlank ();
+        final String presetName = replacesSourceBank ? multisampleSource.getName () : createNameWithoutBank (multisampleSource);
+        if (replacesSourceBank)
             metadata.setDescription (bank);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            writeHeader (out, metadata, multisampleSource.getName ());
+            writeHeader (out, metadata, presetName);
 
             StreamUtils.writeUnsigned16 (out, parameters.size (), false);
             StreamUtils.padBytes (out, 2);
