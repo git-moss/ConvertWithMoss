@@ -381,7 +381,11 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
             if (zoneHeader == null || !child.isList (EmulatorXConstants.WINDOW_LIST_TYPE))
                 continue;
 
-            final Integer sampleIndex = Integer.valueOf (zoneHeader.getU16 (EmulatorXConstants.ZONE_SAMPLE_INDEX));
+            // The sample indices are 1-based, index 0 means that the zone has no sample assigned
+            final int index = zoneHeader.getU16 (EmulatorXConstants.ZONE_SAMPLE_INDEX);
+            if (index == 0)
+                continue;
+            final Integer sampleIndex = Integer.valueOf (index);
             final EmulatorXSampleFile sampleFile = samples.get (sampleIndex);
             if (sampleFile == null)
             {
