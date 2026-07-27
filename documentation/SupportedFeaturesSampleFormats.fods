@@ -6601,6 +6601,150 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce67" table:number-columns-repeated="16315"/>
     </table:table-row>
+    <table:table-row table:style-name="ro6">
+     <table:table-cell table:style-name="ce77" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Roland SP-404MK2</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce77" office:value-type="string" calcext:value-type="string"><text:p>Read</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>PADCONF.BIN (project folder)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Project with up to 10 banks (A-J), one multi-sample per bank</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce12"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string"><text:p>16</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string"><text:p>48 kHz</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce16"/>
+     <table:table-cell table:style-name="ce4" office:value-type="string" calcext:value-type="string"><text:p>Project + bank (A-J)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>from filename</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>from filename</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce4"/>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Pad key</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string"><text:p>One key per pad (the device has no key ranges)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Trim window not decoded yet</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Trim window not decoded yet</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Pad pitch + fine</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Pad level</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Pad pan</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce16"/>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>Forward (the device stores loop on/off only)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Loop points not decoded yet</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Loop points not decoded yet</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce67" table:number-columns-repeated="16315"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro12">
+     <table:covered-table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce77" office:value-type="string" calcext:value-type="string"><text:p>Write</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>PROJECT_XX folder (PADCONF.BIN + SMPL)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Project with up to 10 banks (A-J), 16 pads each</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce12"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string"><text:p>16</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string"><text:p>48 kHz (re-sampled)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce16"/>
+     <table:table-cell table:style-name="ce4" office:value-type="string" calcext:value-type="string"><text:p>Pad name (per zone)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce4"/>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Pad key</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string"><text:p>One pad per zone, 16 per bank; further zones go to the next bank</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string"><text:p>Reduced to the loudest layer (a pad plays one sample)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Pad pitch + fine</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Pad level</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>Pad pan</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce16"/>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>Loop on/off</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce77"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce13"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce67" table:number-columns-repeated="16315"/>
+    </table:table-row>
     <table:table-row table:style-name="ro3">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Roland ZEN-Core</text:p>
