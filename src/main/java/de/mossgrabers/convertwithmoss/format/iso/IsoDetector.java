@@ -12,6 +12,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
+import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emulator4Detector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
@@ -27,6 +28,7 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
     private static final String         IDS_ISO_PROCESSING_FORMAT = "IDS_ISO_PROCESSING_FORMAT";
 
     private final EnsoniqEpsAsrDetector ensoniqDetector;
+    private final Emulator4Detector     emulator4Detector;
     private final S5xxDetector          rolandS5xxDetector;
     private final S770Detector          rolandS7xxDetector;
 
@@ -38,8 +40,9 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
      */
     public IsoDetector (final INotifier notifier)
     {
-        super ("ISO/IMG file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso", ".img", ".out", ".sdk");
+        super ("ISO/IMG file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso", ".img", ".out", ".sdk", ".hda");
 
+        this.emulator4Detector = new Emulator4Detector (notifier);
         this.ensoniqDetector = new EnsoniqEpsAsrDetector (notifier);
         this.rolandS5xxDetector = new S5xxDetector (notifier);
         this.rolandS7xxDetector = new S770Detector (notifier);
@@ -62,6 +65,12 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
             case AKAI_S3000:
                 this.notifier.log (IDS_ISO_PROCESSING_FORMAT, IsoFormat.getName (isoFormat));
                 return this.processAkaiS1000Disk (sourceFile);
+
+            case EMU3:
+                this.notifier.log (IDS_ISO_PROCESSING_FORMAT, IsoFormat.getName (isoFormat));
+                this.emulator4Detector.setSourceFolder (this.sourceFolder);
+                this.emulator4Detector.setSettings (this.settingsConfiguration);
+                return this.emulator4Detector.readPresetFile (sourceFile);
 
             case ENSONIQ:
                 this.ensoniqDetector.setSourceFolder (this.sourceFolder);
