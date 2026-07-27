@@ -51,6 +51,9 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
 {
+    private static final String IDS_EIII_MALFORMED_SAMPLE = "IDS_EIII_MALFORMED_SAMPLE";
+
+
     /** Holds the parsed information of one sample of a bank. */
     private static class Sample
     {
@@ -224,7 +227,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
     {
         if (address < 0 || address + Emulator3Constants.SAMPLE_HEADER_SIZE > data.length)
         {
-            this.notifier.logError ("IDS_EIII_MALFORMED_SAMPLE", Integer.toString (sampleIndex), bankName);
+            this.notifier.logError (IDS_EIII_MALFORMED_SAMPLE, Integer.toString (sampleIndex), bankName);
             return null;
         }
         final int offset = (int) address;
@@ -244,7 +247,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
         final long dataSize = (long) numFrames * 2 * (isStereo ? 2 : 1);
         if (numFrames <= 0 || sampleRate <= 0 || offset + Emulator3Constants.SAMPLE_HEADER_SIZE + dataSize > data.length)
         {
-            this.notifier.logError ("IDS_EIII_MALFORMED_SAMPLE", Integer.toString (sampleIndex), bankName);
+            this.notifier.logError (IDS_EIII_MALFORMED_SAMPLE, Integer.toString (sampleIndex), bankName);
             return null;
         }
 
@@ -618,7 +621,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
         }
 
         if (notifier != null && bankName != null && numFrames <= 0)
-            notifier.logError ("IDS_EIII_MALFORMED_SAMPLE", sample.name, bankName);
+            notifier.logError (IDS_EIII_MALFORMED_SAMPLE, sample.name, bankName);
         return new InMemorySampleData (new DefaultAudioMetadata (numChannels, sample.sampleRate, 16, numFrames), pcm);
     }
 

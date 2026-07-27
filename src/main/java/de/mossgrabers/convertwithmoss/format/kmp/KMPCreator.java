@@ -130,6 +130,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
      *
      * @param subFolder The sub-folder to store to
      * @param sampleName The KMP file to create
+     * @param displayName The name to display
      * @param sampleZones The sample zones to add to the KMP
      * @param zoneChannels The channel configuration of the zone
      * @param kmpIndex The index to use for the KMP

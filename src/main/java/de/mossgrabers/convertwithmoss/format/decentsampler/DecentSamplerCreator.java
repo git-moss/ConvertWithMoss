@@ -60,6 +60,13 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreatorUI>
 {
+    private static final String       TAG_GROUP_INDEX      = "groupIndex";
+    private static final String       TAG_LEVEL            = "level";
+    private static final String       TAG_MOD_BEHAVIOR     = "modBehavior";
+    private static final String       TAG_PARAMETER        = "parameter";
+
+    private static final String       TAG_TRANSLATION      = "translation";
+
     private static final String       IDS_NOTIFY_STORING   = "IDS_NOTIFY_STORING";
     private static final String       DECENT_SAMPLER       = "DecentSampler";
 
@@ -358,10 +365,10 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
 
     /**
-     * Limit the number of voices of the instrument. DecentSampler can only limit the polyphony of
-     * a tag, therefore a tag is created and assigned to all groups. The option to make the
-     * instrument monophonic always enforces one voice, otherwise the polyphony of the instrument
-     * is applied, if it is set.
+     * Limit the number of voices of the instrument. DecentSampler can only limit the polyphony of a
+     * tag, therefore a tag is created and assigned to all groups. The option to make the instrument
+     * monophonic always enforces one voice, otherwise the polyphony of the instrument is applied,
+     * if it is set.
      *
      * @param document The XML document
      * @param multisampleElement The top level element
@@ -529,12 +536,12 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
             final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
             bindingElement.setAttribute ("type", "effect");
-            bindingElement.setAttribute ("level", "group");
-            bindingElement.setAttribute ("groupIndex", Integer.toString (groupIndex));
+            bindingElement.setAttribute (TAG_LEVEL, "group");
+            bindingElement.setAttribute (TAG_GROUP_INDEX, Integer.toString (groupIndex));
             bindingElement.setAttribute ("effectIndex", "0");
-            bindingElement.setAttribute ("parameter", "FX_FILTER_FREQUENCY");
-            bindingElement.setAttribute ("modBehavior", "add");
-            bindingElement.setAttribute ("translation", "table");
+            bindingElement.setAttribute (TAG_PARAMETER, "FX_FILTER_FREQUENCY");
+            bindingElement.setAttribute (TAG_MOD_BEHAVIOR, "add");
+            bindingElement.setAttribute (TAG_TRANSLATION, "table");
             bindingElement.setAttribute ("translationTable", "0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000");
         }
     }
@@ -565,14 +572,15 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
         final Element bindingElement = XMLUtils.addElement (document, lfoElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", "amp");
-        bindingElement.setAttribute ("level", "group");
-        bindingElement.setAttribute ("groupIndex", Integer.toString (groupIndex));
-        bindingElement.setAttribute ("parameter", "GROUP_TUNING");
-        bindingElement.setAttribute ("translation", "linear");
-        // Unit are semi-tones; the oscillator is bipolar, so the full range is applied symmetrically
+        bindingElement.setAttribute (TAG_LEVEL, "group");
+        bindingElement.setAttribute (TAG_GROUP_INDEX, Integer.toString (groupIndex));
+        bindingElement.setAttribute (TAG_PARAMETER, "GROUP_TUNING");
+        bindingElement.setAttribute (TAG_TRANSLATION, "linear");
+        // Unit are semi-tones; the oscillator is bipolar, so the full range is applied
+        // symmetrically
         bindingElement.setAttribute ("translationOutputMin", Integer.toString (-IEnvelope.MAX_ENVELOPE_DEPTH / 100));
         bindingElement.setAttribute ("translationOutputMax", Integer.toString (IEnvelope.MAX_ENVELOPE_DEPTH / 100));
-        bindingElement.setAttribute ("modBehavior", "add");
+        bindingElement.setAttribute (TAG_MOD_BEHAVIOR, "add");
     }
 
 
@@ -604,14 +612,14 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
         final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", "amp");
-        bindingElement.setAttribute ("level", "group");
-        bindingElement.setAttribute ("groupIndex", Integer.toString (groupIndex));
-        bindingElement.setAttribute ("parameter", "GROUP_TUNING");
-        bindingElement.setAttribute ("translation", "linear");
+        bindingElement.setAttribute (TAG_LEVEL, "group");
+        bindingElement.setAttribute (TAG_GROUP_INDEX, Integer.toString (groupIndex));
+        bindingElement.setAttribute (TAG_PARAMETER, "GROUP_TUNING");
+        bindingElement.setAttribute (TAG_TRANSLATION, "linear");
         bindingElement.setAttribute ("translationOutputMin", "0");
         // Unit are semi-tones; maximum value is 120 semi-tones
         bindingElement.setAttribute ("translationOutputMax", Integer.toString (IEnvelope.MAX_ENVELOPE_DEPTH / 100));
-        bindingElement.setAttribute ("modBehavior", "add");
+        bindingElement.setAttribute (TAG_MOD_BEHAVIOR, "add");
     }
 
 

@@ -32,10 +32,10 @@ import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 
 /**
  * Detects Roland SP-404MK2 projects. A project is a folder holding a <i>PADCONF.BIN</i> pad
- * configuration and a <i>SMPL</i> sub-folder of <i>BANK&lt;bank&gt;-&lt;pad&gt;.SMP</i> sample files.
- * Since the SP-404MK2 is a pad sampler (each of its 160 pads plays one sample, there are no
- * key-ranges), every populated bank is converted into one multi-sample whose pads become
- * single-key zones - the same mapping used for the other pad devices. Projects written by
+ * configuration and a <i>SMPL</i> sub-folder of <i>BANK&lt;bank&gt;-&lt;pad&gt;.SMP</i> sample
+ * files. Since the SP-404MK2 is a pad sampler (each of its 160 pads plays one sample, there are no
+ * key-ranges), every populated bank is converted into one multi-sample whose pads become single-key
+ * zones - the same mapping used for the other pad devices. Projects written by
  * {@link SP404Mk2Creator} round-trip through this detector.
  *
  * @author Jürgen Moßgraber
@@ -211,7 +211,7 @@ public class SP404Mk2Detector extends AbstractDetector<MetadataSettingsUI>
 
         final int recordOffset = metaStart + padIndex * SP404Mk2Constants.PAD_RECORD_SIZE;
         final int volume = (int) SP404Mk2Constants.getU32 (data, recordOffset + SP404Mk2Constants.PAD_VOLUME);
-        zone.setGain (MathUtils.valueToDb (Math.max (Math.min (volume, 127), 1) / 127.0));
+        zone.setGain (MathUtils.valueToDb (Math.clamp (volume, 1, 127) / 127.0));
         final int pan = (int) SP404Mk2Constants.getU32 (data, recordOffset + SP404Mk2Constants.PAD_PAN);
         zone.setPanning (Math.clamp ((pan - SP404Mk2Constants.PAN_CENTER) / 63.0, -1.0, 1.0));
         final int pitch = SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_PITCH);

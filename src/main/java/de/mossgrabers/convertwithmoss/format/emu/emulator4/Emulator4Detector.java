@@ -45,11 +45,11 @@ import de.mossgrabers.tools.FileUtils;
 /**
  * Detects E-mu Emulator IV bank files (*.e4b) as well as CD-ROM and hard disk images of the EOS
  * samplers (*.iso, *.img, *.hda) which use the proprietary E-mu disk filesystem and contain such
- * banks. A bank contains up to 1000 presets and 1000 samples; every preset becomes one
- * multi-sample source. A preset is a list of voices, each of which maps a set of zones
- * (key/velocity ranges referencing a sample) and carries the tuning, volume, filter and envelope
- * settings for them; every voice becomes one group. The format was reverse-engineered by the
- * mpc2emu project, see documentation/design/E4B_FORMAT.md.
+ * banks. A bank contains up to 1000 presets and 1000 samples; every preset becomes one multi-sample
+ * source. A preset is a list of voices, each of which maps a set of zones (key/velocity ranges
+ * referencing a sample) and carries the tuning, volume, filter and envelope settings for them;
+ * every voice becomes one group. The format was reverse-engineered by the mpc2emu project, see
+ * documentation/design/E4B_FORMAT.md.
  *
  * @author Jürgen Moßgraber
  */
@@ -61,14 +61,14 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
     /** Holds the parsed information of one E3S1 sample chunk. */
     private static class Sample
     {
-        String              name;
-        InMemorySampleData  sampleData;
-        int                 numFrames;
-        int                 rootKey;
-        double              tuning;
-        boolean             hasLoop;
-        int                 loopStart;
-        int                 loopEnd;
+        String             name;
+        InMemorySampleData sampleData;
+        int                numFrames;
+        int                rootKey;
+        double             tuning;
+        boolean            hasLoop;
+        int                loopStart;
+        int                loopEnd;
     }
 
 
@@ -217,9 +217,9 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Parse an E3S1 sample chunk. The chunk holds a 94 byte header (all fields little-endian
-     * except the sample index) followed by 16-bit little-endian mono PCM data. Loop positions are
-     * stored as byte offsets relative to the 92 byte EOS sample struct.
+     * Parse an E3S1 sample chunk. The chunk holds a 94 byte header (all fields little-endian except
+     * the sample index) followed by 16-bit little-endian mono PCM data. Loop positions are stored
+     * as byte offsets relative to the 92 byte EOS sample struct.
      *
      * @param data The bank content
      * @param offset The offset of the chunk body
@@ -310,8 +310,8 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Parse an E4P1 preset chunk into a multi-sample source. Every voice of the preset becomes one
-     * group; the voice parameters (tuning, volume, filter, envelopes, modulation cords) are
-     * applied to all zones of the voice.
+     * group; the voice parameters (tuning, volume, filter, envelopes, modulation cords) are applied
+     * to all zones of the voice.
      *
      * @param sourceFile The bank file
      * @param bankName The name of the bank which contains the preset
@@ -451,9 +451,9 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      */
     private static void parseVoice (final byte [] body, final int offset, final int numZones, final Map<Integer, Sample> samplesByIndex, final Set<Integer> missingSampleIndices, final IGroup group)
     {
-        // Per-voice tuning: key transpose and coarse tune in semitones. Both always apply to all
+        // Per-voice tuning: key transpose and coarse tune in semi-tones. Both always apply to all
         // zones of the voice, there is no per-zone counterpart for them
-        final double coarseTuning = body[offset + 34] + body[offset + 35];
+        final double coarseTuning = body[offset + 34] + (double) body[offset + 35];
         final boolean isFixedPitch = body[offset + 38] == 1;
 
         // Fine tuning, volume and panning exist twice: at the voice level and in every zone entry.

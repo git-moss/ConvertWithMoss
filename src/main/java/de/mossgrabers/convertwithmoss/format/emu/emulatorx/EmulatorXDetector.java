@@ -62,7 +62,12 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
     private static final double MINIMUM_STATIC_CUTOFF = 0.01;
 
 
-    /** The velocity range of a group of voices. */
+    /**
+     * The velocity range of a group of voices.
+     * 
+     * @param low The low velocity value
+     * @param high The high velocity value
+     */
     private record VelocityRange (int low, int high)
     {
         // Intentionally empty
@@ -126,7 +131,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         final File parent = folder.getParentFile ();
         if (parent == null)
             return false;
-        final File [] banks = parent.listFiles ( (dir, name) -> name.toLowerCase (Locale.US).endsWith (EmulatorXConstants.BANK_ENDING));
+        final File [] banks = parent.listFiles ((_, name) -> name.toLowerCase (Locale.US).endsWith (EmulatorXConstants.BANK_ENDING));
         return banks != null && banks.length > 0;
     }
 
@@ -245,7 +250,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
             samples.put (Integer.valueOf (index), EmulatorXSampleFile.read (Files.readAllBytes (file.toPath ())));
             return true;
         }
-        catch (final IOException | ParseException ex)
+        catch (final IOException | ParseException _)
         {
             this.notifier.logError ("IDS_EXB_MALFORMED_SAMPLE", file.getName ());
             samples.put (Integer.valueOf (index), null);
@@ -287,7 +292,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
             for (final ISampleZone zone: this.parseVoice (voice, presetName, samples, initialControllers))
             {
                 final VelocityRange velocityRange = new VelocityRange (zone.getVelocityLow (), zone.getVelocityHigh ());
-                final List<IGroup> candidates = groupsByVelocity.computeIfAbsent (velocityRange, key -> new ArrayList<> ());
+                final List<IGroup> candidates = groupsByVelocity.computeIfAbsent (velocityRange, _ -> new ArrayList<> ());
                 IGroup group = null;
                 for (final IGroup candidate: candidates)
                     if (!overlaps (candidate, zone))

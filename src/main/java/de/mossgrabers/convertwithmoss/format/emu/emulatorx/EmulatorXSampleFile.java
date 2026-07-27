@@ -154,10 +154,10 @@ public class EmulatorXSampleFile
         // Without a loop the end is put in front of the start, which is what the factory banks do
         final int loopStartOffset = this.hasLoop ? this.loopStart * EmulatorXConstants.BYTES_PER_FRAME : 0;
         final int loopEndOffset = this.hasLoop ? (this.loopEnd - 1) * EmulatorXConstants.BYTES_PER_FRAME : -EmulatorXConstants.BYTES_PER_FRAME;
-        EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_START, leftStart + loopStartOffset);
-        EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_RIGHT_LOOP_START, rightStart + loopStartOffset);
-        EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_END, leftStart + loopEndOffset);
-        EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_RIGHT_LOOP_END, rightStart + loopEndOffset);
+        EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_START, leftStart + (long) loopStartOffset);
+        EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_RIGHT_LOOP_START, rightStart + (long) loopStartOffset);
+        EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_END, leftStart + (long) loopEndOffset);
+        EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_RIGHT_LOOP_END, rightStart + (long) loopEndOffset);
 
         EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_RATE, this.sampleRate);
         EmulatorXConstants.putU16LE (fileData, payload + EmulatorXConstants.SAMPLE_LOOP_FLAG, this.hasLoop ? 1 : 0);

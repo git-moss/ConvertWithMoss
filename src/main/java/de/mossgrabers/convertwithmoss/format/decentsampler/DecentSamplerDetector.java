@@ -43,9 +43,9 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
@@ -62,6 +62,8 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetectorUI>
 {
+    private static final String                  TAG_PARAMETER         = "parameter";
+
     private static final String                  DECENT_SAMPLER        = "DecentSampler";
     private static final String                  ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
     private static final String                  ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
@@ -376,7 +378,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                     for (final Element envelopeElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.ENVELOPE))
                     {
                         final Element bindingElement = XMLUtils.getChildElementByName (envelopeElement, DecentSamplerTag.BINDING);
-                        if (bindingElement != null && "FX_FILTER_FREQUENCY".equals (bindingElement.getAttribute ("parameter")))
+                        if (bindingElement != null && "FX_FILTER_FREQUENCY".equals (bindingElement.getAttribute (TAG_PARAMETER)))
                         {
                             // IMPROVE: All filters are applied to the global filter. If filters on
                             // all levels are supported, this needs to be checked here
@@ -660,7 +662,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             for (final Element envelopeElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.ENVELOPE))
             {
                 final Element bindingElement = XMLUtils.getChildElementByName (envelopeElement, DecentSamplerTag.BINDING);
-                if (bindingElement != null && "GROUP_TUNING".equals (bindingElement.getAttribute ("parameter")))
+                if (bindingElement != null && "GROUP_TUNING".equals (bindingElement.getAttribute (TAG_PARAMETER)))
                 {
                     final double depth = XMLUtils.getDoubleAttribute (envelopeElement, DecentSamplerTag.MOD_AMOUNT, 1.0);
                     final IEnvelopeModulator pitchEnvelopeModulator = new DefaultEnvelopeModulator (depth);
@@ -674,14 +676,15 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
     private static Optional<ILfoModulator> parsePitchLfoModulation (final Element topElement)
     {
-        // Parse a low frequency oscillator bound to the pitch (vibrato). The oscillator bound to the
+        // Parse a low frequency oscillator bound to the pitch (vibrato). The oscillator bound to
+        // the
         // global tuning in the template is a mod-wheel routing and is intentionally not matched.
         final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
         if (modulatorsElement != null)
             for (final Element lfoElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.LFO))
             {
                 final Element bindingElement = XMLUtils.getChildElementByName (lfoElement, DecentSamplerTag.BINDING);
-                if (bindingElement == null || !"GROUP_TUNING".equals (bindingElement.getAttribute ("parameter")))
+                if (bindingElement == null || !"GROUP_TUNING".equals (bindingElement.getAttribute (TAG_PARAMETER)))
                     continue;
 
                 final double depth = XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0);
@@ -691,7 +694,8 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                 final ILfoModulator pitchLfoModulator = new DefaultLfoModulator (depth);
                 final ILfo pitchLfo = pitchLfoModulator.getSource ();
                 pitchLfo.setWaveform (toLfoWaveform (lfoElement.getAttribute (DecentSamplerTag.LFO_SHAPE)));
-                // Only a frequency given in Hertz can be converted; a tempo synchronized rate has no
+                // Only a frequency given in Hertz can be converted; a tempo synchronized rate has
+                // no
                 // representation without a tempo
                 final String frequencyFormat = lfoElement.getAttribute (DecentSamplerTag.LFO_FREQUENCY_FORMAT);
                 if (frequencyFormat.isEmpty () || "hz".equals (frequencyFormat))
