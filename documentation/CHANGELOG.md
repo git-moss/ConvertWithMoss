@@ -6,6 +6,7 @@
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
 * New: Added support for the E-mu Emulator III/IIIX/ESI bank format (E3B, E3X, ESI).
+* New: E-mu Emulator III banks can also be read directly from CD-ROM and hard disk images of the samplers (ISO, IMG, HDA), which use the same proprietary E-mu disk filesystem as the EOS samplers.
 * New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
 * New: Added support for the E-mu Emulator IV bank format (E4B). Banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format. New: Writing creates a bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7. Written banks have not been tested on real hardware yet.
 * Backend
