@@ -106,6 +106,8 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
                     this.notifier.logError ("IDS_EIII_NOT_A_BANK", sourceFile.getName ());
                 return Collections.emptyList ();
             }
+            if (Emulator3FloppySet.isFloppyDisk (data))
+                return this.parseFloppyDisk (sourceFile, data, bankFormat);
             return this.parseBank (sourceFile, FileUtils.getNameWithoutType (sourceFile), data, bankFormat);
         }
         catch (final IOException ex)
@@ -166,6 +168,90 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
 
 
     /**
+     * Parse a floppy disk of a bank set. The EIIIX and ESI samplers save a bank onto one or more
+     * floppy disks; the set is assembled and converted into a bank when its first disk is read,
+     * the other disks of the set are skipped. All disks of a set have to be in the same folder;
+     * they are recognized by the bank name of their disk headers since the file names of the sets
+     * in the wild number their disks in different ways.
+     *
+     * @param sourceFile The file which contains the first disk
+     * @param data The content of the disk
+     * @param bankFormat The format of the bank
+     * @return The multi-sample sources
+     * @throws IOException Could not read a continuation disk
+     */
+    private List<IMultisampleSource> parseFloppyDisk (final File sourceFile, final byte [] data, final Emulator3BankFormat bankFormat) throws IOException
+    {
+        // The floppy sets of the original Emulator III are not documented - no set to verify
+        // against has surfaced so far
+        if (bankFormat.isCompact ())
+        {
+            this.notifier.logError ("IDS_EIII_FLOPPY_E3_NOT_SUPPORTED", sourceFile.getName ());
+            return Collections.emptyList ();
+        }
+
+        final int totalDisks = Emulator3FloppySet.getTotalDisks (data);
+        final int diskNumber = Emulator3FloppySet.getDiskNumber (data);
+        if (diskNumber != 1)
+        {
+            this.notifier.log ("IDS_EIII_CONTINUATION_DISK_IGNORED", Integer.toString (diskNumber), Integer.toString (totalDisks));
+            return Collections.emptyList ();
+        }
+
+        final byte [] [] disks = new byte [totalDisks] [];
+        disks[0] = data;
+        for (int diskIndex = 2; diskIndex <= totalDisks; diskIndex++)
+        {
+            final File continuationFile = this.findContinuationDisk (sourceFile, data, diskIndex);
+            if (continuationFile == null)
+            {
+                this.notifier.logError ("IDS_EIII_CONTINUATION_DISK_NOT_FOUND", Integer.toString (diskIndex), Integer.toString (totalDisks));
+                return Collections.emptyList ();
+            }
+            this.notifier.log ("IDS_EIII_CONTINUATION_DISK_FOUND", Integer.toString (diskIndex), Integer.toString (totalDisks));
+            disks[diskIndex - 1] = Files.readAllBytes (continuationFile.toPath ());
+        }
+
+        final String bankName = Emulator3Constants.decodeName (data, Emulator3Constants.BANK_NAME);
+        final byte [] bank = Emulator3FloppySet.createBank (disks, bankFormat, bankName, this.notifier);
+        if (bank == null)
+        {
+            this.notifier.logError ("IDS_EIII_NOT_A_BANK", sourceFile.getName ());
+            return Collections.emptyList ();
+        }
+        return this.parseBank (sourceFile, bankName, bank, bankFormat);
+    }
+
+
+    /**
+     * Find the disk with the given number of the same floppy set in the folder of the first disk.
+     *
+     * @param sourceFile The file which contains the first disk
+     * @param firstDisk The content of the first disk
+     * @param diskNumber The 1-based number of the wanted disk
+     * @return The file or null if it is not in the folder
+     * @throws IOException Could not read a candidate file
+     */
+    private File findContinuationDisk (final File sourceFile, final byte [] firstDisk, final int diskNumber) throws IOException
+    {
+        final File [] files = sourceFile.getParentFile ().listFiles ();
+        if (files == null)
+            return null;
+        for (final File file: files)
+        {
+            if (!file.isFile () || file.length () != Emulator3FloppySet.FLOPPY_SIZE || file.equals (sourceFile))
+                continue;
+            try (final InputStream in = Files.newInputStream (file.toPath ()))
+            {
+                if (Emulator3FloppySet.isContinuationDisk (firstDisk, in.readNBytes (0x200), diskNumber))
+                    return file;
+            }
+        }
+        return null;
+    }
+
+
+    /**
      * Parse a bank and create one multi-sample source per preset.
      *
      * @param sourceFile The file which contains the bank (the bank file itself or a disk image)
@@ -214,7 +300,10 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             final int presetOffset = getPresetOffset (data, bankFormat, i);
             if (presetOffset < 0)
                 continue;
-            final int link = Emulator3Constants.getU16 (data, presetOffset + Emulator3Constants.PRESET_LINK);
+            // The link is a single byte, not the 16 bit value emu3bm reads: the byte behind it is
+            // an independent parameter which about 1% of the library presets set, which made
+            // their links look out of range and lose the layered preset
+            final int link = data[presetOffset + Emulator3Constants.PRESET_LINK] & 0xFF;
             if (link > 0 && link - 1 < maxPresets && link - 1 != i)
                 linkedPresets.add (Integer.valueOf (link - 1));
         }
@@ -364,7 +453,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             if (offset < 0)
                 break;
             this.parseLayers (data, bankFormat, offset, groups, samplesByIndex, missingSampleIndices, bankName);
-            final int link = Emulator3Constants.getU16 (data, offset + Emulator3Constants.PRESET_LINK);
+            final int link = data[offset + Emulator3Constants.PRESET_LINK] & 0xFF;
             currentIndex = link > 0 && link - 1 < numPresets ? link - 1 : -1;
         }
 
