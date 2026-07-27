@@ -34,12 +34,16 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
@@ -474,6 +478,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         // IMPROVE: Should be added to group itself but needs to be adapted in all other formats
         final Optional<IFilter> optFilter = parseFilterEffect (topElement, groupElement);
         final Optional<IEnvelopeModulator> pitchModulation = parsePitchModulation (topElement);
+        final Optional<ILfoModulator> pitchLfoModulation = parsePitchLfoModulation (topElement);
 
         for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE, false))
         {
@@ -510,6 +515,13 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                 final IEnvelopeModulator pitchModulator = sampleZone.getPitchEnvelopeModulator ();
                 pitchModulator.setDepth (envelopeModulator.getDepth ());
                 pitchModulator.setSource (envelopeModulator.getSource ());
+            }
+            if (pitchLfoModulation.isPresent ())
+            {
+                final ILfoModulator lfoModulator = pitchLfoModulation.get ();
+                final ILfoModulator pitchLfoModulator = sampleZone.getPitchLfoModulator ();
+                pitchLfoModulator.setDepth (lfoModulator.getDepth ());
+                pitchLfoModulator.setSource (lfoModulator.getSource ());
             }
 
             group.addSampleZone (sampleZone);
@@ -657,6 +669,48 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                 }
             }
         return Optional.empty ();
+    }
+
+
+    private static Optional<ILfoModulator> parsePitchLfoModulation (final Element topElement)
+    {
+        // Parse a low frequency oscillator bound to the pitch (vibrato). The oscillator bound to the
+        // global tuning in the template is a mod-wheel routing and is intentionally not matched.
+        final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
+        if (modulatorsElement != null)
+            for (final Element lfoElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.LFO))
+            {
+                final Element bindingElement = XMLUtils.getChildElementByName (lfoElement, DecentSamplerTag.BINDING);
+                if (bindingElement == null || !"GROUP_TUNING".equals (bindingElement.getAttribute ("parameter")))
+                    continue;
+
+                final double depth = XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0);
+                if (depth == 0)
+                    continue;
+
+                final ILfoModulator pitchLfoModulator = new DefaultLfoModulator (depth);
+                final ILfo pitchLfo = pitchLfoModulator.getSource ();
+                pitchLfo.setWaveform (toLfoWaveform (lfoElement.getAttribute (DecentSamplerTag.LFO_SHAPE)));
+                // Only a frequency given in Hertz can be converted; a tempo synchronized rate has no
+                // representation without a tempo
+                final String frequencyFormat = lfoElement.getAttribute (DecentSamplerTag.LFO_FREQUENCY_FORMAT);
+                if (frequencyFormat.isEmpty () || "hz".equals (frequencyFormat))
+                    pitchLfo.setRate (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_FREQUENCY, -1));
+                pitchLfo.setDelay (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_DELAY_TIME, -1));
+                return Optional.of (pitchLfoModulator);
+            }
+        return Optional.empty ();
+    }
+
+
+    private static LfoWaveform toLfoWaveform (final String shape)
+    {
+        return switch (shape)
+        {
+            case "square" -> LfoWaveform.SQUARE;
+            case "saw" -> LfoWaveform.SAWTOOTH_UP;
+            default -> LfoWaveform.SINE;
+        };
     }
 
 

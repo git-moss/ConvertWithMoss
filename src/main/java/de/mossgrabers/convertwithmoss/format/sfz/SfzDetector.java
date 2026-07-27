@@ -27,6 +27,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -499,6 +501,22 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         pitchEnvelope.setAttackSlope (this.getDoubleValue (SfzOpcode.PITCHEG_ATTACK_SHAPE, 0) / 10.0);
         pitchEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.PITCHEG_DECAY_SHAPE, 0) / 10.0);
         pitchEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.PITCHEG_RELEASE_SHAPE, 0) / 10.0);
+
+        // -----------------------------------------------------------
+        // Pitch LFO (vibrato)
+
+        // Without a depth there is no modulation, therefore the oscillator is not read at all
+        final double lfoDepth = this.getDoubleValue (SfzOpcode.PITCHLFO_DEPTH, 0);
+        if (lfoDepth != 0)
+        {
+            final ILfoModulator pitchLfoModulator = sampleMetadata.getPitchLfoModulator ();
+            pitchLfoModulator.setDepth (lfoDepth / IEnvelope.MAX_ENVELOPE_DEPTH);
+
+            final ILfo pitchLfo = pitchLfoModulator.getSource ();
+            pitchLfo.setRate (this.getDoubleValue (SfzOpcode.PITCHLFO_FREQ, -1));
+            pitchLfo.setDelay (this.getDoubleValue (SfzOpcode.PITCHLFO_DELAY, -1));
+            pitchLfo.setFadeIn (this.getDoubleValue (SfzOpcode.PITCHLFO_FADE, -1));
+        }
 
         // -----------------------------------------------------------
         // Volume

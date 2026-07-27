@@ -367,6 +367,18 @@ public class DlsArticulation
 
 
     /**
+     * Get the controller which modulates the connection, e.g. the modulation wheel. A value of
+     * CONN_SRC_NONE means that the connection is always fully applied.
+     *
+     * @return The control, see the CONN_SRC_* constants
+     */
+    public int getControl ()
+    {
+        return this.control;
+    }
+
+
+    /**
      * Get the destination.
      *
      * @return The source, see the CONN_DST_* constants
@@ -398,6 +410,33 @@ public class DlsArticulation
     public static double absoluteTimeToSeconds (final int value)
     {
         return value == 0x80000000 ? 0.0 : Math.pow (2.0, value / (1200.0 * 65536.0));
+    }
+
+
+    /**
+     * Convert a relative pitch connection value to cent. The value is stored as a 32-bit fixed point
+     * number with 65536 representing one cent.
+     *
+     * @param value The raw 32-bit relative pitch value
+     * @return The pitch in cent
+     */
+    public static double relativePitchToCents (final int value)
+    {
+        return value / 65536.0;
+    }
+
+
+    /**
+     * Convert an absolute pitch connection value to a frequency in Hertz. The value is stored as a
+     * 32-bit fixed point number with 65536 representing one cent, where 6900 cent equal 440 Hertz
+     * (which puts 0 cent at about 8.176 Hertz, the same reference as SoundFont).
+     *
+     * @param value The raw 32-bit absolute pitch value
+     * @return The frequency in Hertz
+     */
+    public static double absolutePitchToHertz (final int value)
+    {
+        return 440.0 * Math.pow (2.0, (value / 65536.0 - 6900.0) / 1200.0);
     }
 
 

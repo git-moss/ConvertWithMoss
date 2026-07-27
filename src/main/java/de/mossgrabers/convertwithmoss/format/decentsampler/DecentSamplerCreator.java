@@ -37,9 +37,12 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -342,7 +345,10 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
             this.createFilter (document, modulatorsElement, multisampleSource, groupElement, groupIndex);
             if (!zones.isEmpty ())
+            {
                 createPitchModulator (document, modulatorsElement, zones.get (0).getPitchEnvelopeModulator (), groupIndex);
+                createPitchLfoModulator (document, modulatorsElement, zones.get (0).getPitchLfoModulator (), groupIndex);
+            }
         }
 
         this.applyPolyphony (document, multisampleElement, groupsElement, multisampleSource);
@@ -531,6 +537,55 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
             bindingElement.setAttribute ("translation", "table");
             bindingElement.setAttribute ("translationTable", "0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000");
         }
+    }
+
+
+    private static void createPitchLfoModulator (final Document document, final Element modulatorsElement, final ILfoModulator pitchLfoModulator, final int groupIndex)
+    {
+        final double lfoDepth = pitchLfoModulator.getDepth ();
+        if (lfoDepth == 0)
+            return;
+
+        final ILfo pitchLfo = pitchLfoModulator.getSource ();
+
+        final Element lfoElement = XMLUtils.addElement (document, modulatorsElement, DecentSamplerTag.LFO);
+        lfoElement.setAttribute (DecentSamplerTag.LFO_SHAPE, toLfoShape (pitchLfo.getWaveform ()));
+        // The modulation depth is applied through the binding range below, like the pitch envelope.
+        // A vibrato depth is small in relation to the full range, so more digits are needed here.
+        XMLUtils.setDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, Math.abs (lfoDepth), 5);
+        final double rate = pitchLfo.getRate ();
+        if (rate > 0)
+        {
+            lfoElement.setAttribute (DecentSamplerTag.LFO_FREQUENCY_FORMAT, "hz");
+            XMLUtils.setDoubleAttribute (lfoElement, DecentSamplerTag.LFO_FREQUENCY, rate, 3);
+        }
+        final double delay = pitchLfo.getDelay ();
+        if (delay > 0)
+            XMLUtils.setDoubleAttribute (lfoElement, DecentSamplerTag.LFO_DELAY_TIME, delay, 3);
+
+        final Element bindingElement = XMLUtils.addElement (document, lfoElement, DecentSamplerTag.BINDING);
+        bindingElement.setAttribute ("type", "amp");
+        bindingElement.setAttribute ("level", "group");
+        bindingElement.setAttribute ("groupIndex", Integer.toString (groupIndex));
+        bindingElement.setAttribute ("parameter", "GROUP_TUNING");
+        bindingElement.setAttribute ("translation", "linear");
+        // Unit are semi-tones; the oscillator is bipolar, so the full range is applied symmetrically
+        bindingElement.setAttribute ("translationOutputMin", Integer.toString (-IEnvelope.MAX_ENVELOPE_DEPTH / 100));
+        bindingElement.setAttribute ("translationOutputMax", Integer.toString (IEnvelope.MAX_ENVELOPE_DEPTH / 100));
+        bindingElement.setAttribute ("modBehavior", "add");
+    }
+
+
+    private static String toLfoShape (final LfoWaveform waveform)
+    {
+        // DecentSampler only knows sine, square and saw. The triangle and random waveforms are
+        // mapped to the closest available shape.
+        return switch (waveform)
+        {
+            case SQUARE -> "square";
+            case SAWTOOTH_UP, SAWTOOTH_DOWN -> "saw";
+            default -> "sine";
+        };
     }
 
 

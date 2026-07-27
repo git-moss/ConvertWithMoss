@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -54,6 +55,7 @@ public class DefaultSampleZone implements ISampleZone
     protected IModulator         amplitudeVelocityModulator = new DefaultModulator (1);
     protected IEnvelopeModulator amplitudeEnvelopeModulator = new DefaultEnvelopeModulator (1);
     protected IEnvelopeModulator pitchModulator             = new DefaultEnvelopeModulator (0);
+    protected ILfoModulator      pitchLfoModulator          = new DefaultLfoModulator (0);
     protected IFilter            filter                     = null;
 
     protected List<ISampleLoop>  loops                      = new ArrayList<> (1);
@@ -569,6 +571,14 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
+    public ILfoModulator getPitchLfoModulator ()
+    {
+        return this.pitchLfoModulator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public Optional<IFilter> getFilter ()
     {
         return Optional.ofNullable (this.filter);
@@ -614,6 +624,7 @@ public class DefaultSampleZone implements ISampleZone
         this.amplitudeVelocityModulator = other.getAmplitudeVelocityModulator ();
         this.amplitudeEnvelopeModulator = other.getAmplitudeEnvelopeModulator ();
         this.pitchModulator = other.getPitchEnvelopeModulator ();
+        this.pitchLfoModulator = other.getPitchLfoModulator ();
         final Optional<IFilter> filterOpt = other.getFilter ();
         this.filter = filterOpt.isPresent () ? filterOpt.get () : null;
 

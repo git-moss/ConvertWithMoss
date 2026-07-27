@@ -19,6 +19,8 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -847,6 +849,19 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 pitchEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
                 pitchEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
                 pitchEnvelope.setTimeKeyTracking (convertEnvelopeKeyTracking (generators.getSignedValue (Generator.KEYNUM_TO_MOD_ENV_DECAY), generators.getSignedValue (Generator.KEYNUM_TO_MOD_ENV_HOLD)));
+            }
+
+            // The vibrato low frequency oscillator maps to the pitch modulation. Its waveform is
+            // always a triangle and the depth is given in cent, like the pitch envelope.
+            final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+            final int vibLfoDepth = generators.getSignedValue (Generator.VIB_LFO_TO_PITCH).intValue ();
+            pitchLfoModulator.setDepth (vibLfoDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
+            if (vibLfoDepth != 0)
+            {
+                final ILfo pitchLfo = pitchLfoModulator.getSource ();
+                // The frequency is stored in absolute cents, see the filter cutoff above
+                pitchLfo.setRate (8.176 * Math.pow (2, generators.getSignedValue (Generator.FREQ_VIB_LFO).doubleValue () / 1200.0));
+                pitchLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_VIB_LFO)));
             }
 
             return Optional.of (zone);
