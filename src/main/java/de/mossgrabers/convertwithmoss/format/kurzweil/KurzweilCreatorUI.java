@@ -4,11 +4,14 @@
 
 package de.mossgrabers.convertwithmoss.format.kurzweil;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
+import de.mossgrabers.convertwithmoss.core.settings.ShortNameSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -22,7 +25,7 @@ import javafx.scene.layout.Pane;
  *
  * @author Jürgen Moßgraber
  */
-public class KurzweilCreatorUI implements ICoreTaskSettings
+public class KurzweilCreatorUI extends ShortNameSettingsUI
 {
     /**
      * The target device family. Since the created files use only K2000 features, the selection only
@@ -65,6 +68,15 @@ public class KurzweilCreatorUI implements ICoreTaskSettings
     private TargetDevice        targetDevice           = TargetDevice.K2000;
 
 
+    /**
+     * Constructor.
+     */
+    public KurzweilCreatorUI ()
+    {
+        super ("Kurzweil");
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public Pane getEditPane ()
@@ -77,6 +89,7 @@ public class KurzweilCreatorUI implements ICoreTaskSettings
         this.targetDeviceBox.setMaxWidth (Double.MAX_VALUE);
         panel.addComponent (this.targetDeviceBox);
 
+        this.addTo (panel);
         return panel.getPane ();
     }
 
@@ -85,6 +98,8 @@ public class KurzweilCreatorUI implements ICoreTaskSettings
     @Override
     public void loadSettings (final BasicConfig config)
     {
+        super.loadSettings (config);
+
         this.targetDeviceBox.getSelectionModel ().select (Math.clamp (config.getInteger (KURZWEIL_TARGET_DEVICE, 0), 0, TargetDevice.values ().length - 1));
     }
 
@@ -93,6 +108,8 @@ public class KurzweilCreatorUI implements ICoreTaskSettings
     @Override
     public void saveSettings (final BasicConfig config)
     {
+        super.saveSettings (config);
+
         config.setInteger (KURZWEIL_TARGET_DEVICE, this.targetDeviceBox.getSelectionModel ().getSelectedIndex ());
     }
 
@@ -101,6 +118,9 @@ public class KurzweilCreatorUI implements ICoreTaskSettings
     @Override
     public boolean checkSettingsUI (final INotifier notifier)
     {
+        if (!super.checkSettingsUI (notifier))
+            return false;
+
         final int selected = this.targetDeviceBox.getSelectionModel ().getSelectedIndex ();
         this.targetDevice = TargetDevice.values ()[Math.clamp (selected, 0, TargetDevice.values ().length - 1)];
         return true;
@@ -111,6 +131,9 @@ public class KurzweilCreatorUI implements ICoreTaskSettings
     @Override
     public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
+        if (!super.checkSettingsCLI (notifier, parameters))
+            return false;
+
         final String value = parameters.remove (KURZWEIL_TARGET_DEVICE);
         if (value == null)
         {
@@ -141,10 +164,9 @@ public class KurzweilCreatorUI implements ICoreTaskSettings
     @Override
     public String [] getCLIParameterNames ()
     {
-        return new String []
-        {
-            KURZWEIL_TARGET_DEVICE
-        };
+        final List<String> parameterNames = new ArrayList<> (Arrays.asList (super.getCLIParameterNames ()));
+        parameterNames.add (KURZWEIL_TARGET_DEVICE);
+        return parameterNames.toArray (new String [parameterNames.size ()]);
     }
 
 
