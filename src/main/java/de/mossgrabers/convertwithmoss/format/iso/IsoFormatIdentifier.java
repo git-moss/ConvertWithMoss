@@ -97,6 +97,10 @@ public class IsoFormatIdentifier
         if (data == null || data.length < MINIMUM_NUMBER_OF_REQUIRED_BYTES)
             return IsoFormat.UNKNOWN;
 
+        // E-mu EOS (Emulator IV series) - the proprietary EMU3 filesystem
+        if ("EMU3".equals (readString (data, 0, 4)))
+            return IsoFormat.EMU3;
+
         // Roland S-5xx / S-7xx
         try
         {

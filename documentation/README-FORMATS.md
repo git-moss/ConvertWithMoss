@@ -77,6 +77,7 @@ The following multi-sample formats are supported:
 * [Roland MV-8000/MV-8800](#roland-mv-8000mv-8800)
 * [Roland S-50 Series](#roland-s-50-series) - read only
 * [Roland S-770 Series](#roland-s-770-series) - read only
+* [Roland SP-404MK2](#roland-sp-404mk2)
 * [Roland ZEN-Core](#roland-zen-core)
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
@@ -279,6 +280,29 @@ The DLS format (*.dls) is a standardized file format developed for storing and d
 There is no write support.
 
 The amplitude and pitch envelopes, the sample loops and a pitch LFO (vibrato) are read. The vibrato's depth, its frequency (converted from absolute pitch cents to Hertz) and its start delay are carried over to the pitch LFO. Only a connection which is not modulated by a controller is read as the vibrato; the format normally contains a second one controlled by the modulation wheel, which is the amount the wheel can dial in and would sound permanently if it were converted.
+## E-mu Emulator IV
+
+The E-mu Emulator IV series (Emulator 4, E4X, E4XT, E4K, e-Synth, e-6400 and the other EOS samplers, 1994-2002) stores its banks in single *.e4b* files which contain all presets, their parameters and the sample data. A preset layers several voices; each voice maps a set of zones (a key/velocity range referencing a sample) and carries the tuning, volume, filter, envelope and modulation settings for them. The format is not documented by E-mu, the layout was reverse-engineered by the mpc2emu project from hardware-saved E4XT banks and commercial EOS CD-ROMs (see *documentation/design/E4B_FORMAT.md*).
+
+Banks can be read from single *.e4b* files and also directly from CD-ROM and hard disk images of the EOS samplers (*.iso*, *.img*, *.hda* - e.g. images for SCSI emulators like the ZuluSCSI or dumps of commercial E-mu CD-ROMs), which use the proprietary E-mu disk filesystem. All banks of an image are read; files of the older EIII samplers, which use the same filesystem for their banks, are skipped.
+
+When reading, every preset of a bank becomes one multi-sample and every voice becomes a group. Names, key and velocity ranges, root keys, tuning, volume, panning, loops, the amplitude envelope with its velocity modulation, the filter (type, cutoff, resonance, key tracking and envelope with its depth) and the 16-bit sample data are read. The per-zone offsets for fine tuning, volume and panning are applied on top of the settings of their voice, and the pitch offset of a sample is applied as a fine tuning as far as it detunes the sample beyond compensating its sample rate. The EOS effect filter types (phasers, flangers, vocal formants, EQ morphs) have no model equivalent, such voices are converted without a filter.
+
+The name of the bank is passed on as the description of the multi-sample, which the formats that have a field of their own for the bank take it from - the Waldorf Quantum/Iridium for example shows it next to the preset name.
+
+The presets of the commercial EOS libraries are named after the articulation or the variation they provide (*Dark Tremolo*, *Long Release*, ...) while the instrument they actually play is only given by the name of their bank. The name of the bank is therefore prepended to the name of the preset as well, except when the preset name already starts with it - the *Dark Tremolo* preset of the *Greek Bazouki* bank becomes *Greek Bazouki - Dark Tremolo* while *Greek Bazouki XS* is kept unchanged. This also keeps the presets of different banks apart, which would otherwise overwrite each other since a name like *Natural Range* is used in many banks. If the folder structure of the source is created, each bank additionally gets a folder of its own.
+
+A written bank does not repeat this in its preset names, since the file itself is that bank and its preset names hold only 16 characters - which the bank alone would fill. The file name of the bank keeps the full name.
+
+#### Source Options
+
+* Prepend the bank name to the preset name: Enabled by default, see above. Disable it to keep the preset names exactly as they are in the bank - the bank is then only carried in the description, and the written file names are the bare preset names.
+
+When writing, each multi-sample becomes one preset; a library collects all multi-samples into a single bank (up to 1000 presets and 1000 samples). Every zone is written as its own voice, which keeps all per-zone settings; the panning, which only exists per zone, is written into the zone entry. Samples are stored as 16-bit mono PCM with their original sample rate (rates above 48kHz, the EOS maximum, are down-sampled); stereo samples are mixed down to mono. Identical samples mapped to multiple zones are stored only once. Since EOS only has a sample-level forward loop, alternating loops are written as forward loops and only the first loop of a zone is kept. Written banks validate against the reference parser of the mpc2emu project but have not been verified on real hardware yet.
+
+#### Destination Options
+
+* Create CD-ROM image (.iso) for SCSI CD-ROM emulators: The bank is wrapped into a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem. Copy the image to the SD card of a SCSI emulator (e.g. rename it to *CD1.iso* for a ZuluSCSI in CD-ROM mode) and load the bank on the sampler from the emulated CD-ROM drive. This works on all EOS versions and on units which cannot read FAT hard disks (EOS before 4.7); a plain bank file instead requires a FAT formatted hard disk and EOS 4.7 or later.
 
 ## Elektron Tonverk
 
@@ -391,9 +415,10 @@ Note that this will not work with IIx or earlier versions despite the same VC fi
 
 ## ISO/IMG Files
 
-Searches for files ending with *.ISO or *.IMG. Currently, the following formats can be handled:
+Searches for files ending with *.ISO, *.IMG or *.HDA. Currently, the following formats can be handled:
 
 * [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
 * [Roland S-50 series](#roland-s-50-series)
@@ -431,6 +456,7 @@ The .PCM format belongs to the KORG Family of PA Models. It is used in combinati
 
 * Enable the +12dB option: Increases the volume of each sample by +12dB. Use for low volume samples.
 * Set sample volume to +99: If enabled, sets all sample volumes to +99. Use for very low volume samples.
+* Shorten the name for the device display: Keeps only the last separated part of the name (after " - ", " / ", " : " or " | "), e.g. *Greek Bazouki - Dark Tremolo* becomes *Dark Tremolo*. The multi-sample name of this format holds only 24 characters, so a source whose name is qualified with the bank it comes from otherwise loses exactly the part which tells its presets apart. The file and folder names are not affected. The dropped part is not written anywhere else, therefore this is disabled by default. CLI: `KMPShortenName=1`.
 
 ## Korg wavestate/modwave
 
@@ -451,6 +477,7 @@ When writing, a file is created which uses only K2000 features and therefore loa
 #### Destination Options
 
 * Target Device: Selects the device family for which the file is named: *K2000 (krz)*, *K2500 (k25)* or *K2600 (k26)*. Since the written objects use only K2000 features, the selection only sets the file extension.
+* Shorten the name for the device display: Keeps only the last separated part of the name (after " - ", " / ", " : " or " | "), e.g. *Greek Bazouki - Dark Tremolo* becomes *Dark Tremolo*. The name field of this format holds only 16 characters, so a source whose name is qualified with the bank it comes from otherwise loses exactly the part which tells its presets apart. The dropped part is not written anywhere else, therefore this is disabled by default. CLI: `KurzweilShortenName=1`.
 
 ## Logic EXS24
 
@@ -573,6 +600,10 @@ The file format is not documented by Roland, it was reverse-engineered from the 
 
 When writing patches, samples are converted to 16-bit/44.1kHz. Since the note range of a patch is limited to MIDI notes 21-116, zones outside of this range are clipped or skipped. Identical samples mapped to multiple key ranges are stored only once.
 
+### Destination Options
+
+* Shorten the name for the device display: Keeps only the last separated part of the name (after " - ", " / ", " : " or " | "), e.g. *Greek Bazouki - Dark Tremolo* becomes *Dark Tremolo*. The name field of this format holds only 12 characters, so a source whose name is qualified with the bank it comes from otherwise loses exactly the part which tells its presets apart. The dropped part is not written anywhere else, therefore this is disabled by default. CLI: `MV8000ShortenName=1`.
+
 ## Roland S-50 Series
 
 The Roland S-50 series (S-50, S-330, S-550, W-30), introduced in the mid-1980s, represented a significant development in digital sampling technology. Based on 12-bit pulse-code modulation (PCM) sampling, the system combined waveform acquisition, editing, and keyboard performance capabilities within a single instrument. The series was notable for its integration of video-based graphical editing, enabling detailed visualization and manipulation of sampled waveforms.
@@ -585,6 +616,18 @@ The Roland S-770 series comprises a family of digital PCM samplers introduced be
 
 Only reading is supported. But it supports both HD/CD-Rom and diskette image files. Also files that span multiple diskettes are supported (all disk files need to be in the same folder).
 
+## Roland SP-404MK2
+
+The Roland SP-404MKII is a pad-based sampler and effector. A project holds 10 banks (A-J) of 16 pads each (160 pads); every pad plays a single sample with its own start/end, loop, level, pan, pitch and BPM. It is not a keyboard multi-sampler - there are no key-ranges - so, as with the other pad devices, ConvertWithMoss treats each **populated bank as one multi-sample** and each **pad as a single-key zone** (a drum-kit-shaped mapping).
+
+The format is not documented by Roland; it was reverse-engineered and validated against real exported projects and the SP-404MKII v5.52 firmware (see *documentation/design/SP404MK2_FORMAT.md*). A project is a folder (`PROJECT_XX`) holding a `PADCONF.BIN` pad-configuration file and a `SMPL` folder of `BANK<bank>-<pad>.SMP` samples in Roland's own `RFWV` wave container (48 kHz, 16-bit, big-endian PCM). Both the exported (31,488-byte) and the device-internal (52,000-byte) `PADCONF.BIN` forms are read. Point ConvertWithMoss at a project folder (or a folder of projects, e.g. the `EXPORT/PROJECT` folder of an SD card) to read it. Writing produces the same `PROJECT_XX/PADCONF.BIN` + `SMPL/*.SMP` layout; copy it into the `IMPORT` folder of an SD card and load it with the device's *IMPORT PROJECT* function. Written projects have not been verified on hardware yet - feedback is welcome.
+
+Reading extracts each pad's full sample together with its name, level, panning and loop on/off state; a multi-zone source written back becomes one pad per zone. The following limitations apply:
+
+* Each pad plays one sample, so overlapping velocity layers are reduced to the loudest layer and a bank holds at most 16 zones; zones beyond a bank are carried into the next bank.
+* The on-device start/end trim and loop points are preserved in the file but not applied - the full sample is always extracted (the byte-offset encoding of the trim window is not yet fully decoded).
+* Patterns (`PTN`), pattern chains and project artwork are not converted.
+
 ## Roland ZEN-Core
 
 The ZEN-Core sound engine powers Roland's FANTOM-0, FANTOM / FANTOM EX, Juno-X, Jupiter-X/Xm and the MC-707/MC-101 grooveboxes, which all share one *.svz* container - and one model tag (`KY019`) - holding a tone (or a bank of tones) together with its user samples and its keyboard mapping. ConvertWithMoss writes an importable *.svz* - a single tone for one multi-sample, or a multi-tone bank that shares one sample pool for several - which is loaded on the device through its *UTILITY -> IMPORT* function. The GAIA-2 and the ZENOLOGY plug-in run the same engine but are not supported, because neither can load the user samples a multi-sample needs: the GAIA-2 has no sampler at all (its *IMPORT* accepts only tones) and the ZENOLOGY plug-in imports only the tone from a *.svz*, so a multi-sample would play silent there. The user samples, multisample key map, filter and envelopes of a *.svz* are also read back (the envelope times through the same hardware-calibrated law the writer uses).
@@ -592,6 +635,10 @@ The ZEN-Core sound engine powers Roland's FANTOM-0, FANTOM / FANTOM EX, Juno-X, 
 User samples are written at the device-native 48 kHz / 16-bit. As the ZEN-Core voice engine has no loop cross-fade or de-click of its own, click-free playback (hardware-verified on a FANTOM-0) is prepared into the samples: the loop end is re-seated so the wrap reproduces the waveform's own step into the loop start, and a loop with no seamless end point (an evolving pad) gets its tail cross-faded in phase into the loop-start lead-in.
 
 **Smoothing audible loop jumps - the *Set fixed loop-crossfade* processing option.** A loop can wrap click-free and still jump audibly on every pass: when the sound evolves across the loop region (a swelling pad), the level just before the loop end differs from the level at the loop start. That jump sits in the source's own loop points and plays the same way on the source instrument, so it is faithfully kept by default. Since the ZEN-Core engine cannot cross-fade at playback, enabling the *Set fixed loop-crossfade* processing option (or a cross-fade specified by the source preset) bakes the cross-fade into the written sample audio instead. A loop that already wraps cleanly is left untouched - byte-identical to a conversion without the option - so it is safe to enable for a whole library; a moderate value such as 30 % is a good starting point (hardware-verified: the loop stays audible as a musical evolution but no longer jumps). All samples are stored mono, since the voice engine mis-plays an interleaved-stereo sample (the two channels alternate into the output as a buzz). A stereo source is written the factory way - split into a left and a right mono sample played by a two-partial tone, Partial 1 panned hard left and Partial 2 hard right - which is hardware-verified click-free true stereo. Velocity layers are mapped onto separate tone partials - each distinct source velocity range plays its own partial (in stereo, its own pair of hard-panned partials), up to four mono or two stereo layers, the voice engine's four-partial limit, with any excess layers merged into the top one; a single velocity range is written as one multi-sample. Samples and multisamples are named with a content hash, since the device silently re-uses already imported ones of the same name, an inert spacer sample always closes the sample pool (the device does not reliably load the wave data of the last sample in a pool - hardware-verified with pools of one and of six samples - so no real sample is written into the last slot), and sample name fields are zero-padded as the device requires. Each tone additionally carries the source's filter (type, cutoff, resonance) and its amplitude, pitch and TVF-filter envelopes - both the envelope time law (each stage's seconds-to-value curve was measured on a FANTOM-0 with a calibration bank; the previous approximation played all envelope stages several times too fast and collapsed times below ~0.3 s to instant) and the pitch and filter envelope depths are hardware-calibrated; a near-instant amplitude attack is floored to a small hardware-calibrated value, since the voice engine emits a transient at note-on when the amplifier opens too fast; percussive material whose own onset hides that transient (saws, plucks, drum hits - hardware-verified at every pitch) keeps the fastest attack and its full transient, while smooth material (string pads) gets a floor whose ~11 ms ramp is faster than half a cycle of a bass fundamental. Tone names are capped at the format's 16 characters - the name the device displays - and names in a bank that would truncate identically stay recognizable: part of the shared head is elided with a ~ and the distinctive tail is kept (e.g. *082_RTW2_106_BASS_SAW* and *..._SQR* become *082_RTW2_106~SAW* and *082_RTW2_106~SQR*). A source without any convertible sample is skipped with an error instead of being written as a silent tone, and a broken source does not lose the rest of a library. There are no destination options: the file always carries the shared `KY019` header of the sample-capable hardware.
+
+### Destination Options
+
+* Shorten the name for the device display: Keeps only the last separated part of the name (after " - ", " / ", " : " or " | "), e.g. *Greek Bazouki - Dark Tremolo* becomes *Dark Tremolo*. The name field of this format holds only 16 characters, so a source whose name is qualified with the bank it comes from otherwise loses exactly the part which tells its presets apart. The dropped part is not written anywhere else, therefore this is disabled by default. CLI: `ZenCoreShortenName=1`.
 
 ## Sample files (AIFF, FLAC, NCW, OGG, WAV)
 
@@ -770,6 +817,8 @@ This family of Waldorf synthesizers supports the playback of multi-samples. One 
 If this format is used as the source it produces 1 or 2 output presets, one for each layer. If used as the destination format, each group of the source multi-sample is applied to one of the 3 oscillators. If the source contains more than 3 groups, all zones of the additional groups are added to the multi-sample of the 3rd oscillator.
 
 The volume, panning and tuning of an oscillator are offsets on top of the values of its sample map entries, therefore the two are combined when reading instead of the oscillator replacing the sample map. When writing, the volume and panning of a group are stored on its oscillator and only the remainder in its sample map, so they survive a Quantum/Iridium round-trip - previously the oscillator was always written as 0 dB and Center.
+
+Since the device has a field of its own for the bank, a source which carries its bank in front of its name is written with that bank removed from the preset name - the device shows it in the Bank field anyway and the display offers little room. The file name keeps the full name, so the files can still be told apart in a file browser. An explicit *Bank* from the destination options replaces the source's bank, which is then no longer written anywhere else, so in that case the preset name keeps it.
 
 ### Destination Options
 
