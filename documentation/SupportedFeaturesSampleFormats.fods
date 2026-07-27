@@ -3317,6 +3317,15 @@
      <table:table-cell table:style-name="ce57" table:number-columns-repeated="2"/>
     </table:table-row>
     <table:table-row table:style-name="ro6">
+     <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>E-mu Emulator III / IIIX / ESI</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string"><text:p>Read</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>e3b, e3x, esi</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Bank with up to 256 presets and 999 samples</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce12" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>16</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string"><text:p>All</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce3" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce16" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>E-mu Emulator X</text:p></table:table-cell>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string"><text:p>Read</text:p></table:table-cell>
      <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>exb, ebl</text:p></table:table-cell>
@@ -3395,6 +3404,28 @@
      <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>from filename</text:p></table:table-cell>
      <table:table-cell table:style-name="ce57" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce57" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string"><text:p>Bank name</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>from filename</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce70" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Primary / secondary layer, linked presets</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce70" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce70" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce4" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Original key</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Note zone key map (MIDI 21-108)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Velocity range of the layer (per group)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Zone tuning (+/-100 cents)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Non-transpose flag</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Amplifier level</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Zone panorama</text:p></table:table-cell>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Bank name (read only)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>from filename</text:p></table:table-cell>
      <table:table-cell table:style-name="ce70"/>
@@ -3421,6 +3452,10 @@
      <table:table-cell table:style-name="ce13" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
      <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
      <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce70" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce4" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Forward</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Loop in release flag</text:p></table:table-cell>
      <table:table-cell table:style-name="ce70"/>
      <table:table-cell table:style-name="ce4"/>
      <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Forward</text:p></table:table-cell>
@@ -3429,6 +3464,100 @@
      <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Loop end</text:p></table:table-cell>
      <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
      <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce70" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce56" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Amplifier envelope (attack, hold, decay, sustain, release)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Velocity to amplifier level</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce77" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce56" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Pitch bend range (semitones, per preset)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Same as bend up (per preset)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Auxiliary envelope with pitch destination</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce57" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce77" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce56" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>ESI: low-pass, high-pass, band-pass, notch / EIII, EIIIX: low-pass</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>2 / 4 / 6</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Filter cutoff (26 Hz - 74 kHz)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Filter Q</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Filter envelope + amount</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Velocity to filter cutoff</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Filter tracking</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce67" table:number-columns-repeated="16315"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro12">
+     <table:covered-table-cell table:style-name="ce2"><text:p>E-mu Emulator III / IIIX / ESI</text:p></table:covered-table-cell>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string"><text:p>Write</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string"><text:p>e3x, esi</text:p></table:table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Bank with up to 256 presets and 999 samples</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce12"/>
+     <table:covered-table-cell table:style-name="ce16"><text:p>16</text:p></table:covered-table-cell>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string"><text:p>Up to 44.1 kHz</text:p></table:table-cell>
+     <table:covered-table-cell table:style-name="ce3"/>
+     <table:covered-table-cell table:style-name="ce16"/>
+     <table:covered-table-cell table:style-name="ce4"><text:p>Preset name (16 characters)</text:p></table:covered-table-cell>
+     <table:table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce70"/>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Primary / secondary layer, linked presets</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce70"/>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce70"/>
+     <table:covered-table-cell table:style-name="ce4"/>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Original key</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Note zone key map (MIDI 21-108)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce13"/>
+     <table:covered-table-cell table:style-name="ce18"><text:p>Velocity range of the layer (per group)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce13"/>
+     <table:covered-table-cell table:style-name="ce13"/>
+     <table:covered-table-cell table:style-name="ce13"/>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Zone tuning (+/-100 cents)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Non-transpose flag</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce13"/>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Amplifier level</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Zone panorama</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce13"/>
+     <table:covered-table-cell table:style-name="ce13"/>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce70"/>
+     <table:covered-table-cell table:style-name="ce4"/>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Forward</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce56"><text:p>Loop in release flag</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Loop start</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Loop end</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce70"/>
+     <table:covered-table-cell table:style-name="ce56"/>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Amplifier envelope (attack, hold, decay, sustain, release)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce56"><text:p>Velocity to amplifier level</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce57"/>
+     <table:covered-table-cell table:style-name="ce77"/>
+     <table:covered-table-cell table:style-name="ce56"/>
+     <table:covered-table-cell table:style-name="ce63"><text:p>Pitch bend range (semitones, per preset)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce63"><text:p>Same as bend up (per preset)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Auxiliary envelope with pitch destination</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce77"/>
+     <table:covered-table-cell table:style-name="ce77"/>
+     <table:covered-table-cell table:style-name="ce56"/>
+     <table:covered-table-cell table:style-name="ce63"><text:p>ESI: low-pass, high-pass, band-pass, notch / EIII, EIIIX: low-pass</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>2 / 4 / 6</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Filter cutoff (26 Hz - 74 kHz)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Filter Q</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce9"><text:p>Filter envelope + amount</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce56"><text:p>Velocity to filter cutoff</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce56"><text:p>Filter tracking</text:p></table:covered-table-cell>
      <table:table-cell table:style-name="ce70"/>
      <table:table-cell table:style-name="ce56"/>
      <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>6-stage envelope (attack,</text:p><text:p>hold, decay, sustain,</text:p><text:p>release)</text:p></table:table-cell>

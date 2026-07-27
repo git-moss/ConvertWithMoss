@@ -3,6 +3,7 @@
 ## 19.2.0
 
 * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, SFZ, SoundFont 2. Previously any vibrato was dropped on conversion.
+* New: Added support for the E-mu Emulator III/IIIX/ESI bank format (E3B, E3X, ESI).
 * New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
 * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
 * New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
