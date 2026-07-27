@@ -235,6 +235,8 @@ A dspreset file contains a single preset and the description of the multi-sample
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
+A pitch LFO (vibrato) is converted as an `<lfo>` bound to the group tuning, carrying its rate (in Hertz), depth and delay. The oscillator's fade-in has no equivalent and is dropped, and the waveform is mapped to the nearest of sine, square and saw.
+
 ### Source Options
 
 * Create one multi-sample per group: Creates a separate multi-sample for each group instead of one multi-sample which contains all groups. Intended for presets which contain several alternative kits or articulations as groups and switch between them via their user interface (only one group is enabled at a time). Disabled groups are converted as well when this option is enabled; when it is off, only the enabled groups are converted.
@@ -274,6 +276,8 @@ Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipp
 
 The DLS format (*.dls) is a standardized file format developed for storing and distributing collections of digital musical instrument sounds, enabling their use in software synthesizers and hardware devices compatible with the MIDI protocol. It encapsulates audio samples, instrument definitions, articulations, and performance parameters into a single file. Developed in the 1990s initially by the Interactive Audio Special Interest Group (IASIG) and later standardized by the MIDI Manufacturers Association (MMA), with the first formal specification released in 1999.
 There is no write support.
+
+The amplitude and pitch envelopes, the sample loops and a pitch LFO (vibrato) are read. The vibrato's depth, its frequency (converted from absolute pitch cents to Hertz) and its start delay are carried over to the pitch LFO. Only a connection which is not modulated by a controller is read as the vibrato; the format normally contains a second one controlled by the modulation wheel, which is the amount the wheel can dial in and would sound permanently if it were converted.
 
 ## Elektron Tonverk
 
@@ -419,9 +423,9 @@ Since the format supports only one group of a multi-sample, multiple destination
 
 The Kurzweil K2000 (1991), K2500 and K2600 samplers/synthesizers share one object file format with the extensions *.krz*, *.k25* and *.k26*. A file is a bank of numbered objects: programs (presets), keymaps (the mapping of sample recordings across the keys and the 8 dynamic velocity levels) and samples, which may contain several recordings (multiple root keys, stereo pairs). The layout was derived from the source code of the GPL tool KurzFiler by Marc Halbruegge (see *documentation/design/KURZWEIL_FORMAT.md*).
 
-When reading, each program becomes one multi-sample: its layers reference keymaps from which the key ranges, velocity levels, root keys, tunings, volume adjusts, loops and the 16-bit sample data are read. From the program layers the key and velocity windows, the amplitude envelope (unless the layer plays the 'natural' envelope of its samples), the filter (type, number of poles, cutoff, resonance) and the filter envelope with its modulation depth are read as well. Keymaps and samples which are not referenced by any program are converted as multi-samples of their own. Many factory and commercial K-series files map samples from the device ROM which is not present in the file; such zones cannot be converted and are skipped with a note.
+When reading, each program becomes one multi-sample: its layers reference keymaps from which the key ranges, velocity levels, root keys, tunings, volume adjusts, loops and the 16-bit sample data are read. From the program layers the key and velocity windows, the amplitude envelope (unless the layer plays the 'natural' envelope of its samples), the filter (type, number of poles, cutoff, resonance) and the filter envelope or velocity modulation of the cutoff with its depth are read as well. Keymaps and samples which are not referenced by any program are converted as multi-samples of their own. Many factory and commercial K-series files map samples from the device ROM which is not present in the file; such zones cannot be converted and are skipped with a note.
 
-When writing, a file is created which uses only K2000 features and therefore loads on all three device families (the current Kurzweil range - K2700, PC4, Forte - imports these files as well). Each multi-sample becomes a program with one layer and a keymap; the velocity layers of the source are quantized onto the 8 dynamic levels of the keymap. The layer carries the global amplitude envelope of the multi-sample as well as the global filter, which is mapped onto the nearest filter of the device (1/2/4-pole low-pass, 2/4-pole bandpass, high-pass, notch) together with its cutoff, resonance and filter envelope. One sample object is written per zone (16-bit; the sample rate is kept up to 96kHz, the maximum sample playback rate of the devices) with the zone gain in its volume adjust. Since the device plays a loop until the end of the sample, the data after the loop end is cut off. If any zone is stereo, all samples of the program are written as stereo pairs. The keymap covers MIDI notes 12-127 (C0-G9 in Kurzweil terms), keys below are dropped. Several multi-samples can be written into one file as a library; if the object IDs (200-999 per type) do not suffice, multiple files are created.
+When writing, a file is created which uses only K2000 features and therefore loads on all three device families (the current Kurzweil range - K2700, PC4, Forte - imports these files as well). Each multi-sample becomes a program with one layer and a keymap; the velocity layers of the source are quantized onto the 8 dynamic levels of the keymap. The layer carries the global amplitude envelope of the multi-sample as well as the global filter, which is mapped onto the nearest filter of the device (1/2/4-pole low-pass, 2/4-pole bandpass, high-pass, notch) together with its cutoff, resonance and filter envelope or cutoff velocity modulation (the device has one modulation slot on the filter page; the envelope has priority). One sample object is written per zone (16-bit; the sample rate is kept up to 96kHz, the maximum sample playback rate of the devices) with the zone gain in its volume adjust. Since the device plays a loop until the end of the sample, the data after the loop end is cut off. If any zone is stereo, all samples of the program are written as stereo pairs. The keymap covers MIDI notes 12-127 (C0-G9 in Kurzweil terms), keys below are dropped. Several multi-samples can be written into one file as a library; if the object IDs (200-999 per type) do not suffice, multiple files are created.
 
 #### Destination Options
 
@@ -619,6 +623,8 @@ The SFZ file contains only the description of the multi-sample. The related samp
 
 SFZ can only mark a sample as a one-shot (`loop_mode=one_shot`) if it has no loop. A looped zone therefore keeps its loop and is not written as a one-shot.
 
+A pitch LFO (vibrato) is read and written via the `pitchlfo_freq` (Hertz), `pitchlfo_depth` (cent), `pitchlfo_delay` and `pitchlfo_fade` (seconds) opcodes.
+
 ### Source Options
 
 * Log unsupported SFZ opcodes: If enabled, opcodes which are found in the source but are not used (not supported) as input for the conversion are logged.
@@ -636,6 +642,8 @@ A SoundFont can contain several presets grouped into banks. Presets refer to one
 The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
 
 There are metadata fields for creator and some description specified in the format. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
+
+The vibrato low frequency oscillator (generators `vibLfoToPitch`, `freqVibLFO` and `delayVibLFO`) is converted to and from the pitch LFO, carrying its depth, rate and delay. The waveform is always a triangle in this format and there is no fade-in.
 
 ### Source Options
 

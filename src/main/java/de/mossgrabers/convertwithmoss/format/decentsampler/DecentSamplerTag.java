@@ -31,6 +31,16 @@ public class DecentSamplerTag
     public static final String                    MODULATORS         = "modulators";
     /** The envelope tag. */
     public static final String                    ENVELOPE           = "envelope";
+    /** The low frequency oscillator tag. */
+    public static final String                    LFO                = "lfo";
+    /** The LFO shape attribute. */
+    public static final String                    LFO_SHAPE          = "shape";
+    /** The LFO frequency attribute. */
+    public static final String                    LFO_FREQUENCY      = "frequency";
+    /** The LFO frequency format attribute. */
+    public static final String                    LFO_FREQUENCY_FORMAT = "frequencyFormat";
+    /** The LFO delay time attribute. */
+    public static final String                    LFO_DELAY_TIME     = "delayTime";
 
     /** The user interface tag. */
     public static final String                    UI                 = "ui";
