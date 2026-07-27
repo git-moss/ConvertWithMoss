@@ -3460,7 +3460,7 @@
      <table:covered-table-cell table:style-name="ce56"><text:p>Filter tracking</text:p></table:covered-table-cell>
      <table:table-cell table:style-name="ce67" table:number-columns-repeated="16315"/>
     </table:table-row>
-    <table:table-row table:style-name="ro9">
+    <table:table-row table:style-name="ro6">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>E-mu Emulator IV</text:p></table:table-cell>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string"><text:p>Read</text:p></table:table-cell>
      <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>e4b</text:p></table:table-cell>
@@ -3532,7 +3532,7 @@
      <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Key to Cutoff cord</text:p></table:table-cell>
      <table:table-cell table:style-name="ce67" table:number-columns-repeated="16315"/>
     </table:table-row>
-    <table:table-row table:style-name="ro9">
+    <table:table-row table:style-name="ro12">
      <table:covered-table-cell table:style-name="ce3"/>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string"><text:p>Write</text:p></table:table-cell>
      <table:covered-table-cell table:style-name="ce3"/>
