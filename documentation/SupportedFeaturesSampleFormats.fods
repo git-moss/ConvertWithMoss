@@ -3327,7 +3327,7 @@
      <table:table-cell table:style-name="ce3"/>
      <table:table-cell table:style-name="ce16"/>
      <table:table-cell table:style-name="ce4" office:value-type="string" calcext:value-type="string"><text:p>Preset name</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce4" office:value-type="string" calcext:value-type="string"><text:p>Phdr category,</text:p><text:p>mapped to the</text:p><text:p>model categories</text:p></table:table-cell>
      <table:table-cell table:style-name="ce57"/>
      <table:table-cell table:style-name="ce57"/>
      <table:table-cell table:style-name="ce57"/>
@@ -3399,7 +3399,7 @@
      <table:table-cell table:style-name="ce3"/>
      <table:table-cell table:style-name="ce16"/>
      <table:table-cell table:style-name="ce4" office:value-type="string" calcext:value-type="string"><text:p>Name</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce57"/>
+     <table:table-cell table:style-name="ce4" office:value-type="string" calcext:value-type="string"><text:p>Phdr category</text:p></table:table-cell>
      <table:table-cell table:style-name="ce57"/>
      <table:table-cell table:style-name="ce57"/>
      <table:table-cell table:style-name="ce57"/>

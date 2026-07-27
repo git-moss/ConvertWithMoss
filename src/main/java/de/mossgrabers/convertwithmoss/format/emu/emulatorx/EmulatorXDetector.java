@@ -36,6 +36,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -267,6 +268,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         if (header == null)
             return null;
         final String presetName = EmulatorXConstants.decodeName (header.getData (), header.getOffset () + 4);
+        final String presetCategory = EmulatorXConstants.decodeName (header.getData (), header.getOffset () + EmulatorXConstants.PRESET_CATEGORY);
 
         final EmulatorXChunk voiceList = preset.getList (EmulatorXConstants.VOICE_LIST_TYPE);
         if (voiceList == null)
@@ -305,7 +307,12 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
         if (groups.isEmpty ())
             return null;
-        return this.createMultisampleSource (sourceFile, presetName.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : presetName, groups);
+        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, presetName.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : presetName, groups);
+        // The category of the preset is the one the sound designer chose, which beats the one
+        // guessed from the file path; it is mapped onto the categories of the model
+        if (!presetCategory.isBlank ())
+            multisampleSource.getMetadata ().setCategory (TagDetector.normalizeCategory (presetCategory));
+        return multisampleSource;
     }
 
 

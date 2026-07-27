@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
@@ -163,7 +164,7 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
                 this.notifier.logError ("IDS_EXB_NO_ZONES", multisampleSource.getName ());
                 continue;
             }
-            presets.add (createPreset (multisampleSource.getName (), voices));
+            presets.add (createPreset (multisampleSource.getName (), multisampleSource.getMetadata ().getCategory (), voices));
             presetNames.add (multisampleSource.getName ());
         }
 
@@ -353,11 +354,15 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
      * @return The payload
      * @throws IOException Could not assemble the preset
      */
-    private static byte [] createPreset (final String name, final List<byte []> voices) throws IOException
+    private static byte [] createPreset (final String name, final String category, final List<byte []> voices) throws IOException
     {
         final byte [] header = new byte [EmulatorXConstants.PRESET_HEADER_SIZE];
         EmulatorXConstants.putU32BE (header, 0, EmulatorXConstants.VERSION_PRESET);
         EmulatorXConstants.encodeName (header, 4, name);
+        // The application shows the category next to the preset name and can filter by it. The
+        // placeholder of a source without a category is not worth writing
+        if (category != null && !category.isBlank () && !TagDetector.CATEGORY_UNKNOWN.equals (category))
+            EmulatorXConstants.encodeName (header, EmulatorXConstants.PRESET_CATEGORY, category);
         EmulatorXConstants.putU32BE (header, EmulatorXConstants.PRESET_NUM_VOICES, voices.size ());
         EmulatorXConstants.putU32BE (header, 144, 0xFFFFFFFFL);
 

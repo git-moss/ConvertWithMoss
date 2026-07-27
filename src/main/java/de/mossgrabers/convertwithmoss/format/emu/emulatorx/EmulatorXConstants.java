@@ -92,6 +92,8 @@ public class EmulatorXConstants
     /** The size of the preset header chunk. */
     public static final int     PRESET_HEADER_SIZE      = 154;
     /** The offset of the number of voices inside the preset header. */
+    /** The offset of the category inside the preset header. */
+    public static final int     PRESET_CATEGORY         = 68;
     public static final int     PRESET_NUM_VOICES       = 132;
     /** The size of the voice header chunk. */
     public static final int     VOICE_HEADER_SIZE       = 16;

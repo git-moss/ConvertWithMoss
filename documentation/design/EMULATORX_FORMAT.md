@@ -176,7 +176,7 @@ The payload is a sequence of chunks:
 |--------|------|--------------------------------------------------------------------|
 | 0      | 4    | Version, 3                                                         |
 | 4      | 64   | Preset name                                                        |
-| 68     | 64   | Category of the preset ('Synthesizer', 'Keyboard - GM'); empty in some banks |
+| 68     | 64   | Category of the preset ('Synthesizer', 'Keyboard - GM'); empty in some banks. Read and written, mapped onto the categories of the model |
 | 132    | 4    | Number of voices                                                   |
 | 136    | 8    | Zero                                                               |
 | 144    | 4    | `0xFFFFFFFF`                                                       |
