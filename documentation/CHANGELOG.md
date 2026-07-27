@@ -12,6 +12,9 @@
 * Backend
   * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, SFZ, SoundFont 2. Other formats pending.
   * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
+* E-mu Emulator III
+  * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.
+  * Fixed: The preset link is a single byte followed by a separate parameter, not a 16 bit value. A few presets whose second byte is set lost the preset which is layered on top of them.
 * Kurzweil K2x00
   * Fixed: An envelope stage with both a zero time and a zero level is unused on the device and keeps the level of the previous stage, but was read literally. A program which leaves its decay stage unused - like the reported FM basses, which sustain at the attack level and only fade out with a long release - was therefore converted to a silent preset. Additionally, the attack velocity is now converted as a cutoff modulation source of the F1 slot in both directions; the same programs open their nearly closed cutoff by velocity and converted very dull without it.
 * Waldorf Quantum/Iridium

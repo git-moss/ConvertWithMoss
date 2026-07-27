@@ -94,7 +94,8 @@ offset size
 46     1    uint8  highest velocity of the primary layer
 47     1    uint8  lowest velocity of the secondary layer
 48     1    uint8  highest velocity of the secondary layer
-49     2    uint16 1-based number of the preset which is layered on top of this one, 0 = none
+49     1    uint8  1-based number of the preset which is layered on top of this one, 0 = none
+50     1    uint8  unknown parameter
 51     2    int8   unknown
 53     1    uint8  number of note zones
 54     88   uint8  one entry per key: the index of its note zone, 0xFF = unmapped
@@ -106,7 +107,11 @@ MIDI note 21 (which the samplers display as A-1), key 87 is MIDI note 108.
 A **velocity range** of 0 for the high value means that the layer is not restricted.
 
 The **link** builds chains of presets which play together; combined with the per-layer velocity
-ranges this is how the samplers stack more than the two layers a single preset provides.
+ranges this is how the samplers stack more than the two layers a single preset provides. emu3bm
+reads offsets 49-50 as one uint16, but the byte at 50 is a parameter of its own: about 1% of the
+library presets set it together with a link (e.g. `Stick Combo III` of the `Chapman Stick` bank,
+link 51 and parameter 61), which makes the 16 bit value look out of range and would lose the
+layered preset.
 
 ### Note zone (4 bytes)
 
@@ -227,6 +232,76 @@ of the libraries and its meaning is unknown.
 Sample rates are arbitrary, not a fixed set - the libraries contain rates such as 7000, 12000,
 15625, 27777 and 31396 Hz. The samplers always play back at 44.1 kHz and compensate with the
 encoded playback rate `0xF800 | (int) (-9799 + 1108 * ln(rate))`.
+
+## Floppy disk sets
+
+The EIIIX and ESI samplers also save a bank onto one or more 1.44 MB floppy disks (raw images of
+1474560 bytes). The layout below was derived from the EIIIX and ESI sets of the E-mu and
+Sweetwater floppy libraries (10 sets, 789 presets, 806 samples) and verified by comparing shared
+material with the library CD-ROMs. Sets of the original Emulator III were not available; their
+layout is unknown.
+
+Every disk starts with a 512 byte disk header whose values are **big-endian** - like everything
+else on the floppies, which are a dump of the memory of the 68k CPU of the samplers:
+
+```
+offset size
+0      16   char   bank identifier as in a bank file
+16     16   char   bank name
+36     4    uint32 always 1
+40     4    uint32 1-based number of this disk
+44     4    uint32 number of disks of the set
+72     4    uint32 number of 512 byte content blocks of the whole set
+```
+
+The header holds further sizes and block counts (with the EIIIX and the ESI ordering them
+differently) plus some per-disk fields, but none of them are needed - everything follows from the
+payload itself. A bank file carries little-endian 1s at offsets 36-47, so sane big-endian disk
+numbers tell a floppy disk from a bank file of the same size. The disks of a set share the
+identifier and the bank name of their headers; the file names cannot be used to collect a set
+since the collections in the wild number their disks in different ways (`Orchestral #002.img`,
+`sw_classic_2.img`).
+
+The payload - bytes 0x200 up to the end of every disk, concatenated in disk order - consists of
+three regions, each padded to full 512 byte blocks. The EIIIX orders them record, sample data,
+sample header table; the ESI samplers order them record, sample header table, sample data.
+
+**The bank record** holds the bank name (16 bytes), 16 bytes of fields and then exactly what a
+bank file stores from offset 0x6C on: bank file offset `B` maps to payload offset `B - 0x4C`. The
+two address tables are big-endian and hold memory addresses instead of file offsets; subtracting
+the first entry of the preset table (the address of the preset area) turns the preset entries into
+the offsets of a bank file, including the empty-slot and terminator semantics. The region ends
+behind the filler byte, i.e. its size is `presetAreaOffset - 0x4C + presetTableTerminator -
+firstEntry + 1`.
+
+**The sample header table** is 92000 bytes (180 blocks): 1000 slots of 92 bytes, one per sample
+number, slot 0 unused. The slots use the field layout of a bank file sample header with these
+differences:
+
+* All values are big-endian and the positions are byte offsets relative to the start of the
+  channel data: the start fields are 0, the end fields hold the size of the channel in bytes and
+  the loop end points *behind* the last frame of the loop, where a bank file stores the frame
+  before the last one (verified by sweeping the offset over the loop seams of all looped samples:
+  the file parser's +1 yields the clean seam without any further correction).
+* The option flags differ from a bank file: `0x02` = has a left channel, `0x04` = has a right
+  channel, `0x08` = loop in release, `0x40` = looped. The position and data fields of a channel
+  which is not flagged hold stale values of deleted allocations and must not be read - which is
+  also why the table can hold more plausible-looking headers than the sample table has entries.
+* The data offset fields at 0x3C/0x40 hold the memory address of the channel's data. Bit 26
+  (0x4000000) is a memory bank flag and has to be masked off; the masked address is the position
+  in the sample data region. The masked sample table terminator is the size of that region.
+
+**The sample data region** holds one chunk per channel per sample, each preceded by an unused 92
+byte slot (the layout of a bank file with the headers blanked out). The 16 bit sample values are
+big-endian.
+
+The presets of the record are byte-identical with a bank file with one exception: the flag byte of
+a zone (offset 47) is stored with its bits mirrored - the flag a bank file keeps in bit 0 sits in
+bit 7 and so on. This is obvious from the `Stereo Grand` library, whose zones all carry 0x80:
+read as a file flag that would mute the right channel of every zone of a stereo piano, while the
+mirrored value is the undocumented bit 0x01 which most zones of the library CD-ROMs set as well.
+The bytes around it (filter Q with its real-time bit at 13, filter type at 45, real-time enables
+at 46) are stored unmirrored.
 
 ## Device requirements when writing
 
