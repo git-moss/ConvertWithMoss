@@ -8,14 +8,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.zip.CRC32;
 import java.util.zip.ZipOutputStream;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -25,10 +29,13 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -145,14 +152,18 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         samplesElement.setAttribute (RenoiseTag.ATTR_TYPE, "SampleList");
         final Element modulationSetsElement = document.createElement (RenoiseTag.MODULATION_SETS);
 
+        // Zones with identical modulation share one modulation set so that a conventional
+        // multi-sample gets one instrument-wide set; additional sets are only created for zones
+        // which genuinely modulate differently (e.g. release samples with their own envelope)
+        final Map<String, Integer> modulationSetKeys = new HashMap<> ();
         boolean hasRoundRobin = false;
         boolean hasRandom = false;
         int zoneIndex = 0;
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                this.createSampleElement (document, samplesElement, zoneIndex, zone);
-                createModulationSet (document, modulationSetsElement, zoneIndex, zone);
+                final int modulationSetIndex = addModulationSet (document, modulationSetsElement, modulationSetKeys, zone);
+                this.createSampleElement (document, samplesElement, zoneIndex, modulationSetIndex, zone);
                 final PlayLogic playLogic = zone.getPlayLogic ();
                 hasRoundRobin = hasRoundRobin || playLogic == PlayLogic.ROUND_ROBIN;
                 hasRandom = hasRandom || playLogic == PlayLogic.RANDOM;
@@ -181,11 +192,11 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
      *
      * @param document The XML document
      * @param samplesElement The element to which to add the sample
-     * @param zoneIndex The global index of the zone (used to reference the sample file and the
-     *            modulation set)
+     * @param zoneIndex The global index of the zone (used to reference the sample file)
+     * @param modulationSetIndex The index of the modulation set which modulates this sample
      * @param zone The zone from which to read the sample information
      */
-    private void createSampleElement (final Document document, final Element samplesElement, final int zoneIndex, final ISampleZone zone)
+    private void createSampleElement (final Document document, final Element samplesElement, final int zoneIndex, final int modulationSetIndex, final ISampleZone zone)
     {
         final Element sampleElement = XMLUtils.addElement (document, samplesElement, RenoiseTag.SAMPLE);
 
@@ -219,7 +230,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_START, Integer.toString (loop == null ? 0 : Math.max (0, loop.getStart ())));
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_END, Integer.toString (loop == null ? 0 : Math.max (0, loop.getEnd ())));
 
-        XMLUtils.addTextElement (document, sampleElement, RenoiseTag.MODULATION_SET_INDEX, Integer.toString (zoneIndex));
+        XMLUtils.addTextElement (document, sampleElement, RenoiseTag.MODULATION_SET_INDEX, Integer.toString (modulationSetIndex));
 
         // Key/velocity mapping
         final Element mappingElement = XMLUtils.addElement (document, sampleElement, RenoiseTag.MAPPING);
@@ -235,17 +246,52 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Create the modulation set for one zone. It holds the amplitude envelope and - if present -
-     * the sampler filter (type, cutoff, resonance and filter envelope) and the pitch envelope.
+     * Get the index of the modulation set which describes the modulation of the given zone. If an
+     * identical set was already created for a previous zone it is shared and its index is returned,
+     * otherwise a new set is added. This keeps one instrument-wide modulation set for the usual
+     * case that all zones modulate identically.
      *
      * @param document The XML document
-     * @param modulationSetsElement The element to which to add the modulation set
-     * @param zoneIndex The global index of the zone
+     * @param modulationSetsElement The element which holds all modulation sets
+     * @param modulationSetKeys Maps the comparison key of each created modulation set to its index
      * @param zone The zone from which to read the modulation information
+     * @return The index of the modulation set to reference from the sample
      */
-    private static void createModulationSet (final Document document, final Element modulationSetsElement, final int zoneIndex, final ISampleZone zone)
+    private static int addModulationSet (final Document document, final Element modulationSetsElement, final Map<String, Integer> modulationSetKeys, final ISampleZone zone)
     {
-        final Element modulationSetElement = XMLUtils.addElement (document, modulationSetsElement, RenoiseTag.MODULATION_SET);
+        final Element modulationSetElement = createModulationSet (document, zone);
+        final String key = createComparisonKey (modulationSetElement);
+        final Integer existingIndex = modulationSetKeys.get (key);
+        if (existingIndex != null)
+            return existingIndex.intValue ();
+
+        final int index = modulationSetKeys.size ();
+        modulationSetKeys.put (key, Integer.valueOf (index));
+
+        // The name is not part of the comparison key, therefore it is only set once the set is
+        // known to be a new one; it belongs between the devices and the filter type
+        final Element nameElement = document.createElement (RenoiseTag.NAME);
+        nameElement.setTextContent ("Set " + (index + 1));
+        modulationSetElement.insertBefore (nameElement, XMLUtils.getChildElementByName (modulationSetElement, RenoiseTag.FILTER_TYPE));
+
+        modulationSetsElement.appendChild (modulationSetElement);
+        return index;
+    }
+
+
+    /**
+     * Create the modulation set for one zone. It holds the amplitude envelope and - if present -
+     * the sampler filter (type, cutoff, resonance and filter envelope), the pitch envelope and the
+     * pitch LFO (vibrato). The created element is not appended to the document and does not
+     * contain a name element yet.
+     *
+     * @param document The XML document
+     * @param zone The zone from which to read the modulation information
+     * @return The created modulation set element
+     */
+    private static Element createModulationSet (final Document document, final ISampleZone zone)
+    {
+        final Element modulationSetElement = document.createElement (RenoiseTag.MODULATION_SET);
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.SELECTED_PRESET_NAME, "Init");
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.SELECTED_PRESET_LIBRARY, "Bundled Content");
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.SELECTED_PRESET_MODIFIED, "true");
@@ -282,9 +328,53 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         if (pitchModulator.getDepth () != 0)
             createAhdsrDevice (document, devicesElement, RenoiseTag.TARGET_PITCH, RenoiseTag.OP_ADD, true, pitchModulator.getSource ());
 
-        XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.NAME, "Set " + (zoneIndex + 1));
+        final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+        if (pitchLfoModulator.getDepth () != 0 && pitchLfoModulator.getSource ().isSet ())
+            createLfoDevice (document, devicesElement, pitchLfoModulator);
+
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.FILTER_TYPE, Integer.toString (filterTypeIndex));
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.FILTER_BANK_VERSION, Integer.toString (RenoiseFilterType.FILTER_BANK_VERSION));
+        return modulationSetElement;
+    }
+
+
+    /**
+     * Create a text key from an element and all of its children (tag names, attributes and text
+     * content) which can be compared to decide whether two modulation sets are identical.
+     *
+     * @param element The element for which to create the key
+     * @return The comparison key
+     */
+    private static String createComparisonKey (final Element element)
+    {
+        final StringBuilder sb = new StringBuilder ();
+        appendComparisonKey (element, sb);
+        return sb.toString ();
+    }
+
+
+    /**
+     * Append the comparison key of an element and all of its children to the given string builder.
+     *
+     * @param element The element for which to append the key
+     * @param sb Where to append the key
+     */
+    private static void appendComparisonKey (final Element element, final StringBuilder sb)
+    {
+        sb.append ('<').append (element.getTagName ());
+        final NamedNodeMap attributes = element.getAttributes ();
+        for (int i = 0; i < attributes.getLength (); i++)
+        {
+            final Node attribute = attributes.item (i);
+            sb.append (' ').append (attribute.getNodeName ()).append ("=\"").append (attribute.getNodeValue ()).append ('"');
+        }
+        sb.append ('>');
+        for (Node child = element.getFirstChild (); child != null; child = child.getNextSibling ())
+            if (child instanceof final Element childElement)
+                appendComparisonKey (childElement, sb);
+            else
+                sb.append (child.getNodeValue ());
+        sb.append ("</>");
     }
 
 
@@ -307,7 +397,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         addParameter (document, deviceElement, RenoiseTag.VOLUME, 1.0);
         addParameter (document, deviceElement, RenoiseTag.PANNING, 0.0);
         addParameter (document, deviceElement, RenoiseTag.PITCH, 0.0);
-        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.PITCH_MODULATION_RANGE, "12");
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.PITCH_MODULATION_RANGE, Integer.toString (RenoiseValueConverter.PITCH_MODULATION_RANGE));
         addParameter (document, deviceElement, RenoiseTag.CUTOFF, cutoff);
         addParameter (document, deviceElement, RenoiseTag.RESONANCE, resonance);
         addParameter (document, deviceElement, RenoiseTag.DRIVE, 0.0);
@@ -341,6 +431,56 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final double sustain = envelope.getSustainLevel ();
         addParameter (document, deviceElement, RenoiseTag.SUSTAIN, sustain < 0 ? 1.0 : sustain);
         addParameter (document, deviceElement, RenoiseTag.RELEASE, RenoiseValueConverter.timeToRenoise (envelope.getReleaseTime ()));
+    }
+
+
+    /**
+     * Create a LFO modulation device which modulates the pitch (vibrato).
+     *
+     * @param document The XML document
+     * @param devicesElement The devices element to which to add the device
+     * @param lfoModulator The pitch LFO modulator to write
+     */
+    private static void createLfoDevice (final Document document, final Element devicesElement, final ILfoModulator lfoModulator)
+    {
+        final Element deviceElement = XMLUtils.addElement (document, devicesElement, RenoiseTag.LFO_DEVICE);
+        deviceElement.setAttribute (RenoiseTag.ATTR_TYPE, RenoiseTag.LFO_DEVICE);
+
+        addParameter (document, deviceElement, RenoiseTag.IS_ACTIVE, 1.0);
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TARGET, RenoiseTag.TARGET_PITCH);
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.OPERATOR, RenoiseTag.OP_ADD);
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.BIPOLAR, "true");
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TEMPO_SYNCED, "false");
+
+        final ILfo lfo = lfoModulator.getSource ();
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.LFO_MODE, waveformToMode (lfo.getWaveform ()));
+        addParameter (document, deviceElement, RenoiseTag.LFO_FREQUENCY, RenoiseValueConverter.lfoRateToRenoise (lfo.getRate ()));
+        addParameter (document, deviceElement, RenoiseTag.LFO_AMPLITUDE, RenoiseValueConverter.lfoDepthToAmplitude (lfoModulator.getDepth ()));
+        final double startPhase = lfo.getStartPhase ();
+        addParameter (document, deviceElement, RenoiseTag.LFO_DEPHASE, startPhase > 0 ? startPhase * 360.0 : 0);
+        // Renoise has a single onset time which ramps the LFO in, therefore delay and fade-in are
+        // combined
+        final double onset = Math.max (0, lfo.getDelay ()) + Math.max (0, lfo.getFadeIn ());
+        addParameter (document, deviceElement, RenoiseTag.LFO_DELAY, RenoiseValueConverter.lfoDelayToRenoise (onset));
+    }
+
+
+    /**
+     * Get the Renoise LFO mode for a waveform of the model. Renoise has no triangle, which is
+     * mapped to sine as the closest smooth shape.
+     *
+     * @param waveform The waveform
+     * @return The Renoise LFO mode
+     */
+    private static String waveformToMode (final LfoWaveform waveform)
+    {
+        return switch (waveform)
+        {
+            case SQUARE -> RenoiseTag.LFO_MODE_PULSE;
+            case SAWTOOTH_UP, SAWTOOTH_DOWN -> RenoiseTag.LFO_MODE_SAW;
+            case RANDOM -> RenoiseTag.LFO_MODE_RANDOM;
+            default -> RenoiseTag.LFO_MODE_SIN;
+        };
     }
 
 
