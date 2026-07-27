@@ -159,7 +159,10 @@ which are not listed are 0 in generated programs.
     stages, 1 decay stage and 3 release stages, each with a duration and a target level -
     byte `[14]` is a loop flag. A time byte holds the number of steps on the non-linear
     editor time grid plus 3 (grid: 0-2s in 0.02s steps, 2-5s in 0.04s, 5-10s in 0.10s,
-    10-15s in 0.5s, 15-25s in 1s, 25-60s in 5s); a level byte is a signed percentage.
+    10-15s in 0.5s, 15-25s in 1s, 25-60s in 5s); a level byte is a signed percentage. A stage
+    whose time and level are both 0 is unused and keeps the level of the previous stage: many
+    factory programs leave the decay stage unused so the envelope sustains at the attack
+    level and only the release stages fade the (naturally decaying) sample out.
   * CAL (tag 64): `[0]` 0x7F, `[1]` keymap transpose, `[3]` 0x2B, `[7..8]` a *second* keymap
     slot which must stay 0 - writing the keymap ID into both slots makes the layer claim two
     keymaps, which overflows the device at 4 or more layers and mutes the whole program -
@@ -168,8 +171,9 @@ which are not listed are 0 in generated programs.
   * F1 page (tag 0x50): `[0]` DSP function type of the F1 slot (the filter, see below),
     `[1]` filter cutoff as signed semi-tones: Hz = 440 * 2^((byte - 9) / 12), device range
     -48 (16 Hz) to 79 (25088 Hz), `[5]` cutoff modulation source (121 = ENV2, the filter
-    envelope), `[6]` its signed depth: piece-wise linear through the calibration points
-    0 = 0 cents, 40 = 1200 cents, 127 = 10800 cents
+    envelope; 100 = the attack velocity), `[6]` its signed depth: piece-wise linear through
+    the calibration points 0 = 0 cents, 40 = 1200 cents, 127 = 10800 cents (measured for the
+    filter envelope depth; assumed for the other sources of the slot)
   * F2 page (tag 0x51): `[0]` function type: 16 = resonance, 61 = none, `[1]` the resonance
     in 0.5 dB steps (0..48 = 0..24 dB); for the 2-pole bandpass the value is the bandwidth
     instead (64 is a typical medium width)
