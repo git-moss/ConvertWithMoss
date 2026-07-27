@@ -51,6 +51,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.control.ScrollPane;
@@ -964,7 +965,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     }
 
 
-    private class TaskPane// <T extends ICoreTask<?>>
+    private class TaskPane
     {
         private final BorderPane                formatPane    = new BorderPane ();
         private final TextField                 search        = new TextField ();
@@ -1008,11 +1009,13 @@ public class MainFrame extends AbstractFrame implements INotifier
             final ObservableList<String> observableList = FXCollections.observableList (taskNames);
             final FilteredList<String> filtered = new FilteredList<> (observableList, _ -> true);
             this.formatList = new ListView<> (filtered);
+            this.setTooltips ();
+            final MultipleSelectionModel<String> selectionModel = this.formatList.getSelectionModel ();
 
             filtered.predicateProperty ().bind (Bindings.createObjectBinding (() -> f -> this.isVisibleInFilter (this.search.getText (), f, isSource), this.search.textProperty (), MainFrame.this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ()));
 
             // Ensure that there is always a selected element (select by value)
-            this.formatList.getSelectionModel ().selectedItemProperty ().addListener ((_, _, newVal) -> {
+            selectionModel.selectedItemProperty ().addListener ((_, _, newVal) -> {
                 if (newVal != null)
                     this.lastSelected = newVal;
             });
@@ -1020,12 +1023,12 @@ public class MainFrame extends AbstractFrame implements INotifier
                 if (filtered.isEmpty ())
                     return;
                 if (this.lastSelected != null && filtered.contains (this.lastSelected))
-                    this.formatList.getSelectionModel ().select (this.lastSelected);
+                    selectionModel.select (this.lastSelected);
                 else
-                    this.formatList.getSelectionModel ().selectFirst ();
+                    selectionModel.selectFirst ();
             });
 
-            this.formatList.getSelectionModel ().selectedItemProperty ().addListener ((_, _, selected) -> {
+            selectionModel.selectedItemProperty ().addListener ((_, _, selected) -> {
                 if (selected != null)
                     this.showPane (selected);
             });
@@ -1036,6 +1039,29 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.formatPane.setLeft (sidebar);
             this.formatPane.setCenter (this.contentArea);
             this.formatPane.getStyleClass ().add ("paddingLeftBottomRight");
+        }
+
+
+        private void setTooltips ()
+        {
+            this.formatList.setCellFactory (_ -> new ListCell<String> ()
+            {
+                // Install once, reuse
+                private final Tooltip tip = new Tooltip ();
+                {
+                    this.setTooltip (this.tip);
+                }
+
+
+                /** {@inheritDoc} */
+                @Override
+                protected void updateItem (final String item, final boolean empty)
+                {
+                    super.updateItem (item, empty);
+                    this.setText (empty ? null : item);
+                    this.tip.setText (empty ? null : item);
+                }
+            });
         }
 
 
