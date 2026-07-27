@@ -23,6 +23,9 @@ public class Generator
     /** The ID of the end loop offset. */
     public static final int     END_LOOP_ADDRS_OFFSET    = 3;
 
+    /** The ID of the vibrato low frequency oscillator to pitch generator. */
+    public static final int     VIB_LFO_TO_PITCH         = 6;
+
     /** The ID of the modulation envelope to pitch generator. */
     public static final int     MOD_ENV_TO_PITCH         = 7;
 
@@ -36,6 +39,11 @@ public class Generator
 
     /** The ID of the panning generator. */
     public static final int     PANNING                  = 17;
+
+    /** The ID of the vibrato low frequency oscillator delay generator (in time-cents). */
+    public static final int     DELAY_VIB_LFO            = 23;
+    /** The ID of the vibrato low frequency oscillator frequency generator (in absolute cents). */
+    public static final int     FREQ_VIB_LFO             = 24;
 
     /** The ID of the modulation envelope delay generator. */
     public static final int     MOD_ENV_DELAY            = 25;

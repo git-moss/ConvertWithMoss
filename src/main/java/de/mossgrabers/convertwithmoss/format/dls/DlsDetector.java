@@ -19,6 +19,8 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
@@ -242,6 +244,28 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             pitchEnvelopeModulator.setSource (pitchEnvelope);
         }
 
+        // Pitch LFO (vibrato). The low frequency oscillator which modulates the pitch is the
+        // vibrato; its frequency and delay are set by their own connections.
+        // Only an *uncontrolled* connection is read: the format additionally defines the same
+        // connection controlled by the modulation wheel, which is the amount the wheel can dial in
+        // and must not be applied as a permanently sounding vibrato.
+        final Optional<DlsArticulation> pitchLfoModulation = getUncontrolledArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_LFO, DlsArticulation.CONN_DST_PITCH);
+        if (pitchLfoModulation.isPresent ())
+        {
+            final double depthCents = DlsArticulation.relativePitchToCents (pitchLfoModulation.get ().getScale ());
+            if (depthCents != 0)
+            {
+                final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+                pitchLfoModulator.setDepth (Math.clamp (depthCents, -IEnvelope.MAX_ENVELOPE_DEPTH, IEnvelope.MAX_ENVELOPE_DEPTH) / IEnvelope.MAX_ENVELOPE_DEPTH);
+
+                final ILfo pitchLfo = pitchLfoModulator.getSource ();
+                final Optional<DlsArticulation> lfoFrequency = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_LFO_FREQUENCY);
+                if (lfoFrequency.isPresent ())
+                    pitchLfo.setRate (DlsArticulation.absolutePitchToHertz (lfoFrequency.get ().getScale ()));
+                pitchLfo.setDelay (getTime (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_LFO_STARTDELAY));
+            }
+        }
+
         // Pitch tuning
         final Optional<DlsArticulation> pitchTuning = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_PITCH);
         if (pitchTuning.isPresent ())
@@ -261,6 +285,33 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         if (articulation.isPresent ())
             return articulation;
         return getArticulation (dlsInstrument.getArticulations (), source, destination);
+    }
+
+
+    /**
+     * Get a connection which is not modulated by a controller, e.g. the modulation wheel.
+     *
+     * @param dlsInstrument The instrument
+     * @param dlsRegion The region
+     * @param source The source, see the CONN_SRC_* constants
+     * @param destination The destination, see the CONN_DST_* constants
+     * @return The connection, if any
+     */
+    private static Optional<DlsArticulation> getUncontrolledArticulation (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int source, final int destination)
+    {
+        final Optional<DlsArticulation> articulation = getUncontrolledArticulation (dlsRegion.getArticulations (), source, destination);
+        if (articulation.isPresent ())
+            return articulation;
+        return getUncontrolledArticulation (dlsInstrument.getArticulations (), source, destination);
+    }
+
+
+    private static Optional<DlsArticulation> getUncontrolledArticulation (final List<DlsArticulation> articulations, final int source, final int destination)
+    {
+        for (final DlsArticulation articulation: articulations)
+            if (articulation.getSource () == source && articulation.getDestination () == destination && articulation.getControl () == DlsArticulation.CONN_SRC_NONE)
+                return Optional.of (articulation);
+        return Optional.empty ();
     }
 
 

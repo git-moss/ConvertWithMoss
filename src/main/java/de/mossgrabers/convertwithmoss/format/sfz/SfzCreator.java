@@ -28,6 +28,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -374,6 +376,24 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         }
 
         // -----------------------------------------------------------
+        // Pitch LFO (vibrato)
+
+        final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+        final double lfoDepth = pitchLfoModulator.getDepth ();
+        if (lfoDepth != 0)
+        {
+            final StringBuilder lfoStr = new StringBuilder ();
+            lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append ((int) Math.round (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
+
+            final ILfo pitchLfo = pitchLfoModulator.getSource ();
+            addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FREQ, pitchLfo.getRate ());
+            addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_DELAY, pitchLfo.getDelay ());
+            addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FADE, pitchLfo.getFadeIn ());
+
+            buffer.append (lfoStr).append (LINE_FEED);
+        }
+
+        // -----------------------------------------------------------
         // Sample Loop
 
         this.createLoops (buffer, zone);
@@ -592,6 +612,16 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (!sb.isEmpty ())
             sb.append (' ');
         sb.append (opcode).append ('=').append (formatAsFloat (Math.clamp (value * 100.0, 0.0, 100.0)));
+    }
+
+
+    private static void addLfoTimeAttribute (final StringBuilder sb, final String opcode, final double value)
+    {
+        if (value < 0)
+            return;
+        if (!sb.isEmpty ())
+            sb.append (' ');
+        sb.append (opcode).append ('=').append (formatAsFloat (value));
     }
 
 
