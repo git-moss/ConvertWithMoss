@@ -167,11 +167,11 @@ public class ConverterBackend
         this.detectors.add (new DecentSamplerDetector (notifier));
         this.detectors.add (new DlsDetector (notifier));
         this.detectors.add (new DistingExDetector (notifier));
+        this.detectors.add (new Emulator3Detector (notifier));
         this.detectors.add (new Emulator4Detector (notifier));
+        this.detectors.add (new EmulatorXDetector (notifier));
         this.detectors.add (new TonverkMultiDetector (notifier));
         this.detectors.add (new TonverkPresetDetector (notifier));
-        this.detectors.add (new Emulator3Detector (notifier));
-        this.detectors.add (new EmulatorXDetector (notifier));
         this.detectors.add (new EnsoniqEpsAsrDetector (notifier));
         this.detectors.add (new MirageDetector (notifier));
         this.detectors.add (new FairlightCmi3Detector (notifier));
@@ -211,11 +211,11 @@ public class ConverterBackend
         this.creators.add (new TX16WxCreator (notifier));
         this.creators.add (new DecentSamplerCreator (notifier));
         this.creators.add (new DistingExCreator (notifier));
+        this.creators.add (new Emulator3Creator (notifier));
         this.creators.add (new Emulator4Creator (notifier));
+        this.creators.add (new EmulatorXCreator (notifier));
         this.creators.add (new TonverkMultiCreator (notifier));
         this.creators.add (new TonverkPresetCreator (notifier));
-        this.creators.add (new Emulator3Creator (notifier));
-        this.creators.add (new EmulatorXCreator (notifier));
         this.creators.add (new KMPCreator (notifier));
         this.creators.add (new KorgmultisampleCreator (notifier));
         this.creators.add (new KurzweilCreator (notifier));
