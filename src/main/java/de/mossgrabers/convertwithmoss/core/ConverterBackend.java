@@ -84,6 +84,8 @@ import de.mossgrabers.convertwithmoss.format.roland.mv8000.MV8000Creator;
 import de.mossgrabers.convertwithmoss.format.roland.mv8000.MV8000Detector;
 import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
+import de.mossgrabers.convertwithmoss.format.roland.sp404mk2.SP404Mk2Creator;
+import de.mossgrabers.convertwithmoss.format.roland.sp404mk2.SP404Mk2Detector;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreCreator;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreDetector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
@@ -180,6 +182,7 @@ public class ConverterBackend
         this.detectors.add (new MV8000Detector (notifier));
         this.detectors.add (new S5xxDetector (notifier));
         this.detectors.add (new S770Detector (notifier));
+        this.detectors.add (new SP404Mk2Detector (notifier));
         this.detectors.add (new ZenCoreDetector (notifier));
         this.detectors.add (new SxtDetector (notifier));
         this.detectors.add (new SampleFileDetector (notifier));
@@ -215,6 +218,7 @@ public class ConverterBackend
         this.creators.add (new RenoiseCreator (notifier));
         this.creators.add (new MC707Creator (notifier));
         this.creators.add (new MV8000Creator (notifier));
+        this.creators.add (new SP404Mk2Creator (notifier));
         this.creators.add (new ZenCoreCreator (notifier));
         this.creators.add (new SxtCreator (notifier));
         this.creators.add (new WavCreator (notifier));

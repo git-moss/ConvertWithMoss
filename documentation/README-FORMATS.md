@@ -76,6 +76,7 @@ The following multi-sample formats are supported:
 * [Roland MV-8000/MV-8800](#roland-mv-8000mv-8800)
 * [Roland S-50 Series](#roland-s-50-series) - read only
 * [Roland S-770 Series](#roland-s-770-series) - read only
+* [Roland SP-404MK2](#roland-sp-404mk2)
 * [Roland ZEN-Core](#roland-zen-core)
 * [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
@@ -586,6 +587,18 @@ The format of the S-50 is slightly different to the one used on the other models
 The Roland S-770 series comprises a family of digital PCM samplers introduced between 1989 and 1995, including the S-750, S-770, S-760, DJ-70, DJ-70 MkII, and SP-700. These instruments share a common sampling architecture based on high-resolution PCM playback, digital resonant Time Variant Filters (TVFs), and sophisticated modulation and envelope generators. The flagship S-770 expanded the platform with advanced multisampling capabilities, internal digital signal processing, and video-based graphical editing, while the later S-760 provided similar functionality in a more compact and cost-effective form. The DJ-70 and SP-700 adapted the technology for performance-oriented and phrase-sampling applications.
 
 Only reading is supported. But it supports both HD/CD-Rom and diskette image files. Also files that span multiple diskettes are supported (all disk files need to be in the same folder).
+
+## Roland SP-404MK2
+
+The Roland SP-404MKII is a pad-based sampler and effector. A project holds 10 banks (A-J) of 16 pads each (160 pads); every pad plays a single sample with its own start/end, loop, level, pan, pitch and BPM. It is not a keyboard multi-sampler - there are no key-ranges - so, as with the other pad devices, ConvertWithMoss treats each **populated bank as one multi-sample** and each **pad as a single-key zone** (a drum-kit-shaped mapping).
+
+The format is not documented by Roland; it was reverse-engineered and validated against real exported projects and the SP-404MKII v5.52 firmware (see *documentation/design/SP404MK2_FORMAT.md*). A project is a folder (`PROJECT_XX`) holding a `PADCONF.BIN` pad-configuration file and a `SMPL` folder of `BANK<bank>-<pad>.SMP` samples in Roland's own `RFWV` wave container (48 kHz, 16-bit, big-endian PCM). Both the exported (31,488-byte) and the device-internal (52,000-byte) `PADCONF.BIN` forms are read. Point ConvertWithMoss at a project folder (or a folder of projects, e.g. the `EXPORT/PROJECT` folder of an SD card) to read it. Writing produces the same `PROJECT_XX/PADCONF.BIN` + `SMPL/*.SMP` layout; copy it into the `IMPORT` folder of an SD card and load it with the device's *IMPORT PROJECT* function. Written projects have not been verified on hardware yet - feedback is welcome.
+
+Reading extracts each pad's full sample together with its name, level, panning and loop on/off state; a multi-zone source written back becomes one pad per zone. The following limitations apply:
+
+* Each pad plays one sample, so overlapping velocity layers are reduced to the loudest layer and a bank holds at most 16 zones; zones beyond a bank are carried into the next bank.
+* The on-device start/end trim and loop points are preserved in the file but not applied - the full sample is always extracted (the byte-offset encoding of the trim window is not yet fully decoded).
+* Patterns (`PTN`), pattern chains and project artwork are not converted.
 
 ## Roland ZEN-Core
 

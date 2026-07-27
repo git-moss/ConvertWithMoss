@@ -3,6 +3,7 @@
 ## 19.2.0
 
 * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, SFZ, SoundFont 2. Previously any vibrato was dropped on conversion.
+* New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
 * New: Added support for the E-mu Emulator IV bank format (E4B). The name of the bank is passed on as the description and - switchable - prepended to the name of a read preset, since the presets of the EOS libraries are only named after their articulation ('Dark Tremolo') and not after the instrument they play. Written banks have not been tested on real hardware yet.
 * New: E-mu Emulator IV banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format.
 * New: The E-mu Emulator IV destination can write the bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7.
