@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedOutputStream;
@@ -72,6 +73,9 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected static final DestinationAudioFormat DESTINATION_FORMAT                 = new DestinationAudioFormat ();
     protected static final String                 IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA = "IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA";
     protected static final String                 FORWARD_SLASH                      = "/";
+
+    /** The separators between the segments of a qualified name. */
+    private static final Pattern                  NAME_SEPARATOR                     = Pattern.compile ("\\s+[-/:|]\\s+");
 
     protected final ProgressLogger                progress;
     private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
@@ -190,6 +194,54 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
             this.notifier.logError ("IDS_NOTIFY_ERR_PARSER", ex);
             return Optional.empty ();
         }
+    }
+
+
+    /**
+     * Shorten a name for a device which only displays few characters, by keeping the last of its
+     * separated segments - e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'. The part
+     * which tells such a name apart from its siblings is at its end, which is exactly the part a
+     * device with a short name field cuts off, so keeping the last segment preserves much more than
+     * truncating the full name does. Only for destinations which offer this as an option, since the
+     * dropped segments are not stored anywhere else. A name without a separator is returned
+     * unchanged; the caller still has to enforce the actual length limit of its format.
+     *
+     * @param name The full name
+     * @return The last segment of the name
+     */
+    protected static String createShortName (final String name)
+    {
+        if (name == null)
+            return null;
+        final String trimmedName = name.trim ();
+        final String [] segments = NAME_SEPARATOR.split (trimmedName);
+        if (segments.length == 0)
+            return trimmedName;
+        final String lastSegment = segments[segments.length - 1].trim ();
+        return lastSegment.isEmpty () ? trimmedName : lastSegment;
+    }
+
+
+    /**
+     * Remove the bank from the front of the name of a multi-sample. A source which comes from a
+     * bank of several presets carries the bank in its name, so that it stays unique and tells which
+     * instrument it is (e.g. 'Greek Bazouki - Dark Tremolo' instead of only 'Dark Tremolo'). A
+     * destination which stores the bank separately - in a field of its own like the Waldorf
+     * Quantum/Iridium, or because the written file is that bank - does not need the name to repeat
+     * it, while the file name keeps the full one for the user to tell the files apart. The name is
+     * returned unchanged if it does not start with the bank.
+     *
+     * @param multisampleSource The multi-sample source
+     * @return The name of the multi-sample without the leading bank
+     */
+    protected static String createNameWithoutBank (final IMultisampleSource multisampleSource)
+    {
+        final String name = multisampleSource.getName ();
+        final String bank = multisampleSource.getMetadata ().getDescription ();
+        if (name == null || bank == null || bank.isBlank ())
+            return name;
+        final String prefix = bank + " - ";
+        return name.startsWith (prefix) && name.length () > prefix.length () ? name.substring (prefix.length ()) : name;
     }
 
 

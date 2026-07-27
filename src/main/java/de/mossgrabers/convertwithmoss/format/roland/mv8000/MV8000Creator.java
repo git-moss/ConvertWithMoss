@@ -29,7 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
+import de.mossgrabers.convertwithmoss.core.settings.ShortNameSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
@@ -41,7 +41,7 @@ import de.mossgrabers.tools.StringUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
+public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
 {
     private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -93,7 +93,7 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
      */
     public MV8000Creator (final INotifier notifier)
     {
-        super ("Roland MV-8000", "MV8000", notifier, EmptySettingsUI.INSTANCE);
+        super ("Roland MV-8000", "MV8000", notifier, new ShortNameSettingsUI ("MV8000"));
     }
 
 
@@ -109,7 +109,9 @@ public class MV8000Creator extends AbstractCreator<EmptySettingsUI>
         recalculateSamplePositions (multisampleSource, MV8000Sample.SAMPLE_RATE);
 
         final MV8000Patch patch = new MV8000Patch ();
-        patch.setName (multisampleSource.getName ());
+        // The patch name field holds 12 characters, which the device displays
+        final String patchName = multisampleSource.getName ();
+        patch.setName (this.settingsConfiguration.isShortenName () ? createShortName (patchName) : patchName);
         final Integer category = CATEGORY_MAP.get (multisampleSource.getMetadata ().getCategory ());
         patch.setCategory (category == null ? 0 : category.intValue ());
 
