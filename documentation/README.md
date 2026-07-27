@@ -93,7 +93,8 @@ For Linux (BSD not tested) there is also a `Makefile` for build and install with
 # Usage via the user interface
 
 1. Select the source format on the left.
-2. Select the source folder, which contains one or more multisamples in the selected source format. The files can also be located in sub-folders.
+2. Select the source folder with the *Folder* button, which contains one or more multisamples in the selected source format. The files can also be located in sub-folders.
+   * If you only want to convert some of the files of a folder, use the *Files* button instead and pick them in the file dialog (hold *Shift* or *Ctrl*/*Cmd* to select several files). The number of selected files is shown below the source path; press *Clear* there to convert the whole folder again. Editing the source path discards the selection as well. Note that sub-folders are not searched in this case, since the selection already states exactly what to convert. You can also enter the path of a single file to convert only that one.
 3. Select the destination format on the right.
 4. Select the output folder where you want to create the multisamples. You can add a non-existing folder to the name, which then is automatically created. E.g. you could select the Desktop and then add a folder *Conversions*.
 5. Choose the type of the created output format: either single presets, a preset library which contains all found source files, a performance which contains several presets with settings or finally a library of performances. Only some destination formats support libraries and performances, all others are greyed out.
@@ -139,10 +140,13 @@ The following output is displayed (the processing parameters are omitted):
 
 ```
 Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY]
-                       -s=SOURCE [-t=TYPE] [-p[=KEY=VALUE...]]... SOURCE_FOLDER
-                       DESTINATION_FOLDER
-      SOURCE_FOLDER        The source folder to process.
-      DESTINATION_FOLDER   The destination folder to write to.
+                       -s=SOURCE [-t=TYPE] [-p[=KEY=VALUE...]]...
+                       SOURCE... DESTINATION_FOLDER
+      SOURCE... DESTINATION_FOLDER
+                           The source folder to process or, instead, one or
+                             more source files to convert only these (e.g. by
+                             using a wildcard), followed by the destination
+                             folder to write to.
   -a, --analyze            If present, only analyzes the potential source files.
   -d, --destination=DESTINATION
                            The destination format.
@@ -162,6 +166,14 @@ The parameters should be easy to understand since they are identical to what you
 Here is an example for a conversion from Kontakt NKI files to 1010music format:
 
 ```./ConvertWithMoss -s nki -d 1010music D:\MySampler\Kontakt C:\ConversionOutput```
+
+If you do not want to convert all files of a folder, give the files to convert instead of the folder, which is most useful with a wildcard. This converts only the two named programs and only the EXS files which start with 'Piano':
+
+```./ConvertWithMoss -s exs24 -d 1010music "My Rhodes.exs" "My Wurli.exs" C:\ConversionOutput```
+
+```./ConvertWithMoss -s exs24 -d 1010music D:\MySampler\Piano*.exs C:\ConversionOutput```
+
+Note that sub-folders are not searched in this case, since the given files already state exactly what to convert. Each of the files is converted on its own, exactly like it would be as part of a full folder conversion.
 
 To get a list of the available detectors simply set a non-existing one like this (same for the creators):
 

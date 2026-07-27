@@ -288,7 +288,7 @@ public class ConverterBackend
         else
             this.notifier.log ("IDS_NOTIFY_DETECTING", detector.getName (), creator.getName ());
         this.creator.clearCancelled ();
-        this.detector.detect (detectionSettings.sourceFolder, this::acceptMultisample, this::acceptPerformance, detectPerformances);
+        this.detector.detect (detectionSettings.sourceFolder, detectionSettings.sourceFiles, this::acceptMultisample, this::acceptPerformance, detectPerformances);
     }
 
 
