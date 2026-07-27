@@ -303,6 +303,13 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
                 envelope.fromEnvelope (cutoffModulator.getSource ());
                 layer.setFilterEnvelope (envelope, depth);
             }
+            else
+            {
+                // The F1 page has only one modulation slot, the filter envelope has priority
+                final int velocityDepth = (int) Math.round (filter.getCutoffVelocityModulator ().getDepth () * KurzweilDetector.MAX_VELOCITY_MODULATION_CENTS);
+                if (velocityDepth != 0)
+                    layer.setCutoffVelocityModulation (velocityDepth);
+            }
         }
 
         return layer;

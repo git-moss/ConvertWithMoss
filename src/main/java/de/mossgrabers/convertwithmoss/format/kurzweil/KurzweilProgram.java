@@ -46,6 +46,8 @@ public class KurzweilProgram
 
     /** The control source code of the second envelope (ENV2). */
     private static final int CONTROL_SOURCE_ENV2     = 121;
+    /** The control source code of the attack velocity. */
+    private static final int CONTROL_SOURCE_VELOCITY = 100;
     /** The control source code for 'always on'. */
     private static final int CONTROL_SOURCE_ON       = 0x7F;
 
@@ -81,11 +83,11 @@ public class KurzweilProgram
         private int              velocityLow          = 1;
         private int              velocityHigh         = 127;
 
-        private boolean          isNaturalEnvelope    = true;
-        private KurzweilEnvelope amplitudeEnvelope    = null;
-        private KurzweilEnvelope filterEnvelope       = null;
-        private int              filterEnvelopeSource = 0;
-        private int              filterEnvelopeDepth  = 0;
+        private boolean          isNaturalEnvelope       = true;
+        private KurzweilEnvelope amplitudeEnvelope       = null;
+        private KurzweilEnvelope filterEnvelope          = null;
+        private int              cutoffModulationSource  = 0;
+        private int              cutoffModulationDepth   = 0;
 
         private int              algorithm            = 1;
         private int              filterType           = FILTER_NONE;
@@ -203,7 +205,7 @@ public class KurzweilProgram
          */
         public KurzweilEnvelope getFilterEnvelope ()
         {
-            return this.filterEnvelopeSource == CONTROL_SOURCE_ENV2 && this.filterEnvelopeDepth != 0 ? this.filterEnvelope : null;
+            return this.cutoffModulationSource == CONTROL_SOURCE_ENV2 && this.cutoffModulationDepth != 0 ? this.filterEnvelope : null;
         }
 
 
@@ -214,7 +216,7 @@ public class KurzweilProgram
          */
         public int getFilterEnvelopeDepth ()
         {
-            return this.filterEnvelopeDepth;
+            return this.cutoffModulationDepth;
         }
 
 
@@ -227,8 +229,33 @@ public class KurzweilProgram
         public void setFilterEnvelope (final KurzweilEnvelope envelope, final int depth)
         {
             this.filterEnvelope = envelope;
-            this.filterEnvelopeSource = CONTROL_SOURCE_ENV2;
-            this.filterEnvelopeDepth = depth;
+            this.cutoffModulationSource = CONTROL_SOURCE_ENV2;
+            this.cutoffModulationDepth = depth;
+        }
+
+
+        /**
+         * Get the depth of the velocity modulation of the filter frequency (the attack velocity
+         * as the cutoff control source).
+         *
+         * @return The depth in cents, 0 if the velocity is not routed to the filter frequency
+         */
+        public int getCutoffVelocityDepth ()
+        {
+            return this.cutoffModulationSource == CONTROL_SOURCE_VELOCITY ? this.cutoffModulationDepth : 0;
+        }
+
+
+        /**
+         * Route the attack velocity to the filter frequency. Note that the F1 page has only one
+         * modulation slot: this replaces a set filter envelope.
+         *
+         * @param depth The modulation depth in cents
+         */
+        public void setCutoffVelocityModulation (final int depth)
+        {
+            this.cutoffModulationSource = CONTROL_SOURCE_VELOCITY;
+            this.cutoffModulationDepth = depth;
         }
 
 
@@ -608,8 +635,8 @@ public class KurzweilProgram
                 case TAG_F1_PAGE:
                     currentLayer.filterType = data[0] & 0xFF;
                     currentLayer.cutoff = data[1];
-                    currentLayer.filterEnvelopeSource = data[5] & 0xFF;
-                    currentLayer.filterEnvelopeDepth = decodeFilterEnvelopeDepth (data[6]);
+                    currentLayer.cutoffModulationSource = data[5] & 0xFF;
+                    currentLayer.cutoffModulationDepth = decodeModulationDepth (data[6]);
                     break;
 
                 case TAG_F2_PAGE:
@@ -680,8 +707,7 @@ public class KurzweilProgram
         this.segments.add (new Segment (TAG_ENVELOPE, data));
 
         // The filter envelope (ENV2)
-        final boolean hasFilterEnvelope = layer.filterEnvelope != null && layer.filterEnvelopeDepth != 0;
-        if (hasFilterEnvelope)
+        if (layer.getFilterEnvelope () != null)
         {
             data = new byte [15];
             layer.filterEnvelope.write (data);
@@ -700,14 +726,15 @@ public class KurzweilProgram
         data[29] = (byte) layer.algorithm;
         this.segments.add (new Segment (TAG_CALIBRATION, data));
 
-        // The F1 page with the filter type, the cutoff and the filter envelope routing
+        // The F1 page with the filter type, the cutoff and the cutoff modulation routing (the
+        // filter envelope or the attack velocity)
         data = new byte [15];
         data[0] = (byte) layer.filterType;
         data[1] = (byte) layer.cutoff;
-        if (hasFilterEnvelope)
+        if (layer.cutoffModulationSource != 0 && layer.cutoffModulationDepth != 0)
         {
-            data[5] = CONTROL_SOURCE_ENV2;
-            data[6] = (byte) encodeFilterEnvelopeDepth (layer.filterEnvelopeDepth);
+            data[5] = (byte) layer.cutoffModulationSource;
+            data[6] = (byte) encodeModulationDepth (layer.cutoffModulationDepth);
         }
         this.segments.add (new Segment (TAG_F1_PAGE, data));
 
@@ -785,14 +812,15 @@ public class KurzweilProgram
 
 
     /**
-     * Decode the modulation depth of the filter envelope into cents. Piece-wise linear through the
-     * calibration points measured on the device: 0 = 0 cents, 40 = 1200 cents and 127 = 10800
-     * cents.
+     * Decode a modulation depth byte of the filter frequency into cents. Piece-wise linear through
+     * the calibration points measured on the device for the filter envelope depth: 0 = 0 cents, 40
+     * = 1200 cents and 127 = 10800 cents. The same encoding is assumed for the other modulation
+     * sources of the slot.
      *
      * @param depthByte The signed depth byte
      * @return The depth in cents
      */
-    public static int decodeFilterEnvelopeDepth (final int depthByte)
+    public static int decodeModulationDepth (final int depthByte)
     {
         final int absDepth = Math.abs (depthByte);
         final int cents = absDepth <= 40 ? absDepth * 30 : (int) Math.round ((absDepth - 29) / 0.0090625);
@@ -801,12 +829,12 @@ public class KurzweilProgram
 
 
     /**
-     * Encode a modulation depth of the filter envelope in cents into the signed depth byte.
+     * Encode a modulation depth of the filter frequency in cents into the signed depth byte.
      *
      * @param cents The depth in cents
      * @return The signed depth byte in the range of -127..127
      */
-    public static int encodeFilterEnvelopeDepth (final int cents)
+    public static int encodeModulationDepth (final int cents)
     {
         final int absCents = Math.abs (cents);
         final int depthByte = Math.clamp (absCents <= 1200 ? (int) Math.round (absCents / 30.0) : (int) Math.round (29 + absCents * 0.0090625), 0, 127);

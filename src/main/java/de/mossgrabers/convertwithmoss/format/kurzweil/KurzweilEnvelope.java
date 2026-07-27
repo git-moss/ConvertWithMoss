@@ -129,8 +129,14 @@ public class KurzweilEnvelope
             this.levels[stage] = peak;
         }
 
-        this.times[STAGE_DECAY] = Math.max (0, envelope.getDecayTime ());
-        this.levels[STAGE_DECAY] = (int) Math.round ((sustainLevel < 0 ? 1 : sustainLevel) * 100);
+        double decay = Math.max (0, envelope.getDecayTime ());
+        final int sustainPercent = (int) Math.round ((sustainLevel < 0 ? 1 : sustainLevel) * 100);
+        // A stage with a zero time and level is unused on the device and would sustain at the
+        // attack level - keep an intended instant drop to silence by using one grid step
+        if (sustainPercent == 0 && decay <= 0)
+            decay = 0.02;
+        this.times[STAGE_DECAY] = decay;
+        this.levels[STAGE_DECAY] = sustainPercent;
 
         this.times[STAGE_DECAY + 1] = Math.max (0, envelope.getReleaseTime ());
         this.levels[STAGE_DECAY + 1] = 0;
@@ -139,18 +145,27 @@ public class KurzweilEnvelope
 
 
     /**
-     * Fill a model envelope from the stages: leading attack stages which stay at level 0 form the
-     * delay, the following stages up to the peak level the attack and the remaining attack stages
-     * the hold. The decay stage sets the decay time and sustain level, the release stages up to the
-     * first which reaches level 0 sum to the release time.
+     * Fill a model envelope from the stages. A stage with both a zero time and a zero level is
+     * unused on the device and keeps the level of the previous stage - many factory programs
+     * leave the decay stage unused so the envelope sustains at the attack level and only the
+     * release stages fade the (naturally decaying) sample out. Leading attack stages which stay
+     * at level 0 form the delay, the following stages up to the peak level the attack and the
+     * remaining attack stages the hold. A used decay stage sets the decay time and sustain level;
+     * an unused one sustains at the level which the attack stages reached. The used release
+     * stages up to the first which reaches level 0 sum to the release time.
      *
      * @param envelope The envelope to fill
      */
     public void toEnvelope (final IEnvelope envelope)
     {
         int peak = 0;
+        int lastAttackLevel = 0;
         for (int stage = 0; stage < STAGE_DECAY; stage++)
+        {
             peak = Math.max (peak, this.levels[stage]);
+            if (!this.isUnused (stage))
+                lastAttackLevel = this.levels[stage];
+        }
 
         if (peak > 0)
         {
@@ -182,18 +197,38 @@ public class KurzweilEnvelope
             envelope.setHoldLevel (peak / 100.0);
         }
 
-        envelope.setDecayTime (this.times[STAGE_DECAY]);
-        envelope.setSustainLevel (Math.clamp (this.levels[STAGE_DECAY], 0, 100) / 100.0);
+        if (this.isUnused (STAGE_DECAY))
+            envelope.setSustainLevel (Math.clamp (lastAttackLevel, 0, 100) / 100.0);
+        else
+        {
+            envelope.setDecayTime (this.times[STAGE_DECAY]);
+            envelope.setSustainLevel (Math.clamp (this.levels[STAGE_DECAY], 0, 100) / 100.0);
+        }
 
         double release = 0;
         for (int stage = STAGE_DECAY + 1; stage < NUM_STAGES; stage++)
         {
+            if (this.isUnused (stage))
+                continue;
             release += this.times[stage];
             if (this.levels[stage] <= 0)
                 break;
         }
         envelope.setReleaseTime (release);
         envelope.setEndLevel (0);
+    }
+
+
+    /**
+     * Check if a stage is unused: both its time and its target level are zero. The device keeps
+     * the level of the previous stage in this case.
+     *
+     * @param stage The index of the stage
+     * @return True if the stage is unused
+     */
+    private boolean isUnused (final int stage)
+    {
+        return this.times[stage] <= 0 && this.levels[stage] == 0;
     }
 
 

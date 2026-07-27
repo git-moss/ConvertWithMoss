@@ -47,7 +47,10 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String IDS_KURZWEIL_READING = "IDS_KURZWEIL_READING";
+    private static final String IDS_KURZWEIL_READING            = "IDS_KURZWEIL_READING";
+
+    /** A full cutoff velocity modulation is 8 octaves (the SFZ 'fil_veltrack' range). */
+    static final int            MAX_VELOCITY_MODULATION_CENTS   = 9600;
 
 
     /**
@@ -386,6 +389,9 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
             modulator.setDepth (Math.clamp (layer.getFilterEnvelopeDepth () / (double) IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1));
             filterEnvelope.toEnvelope (modulator.getSource ());
         }
+        final int cutoffVelocityDepth = layer.getCutoffVelocityDepth ();
+        if (cutoffVelocityDepth != 0)
+            filter.getCutoffVelocityModulator ().setDepth (Math.clamp (cutoffVelocityDepth / (double) MAX_VELOCITY_MODULATION_CENTS, -1, 1));
         zone.setFilter (filter);
     }
 
