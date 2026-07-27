@@ -76,10 +76,14 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
 
         try
         {
-            final S5xxDiskImage image = new S5xxDiskImageParser (sourceFile).parse ();
-            final S5xxDiskImageHeader hdr = image.getHeader ();
-            this.notifier.log ("IDS_S5XX_VERSION", hdr.getSamplerType ().getDescription (), hdr.getOsVersionString ());
-            return this.readPatches (sourceFile, image);
+            final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+            for (final S5xxDiskImage image: new S5xxDiskImageParser (sourceFile).parse ())
+            {
+                final S5xxDiskImageHeader hdr = image.getHeader ();
+                this.notifier.log ("IDS_S5XX_VERSION", hdr.getSamplerType ().getDescription (), hdr.getOsVersionString ());
+                multisampleSources.addAll (this.readPatches (sourceFile, image));
+            }
+            return multisampleSources;
         }
         catch (final IOException ex)
         {
