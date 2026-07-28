@@ -162,7 +162,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
                 final List<ISampleZone> leftSampleZones = new ArrayList<> ();
                 final List<ISampleZone> rightSampleZones = new ArrayList<> ();
                 for (final ISampleZone zone: sampleZones)
-                    if (zone.getTuning () <= -1)
+                    if (zone.getPanning () <= -1)
                         leftSampleZones.add (zone);
                     else
                         rightSampleZones.add (zone);
