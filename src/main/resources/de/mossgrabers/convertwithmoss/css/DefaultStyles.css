@@ -121,3 +121,7 @@
 .log-view .list-cell:error {
     -fx-text-fill: red;
 }
+/** The buttons next to the source path and in the contents dialog. */
+.contentsToolbar {
+    -fx-spacing: 5.0;
+}

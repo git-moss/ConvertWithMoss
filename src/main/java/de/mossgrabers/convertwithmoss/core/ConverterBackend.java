@@ -11,6 +11,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
@@ -124,6 +125,20 @@ public class ConverterBackend
 {
     private static final String            IDS_NOTIFY_SAVE_FAILED      = "IDS_NOTIFY_SAVE_FAILED";
 
+    /**
+     * The prefixes of the formats where one source file contains more than one preset, e.g. a bank,
+     * a disk image or a library. Selecting the contents of a source is only useful for these, since
+     * for all other formats one file simply is one preset, which can already be picked as a file.
+     *
+     * This is kept in one place to have the whole classification reviewable at a glance. It could
+     * as well become a method of the detectors themselves, like it is done for performances.
+     */
+    private static final Set<String>       MULTI_PRESET_FORMATS        = Set.of (
+            // Banks and disk images of hardware samplers
+            "EIII", "E4B", "EXB", "ISO", "Ensoniq", "Mirage", "S900", "S1000", "MPC2000", "MPC60", "Kurzweil", "KMP", "S5xx", "S7xx",
+            // Projects and libraries which hold several presets
+            "MC707", "SP404MK2", "1010music", "Bento", "Ysfc", "Nki", "Sf2", "DLS", "ZBP", "DecentSampler", "Ableton");
+
     protected INotifier                    notifier;
     protected final List<IDetector<?>>     detectors;
     protected final List<ICreator<?>>      creators;
@@ -132,9 +147,13 @@ public class ConverterBackend
     private ICreator<?>                    creator;
     private DetectSettings                 detectionSettings;
     private boolean                        onlyAnalyse;
+    private boolean                        onlyContents;
+    private int                            indexInFile;
+    private File                           currentSourceFile;
 
     private final List<IMultisampleSource> collectedPresetSources      = new ArrayList<> ();
     private final List<IPerformanceSource> collectedPerformanceSources = new ArrayList<> ();
+    private final List<ContentsEntry>      contentsEntries             = new ArrayList<> ();
 
 
     /**
@@ -274,21 +293,92 @@ public class ConverterBackend
      */
     public void detect (final IDetector<?> detector, final ICreator<?> creator, final DetectSettings detectionSettings, final boolean detectPerformances, final boolean onlyAnalyse)
     {
+        this.detect (detector, creator, detectionSettings, detectPerformances, onlyAnalyse, false);
+    }
+
+
+    /**
+     * Detect all sources of the source folder but do not convert anything. Only the information to
+     * display and to identify each source is collected, which can be retrieved afterwards with
+     * {@link #getContentsEntries()}. This is the first step of converting only specific sources of
+     * e.g. a disk image which contains several banks.
+     *
+     * @param detector The file detector
+     * @param detectionSettings The settings for the detection process
+     * @param detectPerformances If true, performances are detected otherwise presets
+     */
+    public void detectContents (final IDetector<?> detector, final DetectSettings detectionSettings, final boolean detectPerformances)
+    {
+        this.detect (detector, null, detectionSettings, detectPerformances, true, true);
+    }
+
+
+    private void detect (final IDetector<?> detector, final ICreator<?> creator, final DetectSettings detectionSettings, final boolean detectPerformances, final boolean onlyAnalyse, final boolean onlyContents)
+    {
         this.detector = detector;
         this.creator = creator;
         this.detectionSettings = detectionSettings;
         this.onlyAnalyse = onlyAnalyse;
+        this.onlyContents = onlyContents;
+        this.indexInFile = 0;
+        this.currentSourceFile = null;
 
         this.collectedPresetSources.clear ();
         this.collectedPerformanceSources.clear ();
+        this.contentsEntries.clear ();
 
         this.notifier.log ("TITLE");
-        if (this.onlyAnalyse)
+        if (this.onlyContents)
+            this.notifier.log ("IDS_NOTIFY_DETECTING_CONTENTS", detector.getName ());
+        else if (this.onlyAnalyse)
             this.notifier.log ("IDS_NOTIFY_DETECTING_NO_CONVERSION", detector.getName ());
         else
             this.notifier.log ("IDS_NOTIFY_DETECTING", detector.getName (), creator.getName ());
-        this.creator.clearCancelled ();
-        this.detector.detect (detectionSettings.sourceFolder, detectionSettings.sourceFiles, this::acceptMultisample, this::acceptPerformance, detectPerformances);
+        if (this.creator != null)
+            this.creator.clearCancelled ();
+        this.detector.detect (detectionSettings.sourceFolder, getFilesToRead (detectionSettings, onlyContents), this::acceptMultisample, this::acceptPerformance, detectPerformances);
+    }
+
+
+    /**
+     * Get the files which need to be read. These are the files which the user selected, if any. If
+     * specific sources were selected as well, only the files which contain them are left, since all
+     * other files contain nothing to convert. A contents run ignores the selected sources, since it
+     * is the run which creates that selection in the first place.
+     *
+     * @param detectionSettings The settings of the detection process
+     * @param onlyContents True if only the contents are detected
+     * @return The files to read, empty to search the whole source folder
+     */
+    private static List<File> getFilesToRead (final DetectSettings detectionSettings, final boolean onlyContents)
+    {
+        if (onlyContents || detectionSettings.selectedSources.isEmpty ())
+            return detectionSettings.sourceFiles;
+        return new ArrayList<> (detectionSettings.selectedSources.keySet ());
+    }
+
+
+    /**
+     * Check if one source file of the format of the given detector can contain more than one
+     * preset, which makes it useful to display and select the contents of a source.
+     *
+     * @param detector The detector to check
+     * @return True if one file can contain several presets
+     */
+    public static boolean containsMultiplePresets (final IDetector<?> detector)
+    {
+        return MULTI_PRESET_FORMATS.contains (detector.getPrefix ());
+    }
+
+
+    /**
+     * Get the sources which were found by the last contents detection run.
+     *
+     * @return The found sources
+     */
+    public List<ContentsEntry> getContentsEntries ()
+    {
+        return this.contentsEntries;
     }
 
 
@@ -337,6 +427,20 @@ public class ConverterBackend
         if (this.detector.isCancelled ())
             return;
 
+        // The index must be counted up for every detected source of a file - before anything is
+        // skipped - since it identifies the source across the contents and the conversion run
+        final int index = this.nextIndex (multisampleSource.getSourceFile ());
+
+        if (this.onlyContents)
+        {
+            this.contentsEntries.add (new ContentsEntry (index, multisampleSource));
+            this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", multisampleSource.getName ());
+            return;
+        }
+
+        if (!this.isSelected (multisampleSource.getSourceFile (), index))
+            return;
+
         this.processSource (multisampleSource);
 
         if (this.detectionSettings.wantsMultipleFiles)
@@ -378,6 +482,19 @@ public class ConverterBackend
         if (instrumentSources.isEmpty ())
             return;
 
+        final File sourceFile = instrumentSources.get (0).getMultisampleSource ().getSourceFile ();
+        final int index = this.nextIndex (sourceFile);
+
+        if (this.onlyContents)
+        {
+            this.contentsEntries.add (new ContentsEntry (index, performanceSource.getName (), instrumentSources.get (0).getMultisampleSource ()));
+            this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", performanceSource.getName ());
+            return;
+        }
+
+        if (!this.isSelected (sourceFile, index))
+            return;
+
         for (final IInstrumentSource instrumentSource: instrumentSources)
             this.processSource (instrumentSource.getMultisampleSource ());
 
@@ -408,6 +525,41 @@ public class ConverterBackend
         {
             this.notifier.logError (IDS_NOTIFY_SAVE_FAILED, ex);
         }
+    }
+
+
+    /**
+     * Get the index of the next source of the given file. The sources of a file are delivered one
+     * after the other, therefore the counter simply restarts whenever another file is reported.
+     *
+     * @param sourceFile The file which contains the source
+     * @return The index of the source inside of its file
+     */
+    private int nextIndex (final File sourceFile)
+    {
+        if (this.currentSourceFile == null || !this.currentSourceFile.equals (sourceFile))
+        {
+            this.currentSourceFile = sourceFile;
+            this.indexInFile = 0;
+        }
+        return this.indexInFile++;
+    }
+
+
+    /**
+     * Check if the given source should be converted. All sources are converted if no specific ones
+     * were selected.
+     *
+     * @param sourceFile The file which contains the source
+     * @param index The index of the source inside of its file
+     * @return True if it should be converted
+     */
+    private boolean isSelected (final File sourceFile, final int index)
+    {
+        if (this.detectionSettings.selectedSources.isEmpty ())
+            return true;
+        final Set<Integer> indices = this.detectionSettings.selectedSources.get (sourceFile);
+        return indices != null && indices.contains (Integer.valueOf (index));
     }
 
 

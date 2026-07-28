@@ -12,6 +12,7 @@
 * User Interface
   * New: Added tooltips to format lists to be able to see the full text of an entry.
   * New: Next to the *Folder* button of the source there is now a *Files* button, which converts only the files picked from a folder instead of all of them. This is useful for a folder which contains many files of the source format but only some of them should be converted (e.g. a couple of EXS or disk images). The selection is shown below the source path and can be discarded with *Clear*; changing the source path discards it as well. Each selected file is converted on its own, exactly like it would be as part of a full folder conversion - the destination type still decides whether the results become single presets or one library. Entering the path of a file instead of a folder converts that one file.
+  * New: A source format where one file contains several presets - a bank, a disk image or a library - has a *Contents...* button, which shows all presets found in the source as a tree of their file and their containers. Each entry shows its number of zones, its key range and its category, so that an unknown bank can be explored, and only the ticked presets are converted. Selecting the files to read first keeps this fast, since only those files are opened.
 * Command Line Interface
   * New: One or more source files can be given instead of the source folder, which converts only these files (e.g. `ConvertWithMoss -s exs24 -d 1010music MySampler/Piano*.exs Output`). The last given path stays the destination folder.
 * Backend
