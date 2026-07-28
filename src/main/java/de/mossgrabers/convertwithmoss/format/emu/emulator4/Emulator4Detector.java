@@ -237,11 +237,16 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
         final int sampleIndex = Emulator4Constants.getU16BE (data, offset);
         final String displayName = Emulator4Constants.decodeName (data, offset + 2);
-        final long loopStartOffset = Emulator4Constants.getU32LE (data, offset + 38);
-        final long loopEndOffset = Emulator4Constants.getU32LE (data, offset + 46);
         final int sampleRate = (int) Emulator4Constants.getU32LE (data, offset + 54);
         final int pitchOffset = (short) Emulator4Constants.getU16LE (data, offset + 58);
         final int options = Emulator4Constants.getU16LE (data, offset + 60);
+
+        // This is the sample structure of the Emulator III, which stores all of its positions
+        // twice - once for each channel. Some samples only hold their right channel and use the
+        // second set of positions, exactly as the Emulator III detector already handles it
+        final boolean hasLeftChannel = (options & Emulator4Constants.OPTION_CHANNEL_LEFT) > 0;
+        final long loopStartOffset = Emulator4Constants.getU32LE (data, offset + (hasLeftChannel ? 38 : 42));
+        final long loopEndOffset = Emulator4Constants.getU32LE (data, offset + (hasLeftChannel ? 46 : 50));
 
         final int pcmLength = (size - Emulator4Constants.SAMPLE_HEADER_SIZE) / 2 * 2;
         final int numFrames = pcmLength / 2;
@@ -493,18 +498,30 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
                 filterKeyTracking = Math.clamp (amount / 127.0 * Emulator4Constants.FULL_KEY_TRACKING, 0, 1);
         }
 
-        // The amplitude envelope: 6 rate/level stages in the primary zone table of which the
-        // standard ADSR mapping uses attack 1, decay 1 (its level is the sustain) and release 1
+        // The amplitude envelope: 6 rate/level stages in the primary zone table, which are attack
+        // 1, attack 2, decay 1, decay 2, release 1 and release 2. The model has one attack, hold,
+        // decay and release stage, so the pairs are added up; a decay 1 stage which stays at the
+        // level of attack 2 is a plateau and therefore the hold stage. This is the same envelope
+        // as the one of the Emulator X and is mapped in the same way. Stopping at decay 1 loses
+        // the decay of more than half of the EOS library, and a voice whose decay 1 keeps the peak
+        // - a plucked instrument which rings for a while and then fades away - even sustains
+        // forever instead of ever decaying
         final int pztOffset = offset + Emulator4Constants.VOICE_PZT_OFFSET;
+        final double [] times = new double [6];
+        final int [] levels = new int [6];
+        for (int stage = 0; stage < 6; stage++)
+        {
+            times[stage] = Emulator4Constants.envelopeRateToTime (body[pztOffset + stage * 2] & 0xFF);
+            levels[stage] = body[pztOffset + stage * 2 + 1];
+        }
+
         final IEnvelope amplitudeEnvelope = new DefaultEnvelope ();
-        amplitudeEnvelope.setAttackTime (Emulator4Constants.envelopeRateToTime (body[pztOffset] & 0xFF));
-        // An attack 2 stage with the same level as attack 1 is a plateau, which is a hold stage
-        final double holdTime = Emulator4Constants.envelopeRateToTime (body[pztOffset + 2] & 0xFF);
-        if (holdTime > 0 && body[pztOffset + 1] == body[pztOffset + 3])
-            amplitudeEnvelope.setHoldTime (holdTime);
-        amplitudeEnvelope.setDecayTime (Emulator4Constants.envelopeRateToTime (body[pztOffset + 4] & 0xFF));
-        amplitudeEnvelope.setSustainLevel (Math.clamp (body[pztOffset + 5] / 127.0, 0, 1));
-        amplitudeEnvelope.setReleaseTime (Emulator4Constants.envelopeRateToTime (body[pztOffset + 8] & 0xFF));
+        amplitudeEnvelope.setAttackTime (times[0] + times[1]);
+        final boolean isPlateau = levels[2] == levels[1];
+        amplitudeEnvelope.setHoldTime (isPlateau ? times[2] : 0);
+        amplitudeEnvelope.setDecayTime (isPlateau ? times[3] : times[2] + times[3]);
+        amplitudeEnvelope.setSustainLevel (Math.clamp (levels[3] / 127.0, 0, 1));
+        amplitudeEnvelope.setReleaseTime (times[4] + times[5]);
 
         final IFilter filter = createFilter (body, offset, pztOffset, filterEnvelopeDepth, filterKeyTracking);
 
