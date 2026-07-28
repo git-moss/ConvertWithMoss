@@ -213,6 +213,8 @@ public class Emulator3Constants
 
     /** The default cutoff value, which is the fully open filter. */
     public static final int    DEFAULT_CUTOFF                  = 0xEF;
+    /** A low-pass at or above this frequency removes nothing which can be heard. */
+    public static final double INAUDIBLE_CUTOFF_HERTZ          = 20000.0;
     /** The value of the amplifier level and the sustain which means 100%. */
     public static final int    FULL_LEVEL                      = 0x7F;
     /** The value of the panorama which means centered. */
