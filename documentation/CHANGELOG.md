@@ -34,6 +34,11 @@
 * Waldorf Quantum/Iridium
   * New: A source which carries its bank in front of its name is written without it in the preset name, since the device shows the bank in a field of its own. The file name keeps the full name. An explicit Bank from the settings replaces the source's bank, in which case the name keeps it.
 
+* Yamaha YSFC
+  * Fixed: Envelope times were quantized to whole seconds when writing, since the lookup into the time table compared against truncated table entries - every sub-second time became about 0.9 seconds (e.g. a release of 0.3s tripled) in all written amplitude, filter and pitch envelopes.
+  * Fixed: The tuning of a zone was written to both the keybank and the element although the two stack on the device (and when reading), which doubled the detune of every written zone. The element tuning is now left neutral.
+  * Fixed: When reading performances, a performance was added to the result once per part, so a multi-part performance was converted multiple times.
+
 ## 19.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
