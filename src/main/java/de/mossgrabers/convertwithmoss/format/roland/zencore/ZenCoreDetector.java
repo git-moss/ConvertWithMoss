@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.roland.zencore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -84,16 +85,44 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
-        final Optional<ZenCoreKeyMap> keyMap = ZenCoreSvz.readKeyMap (container);
+        // A bank holds one tone per preset, all of them sharing the sample pool of the file. Each
+        // tone becomes a multi-sample of its own, built from the multi-samples which its partials
+        // play - otherwise all presets of a bank would be flattened into one.
+        final List<SvzInstrument> tones = ZenCoreSvz.readTones (container);
+        final List<ZenCoreKeyMap> keyMaps = ZenCoreSvz.readKeyMaps (container);
+        final String fileName = FileUtils.getNameWithoutType (svzFile);
+        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+
+        if (tones.size () > 1)
+        {
+            for (final SvzInstrument tone: tones)
+            {
+                final IGroup toneGroup = new DefaultGroup ("Samples");
+                for (final int waveNumber: tone.waveNumbers)
+                    if (waveNumber > 0 && waveNumber <= keyMaps.size ())
+                        buildZonesFromKeyMap (toneGroup, samples, keyMaps.get (waveNumber - 1));
+                if (toneGroup.getSampleZones ().isEmpty ())
+                    continue;
+                applyToneShaping (toneGroup, tone);
+                final String toneName = tone.name == null || tone.name.isBlank () ? fileName : tone.name;
+                multisampleSources.add (this.createMultisampleSource (svzFile, toneName, List.of (toneGroup)));
+                this.notifier.log ("IDS_ZENCORE_READING_SVZ", toneName, Integer.toString (toneGroup.getSampleZones ().size ()));
+            }
+            if (!multisampleSources.isEmpty ())
+                return multisampleSources;
+        }
+
+        // One tone, or a file which only holds user samples: everything of the file becomes one
+        // multi-sample which is named after the file
         final IGroup group = new DefaultGroup ("Samples");
-        if (keyMap.isEmpty ())
+        if (keyMaps.isEmpty ())
         {
             for (final ZenCoreSample sample: samples)
                 if (sample.getSampleData () != null)
                     group.addSampleZone (createZone (sample, sample.getOriginalKey (), sample.getOriginalKey ()));
         }
         else
-            buildZonesFromKeyMap (group, samples, keyMap.get ());
+            buildZonesFromKeyMap (group, samples, keyMaps.get (0));
 
         if (group.getSampleZones ().isEmpty ())
         {
@@ -101,15 +130,13 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
-        // Carry the first tone's shaping back into the model, so ZEN-Core sources convert with
-        // their filter and envelopes instead of pipeline defaults - the times through the same
+        // Carry the tone's shaping back into the model, so ZEN-Core sources convert with their
+        // filter and envelopes instead of pipeline defaults - the times through the same
         // hardware-calibrated law the writer uses.
-        final Optional<SvzInstrument> tone = ZenCoreSvz.readTone (container);
-        if (tone.isPresent ())
-            applyToneShaping (group, tone.get ());
-        final String name = FileUtils.getNameWithoutType (svzFile);
-        this.notifier.log ("IDS_ZENCORE_READING_SVZ", name, Integer.toString (group.getSampleZones ().size ()));
-        return Collections.singletonList (this.createMultisampleSource (svzFile, name, List.of (group)));
+        if (!tones.isEmpty ())
+            applyToneShaping (group, tones.get (0));
+        this.notifier.log ("IDS_ZENCORE_READING_SVZ", fileName, Integer.toString (group.getSampleZones ().size ()));
+        return Collections.singletonList (this.createMultisampleSource (svzFile, fileName, List.of (group)));
     }
 
 
