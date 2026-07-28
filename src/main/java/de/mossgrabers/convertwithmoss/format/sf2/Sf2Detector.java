@@ -864,6 +864,19 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 pitchLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_VIB_LFO)));
             }
 
+            // The modulation low frequency oscillator to volume maps to the amplitude modulation
+            // (tremolo). Its waveform is always a triangle and the depth is given in centibels.
+            final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
+            final int modLfoToVolume = generators.getSignedValue (Generator.MOD_LFO_TO_VOLUME).intValue ();
+            amplitudeLfoModulator.setDepth (modLfoToVolume / 10.0 / ILfoModulator.MAX_VOLUME_DEPTH);
+            if (modLfoToVolume != 0)
+            {
+                final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
+                // The frequency is stored in absolute cents, see the filter cutoff above
+                amplitudeLfo.setRate (8.176 * Math.pow (2, generators.getSignedValue (Generator.FREQ_MOD_LFO).doubleValue () / 1200.0));
+                amplitudeLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_MOD_LFO)));
+            }
+
             return Optional.of (zone);
         }
         catch (final IOException _)

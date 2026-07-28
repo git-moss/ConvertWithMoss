@@ -54,6 +54,7 @@ public class DefaultSampleZone implements ISampleZone
     protected boolean            isReversed                 = false;
     protected IModulator         amplitudeVelocityModulator = new DefaultModulator (1);
     protected IEnvelopeModulator amplitudeEnvelopeModulator = new DefaultEnvelopeModulator (1);
+    protected ILfoModulator      amplitudeLfoModulator      = new DefaultLfoModulator (0);
     protected IEnvelopeModulator pitchModulator             = new DefaultEnvelopeModulator (0);
     protected ILfoModulator      pitchLfoModulator          = new DefaultLfoModulator (0);
     protected IFilter            filter                     = null;
@@ -563,6 +564,14 @@ public class DefaultSampleZone implements ISampleZone
 
     /** {@inheritDoc} */
     @Override
+    public ILfoModulator getAmplitudeLfoModulator ()
+    {
+        return this.amplitudeLfoModulator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public IEnvelopeModulator getPitchEnvelopeModulator ()
     {
         return this.pitchModulator;
@@ -623,6 +632,7 @@ public class DefaultSampleZone implements ISampleZone
         this.isReversed = other.isReversed ();
         this.amplitudeVelocityModulator = other.getAmplitudeVelocityModulator ();
         this.amplitudeEnvelopeModulator = other.getAmplitudeEnvelopeModulator ();
+        this.amplitudeLfoModulator = other.getAmplitudeLfoModulator ();
         this.pitchModulator = other.getPitchEnvelopeModulator ();
         this.pitchLfoModulator = other.getPitchLfoModulator ();
         final Optional<IFilter> filterOpt = other.getFilter ();

@@ -13,6 +13,7 @@
   * New: Added tooltips to format lists to be able to see the full text of an entry.
 * Backend
   * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, SFZ, SoundFont 2. Other formats pending.
+  * New: Added support for a LFO modulating the volume (tremolo) with its rate, depth and delay: DecentSampler, DLS, SFZ, SoundFont 2. Other formats pending.
   * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
 * E-mu Emulator III
   * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.

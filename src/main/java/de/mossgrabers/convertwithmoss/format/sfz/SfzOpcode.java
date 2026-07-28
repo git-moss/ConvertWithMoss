@@ -164,6 +164,15 @@ public class SfzOpcode
     /** SFZ v1. The key at which the amplitude key tracking has no effect. */
     public static final String AMP_KEY_CENTER        = "amp_keycenter";
 
+    /** SFZ v1. The amplitude LFO (tremolo) frequency in Hertz. */
+    public static final String AMPLFO_FREQ           = "amplfo_freq";
+    /** SFZ v1. The amplitude LFO (tremolo) depth in decibels. */
+    public static final String AMPLFO_DEPTH          = "amplfo_depth";
+    /** SFZ v1. The amplitude LFO (tremolo) delay time in seconds. */
+    public static final String AMPLFO_DELAY          = "amplfo_delay";
+    /** SFZ v1. The amplitude LFO (tremolo) fade-in time in seconds. */
+    public static final String AMPLFO_FADE           = "amplfo_fade";
+
     // -----------------------------------------------------------
     // Filter opcodes
 

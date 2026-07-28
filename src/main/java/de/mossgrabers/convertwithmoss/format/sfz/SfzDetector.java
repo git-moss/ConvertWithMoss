@@ -707,6 +707,21 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         // The key tracking is always relative to the root key of the zone, therefore the center key
         // is only marked as processed
         this.getIntegerValue (SfzOpcode.AMP_KEY_CENTER);
+
+        // Amplitude LFO (tremolo)
+
+        // Without a depth there is no modulation, therefore the oscillator is not read at all
+        final double lfoDepth = this.getDoubleValue (SfzOpcode.AMPLFO_DEPTH, 0);
+        if (lfoDepth != 0)
+        {
+            final ILfoModulator amplitudeLfoModulator = sampleZone.getAmplitudeLfoModulator ();
+            amplitudeLfoModulator.setDepth (lfoDepth / ILfoModulator.MAX_VOLUME_DEPTH);
+
+            final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
+            amplitudeLfo.setRate (this.getDoubleValue (SfzOpcode.AMPLFO_FREQ, -1));
+            amplitudeLfo.setDelay (this.getDoubleValue (SfzOpcode.AMPLFO_DELAY, -1));
+            amplitudeLfo.setFadeIn (this.getDoubleValue (SfzOpcode.AMPLFO_FADE, -1));
+        }
     }
 
 

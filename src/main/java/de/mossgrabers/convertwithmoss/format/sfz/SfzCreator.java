@@ -492,6 +492,23 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         if (ampEnvParameterLevel == ParameterLevel.ZONE)
             createVolumeEnvelope (buffer, zone);
+
+        // Amplitude LFO (tremolo)
+
+        final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
+        final double lfoDepth = amplitudeLfoModulator.getDepth ();
+        if (lfoDepth != 0)
+        {
+            final StringBuilder lfoStr = new StringBuilder ();
+            lfoStr.append (SfzOpcode.AMPLFO_DEPTH).append ('=').append (formatDouble (lfoDepth * ILfoModulator.MAX_VOLUME_DEPTH, 2));
+
+            final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
+            addLfoTimeAttribute (lfoStr, SfzOpcode.AMPLFO_FREQ, amplitudeLfo.getRate ());
+            addLfoTimeAttribute (lfoStr, SfzOpcode.AMPLFO_DELAY, amplitudeLfo.getDelay ());
+            addLfoTimeAttribute (lfoStr, SfzOpcode.AMPLFO_FADE, amplitudeLfo.getFadeIn ());
+
+            buffer.append (lfoStr).append (LINE_FEED);
+        }
     }
 
 

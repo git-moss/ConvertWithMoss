@@ -266,6 +266,27 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
+        // Volume LFO (tremolo). The low frequency oscillator which modulates the gain is the
+        // tremolo; it shares its frequency and delay connections with the vibrato above since the
+        // format has only one modulation oscillator. Only an *uncontrolled* connection is read for
+        // the same reason as for the vibrato.
+        final Optional<DlsArticulation> gainLfoModulation = getUncontrolledArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_LFO, DlsArticulation.CONN_DST_GAIN);
+        if (gainLfoModulation.isPresent ())
+        {
+            final double depthDecibels = DlsArticulation.relativeGainToDecibels (gainLfoModulation.get ().getScale ());
+            if (depthDecibels != 0)
+            {
+                final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
+                amplitudeLfoModulator.setDepth (Math.clamp (depthDecibels, -ILfoModulator.MAX_VOLUME_DEPTH, ILfoModulator.MAX_VOLUME_DEPTH) / ILfoModulator.MAX_VOLUME_DEPTH);
+
+                final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
+                final Optional<DlsArticulation> lfoFrequency = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_LFO_FREQUENCY);
+                if (lfoFrequency.isPresent ())
+                    amplitudeLfo.setRate (DlsArticulation.absolutePitchToHertz (lfoFrequency.get ().getScale ()));
+                amplitudeLfo.setDelay (getTime (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_LFO_STARTDELAY));
+            }
+        }
+
         // Pitch tuning
         final Optional<DlsArticulation> pitchTuning = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_PITCH);
         if (pitchTuning.isPresent ())

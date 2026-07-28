@@ -443,6 +443,27 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                 instrumentZone.addSignedGenerator (Generator.DELAY_VIB_LFO, convertEnvelopeTime (delay));
         }
 
+        // Set the modulation low frequency oscillator to volume from the amplitude modulation
+        // (tremolo). The depth is given in centibels, the fade-in and the waveform have no
+        // equivalent in Sf2.
+        final ILfoModulator amplitudeLfoModulator = sampleZone.getAmplitudeLfoModulator ();
+        final double modLfoDepth = amplitudeLfoModulator.getDepth ();
+        if (modLfoDepth != 0)
+        {
+            instrumentZone.addSignedGenerator (Generator.MOD_LFO_TO_VOLUME, (int) Math.round (modLfoDepth * ILfoModulator.MAX_VOLUME_DEPTH * 10.0));
+            final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
+            final double rate = amplitudeLfo.getRate ();
+            if (rate > 0)
+            {
+                // The frequency is stored in absolute cents, see the filter cutoff below
+                final double frequencyCents = Math.log (rate / 8.176) * 1200.0 / Math.log (2);
+                instrumentZone.addSignedGenerator (Generator.FREQ_MOD_LFO, (int) Math.round (frequencyCents));
+            }
+            final double delay = amplitudeLfo.getDelay ();
+            if (delay >= 0)
+                instrumentZone.addSignedGenerator (Generator.DELAY_MOD_LFO, convertEnvelopeTime (delay));
+        }
+
         // Filter settings
         final Optional<IFilter> filterOpt = sampleZone.getFilter ();
         if (filterOpt.isPresent ())

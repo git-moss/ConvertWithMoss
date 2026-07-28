@@ -481,6 +481,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         final Optional<IFilter> optFilter = parseFilterEffect (topElement, groupElement);
         final Optional<IEnvelopeModulator> pitchModulation = parsePitchModulation (topElement);
         final Optional<ILfoModulator> pitchLfoModulation = parsePitchLfoModulation (topElement);
+        final Optional<ILfoModulator> amplitudeLfoModulation = parseAmplitudeLfoModulation (topElement);
 
         for (final Element sampleElement: XMLUtils.getChildElementsByName (groupElement, DecentSamplerTag.SAMPLE, false))
         {
@@ -524,6 +525,13 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                 final ILfoModulator pitchLfoModulator = sampleZone.getPitchLfoModulator ();
                 pitchLfoModulator.setDepth (lfoModulator.getDepth ());
                 pitchLfoModulator.setSource (lfoModulator.getSource ());
+            }
+            if (amplitudeLfoModulation.isPresent ())
+            {
+                final ILfoModulator lfoModulator = amplitudeLfoModulation.get ();
+                final ILfoModulator amplitudeLfoModulator = sampleZone.getAmplitudeLfoModulator ();
+                amplitudeLfoModulator.setDepth (lfoModulator.getDepth ());
+                amplitudeLfoModulator.setSource (lfoModulator.getSource ());
             }
 
             group.addSampleZone (sampleZone);
@@ -702,6 +710,40 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                     pitchLfo.setRate (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_FREQUENCY, -1));
                 pitchLfo.setDelay (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_DELAY_TIME, -1));
                 return Optional.of (pitchLfoModulator);
+            }
+        return Optional.empty ();
+    }
+
+
+    private static Optional<ILfoModulator> parseAmplitudeLfoModulation (final Element topElement)
+    {
+        // Parse a low frequency oscillator bound to the group volume (tremolo)
+        final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
+        if (modulatorsElement != null)
+            for (final Element lfoElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.LFO))
+            {
+                final Element bindingElement = XMLUtils.getChildElementByName (lfoElement, DecentSamplerTag.BINDING);
+                if (bindingElement == null || !"AMP_VOLUME".equals (bindingElement.getAttribute (TAG_PARAMETER)))
+                    continue;
+
+                final double modAmount = XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0);
+                if (modAmount <= 0)
+                    continue;
+
+                // The volume parameter is linear with 1 being full volume. The bipolar oscillator
+                // swings by the modulation amount around it, therefore a swing of x dips to 1-x
+                // which is -20*log10(1-x) dB below full volume.
+                final double depthDecibels = modAmount >= 1 ? ILfoModulator.MAX_VOLUME_DEPTH : Math.min (-20.0 * Math.log10 (1.0 - modAmount), ILfoModulator.MAX_VOLUME_DEPTH);
+                final ILfoModulator amplitudeLfoModulator = new DefaultLfoModulator (depthDecibels / ILfoModulator.MAX_VOLUME_DEPTH);
+                final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
+                amplitudeLfo.setWaveform (toLfoWaveform (lfoElement.getAttribute (DecentSamplerTag.LFO_SHAPE)));
+                // Only a frequency given in Hertz can be converted; a tempo synchronized rate has
+                // no representation without a tempo
+                final String frequencyFormat = lfoElement.getAttribute (DecentSamplerTag.LFO_FREQUENCY_FORMAT);
+                if (frequencyFormat.isEmpty () || "hz".equals (frequencyFormat))
+                    amplitudeLfo.setRate (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_FREQUENCY, -1));
+                amplitudeLfo.setDelay (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_DELAY_TIME, -1));
+                return Optional.of (amplitudeLfoModulator);
             }
         return Optional.empty ();
     }
