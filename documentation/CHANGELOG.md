@@ -16,6 +16,12 @@
   * New: Added support for a LFO modulating the volume (tremolo) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
   * Fixed: Detecting a source which contains many presets was dominated by a fixed 10 millisecond pause taken after every single detected preset. A CD-ROM image of an E-mu sampler with 812 presets needed 11 seconds, of which 8 were that pause; two of them with 2339 presets needed 36 seconds. The pause is now taken every 64 presets, which keeps a cancellation responsive but takes the two images down to 1.4 seconds.
+* 1010music blackbox / bento
+  * Fixed: The loop cross-fade of a blackbox pad was read from the loop-end attribute instead of the fade-amount attribute - virtually every looped pad got a cross-fade spanning the entire loop, which destinations that bake cross-fades into the audio smeared audibly.
+  * Fixed: A performance instrument on OMNI was written into a bento project with MIDI input channel 'Off', so the track received no MIDI at all - the same defect was fixed for the blackbox in 19.1.0.
+  * Fixed: The loop type and cross-fade of a bento cell were assigned from themselves instead of the cell's default loop - a ping-pong loop read as a forward loop.
+  * Fixed: The sample length attribute of a bento cell was treated as an absolute end position although it is the play-back length (the blackbox reading is correct) - a cell with a moved sample start lost that many frames from its end.
+  * Fixed: The root velocity written into a bento project was half of the velocity range's width instead of its mid-point, which for a layer of 80..127 lies outside of the layer.
 * E-mu Emulator III
   * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.
   * Fixed: The preset link is a single byte followed by a separate parameter, not a 16 bit value. A few presets whose second byte is set lost the preset which is layered on top of them.
