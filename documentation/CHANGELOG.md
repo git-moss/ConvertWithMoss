@@ -12,6 +12,7 @@
 * User Interface
   * New: Added tooltips to format lists to be able to see the full text of an entry.
 * Backend
+  * Fixed: Detecting a source which contains many presets was dominated by a fixed 10 millisecond pause taken after every single detected preset. A CD-ROM image of an E-mu sampler with 812 presets needed 11 seconds, of which 8 were that pause; two of them with 2339 presets needed 36 seconds. The pause is now taken every 64 presets, which keeps a cancellation responsive but takes the two images down to 1.4 seconds.
   * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, SFZ, SoundFont 2. Other formats pending.
   * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
 * E-mu Emulator III
