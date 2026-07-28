@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -62,6 +63,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.BlendMode;
 import javafx.scene.image.Image;
@@ -71,6 +73,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -93,7 +96,11 @@ public class MainFrame extends AbstractFrame implements INotifier
     private static final String    DESTINATION_FORMAT                  = "DestinationFormat";
     private static final String    DESTINATION_TYPE                    = "DestinationType";
     private static final String    SOURCE_PATH                         = "SourcePath";
+    private static final String    SOURCE_FILE                         = "SourceFile";
+    private static final String    SOURCE_BATCH_MODE                   = "SourceBatchMode";
     private static final String    SOURCE_TYPE                         = "SourceType";
+    /** The prefix of the format which reads all disk images, whatever sampler wrote them. */
+    private static final String    GENERIC_IMAGE_FORMAT                = "ISO";
     private static final String    PRESET_LIBRARY_FILENAME             = "PresetLibraryFilename";
     private static final String    PERFORMANCE_LIBRARY_FILENAME        = "PerformanceLibraryFilename";
     private static final String    PROCESSING_ENABLE                   = "ProcessingEnable";
@@ -125,7 +132,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private Button                 processingButton;
     private Button                 settingsButton;
     private Button                 sourceFolderSelectButton;
-    private Button                 sourceFilesSelectButton;
+    private ToggleButton           batchModeButton;
     private Button                 contentsButton;
     private Button                 clearSelectionButton;
     private Label                  selectionLabel;
@@ -135,6 +142,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private final TabPane          destinationTypeTabPane              = new TabPane ();
 
     private final List<String>     sourcePathHistory                   = new ArrayList<> ();
+    private final List<String>     sourceFileHistory                   = new ArrayList<> ();
     private final List<String>     destinationPathHistory              = new ArrayList<> ();
 
     private final LoggerBoxLogger  logger                              = new LoggerBoxLogger (MAXIMUM_NUMBER_OF_LOG_ENTRIES);
@@ -143,8 +151,6 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private FileWriter             logWriter;
     private boolean                combineWithPreviousMessage          = false;
-    private final List<File>       selectedSourceFiles                 = new ArrayList<> ();
-    private boolean                isSettingSourcePath                 = false;
     private TextField              presetLibraryFilename;
     private TextField              performanceLibraryFilename;
     private final ConverterBackend backend;
@@ -152,9 +158,9 @@ public class MainFrame extends AbstractFrame implements INotifier
     private SettingsDialog         settingsDialog;
     private ProcessingDialog       processingDialog;
     private ContentsDialog         contentsDialog;
-    private boolean                isContentsRun               = false;
-    private int                    numberOfFoundSources        = 0;
-    private int                    numberOfSelectedSources     = 0;
+    private boolean                isContentsRun                       = false;
+    private int                    numberOfFoundSources                = 0;
+    private int                    numberOfSelectedSources             = 0;
     private final DetectSettings   detectSettings                      = new DetectSettings ();
 
     // Parameters of Settings dialog
@@ -207,20 +213,26 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
         this.sourceFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_TOOLTIP")));
-        this.sourceFolderSelectButton.setOnAction (_ -> this.selectSourceFolder ());
-        this.sourceFilesSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_FILES"));
-        this.sourceFilesSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_FILES_TOOLTIP")));
-        this.sourceFilesSelectButton.setOnAction (_ -> this.selectSourceFiles ());
+        this.sourceFolderSelectButton.setOnAction (_ -> this.selectSource ());
+
+        // Batch converts all files of a folder, which is the default; switching it off converts one
+        // single picked file and keeps a history of its own
+        this.batchModeButton = new ToggleButton (Functions.getText ("@IDS_MAIN_SOURCE_BATCH"));
+        this.batchModeButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SOURCE_BATCH_TOOLTIP")));
+        this.batchModeButton.setSelected (true);
+        this.batchModeButton.setOnAction (_ -> this.toggleBatchMode ());
+
         this.contentsButton = new Button (Functions.getText ("@IDS_MAIN_CONTENTS"));
         this.contentsButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_CONTENTS_TOOLTIP")));
         this.contentsButton.setOnAction (_ -> this.openContents ());
         // Collapse the layout when the contents button is hidden
         this.contentsButton.managedProperty ().bind (this.contentsButton.visibleProperty ());
         this.contentsButton.focusTraversableProperty ().bind (this.contentsButton.visibleProperty ());
-        final HBox sourceSelectButtons = new HBox (this.sourceFolderSelectButton, this.sourceFilesSelectButton, this.contentsButton);
+
+        final HBox sourceSelectButtons = new HBox (this.sourceFolderSelectButton, this.batchModeButton, this.contentsButton);
         sourceSelectButtons.getStyleClass ().add ("sourceSelectButtons");
 
-        // Shows how the conversion is narrowed down, as long as anything is selected
+        // Shows how many of the found presets are converted, as long as a selection is active
         this.selectionLabel = new Label ();
         this.clearSelectionButton = new Button (Functions.getText ("@IDS_MAIN_SELECTION_CLEAR"));
         this.clearSelectionButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECTION_CLEAR_TOOLTIP")));
@@ -234,11 +246,9 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.selectionLabel.setLabelFor (this.clearSelectionButton);
         this.clearSelectionButton.focusTraversableProperty ().bind (this.selectionPane.visibleProperty ());
 
-        // Any manual change of the source path discards the selection
-        this.sourcePathField.getEditor ().textProperty ().addListener ((_, _, _) -> {
-            if (!this.isSettingSourcePath)
-                this.clearSelection ();
-        });
+        // Any change of the source discards the selection, which addresses the presets by their
+        // position in the detection run of exactly that source
+        this.sourcePathField.getEditor ().textProperty ().addListener ((_, _, _) -> this.clearSelection ());
 
         final BoxPanel sourceUpperPane = new BoxPanel (Orientation.VERTICAL);
         final TitledSeparator sourceTitle = new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER"));
@@ -392,7 +402,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     {
         this.traversalManager.add (this.sourcePathField);
         this.traversalManager.add (this.sourceFolderSelectButton);
-        this.traversalManager.add (this.sourceFilesSelectButton);
+        this.traversalManager.add (this.batchModeButton);
         this.traversalManager.add (this.contentsButton);
         this.traversalManager.add (this.clearSelectionButton);
 
@@ -470,10 +480,20 @@ public class MainFrame extends AbstractFrame implements INotifier
             if (!this.sourcePathHistory.contains (sourcePath))
                 this.sourcePathHistory.add (sourcePath);
         }
-        this.sourcePathField.getItems ().addAll (this.sourcePathHistory);
+        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
+        {
+            final String sourceFile = this.config.getProperty (SOURCE_FILE + i);
+            if (sourceFile == null || sourceFile.isBlank ())
+                break;
+            if (!this.sourceFileHistory.contains (sourceFile))
+                this.sourceFileHistory.add (sourceFile);
+        }
+        this.batchModeButton.setSelected (this.config.getBoolean (SOURCE_BATCH_MODE, true));
+        final List<String> activeHistory = this.activeSourceHistory ();
+        this.sourcePathField.getItems ().addAll (activeHistory);
         this.sourcePathField.setEditable (true);
-        if (!this.sourcePathHistory.isEmpty ())
-            this.sourcePathField.getEditor ().setText (this.sourcePathHistory.get (0));
+        if (!activeHistory.isEmpty ())
+            this.sourcePathField.getEditor ().setText (activeHistory.get (0));
 
         for (final IDetector<?> detector: this.backend.getDetectors ())
             detector.getSettings ().loadSettings (this.config);
@@ -538,9 +558,12 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void saveConfiguration ()
     {
-        updateHistory (this.sourcePathField.getEditor ().getText (), this.sourcePathHistory);
+        updateHistory (this.sourcePathField.getEditor ().getText (), this.activeSourceHistory ());
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
             this.config.setProperty (SOURCE_PATH + i, this.sourcePathHistory.size () > i ? this.sourcePathHistory.get (i) : "");
+        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
+            this.config.setProperty (SOURCE_FILE + i, this.sourceFileHistory.size () > i ? this.sourceFileHistory.get (i) : "");
+        this.config.setBoolean (SOURCE_BATCH_MODE, this.batchModeButton.isSelected ());
 
         updateHistory (this.destinationPathField.getEditor ().getText (), this.destinationPathHistory);
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -708,24 +731,15 @@ public class MainFrame extends AbstractFrame implements INotifier
 
 
     /**
-     * Detect all sources of the source folder and show them for selection, so that only some of
-     * them can be converted. No files are written.
+     * Detect all sources of the source and show them for selection, so that only some of them can
+     * be converted. No files are written.
      */
     private void openContents ()
     {
-        // The source folder is required but the output folder is not, since nothing is written
-        this.detectSettings.sourceFolder = new File (this.sourcePathField.getEditor ().getText ());
-        if (!this.detectSettings.sourceFolder.isDirectory ())
-        {
-            Functions.message ("@IDS_NOTIFY_FOLDER_DOES_NOT_EXIST", this.detectSettings.sourceFolder.getAbsolutePath ());
-            this.sourcePathField.requestFocus ();
-            return;
-        }
-
-        // Only the selected files are read, exactly like the conversion does - otherwise picking
-        // the files to convert would be undone by looking at their contents
-        this.detectSettings.sourceFiles.clear ();
-        if (!this.verifySourceFiles ())
+        // The source is required but the output folder is not, since nothing is written. The
+        // source is read exactly as the conversion reads it: a folder in batch mode and the one
+        // picked file otherwise
+        if (!this.applySourcePath ())
             return;
 
         final int selectedDetector = this.sourceTaskPane.getSelectedFormat ();
@@ -792,6 +806,33 @@ public class MainFrame extends AbstractFrame implements INotifier
 
 
     /**
+     * Discard the selection of presets and convert everything of the source again.
+     */
+    private void clearSelection ()
+    {
+        if (this.detectSettings.selectedSources.isEmpty ())
+            return;
+        this.detectSettings.selectedSources.clear ();
+        this.numberOfSelectedSources = 0;
+        this.updateSelectionPane ();
+    }
+
+
+    /**
+     * Show how many of the found presets the conversion is narrowed down to, if it is.
+     */
+    private void updateSelectionPane ()
+    {
+        this.selectionPane.setVisible (!this.detectSettings.selectedSources.isEmpty ());
+        if (this.detectSettings.selectedSources.isEmpty ())
+            return;
+        final String text = Functions.getMessage ("IDS_MAIN_SELECTION_PRESETS", Integer.toString (this.numberOfSelectedSources), Integer.toString (this.numberOfFoundSources));
+        this.selectionLabel.setText (text);
+        this.selectionPane.setAccessibleText (text);
+    }
+
+
+    /**
      * Cancel button was pressed.
      */
     private void cancelExecution ()
@@ -817,28 +858,9 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private boolean verifyFolders ()
     {
-        // Check source folder. A file can be entered as well, which is then the only file to
-        // convert - like a selection of one file.
-        final File sourcePath = new File (this.sourcePathField.getEditor ().getText ());
-        this.detectSettings.sourceFiles.clear ();
-        if (sourcePath.isFile ())
-        {
-            this.detectSettings.sourceFolder = sourcePath.getAbsoluteFile ().getParentFile ();
-            this.detectSettings.sourceFiles.add (sourcePath.getAbsoluteFile ());
-        }
-        else
-        {
-            if (!sourcePath.isDirectory ())
-            {
-                Functions.message ("@IDS_NOTIFY_SOURCE_DOES_NOT_EXIST", sourcePath.getAbsolutePath ());
-                this.sourcePathField.requestFocus ();
-                return false;
-            }
-            this.detectSettings.sourceFolder = sourcePath;
-            if (!this.verifySourceFiles ())
-                return false;
-        }
-        this.sourcePathHistory.add (0, sourcePath.getAbsolutePath ());
+        if (!this.applySourcePath ())
+            return false;
+        this.activeSourceHistory ().add (0, this.sourcePathField.getEditor ().getText ());
 
         // Check output folder
         this.detectSettings.outputFolder = new File (this.destinationPathField.getEditor ().getText ());
@@ -862,34 +884,40 @@ public class MainFrame extends AbstractFrame implements INotifier
 
 
     /**
-     * Take over the selected source files, if any. Files which were removed in the meantime are
-     * reported and the selection is dropped if none of them is left.
+     * Take the entered source over into the detection settings. A file can be entered as well -
+     * which is what switching Batch off does - and is then the only file to convert.
      *
-     * @return True if the conversion can be started
+     * @return True if the source exists
      */
-    private boolean verifySourceFiles ()
+    private boolean applySourcePath ()
     {
-        if (this.selectedSourceFiles.isEmpty ())
-            return true;
-
-        final List<String> missingFiles = new ArrayList<> ();
-        for (final File file: this.selectedSourceFiles)
-            if (file.isFile ())
-                this.detectSettings.sourceFiles.add (file);
-            else
-                missingFiles.add (file.getAbsolutePath ());
-
-        if (this.detectSettings.sourceFiles.isEmpty ())
+        final File sourcePath = new File (this.sourcePathField.getEditor ().getText ());
+        this.detectSettings.sourceFiles.clear ();
+        if (sourcePath.isFile ())
         {
-            this.clearSelection ();
-            Functions.message ("@IDS_NOTIFY_SELECTED_FILES_ARE_GONE");
+            this.detectSettings.sourceFolder = sourcePath.getAbsoluteFile ().getParentFile ();
+            this.detectSettings.sourceFiles.add (sourcePath.getAbsoluteFile ());
+            return true;
+        }
+        if (!sourcePath.isDirectory ())
+        {
+            Functions.message ("@IDS_NOTIFY_SOURCE_DOES_NOT_EXIST", sourcePath.getAbsolutePath ());
             this.sourcePathField.requestFocus ();
             return false;
         }
-
-        if (!missingFiles.isEmpty ())
-            Functions.message ("@IDS_NOTIFY_SELECTED_FILES_MISSING", String.join ("\n", missingFiles));
+        this.detectSettings.sourceFolder = sourcePath;
         return true;
+    }
+
+
+    /**
+     * Get the path history of the mode which is currently active.
+     *
+     * @return The folder history in batch mode and the single file history otherwise
+     */
+    private List<String> activeSourceHistory ()
+    {
+        return this.batchModeButton.isSelected () ? this.sourcePathHistory : this.sourceFileHistory;
     }
 
 
@@ -1051,81 +1079,162 @@ public class MainFrame extends AbstractFrame implements INotifier
     }
 
 
+    /**
+     * Select the source, which is a folder in batch mode and a single file otherwise.
+     */
+    private void selectSource ()
+    {
+        if (this.batchModeButton.isSelected ())
+            this.selectSourceFolder ();
+        else
+            this.selectSourceFile ();
+    }
+
+
     private void selectSourceFolder ()
     {
         this.setActiveSourcePath ();
         final Optional<File> file = Functions.getFolderFromUser (this.getStage (), this.config, "@IDS_MAIN_SELECT_SOURCE_HEADER");
         if (file.isEmpty ())
             return;
-        // Selecting a folder always means to convert everything in it
-        this.clearSelection ();
         this.sourcePathField.getEditor ().setText (file.get ().getAbsolutePath ());
     }
 
 
     /**
-     * Select several source files to convert instead of all files of a folder. The path field is
-     * set to the folder which contains them, which is what the conversion falls back to if the
-     * selection gets discarded.
+     * Select one single source file to convert. The dialog offers the file endings of every source
+     * format so that the format can be switched right in it; the format list follows both that
+     * choice and the ending of the picked file.
      */
-    private void selectSourceFiles ()
+    private void selectSourceFile ()
     {
         this.setActiveSourcePath ();
-        final List<File> files = Functions.getFilesFromUser (this.getStage (), "@IDS_MAIN_SELECT_SOURCE_FILES_HEADER", this.config, this.createSourceFileFilters ());
-        if (files.isEmpty ())
+
+        final FileChooser chooser = new FileChooser ();
+        chooser.setTitle (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_FILE_HEADER"));
+        final String activePath = this.config.getActivePath ();
+        if (activePath != null)
+        {
+            final File activeFolder = new File (activePath);
+            if (activeFolder.isDirectory ())
+                chooser.setInitialDirectory (activeFolder);
+        }
+
+        final Map<ExtensionFilter, Integer> formatOfFilter = new HashMap<> ();
+        final ExtensionFilter preSelected = this.fillSourceFileFilters (chooser, formatOfFilter);
+        if (preSelected != null)
+            chooser.setSelectedExtensionFilter (preSelected);
+
+        final File file = chooser.showOpenDialog (this.getStage ());
+        if (file == null)
             return;
+        this.config.setActivePath (file.getParentFile ());
+        this.sourcePathField.getEditor ().setText (file.getAbsolutePath ());
 
-        // The presets were identified against the previously read files
-        this.detectSettings.selectedSources.clear ();
-        this.numberOfSelectedSources = 0;
-        this.selectedSourceFiles.clear ();
-        this.selectedSourceFiles.addAll (files);
-
-        // Do not discard the selection which is just being made
-        this.isSettingSourcePath = true;
-        this.sourcePathField.getEditor ().setText (files.get (0).getAbsoluteFile ().getParent ());
-        this.isSettingSourcePath = false;
-
-        this.updateSelectionPane ();
+        // A format which was picked in the dialog wins, otherwise the file ending decides
+        final ExtensionFilter selectedFilter = chooser.getSelectedExtensionFilter ();
+        final Integer pickedFormat = selectedFilter == preSelected ? null : formatOfFilter.get (selectedFilter);
+        final int format = pickedFormat == null ? findSourceFormat (this.backend.getDetectors (), file) : pickedFormat.intValue ();
+        if (format >= 0)
+            this.sourceTaskPane.setSelectedFormat (format);
     }
 
 
     /**
-     * Discard the selection of files and of presets and convert everything of the source folder
-     * again.
+     * Add one file filter per source format to the given file chooser plus a filter for all files.
+     *
+     * @param chooser The file chooser to fill
+     * @param formatOfFilter Where to collect the source format index of each added filter
+     * @return The filter of the currently selected source format or null if it has none
      */
-    private void clearSelection ()
+    private ExtensionFilter fillSourceFileFilters (final FileChooser chooser, final Map<ExtensionFilter, Integer> formatOfFilter)
     {
-        if (this.selectedSourceFiles.isEmpty () && this.detectSettings.selectedSources.isEmpty ())
-            return;
-        this.selectedSourceFiles.clear ();
-        this.detectSettings.selectedSources.clear ();
-        this.numberOfSelectedSources = 0;
-        this.updateSelectionPane ();
+        final List<IDetector<?>> detectors = this.backend.getDetectors ();
+        final int selectedFormat = this.sourceTaskPane.getSelectedFormat ();
+        ExtensionFilter preSelected = null;
+        for (int index = 0; index < detectors.size (); index++)
+        {
+            final IDetector<?> detector = detectors.get (index);
+            final List<String> extensions = collectExtensions (detector);
+            if (extensions.isEmpty ())
+                continue;
+            final ExtensionFilter filter = new ExtensionFilter (detector.getName (), extensions);
+            chooser.getExtensionFilters ().add (filter);
+            formatOfFilter.put (filter, Integer.valueOf (index));
+            if (index == selectedFormat)
+                preSelected = filter;
+        }
+        chooser.getExtensionFilters ().add (new ExtensionFilter (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_FILES_ALL"), "*.*"));
+        return preSelected;
     }
 
 
     /**
-     * Describe how the conversion is narrowed down: by the selected files, by the selected presets
-     * or by both of them.
+     * Get the file endings of a detector as file dialog extensions. A file ending might be a full
+     * file name (e.g. 'PADCONF.BIN'), which needs to be reduced to its extension.
+     *
+     * @param detector The detector
+     * @return The extensions, empty if the detector accepts any file
      */
-    private void updateSelectionPane ()
+    private static List<String> collectExtensions (final IDetector<?> detector)
     {
-        final List<String> parts = new ArrayList<> ();
-        final int numberOfFiles = this.selectedSourceFiles.size ();
-        if (numberOfFiles == 1)
-            parts.add (Functions.getMessage ("IDS_MAIN_SELECTION_FILE", this.selectedSourceFiles.get (0).getName ()));
-        else if (numberOfFiles > 1)
-            parts.add (Functions.getMessage ("IDS_MAIN_SELECTION_FILES", Integer.toString (numberOfFiles)));
-        if (!this.detectSettings.selectedSources.isEmpty ())
-            parts.add (Functions.getMessage ("IDS_MAIN_SELECTION_PRESETS", Integer.toString (this.numberOfSelectedSources), Integer.toString (this.numberOfFoundSources)));
+        final Set<String> extensions = new TreeSet<> ();
+        for (final String fileEnding: detector.getFileEndings ())
+        {
+            final int dotPosition = fileEnding.lastIndexOf ('.');
+            extensions.add (dotPosition < 0 ? "*." + fileEnding : "*" + fileEnding.substring (dotPosition));
+        }
+        return new ArrayList<> (extensions);
+    }
 
-        this.selectionPane.setVisible (!parts.isEmpty ());
-        if (parts.isEmpty ())
-            return;
-        final String text = Functions.getMessage ("IDS_MAIN_SELECTION", String.join (", ", parts));
-        this.selectionLabel.setText (text);
-        this.selectionPane.setAccessibleText (text);
+
+    /**
+     * Find the source format which reads the given file, judged by its file ending. Disk images are
+     * claimed by several detectors - the E-mu ones read their own images - so the generic ISO/IMG
+     * format wins there, since it hands the image to whichever of them can read it.
+     *
+     * @param detectors The available source formats
+     * @param file The file to find the format for
+     * @return The index of the format or -1 if no format claims the ending
+     */
+    private static int findSourceFormat (final List<IDetector<?>> detectors, final File file)
+    {
+        final String name = file.getName ().toLowerCase (Locale.US);
+        int match = -1;
+        for (int index = 0; index < detectors.size (); index++)
+        {
+            final IDetector<?> detector = detectors.get (index);
+            final Set<String> fileEndings = detector.getFileEndings ();
+            if (fileEndings.isEmpty ())
+                continue;
+            for (final String fileEnding: fileEndings)
+                if (name.endsWith (fileEnding.toLowerCase (Locale.US)))
+                {
+                    if (GENERIC_IMAGE_FORMAT.equals (detector.getPrefix ()))
+                        return index;
+                    if (match < 0)
+                        match = index;
+                    break;
+                }
+        }
+        return match;
+    }
+
+
+    /**
+     * Switch between converting all files of a folder and converting one single file. Each mode has
+     * a path history of its own, which is exchanged here.
+     */
+    private void toggleBatchMode ()
+    {
+        final boolean isBatchMode = this.batchModeButton.isSelected ();
+        // The entered path belongs to the mode which is being left
+        updateHistory (this.sourcePathField.getEditor ().getText (), isBatchMode ? this.sourceFileHistory : this.sourcePathHistory);
+
+        final List<String> history = isBatchMode ? this.sourcePathHistory : this.sourceFileHistory;
+        this.sourcePathField.getItems ().setAll (history);
+        this.sourcePathField.getEditor ().setText (history.isEmpty () ? "" : history.get (0));
+        this.clearSelection ();
     }
 
 
@@ -1140,37 +1249,6 @@ public class MainFrame extends AbstractFrame implements INotifier
             currentSourcePath = currentSourcePath.getAbsoluteFile ().getParentFile ();
         if (currentSourcePath != null && currentSourcePath.isDirectory ())
             this.config.setActivePath (currentSourcePath);
-    }
-
-
-    /**
-     * Create the file filters for the source file selection dialog from the file endings of the
-     * currently selected source format.
-     *
-     * @return The file filters
-     */
-    private ExtensionFilter [] createSourceFileFilters ()
-    {
-        final List<ExtensionFilter> filters = new ArrayList<> ();
-
-        final int selectedDetector = this.sourceTaskPane.getSelectedFormat ();
-        if (selectedDetector >= 0)
-        {
-            final IDetector<?> detector = this.backend.getDetectors ().get (selectedDetector);
-            // A file ending might be a full file name (e.g. 'PADCONF.BIN'), which needs to be
-            // reduced to its extension for the file dialog
-            final Set<String> extensions = new TreeSet<> ();
-            for (final String fileEnding: detector.getFileEndings ())
-            {
-                final int dotPosition = fileEnding.lastIndexOf ('.');
-                extensions.add (dotPosition < 0 ? "*." + fileEnding : "*" + fileEnding.substring (dotPosition));
-            }
-            if (!extensions.isEmpty ())
-                filters.add (new ExtensionFilter (detector.getName (), new ArrayList<> (extensions)));
-        }
-
-        filters.add (new ExtensionFilter (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_FILES_ALL"), "*.*"));
-        return filters.toArray (new ExtensionFilter [filters.size ()]);
     }
 
 
