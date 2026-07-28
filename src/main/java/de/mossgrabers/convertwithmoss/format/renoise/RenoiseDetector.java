@@ -515,6 +515,11 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             if (!RenoiseTag.TARGET_VOLUME.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0)
                 continue;
 
+            // A tempo synchronized rate has no representation without a tempo, which is not part
+            // of a multi-sample
+            if ("true".equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TEMPO_SYNCED)))
+                continue;
+
             final double depth = RenoiseValueConverter.amplitudeToVolumeLfoDepth (paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0));
             if (depth == 0)
                 continue;
