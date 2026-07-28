@@ -5,8 +5,11 @@
 package de.mossgrabers.convertwithmoss.format.akai.mpc;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.GZIPOutputStream;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -65,6 +69,12 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
+        if (this.settingsConfiguration.isWriteTrackFile ())
+        {
+            this.createTrackPreset (destinationFolder, multisampleSource);
+            return;
+        }
+
         final String sampleName = createSafeFilename (multisampleSource.getName ());
 
         // Store all samples and metadata file in one folder
@@ -85,6 +95,48 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 
         // Store all samples - WAV ending needs to be upper case!
         this.writeSamples (sampleFolder, multisampleSource, ".WAV");
+
+        this.progress.notifyDone ();
+    }
+
+
+    /**
+     * Create a MPC 3 track file (*.xty) with its sample folder.
+     *
+     * @param destinationFolder Where to store the track file
+     * @param multisampleSource The multi-sample to store
+     * @throws IOException Could not store the file
+     */
+    private void createTrackPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    {
+        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "xty");
+
+        final MPC3TrackFile.TrackDocument document = new MPC3TrackFile (this.settingsConfiguration.getLayerLimit ()).create (multisampleSource, sampleName);
+        if (document.numKeygroups () > 128)
+            this.notifier.logError ("IDS_MPC_MORE_THAN_128_KEYGROUPS", Integer.toString (document.numKeygroups ()));
+
+        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        try (final Writer writer = new OutputStreamWriter (new GZIPOutputStream (new FileOutputStream (multiFile)), StandardCharsets.UTF_8))
+        {
+            writer.write (MPC3TrackFile.HEADER_MAGIC);
+            writer.write ('\n');
+            writer.write (MPCKeygroupConstants.TRACK_FILE_VERSION);
+            writer.write ('\n');
+            writer.write (MPC3TrackFile.HEADER_DATA_TYPE);
+            writer.write ('\n');
+            writer.write (MPC3TrackFile.HEADER_ENCODING);
+            writer.write ('\n');
+            writer.write (MPCKeygroupConstants.TRACK_FILE_PLATFORM);
+            writer.write ('\n');
+            writer.write (document.json ());
+        }
+
+        // The samples live in a folder next to the track file - WAV ending needs to be upper case!
+        final String trackFileName = multiFile.getName ();
+        final File trackDataFolder = new File (destinationFolder, trackFileName.substring (0, trackFileName.length () - ".xty".length ()) + MPC3TrackFile.TRACK_DATA_SUFFIX);
+        safeCreateDirectory (trackDataFolder);
+        this.writeSamples (trackDataFolder, multisampleSource, ".WAV");
 
         this.progress.notifyDone ();
     }

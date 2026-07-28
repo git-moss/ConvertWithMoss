@@ -173,7 +173,7 @@ The Akai MESA S3P format is a computer-side representation of Akai S-series prog
 
 A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a description file (.xpm) and the sample files (.WAV). Both keygroup and drum types are supported.
 
-### Akai MPC Project/Track - read only
+### Akai MPC Project/Track
 
 A track file (*.xty) is a MPC v3 specific file that saves all settings, samples, macros, FX and MIDI data associated with a track. A track consists of two elements; the track file itself and a trackData folder containing the samples used within the track (ending with '_\[TrackData\]'). If the track contains a keygroup it is extracted as a multi-sample source.
 A project file (*.xpj) contains all track and project settings. All tracks which contain a keygroup are extracted as a multi-sample source.
@@ -184,6 +184,7 @@ A project file (*.xpj) contains all track and project settings. All tracks which
 
 ### Destination Options
 
+* Output Format: Writes either a MPC 2 keygroup - a folder with the description file (.xpm) and the samples - or a MPC 3 track file (.xty) with its sample folder (ending with '_\[TrackData\]'). The track files replicate the complete 'SerialisableTrackData' structure of files written by MPC firmware 3.7 - all 128 instrument slots with their layers, the key-group performance controls and the sample list - but have not been verified in the MPC 3 software itself yet; reports welcome.
 * Limit layers to: MPC Firmware 3.4 increased the number of possible layers in a keygroup to 8. This option allows you to choose between 4 (for older firmware revisions) or 8.
 
 ### Destination Restrictions
