@@ -355,6 +355,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
             {
                 createPitchModulator (document, modulatorsElement, zones.get (0).getPitchEnvelopeModulator (), groupIndex);
                 createPitchLfoModulator (document, modulatorsElement, zones.get (0).getPitchLfoModulator (), groupIndex);
+                createAmplitudeLfoModulator (document, modulatorsElement, zones.get (0).getAmplitudeLfoModulator (), groupIndex);
             }
         }
 
@@ -580,6 +581,44 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         // symmetrically
         bindingElement.setAttribute ("translationOutputMin", Integer.toString (-IEnvelope.MAX_ENVELOPE_DEPTH / 100));
         bindingElement.setAttribute ("translationOutputMax", Integer.toString (IEnvelope.MAX_ENVELOPE_DEPTH / 100));
+        bindingElement.setAttribute (TAG_MOD_BEHAVIOR, "add");
+    }
+
+
+    private static void createAmplitudeLfoModulator (final Document document, final Element modulatorsElement, final ILfoModulator amplitudeLfoModulator, final int groupIndex)
+    {
+        final double lfoDepth = amplitudeLfoModulator.getDepth ();
+        if (lfoDepth == 0)
+            return;
+
+        final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
+
+        final Element lfoElement = XMLUtils.addElement (document, modulatorsElement, DecentSamplerTag.LFO);
+        lfoElement.setAttribute (DecentSamplerTag.LFO_SHAPE, toLfoShape (amplitudeLfo.getWaveform ()));
+        // The volume parameter is linear with 1 being full volume. The bipolar oscillator swings by
+        // the modulation amount around it, therefore a depth of d dB requires a swing of
+        // 1-10^(-d/20) for its lowest point to be d dB below full volume.
+        final double depthDecibels = Math.abs (lfoDepth) * ILfoModulator.MAX_VOLUME_DEPTH;
+        XMLUtils.setDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 1.0 - Math.pow (10.0, -depthDecibels / 20.0), 5);
+        final double rate = amplitudeLfo.getRate ();
+        if (rate > 0)
+        {
+            lfoElement.setAttribute (DecentSamplerTag.LFO_FREQUENCY_FORMAT, "hz");
+            XMLUtils.setDoubleAttribute (lfoElement, DecentSamplerTag.LFO_FREQUENCY, rate, 3);
+        }
+        final double delay = amplitudeLfo.getDelay ();
+        if (delay > 0)
+            XMLUtils.setDoubleAttribute (lfoElement, DecentSamplerTag.LFO_DELAY_TIME, delay, 3);
+
+        final Element bindingElement = XMLUtils.addElement (document, lfoElement, DecentSamplerTag.BINDING);
+        bindingElement.setAttribute ("type", "amp");
+        bindingElement.setAttribute (TAG_LEVEL, "group");
+        bindingElement.setAttribute (TAG_GROUP_INDEX, Integer.toString (groupIndex));
+        bindingElement.setAttribute (TAG_PARAMETER, "AMP_VOLUME");
+        bindingElement.setAttribute (TAG_TRANSLATION, "linear");
+        // The oscillator is bipolar, the swing is applied symmetrically around the group volume
+        bindingElement.setAttribute ("translationOutputMin", "-1");
+        bindingElement.setAttribute ("translationOutputMax", "1");
         bindingElement.setAttribute (TAG_MOD_BEHAVIOR, "add");
     }
 

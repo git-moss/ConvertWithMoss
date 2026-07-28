@@ -4,6 +4,10 @@
 
 package de.mossgrabers.convertwithmoss.format.renoise;
 
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
+
+
 /**
  * Converts values between the ConvertWithMoss model units and the Renoise instrument (XRNI) units.
  * <p>
@@ -42,9 +46,25 @@ public final class RenoiseValueConverter
     /** The maximum value of a mixer modulation parameter (cutoff and resonance are 0..127). */
     public static final double  MIXER_PARAM_MAX       = 127.0;
 
+    /**
+     * The pitch modulation range in semitones written to the mixer device. It scales all pitch
+     * modulation, therefore the LFO amplitude is expressed relative to it.
+     */
+    public static final int     PITCH_MODULATION_RANGE = 12;
+
     // Filter cutoff mapping. The 0..127 cutoff maps exponentially over the audible range.
     private static final double FILTER_MIN_HERTZ      = 20.0;
     private static final double FILTER_MAX_HERTZ      = 20000.0;
+
+    // LFO mappings, measured by sweeping the modulation LFO device parameters in Renoise 3.5.4 and
+    // recording the displayed values: Hertz = min + 20 * (100 ^ value - 1) / 99 with a constant
+    // zero-point of about 2 mHz; the onset (delay) time uses the same cubic curve family as the
+    // envelope times with a maximum of 8 seconds.
+    private static final double LFO_MIN_HERTZ         = 0.001953125;
+    private static final double LFO_MAX_HERTZ         = 20.0;
+    private static final double LFO_FREQUENCY_BASE    = 100.0;
+    private static final double LFO_MAX_DELAY_SECONDS = 8.0;
+    private static final double LFO_DELAY_EXPONENT    = 3.0;
 
 
     /**
@@ -264,5 +284,125 @@ public final class RenoiseValueConverter
     public static double mixerToResonance (final double value)
     {
         return Math.clamp (value / MIXER_PARAM_MAX, 0, 1);
+    }
+
+
+    /**
+     * Convert a LFO rate in Hertz to the normalized Renoise LFO frequency value.
+     *
+     * @param hertz The rate in Hertz
+     * @return The normalized value [0..1]
+     */
+    public static double lfoRateToRenoise (final double hertz)
+    {
+        if (hertz <= LFO_MIN_HERTZ)
+            return 0;
+        final double clamped = Math.min (hertz, LFO_MAX_HERTZ) - LFO_MIN_HERTZ;
+        final double normalized = Math.log1p ((LFO_FREQUENCY_BASE - 1.0) * clamped / LFO_MAX_HERTZ) / Math.log (LFO_FREQUENCY_BASE);
+        return Math.clamp (normalized, 0, 1);
+    }
+
+
+    /**
+     * Convert a LFO onset time in seconds to the normalized Renoise LFO delay value.
+     *
+     * @param seconds The onset time in seconds (negative is treated as 0)
+     * @return The normalized value [0..1]
+     */
+    public static double lfoDelayToRenoise (final double seconds)
+    {
+        if (seconds <= 0)
+            return 0;
+        final double normalized = Math.pow (Math.min (seconds, LFO_MAX_DELAY_SECONDS) / LFO_MAX_DELAY_SECONDS, 1.0 / LFO_DELAY_EXPONENT);
+        return Math.clamp (normalized, 0, 1);
+    }
+
+
+    /**
+     * Convert a modulation depth of the model ([-1..1], 1 = the full envelope depth) to the
+     * Renoise LFO amplitude, which is relative to the pitch modulation range of the mixer device.
+     *
+     * @param depth The modulation depth [-1..1]
+     * @return The LFO amplitude [0..1]
+     */
+    public static double lfoDepthToAmplitude (final double depth)
+    {
+        final double semitones = Math.abs (depth) * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
+        return Math.clamp (semitones / PITCH_MODULATION_RANGE, 0, 1);
+    }
+
+
+    /**
+     * Convert a volume modulation depth of the model ([-1..1], 1 = the full volume depth in dB) to
+     * the Renoise LFO amplitude. The volume chain is linear, therefore the depth in decibels is
+     * expressed as the linear swing whose lowest point lies that many decibels below full volume.
+     *
+     * @param depth The modulation depth [-1..1]
+     * @return The LFO amplitude [0..1]
+     */
+    public static double volumeLfoDepthToAmplitude (final double depth)
+    {
+        final double decibels = Math.abs (depth) * ILfoModulator.MAX_VOLUME_DEPTH;
+        return Math.clamp (1.0 - Math.pow (10.0, -decibels / 20.0), 0, 1);
+    }
+
+
+    /**
+     * Convert a Renoise LFO amplitude of a volume LFO to a modulation depth of the model ([0..1],
+     * 1 = the full volume depth in dB). This is the inverse of
+     * {@link #volumeLfoDepthToAmplitude(double)}.
+     *
+     * @param amplitude The LFO amplitude [0..1]
+     * @return The modulation depth [0..1]
+     */
+    public static double amplitudeToVolumeLfoDepth (final double amplitude)
+    {
+        final double clamped = Math.clamp (amplitude, 0, 1);
+        if (clamped >= 1)
+            return 1;
+        final double decibels = -20.0 * Math.log10 (1.0 - clamped);
+        return Math.clamp (decibels / ILfoModulator.MAX_VOLUME_DEPTH, 0, 1);
+    }
+
+
+    /**
+     * Convert a normalized Renoise LFO frequency value to a rate in Hertz.
+     *
+     * @param value The normalized value [0..1]
+     * @return The rate in Hertz
+     */
+    public static double lfoRateToHertz (final double value)
+    {
+        final double normalized = Math.clamp (value, 0, 1);
+        return LFO_MIN_HERTZ + LFO_MAX_HERTZ * (Math.pow (LFO_FREQUENCY_BASE, normalized) - 1.0) / (LFO_FREQUENCY_BASE - 1.0);
+    }
+
+
+    /**
+     * Convert a normalized Renoise LFO delay value to an onset time in seconds.
+     *
+     * @param value The normalized value [0..1]
+     * @return The onset time in seconds
+     */
+    public static double lfoDelayToSeconds (final double value)
+    {
+        if (value <= 0)
+            return 0;
+        return Math.pow (Math.clamp (value, 0, 1), LFO_DELAY_EXPONENT) * LFO_MAX_DELAY_SECONDS;
+    }
+
+
+    /**
+     * Convert a Renoise LFO amplitude to a modulation depth of the model ([-1..1], 1 = the full
+     * envelope depth).
+     *
+     * @param amplitude The LFO amplitude [0..1]
+     * @param pitchModulationRange The pitch modulation range of the mixer device in semitones
+     * @return The modulation depth [0..1]
+     */
+    public static double amplitudeToLfoDepth (final double amplitude, final int pitchModulationRange)
+    {
+        final double semitones = Math.clamp (amplitude, 0, 1) * pitchModulationRange;
+        return Math.clamp (semitones * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH, 0, 1);
     }
 }

@@ -441,6 +441,19 @@ public class DlsArticulation
 
 
     /**
+     * Convert a relative gain connection value to decibels. The value is stored as a 32-bit fixed
+     * point number with 65536 representing one centibel (1/10 dB).
+     *
+     * @param value The raw 32-bit relative gain value
+     * @return The gain in decibels
+     */
+    public static double relativeGainToDecibels (final int value)
+    {
+        return value / 65536.0 / 10.0;
+    }
+
+
+    /**
      * Normalizes a DLS EG Sustain Level lScale value to the range 0.0..1.0.
      *
      * Per Section 1.7.2.7: Sustain is defined as a percentage of the envelope peak in 0.1%

@@ -666,10 +666,10 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
 
 
     /**
-     * Create the filter of a zone. A fully open filter without resonance, envelope or key tracking
-     * is the bypass state of the samplers and creates no filter. The effect filters of the ESI
-     * samplers (phasers, flangers, vocal formants, swept EQs) have no model equivalent and create
-     * no filter either.
+     * Create the filter of a zone. A low-pass above the audible range without resonance, envelope
+     * or key tracking is the bypass state of the samplers and creates no filter. The effect filters
+     * of the ESI samplers (phasers, flangers, vocal formants, swept EQs) have no model equivalent
+     * and create no filter either.
      *
      * @param data The content of the bank
      * @param bankFormat The format of the bank
@@ -690,10 +690,15 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
         final double keyTracking = Math.clamp (data[offset + Emulator3Constants.ZONE_VCF_TRACKING] / 127.0 * 2.0, 0, 1);
 
         final double velocityDepth = Math.clamp (data[offset + Emulator3Constants.ZONE_VELOCITY_TO_VCF_CUTOFF] / 127.0, -1, 1);
-        if (cutoff == 0xFF && resonance == 0 && envelopeDepth == 0 && keyTracking == 0 && velocityDepth == 0)
+        // A low-pass which sits above the audible range and which nothing pulls down again removes
+        // nothing which can be heard, which is how the samplers switch their filter off. The
+        // cutoff parameter reaches up to 74 kHz and the banks park it at several values there -
+        // 0xEF and 0xFF are the two most common ones - so the frequency decides and not one value
+        final double cutoffFrequency = Emulator3Constants.getCutoffFrequency (cutoff);
+        if (filterType == FilterType.LOW_PASS && cutoffFrequency >= Emulator3Constants.INAUDIBLE_CUTOFF_HERTZ && resonance == 0 && envelopeDepth == 0 && keyTracking == 0 && velocityDepth == 0)
             return null;
 
-        final IFilter filter = new DefaultFilter (filterType, Emulator3Constants.getFilterPoles (filterTypeAndShape, bankFormat), Emulator3Constants.getCutoffFrequency (cutoff), resonance / 127.0);
+        final IFilter filter = new DefaultFilter (filterType, Emulator3Constants.getFilterPoles (filterTypeAndShape, bankFormat), cutoffFrequency, resonance / 127.0);
         filter.setCutoffKeyTracking (keyTracking);
         filter.getCutoffVelocityModulator ().setDepth (velocityDepth);
 

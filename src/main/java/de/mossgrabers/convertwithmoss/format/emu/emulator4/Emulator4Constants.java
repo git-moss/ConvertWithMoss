@@ -64,7 +64,9 @@ public class Emulator4Constants
 
     /** The 'forward loop on' bit of the sample options field. */
     protected static final int     OPTION_LOOP                = 0x0001;
-    /** The sample options of a mono sample without a loop. */
+    /** The 'sample holds its left channel' bit of the sample options field. */
+    protected static final int     OPTION_CHANNEL_LEFT        = 0x0020;
+    /** The sample options of a mono sample without a loop, which is a left channel only. */
     protected static final int     OPTIONS_MONO               = 0x0020;
     /** The sample options of a mono sample with a forward loop. */
     protected static final int     OPTIONS_MONO_LOOP          = 0x0031;
@@ -73,6 +75,33 @@ public class Emulator4Constants
     protected static final double  CUTOFF_MIN_HERTZ           = 57.0;
     /** The highest filter cutoff frequency (cutoff byte 255). */
     protected static final double  CUTOFF_MAX_HERTZ           = 20000.0;
+    /** A low-pass at or below this frequency leaves nothing of the signal audible. */
+    protected static final double  CLOSED_LOW_PASS_HERTZ      = 100.0;
+    /** A high-pass at or above this frequency leaves nothing of the signal audible. */
+    protected static final double  CLOSED_HIGH_PASS_HERTZ     = 9000.0;
+
+    /** The number of modulation cords of a voice. */
+    protected static final int     NUM_MOD_CORDS              = 20;
+    /** The size of one modulation cord: source, destination, amount and a flag. */
+    protected static final int     MOD_CORD_SIZE              = 4;
+    /** The offset of the source inside a modulation cord. */
+    protected static final int     MOD_CORD_SOURCE            = 0;
+    /** The offset of the destination inside a modulation cord. */
+    protected static final int     MOD_CORD_DESTINATION       = 1;
+    /** The offset of the amount inside a modulation cord. */
+    protected static final int     MOD_CORD_AMOUNT            = 2;
+    /** The modulation source 'key', which the model converts into the cutoff key tracking. */
+    protected static final int     MOD_SOURCE_KEY             = 0x08;
+    /** The modulation source 'filter envelope', which the model converts into a filter envelope. */
+    protected static final int     MOD_SOURCE_FILTER_ENVELOPE = 0x50;
+    /** The modulation destination 'filter frequency'. */
+    protected static final int     MOD_DEST_CUTOFF            = 0x38;
+    /** The modulation destination 'amplifier'. */
+    protected static final int     MOD_DEST_AMPLIFIER         = 0x40;
+    /** The lowest modulation source which is one of the velocity variants (add, centered). */
+    protected static final int     MOD_SOURCE_VELOCITY_FIRST  = 0x0A;
+    /** The highest modulation source which is one of the velocity variants (subtract). */
+    protected static final int     MOD_SOURCE_VELOCITY_LAST   = 0x0C;
 
     /** The default velocity-to-amplitude modulation amount of the EOS factory cord set (~24%). */
     protected static final int     DEFAULT_VELOCITY_AMOUNT    = 0x1E;
