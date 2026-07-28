@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -269,6 +270,8 @@ public final class ZenCoreSvz
          * partial has its own multi-sample, pan and velocity window.
          */
         public List<SvzPartial> partials;
+        /** The wave numbers of the multi-samples which the partials of the tone play (read side). */
+        public int []           waveNumbers      = new int [0];
 
         // ----------------------------------------------------------------------------------------
         // Optional Partial-1 tone parameters taken from the source; -1 keeps the template default
@@ -772,10 +775,27 @@ public final class ZenCoreSvz
      */
     public static Optional<ZenCoreKeyMap> readKeyMap (final ZenCoreContainer container)
     {
+        final List<ZenCoreKeyMap> keyMaps = readKeyMaps (container);
+        return keyMaps.isEmpty () ? Optional.empty () : Optional.of (keyMaps.get (0));
+    }
+
+
+    /**
+     * Read all multi-samples of the <i>MSPa</i> section. A tone references them by their wave
+     * number, which is the position in this list plus one, see buildTone.
+     *
+     * @param container The SVZ container
+     * @return The multi-samples in the order in which they are stored
+     */
+    public static List<ZenCoreKeyMap> readKeyMaps (final ZenCoreContainer container)
+    {
         final ZenCoreContainer.Section msp = container.getSection ("MSPa");
         if (msp == null || msp.getCount () == 0)
-            return Optional.empty ();
-        return Optional.of (new ZenCoreKeyMap (msp.getFile (), msp.getDataStart ()));
+            return Collections.emptyList ();
+        final List<ZenCoreKeyMap> keyMaps = new ArrayList<> (msp.getCount ());
+        for (int i = 0; i < msp.getCount (); i++)
+            keyMaps.add (new ZenCoreKeyMap (msp.getFile (), msp.getDataStart () + i * msp.getUnitSize ()));
+        return keyMaps;
     }
 
 
@@ -790,12 +810,66 @@ public final class ZenCoreSvz
      */
     public static Optional<SvzInstrument> readTone (final ZenCoreContainer container)
     {
+        final List<SvzInstrument> tones = readTones (container);
+        return tones.isEmpty () ? Optional.empty () : Optional.of (tones.get (0));
+    }
+
+
+    /**
+     * Read all tones of the <i>PATa</i> section. A preset file holds one tone, a bank holds one per
+     * preset - all of them sharing the sample pool of the file - which is why each tone names the
+     * multi-samples it plays in {@link SvzInstrument#waveNumbers}.
+     *
+     * @param container The SVZ container
+     * @return The tones in the order in which they are stored, empty if the container holds none
+     */
+    public static List<SvzInstrument> readTones (final ZenCoreContainer container)
+    {
         final ZenCoreContainer.Section pat = container.getSection ("PATa");
         if (pat == null || pat.getCount () == 0)
-            return Optional.empty ();
-        final byte [] file = pat.getFile ();
-        final int r = pat.getDataStart ();
+            return Collections.emptyList ();
+        final List<SvzInstrument> tones = new ArrayList<> (pat.getCount ());
+        for (int i = 0; i < pat.getCount (); i++)
+            tones.add (readTone (pat.getFile (), pat.getDataStart () + i * pat.getUnitSize ()));
+        return tones;
+    }
+
+
+    /**
+     * Read one tone record.
+     *
+     * @param file The content of the SVZ file
+     * @param r The offset of the tone record
+     * @return The tone
+     */
+    private static SvzInstrument readTone (final byte [] file, final int r)
+    {
         final SvzInstrument tone = new SvzInstrument ();
+        tone.name = ZenCoreUtil.readName (file, r, NAME_LENGTH);
+
+        // The multi-samples which the enabled partials play. A partial whose wave group is zero is
+        // switched off and plays nothing, see buildTone.
+        final List<Integer> waves = new ArrayList<> ();
+        for (int p = 0; p < 4; p++)
+        {
+            final int oscBase = p * PAT_PARTIAL_STRIDE;
+            if (file[r + PAT_WAVE_GROUP + oscBase] == 0)
+                continue;
+            for (final int offset: new int []
+            {
+                PAT_WAVE_L,
+                PAT_WAVE_R
+            })
+            {
+                final int wave = ZenCoreUtil.readUnsigned16 (file, r + offset + oscBase, false);
+                if (wave > 0 && !waves.contains (Integer.valueOf (wave)))
+                    waves.add (Integer.valueOf (wave));
+            }
+        }
+        tone.waveNumbers = new int [waves.size ()];
+        for (int i = 0; i < waves.size (); i++)
+            tone.waveNumbers[i] = waves.get (i).intValue ();
+
         tone.filterType = ZenCoreUtil.readUnsigned16 (file, r + PAT_FILTER_TYPE, false) / 0x100;
         tone.cutoff = ZenCoreUtil.readUnsigned16 (file, r + PAT_CUTOFF, false);
         tone.resonance = ZenCoreUtil.readUnsigned16 (file, r + PAT_RESONANCE, false);
@@ -811,7 +885,7 @@ public final class ZenCoreSvz
         tone.filterEnvDepth = file[r + PAT_FILTER_ENV_DEPTH];
         tone.filterEnvTimes = readEnvBlock (file, r + PAT_FILTER_ENV_TIME, 4);
         tone.filterEnvLevels = readEnvBlock (file, r + PAT_FILTER_ENV_LEVEL, 5);
-        return Optional.of (tone);
+        return tone;
     }
 
 
