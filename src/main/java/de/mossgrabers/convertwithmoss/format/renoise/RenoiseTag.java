@@ -115,6 +115,8 @@ public class RenoiseTag
 
     /** The AHDSR modulation device tag (and its required type attribute value). */
     public static final String AHDSR_DEVICE             = "SampleAhdsrModulationDevice";
+    /** The LFO modulation device tag (and its required type attribute value). */
+    public static final String LFO_DEVICE               = "SampleLfoModulationDevice";
     /** The mixer modulation device tag - holds the base input values (cutoff, resonance, ...). */
     public static final String MIXER_DEVICE             = "SampleMixerModulationDevice";
     /** The selected preset name tag. */
@@ -147,6 +149,16 @@ public class RenoiseTag
     public static final String SUSTAIN                  = "Sustain";
     /** The release parameter tag. */
     public static final String RELEASE                  = "Release";
+    /** The waveform mode tag of a LFO device. */
+    public static final String LFO_MODE                 = "Mode";
+    /** The frequency parameter tag of a LFO device. */
+    public static final String LFO_FREQUENCY            = "Frequency";
+    /** The amplitude parameter tag of a LFO device. */
+    public static final String LFO_AMPLITUDE            = "Amplitude";
+    /** The start phase parameter tag of a LFO device (0..360 degrees). */
+    public static final String LFO_DEPHASE              = "Dephase";
+    /** The onset time parameter tag of a LFO device. */
+    public static final String LFO_DELAY                = "Delay";
 
     /** The pitch base value parameter tag (mixer device). */
     public static final String PITCH                    = "Pitch";
@@ -198,6 +210,15 @@ public class RenoiseTag
     public static final String OP_MULTIPLY              = "*";
     /** Modulation operator: add to the target's running value. */
     public static final String OP_ADD                   = "+";
+
+    /** LFO waveform mode: sine. */
+    public static final String LFO_MODE_SIN             = "Sin";
+    /** LFO waveform mode: saw-tooth. */
+    public static final String LFO_MODE_SAW             = "Saw";
+    /** LFO waveform mode: pulse (square). */
+    public static final String LFO_MODE_PULSE           = "Pulse";
+    /** LFO waveform mode: random (sample and hold). */
+    public static final String LFO_MODE_RANDOM          = "Random";
 
     /** New-note-action: cut the previous note. */
     public static final String NNA_CUT                  = "Cut";
