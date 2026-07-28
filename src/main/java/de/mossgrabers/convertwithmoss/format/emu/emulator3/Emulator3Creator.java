@@ -418,7 +418,8 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         }
         else
         {
-            // Without a filter write the bypass state: fully open, no resonance, full key tracking
+            // Without a filter write the bypass state: fully open, no resonance, no key tracking,
+            // which is what the detector reads back as 'no filter'
             data[offset + Emulator3Constants.ZONE_VCF_CUTOFF] = (byte) Emulator3Constants.DEFAULT_CUTOFF;
             data[offset + Emulator3Constants.ZONE_VCF_Q] = (byte) (isEsi ? Emulator3Constants.Q_REALTIME_ENABLE : 0);
             data[offset + Emulator3Constants.ZONE_VCF_TRACKING] = Emulator3Constants.NO_VCF_TRACKING;
