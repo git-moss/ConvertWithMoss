@@ -31,6 +31,11 @@
   * Fixed: A modulation set was created for every key zone. Now zones with identical modulation share one set, which gives the usual single instrument-wide modulation set; additional sets are only created for zones which genuinely modulate differently.
   * New: A pitch LFO (vibrato) is read from and written as a LFO modulation device (waveform, rate, depth and onset time; the value curves were calibrated against Renoise 3.5.4).
   * New: A volume LFO (tremolo) is read from and written as a LFO modulation device targeting the volume; since the volume chain is linear, the depth in decibels is expressed as the linear swing whose lowest point lies that many decibels below full volume.
+* SoundFont 2
+  * Fixed: Generators which only appear on the preset level were dropped entirely when the instrument level did not carry the same generator, although the specification defines them as offsets to the default value in that case. A preset whose global zone transposes a plain instrument down an octave was read an octave too high, preset-level attenuation and envelope offsets vanished, and a preset-level filter offset never created a filter. Such generators are routine in commercial and General MIDI SoundFonts.
+  * Fixed: A preset-level generator offset was added without the signed conversion when the instrument level carried the generator and the value was looked up unsigned - a negative offset (e.g. lowering the filter cutoff) was added as a huge positive number.
+  * Fixed: The filter resonance was read as centibels divided by 100 instead of 10, so every resonance came out ten times too small (20 dB read as 2 dB) and each SoundFont-to-SoundFont round trip divided it by ten again. Writing was already correct.
+  * Fixed: Negative pitch and filter envelope modulation amounts (downward sweeps, e.g. the pitch drop of an 808-style kick) were dropped when writing; both generators are signed in the format and reading them was already correct.
 * Waldorf Quantum/Iridium
   * New: A source which carries its bank in front of its name is written without it in the preset name, since the device shows the bank in a field of its own. The file name keeps the full name. An explicit Bank from the settings replaces the source's bank, in which case the name keeps it.
 
@@ -115,6 +120,11 @@
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
 * TX16Wx
   * Fixed: Envelope levels which are not set were written as -100%, which is a valid but completely different envelope. They now fall back to the neutral level.
+* SoundFont 2
+  * Fixed: Generators which only appear on the preset level were dropped entirely when the instrument level did not carry the same generator, although the specification defines them as offsets to the default value in that case. A preset whose global zone transposes a plain instrument down an octave was read an octave too high, preset-level attenuation and envelope offsets vanished, and a preset-level filter offset never created a filter. Such generators are routine in commercial and General MIDI SoundFonts.
+  * Fixed: A preset-level generator offset was added without the signed conversion when the instrument level carried the generator and the value was looked up unsigned - a negative offset (e.g. lowering the filter cutoff) was added as a huge positive number.
+  * Fixed: The filter resonance was read as centibels divided by 100 instead of 10, so every resonance came out ten times too small (20 dB read as 2 dB) and each SoundFont-to-SoundFont round trip divided it by ten again. Writing was already correct.
+  * Fixed: Negative pitch and filter envelope modulation amounts (downward sweeps, e.g. the pitch drop of an 808-style kick) were dropped when writing; both generators are signed in the format and reading them was already correct.
 * Waldorf Quantum/Iridium
   * New: Added a creator option to prefix written preset file names with a 5-digit import number (e.g. 05002-Name.qpat), mirroring the device's own export naming so the device assigns each preset to that number on import.
   * New: The oscillator volume and panning are now preserved instead of always being written as 0 dB / Center, so a Quantum/Iridium round-trip keeps them.
