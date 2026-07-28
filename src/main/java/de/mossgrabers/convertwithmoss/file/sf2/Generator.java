@@ -37,8 +37,16 @@ public class Generator
     /** The ID of the modulation envelope to filter cutoff generator. */
     public static final int     MOD_ENV_TO_FILTER_CUTOFF = 11;
 
+    /** The ID of the modulation low frequency oscillator to volume generator (in centibels). */
+    public static final int     MOD_LFO_TO_VOLUME        = 13;
+
     /** The ID of the panning generator. */
     public static final int     PANNING                  = 17;
+
+    /** The ID of the modulation low frequency oscillator delay generator (in time-cents). */
+    public static final int     DELAY_MOD_LFO            = 21;
+    /** The ID of the modulation low frequency oscillator frequency generator (in absolute cents). */
+    public static final int     FREQ_MOD_LFO             = 22;
 
     /** The ID of the vibrato low frequency oscillator delay generator (in time-cents). */
     public static final int     DELAY_VIB_LFO            = 23;
