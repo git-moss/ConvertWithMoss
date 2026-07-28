@@ -293,6 +293,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
         // Presets which another preset links to are layered on top of it and are therefore not
         // converted on their own
         final Set<Integer> linkedPresets = new HashSet<> ();
+        final List<Integer> presetOffsets = new ArrayList<> ();
         for (int i = 0; i < maxPresets; i++)
         {
             if (!isPresetPresent (data, bankFormat, i))
@@ -300,6 +301,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             final int presetOffset = getPresetOffset (data, bankFormat, i);
             if (presetOffset < 0)
                 continue;
+            presetOffsets.add (Integer.valueOf (presetOffset));
             // The link is a single byte, not the 16 bit value emu3bm reads: the byte behind it is
             // an independent parameter which about 1% of the library presets set, which made
             // their links look out of range and lose the layered preset
@@ -308,12 +310,26 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
                 linkedPresets.add (Integer.valueOf (link - 1));
         }
 
+        // Many banks of the E-mu library CD-ROMs store their zone sample indices without the
+        // high byte, see Emulator3SampleIndexRepair
+        final Map<Integer, String> sampleNames = new HashMap<> ();
+        for (final Map.Entry<Integer, Sample> entry: samplesByIndex.entrySet ())
+            sampleNames.put (entry.getKey (), entry.getValue ().name);
+        final Map<Integer, Map<Integer, Integer>> repairsByPresetOffset = Emulator3SampleIndexRepair.resolveBank (data, presetOffsets, sampleNames);
+        if (!repairsByPresetOffset.isEmpty ())
+        {
+            int repairedReferences = 0;
+            for (final Map<Integer, Integer> mapping: repairsByPresetOffset.values ())
+                repairedReferences += mapping.size ();
+            this.notifier.log ("IDS_EIII_REPAIRED_INDICES", Integer.toString (repairedReferences), Integer.toString (repairsByPresetOffset.size ()), bankName);
+        }
+
         final List<IMultisampleSource> results = new ArrayList<> ();
         for (int i = 0; i < maxPresets; i++)
         {
             if (!isPresetPresent (data, bankFormat, i) || linkedPresets.contains (Integer.valueOf (i)))
                 continue;
-            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, data, bankFormat, i, maxPresets, samplesByIndex);
+            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, data, bankFormat, i, maxPresets, samplesByIndex, repairsByPresetOffset);
             if (multisampleSource != null)
                 results.add (multisampleSource);
         }
@@ -433,9 +449,10 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      * @param presetIndex The index of the preset
      * @param numPresets The number of presets of the bank
      * @param samplesByIndex The samples of the bank by their 1-based index
+     * @param repairsByPresetOffset The repaired zone sample indices by preset offset
      * @return The multi-sample source or null if the preset has no usable zones
      */
-    private IMultisampleSource parsePreset (final File sourceFile, final String bankName, final byte [] data, final Emulator3BankFormat bankFormat, final int presetIndex, final int numPresets, final Map<Integer, Sample> samplesByIndex)
+    private IMultisampleSource parsePreset (final File sourceFile, final String bankName, final byte [] data, final Emulator3BankFormat bankFormat, final int presetIndex, final int numPresets, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Map<Integer, Integer>> repairsByPresetOffset)
     {
         final int presetOffset = getPresetOffset (data, bankFormat, presetIndex);
         if (presetOffset < 0)
@@ -452,7 +469,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             final int offset = getPresetOffset (data, bankFormat, currentIndex);
             if (offset < 0)
                 break;
-            this.parseLayers (data, bankFormat, offset, groups, samplesByIndex, missingSampleIndices, bankName);
+            this.parseLayers (data, bankFormat, offset, groups, samplesByIndex, repairsByPresetOffset.getOrDefault (Integer.valueOf (offset), Map.of ()), missingSampleIndices, bankName);
             final int link = data[offset + Emulator3Constants.PRESET_LINK] & 0xFF;
             currentIndex = link > 0 && link - 1 < numPresets ? link - 1 : -1;
         }
@@ -486,10 +503,11 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      * @param presetOffset The offset of the preset
      * @param groups Where to add the created groups
      * @param samplesByIndex The samples of the bank by their 1-based index
+     * @param indexRepairs The repaired zone sample indices of this preset
      * @param missingSampleIndices Where to collect the indices of referenced but absent samples
      * @param bankName The name of the bank
      */
-    private void parseLayers (final byte [] data, final Emulator3BankFormat bankFormat, final int presetOffset, final List<IGroup> groups, final Map<Integer, Sample> samplesByIndex, final Set<Integer> missingSampleIndices, final String bankName)
+    private void parseLayers (final byte [] data, final Emulator3BankFormat bankFormat, final int presetOffset, final List<IGroup> groups, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Integer> indexRepairs, final Set<Integer> missingSampleIndices, final String bankName)
     {
         final int numNoteZones = data[presetOffset + Emulator3Constants.PRESET_NUM_NOTE_ZONES] & 0xFF;
         if (numNoteZones == 0)
@@ -530,7 +548,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
                 final int zone = zoneOffset + zoneIndex * Emulator3Constants.ZONE_SIZE;
                 if (zone + Emulator3Constants.ZONE_SIZE > data.length)
                     continue;
-                final ISampleZone sampleZone = this.parseZone (data, bankFormat, zone, presetOffset, keyLow + Emulator3Constants.KEY_OFFSET, keyHigh + Emulator3Constants.KEY_OFFSET, samplesByIndex, missingSampleIndices, bankName);
+                final ISampleZone sampleZone = this.parseZone (data, bankFormat, zone, presetOffset, keyLow + Emulator3Constants.KEY_OFFSET, keyHigh + Emulator3Constants.KEY_OFFSET, samplesByIndex, indexRepairs, missingSampleIndices, bankName);
                 if (sampleZone != null)
                     group.addSampleZone (sampleZone);
             }
@@ -589,15 +607,17 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      * @param keyLow The lowest key of the zone
      * @param keyHigh The highest key of the zone
      * @param samplesByIndex The samples of the bank by their 1-based index
+     * @param indexRepairs The repaired zone sample indices of the preset
      * @param missingSampleIndices Where to collect the indices of referenced but absent samples
      * @param bankName The name of the bank
      * @return The zone or null if its sample is not in the bank
      */
-    private ISampleZone parseZone (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int presetOffset, final int keyLow, final int keyHigh, final Map<Integer, Sample> samplesByIndex, final Set<Integer> missingSampleIndices, final String bankName)
+    private ISampleZone parseZone (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int presetOffset, final int keyLow, final int keyHigh, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Integer> indexRepairs, final Set<Integer> missingSampleIndices, final String bankName)
     {
-        final int sampleIndex = Emulator3Constants.getU16 (data, offset + Emulator3Constants.ZONE_SAMPLE_INDEX) & Emulator3Constants.ZONE_SAMPLE_INDEX_MASK;
-        if (sampleIndex == 0)
+        final int storedIndex = Emulator3Constants.getU16 (data, offset + Emulator3Constants.ZONE_SAMPLE_INDEX) & Emulator3Constants.ZONE_SAMPLE_INDEX_MASK;
+        if (storedIndex == 0)
             return null;
+        final int sampleIndex = indexRepairs.getOrDefault (Integer.valueOf (storedIndex), Integer.valueOf (storedIndex)).intValue ();
         final Sample sample = samplesByIndex.get (Integer.valueOf (sampleIndex));
         if (sample == null)
         {
