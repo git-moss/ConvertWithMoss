@@ -123,10 +123,19 @@ filters without a model equivalent.
 
 Two 6-stage envelopes as rate/level byte pairs, plus the LFO parameters. The
 amplitude envelope stages are at bytes 0-11 (attack1, attack2, decay1, decay2,
-release1, release2), the filter envelope mirrors this at bytes 14-25. In the
-standard ADSR shape attack 1 rises to full level, decay 1 falls to the sustain
-level (decay 2 holds it) and release 1 falls to silence. An attack 2 stage
-with the same level as attack 1 is a plateau and expresses a hold stage.
+release1, release2), the filter envelope mirrors this at bytes 14-25. Each
+stage ramps to its own level in its own time, so the level a voice really
+sustains at is the one of **decay 2**, not of decay 1.
+
+Mapping the six stages onto the attack/hold/decay/sustain/release of the model
+works exactly as for the Emulator X, whose envelope this is: the two attack
+and the two release times are added up, and a decay 1 stage which stays at the
+level of attack 2 is a plateau and therefore the hold stage, which leaves
+decay 2 as the decay. Only where decay 1 does fall do the two decay times add
+up. Taking decay 1 alone loses the tail of 52% of the voices of the Producer
+Series Vol. 1 and 2 CD-ROMs, and the 8% whose decay 1 holds the peak (a
+plucked instrument which rings and then fades away, e.g. `Nylon Guitar`) end
+up sustaining for ever instead of decaying at all.
 
 The rate <-> time law was calibrated on E4XT hardware by mpc2emu:
 `seconds = 0.0310 * e^(0.0581 * rate)`, rate 0 = instant, 127 = ~47 s. Levels
@@ -209,14 +218,30 @@ are byte offsets relative to the struct start (i.e. 92 = first PCM byte):
 |---|---|---|
 | 0  | 2 | sample index (1-based, big-endian) |
 | 2  | 16 | name, space-padded ASCII; the root note is conventionally appended (e.g. `_C3` for MIDI 60, octave = note/12 - 2) |
-| 22 | 4 | start = 92 |
-| 30 | 4 | end = 92 + PCM bytes - 2 |
-| 38 | 4 | loop start |
-| 46 | 4 | loop end |
+| 22 | 4 | start, left channel = 92 |
+| 26 | 4 | start, right channel |
+| 30 | 4 | end, left channel = 92 + PCM bytes - 2 |
+| 34 | 4 | end, right channel |
+| 38 | 4 | loop start, left channel |
+| 42 | 4 | loop start, right channel |
+| 46 | 4 | loop end, left channel |
+| 50 | 4 | loop end, right channel |
 | 54 | 4 | sample rate - informational only, inherited from the EOS 3 struct |
 | 58 | 2 | pitch offset in 1/64 semitones (signed) |
-| 60 | 2 | options: 0x0020 = mono, 0x0031 = mono with forward loop |
+| 60 | 2 | options: 0x0001 = forward loop, 0x0020 = holds the left channel, 0x0040 = holds the right channel; 0x0020 = mono, 0x0031 = mono with forward loop |
 | 62 | 4 | data offset = 92 |
+
+Every position exists twice, once per channel - the struct is the one of the
+Emulator III. A sample which only holds its **right** channel (option 0x0020
+clear, e.g. options 0x0059) keeps its positions in the second field of each
+pair and leaves the first one with a stale value which does not address the
+sample: the loop start reads as the constant 12 and the same loop end appears
+verbatim on several samples of different lengths. Reading the left fields
+unconditionally therefore gives those samples the loop of an unrelated sample
+or drops it altogether. Of 7835 looped samples on three commercial CD-ROMs
+(Producer Series Vol. 1 and 2, E4 Ultra Production Set) 1402 are right channel
+only, and selecting the pair by the option bit makes all 7835 resolve inside
+their sample.
 
 EOS has exactly one loop type (forward, on/off at the sample level). A forward
 loop shorter than ~84 frames plays an octave low on the hardware (the E4XT

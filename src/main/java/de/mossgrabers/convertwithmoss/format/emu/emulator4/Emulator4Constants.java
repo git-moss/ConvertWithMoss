@@ -64,7 +64,9 @@ public class Emulator4Constants
 
     /** The 'forward loop on' bit of the sample options field. */
     protected static final int     OPTION_LOOP                = 0x0001;
-    /** The sample options of a mono sample without a loop. */
+    /** The 'sample holds its left channel' bit of the sample options field. */
+    protected static final int     OPTION_CHANNEL_LEFT        = 0x0020;
+    /** The sample options of a mono sample without a loop, which is a left channel only. */
     protected static final int     OPTIONS_MONO               = 0x0020;
     /** The sample options of a mono sample with a forward loop. */
     protected static final int     OPTIONS_MONO_LOOP          = 0x0031;
