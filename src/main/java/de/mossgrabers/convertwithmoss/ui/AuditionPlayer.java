@@ -30,26 +30,40 @@ public class AuditionPlayer
     private Thread           playThread;
     private SourceDataLine   line;
     private volatile boolean isCancelled      = false;
+    private volatile boolean isStreaming      = false;
 
 
     /**
      * Play one note of the given multi-sample. A note which is currently playing is stopped first.
      *
      * @param source The multi-sample to play
+     * @param whenFinished Called when the note has been played to its end, not when it is stopped.
+     *            It is called from the playback thread.
+     * @return True if a note is playing now, false if the multi-sample renders to nothing at all
      * @throws IOException Could not read the audio data of the multi-sample
      */
-    public synchronized void play (final IMultisampleSource source) throws IOException
+    public synchronized boolean play (final IMultisampleSource source, final Runnable whenFinished) throws IOException
     {
         this.stop ();
 
         final byte [] pcm = PresetRenderer.render (source);
         if (pcm.length == 0)
-            return;
+            return false;
 
         this.isCancelled = false;
-        this.playThread = new Thread (() -> this.stream (pcm), "Audition");
+        this.isStreaming = true;
+        this.playThread = new Thread ( () -> {
+
+            // The playing state is cleared before the callback runs, so that it already sees that
+            // the note has ended
+            this.stream (pcm);
+            if (!this.isCancelled)
+                whenFinished.run ();
+
+        }, "Audition");
         this.playThread.setDaemon (true);
         this.playThread.start ();
+        return true;
     }
 
 
@@ -73,6 +87,7 @@ public class AuditionPlayer
                 Thread.currentThread ().interrupt ();
             }
         this.playThread = null;
+        this.isStreaming = false;
     }
 
 
@@ -83,8 +98,7 @@ public class AuditionPlayer
      */
     public boolean isPlaying ()
     {
-        final Thread currentThread = this.playThread;
-        return currentThread != null && currentThread.isAlive ();
+        return this.isStreaming;
     }
 
 
@@ -115,6 +129,7 @@ public class AuditionPlayer
         finally
         {
             this.line = null;
+            this.isStreaming = false;
         }
     }
 }
