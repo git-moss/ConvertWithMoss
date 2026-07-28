@@ -213,12 +213,19 @@ public class Emulator3Constants
 
     /** The default cutoff value, which is the fully open filter. */
     public static final int    DEFAULT_CUTOFF                  = 0xEF;
+    /** A low-pass at or above this frequency removes nothing which can be heard. */
+    public static final double INAUDIBLE_CUTOFF_HERTZ          = 20000.0;
     /** The value of the amplifier level and the sustain which means 100%. */
     public static final int    FULL_LEVEL                      = 0x7F;
     /** The value of the panorama which means centered. */
     public static final int    CENTER_PAN                      = 0x40;
-    /** The value of the filter tracking which means no tracking. */
-    public static final int    NO_VCF_TRACKING                 = 0x40;
+    /**
+     * The value of the filter tracking which means no tracking. The parameter is a signed byte
+     * which the samplers show from -2.00 to +2.00, and the operations manual says of 0.00 that
+     * "the filter cutoff will not be affected by the keyboard pitch". 0x40 is +1.00 and not the
+     * neutral value it was taken for.
+     */
+    public static final int    NO_VCF_TRACKING                 = 0;
     /** The filter tracking value which follows the keyboard at 100%. */
     public static final double FULL_VCF_TRACKING               = 0.5;
 

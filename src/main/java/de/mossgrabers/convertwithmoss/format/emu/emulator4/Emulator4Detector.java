@@ -482,19 +482,20 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         double velocityToAmplitude = 0;
         double filterEnvelopeDepth = 0;
         double filterKeyTracking = 0;
-        for (int slot = 0; slot < 20; slot++)
+        for (int slot = 0; slot < Emulator4Constants.NUM_MOD_CORDS; slot++)
         {
-            final int source = body[modOffset + slot * 4] & 0xFF;
-            final int destination = body[modOffset + slot * 4 + 1] & 0xFF;
-            final int amount = body[modOffset + slot * 4 + 2];
+            final int cordOffset = modOffset + slot * Emulator4Constants.MOD_CORD_SIZE;
+            final int source = body[cordOffset + Emulator4Constants.MOD_CORD_SOURCE] & 0xFF;
+            final int destination = body[cordOffset + Emulator4Constants.MOD_CORD_DESTINATION] & 0xFF;
+            final int amount = body[cordOffset + Emulator4Constants.MOD_CORD_AMOUNT];
             if (amount == 0)
                 continue;
             // Velocity sources: 0x0A add, 0x0B centered, 0x0C subtract
-            if (destination == 0x40 && source >= 0x0A && source <= 0x0C)
+            if (destination == Emulator4Constants.MOD_DEST_AMPLIFIER && source >= Emulator4Constants.MOD_SOURCE_VELOCITY_FIRST && source <= Emulator4Constants.MOD_SOURCE_VELOCITY_LAST)
                 velocityToAmplitude = Math.clamp (Math.abs (amount) / 127.0, 0, 1);
-            else if (destination == 0x38 && source == 0x50)
+            else if (destination == Emulator4Constants.MOD_DEST_CUTOFF && source == Emulator4Constants.MOD_SOURCE_FILTER_ENVELOPE)
                 filterEnvelopeDepth = Math.clamp (amount / 127.0, -1, 1);
-            else if (destination == 0x38 && source == 0x08)
+            else if (destination == Emulator4Constants.MOD_DEST_CUTOFF && source == Emulator4Constants.MOD_SOURCE_KEY)
                 filterKeyTracking = Math.clamp (amount / 127.0 * Emulator4Constants.FULL_KEY_TRACKING, 0, 1);
         }
 
@@ -597,7 +598,9 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      * Create the filter of a voice. The 'wide open' default (4-pole low-pass at full frequency
      * without resonance, envelope or key tracking) is the EOS bypass state and creates no filter.
      * The effect and morph filter types of the EOS (phasers, flangers, vocal formants, EQ morphs)
-     * have no model equivalent and create no filter either.
+     * have no model equivalent and create no filter either. A cutoff which is parked at the end of
+     * its range and only opened up again by a modulation which is lost creates no filter either,
+     * see {@link #isCutoffParked}.
      *
      * @param body The content of the preset chunk
      * @param offset The offset of the voice block
@@ -657,7 +660,14 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         if (filterType == 0x00 && cutoff == 255 && resonance == 0 && filterEnvelopeDepth == 0 && filterKeyTracking == 0)
             return null;
 
-        final IFilter filter = new DefaultFilter (type, poles, Emulator4Constants.cutoffToHertz (cutoff), Math.clamp (resonance / 127.0, 0, 1));
+        final double cutoffHertz = Emulator4Constants.cutoffToHertz (cutoff);
+        final int parkedEnd = isCutoffParked (type, cutoffHertz);
+        // The filter envelope is converted, so an envelope which pulls the cutoff away from that
+        // end does open the voice up again in the model as well and its filter is kept
+        if (parkedEnd != 0 && filterEnvelopeDepth * parkedEnd <= 0 && hasLostCutoffModulation (body, offset))
+            return null;
+
+        final IFilter filter = new DefaultFilter (type, poles, cutoffHertz, Math.clamp (resonance / 127.0, 0, 1));
         filter.setCutoffKeyTracking (filterKeyTracking);
 
         if (filterEnvelopeDepth != 0)
@@ -674,5 +684,58 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         return filter;
+    }
+
+
+    /**
+     * Test whether the cutoff is parked at an end of its range at which the filter suppresses the
+     * whole signal: a low-pass which is closed down to the bottom, a high-pass which is opened up
+     * to the top and a band-pass at either of the two.
+     *
+     * @param type The type of the filter
+     * @param cutoffHertz The cutoff frequency in Hertz
+     * @return 1 if the cutoff is parked at the bottom, -1 if it is parked at the top and 0 if it is
+     *         not parked; the sign is the direction a modulation has to take to open it up again
+     */
+    private static int isCutoffParked (final FilterType type, final double cutoffHertz)
+    {
+        // A band-rejection at an end of its range passes everything instead of nothing
+        if (type == FilterType.BAND_REJECTION)
+            return 0;
+        if (cutoffHertz <= Emulator4Constants.CLOSED_LOW_PASS_HERTZ && type != FilterType.HIGH_PASS)
+            return 1;
+        if (cutoffHertz >= Emulator4Constants.CLOSED_HIGH_PASS_HERTZ && type != FilterType.LOW_PASS)
+            return -1;
+        return 0;
+    }
+
+
+    /**
+     * Test whether a modulation cord routes something into the filter cutoff which the model cannot
+     * hold. Only the filter envelope and the key tracking have a counterpart there; velocity, the
+     * assignable MIDI controllers, the LFOs and the auxiliary envelope are lost. Presets of the EOS
+     * libraries commonly park the cutoff at an end of its range and open it up again with such a
+     * cord. Once it is lost, what is left is a filter which removes the whole signal - on 'Producer
+     * Series Vol. 7 - Old World Instruments' every single one of the 2062 low-pass voices sits at
+     * the bottom of the range - so leaving the filter out is much closer to the original than the
+     * silence it would create.
+     *
+     * @param body The content of the preset chunk
+     * @param offset The offset of the voice block
+     * @return True if such a cord exists
+     */
+    private static boolean hasLostCutoffModulation (final byte [] body, final int offset)
+    {
+        final int modOffset = offset + Emulator4Constants.VOICE_MOD_OFFSET;
+        for (int slot = 0; slot < Emulator4Constants.NUM_MOD_CORDS; slot++)
+        {
+            final int cordOffset = modOffset + slot * Emulator4Constants.MOD_CORD_SIZE;
+            if ((body[cordOffset + Emulator4Constants.MOD_CORD_DESTINATION] & 0xFF) != Emulator4Constants.MOD_DEST_CUTOFF || body[cordOffset + Emulator4Constants.MOD_CORD_AMOUNT] == 0)
+                continue;
+            final int source = body[cordOffset + Emulator4Constants.MOD_CORD_SOURCE] & 0xFF;
+            if (source != Emulator4Constants.MOD_SOURCE_FILTER_ENVELOPE && source != Emulator4Constants.MOD_SOURCE_KEY)
+                return true;
+        }
+        return false;
     }
 }
