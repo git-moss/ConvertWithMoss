@@ -478,6 +478,15 @@ public interface ISampleZone
 
 
     /**
+     * Get the low frequency oscillator modulator for the amplitude, which is commonly called
+     * tremolo. A depth of zero means that there is no tremolo.
+     *
+     * @return The modulator, never null
+     */
+    ILfoModulator getAmplitudeLfoModulator ();
+
+
+    /**
      * Get the pitch modulator.
      *
      * @return The modulator, never null
