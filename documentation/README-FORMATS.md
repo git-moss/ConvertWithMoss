@@ -238,7 +238,7 @@ A dspreset file contains a single preset and the description of the multi-sample
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
-A pitch LFO (vibrato) is converted as an `<lfo>` bound to the group tuning, carrying its rate (in Hertz), depth and delay. The oscillator's fade-in has no equivalent and is dropped, and the waveform is mapped to the nearest of sine, square and saw.
+A pitch LFO (vibrato) is converted as an `<lfo>` bound to the group tuning, carrying its rate (in Hertz), depth and delay. The oscillator's fade-in has no equivalent and is dropped, and the waveform is mapped to the nearest of sine, square and saw. A volume LFO (tremolo) is converted as an `<lfo>` bound to the group volume in the same way; since the volume parameter is linear, the depth in decibels is translated into the linear swing whose lowest point lies that many decibels below full volume.
 
 ### Source Options
 
@@ -280,7 +280,7 @@ Both the program (.zbp) as well as the bank (.zbb) are stored as monoliths (zipp
 The DLS format (*.dls) is a standardized file format developed for storing and distributing collections of digital musical instrument sounds, enabling their use in software synthesizers and hardware devices compatible with the MIDI protocol. It encapsulates audio samples, instrument definitions, articulations, and performance parameters into a single file. Developed in the 1990s initially by the Interactive Audio Special Interest Group (IASIG) and later standardized by the MIDI Manufacturers Association (MMA), with the first formal specification released in 1999.
 There is no write support.
 
-The amplitude and pitch envelopes, the sample loops and a pitch LFO (vibrato) are read. The vibrato's depth, its frequency (converted from absolute pitch cents to Hertz) and its start delay are carried over to the pitch LFO. Only a connection which is not modulated by a controller is read as the vibrato; the format normally contains a second one controlled by the modulation wheel, which is the amount the wheel can dial in and would sound permanently if it were converted.
+The amplitude and pitch envelopes, the sample loops and a pitch LFO (vibrato) are read. The vibrato's depth, its frequency (converted from absolute pitch cents to Hertz) and its start delay are carried over to the pitch LFO. Only a connection which is not modulated by a controller is read as the vibrato; the format normally contains a second one controlled by the modulation wheel, which is the amount the wheel can dial in and would sound permanently if it were converted. A volume LFO (tremolo) is read from an uncontrolled connection of the oscillator to the gain under the same rule; it shares the frequency and delay of the vibrato since the format has only one modulation oscillator.
 ## E-mu Emulator IV
 
 The E-mu Emulator IV series (Emulator 4, E4X, E4XT, E4K, e-Synth, e-6400 and the other EOS samplers, 1994-2002) stores its banks in single *.e4b* files which contain all presets, their parameters and the sample data. A preset layers several voices; each voice maps a set of zones (a key/velocity range referencing a sample) and carries the tuning, volume, filter, envelope and modulation settings for them. The format is not documented by E-mu, the layout was reverse-engineered by the mpc2emu project from hardware-saved E4XT banks and commercial EOS CD-ROMs (see *documentation/design/E4B_FORMAT.md*).
@@ -704,7 +704,7 @@ The SFZ file contains only the description of the multi-sample. The related samp
 
 SFZ can only mark a sample as a one-shot (`loop_mode=one_shot`) if it has no loop. A looped zone therefore keeps its loop and is not written as a one-shot.
 
-A pitch LFO (vibrato) is read and written via the `pitchlfo_freq` (Hertz), `pitchlfo_depth` (cent), `pitchlfo_delay` and `pitchlfo_fade` (seconds) opcodes.
+A pitch LFO (vibrato) is read and written via the `pitchlfo_freq` (Hertz), `pitchlfo_depth` (cent), `pitchlfo_delay` and `pitchlfo_fade` (seconds) opcodes. A volume LFO (tremolo) is read and written via the `amplfo_freq` (Hertz), `amplfo_depth` (decibels), `amplfo_delay` and `amplfo_fade` (seconds) opcodes.
 
 ### Source Options
 
@@ -724,7 +724,7 @@ The conversion process creates one destination file for each preset found in a S
 
 There are metadata fields for creator and some description specified in the format. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
-The vibrato low frequency oscillator (generators `vibLfoToPitch`, `freqVibLFO` and `delayVibLFO`) is converted to and from the pitch LFO, carrying its depth, rate and delay. The waveform is always a triangle in this format and there is no fade-in.
+The vibrato low frequency oscillator (generators `vibLfoToPitch`, `freqVibLFO` and `delayVibLFO`) is converted to and from the pitch LFO, carrying its depth, rate and delay. The volume modulation of the modulation low frequency oscillator (generators `modLfoToVolume`, `freqModLfo` and `delayModLfo`) is converted to and from the volume LFO (tremolo) in the same way. The waveform is always a triangle in this format and there is no fade-in.
 
 ### Source Options
 
