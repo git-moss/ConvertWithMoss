@@ -116,7 +116,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
 
             zone.setNoteCrossfadeLow (kontaktZone.getFadeLowKey ());
             zone.setNoteCrossfadeHigh (kontaktZone.getFadeHighKey ());
-            zone.setVelocityCrossfadeLow (kontaktZone.getFadeLowKey ());
+            zone.setVelocityCrossfadeLow (kontaktZone.getFadeLowVelocity ());
             zone.setVelocityCrossfadeHigh (kontaktZone.getFadeHighVelocity ());
 
             // Only on a group level...
