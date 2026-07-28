@@ -13,7 +13,7 @@
   * New: Added tooltips to format lists to be able to see the full text of an entry.
 * Backend
   * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
-  * New: Added support for a LFO modulating the volume (tremolo) with its rate, depth and delay: DecentSampler, DLS, SFZ, SoundFont 2. Other formats pending.
+  * New: Added support for a LFO modulating the volume (tremolo) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
 * E-mu Emulator III
   * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.
@@ -23,6 +23,7 @@
 * Renoise
   * Fixed: A modulation set was created for every key zone. Now zones with identical modulation share one set, which gives the usual single instrument-wide modulation set; additional sets are only created for zones which genuinely modulate differently.
   * New: A pitch LFO (vibrato) is read from and written as a LFO modulation device (waveform, rate, depth and onset time; the value curves were calibrated against Renoise 3.5.4).
+  * New: A volume LFO (tremolo) is read from and written as a LFO modulation device targeting the volume; since the volume chain is linear, the depth in decibels is expressed as the linear swing whose lowest point lies that many decibels below full volume.
 * Waldorf Quantum/Iridium
   * New: A source which carries its bank in front of its name is written without it in the preset name, since the device shows the bank in a field of its own. The file name keeps the full name. An explicit Bank from the settings replaces the source's bank, in which case the name keeps it.
 

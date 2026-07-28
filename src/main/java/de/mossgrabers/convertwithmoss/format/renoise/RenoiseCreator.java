@@ -281,9 +281,9 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Create the modulation set for one zone. It holds the amplitude envelope and - if present -
-     * the sampler filter (type, cutoff, resonance and filter envelope), the pitch envelope and the
-     * pitch LFO (vibrato). The created element is not appended to the document and does not
-     * contain a name element yet.
+     * the sampler filter (type, cutoff, resonance and filter envelope), the pitch envelope, the
+     * pitch LFO (vibrato) and the volume LFO (tremolo). The created element is not appended to the
+     * document and does not contain a name element yet.
      *
      * @param document The XML document
      * @param zone The zone from which to read the modulation information
@@ -330,7 +330,11 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 
         final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
         if (pitchLfoModulator.getDepth () != 0 && pitchLfoModulator.getSource ().isSet ())
-            createLfoDevice (document, devicesElement, pitchLfoModulator);
+            createLfoDevice (document, devicesElement, RenoiseTag.TARGET_PITCH, RenoiseValueConverter.lfoDepthToAmplitude (pitchLfoModulator.getDepth ()), pitchLfoModulator);
+
+        final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
+        if (amplitudeLfoModulator.getDepth () != 0 && amplitudeLfoModulator.getSource ().isSet ())
+            createLfoDevice (document, devicesElement, RenoiseTag.TARGET_VOLUME, RenoiseValueConverter.volumeLfoDepthToAmplitude (amplitudeLfoModulator.getDepth ()), amplitudeLfoModulator);
 
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.FILTER_TYPE, Integer.toString (filterTypeIndex));
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.FILTER_BANK_VERSION, Integer.toString (RenoiseFilterType.FILTER_BANK_VERSION));
@@ -435,19 +439,22 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Create a LFO modulation device which modulates the pitch (vibrato).
+     * Create a LFO modulation device which modulates the given target, e.g. the pitch (vibrato) or
+     * the volume (tremolo).
      *
      * @param document The XML document
      * @param devicesElement The devices element to which to add the device
-     * @param lfoModulator The pitch LFO modulator to write
+     * @param target The modulation target, see the TARGET_* constants
+     * @param amplitude The LFO amplitude [0..1] already converted for the target
+     * @param lfoModulator The LFO modulator to write
      */
-    private static void createLfoDevice (final Document document, final Element devicesElement, final ILfoModulator lfoModulator)
+    private static void createLfoDevice (final Document document, final Element devicesElement, final String target, final double amplitude, final ILfoModulator lfoModulator)
     {
         final Element deviceElement = XMLUtils.addElement (document, devicesElement, RenoiseTag.LFO_DEVICE);
         deviceElement.setAttribute (RenoiseTag.ATTR_TYPE, RenoiseTag.LFO_DEVICE);
 
         addParameter (document, deviceElement, RenoiseTag.IS_ACTIVE, 1.0);
-        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TARGET, RenoiseTag.TARGET_PITCH);
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TARGET, target);
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.OPERATOR, RenoiseTag.OP_ADD);
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.BIPOLAR, "true");
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TEMPO_SYNCED, "false");
@@ -455,7 +462,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final ILfo lfo = lfoModulator.getSource ();
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.LFO_MODE, waveformToMode (lfo.getWaveform ()));
         addParameter (document, deviceElement, RenoiseTag.LFO_FREQUENCY, RenoiseValueConverter.lfoRateToRenoise (lfo.getRate ()));
-        addParameter (document, deviceElement, RenoiseTag.LFO_AMPLITUDE, RenoiseValueConverter.lfoDepthToAmplitude (lfoModulator.getDepth ()));
+        addParameter (document, deviceElement, RenoiseTag.LFO_AMPLITUDE, amplitude);
         final double startPhase = lfo.getStartPhase ();
         addParameter (document, deviceElement, RenoiseTag.LFO_DEPHASE, startPhase > 0 ? startPhase * 360.0 : 0);
         // Renoise has a single onset time which ramps the LFO in, therefore delay and fade-in are

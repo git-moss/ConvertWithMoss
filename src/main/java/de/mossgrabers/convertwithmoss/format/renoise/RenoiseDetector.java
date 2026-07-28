@@ -293,6 +293,11 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                 zone.getPitchLfoModulator ().setSource (modulationSet.pitchLfo);
                 zone.getPitchLfoModulator ().setDepth (modulationSet.pitchLfoDepth);
             }
+            if (modulationSet.volumeLfo != null && modulationSet.volumeLfoDepth > 0)
+            {
+                zone.getAmplitudeLfoModulator ().setSource (modulationSet.volumeLfo);
+                zone.getAmplitudeLfoModulator ().setDepth (modulationSet.volumeLfoDepth);
+            }
             final Optional<IFilter> filter = modulationSet.createFilter ();
             if (filter.isPresent ())
                 zone.setFilter (filter.get ());
@@ -456,6 +461,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                 }
 
                 readPitchLfo (devicesElement, modulationSet, pitchModulationRange);
+                readVolumeLfo (devicesElement, modulationSet);
             }
 
             result.add (modulationSet);
@@ -483,19 +489,56 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             if (depth == 0)
                 continue;
 
-            final ILfo lfo = new DefaultLfo ();
-            lfo.setWaveform (modeToWaveform (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.LFO_MODE)));
-            lfo.setRate (RenoiseValueConverter.lfoRateToHertz (paramValue (deviceElement, RenoiseTag.LFO_FREQUENCY, 0)));
-            final double delaySeconds = RenoiseValueConverter.lfoDelayToSeconds (paramValue (deviceElement, RenoiseTag.LFO_DELAY, 0));
-            if (delaySeconds > 0)
-                lfo.setDelay (delaySeconds);
-            final double dephase = paramValue (deviceElement, RenoiseTag.LFO_DEPHASE, 0);
-            if (dephase > 0)
-                lfo.setStartPhase (Math.clamp (dephase / 360.0, 0, 1));
-            modulationSet.pitchLfo = lfo;
+            modulationSet.pitchLfo = readLfoDevice (deviceElement);
             modulationSet.pitchLfoDepth = depth;
             return;
         }
+    }
+
+
+    /**
+     * Read the first active LFO device which modulates the volume (tremolo) into the modulation
+     * set.
+     *
+     * @param devicesElement The devices element of the modulation set
+     * @param modulationSet The modulation set to fill
+     */
+    private static void readVolumeLfo (final Element devicesElement, final ModulationSet modulationSet)
+    {
+        for (final Element deviceElement: XMLUtils.getChildElementsByName (devicesElement, RenoiseTag.LFO_DEVICE, false))
+        {
+            if (!RenoiseTag.TARGET_VOLUME.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0)
+                continue;
+
+            final double depth = RenoiseValueConverter.amplitudeToVolumeLfoDepth (paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0));
+            if (depth == 0)
+                continue;
+
+            modulationSet.volumeLfo = readLfoDevice (deviceElement);
+            modulationSet.volumeLfoDepth = depth;
+            return;
+        }
+    }
+
+
+    /**
+     * Read the waveform, rate, onset time and start phase of a LFO device.
+     *
+     * @param deviceElement The LFO device element
+     * @return The filled oscillator of the model
+     */
+    private static ILfo readLfoDevice (final Element deviceElement)
+    {
+        final ILfo lfo = new DefaultLfo ();
+        lfo.setWaveform (modeToWaveform (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.LFO_MODE)));
+        lfo.setRate (RenoiseValueConverter.lfoRateToHertz (paramValue (deviceElement, RenoiseTag.LFO_FREQUENCY, 0)));
+        final double delaySeconds = RenoiseValueConverter.lfoDelayToSeconds (paramValue (deviceElement, RenoiseTag.LFO_DELAY, 0));
+        if (delaySeconds > 0)
+            lfo.setDelay (delaySeconds);
+        final double dephase = paramValue (deviceElement, RenoiseTag.LFO_DEPHASE, 0);
+        if (dephase > 0)
+            lfo.setStartPhase (Math.clamp (dephase / 360.0, 0, 1));
+        return lfo;
     }
 
 
@@ -672,7 +715,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Holds the envelopes, the pitch LFO and the sampler filter of one Renoise modulation set.
+     * Holds the envelopes, the pitch and volume LFOs and the sampler filter of one Renoise
+     * modulation set.
      */
     private static class ModulationSet
     {
@@ -694,6 +738,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         IEnvelope                   cutoffEnvelope;
         ILfo                        pitchLfo;
         double                      pitchLfoDepth;
+        ILfo                        volumeLfo;
+        double                      volumeLfoDepth;
         int                         filterTypeIndex                 = RenoiseFilterType.INDEX_NONE;
         double                      cutoffValue                     = -1;
         double                      resonanceValue                  = -1;

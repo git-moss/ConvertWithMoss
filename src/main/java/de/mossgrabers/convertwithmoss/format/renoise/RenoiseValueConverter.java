@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.renoise;
 
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 
 
 /**
@@ -328,6 +329,39 @@ public final class RenoiseValueConverter
     {
         final double semitones = Math.abs (depth) * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
         return Math.clamp (semitones / PITCH_MODULATION_RANGE, 0, 1);
+    }
+
+
+    /**
+     * Convert a volume modulation depth of the model ([-1..1], 1 = the full volume depth in dB) to
+     * the Renoise LFO amplitude. The volume chain is linear, therefore the depth in decibels is
+     * expressed as the linear swing whose lowest point lies that many decibels below full volume.
+     *
+     * @param depth The modulation depth [-1..1]
+     * @return The LFO amplitude [0..1]
+     */
+    public static double volumeLfoDepthToAmplitude (final double depth)
+    {
+        final double decibels = Math.abs (depth) * ILfoModulator.MAX_VOLUME_DEPTH;
+        return Math.clamp (1.0 - Math.pow (10.0, -decibels / 20.0), 0, 1);
+    }
+
+
+    /**
+     * Convert a Renoise LFO amplitude of a volume LFO to a modulation depth of the model ([0..1],
+     * 1 = the full volume depth in dB). This is the inverse of
+     * {@link #volumeLfoDepthToAmplitude(double)}.
+     *
+     * @param amplitude The LFO amplitude [0..1]
+     * @return The modulation depth [0..1]
+     */
+    public static double amplitudeToVolumeLfoDepth (final double amplitude)
+    {
+        final double clamped = Math.clamp (amplitude, 0, 1);
+        if (clamped >= 1)
+            return 1;
+        final double decibels = -20.0 * Math.log10 (1.0 - clamped);
+        return Math.clamp (decibels / ILfoModulator.MAX_VOLUME_DEPTH, 0, 1);
     }
 
 
