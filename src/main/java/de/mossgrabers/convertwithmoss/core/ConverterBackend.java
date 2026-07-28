@@ -137,7 +137,7 @@ public class ConverterBackend
             // Banks and disk images of hardware samplers
             "EIII", "E4B", "EXB", "ISO", "Ensoniq", "Mirage", "S900", "S1000", "MPC2000", "MPC60", "Kurzweil", "KMP", "S5xx", "S7xx",
             // Projects and libraries which hold several presets
-            "MC707", "SP404MK2", "1010music", "Bento", "Ysfc", "Nki", "Sf2", "DLS", "ZBP", "DecentSampler", "Ableton");
+            "MC707", "SP404MK2", "ZenCore", "1010music", "Bento", "Ysfc", "Nki", "Sf2", "DLS", "ZBP", "DecentSampler", "Ableton");
 
     protected INotifier                    notifier;
     protected final List<IDetector<?>>     detectors;
