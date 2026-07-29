@@ -109,7 +109,7 @@ public class KSFFile
                     final int s = in.readInt ();
                     // Originally in the Triton the start is only 3 bytes! The first byte is the
                     // 'default bank' (0–3) but documented as 4 byte start in the later workstations
-                    zone.setStart (s & 0xFFF);
+                    zone.setStart (s & 0xFFFFFF);
 
                     // No idea what 'second start' is, seems to be identical to loop start
                     in.readInt ();
@@ -148,7 +148,7 @@ public class KSFFile
 
                     // Boost by 12dB
                     if ((attributes & 1) > 0)
-                        zone.setGain (boostDecibels (zone.getGain (), 12.0));
+                        zone.setGain (zone.getGain () + 12.0);
 
                     if ((attributes & 0x10) > 0)
                         throw new ParseException (Functions.getMessage ("IDS_KMP_COMPRESSED_DATA_NOT_SUPPORTED"));
@@ -367,21 +367,5 @@ public class KSFFile
     {
         final String name = filename.replaceAll ("[\\\\/:*?\"<>|&\\.#]", "_").trim ();
         return name.length () == 1 ? "NAME" + name : name;
-    }
-
-
-    private static double boostDecibels (final double originalDb, final double boostDb)
-    {
-        // Convert original dB to linear scale
-        final double originalLinear = Math.pow (10, originalDb / 10);
-
-        // Convert boost dB to linear scale
-        final double boostLinear = Math.pow (10, boostDb / 10);
-
-        // Add the linear values
-        final double newLinear = originalLinear + boostLinear;
-
-        // Convert back to dB
-        return 10 * Math.log10 (newLinear);
     }
 }
