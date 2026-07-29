@@ -25,7 +25,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
@@ -258,24 +258,24 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
 
             final MirageProgram program = sampleCounter < 8 ? mirageProgramLower : mirageProgramUpper;
 
-            final IEnvelopeModulator ampEnvelopeModulation = createEnvelopeModulation (program.ampEnvelopeAttack, program.ampEnvelopeDecay, program.ampEnvelopeSustain, program.ampEnvelopeRelease, program.ampEnvelopeSustainVelocity, program.ampEnvelopeAttackVelocity, program.ampEnvelopeDecayVelocity);
             final IEnvelopeModulator amplitudeEnvelopeModulator = osc1SampleZone.getAmplitudeEnvelopeModulator ();
-            amplitudeEnvelopeModulator.setDepth (ampEnvelopeModulation.getDepth ());
-            amplitudeEnvelopeModulator.setSource (ampEnvelopeModulation.getSource ());
+            amplitudeEnvelopeModulator.setDepth (1);
+            amplitudeEnvelopeModulator.setSource (createEnvelope (program.ampEnvelopeAttack, program.ampEnvelopeDecay, program.ampEnvelopeSustain, program.ampEnvelopeRelease, program.ampEnvelopeAttackVelocity, program.ampEnvelopeDecayVelocity));
+            // The sustain velocity parameter describes how much the velocity scales the level
+            // (0 = velocity has no effect), which is the velocity modulation amount of the model
+            osc1SampleZone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (program.ampEnvelopeSustainVelocity / 124.0, 0, 1));
 
             final double resonance = Math.clamp (program.resonance, 0, 160) / 160.0;
             final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 4, valueToFrequency (program.filterCutoffFreq + mirageWaveSample.relativeFilterFreq), resonance);
             final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
-            final IEnvelopeModulator filterEnvelopeModulation = createEnvelopeModulation (program.filterEnvelopeAttack, program.filterEnvelopeDecay, program.filterEnvelopeSustain, program.filterEnvelopeRelease, program.filterEnvelopeSustainVelocity, program.filterEnvelopeAttackVelocity, program.filterEnvelopeDecayVelocity);
-            cutoffEnvelopeModulator.setDepth (filterEnvelopeModulation.getDepth ());
-            cutoffEnvelopeModulator.setSource (filterEnvelopeModulation.getSource ());
+            cutoffEnvelopeModulator.setDepth (1);
+            cutoffEnvelopeModulator.setSource (createEnvelope (program.filterEnvelopeAttack, program.filterEnvelopeDecay, program.filterEnvelopeSustain, program.filterEnvelopeRelease, program.filterEnvelopeAttackVelocity, program.filterEnvelopeDecayVelocity));
+            filter.getCutoffVelocityModulator ().setDepth (Math.clamp (program.filterEnvelopeSustainVelocity / 124.0, 0, 1));
 
-            // Not sure about the filter values, therefore, prevent totally closed filter
-            if (cutoffEnvelopeModulator.getDepth () != 0 || filter.getCutoff () > 8000)
-            {
-                filter.setCutoffKeyTracking (program.filterKybdTracking / 4.0);
-                osc1SampleZone.setFilter (filter);
-            }
+            // The filter envelope always ramps up to the full level after the attack, so with the
+            // full modulation depth the filter cannot stay totally closed
+            filter.setCutoffKeyTracking (program.filterKybdTracking / 4.0);
+            osc1SampleZone.setFilter (filter);
 
             // Note: program.mixVelocitySensitivity is ignored since results do not work...
 
@@ -295,17 +295,16 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             osc2SampleZone.setSampleData (sampleData.get ());
             // Tune the 2nd oscillator upwards, interpret as 1 cent
             osc2SampleZone.setTuning (osc2SampleZone.getTuning () + program.oscDetune / 100.0);
-            osc2Group.addSampleZone (osc2SampleZone);
 
             // Adjust the volume between OSC1 and OSC2 with an equal-power cross-fade
             final double mix = program.oscMix / 252.0;
-            osc1SampleZone.setGain (Math.pow (10.0, osc1SampleZone.getGain () / 20.0) * Math.cos (mix * Math.PI * 0.5));
-            osc2SampleZone.setGain (Math.pow (10.0, osc2SampleZone.getGain () / 20.0) * Math.sin (mix * Math.PI * 0.5));
+            osc1SampleZone.setGain (osc1SampleZone.getGain () + MathUtils.valueToDb (Math.cos (mix * Math.PI * 0.5)));
+            osc2SampleZone.setGain (osc2SampleZone.getGain () + MathUtils.valueToDb (Math.sin (mix * Math.PI * 0.5)));
 
             if (program.oscMix < 252)
                 osc1Group.addSampleZone (osc1SampleZone);
             if (program.oscMix > 0)
-                osc1Group.addSampleZone (osc2SampleZone);
+                osc2Group.addSampleZone (osc2SampleZone);
 
             // Assign even wave-samples to OSC1 & assign un-even wave-samples to OSC2 -> but
             // apply parameters of uneven wave-sample!
@@ -367,10 +366,9 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static IEnvelopeModulator createEnvelopeModulation (final int attack, final int decay, final int sustain, final int release, final int sustainVelocity, final int attackVelocity, final int decayKeyScaling)
+    private static IEnvelope createEnvelope (final int attack, final int decay, final int sustain, final int release, final int attackVelocity, final int decayKeyScaling)
     {
-        final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (sustainVelocity / 124.0);
-        final IEnvelope envelope = modulator.getSource ();
+        final IEnvelope envelope = new DefaultEnvelope ();
         envelope.setAttackTime (parseTime (attack));
         envelope.setDecayTime (parseTime (decay));
         envelope.setSustainLevel (parseVolume (sustain));
@@ -387,7 +385,7 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
         // the decay whereas the model scales all times of the envelope.
         envelope.setTimeKeyTracking (Math.clamp (decayKeyScaling / 124.0, 0, 1));
 
-        return modulator;
+        return envelope;
     }
 
 
