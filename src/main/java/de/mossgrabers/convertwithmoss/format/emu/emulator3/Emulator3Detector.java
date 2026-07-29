@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -24,7 +25,10 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -37,6 +41,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emu3DiskImage;
+import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -52,8 +57,11 @@ import de.mossgrabers.tools.FileUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
+public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
 {
+    /** How many banks the last image read held, which decides whether it is reported as empty. */
+    private int                 numberOfReadBanks         = 0;
+
     private static final String IDS_EIII_MALFORMED_SAMPLE = "IDS_EIII_MALFORMED_SAMPLE";
     /** How many indices a log message lists before it is cut off. */
     private static final int    MAXIMUM_REPORTED_INDICES  = 10;
@@ -145,8 +153,28 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      */
     private List<IMultisampleSource> parseImage (final File sourceFile) throws IOException
     {
+        final List<IMultisampleSource> results = this.readImageBanks (sourceFile);
+        if (this.numberOfReadBanks == 0)
+            this.notifier.logError ("IDS_EIII_NO_BANKS_IN_IMAGE", sourceFile.getName ());
+        else
+            this.notifier.log ("IDS_EIII_READING_IMAGE", sourceFile.getName (), Integer.toString (this.numberOfReadBanks));
+        return results;
+    }
+
+
+    /**
+     * Read all Emulator III banks of an E-mu disk image without reporting an image which holds
+     * none. The EIII and the EOS samplers share this filesystem, so the generic ISO/IMG format has
+     * to try both of them on the same image and can only report an empty result once.
+     *
+     * @param sourceFile The image file
+     * @return The multi-sample sources, empty if the image holds no EIII bank
+     * @throws IOException Could not read the image
+     */
+    public List<IMultisampleSource> readImageBanks (final File sourceFile) throws IOException
+    {
         final List<IMultisampleSource> results = new ArrayList<> ();
-        int numBanks = 0;
+        this.numberOfReadBanks = 0;
         for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
         {
             // Skip the files which are not EIII banks, e.g. the operating system of the sampler or
@@ -155,16 +183,12 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             final Emulator3BankFormat bankFormat = Emulator3BankFormat.get (content);
             if (bankFormat == null)
                 continue;
-            numBanks++;
+            this.numberOfReadBanks++;
             results.addAll (this.parseBank (sourceFile, imageFile.getName (), content, bankFormat));
 
             if (this.waitForDelivery ())
                 break;
         }
-        if (numBanks == 0)
-            this.notifier.logError ("IDS_EIII_NO_BANKS_IN_IMAGE", sourceFile.getName ());
-        else
-            this.notifier.log ("IDS_EIII_READING_IMAGE", sourceFile.getName (), Integer.toString (numBanks));
         return results;
     }
 
@@ -300,6 +324,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
         // Presets which another preset links to are layered on top of it and are therefore not
         // converted on their own
         final Set<Integer> linkedPresets = new HashSet<> ();
+        final List<Integer> presetOffsets = new ArrayList<> ();
         for (int i = 0; i < maxPresets; i++)
         {
             if (!isPresetPresent (data, bankFormat, i))
@@ -307,6 +332,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             final int presetOffset = getPresetOffset (data, bankFormat, i);
             if (presetOffset < 0)
                 continue;
+            presetOffsets.add (Integer.valueOf (presetOffset));
             // The link is a single byte, not the 16 bit value emu3bm reads: the byte behind it is
             // an independent parameter which about 1% of the library presets set, which made
             // their links look out of range and lose the layered preset
@@ -315,12 +341,26 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
                 linkedPresets.add (Integer.valueOf (link - 1));
         }
 
+        // Many banks of the E-mu library CD-ROMs store their zone sample indices without the
+        // high byte, see Emulator3SampleIndexRepair
+        final Map<Integer, String> sampleNames = new HashMap<> ();
+        for (final Map.Entry<Integer, Sample> entry: samplesByIndex.entrySet ())
+            sampleNames.put (entry.getKey (), entry.getValue ().name);
+        final Map<Integer, Map<Integer, Integer>> repairsByPresetOffset = Emulator3SampleIndexRepair.resolveBank (data, presetOffsets, sampleNames);
+        if (!repairsByPresetOffset.isEmpty ())
+        {
+            int repairedReferences = 0;
+            for (final Map<Integer, Integer> mapping: repairsByPresetOffset.values ())
+                repairedReferences += mapping.size ();
+            this.notifier.log ("IDS_EIII_REPAIRED_INDICES", Integer.toString (repairedReferences), Integer.toString (repairsByPresetOffset.size ()), bankName);
+        }
+
         final List<IMultisampleSource> results = new ArrayList<> ();
         for (int i = 0; i < maxPresets; i++)
         {
             if (!isPresetPresent (data, bankFormat, i) || linkedPresets.contains (Integer.valueOf (i)))
                 continue;
-            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, data, bankFormat, i, maxPresets, samplesByIndex);
+            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, data, bankFormat, i, maxPresets, samplesByIndex, repairsByPresetOffset);
             if (multisampleSource != null)
                 results.add (multisampleSource);
         }
@@ -462,9 +502,10 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      * @param presetIndex The index of the preset
      * @param numPresets The number of presets of the bank
      * @param samplesByIndex The samples of the bank by their 1-based index
+     * @param repairsByPresetOffset The repaired zone sample indices by preset offset
      * @return The multi-sample source or null if the preset has no usable zones
      */
-    private IMultisampleSource parsePreset (final File sourceFile, final String bankName, final byte [] data, final Emulator3BankFormat bankFormat, final int presetIndex, final int numPresets, final Map<Integer, Sample> samplesByIndex)
+    private IMultisampleSource parsePreset (final File sourceFile, final String bankName, final byte [] data, final Emulator3BankFormat bankFormat, final int presetIndex, final int numPresets, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Map<Integer, Integer>> repairsByPresetOffset)
     {
         final int presetOffset = getPresetOffset (data, bankFormat, presetIndex);
         if (presetOffset < 0)
@@ -481,7 +522,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             final int offset = getPresetOffset (data, bankFormat, currentIndex);
             if (offset < 0)
                 break;
-            this.parseLayers (data, bankFormat, offset, groups, samplesByIndex, missingSampleIndices, bankName);
+            this.parseLayers (data, bankFormat, offset, groups, samplesByIndex, repairsByPresetOffset.getOrDefault (Integer.valueOf (offset), Map.of ()), missingSampleIndices, bankName);
             final int link = data[offset + Emulator3Constants.PRESET_LINK] & 0xFF;
             currentIndex = link > 0 && link - 1 < numPresets ? link - 1 : -1;
         }
@@ -515,10 +556,11 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      * @param presetOffset The offset of the preset
      * @param groups Where to add the created groups
      * @param samplesByIndex The samples of the bank by their 1-based index
+     * @param indexRepairs The repaired zone sample indices of this preset
      * @param missingSampleIndices Where to collect the indices of referenced but absent samples
      * @param bankName The name of the bank
      */
-    private void parseLayers (final byte [] data, final Emulator3BankFormat bankFormat, final int presetOffset, final List<IGroup> groups, final Map<Integer, Sample> samplesByIndex, final Set<Integer> missingSampleIndices, final String bankName)
+    private void parseLayers (final byte [] data, final Emulator3BankFormat bankFormat, final int presetOffset, final List<IGroup> groups, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Integer> indexRepairs, final Set<Integer> missingSampleIndices, final String bankName)
     {
         final int numNoteZones = data[presetOffset + Emulator3Constants.PRESET_NUM_NOTE_ZONES] & 0xFF;
         if (numNoteZones == 0)
@@ -559,9 +601,25 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
                 final int zone = zoneOffset + zoneIndex * Emulator3Constants.ZONE_SIZE;
                 if (zone + Emulator3Constants.ZONE_SIZE > data.length)
                     continue;
-                final ISampleZone sampleZone = this.parseZone (data, bankFormat, zone, presetOffset, keyLow + Emulator3Constants.KEY_OFFSET, keyHigh + Emulator3Constants.KEY_OFFSET, samplesByIndex, missingSampleIndices, bankName);
+                final ISampleZone sampleZone = this.parseZone (data, bankFormat, zone, presetOffset, keyLow + Emulator3Constants.KEY_OFFSET, keyHigh + Emulator3Constants.KEY_OFFSET, samplesByIndex, indexRepairs, missingSampleIndices, bankName);
                 if (sampleZone != null)
+                {
                     group.addSampleZone (sampleZone);
+
+                    // The chorus doubles the zone with a second, slightly detuned voice on its own
+                    // channel. The width of the detune is not documented anywhere; the pair is
+                    // detuned by +-7 cents, which keeps it centered on the original pitch
+                    if ((data[zone + Emulator3Constants.ZONE_FLAGS] & Emulator3Constants.ZONE_FLAG_CHORUS) > 0)
+                    {
+                        final ISampleZone chorusZone = new DefaultSampleZone (sampleZone);
+                        final Optional<ISampleData> chorusSampleData = sampleZone.getSampleData ();
+                        if (chorusSampleData.isPresent ())
+                            chorusZone.setSampleData (chorusSampleData.get ());
+                        sampleZone.setTuning (sampleZone.getTuning () - 0.07);
+                        chorusZone.setTuning (chorusZone.getTuning () + 0.07);
+                        group.addSampleZone (chorusZone);
+                    }
+                }
             }
 
             if (!group.getSampleZones ().isEmpty ())
@@ -618,15 +676,17 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      * @param keyLow The lowest key of the zone
      * @param keyHigh The highest key of the zone
      * @param samplesByIndex The samples of the bank by their 1-based index
+     * @param indexRepairs The repaired zone sample indices of the preset
      * @param missingSampleIndices Where to collect the indices of referenced but absent samples
      * @param bankName The name of the bank
      * @return The zone or null if its sample is not in the bank
      */
-    private ISampleZone parseZone (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int presetOffset, final int keyLow, final int keyHigh, final Map<Integer, Sample> samplesByIndex, final Set<Integer> missingSampleIndices, final String bankName)
+    private ISampleZone parseZone (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int presetOffset, final int keyLow, final int keyHigh, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Integer> indexRepairs, final Set<Integer> missingSampleIndices, final String bankName)
     {
-        final int sampleIndex = Emulator3Constants.getU16 (data, offset + Emulator3Constants.ZONE_SAMPLE_INDEX) & Emulator3Constants.ZONE_SAMPLE_INDEX_MASK;
-        if (sampleIndex == 0)
+        final int storedIndex = Emulator3Constants.getU16 (data, offset + Emulator3Constants.ZONE_SAMPLE_INDEX) & Emulator3Constants.ZONE_SAMPLE_INDEX_MASK;
+        if (storedIndex == 0)
             return null;
+        final int sampleIndex = indexRepairs.getOrDefault (Integer.valueOf (storedIndex), Integer.valueOf (storedIndex)).intValue ();
         final Sample sample = samplesByIndex.get (Integer.valueOf (sampleIndex));
         if (sample == null)
         {
@@ -679,9 +739,25 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             }
         }
 
-        final IFilter filter = createFilter (data, bankFormat, offset);
+        final IFilter filter = createFilter (data, bankFormat, offset, keyLow, zone.getKeyRoot ());
         if (filter != null)
             zone.setFilter (filter);
+
+        // The LFO of the zone: rate, delay and shape are shared by all of its routings, of which
+        // only the vibrato (LFO->Pitch) has a counterpart in the model. The depth of a full
+        // amount is not documented anywhere; it is treated as one semitone
+        final int lfoToPitch = data[offset + Emulator3Constants.ZONE_LFO_TO_PITCH];
+        if (lfoToPitch != 0)
+        {
+            final ILfoModulator lfoModulator = zone.getPitchLfoModulator ();
+            final ILfo lfo = lfoModulator.getSource ();
+            lfo.setWaveform (Emulator3Constants.getLfoWaveform (data[offset + Emulator3Constants.ZONE_VCF_TYPE_LFO_SHAPE] & 0xFF));
+            lfo.setRate (Emulator3Constants.getLfoRate (data[offset + Emulator3Constants.ZONE_LFO_RATE] & 0xFF));
+            final double lfoDelay = Emulator3Constants.getLfoDelay (data[offset + Emulator3Constants.ZONE_LFO_DELAY] & 0xFF);
+            if (lfoDelay > 0)
+                lfo.setDelay (lfoDelay);
+            lfoModulator.setDepth (Math.clamp (lfoToPitch / 127.0, -1, 1) * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
+        }
 
         // The pitch bend range belongs to the preset and applies to all of its zones
         final int pitchBendRange = data[presetOffset + Emulator3Constants.PRESET_PITCH_BEND_RANGE];
@@ -705,7 +781,7 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      * @param offset The offset of the zone
      * @return The filter or null if the zone does not use one
      */
-    private static IFilter createFilter (final byte [] data, final Emulator3BankFormat bankFormat, final int offset)
+    private static IFilter createFilter (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int keyLow, final int rootKey)
     {
         final int filterTypeAndShape = data[offset + Emulator3Constants.ZONE_VCF_TYPE_LFO_SHAPE] & 0xFF;
         final FilterType filterType = Emulator3Constants.getFilterType (filterTypeAndShape, bankFormat);
@@ -719,12 +795,17 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
         final double keyTracking = Math.clamp (data[offset + Emulator3Constants.ZONE_VCF_TRACKING] / 127.0 * 2.0, 0, 1);
 
         final double velocityDepth = Math.clamp (data[offset + Emulator3Constants.ZONE_VELOCITY_TO_VCF_CUTOFF] / 127.0, -1, 1);
-        // A low-pass which sits above the audible range and which nothing pulls down again removes
-        // nothing which can be heard, which is how the samplers switch their filter off. The
-        // cutoff parameter reaches up to 74 kHz and the banks park it at several values there -
-        // 0xEF and 0xFF are the two most common ones - so the frequency decides and not one value
+        // A low-pass which sits above the audible range and which nothing pulls down into it
+        // removes nothing which can be heard, which is how the samplers switch their filter off.
+        // The cutoff parameter reaches up to 74 kHz and the banks park it at several values there -
+        // 0xEF and 0xFF are the two most common ones - so the frequency decides and not one value.
+        // Only a negative envelope or velocity amount lowers the cutoff. The key tracking lowers it
+        // below the root key, so the lowest key of the zone has to stay above the limit as well -
+        // and it may never lift a cutoff which is audible at the root over the limit, which is why
+        // the smaller of the two decides
         final double cutoffFrequency = Emulator3Constants.getCutoffFrequency (cutoff);
-        if (filterType == FilterType.LOW_PASS && cutoffFrequency >= Emulator3Constants.INAUDIBLE_CUTOFF_HERTZ && resonance == 0 && envelopeDepth == 0 && keyTracking == 0 && velocityDepth == 0)
+        final double lowestCutoff = Math.min (cutoffFrequency, cutoffFrequency * Math.pow (2, keyTracking * (keyLow - rootKey) / 12.0));
+        if (filterType == FilterType.LOW_PASS && envelopeDepth >= 0 && velocityDepth >= 0 && lowestCutoff >= Emulator3Constants.INAUDIBLE_CUTOFF_HERTZ)
             return null;
 
         final IFilter filter = new DefaultFilter (filterType, Emulator3Constants.getFilterPoles (filterTypeAndShape, bankFormat), cutoffFrequency, resonance / 127.0);

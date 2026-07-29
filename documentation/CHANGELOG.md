@@ -4,17 +4,18 @@
 
 * Many thanks to David García Goñi for providing specifications of the E-mu formats and refined Kurzweil specifications!
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
-* New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
 * New: Added support for the E-mu Emulator III/IIIX/ESI bank format (E3B, E3X, ESI).
-* New: E-mu Emulator III banks can also be read directly from CD-ROM and hard disk images of the samplers (ISO, IMG, HDA), which use the same proprietary E-mu disk filesystem as the EOS samplers.
-* New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
 * New: Added support for the E-mu Emulator IV bank format (E4B). Banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format. New: Writing creates a bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7. Written banks have not been tested on real hardware yet.
+* New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
+* New: Added support for the Roland S-550 CD-Rom format.
+* New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
 * User Interface
   * New: Added tooltips to format lists to be able to see the full text of an entry.
 * Backend
   * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: Added support for a LFO modulating the volume (tremolo) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
+  * New: Added more instrument names to the category detector.
   * Fixed: Detecting a source which contains many presets was dominated by a fixed 10 millisecond pause taken after every single detected preset. A CD-ROM image of an E-mu sampler with 812 presets needed 11 seconds, of which 8 were that pause; two of them with 2339 presets needed 36 seconds. The pause is now taken every 64 presets, which keeps a cancellation responsive but takes the two images down to 1.4 seconds.
 * E-mu Emulator III
   * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.
@@ -25,6 +26,8 @@
   * Fixed: Presets which park their cutoff at an end of its range and open it up again with a modulation cord were converted to silence. Only the filter envelope and the key tracking of such a cord have a counterpart in the model - velocity, the assignable MIDI controllers and the LFOs are lost - so what was left was a filter which removes the whole signal (the reported '3DPads - 3DreamSwells' held a high-pass at 14.5 kHz, and every single low-pass voice of 'Old World Instruments' sits at the bottom of its range). Such a voice now gets no filter at all, which is much closer to the original than the silence; a voice whose filter envelope does open the cutoff up again keeps its filter. This affects 10390 of the 38783 filter voices of the E4 factory library.
 * Kurzweil K2x00
   * Fixed: An envelope stage with both a zero time and a zero level is unused on the device and keeps the level of the previous stage, but was read literally. A program which leaves its decay stage unused - like the reported FM basses, which sustain at the attack level and only fade out with a long release - was therefore converted to a silent preset. Additionally, the attack velocity is now converted as a cutoff modulation source of the F1 slot in both directions; the same programs open their nearly closed cutoff by velocity and converted very dull without it.
+* Roland S-5xx
+  * Fixed: Removed Null-characters from description texts.
 * Roland ZEN-Core
   * Fixed: A bank (a SVZ which holds one tone per preset, as written by the preset library destination) was read as one single multi-sample: all samples of the file were merged into it and only the shaping of its first tone was applied, so every preset but the first was lost. Each tone is now read as a multi-sample of its own, built from the multi-samples which its partials play. A SVZ with one tone is unchanged.
 * Renoise

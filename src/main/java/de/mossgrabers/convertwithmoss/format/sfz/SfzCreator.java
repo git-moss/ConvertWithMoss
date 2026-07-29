@@ -281,17 +281,20 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addIntegerAttribute (buffer, SfzOpcode.HI_KEY, limitToDefault (keyHigh, 127), true);
         }
 
+        // The fade ranges lie inside of the zone's range - anchoring them outside would both
+        // fade where the zone does not even play and destroy the fade range by the 0/127 clamps
+        // for zones at the edges
         final int crossfadeLow = zone.getNoteCrossfadeLow ();
         if (crossfadeLow > 0)
         {
-            addIntegerAttribute (buffer, SfzOpcode.XF_IN_LO_KEY, Math.max (0, keyLow - crossfadeLow), false);
-            addIntegerAttribute (buffer, SfzOpcode.XF_IN_HI_KEY, keyLow, true);
+            addIntegerAttribute (buffer, SfzOpcode.XF_IN_LO_KEY, keyLow, false);
+            addIntegerAttribute (buffer, SfzOpcode.XF_IN_HI_KEY, Math.min (127, keyLow + crossfadeLow), true);
         }
         final int crossfadeHigh = zone.getNoteCrossfadeHigh ();
         if (crossfadeHigh > 0)
         {
-            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_LO_KEY, keyHigh, false);
-            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, Math.min (127, keyHigh + crossfadeHigh), true);
+            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_LO_KEY, Math.max (0, keyHigh - crossfadeHigh), false);
+            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, keyHigh, true);
         }
 
         // -----------------------------------------------------------
@@ -304,18 +307,19 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (velocityHigh > 0 && velocityHigh < 127)
             addIntegerAttribute (buffer, SfzOpcode.HI_VEL, limitToDefault (velocityHigh, 127), true);
 
+        // See the key crossfade above: the fade ranges lie inside of the zone's range
         final int crossfadeVelocityLow = zone.getVelocityCrossfadeLow ();
         if (crossfadeVelocityLow > 0)
         {
-            addIntegerAttribute (buffer, SfzOpcode.XF_IN_LO_VEL, Math.max (0, velocityLow - crossfadeVelocityLow), false);
-            addIntegerAttribute (buffer, SfzOpcode.XF_IN_HI_VEL, velocityLow, true);
+            addIntegerAttribute (buffer, SfzOpcode.XF_IN_LO_VEL, Math.max (0, velocityLow), false);
+            addIntegerAttribute (buffer, SfzOpcode.XF_IN_HI_VEL, Math.min (127, velocityLow + crossfadeVelocityLow), true);
         }
 
         final int crossfadeVelocityHigh = zone.getVelocityCrossfadeHigh ();
         if (crossfadeVelocityHigh > 0)
         {
-            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_LO_VEL, velocityHigh, false);
-            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, Math.min (127, velocityHigh + crossfadeVelocityHigh), true);
+            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_LO_VEL, Math.max (0, velocityHigh - crossfadeVelocityHigh), false);
+            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, velocityHigh, true);
         }
 
         // -----------------------------------------------------------
@@ -575,7 +579,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final double envelopeDepth = cutoffModulator.getDepth ();
-        if (envelopeDepth > 0)
+        if (envelopeDepth != 0)
         {
             buffer.append (SfzOpcode.FILEG_DEPTH).append ('=').append ((int) Math.round (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
 

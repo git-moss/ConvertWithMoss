@@ -376,10 +376,12 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         // -----------------------------------------------------------
         // Play-range & Loops
 
-        sampleZone.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0));
-        final int stop = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, -1);
-        if (stop > 0)
-            sampleZone.setStop (stop);
+        final int start = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_START, 0);
+        sampleZone.setStart (start);
+        // The attribute is the play-back length, not an absolute end position
+        final int length = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, -1);
+        if (length > 0)
+            sampleZone.setStop (start + length);
 
         if (defaultLoop != null)
         {
@@ -388,8 +390,8 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             if (loopStart >= 0 && loopEnd > 0)
             {
                 final ISampleLoop loop = new DefaultSampleLoop ();
-                loop.setCrossfade (loop.getCrossfade ());
-                loop.setType (loop.getType ());
+                loop.setCrossfade (defaultLoop.getCrossfade ());
+                loop.setType (defaultLoop.getType ());
                 loop.setStart (loopStart);
                 loop.setEnd (loopEnd);
                 sampleZone.addLoop (loop);

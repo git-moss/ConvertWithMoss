@@ -272,8 +272,9 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
             final ISampleLoop sampleLoop = new DefaultSampleLoop ();
             sampleLoop.setType (LOOP_MODES[loopMode]);
             sampleLoop.setLoopUntilRelease (loopMode == 1);
+            // The fine values of the loop points are sub-frame address fractions, not a
+            // cross-fade - the S-7xx has no loop cross-fade parameter
             sampleLoop.setStart ((int) sample.getSustainLoopStart ().getAddress ());
-            sampleLoop.setCrossfadeInSamples (sample.getSustainLoopStart ().getFine () + sample.getSustainLoopEnd ().getFine ());
             sampleLoop.setEnd ((int) sample.getSustainLoopEnd ().getAddress ());
             sampleLoop.setTuning (sample.getSustainLoopTune () / 100.0);
             sampleZone.getLoops ().add (sampleLoop);
@@ -293,12 +294,14 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         final double level = patch.getPatchLevel () / 127.0 * (patch.getStereoMixLevel () / 127.0) * (partial.getPartialLevel () / 127.0) * (partial.getStereoMixLevel () / 127.0) * (sampleSection.getSampleLevel () / 127.0);
         sampleZone.setGain (MathUtils.valueToDb (level));
 
-        double pan = patch.getTotalPan () / 32.0 * (partial.getPan () / 32.0);
+        // Every stage is a signed offset from the center, so the stages add up - multiplying
+        // them would erase all panning as soon as one stage is centered, which is the default
+        double pan = patch.getTotalPan () / 31.0 + partial.getPan () / 32.0;
         final int samplePan = sampleSection.getPan ();
-        // Ignore unsupported panning options
+        // Ignore unsupported panning options (33: random, 34/35: key follow)
         if (samplePan <= 32)
-            pan *= samplePan / 32.0;
-        sampleZone.setPanning (pan);
+            pan += samplePan / 32.0;
+        sampleZone.setPanning (Math.clamp (pan, -1, 1));
 
         final TvaSection tva = partial.getTva ();
         final IEnvelope ampEnvelope = createEnvelope (tva.getLevels (), tva.getTimes (), tva.getEnvTimeKf (), tva.getTimeVelocitySensitivity ());
@@ -401,6 +404,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
     private static double calculateTime (final int value)
     {
-        return 20.0 * Math.pow (2.0, (value - 127.0) / 21.0);
+        // 0 is instant - without this case every envelope stage would take at least 302 ms
+        return value == 0 ? 0 : 20.0 * Math.pow (2.0, (value - 127.0) / 21.0);
     }
 }
