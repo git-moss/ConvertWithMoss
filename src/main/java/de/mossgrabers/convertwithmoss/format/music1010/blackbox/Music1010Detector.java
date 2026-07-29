@@ -270,7 +270,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
                 loop.setType (loopMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARDS);
                 loop.setStart (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_START, 0));
                 loop.setEnd (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0));
-                loop.setCrossfade (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_END, 0) / 1000.0);
+                loop.setCrossfade (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_LOOP_FADE_AMOUNT, 0) / 1000.0);
                 sampleZone.addLoop (loop);
             }
         }
