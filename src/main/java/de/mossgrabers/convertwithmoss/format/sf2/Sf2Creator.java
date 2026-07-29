@@ -410,7 +410,8 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         // supports one modulation envelope
         final IEnvelopeModulator pitchModulator = sampleZone.getPitchEnvelopeModulator ();
         final double pitchModDepth = pitchModulator.getDepth ();
-        if (pitchModDepth > 0)
+        // The modulation amount is signed - a negative value sweeps downwards
+        if (pitchModDepth != 0)
         {
             instrumentZone.addSignedGenerator (Generator.MOD_ENV_TO_PITCH, (int) Math.round (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
@@ -484,7 +485,8 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                 final double cutoffModDepth = cutoffModulator.getDepth ();
-                if (cutoffModDepth > 0)
+                // The modulation amount is signed - a negative value sweeps downwards
+                if (cutoffModDepth != 0)
                 {
                     instrumentZone.addSignedGenerator (Generator.MOD_ENV_TO_FILTER_CUTOFF, (int) (cutoffModDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();

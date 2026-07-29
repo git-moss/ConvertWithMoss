@@ -812,8 +812,9 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                     if (initialResonanceValue != null)
                     {
                         final int initialResonance = initialResonanceValue.intValue ();
+                        // The resonance is stored in centi-bel (dB * 10) in the range of [0..960]
                         if (initialResonance > 0 && initialResonance < 960)
-                            resonance = initialResonance / 100.0;
+                            resonance = initialResonance / 10.0;
                     }
 
                     final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, frequency, resonance / IFilter.MAX_RESONANCE);
