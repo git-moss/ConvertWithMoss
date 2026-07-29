@@ -179,17 +179,14 @@ public class WavFileSampleData extends AbstractFileSampleData
         if (sampleChunk == null)
             return;
 
-        // Read the this.keyRoot if not set...
+        // Read the root key and its fine tuning if the format did not provide a root itself.
+        // The pitch fraction is relative to the unity note of the chunk, so it must never be
+        // combined with - or even overwrite - a root key which the format supplied
         if (addRootKey && zone.getKeyRoot () == -1)
-            zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
-
-        if (zone.getTuning () == 0)
         {
-            final double tune = Math.clamp (sampleChunk.getMIDIPitchFractionAsCents () / 100.0, -0.5, 0.5);
-            zone.setTuning (tune);
-            // Root note needs to be updated as well!
-            if (tune < 0)
-                zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
+            zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
+            if (zone.getTuning () == 0)
+                zone.setTuning (Math.clamp (sampleChunk.getMIDIPitchFractionAsCents () / 100.0, -0.5, 0.5));
         }
 
         if (addLoops)
