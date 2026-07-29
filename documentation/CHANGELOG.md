@@ -104,9 +104,6 @@
 * Spectrasonics Omnisphere 3
   * Fixed: Envelope stages which are not set were written as "not a number" (attack, hold, decay and release) or as a negative sustain level. Unset times are now written as zero and an unset sustain level as the full level.
   * Fixed: The zone tuning was written and read as cents although the model value is in semi-tones, so the tuning was off by a factor of 100 against every other format (an Omnisphere-to-Omnisphere conversion was not affected since both directions had the same error).
-* SFZ
-  * Fixed: The key and velocity crossfade ranges (xfin/xfout) were written outside of the zone's range, where the zone does not even play - and for zones at the edges the 0/127 clamps collapsed the fade range entirely (e.g. a fade at the top of a full-velocity zone was written as the empty range 127..127 and lost). The fades are now anchored inside the zone's range.
-  * Fixed: A negative filter envelope depth (a downward sweep, e.g. of an 808-style kick) was silently dropped when writing; the fileg_depth opcode is now also written for negative depths.
 * Synthstrom Deluge
   * New: Added an Output Type creator option (Synth/Kit, CLI DelugeOutputType) to write a drum kit instead of a synth (sound) preset. A kit writes one drum per note, consolidating velocity layers and round-robins to the loudest layer (a Deluge drum is a single sample). The type is chosen explicitly because a one-sample-per-note layout is not necessarily a kit (e.g. a per-note synth bass).
   * New: Added a "Consolidate kit" option (CLI DelugeConsolidateKit) which reduces a drum kit to one drum per type (kick, snare, hi-hat, ...) ordered by drum role following the factory TR-808 layout (kick on the lowest row), so a beat can be programmed without switching rows. The consolidated drums are labelled by their role for a clean read-out on the device.
