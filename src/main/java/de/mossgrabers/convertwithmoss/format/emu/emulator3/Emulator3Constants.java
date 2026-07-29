@@ -198,6 +198,9 @@ public class Emulator3Constants
     // The flags of a zone
     /** The zone does not transpose its sample across the keyboard. */
     public static final int    ZONE_FLAG_NON_TRANSPOSE         = 0x02;
+
+    /** The flag bit which enables the chorus (a second, slightly detuned voice). */
+    public static final int    ZONE_FLAG_CHORUS                = 0x08;
     /** The zone ignores the loop of its sample. */
     public static final int    ZONE_FLAG_DISABLE_LOOP          = 0x20;
     /** The zone mutes the left channel of its sample. */
