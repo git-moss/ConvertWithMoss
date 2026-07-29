@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -155,16 +156,17 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
         preset.timestamp = System.currentTimeMillis () / 1000;
         preset.metadata.put ("Type", preset.type.isBlank () ? "Custom" : preset.type);
 
-        // Collect at most 12 zones - a Synclavier timbre has 12 partials
+        // Collect at most 12 zones - a Synclavier timbre has 12 partials. When there are more,
+        // twelve zones spread across the key and velocity ranges are kept and their windows are
+        // widened so the whole keyboard stays playable
         final List<ISampleZone> zones = new ArrayList<> ();
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
                 zones.add (zone);
         if (zones.size () > MAX_PARTIALS)
         {
-            this.notifier.logError ("IDS_SYNCLAVIER_PARTIAL_CAP", multisampleSource.getName (), Integer.toString (zones.size ()));
-            while (zones.size () > MAX_PARTIALS)
-                zones.remove (zones.size () - 1);
+            this.notifier.log ("IDS_SYNCLAVIER_V_ZONE_REDUCTION", multisampleSource.getName (), Integer.toString (zones.size ()));
+            reduceZones (zones);
         }
 
         // Velocity layers require the dynamic envelope source to be velocity
@@ -196,6 +198,111 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
         }
 
         zipWriter.addEntry (libraryFolder + presetName, preset.write ());
+    }
+
+
+    /**
+     * Reduces the zones to at most 12, keeping the keyboard playable: the zones of the loudest
+     * velocity layer are preferred (the sound of a full key strike) and picked spread across the
+     * keyboard; the kept zones' key windows are then widened to the mid-points between their
+     * neighbors so the dropped zones leave no dead keys, and when all kept zones come from one
+     * velocity layer their velocity range is opened up completely.
+     *
+     * @param zones The zones, reduced in place
+     */
+    private static void reduceZones (final List<ISampleZone> zones)
+    {
+        // The velocity layer which sounds on a full strike
+        int maxVelocity = 1;
+        for (final ISampleZone zone: zones)
+            maxVelocity = Math.max (maxVelocity, velocityHigh (zone));
+        final List<ISampleZone> primary = new ArrayList<> ();
+        final List<ISampleZone> secondary = new ArrayList<> ();
+        for (final ISampleZone zone: zones)
+            (velocityHigh (zone) == maxVelocity ? primary : secondary).add (zone);
+        final Comparator<ISampleZone> byRoot = Comparator.comparingInt (SynclavierVCreator::rootKey);
+        primary.sort (byRoot);
+        secondary.sort (Comparator.comparingInt (SynclavierVCreator::velocityHigh).reversed ().thenComparing (byRoot));
+
+        final List<ISampleZone> kept = new ArrayList<> (pickSpread (primary, MAX_PARTIALS));
+        if (kept.size () < MAX_PARTIALS)
+            kept.addAll (pickSpread (secondary, MAX_PARTIALS - kept.size ()));
+        kept.sort (byRoot);
+
+        // Widen the key windows to the mid-points between the kept zones' roots
+        for (int i = 0; i < kept.size (); i++)
+        {
+            final ISampleZone zone = kept.get (i);
+            final int root = rootKey (zone);
+            int low = 0;
+            for (int j = i - 1; j >= 0; j--)
+                if (rootKey (kept.get (j)) < root)
+                {
+                    low = (rootKey (kept.get (j)) + root) / 2 + 1;
+                    break;
+                }
+            int high = 127;
+            for (int j = i + 1; j < kept.size (); j++)
+                if (rootKey (kept.get (j)) > root)
+                {
+                    high = (root + rootKey (kept.get (j))) / 2;
+                    break;
+                }
+            zone.setKeyLow (Math.min (Math.max (zone.getKeyLow (), 0), low));
+            zone.setKeyHigh (Math.max (zone.getKeyHigh () < 0 ? 127 : zone.getKeyHigh (), high));
+        }
+
+        // With only one velocity layer left, quiet playing must sound as well
+        boolean onlyPrimary = true;
+        for (final ISampleZone zone: kept)
+            if (velocityHigh (zone) != maxVelocity)
+                onlyPrimary = false;
+        if (onlyPrimary && !secondary.isEmpty ())
+            for (final ISampleZone zone: kept)
+            {
+                zone.setVelocityLow (1);
+                zone.setVelocityHigh (127);
+                zone.setVelocityCrossfadeLow (0);
+                zone.setVelocityCrossfadeHigh (0);
+            }
+
+        zones.clear ();
+        zones.addAll (kept);
+    }
+
+
+    /**
+     * Picks up to the requested number of zones evenly spread over the (root key sorted) list.
+     *
+     * @param sorted The zones sorted by their root key
+     * @param count The maximum number of zones to pick
+     * @return The picked zones
+     */
+    private static List<ISampleZone> pickSpread (final List<ISampleZone> sorted, final int count)
+    {
+        if (sorted.size () <= count)
+            return new ArrayList<> (sorted);
+        final List<ISampleZone> picked = new ArrayList<> ();
+        for (int i = 0; i < count; i++)
+        {
+            final int index = (int) Math.round (i * (sorted.size () - 1.0) / (count - 1.0));
+            final ISampleZone zone = sorted.get (index);
+            if (!picked.contains (zone))
+                picked.add (zone);
+        }
+        return picked;
+    }
+
+
+    private static int rootKey (final ISampleZone zone)
+    {
+        return zone.getKeyRoot () < 0 ? 60 : zone.getKeyRoot ();
+    }
+
+
+    private static int velocityHigh (final ISampleZone zone)
+    {
+        return zone.getVelocityHigh () < 0 ? 127 : zone.getVelocityHigh ();
     }
 
 
