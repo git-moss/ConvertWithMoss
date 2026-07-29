@@ -235,7 +235,7 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         final Optional<DlsArticulation> pitchModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_EG2, DlsArticulation.CONN_DST_PITCH);
         if (pitchModulation.isPresent ())
         {
-            final IEnvelope pitchEnvelope = createEnvelope (dlsInstrument, dlsRegion, true);
+            final IEnvelope pitchEnvelope = createEnvelope (dlsInstrument, dlsRegion, false);
             final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
             // The scale is a relative pitch in cent, stored as a 32-bit fixed point number with
             // 65536 representing one cent

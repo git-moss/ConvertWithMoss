@@ -310,7 +310,8 @@ public class RawRIFFChunk implements IRiffChunk
 
 
     /**
-     * Convert 2 bytes to an integer MSB is first byte.
+     * Convert 2 bytes to a signed integer, LSB is first byte (little-endian as everywhere in
+     * RIFF).
      *
      * @param offset The offset into the data array
      * @return The integer value
@@ -323,7 +324,8 @@ public class RawRIFFChunk implements IRiffChunk
 
 
     /**
-     * Convert 2 bytes to an integer MSB is first byte.
+     * Convert 2 bytes to a signed integer, LSB is first byte (little-endian as everywhere in
+     * RIFF).
      *
      * @param offset The offset into the data array
      * @return The signed integer value
@@ -332,7 +334,7 @@ public class RawRIFFChunk implements IRiffChunk
     {
         final byte [] d = this.getData ();
         final ByteBuffer buffer = ByteBuffer.wrap (d, offset, 2);
-        buffer.order (ByteOrder.BIG_ENDIAN);
+        buffer.order (ByteOrder.LITTLE_ENDIAN);
         return buffer.getShort ();
     }
 

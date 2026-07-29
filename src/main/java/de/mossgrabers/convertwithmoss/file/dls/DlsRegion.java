@@ -235,14 +235,13 @@ public class DlsRegion
 
 
     /**
-     * Get the tuning offset from the unity note. The fine tune is stored as 16 bit relative pitch,
-     * representing 1/32768th semi-tone.
+     * Get the tuning offset from the unity note. The fine tune is stored in cents.
      *
-     * @return The fine tune converted to semi-tones (1-cent is 0.01) in the range of -0.5 to 0.5
+     * @return The fine tune converted to semi-tones (1-cent is 0.01)
      */
     public double getFineTune ()
     {
-        return Math.clamp (this.fineTune, -32768.0, 32768.0) / 32768.0;
+        return this.fineTune / 100.0;
     }
 
 
