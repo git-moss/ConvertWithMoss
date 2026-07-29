@@ -262,8 +262,8 @@ public class BentoCreator extends AbstractMusic1010Creator
             final Element trackParamsElement = XMLUtils.addElement (document, trackElement, Music1010Tag.PARAMS);
             for (final Map.Entry<String, String> entry: TRACK_PARAM_ATTRIBUTES.entrySet ())
                 trackParamsElement.setAttribute (entry.getKey (), entry.getValue ());
-            // MIDI input channel: 0 = Off, 1..16
-            final int midiChannel = instrumentSource.getMidiChannel () % 16 + 1;
+            // MIDI input channel: 0 = Off, 1..16 - OMNI (-1) becomes channel 1
+            final int midiChannel = Math.max (0, instrumentSource.getMidiChannel ()) % 16 + 1;
             trackParamsElement.setAttribute (Music1010Tag.ATTR_MIDI_INPUT_CHANNEL, Integer.toString (midiChannel));
 
             trackParamsElement.setAttribute (Music1010Tag.ATTR_CELLNAME, multisampleSource.getName ());
@@ -410,7 +410,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         // No zone.getKeyTracking ()
         final int loVel = limitToDefault (zone.getVelocityLow (), 1);
         final int hiVel = limitToDefault (zone.getVelocityHigh (), 127);
-        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_ROOT_VEL, (hiVel - loVel) / 2);
+        XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_ROOT_VEL, (hiVel + loVel) / 2);
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_LO_VEL, loVel);
         XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_HI_VEL, hiVel);
         // No fades info.getVelocityCrossfadeLow ()
