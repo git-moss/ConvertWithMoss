@@ -216,7 +216,8 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             return Optional.empty ();
         }
 
-        zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, 0)));
+        // The default is the raw value which represents 0dB
+        zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, TALSamplerConstants.MINUS_12_DB + TALSamplerConstants.VALUE_RANGE * 12.0 / 18.0)));
         zone.setPanning (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANNING, 0.5) * 2.0 - 1.0);
 
         zone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.START_SAMPLE, -1)));

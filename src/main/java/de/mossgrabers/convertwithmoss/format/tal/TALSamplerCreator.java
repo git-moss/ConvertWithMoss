@@ -175,10 +175,8 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final Element sampleElement = XMLUtils.addElement (document, groupElement, TALSamplerTag.MULTISAMPLE);
         sampleElement.setAttribute (TALSamplerTag.MULTISAMPLE_URL, AbstractCreator.formatFileName (folderName, zone.getName () + ".wav"));
 
-        final double gain = zone.getGain ();
-        if (gain != 0)
-            // Not sure if this is correct or if proper dB conversion would need to be applied...
-            XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, convertGain (gain), 6);
+        // Always write the volume: a missing attribute is not read back as 0dB
+        XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, convertGain (zone.getGain ()), 6);
         XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.PANNING, (zone.getPanning () + 1.0) / 2.0, 2);
 
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.START_SAMPLE, Math.max (0, zone.getStart ()));
