@@ -710,7 +710,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
-        final IFilter filter = createFilter (data, bankFormat, offset);
+        final IFilter filter = createFilter (data, bankFormat, offset, keyLow, zone.getKeyRoot ());
         if (filter != null)
             zone.setFilter (filter);
 
@@ -752,7 +752,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param offset The offset of the zone
      * @return The filter or null if the zone does not use one
      */
-    private static IFilter createFilter (final byte [] data, final Emulator3BankFormat bankFormat, final int offset)
+    private static IFilter createFilter (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int keyLow, final int rootKey)
     {
         final int filterTypeAndShape = data[offset + Emulator3Constants.ZONE_VCF_TYPE_LFO_SHAPE] & 0xFF;
         final FilterType filterType = Emulator3Constants.getFilterType (filterTypeAndShape, bankFormat);
@@ -766,12 +766,17 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         final double keyTracking = Math.clamp (data[offset + Emulator3Constants.ZONE_VCF_TRACKING] / 127.0 * 2.0, 0, 1);
 
         final double velocityDepth = Math.clamp (data[offset + Emulator3Constants.ZONE_VELOCITY_TO_VCF_CUTOFF] / 127.0, -1, 1);
-        // A low-pass which sits above the audible range and which nothing pulls down again removes
-        // nothing which can be heard, which is how the samplers switch their filter off. The
-        // cutoff parameter reaches up to 74 kHz and the banks park it at several values there -
-        // 0xEF and 0xFF are the two most common ones - so the frequency decides and not one value
+        // A low-pass which sits above the audible range and which nothing pulls down into it
+        // removes nothing which can be heard, which is how the samplers switch their filter off.
+        // The cutoff parameter reaches up to 74 kHz and the banks park it at several values there -
+        // 0xEF and 0xFF are the two most common ones - so the frequency decides and not one value.
+        // Only a negative envelope or velocity amount lowers the cutoff. The key tracking lowers it
+        // below the root key, so the lowest key of the zone has to stay above the limit as well -
+        // and it may never lift a cutoff which is audible at the root over the limit, which is why
+        // the smaller of the two decides
         final double cutoffFrequency = Emulator3Constants.getCutoffFrequency (cutoff);
-        if (filterType == FilterType.LOW_PASS && cutoffFrequency >= Emulator3Constants.INAUDIBLE_CUTOFF_HERTZ && resonance == 0 && envelopeDepth == 0 && keyTracking == 0 && velocityDepth == 0)
+        final double lowestCutoff = Math.min (cutoffFrequency, cutoffFrequency * Math.pow (2, keyTracking * (keyLow - rootKey) / 12.0));
+        if (filterType == FilterType.LOW_PASS && envelopeDepth >= 0 && velocityDepth >= 0 && lowestCutoff >= Emulator3Constants.INAUDIBLE_CUTOFF_HERTZ)
             return null;
 
         final IFilter filter = new DefaultFilter (filterType, Emulator3Constants.getFilterPoles (filterTypeAndShape, bankFormat), cutoffFrequency, resonance / 127.0);
