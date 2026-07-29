@@ -99,6 +99,8 @@
   * Fixed: All loops were lost when reading a preset: the loop was created but never added to the zone. Writing loops was not affected.
   * Fixed: The pitch key tracking was never read, so zones with a reduced key tracking (e.g. fixed-pitch percussion) were imported as fully tracking.
   * Fixed: The depth of the filter envelope was written into the field of the pitch envelope, so the filter modulation was lost and the pitch modulation was overwritten with it.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * Fixed: The velocity range was taken from the cross-fade opcodes, so it grew by the width of the cross-fade with every conversion (e.g. lovel/hivel 40/100 became 30/110 and then 20/120). The same was already fixed for the key range.
 * Spectrasonics Omnisphere 3
@@ -270,6 +272,8 @@
 * NI
   * New: Renamed "Kontakt NKI" to "NI Kontakt".
   * New: Renamed "Maschine Sound" to "NI Maschine".
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * New: Improved layout of metadata header with long description texts.
 * WAV
@@ -362,6 +366,8 @@
   * New: The root note is now modified instead re-pitching it via tuning parameter.
 * Akai XPM
   * Fixed: Never read loops from WAV files.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * Fixed: Prevent creation of filter type with poles not supported by SFZ (2 poles will be set in such a case).
 
@@ -422,6 +428,8 @@
   * Fixed: Loop cross-fade was written as samples not as milliseconds.
 * SF2
   * New: Use all metadata fields for category detection if none could be extracted from the path.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * Fixed: Read loop cross-fade was not calculated correctly (integer instead of double).
   * Fixed: Writing loop cross-fade was not calculated correctly (was rounded to full seconds).
@@ -482,6 +490,8 @@
   * New: KSC files get now a DOS-safe filename as well. Check for duplicated names is now separate for folders and normal files.
 * Sample Files
   * New: Added option to ignore the loops in the source sample files.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * New: Amplitude envelope settings are now aggregated to group or global level if they are identical.
 
@@ -518,6 +528,8 @@
   * Fixed: The loop end was off by 1.
 * SF2
   * Fixed: Added support for reading missing generators: startAddrsOffset, endAddrsOffset, startloopAddrsOffset and endloopAddrsOffset.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * Fixed: Loops were not read from wave files when loop info was missing in SFZ file.
 
@@ -595,6 +607,8 @@
 * EXS24
   * New: Added support for round-robin. Files are larger now since this info is in an additional block.
   * Fixed: Reading: group indices were off by 1.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * New: Added support for round-robin on group-level (not only zone-level).
 * Kontakt
@@ -664,6 +678,8 @@
   * Fixed: Prevent several characters in file names which could crash the workstation.
 * MPC Keygroups
   * New: Added option to create up to 8 layers which is now supported with MPC Firmware 3.4.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * New: Added support for reading SFZ files which reference other SFZ files with #include statements.
   * New: Added option to (not) log unsupported SFZ opcodes. This is off by default since the warnings confused many users.
@@ -736,6 +752,8 @@
   * New: Added an option to trim samples with a delayed start.
   * Fixed: The MIDI note for the switch (SW) was off by 1 octave (disting assumes C3 as MIDI note 48 instead of 60). This caused playback issues.
   * Fixed: Release trigger groups are now removed from the output since the distingEX does not support release triggers.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * Fixed: Pitch bend was by factor 100 too small (semi-tones instead of cents).
 
@@ -945,6 +963,8 @@
 * MPC keygroups
   * Fixed: Read/Write: Improved mapping of envelopes.
   * Fixed: Write: Pitch was not correct.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
 * SFZ
   * Fixed: Increased allowed range of pitch values.
   * Fixed: Panning was not read / written.
