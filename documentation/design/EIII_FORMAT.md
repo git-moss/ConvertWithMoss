@@ -174,6 +174,27 @@ CD-ROM carries the same bank in both the EIIIX and the ESI-4000 variant (`Orbit 
 exactly 0x4000 (1192x) or 0x8000 (87x) while every other parameter is identical. The index is
 therefore the low 14 bits; the meaning of the two flags is unknown.
 
+**Truncated sample numbers on the library CD-ROMs.** Many banks of the E-mu library CD-ROMs -
+the Formula 4000 volumes, the General MIDI volume and a few banks of the classic volumes - were
+mastered with a tool chain which wrote the 16 bit sample number through 8 bits. The low byte of
+such a number is the true sample slot modulo 256; the high byte is unreliable: zero in most of
+the affected banks, stale garbage in a few (`Tine Strings   X` holds 10 samples and references
+numbers like 522 and 1541, whose low bytes are in range). The damage is per preset, and correctly
+written presets sit in the same banks: in `8M GeneralMidi X` the drum kits reference slots up to
+531 while every melodic preset whose samples sit above slot 256 is truncated - `Choir Aahs`
+references 1..7, which are piano samples, instead of its `Aahs` samples at 257..263. A bank with
+more than 256 samples therefore plays unrelated material for such presets (`OBX Strings` of
+`Vintage+InstrmtX` sounds basketball bounces), and a truncated number whose garbage high byte
+survives points outside of the bank entirely. Three findings prove the mechanism: the drum kits
+of the reduced GM drum banks reference holes whose low bytes are exactly the GM percussion
+sounds, hundreds of presets resolve to samples carrying the preset's own name once the high byte
+is restored (`Oct 3 All` to `Oct 3 All E4`, `P5 Tablura` to `P5TabluraE3`), and the pitch series
+named in the sample names (`OBXStringD2`..`OBXStringG#6`) match the zones' original keys at the
+repaired slots and nowhere else. Since the high byte is lost, `Emulator3SampleIndexRepair`
+infers per preset the page k so that its zones resolve to `low + k * 256`, using the note names
+in the sample names, the preset name occurring in the sample names and the feasibility of each
+page against the sample table; a preset whose evidence is ambiguous keeps its stored numbers.
+
 **Filter type.** Only the ESI samplers store a filter type. Their 19 types are, in the order of the
 upper 5 bits: 2/4/6 pole low-pass, 2nd/4th order high-pass, 2nd/4th order band-pass, contrary
 band-pass, swept EQ 1 oct / 2->1 / 3->1, phaser 1, phaser 2, bat-phaser, flanger lite, vocal
