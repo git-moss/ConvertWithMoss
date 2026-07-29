@@ -223,17 +223,12 @@ public class AkaiMPC60Set
             final int b1 = input.read () & 0xFF;
             final int b2 = input.read () & 0xFF;
 
-            // Extract two 12-bit samples
-            sampleData[outIndex++] = swapBytes ((short) (b0 | (b2 & 0x0F) << 8));
-            sampleData[outIndex++] = swapBytes ((short) (b1 | (b2 & 0xF0) << 4));
+            // Extract two 12-bit samples - the full byte holds the upper 8 bits, the nibble the
+            // lower 4 bits; the 12 bits are left-justified in the 16 bit result
+            sampleData[outIndex++] = (short) (b0 << 8 | (b2 & 0x0F) << 4);
+            sampleData[outIndex++] = (short) (b1 << 8 | (b2 & 0xF0));
         }
 
         return sampleData;
-    }
-
-
-    private static short swapBytes (final short value)
-    {
-        return (short) ((value & 0xFF) << 8 | value >> 8 & 0xFF);
     }
 }

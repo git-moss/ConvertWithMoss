@@ -122,7 +122,7 @@ public class AkaiMPC2000Sound
         // Parameters (4 bytes)
         this.pad = buffer.get () & 0xFF;
         this.level = buffer.get () & 0xFF;
-        this.tune = buffer.get () & 0xFF;
+        this.tune = buffer.get ();
         // 0=Mono 1=Stereo
         this.channels = (buffer.get () & 0xFF) + 1;
 

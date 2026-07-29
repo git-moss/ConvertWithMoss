@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.akai.s1000;
 import java.util.List;
 import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
@@ -65,16 +66,16 @@ public class AkaiS1000ProgramConverter
 
         // Set global values
         final int pitchBendRange = program.getBendToPitch () & 0xFF;
-        final double gain = (program.getVolume () & 0xFF) / 99.0;
+        final double gain = MathUtils.valueToDb ((program.getVolume () & 0xFF) / 99.0);
         final double velocityToVolume = Math.clamp (program.getVelocityToVolume () / 50.0, -1.0, 1.0);
         // The native range of the key to volume intensity is [-50..50] which maps to the model
         // range of [-1..1]
         final double keyToVolume = Math.clamp (program.getKeyToVolume () / 50.0, -1.0, 1.0);
         for (final ISampleZone zone: group.getSampleZones ())
         {
-            zone.setBendUp (pitchBendRange);
-            zone.setBendDown (-pitchBendRange);
-            zone.setGain (gain);
+            zone.setBendUp (pitchBendRange * 100);
+            zone.setBendDown (-pitchBendRange * 100);
+            zone.setGain (zone.getGain () + gain);
             zone.getAmplitudeVelocityModulator ().setDepth (velocityToVolume);
             zone.setAmplitudeKeyTracking (keyToVolume);
         }
@@ -213,7 +214,8 @@ public class AkaiS1000ProgramConverter
                 // Pitch
                 sampleZone.setKeyTracking (sampleKeyTracking[i] ? 1 : 0);
                 final double keygroupSampleTuning = calculateTuning (keygroupSample.getTuneSemitones (), keygroupSample.getTuneCents ());
-                final double sampleTuning = calculateTuning (sample.getTuneSemitones (), sample.getTuneCents ());
+                // The sample header stores literal cents in contrast to the fixed point values
+                final double sampleTuning = sample.getTuneSemitones () + sample.getTuneCents () / 100.0;
                 sampleZone.setTuning (keygroupTuning + keygroupSampleTuning + sampleTuning);
                 if (pitchModulation != 0)
                 {
@@ -240,20 +242,17 @@ public class AkaiS1000ProgramConverter
 
 
     /**
-     * Combine the semi-tone and fine tuning.
+     * Combine the semi-tone and fine tuning of a fixed point tune value. The keygroup and
+     * keygroup-sample tunings are 16 bit fixed point values: a signed semi-tone byte and an
+     * unsigned fraction byte in 1/256 semi-tone steps.
      *
      * @param tuneSemitones The semi-tones in the range of [-50..50]
-     * @param tuneCents The tuning by in the range of [-128..127], needs to be scaled to [-50..+50]
-     * @return The semi-tones with cents as fractions
+     * @param tuneFraction The fraction of a semi-tone in 1/256 steps
+     * @return The semi-tones with the fraction
      */
-    private static double calculateTuning (final int tuneSemitones, final int tuneCents)
+    private static double calculateTuning (final int tuneSemitones, final int tuneFraction)
     {
-        double cents = 0;
-        if (tuneCents < 0)
-            cents = tuneCents / 128.0 * 0.5;
-        else if (tuneCents > 0)
-            cents = tuneCents / 127.0 * 0.5;
-        return tuneSemitones + cents;
+        return tuneSemitones + (tuneFraction & 0xFF) / 256.0;
     }
 
 

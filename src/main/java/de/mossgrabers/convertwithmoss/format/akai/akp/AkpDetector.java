@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -203,13 +204,13 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
         if (groups.isEmpty ())
             return Optional.empty ();
 
-        final double panningFactor = part.getPanning () / 50.0 * 2.0;
-        final double volumeFactor = part.getVolume () / 100.0;
-        if (panningFactor != 0 || volumeFactor != 1)
+        final double panningOffset = part.getPanning () / 50.0;
+        final double volumeOffset = MathUtils.valueToDb (part.getVolume () / 100.0);
+        if (panningOffset != 0 || volumeOffset != 0)
             for (final ISampleZone zone: groups.get (0).getSampleZones ())
             {
-                zone.setPanning (Math.clamp (zone.getPanning () + panningFactor, -1.0, 1.0));
-                zone.setGain (zone.getGain () * volumeFactor);
+                zone.setPanning (Math.clamp (zone.getPanning () + panningOffset, -1.0, 1.0));
+                zone.setGain (zone.getGain () + volumeOffset);
             }
 
         return Optional.of (instrumentSource);

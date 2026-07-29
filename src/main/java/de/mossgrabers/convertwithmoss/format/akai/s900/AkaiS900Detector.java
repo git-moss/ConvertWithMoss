@@ -148,7 +148,9 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         final double nominalPitch = sample.getNominalPitch () / 16.0;
         final int rootNote = (int) Math.round (nominalPitch);
         sampleZone.setKeyRoot (rootNote);
-        sampleZone.setTuning (nominalPitch - rootNote);
+        // The nominal pitch is the recorded pitch of the sample. A sample which was recorded
+        // e.g. a quarter tone sharp must be played back a quarter tone lower to be in tune
+        sampleZone.setTuning (rootNote - nominalPitch);
         sampleZone.setKeyTracking ((keygroup.getFlags () & 0x01) > 0 ? 0 : 1.0);
 
         // Mixing
