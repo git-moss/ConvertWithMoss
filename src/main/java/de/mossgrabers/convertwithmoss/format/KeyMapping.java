@@ -408,18 +408,9 @@ public class KeyMapping
 
 
     /**
-     * Detect groups.
-     *
-     * @param sampleData Info about all available samples
-     * @param groupPatterns The patterns to match for groups
-     * @return The detected groups
-     * @throws MultisampleException There was a pattern detected but (or more) of the samples could
-     *             not be matched
-     */
-    /**
-     * Create a sample zone and fill it with the metadata of the sample file (e.g. the root note
-     * and loops of a WAV 'smpl' chunk), so the mapping can prefer the file's own root over one
-     * parsed from the file name.
+     * Create a sample zone and fill it with the metadata of the sample file (e.g. the root note and
+     * loops of a WAV 'smpl' chunk), so the mapping can prefer the file's own root over one parsed
+     * from the file name.
      *
      * @param sampleData The sample data from which to create the zone
      * @return The zone
@@ -431,7 +422,7 @@ public class KeyMapping
         {
             sampleData.addZoneData (zone, true, true);
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             // The metadata cannot be read - the root note then needs to come from the file name
         }
@@ -439,6 +430,15 @@ public class KeyMapping
     }
 
 
+    /**
+     * Detect groups.
+     *
+     * @param sampleData Info about all available samples
+     * @param groupPatterns The patterns to match for groups
+     * @return The detected groups
+     * @throws MultisampleException There was a pattern detected but (or more) of the samples could
+     *             not be matched
+     */
     private static Map<Integer, List<ISampleZone>> detectGroups (final List<IFileBasedSampleData> sampleData, final String [] groupPatterns) throws MultisampleException
     {
         final Map<Integer, List<ISampleZone>> groups = new TreeMap<> ();

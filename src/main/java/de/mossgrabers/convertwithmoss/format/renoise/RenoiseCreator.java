@@ -57,6 +57,9 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 {
+    private static final String                 TRUE                     = "true";
+    private static final String                 FALSE                    = "false";
+
     /**
      * The document version to write. 33 (Renoise 3.3) is used instead of the latest version since
      * the written structure is valid for it and it loads in newer Renoise versions as well as in
@@ -208,10 +211,11 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final double tuning = zone.getTuning ();
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.TRANSPOSE, Integer.toString (RenoiseValueConverter.tuningToTranspose (tuning)));
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.FINETUNE, Integer.toString (RenoiseValueConverter.tuningToFinetune (tuning)));
-        // 'OneShotTrigger' ignores a note-off and always plays the sample to its end. It defaults to
+        // 'OneShotTrigger' ignores a note-off and always plays the sample to its end. It defaults
+        // to
         // false, therefore it is only written if it is enabled.
         if (zone.isOneShot ())
-            XMLUtils.addTextElement (document, sampleElement, RenoiseTag.ONE_SHOT, "true");
+            XMLUtils.addTextElement (document, sampleElement, RenoiseTag.ONE_SHOT, TRUE);
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.NEW_NOTE_ACTION, RenoiseTag.NNA_NOTE_OFF);
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.INTERPOLATION, "Cubic");
         // 'MuteGroupIndex' is zero-based and defaults to -1 (no mute group), therefore it is only
@@ -226,7 +230,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_MODE, loopMode (loop));
         // 'LoopRelease' true exits the loop on note-off and plays the remainder of the sample
         // (sustain loop); false keeps looping
-        XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_RELEASE, loop != null && loop.isLoopUntilRelease () ? "true" : "false");
+        XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_RELEASE, loop != null && loop.isLoopUntilRelease () ? TRUE : FALSE);
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_START, Integer.toString (loop == null ? 0 : Math.max (0, loop.getStart ())));
         XMLUtils.addTextElement (document, sampleElement, RenoiseTag.LOOP_END, Integer.toString (loop == null ? 0 : Math.max (0, loop.getEnd ())));
 
@@ -238,10 +242,10 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.BASE_NOTE, Integer.toString (RenoiseValueConverter.clampNote (zone.getKeyRoot ())));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.NOTE_START, Integer.toString (RenoiseValueConverter.clampNote (zone.getKeyLow ())));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.NOTE_END, Integer.toString (RenoiseValueConverter.clampNote (limitToDefault (zone.getKeyHigh (), RenoiseValueConverter.MAX_NOTE))));
-        XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_KEY_TO_PITCH, "true");
+        XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_KEY_TO_PITCH, TRUE);
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.VELOCITY_START, Integer.toString (Math.clamp (zone.getVelocityLow (), 0, 127)));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.VELOCITY_END, Integer.toString (Math.clamp (limitToDefault (zone.getVelocityHigh (), 127), 0, 127)));
-        XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_VELOCITY_TO_VOLUME, "true");
+        XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_VELOCITY_TO_VOLUME, TRUE);
     }
 
 
@@ -294,7 +298,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final Element modulationSetElement = document.createElement (RenoiseTag.MODULATION_SET);
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.SELECTED_PRESET_NAME, "Init");
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.SELECTED_PRESET_LIBRARY, "Bundled Content");
-        XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.SELECTED_PRESET_MODIFIED, "true");
+        XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.SELECTED_PRESET_MODIFIED, TRUE);
         final Element devicesElement = XMLUtils.addElement (document, modulationSetElement, RenoiseTag.DEVICES);
 
         // Determine the filter (if any) to set the base cutoff/resonance values of the mixer device
@@ -321,7 +325,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         final double pitchDepth = pitchModulator.getDepth ();
         int pitchModulationRange = RenoiseValueConverter.PITCH_MODULATION_RANGE;
         if (pitchDepth != 0)
-            pitchModulationRange = (int) Math.clamp (Math.round (Math.abs (pitchDepth) * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0), 1, 96);
+            pitchModulationRange = Math.clamp (Math.round (Math.abs (pitchDepth) * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0), 1, 96);
 
         // The mixer device holds the base input values and is required for the filter view to be
         // built; without it Renoise crashes when a filter is active
@@ -437,7 +441,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TARGET, target);
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.OPERATOR, operator);
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.BIPOLAR, Boolean.toString (bipolar));
-        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TEMPO_SYNCED, "false");
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TEMPO_SYNCED, FALSE);
 
         addParameter (document, deviceElement, RenoiseTag.ATTACK, RenoiseValueConverter.timeToRenoise (envelope.getAttackTime ()));
         addParameter (document, deviceElement, RenoiseTag.HOLD, RenoiseValueConverter.timeToRenoise (Math.max (0, envelope.getHoldTime ())));
@@ -466,8 +470,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         addParameter (document, deviceElement, RenoiseTag.IS_ACTIVE, 1.0);
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TARGET, target);
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.OPERATOR, RenoiseTag.OP_ADD);
-        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.BIPOLAR, "true");
-        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TEMPO_SYNCED, "false");
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.BIPOLAR, TRUE);
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.TEMPO_SYNCED, FALSE);
 
         final ILfo lfo = lfoModulator.getSource ();
         XMLUtils.addTextElement (document, deviceElement, RenoiseTag.LFO_MODE, waveformToMode (lfo.getWaveform ()));
