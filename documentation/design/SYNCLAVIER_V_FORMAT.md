@@ -230,8 +230,9 @@ To find a referenced sound file the reader looks, in order:
 * `Partial Volume` + `Partial File Volume` → zone gain (dB, additive); on writing the gain is
   split: -12..+24 dB into the file volume, deeper attenuation into the partial volume;
 * `Partial File Tuning` + `Partial Tuning` (cents) + `Partial Transpose` (semitones) +
-  `Partial Octave` (`12 * log2(Hz / 440)` semitones) → zone tuning; on writing whole semitones go
-  into the transpose and the remainder into the file tuning;
+  `Partial Octave` (`12 * log2(Hz / 440)` semitones) → zone tuning; on writing the tuning is split
+  into octaves (the partial octave covers -72..+24 semitones in octave steps), whole semitones
+  (transpose) and cents (file tuning);
 * `Partial Pan` → zone (and group) panning (`value / 63`);
 * `File Start/End` fraction × sample frames → zone start/stop; `File Loop Mode` = *Loop* → a
   forward loop from the loop fractions; otherwise, with `Intrinsic File Loop` on, the loop stored

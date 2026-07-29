@@ -247,10 +247,18 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
 
         preset.setParameter ("Partial Pan " + partial, (Math.clamp (zone.getPanning (), -1, 1) * 63.0 + 63.0) / 126.0);
 
-        // Split the tuning into whole semi-tones (transpose) and cents (file tuning)
+        // Split the tuning into octaves (the partial octave covers -72..+24 semi-tones in octave
+        // steps), whole semi-tones (transpose, +-24) and cents (file tuning, +-125)
         final double tuning = zone.getTuning ();
-        final double transpose = Math.clamp (Math.rint (tuning), -24, 24);
-        final double cents = Math.clamp ((tuning - transpose) * 100.0, -125, 125);
+        double octaveSemitones = 0;
+        if (tuning > 24)
+            octaveSemitones = Math.min (24, 12 * Math.ceil ((tuning - 24) / 12.0));
+        else if (tuning < -24)
+            octaveSemitones = Math.max (-72, 12 * Math.floor ((tuning + 24) / 12.0));
+        final double remainder = tuning - octaveSemitones;
+        final double transpose = Math.clamp (Math.rint (remainder), -24, 24);
+        final double cents = Math.clamp ((remainder - transpose) * 100.0, -125, 125);
+        preset.setParameter ("Partial Octave " + partial, (octaveSemitones + 72.0) / 96.0);
         preset.setParameter ("Partial Transpose " + partial, (transpose + 24.0) / 48.0);
         preset.setParameter ("Partial File Tuning " + partial, (cents + 125.0) / 250.0);
 

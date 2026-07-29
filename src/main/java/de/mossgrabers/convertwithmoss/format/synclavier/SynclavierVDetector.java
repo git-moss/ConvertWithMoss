@@ -186,6 +186,18 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
             return Optional.empty ();
         }
 
+        // Tell when audible synthesis partials are dropped - the converted preset carries only
+        // the sampled layers
+        int synthesisPartials = 0;
+        for (int partial = 1; partial <= MAX_PARTIALS; partial++)
+        {
+            final int carrierMode = (int) Math.round (preset.getParameter ("Partial " + partial + " Carrier Mode", 0) * 2);
+            if (carrierMode != CARRIER_MODE_AUDITION && preset.getParameter ("Partial Volume " + partial, 0) > 0)
+                synthesisPartials++;
+        }
+        if (synthesisPartials > 0)
+            this.notifier.log ("IDS_SYNCLAVIER_V_MIXED_PRESET", presetName, Integer.toString (synthesisPartials));
+
         final IMultisampleSource multisampleSource = this.createMultisampleSource (synxFile, presetName, groups);
         final IMetadata metadata = multisampleSource.getMetadata ();
         if (!preset.author.isBlank ())
