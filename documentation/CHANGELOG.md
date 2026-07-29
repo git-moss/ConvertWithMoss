@@ -31,6 +31,9 @@
   * Fixed: A modulation set was created for every key zone. Now zones with identical modulation share one set, which gives the usual single instrument-wide modulation set; additional sets are only created for zones which genuinely modulate differently.
   * New: A pitch LFO (vibrato) is read from and written as a LFO modulation device (waveform, rate, depth and onset time; the value curves were calibrated against Renoise 3.5.4).
   * New: A volume LFO (tremolo) is read from and written as a LFO modulation device targeting the volume; since the volume chain is linear, the depth in decibels is expressed as the linear swing whose lowest point lies that many decibels below full volume.
+* Roland ZEN-Core
+  * Fixed: The pan and the velocity window of the tone partials were ignored when reading, so a stereo instrument (two hard-panned partials over two mono multi-samples) collapsed into stacked centered zones and velocity layers all sounded at once. Each partial's zones now carry its pan and velocity range; a partial whose right wave differs from its left one is read as a stereo pair.
+  * Fixed: The levels of the pitch and filter (TVF) envelopes are signed 16 bit values but were read unsigned, so e.g. a pitch envelope starting at -1023 (a classic pitch drop) read as starting at the positive maximum.
 * Waldorf Quantum/Iridium
   * New: A source which carries its bank in front of its name is written without it in the preset name, since the device shows the bank in a field of its own. The file name keeps the full name. An explicit Bank from the settings replaces the source's bank, in which case the name keeps it.
 
@@ -115,6 +118,9 @@
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
 * TX16Wx
   * Fixed: Envelope levels which are not set were written as -100%, which is a valid but completely different envelope. They now fall back to the neutral level.
+* Roland ZEN-Core
+  * Fixed: The pan and the velocity window of the tone partials were ignored when reading, so a stereo instrument (two hard-panned partials over two mono multi-samples) collapsed into stacked centered zones and velocity layers all sounded at once. Each partial's zones now carry its pan and velocity range; a partial whose right wave differs from its left one is read as a stereo pair.
+  * Fixed: The levels of the pitch and filter (TVF) envelopes are signed 16 bit values but were read unsigned, so e.g. a pitch envelope starting at -1023 (a classic pitch drop) read as starting at the positive maximum.
 * Waldorf Quantum/Iridium
   * New: Added a creator option to prefix written preset file names with a 5-digit import number (e.g. 05002-Name.qpat), mirroring the device's own export naming so the device assigns each preset to that number on import.
   * New: The oscillator volume and panning are now preserved instead of always being written as 0 dB / Center, so a Quantum/Iridium round-trip keeps them.
