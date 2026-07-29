@@ -31,9 +31,6 @@
   * Fixed: A modulation set was created for every key zone. Now zones with identical modulation share one set, which gives the usual single instrument-wide modulation set; additional sets are only created for zones which genuinely modulate differently.
   * New: A pitch LFO (vibrato) is read from and written as a LFO modulation device (waveform, rate, depth and onset time; the value curves were calibrated against Renoise 3.5.4).
   * New: A volume LFO (tremolo) is read from and written as a LFO modulation device targeting the volume; since the volume chain is linear, the depth in decibels is expressed as the linear swing whose lowest point lies that many decibels below full volume.
-* TX16Wx
-  * Fixed: The wave IDs of a written program restarted at 0 for every group, although they must be unique across the program - in a program with several groups all regions resolved to the waves of the last group when read (also in the TX16Wx plug-in itself). Additionally the reader now creates an own zone object per region, since several regions may reference the same wave; before, such regions shared one object and overwrote each other's key and velocity ranges.
-  * Fixed: The depth of a pitch envelope was written in cents of the full model depth (12000 cents) but read as a fraction of 4800 cents, inflating the depth 2.5 times in a round trip.
 * Waldorf Quantum/Iridium
   * New: A source which carries its bank in front of its name is written without it in the preset name, since the device shows the bank in a field of its own. The file name keeps the full name. An explicit Bank from the settings replaces the source's bank, in which case the name keeps it.
 
@@ -118,9 +115,6 @@
   * Fixed: Disabled groups were only skipped when written as enabled="0" but not as enabled="false". Presets that switch between several kits via a drop-down in their UI (each kit is a group and only one is enabled) were converted with all kits stacked on the same keys and playing at once.
 * TX16Wx
   * Fixed: Envelope levels which are not set were written as -100%, which is a valid but completely different envelope. They now fall back to the neutral level.
-* TX16Wx
-  * Fixed: The wave IDs of a written program restarted at 0 for every group, although they must be unique across the program - in a program with several groups all regions resolved to the waves of the last group when read (also in the TX16Wx plug-in itself). Additionally the reader now creates an own zone object per region, since several regions may reference the same wave; before, such regions shared one object and overwrote each other's key and velocity ranges.
-  * Fixed: The depth of a pitch envelope was written in cents of the full model depth (12000 cents) but read as a fraction of 4800 cents, inflating the depth 2.5 times in a round trip.
 * Waldorf Quantum/Iridium
   * New: Added a creator option to prefix written preset file names with a 5-digit import number (e.g. 05002-Name.qpat), mirroring the device's own export naming so the device assigns each preset to that number on import.
   * New: The oscillator volume and panning are now preserved instead of always being written as 0 dB / Center, so a Quantum/Iridium round-trip keeps them.
