@@ -405,7 +405,7 @@ public abstract class AbstractNKIMetadataFileHandler
         zoneContent = zoneContent.replace ("%ZONE_KEY_LOW%", Integer.toString (keyLow));
         zoneContent = zoneContent.replace ("%ZONE_KEY_HIGH%", Integer.toString (limitToDefault (zone.getKeyHigh (), 127)));
         zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_LOW%", Integer.toString (limitToDefault (zone.getVelocityCrossfadeLow (), 0)));
-        zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (limitToDefault (zone.getVelocityCrossfadeLow (), 0)));
+        zoneContent = zoneContent.replace ("%ZONE_VEL_CROSS_HIGH%", Integer.toString (limitToDefault (zone.getVelocityCrossfadeHigh (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (limitToDefault (zone.getNoteCrossfadeLow (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (limitToDefault (zone.getNoteCrossfadeHigh (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (limitToDefault (zone.getKeyRoot (), keyLow)));
@@ -429,7 +429,8 @@ public abstract class AbstractNKIMetadataFileHandler
         loopContent = loopContent.replace ("%LOOP_MODE%", loop.isLoopUntilRelease () ? this.tags.untilReleaseValue () : this.tags.untilEndValue ());
         loopContent = loopContent.replace ("%LOOP_ALTERNATING%", loop.getType () == LoopType.ALTERNATING ? "yes" : "no");
         loopContent = loopContent.replace ("%LOOP_TUNING%", Float.toString ((float) Math.pow (2.0, loop.getTuning () / 12.0)));
-        return loopContent.replace ("%LOOP_XFADE%", Integer.toString ((int) loop.getCrossfade ()));
+        // The cross-fade of the format is a length in samples, not the fraction of the loop
+        return loopContent.replace ("%LOOP_XFADE%", Integer.toString (loop.getCrossfadeInSamples ()));
     }
 
 
@@ -611,7 +612,7 @@ public abstract class AbstractNKIMetadataFileHandler
             instrumentSource.setClipKeyLow (Integer.parseInt (lowKey));
         final String highKey = programParameters.get ("highKey");
         if (highKey != null)
-            instrumentSource.setClipKeyLow (Integer.parseInt (highKey));
+            instrumentSource.setClipKeyHigh (Integer.parseInt (highKey));
     }
 
 
@@ -1469,8 +1470,11 @@ public abstract class AbstractNKIMetadataFileHandler
                 return Optional.empty ();
         }
 
+        // The cutoff is stored logarithmically normalized to [0..1] (see the writing side),
+        // 1.0 is the fully open filter at 21.8 kHz
         final String cutoffText = valueMap.get ("cutoff");
-        final double cutoff = cutoffText == null ? 1.0 : Double.parseDouble (cutoffText);
+        final double normalizedCutoff = cutoffText == null ? 1.0 : Double.parseDouble (cutoffText);
+        final double cutoff = MathUtils.denormalizeFrequency (Math.clamp (normalizedCutoff, 0, 1), 21800.0);
         final String resonanceText = valueMap.get ("resonance");
         final double resonance = resonanceText == null ? 0 : Double.parseDouble (resonanceText);
         return Optional.of (new DefaultFilter (filterType, Integer.parseInt (matcher.group (2)), cutoff, resonance));
