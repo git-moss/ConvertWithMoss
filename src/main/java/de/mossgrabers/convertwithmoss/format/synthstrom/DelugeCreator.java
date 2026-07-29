@@ -657,7 +657,14 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         // Oscillator 1 with the sample(s)
         final Element osc1 = XMLUtils.addElement (document, soundElement, DelugeTag.OSC1);
         XMLUtils.addTextElement (document, osc1, DelugeTag.TYPE, DelugeTag.TYPE_SAMPLE);
-        XMLUtils.addTextElement (document, osc1, DelugeTag.LOOP_MODE, Integer.toString (anyLoop && !allOneShot ? DelugeTag.LOOP_MODE_LOOP : DelugeTag.LOOP_MODE_ONCE));
+        final int loopMode;
+        if (anyLoop && !allOneShot)
+            loopMode = DelugeTag.LOOP_MODE_LOOP;
+        else
+            // 'ONCE' ignores a note-off, therefore an instrument which is not a one-shot must use
+            // 'CUT' which stops the play-back on a note-off
+            loopMode = allOneShot ? DelugeTag.LOOP_MODE_ONCE : DelugeTag.LOOP_MODE_CUT;
+        XMLUtils.addTextElement (document, osc1, DelugeTag.LOOP_MODE, Integer.toString (loopMode));
         XMLUtils.addTextElement (document, osc1, DelugeTag.REVERSED, reversed ? "1" : "0");
         XMLUtils.addTextElement (document, osc1, DelugeTag.TIME_STRETCH_ENABLE, "0");
         XMLUtils.addTextElement (document, osc1, DelugeTag.TIME_STRETCH_AMOUNT, "0");
@@ -797,7 +804,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         // sounds)
         final Element patchCables = XMLUtils.addElement (document, defaultParams, DelugeTag.PATCH_CABLES);
 
-        final int ampModAmount = (int) DelugeValues.modulationDepthToPatchAmount (amplitudeEnvelopeModulator.getDepth ());
+        final int ampModAmount = (int) DelugeValues.modulationDepthToPatchAmount (firstZone.getAmplitudeVelocityModulator ().getDepth ());
         createPatchCable (document, patchCables, DelugeTag.SOURCE_VELOCITY, DelugeTag.DESTINATION_VOLUME, ampModAmount);
 
         // Amplitude keyboard tracking is the "note" source routed to the volume. There is no
