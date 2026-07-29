@@ -23,8 +23,8 @@ public enum S5xxSamplerType
     S500("S500", "Roland S-50 (No OS / Sound Disk Only)"),
     /** Roland W-30. */
     W_30("W-30", "Roland W-30"),
-    /** Roland Hard Drive / ZIP / CD-ROM. */
-    LAND("LAND", "Hard Drive / ZIP / CD-ROM (multi-disk container)"),
+    /** Roland Hard Drive / ZIP / CD-ROM. Disc starts with '* ROLAND S-550 *' */
+    LAND("LAND", "HD/CD multi-disk container"),
     /** Roland S-770. */
     S770("S770", "SP-700 / S-750 / S-760 / S-770 / DJ-70 — unsupported"),
     /** Unknown format. */

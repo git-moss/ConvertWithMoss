@@ -15,6 +15,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import de.mossgrabers.tools.ui.Functions;
+
 
 /**
  * Parser for Roland S-50 / S-550 / W-30 / S-330 floppy and hard-drive disk images.
@@ -34,40 +36,32 @@ import java.util.Optional;
 public class S5xxDiskImageParser
 {
     /** Minimum file size to read the full header. */
-    private static final int HDR_MIN_SIZE      = 512;
+    private static final int HDR_MIN_SIZE         = 512;
 
     // LAND directory
-    private static final int LAND_HD_OFFSET    = 1024;
-    private static final int LAND_CD_OFFSET    = 512;
-    private static final int LAND_STRIDE       = 64;
-    private static final int LAND_HD_MAX       = 64;
-    private static final int LAND_CD_MAX       = 309;
-    private static final int LAND_NAME_CHARS   = 50;
+    private static final int LAND_CD_BLOCK_SIZE   = 512;
+    private static final int LAND_STRIDE          = 64;
 
     // Patch area
-    private static final int PATCH_BANK1_START = 64512;
-    // 64512 + 8 × 256
-    private static final int PATCH_BANK2_START = 66560;
+    private static final int PATCH_BANK1_START    = 64512;
 
     // Tone area
-    private static final int TONE_OFFSET       = 69120;
-    private static final int TONE_SIZE         = 128;
-    private static final int TONE_COUNT        = 32;
-    private static final int TONE_LIST_OFFSET  = 0x11E00;
-    private static final int TONE_LIST_SIZE    = 16;
+    private static final int TONE_OFFSET          = 69120;
+    private static final int TONE_SIZE            = 128;
+    private static final int TONE_COUNT           = 32;
+    private static final int TONE_LIST_OFFSET     = 0x11E00;
+    private static final int TONE_LIST_SIZE       = 16;
 
     // Wave Data area
-    private static final int WAVE_DATA_A       = 0x12000;
-    private static final int WAVE_DATA_SIZE    = 0xA2000;
+    private static final int WAVE_DATA_A_DISKETTE = 0x12000;
+    private static final int WAVE_DATA_A_CDROM    = 0x2400;
+    private static final int WAVE_DATA_SIZE       = 0xA2000;
 
     // Disk label
     // Derivation: base = 68552 + loop counter 99 = 68651; row 1 = 68651 + 8 = 68659
-    private static final int LABEL_ROW1_OFFSET = 68659;
-    private static final int LABEL_ROW_LEN     = 12;
-    private static final int LABEL_ROW_COUNT   = 5;
-    // Rows 2-5 start right after row 1 (68671), stored in 12 groups of 4 interleaved bytes.
-    // 68671
-    private static final int LABEL_ROWS25_OFF  = LABEL_ROW1_OFFSET + LABEL_ROW_LEN;
+    private static final int LABEL_ROW1_OFFSET    = 68659;
+    private static final int LABEL_ROW_LEN        = 12;
+    private static final int LABEL_ROW_COUNT      = 5;
 
     private final byte []    data;
 
@@ -99,50 +93,48 @@ public class S5xxDiskImageParser
 
         final S5xxSamplerType samplerType = header.getSamplerType ();
         if (samplerType == S5xxSamplerType.LAND)
-        {
-            // TODO
-            final List<S5xxDiskImage> result = new ArrayList<> ();
-            @SuppressWarnings("unused")
-            final List<S5xxDirectoryEntry> landDirectory = this.parseLandDirectory (header);
-            // throw new IOException ("HD / CD-Roms currently not supported.");
-            for (final S5xxDirectoryEntry entry: landDirectory)
-                result.add (new S5xxDiskImage (header, this.parsePatches (samplerType, 0x10400), this.parseTones (), this.parseDiskLabel (), this.readWaveData ()));
-            return result;
-        }
+            return parseCD (header);
 
-        return Collections.singletonList (new S5xxDiskImage (header, this.parsePatches (samplerType, 0), this.parseTones (), this.parseDiskLabel (), this.readWaveData ()));
+        return Collections.singletonList (new S5xxDiskImage (header, this.parsePatches (samplerType, 0), this.parseTones (0), this.parseDiskLabel (0), this.readWaveData (WAVE_DATA_A_DISKETTE, false)));
     }
 
 
-    private List<S5xxWaveData> readWaveData () throws IOException
+    private List<S5xxDiskImage> parseCD (final S5xxDiskImageHeader header) throws IOException
     {
-        final InputStream input = new ByteArrayInputStream (this.data, WAVE_DATA_A, WAVE_DATA_SIZE);
+        final List<S5xxDiskImage> result = new ArrayList<> ();
+        for (final S5xxSoundDirectoryEntry entry: this.parseSoundDirectory (header))
+        {
+            // The byte start of the virtual disk
+            final int virtualDiskOffset = (int) (entry.getOffset () * LAND_CD_BLOCK_SIZE);
+            // The read-methods skip the header of the diskette which is not present with the
+            // CD-Format!
+            final int missingHeaderOffset = virtualDiskOffset - PATCH_BANK1_START;
+            final int waveOffset = virtualDiskOffset + WAVE_DATA_A_CDROM;
+            result.add (new S5xxDiskImage (header, this.parsePatches (S5xxSamplerType.LAND, missingHeaderOffset), this.parseTones (missingHeaderOffset), this.parseDiskLabel (missingHeaderOffset), this.readWaveData (waveOffset, true)));
+        }
+        return result;
+    }
+
+
+    private List<S5xxWaveData> readWaveData (final int slotOffset, final boolean isCdRom) throws IOException
+    {
+        final InputStream input = new ByteArrayInputStream (this.data, slotOffset, WAVE_DATA_SIZE);
         final List<S5xxWaveData> result = new ArrayList<> ();
         for (int i = 0; i < 36; i++)
-            result.add (new S5xxWaveData (input));
+            result.add (new S5xxWaveData (input, isCdRom ? 16 : 12));
         return result;
     }
 
 
     private List<S5xxPatch> parsePatches (final S5xxSamplerType type, final int slotOffset) throws IOException
     {
-        final int blockSize = type.patchBlockSize ();
-        final int patchCount = type.patchCount ();
-
         final List<S5xxPatch> patches = new ArrayList<> ();
-
-        // Bank 1 - first 8 patches
-        final int bank1Count = type.isS50 () ? patchCount : Math.min (8, patchCount);
-        this.parsePatchBank (patches, slotOffset + PATCH_BANK1_START, blockSize, bank1Count, 0, type);
-
-        // Bank 2 — second 8 patches for S-550 / W-30 / S-330 only
-        if (!type.isS50 () && patchCount > 8)
-            this.parsePatchBank (patches, slotOffset + PATCH_BANK2_START, blockSize, patchCount - 8, 8, type);
+        this.parsePatchBank (patches, slotOffset + PATCH_BANK1_START, type.patchBlockSize (), type.patchCount (), type);
         return patches;
     }
 
 
-    private void parsePatchBank (final List<S5xxPatch> out, final int bankStart, final int blockSize, final int count, final int globalIndexOffset, final S5xxSamplerType type) throws IOException
+    private void parsePatchBank (final List<S5xxPatch> out, final int bankStart, final int blockSize, final int count, final S5xxSamplerType type) throws IOException
     {
         for (int i = 0; i < count; i++)
         {
@@ -150,10 +142,9 @@ public class S5xxDiskImageParser
             if (off + blockSize > this.data.length)
                 break;
 
-            final int gi = globalIndexOffset + i;
-            final String patchId = buildPatchId (gi, type == S5xxSamplerType.S330);
+            final String patchId = buildPatchId (i, type == S5xxSamplerType.S330);
             final InputStream input = new ByteArrayInputStream (this.data, off, blockSize);
-            out.add (new S5xxPatch (gi, patchId, input, type));
+            out.add (new S5xxPatch (i, patchId, input, type));
         }
     }
 
@@ -181,70 +172,77 @@ public class S5xxDiskImageParser
     }
 
 
-    private List<S5xxTone> parseTones () throws IOException
+    private List<S5xxTone> parseTones (final int slotOffset) throws IOException
     {
         final List<S5xxTone> tones = new ArrayList<> ();
 
         for (int i = 0; i < TONE_COUNT; i++)
         {
-            final InputStream toneListInput = new ByteArrayInputStream (this.data, TONE_LIST_OFFSET + i * TONE_LIST_SIZE, TONE_LIST_SIZE);
-            final InputStream toneInput = new ByteArrayInputStream (this.data, TONE_OFFSET + i * TONE_SIZE, TONE_SIZE);
-            tones.add (new S5xxTone (new S5xxToneList (toneListInput), toneInput));
+            final InputStream toneListInput = new ByteArrayInputStream (this.data, slotOffset + TONE_LIST_OFFSET + i * TONE_LIST_SIZE, TONE_LIST_SIZE);
+            final S5xxToneList listEntry = new S5xxToneList (toneListInput);
+            final InputStream toneInput = new ByteArrayInputStream (this.data, slotOffset + TONE_OFFSET + i * TONE_SIZE, TONE_SIZE);
+            tones.add (new S5xxTone (listEntry, toneInput));
         }
         return tones;
     }
 
 
-    private List<S5xxDirectoryEntry> parseLandDirectory (final S5xxDiskImageHeader header)
+    private List<S5xxSoundDirectoryEntry> parseSoundDirectory (final S5xxDiskImageHeader header) throws IOException
     {
-        final boolean isCdRom = header.isCdRom ();
-        final int baseOffset = isCdRom ? LAND_CD_OFFSET : LAND_HD_OFFSET;
-        final int maxSlots = isCdRom ? LAND_CD_MAX : LAND_HD_MAX;
+        Optional<S5xxCDSectionHeader> soundDirectoryHeader = header.getSectionHeader (S5xxCDSectionHeader.SECTION_SOUND_DIRECTORY);
+        if (soundDirectoryHeader.isEmpty ())
+            soundDirectoryHeader = header.getSectionHeader (S5xxCDSectionHeader.SECTION_SOUND_DIRECTORY_ALT);
+        if (soundDirectoryHeader.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_S5XX_UNSOUND_CD"));
 
-        final List<S5xxDirectoryEntry> entries = new ArrayList<> ();
+        final S5xxCDSectionHeader sectionHeader = soundDirectoryHeader.get ();
+        final long baseOffset = sectionHeader.getOffset () * LAND_CD_BLOCK_SIZE;
+        final long maxSlots = (sectionHeader.getSize () * LAND_CD_BLOCK_SIZE) / LAND_STRIDE;
 
+        final List<S5xxSoundDirectoryEntry> entries = new ArrayList<> ();
         for (int slot = 0; slot < maxSlots; slot++)
         {
-            final int off = baseOffset + slot * LAND_STRIDE;
-            if (off < this.data.length)
-            {
-                final int available = Math.min (LAND_NAME_CHARS, this.data.length - off);
-                final String name = this.readAsciiPrintable (off, available);
-
-                // CD-ROM: the tool stops at the first all-blank slot
-                if (!(isCdRom && name.isEmpty ()))
-                    entries.add (new S5xxDirectoryEntry (slot + 1, name));
-            }
+            final long off = baseOffset + slot * LAND_STRIDE;
+            final ByteArrayInputStream entryInputStream = new ByteArrayInputStream (this.data, (int) off, LAND_STRIDE);
+            final S5xxSoundDirectoryEntry e = new S5xxSoundDirectoryEntry (entryInputStream);
+            if (!e.getName ().isEmpty ())
+                entries.add (e);
         }
         return entries;
     }
 
 
-    private Optional<S5xxDiskLabel> parseDiskLabel ()
+    private Optional<S5xxDiskLabel> parseDiskLabel (final int slotOffset)
     {
+        final int startOffset = slotOffset + LABEL_ROW1_OFFSET;
+
+        // Rows 2-5 start right after row 1 (68671), stored in 12 groups of 4 interleaved bytes.
+        // 68671
+        final int labelRows25Offset = startOffset + LABEL_ROW_LEN;
+
         // Last byte needed is index 68718 = LABEL_ROWS25_OFF + 12 groups × 4 bytes − 1
-        final int endNeeded = LABEL_ROWS25_OFF + LABEL_ROW_LEN * 4; // 68719
+        final int endNeeded = labelRows25Offset + LABEL_ROW_LEN * 4; // 68719
         if (this.data.length < endNeeded)
             return Optional.empty ();
 
         final String [] rows = new String [LABEL_ROW_COUNT];
 
         // Row 1: contiguous bytes 68659–68670
-        rows[0] = this.readAscii (LABEL_ROW1_OFFSET, LABEL_ROW_LEN);
+        rows[0] = this.readAscii (startOffset, LABEL_ROW_LEN).trim ().replace ((char) 0, ' ');
 
         // Rows 2–5: interleaved 4-byte groups starting at 68671
         // group N at offset (68671 + N*4): [+0]=row2[N], [+1]=row3[N], [+2]=row4[N], [+3]=row5[N]
         final char [] [] chars = new char [4] [LABEL_ROW_LEN]; // [row-2..5][char]
         for (int n = 0; n < LABEL_ROW_LEN; n++)
         {
-            final int g = LABEL_ROWS25_OFF + n * 4;
+            final int g = labelRows25Offset + n * 4;
             chars[0][n] = (char) (this.data[g] & 0xFF);
             chars[1][n] = (char) (this.data[g + 1] & 0xFF);
             chars[2][n] = (char) (this.data[g + 2] & 0xFF);
             chars[3][n] = (char) (this.data[g + 3] & 0xFF);
         }
         for (int r = 0; r < 4; r++)
-            rows[r + 1] = new String (chars[r]);
+            rows[r + 1] = new String (chars[r]).trim ().replace ((char) 0, ' ');
 
         return Optional.of (new S5xxDiskLabel (rows));
     }
@@ -268,27 +266,5 @@ public class S5xxDiskImageParser
     {
         final int safeLen = Math.clamp (this.data.length - (long) offset, 0, length);
         return new String (this.data, offset, safeLen, StandardCharsets.US_ASCII);
-    }
-
-
-    /**
-     * Reads up to {@code maxLength} <em>printable</em> ASCII bytes (0x20–0x7E), stopping early at
-     * the first non-printable byte.
-     *
-     * @param offset The offset in the data array where the string starts
-     * @param maxLength The maximum length
-     * @return The ASCII text
-     */
-    private String readAsciiPrintable (final int offset, final int maxLength)
-    {
-        final StringBuilder sb = new StringBuilder (maxLength);
-        for (int i = 0; i < maxLength && offset + i < this.data.length; i++)
-        {
-            final char c = (char) (this.data[offset + i] & 0xFF);
-            if (c < 0x20 || c > 0x7E)
-                break;
-            sb.append (c);
-        }
-        return sb.toString ();
     }
 }

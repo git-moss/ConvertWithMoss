@@ -63,7 +63,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public S5xxDetector (final INotifier notifier)
     {
-        super ("Roland S-5xx", "S5xx", notifier, new MetadataSettingsUI ("S5xx"), ".out", ".img", ".sdk");
+        super ("Roland S-5xx", "S5xx", notifier, new MetadataSettingsUI ("S5xx"), ".out", ".img", ".sdk", ".iso");
     }
 
 
@@ -79,8 +79,9 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
             final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
             for (final S5xxDiskImage image: new S5xxDiskImageParser (sourceFile).parse ())
             {
-                final S5xxDiskImageHeader hdr = image.getHeader ();
-                this.notifier.log ("IDS_S5XX_VERSION", hdr.getSamplerType ().getDescription (), hdr.getOsVersionString ());
+                final S5xxDiskImageHeader header = image.getHeader ();
+                final S5xxSamplerType type = header.getSamplerType ();
+                this.notifier.log ("IDS_S5XX_VERSION", type.getDescription (), type == S5xxSamplerType.LAND ? image.getDiskLabelDescription (' ') : header.getOsVersionString ());
                 multisampleSources.addAll (this.readPatches (sourceFile, image));
             }
             return multisampleSources;
@@ -96,7 +97,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     private List<IMultisampleSource> readPatches (final File sourceFile, final S5xxDiskImage image)
     {
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
-        final String metadataDescription = createMetadataDescription (image.getDiskLabel ());
+        final String metadataDescription = image.getDiskLabelDescription ('\n');
 
         for (final S5xxPatch patch: image.getPatches ())
         {
@@ -104,9 +105,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
             if (patchName.isBlank ())
                 continue;
             this.notifier.log ("IDS_S5XX_CONVERTING_PATCH", String.format ("%-3s %s", patch.getPatchId (), patchName));
-
-            final IMultisampleSource multisampleSource = this.readPatch (sourceFile, patch, patchName, metadataDescription, image);
-            multisampleSources.add (multisampleSource);
+            multisampleSources.add (this.readPatch (sourceFile, patch, patchName, metadataDescription, image));
         }
 
         return multisampleSources;
@@ -143,22 +142,25 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
                     if (toneId >= 0)
                     {
                         final S5xxTone tone = tones.get (toneId);
-                        final String toneName = tone.getName ();
-                        final ISampleZone sampleZone = new DefaultSampleZone (toneName, lowKey, highKey);
-                        if (layer == 0)
-                            groupLayer1.addSampleZone (sampleZone);
-                        else
+                        if (!tone.getListEntry ().isDisabled ())
                         {
-                            groupLayer2.addSampleZone (sampleZone);
-                            // Possible stereo setup
-                            if (patch.getKeyMode () == 4 && tone.getOutputAssign () == 1)
-                                sampleZone.setPanning (1);
+                            final String toneName = tone.getName ();
+                            final ISampleZone sampleZone = new DefaultSampleZone (toneName, lowKey, highKey);
+                            if (layer == 0)
+                                groupLayer1.addSampleZone (sampleZone);
+                            else
+                            {
+                                groupLayer2.addSampleZone (sampleZone);
+                                // Possible stereo setup
+                                if (patch.getKeyMode () == 4 && tone.getOutputAssign () == 1)
+                                    sampleZone.setPanning (1);
+                            }
+
+                            sampleZone.setBendUp (bendRange);
+                            sampleZone.setBendDown (-bendRange);
+
+                            applyParameters (sampleZone, tone, waveData, tones, image.getHeader ().getSamplerType ());
                         }
-
-                        sampleZone.setBendUp (bendRange);
-                        sampleZone.setBendDown (-bendRange);
-
-                        applyParameters (sampleZone, tone, waveData, tones, image.getHeader ().getSamplerType ());
                     }
 
                     lowKey = key;
@@ -167,15 +169,13 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
-        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, patchName, applyLayerSetup (patch, groupLayer1, groupLayer2));
-        multisampleSource.getMetadata ().setDescription (metadataDescription);
-        return multisampleSource;
+        return this.createMultisampleSource (sourceFile, patchName, applyLayerSetup (patch, groupLayer1, groupLayer2), metadataDescription);
     }
 
 
     private static void applyParameters (final ISampleZone sampleZone, final S5xxTone tone, final List<S5xxWaveData> waveData, final List<S5xxTone> tones, final S5xxSamplerType samplerType)
     {
-        sampleZone.setSampleData (createSampleData (tone.getOrigSubTone () == 1 ? tones.get (tone.getSourceTone ()) : tone, waveData));
+        sampleZone.setSampleData (createSampleData (tone.getOrigSubTone () == 1 ? tones.get (tone.getSourceTone ()) : tone, waveData, samplerType == S5xxSamplerType.LAND));
         sampleZone.setKeyRoot (tone.getOrigKeyNumber ());
 
         sampleZone.setStart (tone.getStartPoint ());
@@ -237,7 +237,7 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static ISampleData createSampleData (final S5xxTone tone, final List<S5xxWaveData> waveData)
+    private static ISampleData createSampleData (final S5xxTone tone, final List<S5xxWaveData> waveData, final boolean isCdRom)
     {
         final int startSegment = (tone.getWaveBank () == 1 ? 18 : 0) + tone.getWaveSegmentTop ();
         final int numSegments = tone.getWaveSegmentLength ();
@@ -253,7 +253,8 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
             samples = Arrays.copyOf (samples, endPoint + 1);
 
         final int sampleRate = tone.getSamplingFrequency () == 0 ? 30000 : 15000;
-        return new InMemorySampleData (new DefaultAudioMetadata (1, sampleRate, 12, samples.length), samples);
+        final int resolution = isCdRom ? 16 : 12;
+        return new InMemorySampleData (new DefaultAudioMetadata (1, sampleRate, resolution, samples.length), samples);
     }
 
 
@@ -325,19 +326,6 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
         final List<IGroup> result = new ArrayList<> ();
         Collections.addAll (result, groupLayer1, groupLayer2);
         return result;
-    }
-
-
-    private static String createMetadataDescription (final Optional<S5xxDiskLabel> diskLabel)
-    {
-        if (diskLabel.isEmpty ())
-            return "";
-
-        final StringBuilder sb = new StringBuilder ();
-        for (final String row: diskLabel.get ().getRows ())
-            if (row != null && !row.isBlank ())
-                sb.append (row.trim ()).append ("\n");
-        return sb.toString ().trim ();
     }
 
 

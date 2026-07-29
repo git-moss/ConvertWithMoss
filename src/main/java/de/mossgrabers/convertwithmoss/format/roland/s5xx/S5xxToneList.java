@@ -32,12 +32,13 @@ public class S5xxToneList
     {
         this.name = StreamUtils.readAscii (input, 8).trim ();
 
-        // Unknown
+        // Null termination
         input.skipNBytes (1);
 
+        // 0x00 - 0x1F
         this.orgSubTone = StreamUtils.readUnsigned8 (input);
 
-        // Unknown
+        // Unknown - both seem to be boolean states 0x00 / 0x01
         input.skipNBytes (2);
 
         this.rootKey = StreamUtils.readUnsigned8 (input);
@@ -55,6 +56,17 @@ public class S5xxToneList
     public String getName ()
     {
         return this.name;
+    }
+
+
+    /**
+     * Is the tone disabled?
+     * 
+     * @return True if disabled
+     */
+    public boolean isDisabled ()
+    {
+        return this.name.isBlank ();
     }
 
 
