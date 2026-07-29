@@ -8,18 +8,26 @@ Importing Arturia Synclavier V Timbres to Synclavier Regen".
 
 ## SYNX container
 
-`*.synx` (the *Export Preset* / *Export Bank* output of Synclavier V) is a plain **ZIP** archive:
+`*.synx` (the *Export Preset* / *Export Bank* output of Synclavier V) is a **ZIP** archive:
 
 ```
 Synclavier/User/<Library>/<Preset name>     one file per preset, no file extension
+<Library>.png                               optional pack cover (wrapped, see below)
 ```
 
-A preset export contains one file, a bank export several. ConvertWithMoss additionally bundles the
-samples of written presets under `Synclavier/User/<Library>/Samples/<Preset>/*.wav` and references
-them relative to the preset file.
+A preset export contains one preset file, a bank export several. The exported preset files are
+self-contained: the referenced sound files are embedded in a second archive appended to the preset
+(see below). The cover image at the root is not a plain PNG either - it is wrapped in the same
+name-to-bytes archive structure as the embedded sound files.
 
-The preset files are also what Synclavier V stores in its browser database folder
-(`/Library/Arturia/Presets/Synclavier V/...` on macOS) - one extensionless file per preset.
+The application's import is picky about the ZIP container: all entries are **stored**
+(uncompressed) with no general purpose flags and no extra fields. Archives written by common ZIP
+libraries (deflate compression, UTF-8 name flag 0x800, extended timestamp extra fields) are
+rejected with a generic import error, so a writer has to emit the same minimal container.
+
+The preset files (without the appended sample archive) are also what Synclavier V stores in its
+browser database folder (`/Library/Arturia/Presets/Synclavier V/...` on macOS) - one extensionless
+file per preset.
 
 ## Preset file
 
@@ -56,6 +64,22 @@ data, so the file as a whole must be treated as bytes, not lines).
     (enable, delay, splice time/shape, transpose, tuning, volume, modulation) followed by 24
     carrier coefficients/phases and 24 modulator coefficients/phases,
   * `__Mapped__<n>` / `__HW_Mapped__<n>` - 4 byte MIDI mapping entries.
+
+### The appended sample archive of an export
+
+An exported preset file continues after the trailing line feed with a **second** archive which
+embeds every referenced sound file (verbatim copies of the pool WAV files):
+
+```
+22 serialization::archive 10 0 0 <count> 1 0 1 <path> <bytes> (<path> <bytes>)... \n
+```
+
+The `1` after the `1 0` precedes only the first pair; `<path>` is the reference exactly as stored
+in the `AudioSampleObject` and `<bytes>` is the complete audio file as a length-prefixed string.
+Note that this second archive starts with the tokens `10 0 0` where a preset starts with
+`10 0 7` - that is the way to tell the archive kinds apart (the wrapped cover image uses the same
+`10 0 0` map structure with the image name as its single key). Presets in the browser database do
+not carry this section; exports always do, and the import appears to require it.
 
 ## AudioSampleObject
 
@@ -139,3 +163,6 @@ normalized value is the (fractional) position divided by 1250. The list is piece
 * A preset written by ConvertWithMoss starts from a neutral template (the majority value of every
   parameter over the factory corpus, effects off, one initial frame per partial) so that all
   synthesis parameters hold their defaults.
+* Written presets embed their samples in the appended sample archive (referenced as
+  `User/<Preset>/<zone>.wav`) and are packed in the minimal stored-only ZIP container, both of
+  which the import requires.

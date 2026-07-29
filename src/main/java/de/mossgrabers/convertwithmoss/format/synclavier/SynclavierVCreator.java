@@ -4,18 +4,20 @@
 
 package de.mossgrabers.convertwithmoss.format.synclavier;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.zip.CRC32;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipOutputStream;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -27,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -44,7 +47,8 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
     private static final String SYNX_ENDING           = "synx";
     private static final String TEMPLATE_NAME         = "SynclavierVTemplate.preset.gz";
     private static final String ZIP_ROOT              = "Synclavier/User/";
-    private static final String SAMPLE_FOLDER         = "Samples";
+    /** The embedded samples are referenced like pool samples under a 'User' pool folder. */
+    private static final String SAMPLE_FOLDER         = "User";
 
     private static final int    MAX_PARTIALS          = 12;
     private static final double CARRIER_MODE_AUDITION = 0.5;
@@ -104,17 +108,19 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
 
         final String libraryFolder = ZIP_ROOT + safeLibraryName + "/";
         final Set<String> usedPresetNames = new HashSet<> ();
-        try (final ZipOutputStream zipOutputStream = new ZipOutputStream (new FileOutputStream (synxFile)))
+        final MinimalZipWriter zipWriter = new MinimalZipWriter ();
+        for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            for (final IMultisampleSource multisampleSource: multisampleSources)
-            {
-                String presetName = createSafeFilename (multisampleSource.getName ());
-                int counter = 2;
-                while (!usedPresetNames.add (presetName))
-                    presetName = createSafeFilename (multisampleSource.getName ()) + " " + counter++;
+            String presetName = createSafeFilename (multisampleSource.getName ());
+            int counter = 2;
+            while (!usedPresetNames.add (presetName))
+                presetName = createSafeFilename (multisampleSource.getName ()) + " " + counter++;
 
-                this.storePreset (zipOutputStream, libraryFolder, safeLibraryName, presetName, multisampleSource);
-            }
+            this.storePreset (zipWriter, libraryFolder, safeLibraryName, presetName, multisampleSource);
+        }
+        try (final FileOutputStream out = new FileOutputStream (synxFile))
+        {
+            zipWriter.writeTo (out);
         }
     }
 
@@ -129,7 +135,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
      * @param multisampleSource The preset content
      * @throws IOException Could not store the preset
      */
-    private void storePreset (final ZipOutputStream zipOutputStream, final String libraryFolder, final String libraryName, final String presetName, final IMultisampleSource multisampleSource) throws IOException
+    private void storePreset (final MinimalZipWriter zipWriter, final String libraryFolder, final String libraryName, final String presetName, final IMultisampleSource multisampleSource) throws IOException
     {
         final SynclavierVFile preset = SynclavierVFile.parse (getTemplate ());
 
@@ -169,24 +175,51 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
         if (hasVelocityRange)
             preset.setParameter ("Dynamic Envelope Source", DYN_SOURCE_VELOCITY);
 
+        // The samples are embedded in the preset file itself, as the application's own exports do.
+        // They are referenced like pool samples, relative to the Arturia sample pool.
         final String sampleFolder = SAMPLE_FOLDER + "/" + presetName;
         final Set<String> usedSampleNames = new HashSet<> ();
         for (int index = 0; index < zones.size (); index++)
         {
             final ISampleZone zone = zones.get (index);
 
-            // Ensure a unique sample file name inside the preset's sample folder
+            // Ensure a unique sample file name
             String sampleName = createSafeFilename (zone.getName ());
             int counter = 2;
             while (!usedSampleNames.add (sampleName.toLowerCase ()))
                 sampleName = createSafeFilename (zone.getName ()) + " " + counter++;
             zone.setName (sampleName);
 
-            this.fillPartial (preset, index + 1, zone, sampleFolder + "/" + sampleName + ".wav");
+            final String samplePath = sampleFolder + "/" + sampleName + ".wav";
+            preset.samples.put (samplePath, this.createSampleFileContent (multisampleSource, zone));
+            this.fillPartial (preset, index + 1, zone, samplePath);
         }
 
-        storeDataFile (zipOutputStream, libraryFolder + presetName, preset.write (), metadata.getCreationDateTime ());
-        this.storeSampleFiles (zipOutputStream, libraryFolder + sampleFolder, multisampleSource);
+        zipWriter.addEntry (libraryFolder + presetName, preset.write ());
+    }
+
+
+    /**
+     * Creates the WAV file content of a zone, applying the configured destination format handling.
+     *
+     * @param multisampleSource The multi-sample source of the zone
+     * @param zone The zone
+     * @return The WAV file bytes
+     * @throws IOException Could not create the audio data
+     */
+    private byte [] createSampleFileContent (final IMultisampleSource multisampleSource, final ISampleZone zone) throws IOException
+    {
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA", zone.getName (), zone.getName () + ".wav"));
+        try (final ByteArrayOutputStream out = new ByteArrayOutputStream ())
+        {
+            if (this.requiresRewrite (DESTINATION_FORMAT))
+                this.rewriteFile (multisampleSource, zone, out, DESTINATION_FORMAT, false);
+            else
+                sampleData.get ().writeSample (out);
+            return out.toByteArray ();
+        }
     }
 
 
@@ -280,14 +313,6 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
-    /** {@inheritDoc} */
-    @Override
-    protected String createFileName (final int zoneIndex, final ISampleZone zone)
-    {
-        return createSafeFilename (zone.getName ()) + ".wav";
-    }
-
-
     /**
      * Loads the neutral preset template.
      *
@@ -302,5 +327,115 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
                 templateData = in.readAllBytes ();
             }
         return templateData;
+    }
+
+
+    /**
+     * Writes a ZIP file the way the Synclavier V export does: all entries stored (no compression),
+     * no general purpose flags and no extra fields. The application's import is picky about the
+     * container - archives written by {@link java.util.zip.ZipOutputStream} (which flags its
+     * entries as UTF-8 and adds extended timestamp fields) are rejected.
+     */
+    private static class MinimalZipWriter
+    {
+        private record Entry (byte [] name, byte [] data, long crc, int offset)
+        {
+            // Intentionally empty
+        }
+
+        private final List<Entry> entries = new ArrayList<> ();
+        private int               position = 0;
+
+
+        /**
+         * Adds a stored entry.
+         *
+         * @param name The entry name (forward slashes as separators)
+         * @param data The entry content
+         */
+        void addEntry (final String name, final byte [] data)
+        {
+            final CRC32 checksum = new CRC32 ();
+            checksum.update (data);
+            final byte [] nameBytes = name.getBytes (StandardCharsets.UTF_8);
+            this.entries.add (new Entry (nameBytes, data, checksum.getValue (), this.position));
+            this.position += 30 + nameBytes.length + data.length;
+        }
+
+
+        /**
+         * Writes the ZIP file.
+         *
+         * @param out Where to write to
+         * @throws IOException Could not write
+         */
+        void writeTo (final OutputStream out) throws IOException
+        {
+            for (final Entry entry: this.entries)
+            {
+                writeInt (out, 0x04034B50);
+                writeShort (out, 20);
+                writeShort (out, 0);
+                writeShort (out, 0);
+                writeShort (out, 0);
+                writeShort (out, 0x21);
+                writeInt (out, (int) entry.crc);
+                writeInt (out, entry.data.length);
+                writeInt (out, entry.data.length);
+                writeShort (out, entry.name.length);
+                writeShort (out, 0);
+                out.write (entry.name);
+                out.write (entry.data);
+            }
+
+            int centralSize = 0;
+            for (final Entry entry: this.entries)
+            {
+                writeInt (out, 0x02014B50);
+                writeShort (out, 20);
+                writeShort (out, 20);
+                writeShort (out, 0);
+                writeShort (out, 0);
+                writeShort (out, 0);
+                writeShort (out, 0x21);
+                writeInt (out, (int) entry.crc);
+                writeInt (out, entry.data.length);
+                writeInt (out, entry.data.length);
+                writeShort (out, entry.name.length);
+                writeShort (out, 0);
+                writeShort (out, 0);
+                writeShort (out, 0);
+                writeShort (out, 0);
+                writeInt (out, 0);
+                writeInt (out, entry.offset);
+                out.write (entry.name);
+                centralSize += 46 + entry.name.length;
+            }
+
+            writeInt (out, 0x06054B50);
+            writeShort (out, 0);
+            writeShort (out, 0);
+            writeShort (out, this.entries.size ());
+            writeShort (out, this.entries.size ());
+            writeInt (out, centralSize);
+            writeInt (out, this.position);
+            writeShort (out, 0);
+        }
+
+
+        private static void writeShort (final OutputStream out, final int value) throws IOException
+        {
+            out.write (value & 0xFF);
+            out.write (value >> 8 & 0xFF);
+        }
+
+
+        private static void writeInt (final OutputStream out, final int value) throws IOException
+        {
+            out.write (value & 0xFF);
+            out.write (value >> 8 & 0xFF);
+            out.write (value >> 16 & 0xFF);
+            out.write (value >> 24 & 0xFF);
+        }
     }
 }

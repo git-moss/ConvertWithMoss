@@ -146,17 +146,21 @@ public class SynclavierVFile
     final Map<String, String>       metadata             = new TreeMap<> ();
     final Map<String, String>       parameters           = new TreeMap<> ();
     final Map<String, byte []>      blobs                = new TreeMap<> ();
+    /** The embedded sound files of an export: the referenced path mapped to the audio file. */
+    final Map<String, byte []>      samples              = new LinkedHashMap<> ();
 
 
     /**
-     * Checks if the given data starts with the Boost text archive signature.
+     * Checks if the given data starts like a preset archive. Exports wrap other payloads (the
+     * pack image, the embedded sound files) in archives as well but those continue with
+     * <i>10 0 0</i> where a preset has the class version tokens <i>10 0 7</i>.
      *
      * @param data The data to check
-     * @return True if it is an archive
+     * @return True if it is a preset archive
      */
     public static boolean isArchive (final byte [] data)
     {
-        final byte [] start = "22 serialization::archive ".getBytes (StandardCharsets.US_ASCII);
+        final byte [] start = "22 serialization::archive 10 0 7 ".getBytes (StandardCharsets.US_ASCII);
         if (data.length < start.length)
             return false;
         for (int i = 0; i < start.length; i++)
@@ -221,6 +225,22 @@ public class SynclavierVFile
         {
             final String key = reader.readString ();
             preset.blobs.put (key, reader.readBytes ());
+        }
+
+        // An export ('Export Preset'/'Export Bank') appends a second archive which embeds the
+        // referenced sound files: <count> then pairs of the referenced path and the audio file
+        if (reader.hasMoreTokens () && SIGNATURE.equals (reader.readString ()))
+        {
+            reader.readTokens (3);
+            final int numSamples = reader.readInt ();
+            reader.readTokens (2);
+            for (int i = 0; i < numSamples; i++)
+            {
+                if (i == 0)
+                    reader.readToken ();
+                final String path = reader.readString ();
+                preset.samples.put (path, reader.readBytes ());
+            }
         }
         return preset;
     }
@@ -288,6 +308,30 @@ public class SynclavierVFile
             out.write (blob);
         }
         out.write ('\n');
+
+        // The embedded sound files of an export as a second archive
+        if (!this.samples.isEmpty ())
+        {
+            writeString (out, SIGNATURE);
+            writeTokens (out, " " + ARCHIVE_VERSION + " 0 0 " + this.samples.size () + " 1 0");
+            boolean isFirst = true;
+            for (final Map.Entry<String, byte []> entry: this.samples.entrySet ())
+            {
+                if (isFirst)
+                {
+                    writeTokens (out, " 1");
+                    isFirst = false;
+                }
+                writeSeparator (out);
+                writeString (out, entry.getKey ());
+                writeSeparator (out);
+                final byte [] audio = entry.getValue ();
+                out.write (Integer.toString (audio.length).getBytes (StandardCharsets.US_ASCII));
+                writeSeparator (out);
+                out.write (audio);
+            }
+            out.write ('\n');
+        }
         return out.toByteArray ();
     }
 
@@ -462,6 +506,15 @@ public class SynclavierVFile
             while (this.position < this.data.length && !isWhitespace (this.data[this.position]))
                 this.position++;
             return new String (this.data, start, this.position - start, StandardCharsets.US_ASCII);
+        }
+
+
+        boolean hasMoreTokens ()
+        {
+            int index = this.position;
+            while (index < this.data.length && isWhitespace (this.data[index]))
+                index++;
+            return index < this.data.length;
         }
 
 

@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.synclavier;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -153,7 +155,7 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
             final ISampleZone zone;
             try
             {
-                final Optional<ISampleData> sampleData = this.resolveSample (synxFile, zipFile, entry, samplePath);
+                final Optional<ISampleData> sampleData = this.resolveSample (preset, synxFile, zipFile, entry, samplePath);
                 if (sampleData.isEmpty ())
                 {
                     this.notifier.logError ("IDS_SYNCLAVIER_SAMPLE_NOT_FOUND", samplePath);
@@ -306,10 +308,12 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
 
 
     /**
-     * Resolves a referenced sound file. The reference is searched inside the synx ZIP (relative to
+     * Resolves a referenced sound file. The reference is first looked up in the sound files
+     * embedded in the preset (exports are self-contained), then inside the synx ZIP (relative to
      * the preset entry and by its base name), as an absolute path, relative to the folder of the
      * synx file and finally in the Arturia sample pool.
      *
+     * @param preset The preset which references the sound file
      * @param synxFile The synx file
      * @param zipFile The opened ZIP file
      * @param entry The preset entry
@@ -317,9 +321,26 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
      * @return The sample data or empty if the file could not be found
      * @throws IOException Could not read the sample
      */
-    private Optional<ISampleData> resolveSample (final File synxFile, final ZipFile zipFile, final ZipEntry entry, final String samplePath) throws IOException
+    private Optional<ISampleData> resolveSample (final SynclavierVFile preset, final File synxFile, final ZipFile zipFile, final ZipEntry entry, final String samplePath) throws IOException
     {
         final String normalizedPath = samplePath.replace ('\\', '/');
+
+        // Embedded in the preset itself?
+        byte [] embedded = preset.samples.get (samplePath);
+        if (embedded == null)
+            embedded = preset.samples.get (normalizedPath);
+        if (embedded == null)
+        {
+            final String base = fileName (normalizedPath).toLowerCase (Locale.US);
+            for (final Map.Entry<String, byte []> sampleEntry: preset.samples.entrySet ())
+                if (fileName (sampleEntry.getKey ()).toLowerCase (Locale.US).equals (base))
+                {
+                    embedded = sampleEntry.getValue ();
+                    break;
+                }
+        }
+        if (embedded != null)
+            return Optional.of (new WavFileSampleData (new ByteArrayInputStream (embedded)));
 
         // Bundled in the synx file, relative to the preset entry?
         final String entryFolder = folderName (entry.getName ());
