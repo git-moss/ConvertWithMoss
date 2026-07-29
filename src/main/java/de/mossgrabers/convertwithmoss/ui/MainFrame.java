@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -53,6 +54,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.MenuBar;
 import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
@@ -263,7 +265,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.executePane.setVisible (false);
 
         final StackPane stackPane = new StackPane (this.mainPane, this.executePane);
-        this.setCenterNode (stackPane);
+        this.setCenterNode (createSystemMenuBar (stackPane));
 
         this.loadConfiguration ();
 
@@ -389,6 +391,29 @@ public class MainFrame extends AbstractFrame implements INotifier
             stylesheets.remove (stylesheet);
             this.loggingArea.setBlendMode (BlendMode.DARKEN);
         }
+    }
+
+
+    /**
+     * Put the given content below a menu bar which is marked as the menu bar of the application.
+     * macOS builds its application menu - which holds Hide, Hide Others and Quit - from that mark,
+     * so without one the standard Command-H and Command-Q shortcuts of the system do nothing at
+     * all. The menu bar stays empty, since the application has no menus of its own; macOS shows
+     * only its own application menu and the bar takes no space in the window. Every other system
+     * draws a menu bar in the window itself, where an empty one would only be a grey strip, so
+     * there it is left out.
+     *
+     * @param content The content of the window
+     * @return The content, wrapped in the menu bar if the system uses one
+     */
+    private static Node createSystemMenuBar (final Node content)
+    {
+        if (!System.getProperty ("os.name", "").toLowerCase (Locale.US).contains ("mac"))
+            return content;
+
+        final MenuBar menuBar = new MenuBar ();
+        menuBar.setUseSystemMenuBar (true);
+        return new BorderPane (content, menuBar, null, null, null);
     }
 
 
