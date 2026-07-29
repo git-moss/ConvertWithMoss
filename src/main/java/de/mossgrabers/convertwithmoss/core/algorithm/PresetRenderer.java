@@ -61,7 +61,7 @@ public class PresetRenderer
     private static final double  CUTOFF_MODULATION_OCTAVES = 6.0;
     /** The reference key of the filter cutoff key tracking. */
     private static final int     CUTOFF_KEY_CENTER     = 60;
-    /** A short fade at the very end so that stopping the note never clicks. */
+    /** A short fade whenever the signal ends, so that a note never stops with a click. */
     private static final double  FADE_OUT_SECONDS      = 0.01;
 
 
@@ -225,10 +225,20 @@ public class PresetRenderer
                 value = filter.next (value, isReleased);
 
             double amount = level * (volumeLfo == null ? 1 : volumeLfo.nextVolume ());
+            final double fadeFrames = FADE_OUT_SECONDS * SAMPLE_RATE;
             // Fade the very end out so that a note which runs into the limit does not click
             final int remaining = maximumFrames - frame;
-            if (remaining < FADE_OUT_SECONDS * SAMPLE_RATE)
-                amount *= remaining / (FADE_OUT_SECONDS * SAMPLE_RATE);
+            if (remaining < fadeFrames)
+                amount *= remaining / fadeFrames;
+            // The same where the audio itself runs out: a zone which does not loop - or whose loop
+            // has ended with the release - simply stops at its end point, and cutting the wave off
+            // in the middle clicks just as much
+            if ((loop == null || isReleased && loop.untilRelease) && step > 0)
+            {
+                final double audioFrames = (stop - position) / step;
+                if (audioFrames < fadeFrames)
+                    amount *= Math.max (0, audioFrames / fadeFrames);
+            }
 
             left[frame] += value * amount * leftGain;
             right[frame] += value * amount * rightGain;
@@ -479,9 +489,10 @@ public class PresetRenderer
             if (isReleased)
             {
                 final double since = this.time - this.releaseTime;
-                if (this.release <= 0)
-                    return 0;
-                return Math.max (0, this.levelAtRelease * (1 - since / this.release));
+                // A release of zero would drop the level to nothing from one frame to the next,
+                // which clicks - ramp it down over the fade time instead
+                final double releaseSeconds = Math.max (this.release, FADE_OUT_SECONDS);
+                return Math.max (0, this.levelAtRelease * (1 - since / releaseSeconds));
             }
 
             double point = this.time;

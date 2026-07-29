@@ -85,7 +85,7 @@ public class ContentsDialog extends PseudoModalDialog
         selectNoneButton.setOnAction (_ -> this.setAllSelected (false));
 
         final HBox topRow = new HBox (this.searchField, selectAllButton, selectNoneButton);
-        topRow.getStyleClass ().add ("contentsToolbar");
+        topRow.getStyleClass ().addAll ("contentsToolbar", "contentsDialogRow");
         topRow.setAlignment (Pos.CENTER_LEFT);
         HBox.setHgrow (this.searchField, Priority.ALWAYS);
 
@@ -111,7 +111,7 @@ public class ContentsDialog extends PseudoModalDialog
         this.auditionButton.setDisable (true);
 
         final HBox bottomRow = new HBox (this.selectionLabel, this.auditionLabel, this.auditionButton);
-        bottomRow.getStyleClass ().add ("contentsToolbar");
+        bottomRow.getStyleClass ().addAll ("contentsToolbar", "contentsDialogRow");
         bottomRow.setAlignment (Pos.CENTER_LEFT);
         HBox.setHgrow (this.auditionLabel, Priority.ALWAYS);
 
