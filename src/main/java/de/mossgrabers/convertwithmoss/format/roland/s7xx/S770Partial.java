@@ -416,19 +416,19 @@ public class S770Partial
             this.velocityCurveType = StreamUtils.readUnsigned8 (input);
             this.velocityCurveRatio = StreamUtils.readSigned8 (input);
             this.timeVelocitySensitivity = StreamUtils.readSigned8 (input);
-            this.cutoffVelocitySens = StreamUtils.readUnsigned8 (input);
+            this.cutoffVelocitySens = StreamUtils.readSigned8 (input);
             this.levels = new int [4];
             for (int i = 0; i < 4; i++)
                 this.levels[i] = StreamUtils.readUnsigned8 (input);
             this.times = new int [4];
             for (int i = 0; i < 4; i++)
                 this.times[i] = StreamUtils.readUnsigned8 (input);
-            this.envTvfDepth = StreamUtils.readUnsigned8 (input);
-            this.envPitchDepth = StreamUtils.readUnsigned8 (input);
+            this.envTvfDepth = StreamUtils.readSigned8 (input);
+            this.envPitchDepth = StreamUtils.readSigned8 (input);
             this.tvfKfPoint = StreamUtils.readUnsigned8 (input);
             this.envTimeKf = StreamUtils.readSigned8 (input);
             this.envDepthKf = StreamUtils.readUnsigned8 (input);
-            this.cutoffKf = StreamUtils.readUnsigned8 (input);
+            this.cutoffKf = StreamUtils.readSigned8 (input);
         }
 
 
@@ -644,7 +644,7 @@ public class S770Partial
             this.tvaKfPoint = StreamUtils.readUnsigned8 (input);
             this.envTimeKf = StreamUtils.readSigned8 (input);
             input.skipNBytes (1);
-            this.levelKf = StreamUtils.readUnsigned8 (input);
+            this.levelKf = StreamUtils.readSigned8 (input);
         }
 
 
