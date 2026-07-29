@@ -456,7 +456,9 @@ class SxtZone
         zone.setVelocityLow (this.velocityRangeStart);
         zone.setVelocityHigh (this.velocityRangeEnd);
         zone.setVelocityCrossfadeLow (this.velocityFadeIn);
-        zone.setVelocityCrossfadeHigh (this.velocityFadeOut);
+        // The fade-out is stored inverted: 0x80 means off, otherwise 127 minus the fade range
+        // (see fillFrom)
+        zone.setVelocityCrossfadeHigh (this.velocityFadeOut >= 0x80 ? 0 : 127 - this.velocityFadeOut);
         zone.setKeyRoot (this.rootKey);
         zone.setStart ((int) this.sampleStart);
         zone.setStop ((int) this.sampleEnd);
