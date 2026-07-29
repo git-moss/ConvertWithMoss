@@ -57,6 +57,9 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final Pattern NOTE_SUFFIX_PATTERN = Pattern.compile ("_([A-G]#?)(-?\\d+)$");
 
+    /** How many banks the last image read held, which decides whether it is reported as empty. */
+    private int                  numberOfReadBanks   = 0;
+
 
     /** Holds the parsed information of one E3S1 sample chunk. */
     private static class Sample
@@ -124,8 +127,28 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      */
     private List<IMultisampleSource> parseImage (final File sourceFile) throws IOException
     {
+        final List<IMultisampleSource> results = this.readImageBanks (sourceFile);
+        if (this.numberOfReadBanks == 0)
+            this.notifier.logError ("IDS_E4B_NO_BANKS_IN_IMAGE", sourceFile.getName ());
+        else
+            this.notifier.log ("IDS_E4B_READING_IMAGE", sourceFile.getName (), Integer.toString (this.numberOfReadBanks));
+        return results;
+    }
+
+
+    /**
+     * Read all Emulator IV banks of an EOS disk image without reporting an image which holds none.
+     * The EIII and the EOS samplers share this filesystem, so the generic ISO/IMG format has to try
+     * both of them on the same image and can only report an empty result once.
+     *
+     * @param sourceFile The image file
+     * @return The multi-sample sources, empty if the image holds no Emulator IV bank
+     * @throws IOException Could not read the image
+     */
+    public List<IMultisampleSource> readImageBanks (final File sourceFile) throws IOException
+    {
         final List<IMultisampleSource> results = new ArrayList<> ();
-        int numBanks = 0;
+        this.numberOfReadBanks = 0;
         for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
         {
             // Skip files which are not Emulator IV banks, e.g. the banks of the older EIII
@@ -133,13 +156,9 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             final byte [] content = imageFile.getContent ();
             if (!Emulator4Constants.hasMagic (content, 0, Emulator4Constants.FORM_MAGIC) || !Emulator4Constants.hasMagic (content, 8, Emulator4Constants.FORM_TYPE))
                 continue;
-            numBanks++;
+            this.numberOfReadBanks++;
             results.addAll (this.parseBank (sourceFile, imageFile.getName (), content));
         }
-        if (numBanks == 0)
-            this.notifier.logError ("IDS_E4B_NO_BANKS_IN_IMAGE", sourceFile.getName ());
-        else
-            this.notifier.log ("IDS_E4B_READING_IMAGE", sourceFile.getName (), Integer.toString (numBanks));
         return results;
     }
 

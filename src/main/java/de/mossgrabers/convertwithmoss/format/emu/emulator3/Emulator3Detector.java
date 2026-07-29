@@ -41,6 +41,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emu3DiskImage;
+import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -56,8 +57,11 @@ import de.mossgrabers.tools.FileUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
+public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
 {
+    /** How many banks the last image read held, which decides whether it is reported as empty. */
+    private int                 numberOfReadBanks         = 0;
+
     private static final String IDS_EIII_MALFORMED_SAMPLE = "IDS_EIII_MALFORMED_SAMPLE";
 
 
@@ -147,8 +151,28 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
      */
     private List<IMultisampleSource> parseImage (final File sourceFile) throws IOException
     {
+        final List<IMultisampleSource> results = this.readImageBanks (sourceFile);
+        if (this.numberOfReadBanks == 0)
+            this.notifier.logError ("IDS_EIII_NO_BANKS_IN_IMAGE", sourceFile.getName ());
+        else
+            this.notifier.log ("IDS_EIII_READING_IMAGE", sourceFile.getName (), Integer.toString (this.numberOfReadBanks));
+        return results;
+    }
+
+
+    /**
+     * Read all Emulator III banks of an E-mu disk image without reporting an image which holds
+     * none. The EIII and the EOS samplers share this filesystem, so the generic ISO/IMG format has
+     * to try both of them on the same image and can only report an empty result once.
+     *
+     * @param sourceFile The image file
+     * @return The multi-sample sources, empty if the image holds no EIII bank
+     * @throws IOException Could not read the image
+     */
+    public List<IMultisampleSource> readImageBanks (final File sourceFile) throws IOException
+    {
         final List<IMultisampleSource> results = new ArrayList<> ();
-        int numBanks = 0;
+        this.numberOfReadBanks = 0;
         for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
         {
             // Skip the files which are not EIII banks, e.g. the operating system of the sampler or
@@ -157,16 +181,12 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
             final Emulator3BankFormat bankFormat = Emulator3BankFormat.get (content);
             if (bankFormat == null)
                 continue;
-            numBanks++;
+            this.numberOfReadBanks++;
             results.addAll (this.parseBank (sourceFile, imageFile.getName (), content, bankFormat));
 
             if (this.waitForDelivery ())
                 break;
         }
-        if (numBanks == 0)
-            this.notifier.logError ("IDS_EIII_NO_BANKS_IN_IMAGE", sourceFile.getName ());
-        else
-            this.notifier.log ("IDS_EIII_READING_IMAGE", sourceFile.getName (), Integer.toString (numBanks));
         return results;
     }
 
