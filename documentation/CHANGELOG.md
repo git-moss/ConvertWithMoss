@@ -33,9 +33,6 @@
   * New: A volume LFO (tremolo) is read from and written as a LFO modulation device targeting the volume; since the volume chain is linear, the depth in decibels is expressed as the linear swing whose lowest point lies that many decibels below full volume.
 * Waldorf Quantum/Iridium
   * New: A source which carries its bank in front of its name is written without it in the preset name, since the device shows the bank in a field of its own. The file name keeps the full name. An explicit Bank from the settings replaces the source's bank, in which case the name keeps it.
-* WAV
-  * Fixed: The sample chunk stores a note with a negative fine tuning as the next higher unity note with the complementary positive fraction, but the correction was applied in the wrong direction on both sides: reading added 1 to the unity note where 1 must be subtracted and writing subtracted where it must add. The two errors cancelled between ConvertWithMoss' own reader and writer, which is why round trips never showed it - but any WAV from another tool whose pitch fraction is above 50 cents was read two semitones off, and every written WAV with a negative fine tuning carried a unity note two semitones below what conforming samplers expect.
-  * Fixed: A sample chunk whose pitch fraction is above 50 cents overwrote the root key which the preset format itself supplied (e.g. the root of a Bitwig multisample's XML), since the fine-tuning merge was not gated on the root being unset - combined with the direction error above, such a zone ended up more than two octaves off. The root key and fine tuning of the sample chunk are now only used when the format does not provide a root of its own.
 
 ## 19.1.0
 
