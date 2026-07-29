@@ -87,6 +87,26 @@ public class S5xxDiskImage
 
 
     /**
+     * Combine the full label text and clean it.
+     * 
+     * @param combineCharacter The character to use to combine text rows
+     * @return The combined text
+     */
+    public String getDiskLabelDescription (final char combineCharacter)
+    {
+        if (this.diskLabel.isEmpty ())
+            return "none";
+
+        final StringBuilder sb = new StringBuilder ();
+        for (final String row: this.diskLabel.get ().getRows ())
+            if (row != null && !row.isBlank ())
+                sb.append (row.trim ()).append (combineCharacter);
+        final String trimmed = sb.toString ().trim ();
+        return trimmed.isBlank () ? "none" : trimmed;
+    }
+
+
+    /**
      * {@code true} when this is a LAND-type hard-drive / CD-ROM container.
      *
      * @return True if it is a HD / CD
