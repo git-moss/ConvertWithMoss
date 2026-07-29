@@ -399,7 +399,8 @@ public class MaschinePresetAccessor
 
             // Always set to ADSR envelope type
             MaschinePresetParameterArray.writeIntegers (globalOffset + X0D_GLOBAL_AMP_ENVELOPE_TYPE, data, 0, 2, 2, 0, 0, 0);
-            writeFloatValueRow (globalOffset + 92, data, (float) envelopeModulator.getDepth ());
+            // Velocity to volume is the velocity modulation amount, not the envelope depth
+            writeFloatValueRow (globalOffset + 92, data, (float) firstSampleZone.getAmplitudeVelocityModulator ().getDepth ());
 
             final double attackTime = Math.max (0, ampEnvelope.getAttackTime ());
             final double decayTime = Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ());
