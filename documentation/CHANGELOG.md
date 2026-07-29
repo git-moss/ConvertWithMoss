@@ -25,12 +25,6 @@
   * Fixed: Presets which park their cutoff at an end of its range and open it up again with a modulation cord were converted to silence. Only the filter envelope and the key tracking of such a cord have a counterpart in the model - velocity, the assignable MIDI controllers and the LFOs are lost - so what was left was a filter which removes the whole signal (the reported '3DPads - 3DreamSwells' held a high-pass at 14.5 kHz, and every single low-pass voice of 'Old World Instruments' sits at the bottom of its range). Such a voice now gets no filter at all, which is much closer to the original than the silence; a voice whose filter envelope does open the cutoff up again keeps its filter. This affects 10390 of the 38783 filter voices of the E4 factory library.
 * Kurzweil K2x00
   * Fixed: An envelope stage with both a zero time and a zero level is unused on the device and keeps the level of the previous stage, but was read literally. A program which leaves its decay stage unused - like the reported FM basses, which sustain at the attack level and only fade out with a long release - was therefore converted to a silent preset. Additionally, the attack velocity is now converted as a cutoff modulation source of the F1 slot in both directions; the same programs open their nearly closed cutoff by velocity and converted very dull without it.
-* NI Kontakt
-  * Fixed: The filter cutoff of a Kontakt 1 file is stored logarithmically normalized to [0..1] but was read as a frequency in Hertz - a mid-range filter became a low-pass below 1 Hz and the converted preset was practically silent. Writing was already correct, which is why round trips through ConvertWithMoss hid it.
-  * Fixed: The upper key limit of an instrument in a Kontakt 1 multi (NKM) was stored as the lower clip key - the clip range became [high..127] and destinations which apply it dropped or mis-clipped most zones of a performance conversion.
-  * Fixed: The upper velocity crossfade of a written Kontakt 1 file was calculated from the lower velocity crossfade value.
-  * Fixed: The loop cross-fade of a written Kontakt 1 file was the cross-fade fraction cast to a whole number, so every cross-fade became 0 samples. The field is a length in samples.
-  * Fixed: The lower velocity crossfade of a Kontakt 4.2/5+ zone was read from the lower key crossfade field.
 * Roland ZEN-Core
   * Fixed: A bank (a SVZ which holds one tone per preset, as written by the preset library destination) was read as one single multi-sample: all samples of the file were merged into it and only the shaping of its first tone was applied, so every preset but the first was lost. Each tone is now read as a multi-sample of its own, built from the multi-samples which its partials play. A SVZ with one tone is unchanged.
 * Renoise
@@ -132,12 +126,6 @@
   * Fixed: Reading a patch could hang with full CPU load and no output. The loop over the sample slots did not advance on an empty slot, and since a patch rarely uses all of its slots this affected almost every patch.
 * Roland S-7xx
   * Fixed: The two envelope time key-follow fields were read as unsigned although they are signed.
-* NI Kontakt
-  * Fixed: The filter cutoff of a Kontakt 1 file is stored logarithmically normalized to [0..1] but was read as a frequency in Hertz - a mid-range filter became a low-pass below 1 Hz and the converted preset was practically silent. Writing was already correct, which is why round trips through ConvertWithMoss hid it.
-  * Fixed: The upper key limit of an instrument in a Kontakt 1 multi (NKM) was stored as the lower clip key - the clip range became [high..127] and destinations which apply it dropped or mis-clipped most zones of a performance conversion.
-  * Fixed: The upper velocity crossfade of a written Kontakt 1 file was calculated from the lower velocity crossfade value.
-  * Fixed: The loop cross-fade of a written Kontakt 1 file was the cross-fade fraction cast to a whole number, so every cross-fade became 0 samples. The field is a length in samples.
-  * Fixed: The lower velocity crossfade of a Kontakt 4.2/5+ zone was read from the lower key crossfade field.
 * Roland ZEN-Core
   * Fixed: SVZ sample packs produced by Roland's own SF2-to-SVZ converter (e.g. the commercial "ARP Solina Strings" / Vulture Culture SOURCE packs) could not be read - their samples were detected as "50 channels" and the length calculation failed. These chunks embed a complete WAV file rather than raw PCM; the embedded WAV is now read directly.
 
