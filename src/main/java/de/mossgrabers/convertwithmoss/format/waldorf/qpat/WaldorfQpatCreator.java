@@ -538,7 +538,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 createEnvelope (parameters, envelope, AMP_ENV, AMP_ENV, flattenAmpEnvelope);
 
                 // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
-                final double ampVeloAmount = amplitudeEnvelopeModulator.getDepth ();
+                final double ampVeloAmount = firstZone.getAmplitudeVelocityModulator ().getDepth ();
                 parameters.add (new WaldorfQpatParameter ("AmpVeloAmount", StringUtils.formatPercent (ampVeloAmount, 2), (float) ((ampVeloAmount + 1.0) / 2.0)));
             }
         }
