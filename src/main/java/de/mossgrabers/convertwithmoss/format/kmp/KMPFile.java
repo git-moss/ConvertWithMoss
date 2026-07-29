@@ -378,12 +378,20 @@ public class KMPFile
             int originalKey = zone.getKeyRoot ();
             if (originalKey < 0)
                 originalKey = keyLow;
+
+            // The tune field can only express -99..99 cents, therefore fold whole semitones of
+            // the tuning into the original key
+            final double tuning = zone.getTuning ();
+            final int foldedKey = Math.clamp (originalKey - (int) Math.round (tuning), 0, 127);
+            final int cents = (int) Math.clamp (Math.round ((tuning - (originalKey - foldedKey)) * 100.0), -99, 99);
+            originalKey = foldedKey;
+
             if (zone.getKeyTracking () == 0)
                 originalKey |= 0x80;
             out.write (originalKey);
 
             out.write (keyHigh);
-            out.writeByte ((byte) Math.round (zone.getTuning () * 100.0));
+            out.writeByte ((byte) cents);
 
             // See MAX_LEVEL_DB for the scale of the level
             out.writeByte (this.maxVolume ? 99 : Math.clamp (Math.round (Math.clamp (zone.getGain (), -MAX_LEVEL_DB, MAX_LEVEL_DB) / MAX_LEVEL_DB * 99.0), -99, 99));
