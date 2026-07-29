@@ -63,6 +63,8 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
     private int                 numberOfReadBanks         = 0;
 
     private static final String IDS_EIII_MALFORMED_SAMPLE = "IDS_EIII_MALFORMED_SAMPLE";
+    /** How many indices a log message lists before it is cut off. */
+    private static final int    MAXIMUM_REPORTED_INDICES  = 10;
 
 
     /** Holds the parsed information of one sample of a bank. */
@@ -304,15 +306,20 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         // instead of stopping at the first empty entry - the samples behind such a hole are still
         // in the bank and are still referenced by the presets
         final Map<Integer, Sample> samplesByIndex = new HashMap<> ();
+        final Set<Integer> malformedSamples = new TreeSet<> ();
         for (int i = 0; i < maxSamples; i++)
         {
             final long entry = Emulator3Constants.getU32 (data, sampleTable + i * 4);
             if (entry == 0)
                 continue;
-            final Sample sample = this.parseSample (data, sampleAreaStart + entry - Emulator3Constants.SAMPLE_ADDRESS_OFFSET, i + 1, bankName);
+            final Sample sample = this.parseSample (data, sampleAreaStart + entry - Emulator3Constants.SAMPLE_ADDRESS_OFFSET, i + 1, malformedSamples);
             if (sample != null)
                 samplesByIndex.put (Integer.valueOf (i + 1), sample);
         }
+        // A bank which holds no samples at all is not a sound bank - the sampler keeps its own
+        // code in one - so reporting every single entry of it says nothing and buries the log
+        if (!malformedSamples.isEmpty ())
+            this.notifier.logError (IDS_EIII_MALFORMED_SAMPLE, Integer.toString (malformedSamples.size ()), bankName, formatIndices (malformedSamples));
 
         // Presets which another preset links to are layered on top of it and are therefore not
         // converted on their own
@@ -366,6 +373,28 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Format a set of indices for a log message, shortened if there are many of them.
+     *
+     * @param indices The indices
+     * @return The indices separated by commas, cut off after the first ten
+     */
+    private static String formatIndices (final Set<Integer> indices)
+    {
+        final List<String> texts = new ArrayList<> ();
+        for (final Integer index: indices)
+        {
+            if (texts.size () == MAXIMUM_REPORTED_INDICES)
+            {
+                texts.add ("...");
+                break;
+            }
+            texts.add (index.toString ());
+        }
+        return String.join (", ", texts);
+    }
+
+
+    /**
      * Check whether a slot of the preset address table holds a preset. A preset which was deleted
      * leaves an empty slot behind, which has the same address as its successor - the presets behind
      * such a slot are still in the bank.
@@ -407,11 +436,11 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param bankName The name of the bank
      * @return The sample or null if its header is malformed
      */
-    private Sample parseSample (final byte [] data, final long address, final int sampleIndex, final String bankName)
+    private static Sample parseSample (final byte [] data, final long address, final int sampleIndex, final Set<Integer> malformedSamples)
     {
         if (address < 0 || address + Emulator3Constants.SAMPLE_HEADER_SIZE > data.length)
         {
-            this.notifier.logError (IDS_EIII_MALFORMED_SAMPLE, Integer.toString (sampleIndex), bankName);
+            malformedSamples.add (Integer.valueOf (sampleIndex));
             return null;
         }
         final int offset = (int) address;
@@ -431,7 +460,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         final long dataSize = (long) numFrames * 2 * (isStereo ? 2 : 1);
         if (numFrames <= 0 || sampleRate <= 0 || offset + Emulator3Constants.SAMPLE_HEADER_SIZE + dataSize > data.length)
         {
-            this.notifier.logError (IDS_EIII_MALFORMED_SAMPLE, Integer.toString (sampleIndex), bankName);
+            malformedSamples.add (Integer.valueOf (sampleIndex));
             return null;
         }
 
@@ -501,8 +530,8 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         // A bank can hold presets which map no key at all, they are simply dropped
         if (groups.isEmpty ())
             return null;
-        for (final Integer missingSampleIndex: missingSampleIndices)
-            this.notifier.logError ("IDS_EIII_SAMPLE_MISSING", missingSampleIndex.toString (), presetName);
+        if (!missingSampleIndices.isEmpty ())
+            this.notifier.logError ("IDS_EIII_SAMPLE_MISSING", Integer.toString (missingSampleIndices.size ()), presetName, formatIndices (missingSampleIndices));
 
         final boolean prependBankName = !(this.settingsConfiguration instanceof final Emulator3DetectorUI settings) || settings.prependBankName ();
         final String name = presetName.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : presetName;
