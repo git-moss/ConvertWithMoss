@@ -355,8 +355,8 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 final int pitchBendRange = waveSample.getPitchBendRange ();
                 if (pitchBendRange < 13)
                 {
-                    sampleZone.setBendUp (pitchBendRange);
-                    sampleZone.setBendDown (-pitchBendRange);
+                    sampleZone.setBendUp (pitchBendRange * 100);
+                    sampleZone.setBendDown (-pitchBendRange * 100);
                 }
                 final IEnvelopeModulator pitchEnvelopeModulator = sampleZone.getPitchEnvelopeModulator ();
                 pitchEnvelopeModulator.setSource (createEnvelope (waveSample.getPitchEnvelope ()));
@@ -389,7 +389,7 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 if (waveSample.getFilter1ModulationSource () == 13)
                     filter.getCutoffVelocityModulator ().setDepth (waveSample.getFilter1ModulationAmount () / 127.0);
 
-                filter.setCutoffKeyTracking (waveSample.getFilter1EnvelopeAmount () / 127.0);
+                filter.setCutoffKeyTracking (waveSample.getFilter1KeyAmount () / 127.0);
 
                 sampleZone.setFilter (filter);
 
