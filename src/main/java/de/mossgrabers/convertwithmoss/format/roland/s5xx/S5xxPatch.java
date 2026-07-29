@@ -76,7 +76,7 @@ public class S5xxPatch
         this.outputLevel = StreamUtils.readUnsigned8 (input);
         // Only set on S-50
         this.modulationDepth = StreamUtils.readUnsigned8 (input);
-        this.detune = StreamUtils.readUnsigned8 (input);
+        this.detune = StreamUtils.readSigned8 (input);
         this.velocityMixRatio = StreamUtils.readUnsigned8 (input);
         this.afterTouchAssign = StreamUtils.readUnsigned8 (input);
         this.keyAssign = StreamUtils.readUnsigned8 (input);
