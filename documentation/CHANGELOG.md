@@ -16,6 +16,19 @@
   * New: Added support for a LFO modulating the volume (tremolo) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
   * Fixed: Detecting a source which contains many presets was dominated by a fixed 10 millisecond pause taken after every single detected preset. A CD-ROM image of an E-mu sampler with 812 presets needed 11 seconds, of which 8 were that pause; two of them with 2339 presets needed 36 seconds. The pause is now taken every 64 presets, which keeps a cancellation responsive but takes the two images down to 1.4 seconds.
+* Akai AKP/AKM
+  * Fixed: The pitch bend range was passed as semitones into the model's cents field, so the bend wheel effectively did nothing on converted programs.
+  * Fixed: The volume of a multi part was multiplied onto the dB gain of the zones (a no-op for 0dB zones) instead of being added as a dB offset, and the part panning was scaled twice as wide as the field allows.
+* Akai MPC2000/3000
+  * Fixed: The tune of a program pad and of a SND sample were read unsigned - every negatively tuned pad of e.g. the factory library CD came out drastically sharp (a -0.05 semitone pad read as more than +600 semitones and was clamped to +12).
+* Akai MPC60
+  * Fixed: The 12 bit sample data was unpacked with the low nibble at 1/16 of its weight and the result byte-swapped, which reduced the audio to roughly 8 bit quality with a signal-correlated error. The 12 bits are now left-justified as in the reference implementation.
+* Akai S900/S950
+  * Fixed: The fractional part of the nominal pitch was applied with an inverted sign: a sample recorded e.g. a quarter tone sharp was played another quarter tone sharp instead of being corrected. Also the loudness offset was read unsigned, so any attenuation became a boost.
+* Akai S1000/S3000
+  * Fixed: The pitch bend range was passed as semitones into the model's cents field - the bend wheel effectively did nothing.
+  * Fixed: The program volume (a 0..1 value) was written directly as the dB gain of every zone, overwriting the per-layer loudness set before - the velocity-layer balance of every program was discarded.
+  * Fixed: The fraction byte of the keygroup and keygroup-sample fixed point tunings was treated as signed, so negative fine tunes came out about a semitone flat (e.g. -0.05 semitones read as -1.05). The sample header tuning in literal cents is no longer rescaled.
 * E-mu Emulator III
   * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.
   * Fixed: The preset link is a single byte followed by a separate parameter, not a 16 bit value. A few presets whose second byte is set lost the preset which is layered on top of them.
