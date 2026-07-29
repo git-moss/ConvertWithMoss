@@ -286,7 +286,9 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             if (modulationSet.pitchEnvelope != null)
             {
                 zone.getPitchEnvelopeModulator ().setSource (modulationSet.pitchEnvelope);
-                zone.getPitchEnvelopeModulator ().setDepth (1.0);
+                // The full swing of the bipolar pitch AHDSR device is the pitch modulation range
+                // of the mixer device
+                zone.getPitchEnvelopeModulator ().setDepth (modulationSet.pitchModulationRange * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
             }
             if (modulationSet.pitchLfo != null && modulationSet.pitchLfoDepth > 0)
             {
@@ -460,6 +462,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                     pitchModulationRange = XMLUtils.getChildElementIntegerContent (mixerElement, RenoiseTag.PITCH_MODULATION_RANGE, RenoiseValueConverter.PITCH_MODULATION_RANGE);
                 }
 
+                modulationSet.pitchModulationRange = pitchModulationRange;
                 readPitchLfo (devicesElement, modulationSet, pitchModulationRange);
                 readVolumeLfo (devicesElement, modulationSet);
             }
@@ -745,6 +748,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
         IEnvelope                   volumeEnvelope;
         IEnvelope                   pitchEnvelope;
+        int                         pitchModulationRange = RenoiseValueConverter.PITCH_MODULATION_RANGE;
         IEnvelope                   cutoffEnvelope;
         ILfo                        pitchLfo;
         double                      pitchLfoDepth;

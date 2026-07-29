@@ -323,12 +323,13 @@ public final class RenoiseValueConverter
      * Renoise LFO amplitude, which is relative to the pitch modulation range of the mixer device.
      *
      * @param depth The modulation depth [-1..1]
+     * @param pitchModulationRange The pitch modulation range of the mixer device in semitones
      * @return The LFO amplitude [0..1]
      */
-    public static double lfoDepthToAmplitude (final double depth)
+    public static double lfoDepthToAmplitude (final double depth, final int pitchModulationRange)
     {
         final double semitones = Math.abs (depth) * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
-        return Math.clamp (semitones / PITCH_MODULATION_RANGE, 0, 1);
+        return Math.clamp (semitones / pitchModulationRange, 0, 1);
     }
 
 
