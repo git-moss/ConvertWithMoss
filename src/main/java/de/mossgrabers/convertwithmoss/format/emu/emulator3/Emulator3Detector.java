@@ -25,6 +25,8 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -671,6 +673,22 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
         final IFilter filter = createFilter (data, bankFormat, offset);
         if (filter != null)
             zone.setFilter (filter);
+
+        // The LFO of the zone: rate, delay and shape are shared by all of its routings, of which
+        // only the vibrato (LFO->Pitch) has a counterpart in the model. The depth of a full
+        // amount is not documented anywhere; it is treated as one semitone
+        final int lfoToPitch = data[offset + Emulator3Constants.ZONE_LFO_TO_PITCH];
+        if (lfoToPitch != 0)
+        {
+            final ILfoModulator lfoModulator = zone.getPitchLfoModulator ();
+            final ILfo lfo = lfoModulator.getSource ();
+            lfo.setWaveform (Emulator3Constants.getLfoWaveform (data[offset + Emulator3Constants.ZONE_VCF_TYPE_LFO_SHAPE] & 0xFF));
+            lfo.setRate (Emulator3Constants.getLfoRate (data[offset + Emulator3Constants.ZONE_LFO_RATE] & 0xFF));
+            final double lfoDelay = Emulator3Constants.getLfoDelay (data[offset + Emulator3Constants.ZONE_LFO_DELAY] & 0xFF);
+            if (lfoDelay > 0)
+                lfo.setDelay (lfoDelay);
+            lfoModulator.setDepth (Math.clamp (lfoToPitch / 127.0, -1, 1) * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
+        }
 
         // The pitch bend range belongs to the preset and applies to all of its zones
         final int pitchBendRange = data[presetOffset + Emulator3Constants.PRESET_PITCH_BEND_RANGE];
