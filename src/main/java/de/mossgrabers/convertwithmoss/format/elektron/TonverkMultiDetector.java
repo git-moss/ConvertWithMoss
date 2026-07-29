@@ -157,14 +157,16 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
         {
             final int currentPitch = pitches.get (i).intValue ();
 
-            // Calculate the key-range
+            // Calculate the key-range. The lower bound continues one key above the upper bound
+            // of the previous zone, which is the same mid-point expression - without the +1 both
+            // zones would own the boundary key and every note in between would trigger twice
             int keyLow;
             if (i == 0)
                 keyLow = 0;
             else
             {
                 final int previousPitch = pitches.get (i - 1).intValue ();
-                keyLow = clamp (previousPitch + (currentPitch - previousPitch) / 2);
+                keyLow = clamp (previousPitch + (currentPitch - previousPitch) / 2 + 1);
             }
 
             int keyHigh;
