@@ -946,7 +946,8 @@ public class Maschine1Format implements IMaschineFormat
         if (globalAmplitudeModulator.isPresent ())
         {
             final IEnvelopeModulator envelopeModulator = globalAmplitudeModulator.get ();
-            this.globalParametersVriTags.get (Integer.valueOf (6)).floatValue = (float) envelopeModulator.getDepth ();
+            // Velocity to volume is the velocity modulation amount, not the envelope depth
+            this.globalParametersVriTags.get (Integer.valueOf (6)).floatValue = (float) firstSampleZone.getAmplitudeVelocityModulator ().getDepth ();
             final IEnvelope ampEnvelope = envelopeModulator.getSource ();
             this.globalParametersVriTags.get (Integer.valueOf (11)).floatValue = MaschinePresetAccessor.attackMillisToInput ((float) Math.max (0, ampEnvelope.getAttackTime ()) * 1000f);
             this.globalParametersVriTags.get (Integer.valueOf (12)).floatValue = 0f;
