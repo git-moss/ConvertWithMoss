@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.emu.emulator3;
 import java.nio.charset.StandardCharsets;
 
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 
 
 /**
@@ -134,6 +135,15 @@ public class Emulator3Constants
     public static final int    ZONE_NOTE_ON_DELAY              = 43;
     /** The offset of the panorama of the zone. */
     public static final int    ZONE_VCA_PAN                    = 44;
+    /** The offset of the LFO rate. */
+    public static final int    ZONE_LFO_RATE                   = 9;
+
+    /** The offset of the LFO delay. */
+    public static final int    ZONE_LFO_DELAY                  = 10;
+
+    /** The offset of the LFO to pitch (vibrato) amount. */
+    public static final int    ZONE_LFO_TO_PITCH               = 36;
+
     /** The offset of the filter type and the LFO shape. */
     public static final int    ZONE_VCF_TYPE_LFO_SHAPE         = 45;
     /** The offset of the flags which enable the real-time controls. */
@@ -714,5 +724,74 @@ public class Emulator3Constants
     {
         for (int i = 0; i < values.length; i++)
             data[offset + i] = (byte) values[i];
+    }
+
+
+    /** The LFO rate in Hertz by parameter value, as the devices display it. */
+    private static final double [] LFO_RATE                  =
+    {
+        0.08, 0.11, 0.15, 0.18, 0.21, 0.25, 0.28, 0.32, 0.35, 0.39, 0.42, 0.46, 0.50, 0.54, 0.58, 0.63,
+        0.67, 0.71, 0.76, 0.80, 0.85, 0.90, 0.94, 0.99, 1.04, 1.10, 1.15, 1.20, 1.25, 1.31, 1.37, 1.42,
+        1.48, 1.54, 1.60, 1.67, 1.73, 1.79, 1.86, 1.93, 2.00, 2.07, 2.14, 2.21, 2.29, 2.36, 2.44, 2.52,
+        2.60, 2.68, 2.77, 2.85, 2.94, 3.03, 3.12, 3.21, 3.31, 3.40, 3.50, 3.60, 3.70, 3.81, 3.91, 4.02,
+        4.13, 4.25, 4.36, 4.48, 4.60, 4.72, 4.84, 4.97, 5.10, 5.23, 5.37, 5.51, 5.65, 5.79, 5.94, 6.08,
+        6.24, 6.39, 6.55, 6.71, 6.88, 7.04, 7.21, 7.39, 7.57, 7.75, 7.93, 8.12, 8.32, 8.51, 8.71, 8.92,
+        9.13, 9.34, 9.56, 9.78, 10.00, 10.23, 10.47, 10.71, 10.95, 11.20, 11.46, 11.71, 11.98, 12.25, 12.52, 12.80,
+        13.09, 13.38, 13.68, 13.99, 14.30, 14.61, 14.93, 15.26, 15.60, 15.94, 16.29, 16.65, 17.01, 17.38, 17.76, 18.14
+    };
+
+    /** Times in seconds in the range of [0..21.69] by parameter value, used by the LFO delay. */
+    private static final double [] TIME_21_69                =
+    {
+        0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15,
+        0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.28, 0.30, 0.32, 0.34, 0.36,
+        0.38, 0.40, 0.42, 0.44, 0.47, 0.49, 0.52, 0.54, 0.57, 0.60, 0.63, 0.66, 0.69, 0.73, 0.76, 0.80,
+        0.84, 0.87, 0.92, 0.96, 1.00, 1.05, 1.10, 1.15, 1.20, 1.25, 1.31, 1.37, 1.43, 1.49, 1.56, 1.63,
+        1.70, 1.77, 1.84, 1.92, 2.01, 2.09, 2.18, 2.27, 2.37, 2.47, 2.58, 2.69, 2.80, 2.92, 3.04, 3.17,
+        3.30, 3.44, 3.59, 3.73, 3.89, 4.05, 4.22, 4.40, 4.58, 4.77, 4.96, 5.17, 5.38, 5.60, 5.83, 6.07,
+        6.32, 6.58, 6.85, 7.13, 7.42, 7.72, 8.04, 8.37, 8.71, 9.06, 9.43, 9.81, 10.21, 10.63, 11.06, 11.51,
+        11.97, 12.46, 12.96, 13.49, 14.03, 14.60, 15.19, 15.81, 16.44, 17.11, 17.80, 18.52, 19.26, 20.04, 20.85, 21.69
+    };
+
+
+    /**
+     * Get the LFO rate in Hertz.
+     *
+     * @param value The parameter value in the range of [0..127]
+     * @return The rate in Hertz
+     */
+    public static double getLfoRate (final int value)
+    {
+        return LFO_RATE[Math.clamp (value, 0, LFO_RATE.length - 1)];
+    }
+
+
+    /**
+     * Get the LFO delay in seconds.
+     *
+     * @param value The parameter value in the range of [0..127]
+     * @return The delay in seconds
+     */
+    public static double getLfoDelay (final int value)
+    {
+        return TIME_21_69[Math.clamp (value, 0, TIME_21_69.length - 1)];
+    }
+
+
+    /**
+     * Get the LFO waveform, which is stored in the lower 2 bits of the filter type parameter.
+     *
+     * @param filterTypeAndShape The value of the filter type and LFO shape parameter
+     * @return The waveform
+     */
+    public static LfoWaveform getLfoWaveform (final int filterTypeAndShape)
+    {
+        return switch (filterTypeAndShape & 3)
+        {
+            case 1 -> LfoWaveform.SINE;
+            case 2 -> LfoWaveform.SAWTOOTH_UP;
+            case 3 -> LfoWaveform.SQUARE;
+            default -> LfoWaveform.TRIANGLE;
+        };
     }
 }
