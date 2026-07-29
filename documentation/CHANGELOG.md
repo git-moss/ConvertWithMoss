@@ -27,6 +27,8 @@
   * Fixed: An envelope stage with both a zero time and a zero level is unused on the device and keeps the level of the previous stage, but was read literally. A program which leaves its decay stage unused - like the reported FM basses, which sustain at the attack level and only fade out with a long release - was therefore converted to a silent preset. Additionally, the attack velocity is now converted as a cutoff modulation source of the F1 slot in both directions; the same programs open their nearly closed cutoff by velocity and converted very dull without it.
 * Roland ZEN-Core
   * Fixed: A bank (a SVZ which holds one tone per preset, as written by the preset library destination) was read as one single multi-sample: all samples of the file were merged into it and only the shaping of its first tone was applied, so every preset but the first was lost. Each tone is now read as a multi-sample of its own, built from the multi-samples which its partials play. A SVZ with one tone is unchanged.
+* Reason NN-XT
+  * Fixed: The velocity fade-out was read raw although it is stored inverted (0x80 = off, otherwise 127 minus the fade range, as the writer encodes it) - a zone without a fade read as a fade over the whole velocity range and an SXT round trip turned 'off' into a full-range fade.
 * Renoise
   * Fixed: A modulation set was created for every key zone. Now zones with identical modulation share one set, which gives the usual single instrument-wide modulation set; additional sets are only created for zones which genuinely modulate differently.
   * New: A pitch LFO (vibrato) is read from and written as a LFO modulation device (waveform, rate, depth and onset time; the value curves were calibrated against Renoise 3.5.4).
