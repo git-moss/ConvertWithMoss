@@ -384,6 +384,8 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
         final List<Element> groupElements = new ArrayList<> ();
         final List<Element> soundshapeElements = new ArrayList<> ();
+        // The wave IDs must be unique across the whole program and not only within one group
+        int waveID = 0;
         for (final IGroup group: groups)
         {
             final Element groupElement = document.createElement (TX16WxTag.GROUP);
@@ -411,7 +413,10 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             groupElement.setAttribute (TX16WxTag.OUTPUT, "--");
 
             for (int i = 0; i < zones.size (); i++)
-                createSample (document, folderName, programElement, groupElement, zones.get (i), i);
+            {
+                createSample (document, folderName, programElement, groupElement, zones.get (i), waveID);
+                waveID++;
+            }
 
             addGroupModulationAttributes (document, soundshapeElement, zones);
         }

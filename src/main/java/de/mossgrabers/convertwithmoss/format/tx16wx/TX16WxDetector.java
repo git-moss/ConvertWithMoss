@@ -45,6 +45,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataWithSearchHeightSettingsUI;
 import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
@@ -462,9 +463,15 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
         for (final Element regionElement: XMLUtils.getChildElementsByName (groupElement, TX16WxTag.REGION, false))
         {
-            final ISampleZone zone = sampleMap.get (regionElement.getAttribute (TX16WxTag.SAMPLE));
-            if (zone != null)
+            final ISampleZone waveZone = sampleMap.get (regionElement.getAttribute (TX16WxTag.SAMPLE));
+            if (waveZone != null)
             {
+                // Several regions (also across groups) may reference the same wave, therefore
+                // every region gets its own zone object
+                final ISampleZone zone = new DefaultSampleZone (waveZone);
+                final Optional<ISampleData> sampleData = waveZone.getSampleData ();
+                if (sampleData.isPresent ())
+                    zone.setSampleData (sampleData.get ());
                 this.parseZone (zone, regionElement, groupVolumeOffset, groupPanningOffset, groupTuningOffset);
                 zone.setOneShot (isOneShot);
                 group.addSampleZone (zone);
@@ -700,7 +707,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
                 if (modAmoundAsCent.isPresent ())
                 {
                     final IEnvelopeModulator pitchModulator = new DefaultEnvelopeModulator (0);
-                    final double amount = modAmoundAsCent.get ().intValue () / 4800.0;
+                    final double amount = modAmoundAsCent.get ().intValue () / (double) IEnvelope.MAX_ENVELOPE_DEPTH;
                     pitchModulator.setDepth (Math.clamp (amount, -1, 1));
 
                     final Optional<IEnvelope> pitchEnvelope = parsePitchEnvelope (soundShapeElement, modulator.isSource ("ENV1") ? TX16WxTag.ENVELOPE_1 : TX16WxTag.ENVELOPE_2);
