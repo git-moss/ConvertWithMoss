@@ -314,9 +314,18 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
                 cutoffEnvelope = cutoffModulator.getSource ();
         }
 
+        // The depth of the pitch envelope can only be expressed via the pitch modulation range
+        // of the mixer device (the bipolar AHDSR device has no amount parameter), which also
+        // scales the pitch LFO
+        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
+        final double pitchDepth = pitchModulator.getDepth ();
+        int pitchModulationRange = RenoiseValueConverter.PITCH_MODULATION_RANGE;
+        if (pitchDepth != 0)
+            pitchModulationRange = (int) Math.clamp (Math.round (Math.abs (pitchDepth) * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0), 1, 96);
+
         // The mixer device holds the base input values and is required for the filter view to be
         // built; without it Renoise crashes when a filter is active
-        createMixerDevice (document, devicesElement, cutoff, resonance);
+        createMixerDevice (document, devicesElement, cutoff, resonance, pitchModulationRange);
 
         // The amplitude envelope is always present
         createAhdsrDevice (document, devicesElement, RenoiseTag.TARGET_VOLUME, RenoiseTag.OP_MULTIPLY, false, zone.getAmplitudeEnvelopeModulator ().getSource ());
@@ -324,13 +333,12 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         if (cutoffEnvelope != null)
             createAhdsrDevice (document, devicesElement, RenoiseTag.TARGET_CUTOFF, RenoiseTag.OP_ADD, false, cutoffEnvelope);
 
-        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
-        if (pitchModulator.getDepth () != 0)
+        if (pitchDepth != 0)
             createAhdsrDevice (document, devicesElement, RenoiseTag.TARGET_PITCH, RenoiseTag.OP_ADD, true, pitchModulator.getSource ());
 
         final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
         if (pitchLfoModulator.getDepth () != 0 && pitchLfoModulator.getSource ().isSet ())
-            createLfoDevice (document, devicesElement, RenoiseTag.TARGET_PITCH, RenoiseValueConverter.lfoDepthToAmplitude (pitchLfoModulator.getDepth ()), pitchLfoModulator);
+            createLfoDevice (document, devicesElement, RenoiseTag.TARGET_PITCH, RenoiseValueConverter.lfoDepthToAmplitude (pitchLfoModulator.getDepth (), pitchModulationRange), pitchLfoModulator);
 
         final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
         if (amplitudeLfoModulator.getDepth () != 0 && amplitudeLfoModulator.getSource ().isSet ())
@@ -391,8 +399,10 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
      * @param devicesElement The devices element to which to add the device
      * @param cutoff The base cutoff value (0..127)
      * @param resonance The base resonance value (0..127)
+     * @param pitchModulationRange The pitch modulation range in semitones, which scales all
+     *            modulation devices targeting the pitch
      */
-    private static void createMixerDevice (final Document document, final Element devicesElement, final double cutoff, final double resonance)
+    private static void createMixerDevice (final Document document, final Element devicesElement, final double cutoff, final double resonance, final int pitchModulationRange)
     {
         final Element deviceElement = XMLUtils.addElement (document, devicesElement, RenoiseTag.MIXER_DEVICE);
         deviceElement.setAttribute (RenoiseTag.ATTR_TYPE, RenoiseTag.MIXER_DEVICE);
@@ -401,7 +411,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         addParameter (document, deviceElement, RenoiseTag.VOLUME, 1.0);
         addParameter (document, deviceElement, RenoiseTag.PANNING, 0.0);
         addParameter (document, deviceElement, RenoiseTag.PITCH, 0.0);
-        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.PITCH_MODULATION_RANGE, Integer.toString (RenoiseValueConverter.PITCH_MODULATION_RANGE));
+        XMLUtils.addTextElement (document, deviceElement, RenoiseTag.PITCH_MODULATION_RANGE, Integer.toString (pitchModulationRange));
         addParameter (document, deviceElement, RenoiseTag.CUTOFF, cutoff);
         addParameter (document, deviceElement, RenoiseTag.RESONANCE, resonance);
         addParameter (document, deviceElement, RenoiseTag.DRIVE, 0.0);
