@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -25,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -532,7 +534,23 @@ public class Emulator3Detector extends AbstractDetector<Emulator3DetectorUI>
                     continue;
                 final ISampleZone sampleZone = this.parseZone (data, bankFormat, zone, presetOffset, keyLow + Emulator3Constants.KEY_OFFSET, keyHigh + Emulator3Constants.KEY_OFFSET, samplesByIndex, missingSampleIndices, bankName);
                 if (sampleZone != null)
+                {
                     group.addSampleZone (sampleZone);
+
+                    // The chorus doubles the zone with a second, slightly detuned voice on its own
+                    // channel. The width of the detune is not documented anywhere; the pair is
+                    // detuned by +-7 cents, which keeps it centered on the original pitch
+                    if ((data[zone + Emulator3Constants.ZONE_FLAGS] & Emulator3Constants.ZONE_FLAG_CHORUS) > 0)
+                    {
+                        final ISampleZone chorusZone = new DefaultSampleZone (sampleZone);
+                        final Optional<ISampleData> chorusSampleData = sampleZone.getSampleData ();
+                        if (chorusSampleData.isPresent ())
+                            chorusZone.setSampleData (chorusSampleData.get ());
+                        sampleZone.setTuning (sampleZone.getTuning () - 0.07);
+                        chorusZone.setTuning (chorusZone.getTuning () + 0.07);
+                        group.addSampleZone (chorusZone);
+                    }
+                }
             }
 
             if (!group.getSampleZones ().isEmpty ())
