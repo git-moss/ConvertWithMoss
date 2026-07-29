@@ -27,6 +27,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
@@ -795,9 +796,8 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         if (attribute.endsWith ("dB"))
             return Double.parseDouble (attribute.substring (0, attribute.length () - 2));
 
-        // The value is in the range of [0..1] but it is not specified what 0 and 1 means, lets
-        // scale it to [0..6] dB.
-        return Double.parseDouble (attribute) * 6.0;
+        // A value without a unit is a linear amplitude (1.0 = 0dB)
+        return MathUtils.valueToDb (Double.parseDouble (attribute));
     }
 
 
