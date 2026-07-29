@@ -239,6 +239,24 @@ public final class ZenCoreSvz
 
 
     /**
+     * One enabled partial of a tone as read from a preset or bank file.
+     */
+    public static final class SvzTonePartial
+    {
+        /** The 1-based number of the left (or only) multi-sample the partial plays. */
+        public int waveLeft;
+        /** The 1-based number of the right multi-sample; 0 or equal to the left one for mono. */
+        public int waveRight;
+        /** Pan -64 (hard left) .. 0 (centre) .. +63 (hard right). */
+        public int pan;
+        /** Velocity range lower 1-127. */
+        public int velLow  = 1;
+        /** Velocity range upper 1-127. */
+        public int velHigh = 127;
+    }
+
+
+    /**
      * One instrument (tone) that maps keys onto samples of the shared pool. A mono instrument has
      * one multi-sample played by a one-partial tone. A stereo instrument stores its left and right
      * channels as separate mono samples in two multi-samples, played by a two-partial tone (Partial
@@ -270,8 +288,8 @@ public final class ZenCoreSvz
          * partial has its own multi-sample, pan and velocity window.
          */
         public List<SvzPartial> partials;
-        /** The wave numbers of the multi-samples which the partials of the tone play (read side). */
-        public int []           waveNumbers      = new int [0];
+        /** The enabled partials with their multi-sample numbers, pan and velocity window (read side). */
+        public final List<SvzTonePartial> tonePartials = new ArrayList<> ();
 
         // ----------------------------------------------------------------------------------------
         // Optional Partial-1 tone parameters taken from the source; -1 keeps the template default
@@ -818,7 +836,7 @@ public final class ZenCoreSvz
     /**
      * Read all tones of the <i>PATa</i> section. A preset file holds one tone, a bank holds one per
      * preset - all of them sharing the sample pool of the file - which is why each tone names the
-     * multi-samples it plays in {@link SvzInstrument#waveNumbers}.
+     * multi-samples it plays in {@link SvzInstrument#tonePartials}.
      *
      * @param container The SVZ container
      * @return The tones in the order in which they are stored, empty if the container holds none
@@ -847,28 +865,32 @@ public final class ZenCoreSvz
         final SvzInstrument tone = new SvzInstrument ();
         tone.name = ZenCoreUtil.readName (file, r, NAME_LENGTH);
 
-        // The multi-samples which the enabled partials play. A partial whose wave group is zero is
-        // switched off and plays nothing, see buildTone.
-        final List<Integer> waves = new ArrayList<> ();
+        // The multi-samples which the enabled partials play with the partial's pan and velocity
+        // window. A partial whose wave group is zero is switched off and plays nothing, see
+        // buildTone.
         for (int p = 0; p < 4; p++)
         {
             final int oscBase = p * PAT_PARTIAL_STRIDE;
             if (file[r + PAT_WAVE_GROUP + oscBase] == 0)
                 continue;
-            for (final int offset: new int []
+
+            final SvzTonePartial partial = new SvzTonePartial ();
+            partial.waveLeft = ZenCoreUtil.readUnsigned16 (file, r + PAT_WAVE_L + oscBase, false);
+            partial.waveRight = ZenCoreUtil.readUnsigned16 (file, r + PAT_WAVE_R + oscBase, false);
+            partial.pan = file[r + PAT_PAN + oscBase];
+
+            final int kbdBase = p * PAT_KBD_STRIDE;
+            final int velLow = file[r + PAT_VEL_LOW + kbdBase] & 0xFF;
+            final int velHigh = file[r + PAT_VEL_HIGH + kbdBase] & 0xFF;
+            if (velLow >= 1 && velHigh >= velLow && velHigh <= 127)
             {
-                PAT_WAVE_L,
-                PAT_WAVE_R
-            })
-            {
-                final int wave = ZenCoreUtil.readUnsigned16 (file, r + offset + oscBase, false);
-                if (wave > 0 && !waves.contains (Integer.valueOf (wave)))
-                    waves.add (Integer.valueOf (wave));
+                partial.velLow = velLow;
+                partial.velHigh = velHigh;
             }
+
+            if (partial.waveLeft > 0 || partial.waveRight > 0)
+                tone.tonePartials.add (partial);
         }
-        tone.waveNumbers = new int [waves.size ()];
-        for (int i = 0; i < waves.size (); i++)
-            tone.waveNumbers[i] = waves.get (i).intValue ();
 
         tone.filterType = ZenCoreUtil.readUnsigned16 (file, r + PAT_FILTER_TYPE, false) / 0x100;
         tone.cutoff = ZenCoreUtil.readUnsigned16 (file, r + PAT_CUTOFF, false);
@@ -881,10 +903,10 @@ public final class ZenCoreSvz
         tone.envSustain = ZenCoreUtil.readUnsigned16 (file, r + PAT_TVA_LEVEL + 4, false);
         tone.pitchEnvDepth = file[r + PAT_PITCH_ENV_DEPTH];
         tone.pitchEnvTimes = readEnvBlock (file, r + PAT_PITCH_ENV_TIME, 4);
-        tone.pitchEnvLevels = readEnvBlock (file, r + PAT_PITCH_ENV_LEVEL, 5);
+        tone.pitchEnvLevels = readEnvBlockSigned (file, r + PAT_PITCH_ENV_LEVEL, 5);
         tone.filterEnvDepth = file[r + PAT_FILTER_ENV_DEPTH];
         tone.filterEnvTimes = readEnvBlock (file, r + PAT_FILTER_ENV_TIME, 4);
-        tone.filterEnvLevels = readEnvBlock (file, r + PAT_FILTER_ENV_LEVEL, 5);
+        tone.filterEnvLevels = readEnvBlockSigned (file, r + PAT_FILTER_ENV_LEVEL, 5);
         return tone;
     }
 
@@ -894,6 +916,15 @@ public final class ZenCoreSvz
         final int [] values = new int [count];
         for (int i = 0; i < count; i++)
             values[i] = ZenCoreUtil.readUnsigned16 (file, offset + i * 2, false);
+        return values;
+    }
+
+
+    private static int [] readEnvBlockSigned (final byte [] file, final int offset, final int count)
+    {
+        final int [] values = new int [count];
+        for (int i = 0; i < count; i++)
+            values[i] = (short) ZenCoreUtil.readUnsigned16 (file, offset + i * 2, false);
         return values;
     }
 
