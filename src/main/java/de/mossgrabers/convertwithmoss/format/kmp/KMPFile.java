@@ -382,8 +382,8 @@ public class KMPFile
             // The tune field can only express -99..99 cents, therefore fold whole semitones of
             // the tuning into the original key
             final double tuning = zone.getTuning ();
-            final int foldedKey = Math.clamp (originalKey - (int) Math.round (tuning), 0, 127);
-            final int cents = (int) Math.clamp (Math.round ((tuning - (originalKey - foldedKey)) * 100.0), -99, 99);
+            final int foldedKey = Math.clamp (originalKey - Math.round (tuning), 0, 127);
+            final int cents = Math.clamp (Math.round ((tuning - (originalKey - foldedKey)) * 100.0), -99, 99);
             originalKey = foldedKey;
 
             if (zone.getKeyTracking () == 0)

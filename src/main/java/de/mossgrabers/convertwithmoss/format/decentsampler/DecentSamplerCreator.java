@@ -60,18 +60,21 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreatorUI>
 {
-    private static final String       TAG_GROUP_INDEX      = "groupIndex";
-    private static final String       TAG_LEVEL            = "level";
-    private static final String       TAG_MOD_BEHAVIOR     = "modBehavior";
-    private static final String       TAG_PARAMETER        = "parameter";
+    private static final String       TAG_TRANSLATION_OUTPUT_MIN = "translationOutputMin";
+    private static final String       TAG_TRANSLATION_OUTPUT_MAX = "translationOutputMax";
+    private static final String       TAG_LINEAR                 = "linear";
+    private static final String       TAG_GROUP                  = "group";
+    private static final String       TAG_GROUP_INDEX            = "groupIndex";
+    private static final String       TAG_LEVEL                  = "level";
+    private static final String       TAG_MOD_BEHAVIOR           = "modBehavior";
+    private static final String       TAG_PARAMETER              = "parameter";
+    private static final String       TAG_TRANSLATION            = "translation";
 
-    private static final String       TAG_TRANSLATION      = "translation";
+    private static final String       IDS_NOTIFY_STORING         = "IDS_NOTIFY_STORING";
+    private static final String       DECENT_SAMPLER             = "DecentSampler";
 
-    private static final String       IDS_NOTIFY_STORING   = "IDS_NOTIFY_STORING";
-    private static final String       DECENT_SAMPLER       = "DecentSampler";
-
-    private static final List<String> IGNORE_FILES         = Collections.singletonList ("ui.xml");
-    private static final String       LIBRARY_INFO_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<DecentSamplerLibraryInfo name=\"%LIBRARY_NAME%\"/>";
+    private static final List<String> IGNORE_FILES               = Collections.singletonList ("ui.xml");
+    private static final String       LIBRARY_INFO_CONTENT       = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<DecentSamplerLibraryInfo name=\"%LIBRARY_NAME%\"/>";
 
 
     private class PresetResult
@@ -537,7 +540,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
             final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
             bindingElement.setAttribute ("type", "effect");
-            bindingElement.setAttribute (TAG_LEVEL, "group");
+            bindingElement.setAttribute (TAG_LEVEL, TAG_GROUP);
             bindingElement.setAttribute (TAG_GROUP_INDEX, Integer.toString (groupIndex));
             bindingElement.setAttribute ("effectIndex", "0");
             bindingElement.setAttribute (TAG_PARAMETER, "FX_FILTER_FREQUENCY");
@@ -573,14 +576,14 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
         final Element bindingElement = XMLUtils.addElement (document, lfoElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", "amp");
-        bindingElement.setAttribute (TAG_LEVEL, "group");
+        bindingElement.setAttribute (TAG_LEVEL, TAG_GROUP);
         bindingElement.setAttribute (TAG_GROUP_INDEX, Integer.toString (groupIndex));
         bindingElement.setAttribute (TAG_PARAMETER, "GROUP_TUNING");
-        bindingElement.setAttribute (TAG_TRANSLATION, "linear");
+        bindingElement.setAttribute (TAG_TRANSLATION, TAG_LINEAR);
         // Unit are semi-tones; the oscillator is bipolar, so the full range is applied
         // symmetrically
-        bindingElement.setAttribute ("translationOutputMin", Integer.toString (-IEnvelope.MAX_ENVELOPE_DEPTH / 100));
-        bindingElement.setAttribute ("translationOutputMax", Integer.toString (IEnvelope.MAX_ENVELOPE_DEPTH / 100));
+        bindingElement.setAttribute (TAG_TRANSLATION_OUTPUT_MIN, Integer.toString (-IEnvelope.MAX_ENVELOPE_DEPTH / 100));
+        bindingElement.setAttribute (TAG_TRANSLATION_OUTPUT_MAX, Integer.toString (IEnvelope.MAX_ENVELOPE_DEPTH / 100));
         bindingElement.setAttribute (TAG_MOD_BEHAVIOR, "add");
     }
 
@@ -612,13 +615,13 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
         final Element bindingElement = XMLUtils.addElement (document, lfoElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", "amp");
-        bindingElement.setAttribute (TAG_LEVEL, "group");
+        bindingElement.setAttribute (TAG_LEVEL, TAG_GROUP);
         bindingElement.setAttribute (TAG_GROUP_INDEX, Integer.toString (groupIndex));
         bindingElement.setAttribute (TAG_PARAMETER, "AMP_VOLUME");
-        bindingElement.setAttribute (TAG_TRANSLATION, "linear");
+        bindingElement.setAttribute (TAG_TRANSLATION, TAG_LINEAR);
         // The oscillator is bipolar, the swing is applied symmetrically around the group volume
-        bindingElement.setAttribute ("translationOutputMin", "-1");
-        bindingElement.setAttribute ("translationOutputMax", "1");
+        bindingElement.setAttribute (TAG_TRANSLATION_OUTPUT_MIN, "-1");
+        bindingElement.setAttribute (TAG_TRANSLATION_OUTPUT_MAX, "1");
         bindingElement.setAttribute (TAG_MOD_BEHAVIOR, "add");
     }
 
@@ -651,13 +654,13 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
         final Element bindingElement = XMLUtils.addElement (document, envelopeElement, DecentSamplerTag.BINDING);
         bindingElement.setAttribute ("type", "amp");
-        bindingElement.setAttribute (TAG_LEVEL, "group");
+        bindingElement.setAttribute (TAG_LEVEL, TAG_GROUP);
         bindingElement.setAttribute (TAG_GROUP_INDEX, Integer.toString (groupIndex));
         bindingElement.setAttribute (TAG_PARAMETER, "GROUP_TUNING");
-        bindingElement.setAttribute (TAG_TRANSLATION, "linear");
-        bindingElement.setAttribute ("translationOutputMin", "0");
+        bindingElement.setAttribute (TAG_TRANSLATION, TAG_LINEAR);
+        bindingElement.setAttribute (TAG_TRANSLATION_OUTPUT_MIN, "0");
         // Unit are semi-tones; maximum value is 120 semi-tones
-        bindingElement.setAttribute ("translationOutputMax", Integer.toString (IEnvelope.MAX_ENVELOPE_DEPTH / 100));
+        bindingElement.setAttribute (TAG_TRANSLATION_OUTPUT_MAX, Integer.toString (IEnvelope.MAX_ENVELOPE_DEPTH / 100));
         bindingElement.setAttribute (TAG_MOD_BEHAVIOR, "add");
     }
 

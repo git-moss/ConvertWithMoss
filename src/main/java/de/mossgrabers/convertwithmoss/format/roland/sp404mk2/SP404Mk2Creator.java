@@ -315,7 +315,7 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_PITCH, semitones);
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_FINE, cents);
 
-        final int pan = Math.clamp (SP404Mk2Constants.PAN_CENTER + (int) Math.round (zone.getPanning () * 63.0), 0, 127);
+        final int pan = Math.clamp (SP404Mk2Constants.PAN_CENTER + Math.round (zone.getPanning () * 63.0), 0, 127);
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_PAN, pan);
     }
 

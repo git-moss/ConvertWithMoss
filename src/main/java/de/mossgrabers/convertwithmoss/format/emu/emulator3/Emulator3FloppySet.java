@@ -13,51 +13,54 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
  * Assembles the floppy disks of the EIIIX and ESI samplers into a bank. The samplers save a bank
  * onto one or more 1.44 MB floppy disks, each of which starts with a 512 byte disk header that
  * holds the bank identifier and name plus the number of the disk and the size of the set. The
- * payload behind the headers is not a bank file but a dump of the memory of the sampler: the
- * header and the address tables of the bank are stored big-endian, the addresses are memory
- * addresses instead of file positions and the sample headers are kept in a separate table of 92
- * byte slots behind the sample data instead of in front of each sample. This class concatenates
- * the payloads of the disks of a set and converts them into a little-endian bank so that the
- * result can be parsed like a bank file. The layout was derived from the floppy sets of the E-mu
- * and Sweetwater sound libraries; see documentation/design/EIII_FORMAT.md.
+ * payload behind the headers is not a bank file but a dump of the memory of the sampler: the header
+ * and the address tables of the bank are stored big-endian, the addresses are memory addresses
+ * instead of file positions and the sample headers are kept in a separate table of 92 byte slots
+ * behind the sample data instead of in front of each sample. This class concatenates the payloads
+ * of the disks of a set and converts them into a little-endian bank so that the result can be
+ * parsed like a bank file. The layout was derived from the floppy sets of the E-mu and Sweetwater
+ * sound libraries; see documentation/design/EIII_FORMAT.md.
  *
  * @author Jürgen Moßgraber
  */
 public class Emulator3FloppySet
 {
     /** The size of a raw image of a 3.5" HD floppy disk. */
-    public static final int  FLOPPY_SIZE          = 1474560;
+    public static final int   FLOPPY_SIZE                   = 1474560;
 
     /** The offset of the number of the disk in the disk header. */
-    private static final int DISK_NUMBER          = 0x28;
+    private static final int  DISK_NUMBER                   = 0x28;
     /** The offset of the number of disks of the set in the disk header. */
-    private static final int TOTAL_DISKS          = 0x2C;
+    private static final int  TOTAL_DISKS                   = 0x2C;
     /** The size of the disk header at the start of every disk of a set. */
-    private static final int DISK_HEADER_SIZE     = 0x200;
+    private static final int  DISK_HEADER_SIZE              = 0x200;
     /** The largest number of disks a set is accepted to span. */
-    private static final int MAX_DISKS            = 99;
+    private static final int  MAX_DISKS                     = 99;
 
     /**
      * The offset of a structure in a bank file minus its offset in the floppy payload: the payload
      * starts with the bank name (which a bank file stores at 0x10) followed by 16 bytes of fields
      * and then continues with the content behind the bank file header (which starts at 0x6C).
      */
-    private static final int  RECORD_SHIFT        = 0x4C;
+    private static final int  RECORD_SHIFT                  = 0x4C;
 
     /**
-     * The mask of the sample memory addresses. The samplers set bit 26 on addresses of their
-     * second memory bank; the masked address is the position in the sample data region.
+     * The mask of the sample memory addresses. The samplers set bit 26 on addresses of their second
+     * memory bank; the masked address is the position in the sample data region.
      */
-    private static final long SAMPLE_ADDRESS_MASK = 0x3FFFFFF;
+    private static final long SAMPLE_ADDRESS_MASK           = 0x3FFFFFF;
 
-    /** The size of the sample header table: one 92 byte slot for each of the 999 samples plus slot 0. */
-    private static final int  HEADER_TABLE_SIZE   = (Emulator3Constants.SAMPLE_HEADER_SIZE * 1000 + Emulator3Constants.BLOCK_SIZE - 1) / Emulator3Constants.BLOCK_SIZE * Emulator3Constants.BLOCK_SIZE;
+    /**
+     * The size of the sample header table: one 92 byte slot for each of the 999 samples plus slot
+     * 0.
+     */
+    private static final int  HEADER_TABLE_SIZE             = (Emulator3Constants.SAMPLE_HEADER_SIZE * 1000 + Emulator3Constants.BLOCK_SIZE - 1) / Emulator3Constants.BLOCK_SIZE * Emulator3Constants.BLOCK_SIZE;
 
     // The option flags of a sample header on a floppy, which differ from the ones of a bank file
-    private static final int  FLOPPY_OPTION_CHANNEL_LEFT  = 0x02;
-    private static final int  FLOPPY_OPTION_CHANNEL_RIGHT = 0x04;
+    private static final int  FLOPPY_OPTION_CHANNEL_LEFT    = 0x02;
+    private static final int  FLOPPY_OPTION_CHANNEL_RIGHT   = 0x04;
     private static final int  FLOPPY_OPTION_LOOP_IN_RELEASE = 0x08;
-    private static final int  FLOPPY_OPTION_LOOP  = 0x40;
+    private static final int  FLOPPY_OPTION_LOOP            = 0x40;
 
 
     /**
@@ -71,8 +74,8 @@ public class Emulator3FloppySet
 
     /**
      * Check whether the data is a floppy disk of a bank set. A disk has the size of a raw floppy
-     * image and carries the disk header fields big-endian, while a bank file stores the same
-     * region little-endian, which tells the two apart.
+     * image and carries the disk header fields big-endian, while a bank file stores the same region
+     * little-endian, which tells the two apart.
      *
      * @param data The content of the file
      * @return True if it is a floppy disk
@@ -114,9 +117,8 @@ public class Emulator3FloppySet
 
     /**
      * Check whether a file is a disk of the same set as the given first disk with the given disk
-     * number. The disks of a set share the identifier and the bank name of their disk headers;
-     * the file names cannot be used since the sets in the wild number their files in different
-     * ways.
+     * number. The disks of a set share the identifier and the bank name of their disk headers; the
+     * file names cannot be used since the sets in the wild number their files in different ways.
      *
      * @param firstDisk The content of the first disk of the set
      * @param candidate The first {@link #DISK_HEADER_SIZE} bytes of the candidate file
@@ -136,8 +138,8 @@ public class Emulator3FloppySet
 
 
     /**
-     * The header part of {@link #isFloppyDisk(byte[])} for a candidate of which only the header
-     * was read.
+     * The header part of {@link #isFloppyDisk(byte[])} for a candidate of which only the header was
+     * read.
      *
      * @param header The first bytes of the file, at least {@link #DISK_HEADER_SIZE}
      * @return True if the header is the one of a floppy disk
@@ -188,7 +190,7 @@ public class Emulator3FloppySet
         // The payload is organized in 512 byte blocks: the region up to the end of the presets is
         // followed by the sample data and the table of the 92 byte sample headers. The EIIIX
         // puts the sample data first, the ESI samplers the header table.
-        final int recordBlocks = blockAligned (presetArea + (int) presetAreaSize + 1);
+        final int recordBlocks = blockAligned (presetArea + presetAreaSize + 1);
         final int sampleTable = bankFormat.getSampleTableOffset () - RECORD_SHIFT;
         final long [] sampleEntries = new long [maxSamples + 1];
         for (int i = 0; i <= maxSamples; i++)
@@ -256,10 +258,10 @@ public class Emulator3FloppySet
             final FloppySample sample = samples[i];
             if (sample == null)
                 continue;
-            Emulator3Constants.putU32 (bank, bankFormat.getSampleTableOffset () + (i - 1) * 4, writeOffset - sampleArea + Emulator3Constants.SAMPLE_ADDRESS_OFFSET);
+            Emulator3Constants.putU32 (bank, bankFormat.getSampleTableOffset () + (i - 1) * 4, writeOffset - sampleArea + (long) Emulator3Constants.SAMPLE_ADDRESS_OFFSET);
             writeOffset = sample.write (stream, bank, writeOffset);
         }
-        Emulator3Constants.putU32 (bank, bankFormat.getSampleTableOffset () + maxSamples * 4, writeOffset - sampleArea + Emulator3Constants.SAMPLE_ADDRESS_OFFSET);
+        Emulator3Constants.putU32 (bank, bankFormat.getSampleTableOffset () + maxSamples * 4, writeOffset - sampleArea + (long) Emulator3Constants.SAMPLE_ADDRESS_OFFSET);
         return bank;
     }
 
@@ -408,7 +410,7 @@ public class Emulator3FloppySet
             Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_START_LEFT, writeLeft ? headerSize : 0);
             Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_START_RIGHT, this.isStereo ? (long) headerSize + this.channelSize : writeRight ? headerSize : 0);
             Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_END_LEFT, writeLeft ? (long) headerSize + this.channelSize - 2 : 0);
-            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_END_RIGHT, this.isStereo ? (long) headerSize + 2L * this.channelSize - 2 : writeRight ? (long) headerSize + this.channelSize - 2 : 0);
+            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_END_RIGHT, this.isStereo ? headerSize + 2L * this.channelSize - 2 : writeRight ? (long) headerSize + this.channelSize - 2 : 0);
             if (this.hasLoop)
             {
                 // The loop end of a floppy already points behind the last frame of the loop while
@@ -440,27 +442,27 @@ public class Emulator3FloppySet
             writeOffset = copySwapped (stream, (int) this.rightOffset, bank, writeOffset, this.hasLeft ? this.isStereo ? this.channelSize : 0 : this.channelSize);
             return writeOffset;
         }
-    }
 
 
-    /**
-     * Copy sample data and swap the bytes of each 16 bit value.
-     *
-     * @param source The data to copy from
-     * @param sourceOffset The offset to copy from
-     * @param destination The data to copy to
-     * @param destinationOffset The offset to copy to
-     * @param length The number of bytes to copy
-     * @return The offset behind the copied data
-     */
-    private static int copySwapped (final byte [] source, final int sourceOffset, final byte [] destination, final int destinationOffset, final int length)
-    {
-        for (int i = 0; i < length; i += 2)
+        /**
+         * Copy sample data and swap the bytes of each 16 bit value.
+         *
+         * @param source The data to copy from
+         * @param sourceOffset The offset to copy from
+         * @param destination The data to copy to
+         * @param destinationOffset The offset to copy to
+         * @param length The number of bytes to copy
+         * @return The offset behind the copied data
+         */
+        private static int copySwapped (final byte [] source, final int sourceOffset, final byte [] destination, final int destinationOffset, final int length)
         {
-            destination[destinationOffset + i] = source[sourceOffset + i + 1];
-            destination[destinationOffset + i + 1] = source[sourceOffset + i];
+            for (int i = 0; i < length; i += 2)
+            {
+                destination[destinationOffset + i] = source[sourceOffset + i + 1];
+                destination[destinationOffset + i + 1] = source[sourceOffset + i];
+            }
+            return destinationOffset + length;
         }
-        return destinationOffset + length;
     }
 
 

@@ -17,57 +17,84 @@ import java.util.regex.Pattern;
 
 /**
  * Repairs the zone sample indices of the banks of the E-mu library CD-ROMs whose mastering wrote
- * the 16 bit index through an 8 bit tool chain. The low byte of every such index is the true
- * sample slot modulo 256 while the high byte is unreliable: it is zero in most of the affected
- * banks and stale garbage in a few others. A preset whose samples sit above slot 256 therefore
- * plays completely unrelated material - the Formula 4000 and General MIDI CD-ROMs are full of
- * examples like a string preset which sounds basketball bounces.
+ * the 16 bit index through an 8 bit tool chain. The low byte of every such index is the true sample
+ * slot modulo 256 while the high byte is unreliable: it is zero in most of the affected banks and
+ * stale garbage in a few others. A preset whose samples sit above slot 256 therefore plays
+ * completely unrelated material - the Formula 4000 and General MIDI CD-ROMs are full of examples
+ * like a string preset which sounds basketball bounces.
  * <p>
  * The damage is per preset: presets written correctly (for example the drum kits of the 8 MB
- * General MIDI bank, which reference slots up to 531) sit in the same banks as truncated ones.
- * The evidence for the mechanism is spread over the whole library: the General MIDI drum kits of
- * the reduced drum banks reference holes whose low bytes are exactly the GM percussion sounds,
- * hundreds of presets resolve to samples which carry the preset's own name once the high byte is
- * restored ('Oct 3 All' to 'Oct 3 All E4', 'P5 Tablura' to 'P5TabluraE3'), and the pitch series
- * named in the sample names match the zones' original keys at the repaired slots.
+ * General MIDI bank, which reference slots up to 531) sit in the same banks as truncated ones. The
+ * evidence for the mechanism is spread over the whole library: the General MIDI drum kits of the
+ * reduced drum banks reference holes whose low bytes are exactly the GM percussion sounds, hundreds
+ * of presets resolve to samples which carry the preset's own name once the high byte is restored
+ * ('Oct 3 All' to 'Oct 3 All E4', 'P5 Tablura' to 'P5TabluraE3'), and the pitch series named in the
+ * sample names match the zones' original keys at the repaired slots.
  * <p>
  * Since the high byte is lost, the repair infers for each preset the page k so that its zones
  * resolve to slot low + k * 256. The stored interpretation always wins unless a page candidate is
- * decisively better; the evidence used is deliberately narrow: the note names which the E-mu
- * sample names carry ('OBXStringD2', 'puls98fx2') checked against the zones' original keys, the
- * preset name occurring in the sample names, and the feasibility of each page against the sample
- * table (a page is impossible when one of its slots does not exist). Presets whose evidence is
- * ambiguous keep their stored indices.
+ * decisively better; the evidence used is deliberately narrow: the note names which the E-mu sample
+ * names carry ('OBXStringD2', 'puls98fx2') checked against the zones' original keys, the preset
+ * name occurring in the sample names, and the feasibility of each page against the sample table (a
+ * page is impossible when one of its slots does not exist). Presets whose evidence is ambiguous
+ * keep their stored indices.
  *
  * @author Jürgen Moßgraber
  */
 public class Emulator3SampleIndexRepair
 {
     /** A note name at the end of a sample name, e.g. 'OBXStringD2' or 'DRhodes F#4 Hard'. */
-    private static final Pattern      NOTE_UPPER     = Pattern.compile ("([A-G])\\s?([#bx])?\\s?(-?\\d)\\s*$");
+    private static final Pattern     NOTE_UPPER     = Pattern.compile ("([A-G])\\s?([#bx])?\\s?(-?\\d)\\s*$");
     /** A lower case note name; only trusted when letter, accidental and digit are contiguous. */
-    private static final Pattern      NOTE_LOWER     = Pattern.compile ("([a-g])([#bx])?(-?\\d)$");
+    private static final Pattern     NOTE_LOWER     = Pattern.compile ("([a-g])([#bx])?(-?\\d)$");
     /** Words which are too common in sample names to tie a preset to its samples. */
-    private static final Set<String>  GENERIC_TOKENS = Set.of ("loop", "wave", "the", "and", "link", "new", "old", "big", "low", "high");
+    private static final Set<String> GENERIC_TOKENS = Set.of ("loop", "wave", "the", "and", "link", "new", "old", "big", "low", "high");
     /** The pitch classes of the note letters A to G. */
-    private static final int []       PITCH_CLASSES  =
+    private static final int []      PITCH_CLASSES  =
     {
-        9, 11, 0, 2, 4, 5, 7
+        9,
+        11,
+        0,
+        2,
+        4,
+        5,
+        7
     };
 
-    /** A note parsed from a sample name. */
+
+    /**
+     * A note parsed from a sample name.
+     * 
+     * @param pitchClass The index of the note in the scale
+     * @param octave The octave offset
+     * @param hasAccidental Flat or sharp symbol
+     */
     private record Note (int pitchClass, int octave, boolean hasAccidental)
     {
         // Intentionally empty
     }
 
-    /** One way to interpret the stored indices of a preset: as they are or moved to a page. */
+
+    /**
+     * One way to interpret the stored indices of a preset: as they are or moved to a page.
+     * 
+     * @param asIs Use the candidate as is otherwise use the candidate on the given page
+     * @param page The page on which the alternative candidate is located
+     */
     private record Candidate (boolean asIs, int page)
     {
         // Intentionally empty
     }
 
-    /** The evidence collected for one candidate. */
+
+    /**
+     * The evidence collected for one candidate.
+     * 
+     * @param hits The number of reference hits
+     * @param parseable The overall number of references
+     * @param distinctRoots The number of roots
+     * @param affinity The affinity of the names
+     */
     private record Score (int hits, int parseable, int distinctRoots, double affinity)
     {
         // Intentionally empty
@@ -89,8 +116,8 @@ public class Emulator3SampleIndexRepair
      * @param data The content of the bank
      * @param presetOffsets The offsets of all presets of the bank
      * @param sampleNames The names of the samples of the bank by their 1-based slot
-     * @return For each preset offset which needs repairs, the mapping from the stored (masked)
-     *         zone sample index to the resolved slot; presets whose indices are kept are absent
+     * @return For each preset offset which needs repairs, the mapping from the stored (masked) zone
+     *         sample index to the resolved slot; presets whose indices are kept are absent
      */
     public static Map<Integer, Map<Integer, Integer>> resolveBank (final byte [] data, final List<Integer> presetOffsets, final Map<Integer, String> sampleNames)
     {
@@ -174,7 +201,7 @@ public class Emulator3SampleIndexRepair
         }
 
         if (candidates.isEmpty ())
-            return resolvePerZone (roots, stored, lows, sampleNames, maxPage);
+            return resolvePerZone (stored, lows, sampleNames, maxPage);
 
         final String presetName = Emulator3Constants.decodeName (data, presetOffset);
         final Score [] scores = new Score [candidates.size ()];
@@ -197,8 +224,8 @@ public class Emulator3SampleIndexRepair
 
 
     /**
-     * Choose the winning candidate. The stored interpretation is the baseline and only a
-     * decisively better page replaces it.
+     * Choose the winning candidate. The stored interpretation is the baseline and only a decisively
+     * better page replaces it.
      *
      * @param candidates The candidates; the first one is the baseline
      * @param scores The evidence of each candidate
@@ -318,17 +345,16 @@ public class Emulator3SampleIndexRepair
 
 
     /**
-     * Resolve zones one by one when no interpretation fits all of them: a stored index which
-     * exists is kept and one which does not is moved to the lowest page on which it exists.
+     * Resolve zones one by one when no interpretation fits all of them: a stored index which exists
+     * is kept and one which does not is moved to the lowest page on which it exists.
      *
-     * @param roots The original keys of the zones
      * @param stored The stored indices of the zones
      * @param lows The low bytes of the stored indices
      * @param sampleNames The names of the samples of the bank by their 1-based slot
      * @param maxPage The highest page of the bank
      * @return The mapping from the stored index to the resolved slot
      */
-    private static Map<Integer, Integer> resolvePerZone (final int [] roots, final int [] stored, final int [] lows, final Map<Integer, String> sampleNames, final int maxPage)
+    private static Map<Integer, Integer> resolvePerZone (final int [] stored, final int [] lows, final Map<Integer, String> sampleNames, final int maxPage)
     {
         final Map<Integer, Integer> mapping = new HashMap<> ();
         for (int i = 0; i < stored.length; i++)
@@ -350,9 +376,9 @@ public class Emulator3SampleIndexRepair
 
 
     /**
-     * Collect the evidence for one candidate: how many zones' original keys match the note named
-     * in the sample name at the candidate's slot, over how many distinct root keys, how many of
-     * the slots carry a parseable note at all, and how many carry the preset's own name.
+     * Collect the evidence for one candidate: how many zones' original keys match the note named in
+     * the sample name at the candidate's slot, over how many distinct root keys, how many of the
+     * slots carry a parseable note at all, and how many carry the preset's own name.
      *
      * @param candidate The candidate to score
      * @param roots The original keys of the zones
@@ -392,8 +418,8 @@ public class Emulator3SampleIndexRepair
     /**
      * Check whether the note named in a sample name plausibly is the given key. E-mu names are
      * sloppy: the accidental is sometimes dropped ('OBXStringF4' for F#4) and the octave numbers
-     * follow both the C3=60 and the C4=60 convention, so the pitch class must match exactly (or
-     * one semitone flat when no accidental was written) and the octave within roughly one.
+     * follow both the C3=60 and the C4=60 convention, so the pitch class must match exactly (or one
+     * semitone flat when no accidental was written) and the octave within roughly one.
      *
      * @param key The MIDI key of the zone
      * @param note The note parsed from the sample name
