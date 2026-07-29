@@ -651,24 +651,24 @@ public class EXS24Parameters extends EXS24Object
             StreamUtils.writeUnsigned16 (paramValueOutputStream, 0, isBigEndian);
         }
 
-        // Write new parameters
+        // Write new parameters - the reader expects interleaved records of 16 bit ID and
+        // 16 bit value (see read above)
         writtenParams = 0;
-        final ByteArrayOutputStream newParamIDOutputStream = new ByteArrayOutputStream ();
-        final ByteArrayOutputStream newParamValueOutputStream = new ByteArrayOutputStream ();
+        final ByteArrayOutputStream newParamOutputStream = new ByteArrayOutputStream ();
         for (final Map.Entry<Integer, Integer> entry: entrySet)
         {
             final int key = entry.getKey ().intValue ();
             if (key > 0xFF)
             {
-                StreamUtils.writeUnsigned16 (newParamIDOutputStream, key, isBigEndian);
-                StreamUtils.writeUnsigned16 (newParamValueOutputStream, entry.getValue ().intValue (), isBigEndian);
+                StreamUtils.writeUnsigned16 (newParamOutputStream, key, isBigEndian);
+                StreamUtils.writeUnsigned16 (newParamOutputStream, entry.getValue ().intValue (), isBigEndian);
                 writtenParams++;
             }
         }
         for (int i = writtenParams; i < PARAMETER_COUNT_NEW; i++)
         {
-            StreamUtils.writeUnsigned16 (newParamIDOutputStream, 0, isBigEndian);
-            StreamUtils.writeUnsigned32 (paramValueOutputStream, 0, isBigEndian);
+            StreamUtils.writeUnsigned16 (newParamOutputStream, 0, isBigEndian);
+            StreamUtils.writeUnsigned16 (newParamOutputStream, 0, isBigEndian);
         }
 
         // It seems that always 100 old parameters are required...
@@ -678,8 +678,7 @@ public class EXS24Parameters extends EXS24Object
 
         // ... and 200 new
         StreamUtils.writeUnsigned32 (out, PARAMETER_COUNT_NEW, isBigEndian);
-        out.write (newParamIDOutputStream.toByteArray ());
-        out.write (newParamValueOutputStream.toByteArray ());
+        out.write (newParamOutputStream.toByteArray ());
     }
 
 
