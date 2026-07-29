@@ -31,7 +31,6 @@
   * Fixed: A modulation set was created for every key zone. Now zones with identical modulation share one set, which gives the usual single instrument-wide modulation set; additional sets are only created for zones which genuinely modulate differently.
   * New: A pitch LFO (vibrato) is read from and written as a LFO modulation device (waveform, rate, depth and onset time; the value curves were calibrated against Renoise 3.5.4).
   * New: A volume LFO (tremolo) is read from and written as a LFO modulation device targeting the volume; since the volume chain is linear, the depth in decibels is expressed as the linear swing whose lowest point lies that many decibels below full volume.
-  * Fixed: The depth of a pitch envelope was read as the model maximum of 120 semitones instead of the pitch modulation range of the modulation set (12 semitones by default) and was dropped entirely when writing - a 2 semitone pitch envelope e.g. inflated to 120 semitones in a round trip. The depth is now read from and written as the pitch modulation range of the mixer device, which also keeps the pitch LFO consistent.
 * Waldorf Quantum/Iridium
   * New: A source which carries its bank in front of its name is written without it in the preset name, since the device shows the bank in a field of its own. The file name keeps the full name. An explicit Bank from the settings replaces the source's bank, in which case the name keeps it.
 
