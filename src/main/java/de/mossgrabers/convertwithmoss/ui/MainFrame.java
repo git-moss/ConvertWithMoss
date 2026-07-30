@@ -430,7 +430,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private static Node createSystemMenuBar (final Node content)
     {
-        if (!System.getProperty ("os.name", "").toLowerCase (Locale.US).contains ("mac"))
+        if (!OperatingSystem.isMacOS ())
             return content;
 
         final MenuBar menuBar = new MenuBar ();
