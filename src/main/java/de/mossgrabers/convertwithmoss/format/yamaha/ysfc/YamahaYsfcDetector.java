@@ -340,9 +340,11 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                     instrumentSource.setClipKeyLow (part.getNoteLimitLow ());
                     instrumentSource.setClipKeyHigh (part.getNoteLimitHigh ());
                     performanceSource.addInstrument (instrumentSource);
-                    performanceSources.add (performanceSource);
                 }
             }
+
+            if (!performanceSource.getInstruments ().isEmpty ())
+                performanceSources.add (performanceSource);
         }
 
         return performanceSources;

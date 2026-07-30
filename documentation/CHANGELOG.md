@@ -4,11 +4,12 @@
 
 * Many thanks to David García Goñi for providing specifications of the E-mu formats and refined Kurzweil specifications!
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
-* New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
+* New: Added support for the Arturia Synclavier V format (reading and writing of SYNX preset and bank exports; partials which play a sound file become sample zones).
 * New: Added support for the E-mu Emulator III/IIIX/ESI bank format (E3B, E3X, ESI).
-* New: E-mu Emulator III banks can also be read directly from CD-ROM and hard disk images of the samplers (ISO, IMG, HDA), which use the same proprietary E-mu disk filesystem as the EOS samplers.
-* New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
 * New: Added support for the E-mu Emulator IV bank format (E4B). Banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format. New: Writing creates a bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7. Written banks have not been tested on real hardware yet.
+* New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
+* New: Added support for the Roland S-550 CD-Rom format.
+* New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
 * User Interface
   * New: Added tooltips to format lists to be able to see the full text of an entry.
   * New: Next to the *Select* button of the source there is now a *Batch* toggle. It is on by default and everything works as before: *Select* picks the source folder and all of its files of the source format are converted. Switching it off converts one single file instead - *Select* then opens a file dialog whose filter box lists every source format with its file endings, the current one preselected, and the source format is set from the picked file afterwards (a switched filter wins, otherwise the file ending decides; disk images go to the generic ISO/IMG format). Each mode keeps a path history of its own, which is exchanged along with the entered path when the toggle is used.
@@ -20,6 +21,7 @@
   * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: Added support for a LFO modulating the volume (tremolo) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
+  * New: Added more instrument names to the category detector.
   * Fixed: Detecting a source which contains many presets was dominated by a fixed 10 millisecond pause taken after every single detected preset. A CD-ROM image of an E-mu sampler with 812 presets needed 11 seconds, of which 8 were that pause; two of them with 2339 presets needed 36 seconds. The pause is now taken every 64 presets, which keeps a cancellation responsive but takes the two images down to 1.4 seconds.
 * 1010music blackbox / bento
   * Fixed: The loop cross-fade of a blackbox pad was read from the loop-end attribute instead of the fade-amount attribute - virtually every looped pad got a cross-fade spanning the entire loop, which destinations that bake cross-fades into the audio smeared audibly.
@@ -61,6 +63,7 @@
   * Fixed: The fine tune of a region (stored in cents) was divided by 32768 as if it were a semi-tone fraction - a -50 cent detune shrank to -0.15 cents, erasing the detune of every region.
   * Fixed: The signed 16 bit accessor of the RIFF chunk framework read big-endian although RIFF is little-endian throughout; the region fine tune (its only user) additionally came out byte-swapped.
 * E-mu Emulator III
+  * Fixed: The signed 16 bit accessor of the RIFF chunk framework read big-endian although RIFF is little-endian throughout; the region fine tune (its only user) additionally came out byte-swapped.* E-mu Emulator III
   * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.
   * Fixed: The preset link is a single byte followed by a separate parameter, not a 16 bit value. A few presets whose second byte is set lost the preset which is layered on top of them.
   * Fixed: The cutoff parameter reaches up to 74 kHz and the banks switch their filter off by parking it anywhere above the audible range, but only the single value 0xFF was taken as that bypass. Every other parked value created a filter which cannot be heard; the frequency now decides. About 3200 zones of the EIIIX library CD-ROMs lose such a filter.
@@ -93,6 +96,8 @@
   * Fixed: The tune of a key zone was read and written as thousandths of a semitone although the format stores cents (the field is named 'tune_cents' in the format's own schema) - a +50 cent detune was written as 500 cents and a file's tune read 10 times too small. The loop tune already used cents and was correct.
 * Kurzweil K2x00
   * Fixed: An envelope stage with both a zero time and a zero level is unused on the device and keeps the level of the previous stage, but was read literally. A program which leaves its decay stage unused - like the reported FM basses, which sustain at the attack level and only fade out with a long release - was therefore converted to a silent preset. Additionally, the attack velocity is now converted as a cutoff modulation source of the F1 slot in both directions; the same programs open their nearly closed cutoff by velocity and converted very dull without it.
+* Synclavier Regen
+  * Fixed: A source with more than 12 groups lost everything beyond the first 12 - many sources deliver one group per sample zone, so nearly the whole key map was dropped and large multi-samples converted silent. Groups whose zones share the same velocity range and do not overlap on the keyboard are now packed into shared partials (a partial holds a whole key map in its patch list), so such sources fit completely; only genuine layers beyond 12 are still dropped.
 * Logic EXS24
   * Fixed: The velocity sensitivity of the volume envelope was read and written inverted: a file with full sensitivity (-60dB, which is also the format default) was read as no velocity response at all and vice versa. Since both directions were inverted, the defect was invisible in a round trip but e.g. a written EXS did not respond to velocity in Logic.
   * Fixed: The parameters with IDs above 255 (among them the envelope delay and attack slope) were written in a layout which neither the reader nor Logic understands and their padding leaked 4 additional zero bytes per unused slot into the old parameter block - the affected parameters were lost from every written file.
@@ -110,6 +115,7 @@
 * Reason NN-XT
   * Fixed: The velocity fade-out was read raw although it is stored inverted (0x80 = off, otherwise 127 minus the fade range, as the writer encodes it) - a zone without a fade read as a fade over the whole velocity range and an SXT round trip turned 'off' into a full-range fade.
 * Roland S-5xx
+  * Fixed: Removed Null-characters from description texts.
   * Fixed: The TVF key follow used an integer division, so any tracking below the maximum was rounded down to none; the value was also read unsigned, so negative tracking was impossible.
   * Fixed: The unison detune of a patch (documented -50..50 cents) was read unsigned, so a negative detune turned into more than 2 semitones upwards.
 * Roland S-7xx

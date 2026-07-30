@@ -215,7 +215,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
                 newGroup.setGain (Math.clamp (exs24Group.volume, -96, 24));
                 // The group panning is stored as a signed byte in the range of [-50..50], which is
                 // the same encoding as the one of the panning of a zone
-                newGroup.setPanning (Math.clamp (MathUtils.decodeTwosComplement (exs24Group.pan) / 50.0, -1.0, 1.0));
+                newGroup.setPanning (Math.clamp (exs24Group.pan / 50.0, -1.0, 1.0));
             }
             return newGroup;
 
@@ -289,7 +289,7 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
 
         final IEnvelope globalAmplitudeEnvelope = createEnvelope (parameters, 1);
         final Integer env1Velocity = parameters.get (EXS24Parameters.ENV1_VEL_SENS);
-        final double velocityModulation = env1Velocity == null ? 1 : 1 - Math.clamp (env1Velocity.intValue () / -60.0, 0, 1);
+        final double velocityModulation = env1Velocity == null ? 1 : Math.clamp (env1Velocity.intValue () / -60.0, 0, 1);
 
         // The volume key-scaling is stored with the same scaling as the filter key-tracking above,
         // which means 1000 = 100%

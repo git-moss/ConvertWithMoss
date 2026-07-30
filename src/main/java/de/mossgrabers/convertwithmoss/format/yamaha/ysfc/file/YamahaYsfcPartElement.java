@@ -2262,7 +2262,7 @@ public class YamahaYsfcPartElement
             return 0;
 
         for (int i = 0; i < 127; i++)
-            if (seconds >= ENVELOPE_TIMES.get (Integer.valueOf (i)).intValue () && seconds < ENVELOPE_TIMES.get (Integer.valueOf (i + 1)).intValue ())
+            if (seconds >= ENVELOPE_TIMES.get (Integer.valueOf (i)).doubleValue () && seconds < ENVELOPE_TIMES.get (Integer.valueOf (i + 1)).doubleValue ())
                 return i;
 
         return 127;

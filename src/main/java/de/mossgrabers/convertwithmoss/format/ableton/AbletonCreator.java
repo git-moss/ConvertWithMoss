@@ -142,10 +142,10 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
                     text = text.replace ("%AMP_EG_DECAY_TIME%", formatEnvTime (Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ())));
                     text = text.replace ("%AMP_EG_RELEASE_TIME%", formatEnvTime (ampEnvelope.getReleaseTime ()));
 
-                    text = text.replace ("%AMP_EG_START_LEVEL%", formatEnvVolume (ampEnvelope.getStartLevel ()));
-                    text = text.replace ("%AMP_EG_HOLD_LEVEL%", formatEnvVolume (ampEnvelope.getHoldLevel ()));
-                    text = text.replace ("%AMP_EG_SUSTAIN_LEVEL%", formatEnvVolume (ampEnvelope.getSustainLevel ()));
-                    text = text.replace ("%AMP_EG_END_LEVEL%", formatEnvVolume (ampEnvelope.getEndLevel ()));
+                    text = text.replace ("%AMP_EG_START_LEVEL%", formatEnvVolume (ampEnvelope.getStartLevel (), 0));
+                    text = text.replace ("%AMP_EG_HOLD_LEVEL%", formatEnvVolume (ampEnvelope.getHoldLevel (), 1));
+                    text = text.replace ("%AMP_EG_SUSTAIN_LEVEL%", formatEnvVolume (ampEnvelope.getSustainLevel (), 1));
+                    text = text.replace ("%AMP_EG_END_LEVEL%", formatEnvVolume (ampEnvelope.getEndLevel (), 0));
 
                     text = text.replace ("%AMP_EG_ATTACK_SLOPE%", formatDouble (-ampEnvelope.getAttackSlope ()));
                     text = text.replace ("%AMP_EG_DECAY_SLOPE%", formatDouble (-ampEnvelope.getDecaySlope ()));
@@ -163,10 +163,10 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
                     text = text.replace ("%PITCH_EG_DECAY_TIME%", formatEnvTime (Math.max (0, pitchEnvelope.getHoldTime ()) + Math.max (0, pitchEnvelope.getDecayTime ())));
                     text = text.replace ("%PITCH_EG_RELEASE_TIME%", formatEnvTime (pitchEnvelope.getReleaseTime ()));
 
-                    text = text.replace ("%PITCH_EG_START_LEVEL%", formatEnvVolume (pitchEnvelope.getStartLevel ()));
-                    text = text.replace ("%PITCH_EG_HOLD_LEVEL%", formatEnvVolume (pitchEnvelope.getHoldLevel ()));
-                    text = text.replace ("%PITCH_EG_SUSTAIN_LEVEL%", formatEnvVolume (pitchEnvelope.getSustainLevel ()));
-                    text = text.replace ("%PITCH_EG_END_LEVEL%", formatEnvVolume (pitchEnvelope.getEndLevel ()));
+                    text = text.replace ("%PITCH_EG_START_LEVEL%", formatEnvVolume (pitchEnvelope.getStartLevel (), 0));
+                    text = text.replace ("%PITCH_EG_HOLD_LEVEL%", formatEnvVolume (pitchEnvelope.getHoldLevel (), 1));
+                    text = text.replace ("%PITCH_EG_SUSTAIN_LEVEL%", formatEnvVolume (pitchEnvelope.getSustainLevel (), 1));
+                    text = text.replace ("%PITCH_EG_END_LEVEL%", formatEnvVolume (pitchEnvelope.getEndLevel (), 0));
 
                     text = text.replace ("%PITCH_EG_ATTACK_SLOPE%", formatDouble (-pitchEnvelope.getAttackSlope ()));
                     text = text.replace ("%PITCH_EG_DECAY_SLOPE%", formatDouble (-pitchEnvelope.getDecaySlope ()));
@@ -226,10 +226,10 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         text = text.replace ("%FILTER_EG_DECAY_TIME%", formatEnvTime (Math.max (0, filterEnvelope.getHoldTime ()) + Math.max (0, filterEnvelope.getDecayTime ())));
         text = text.replace ("%FILTER_EG_RELEASE_TIME%", formatEnvTime (filterEnvelope.getReleaseTime ()));
 
-        text = text.replace ("%FILTER_EG_START_LEVEL%", formatEnvVolume (filterEnvelope.getStartLevel ()));
-        text = text.replace ("%FILTER_EG_HOLD_LEVEL%", formatEnvVolume (filterEnvelope.getHoldLevel ()));
-        text = text.replace ("%FILTER_EG_SUSTAIN_LEVEL%", formatEnvVolume (filterEnvelope.getSustainLevel ()));
-        text = text.replace ("%FILTER_EG_END_LEVEL%", formatEnvVolume (filterEnvelope.getEndLevel ()));
+        text = text.replace ("%FILTER_EG_START_LEVEL%", formatEnvVolume (filterEnvelope.getStartLevel (), 0));
+        text = text.replace ("%FILTER_EG_HOLD_LEVEL%", formatEnvVolume (filterEnvelope.getHoldLevel (), 1));
+        text = text.replace ("%FILTER_EG_SUSTAIN_LEVEL%", formatEnvVolume (filterEnvelope.getSustainLevel (), 1));
+        text = text.replace ("%FILTER_EG_END_LEVEL%", formatEnvVolume (filterEnvelope.getEndLevel (), 0));
 
         text = text.replace ("%FILTER_EG_ATTACK_SLOPE%", formatDouble (-filterEnvelope.getAttackSlope ()));
         text = text.replace ("%FILTER_EG_DECAY_SLOPE%", formatDouble (-filterEnvelope.getDecaySlope ()));
@@ -381,8 +381,8 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
     }
 
 
-    private static String formatEnvVolume (final double volume)
+    private static String formatEnvVolume (final double volume, final double defaultValue)
     {
-        return volume < 0 ? "1" : formatDouble (volume);
+        return formatDouble (volume < 0 ? defaultValue : volume);
     }
 }

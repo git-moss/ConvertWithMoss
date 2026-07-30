@@ -78,10 +78,41 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
 
     /** {@inheritDoc} */
     @Override
+    protected void detectFiles (final List<File> files)
+    {
+        if (files.isEmpty ())
+            return;
+
+        this.notifier.log ("IDS_NOTIFY_ANALYZING", files.get (0).getParentFile ().getAbsolutePath ());
+        if (this.waitForDelivery ())
+            return;
+
+        // All selected files of the same format belong to one multi-sample, like all files of a
+        // folder do
+        for (final SampleFileType sampleFileType: this.settingsConfiguration.getSampleFileTypes ())
+        {
+            this.fileEndings = sampleFileType.getFileEndings ();
+
+            final List<File> matchingFiles = new ArrayList<> ();
+            for (final File file: files)
+                if (this.matchesFileEnding (file))
+                    matchingFiles.add (file);
+            if (matchingFiles.isEmpty ())
+                continue;
+
+            this.notifier.log ("IDS_NOTIFY_FOUND_RAW_FILES", Integer.toString (matchingFiles.size ()), sampleFileType.getName ());
+            for (final IMultisampleSource multisampleSource: this.readSampleFiles (sampleFileType, matchingFiles.get (0).getParentFile (), matchingFiles))
+                if (!this.isCancelled ())
+                    this.multisampleSourceConsumer.accept (multisampleSource);
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     protected List<IMultisampleSource> readPresetFile (final File folderWithSamples)
     {
         final List<IMultisampleSource> sources = new ArrayList<> ();
-        final ProgressLogger progress = new ProgressLogger (this.notifier);
         for (final SampleFileType sampleFileType: this.settingsConfiguration.getSampleFileTypes ())
         {
             this.fileEndings = sampleFileType.getFileEndings ();
@@ -91,36 +122,48 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                 continue;
 
             final List<File> files = filesOpt.get ();
-            final int length = files.size ();
-
-            this.notifier.log ("IDS_NOTIFY_FOUND_RAW_FILES", Integer.toString (length), sampleFileType.getName ());
-
-            // Analyze all files
-            final List<IFileBasedSampleData> sampleData = new ArrayList<> (length);
-            for (final File file: files)
-            {
-                // Check for task cancellation
-                if (this.isCancelled ())
-                    return Collections.emptyList ();
-
-                try
-                {
-                    sampleData.add (createSampleData (file, this.notifier));
-                    progress.notifyProgress ();
-                }
-                catch (final IOException ex)
-                {
-                    this.notifier.logError ("IDS_NOTIFY_SKIPPED", folderWithSamples.getAbsolutePath (), file.getAbsolutePath (), ex.getMessage ());
-                    return Collections.emptyList ();
-                }
-            }
-
-            progress.notifyNewline ();
-
-            sources.addAll (this.createMultisample (sampleFileType, folderWithSamples, sampleData));
+            this.notifier.log ("IDS_NOTIFY_FOUND_RAW_FILES", Integer.toString (files.size ()), sampleFileType.getName ());
+            sources.addAll (this.readSampleFiles (sampleFileType, folderWithSamples, files));
         }
 
         return sources;
+    }
+
+
+    /**
+     * Read the given sample files and combine them into a multi-sample.
+     *
+     * @param sampleFileType The type of the sample files
+     * @param folderWithSamples The folder which contains the sample files
+     * @param files The sample files to read
+     * @return The multi-sample
+     */
+    private List<IMultisampleSource> readSampleFiles (final SampleFileType sampleFileType, final File folderWithSamples, final List<File> files)
+    {
+        // Analyze all files
+        final ProgressLogger progress = new ProgressLogger (this.notifier);
+        final List<IFileBasedSampleData> sampleData = new ArrayList<> (files.size ());
+        for (final File file: files)
+        {
+            // Check for task cancellation
+            if (this.isCancelled ())
+                return Collections.emptyList ();
+
+            try
+            {
+                sampleData.add (createSampleData (file, this.notifier));
+                progress.notifyProgress ();
+            }
+            catch (final IOException ex)
+            {
+                this.notifier.logError ("IDS_NOTIFY_SKIPPED", folderWithSamples.getAbsolutePath (), file.getAbsolutePath (), ex.getMessage ());
+                return Collections.emptyList ();
+            }
+        }
+
+        progress.notifyNewline ();
+
+        return this.createMultisample (sampleFileType, folderWithSamples, sampleData);
     }
 
 
@@ -154,6 +197,11 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                     group.addSampleZone (sampleZone);
                     sampleFileType.fillInstrumentData (sampleZone, fileSampleData);
                     filenames.add (new File (fileSampleData.getFilename ()).getName ());
+
+                    // Merge the metadata of the sample file itself (e.g. WAV 'smpl' chunks) on top
+                    final Optional<ISampleData> sampleDataOpt = sampleZone.getSampleData ();
+                    if (sampleDataOpt.isPresent ())
+                        sampleDataOpt.get ().addZoneData (sampleZone, true, true);
                 }
                 name = KeyMapping.findCommonPrefix (filenames);
                 if (name.isBlank ())
@@ -179,14 +227,6 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                 name = FileUtils.getNameWithoutType (sampleData.get (0).getFilename ());
             }
             name = cleanupName (name, this.settingsConfiguration.getPostfixTexts ());
-
-            for (final IGroup group: groups)
-                for (final ISampleZone zone: group.getSampleZones ())
-                {
-                    final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
-                    if (sampleDataOpt.isPresent ())
-                        sampleDataOpt.get ().addZoneData (zone, true, true);
-                }
 
             // Remove all loops if requested
             if (this.settingsConfiguration.isShouldIgnoreLoops ())

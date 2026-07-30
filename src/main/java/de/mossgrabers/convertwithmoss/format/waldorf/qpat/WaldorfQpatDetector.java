@@ -648,7 +648,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                     if (amountParam.value != 0.5)
                     {
                         // -24..24 needs to translate to -0.5 to 0.5
-                        final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (amountParam.value - 1.0);
+                        final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (amountParam.value - 0.5);
                         final String prefix = "FreeEnv" + (int) (sourceParam.value - 3.0);
                         final IEnvelope envelope = parseEnvelope (parameters, prefix, prefix);
                         modulator.setSource (envelope);

@@ -408,6 +408,29 @@ public class KeyMapping
 
 
     /**
+     * Create a sample zone and fill it with the metadata of the sample file (e.g. the root note and
+     * loops of a WAV 'smpl' chunk), so the mapping can prefer the file's own root over one parsed
+     * from the file name.
+     *
+     * @param sampleData The sample data from which to create the zone
+     * @return The zone
+     */
+    private static ISampleZone createZone (final IFileBasedSampleData sampleData)
+    {
+        final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (sampleData.getFilename ())), sampleData);
+        try
+        {
+            sampleData.addZoneData (zone, true, true);
+        }
+        catch (final IOException _)
+        {
+            // The metadata cannot be read - the root note then needs to come from the file name
+        }
+        return zone;
+    }
+
+
+    /**
      * Detect groups.
      *
      * @param sampleData Info about all available samples
@@ -426,7 +449,7 @@ public class KeyMapping
         {
             final List<ISampleZone> zones = new ArrayList<> (sampleData.size ());
             for (final IFileBasedSampleData si: sampleData)
-                zones.add (new DefaultSampleZone (FileUtils.getNameWithoutType (new File (si.getFilename ())), si));
+                zones.add (createZone (si));
             groups.put (Integer.valueOf (0), zones);
             return groups;
         }
@@ -445,7 +468,7 @@ public class KeyMapping
                 final Integer id = Integer.valueOf (number);
                 // Matcher group "prefix" not used
                 // Matcher group "postfix" not used
-                final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (filename)), si);
+                final ISampleZone zone = createZone (si);
                 groups.computeIfAbsent (id, _ -> new ArrayList<> ()).add (zone);
             }
             catch (final NumberFormatException _)

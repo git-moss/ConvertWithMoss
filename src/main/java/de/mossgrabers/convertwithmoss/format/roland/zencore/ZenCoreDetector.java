@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -98,9 +97,8 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
             for (final SvzInstrument tone: tones)
             {
                 final IGroup toneGroup = new DefaultGroup ("Samples");
-                for (final int waveNumber: tone.waveNumbers)
-                    if (waveNumber > 0 && waveNumber <= keyMaps.size ())
-                        buildZonesFromKeyMap (toneGroup, samples, keyMaps.get (waveNumber - 1));
+                for (final ZenCoreSvz.SvzTonePartial partial: tone.tonePartials)
+                    addPartialZones (toneGroup, samples, keyMaps, partial);
                 if (toneGroup.getSampleZones ().isEmpty ())
                     continue;
                 applyToneShaping (toneGroup, tone);
@@ -121,6 +119,13 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
                 if (sample.getSampleData () != null)
                     group.addSampleZone (createZone (sample, sample.getOriginalKey (), sample.getOriginalKey ()));
         }
+        else if (tones.size () == 1 && !tones.get (0).tonePartials.isEmpty ())
+        {
+            // A single tone also carries the partial pans and velocity windows, e.g. the two
+            // hard-panned partials of a stereo instrument
+            for (final ZenCoreSvz.SvzTonePartial partial: tones.get (0).tonePartials)
+                addPartialZones (group, samples, keyMaps, partial);
+        }
         else
             buildZonesFromKeyMap (group, samples, keyMaps.get (0));
 
@@ -137,6 +142,50 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
             applyToneShaping (group, tones.get (0));
         this.notifier.log ("IDS_ZENCORE_READING_SVZ", fileName, Integer.toString (group.getSampleZones ().size ()));
         return Collections.singletonList (this.createMultisampleSource (svzFile, fileName, List.of (group)));
+    }
+
+
+    /**
+     * Add the zones of one tone partial: the zones of the multi-sample(s) it plays with the
+     * partial's pan and velocity window applied. A partial whose right wave differs from its left
+     * one plays the two multi-samples as a stereo pair.
+     *
+     * @param toneGroup The group to which to add the zones
+     * @param samples The sample pool of the file
+     * @param keyMaps The key maps of all multi-samples of the file
+     * @param partial The partial to add
+     */
+    private static void addPartialZones (final IGroup toneGroup, final List<ZenCoreSample> samples, final List<ZenCoreKeyMap> keyMaps, final ZenCoreSvz.SvzTonePartial partial)
+    {
+        final boolean stereoPair = partial.waveRight > 0 && partial.waveRight != partial.waveLeft;
+        final double leftPanning = stereoPair ? (partial.pan - 64) / 64.0 : partial.pan / 64.0;
+        addPartialWaveZones (toneGroup, samples, keyMaps, partial, partial.waveLeft, Math.clamp (leftPanning, -1, 1));
+        if (stereoPair)
+            addPartialWaveZones (toneGroup, samples, keyMaps, partial, partial.waveRight, Math.clamp ((partial.pan + 64) / 64.0, -1, 1));
+    }
+
+
+    private static void addPartialWaveZones (final IGroup toneGroup, final List<ZenCoreSample> samples, final List<ZenCoreKeyMap> keyMaps, final ZenCoreSvz.SvzTonePartial partial, final int waveNumber, final double panning)
+    {
+        if (waveNumber <= 0 || waveNumber > keyMaps.size ())
+            return;
+
+        final int sizeBefore = toneGroup.getSampleZones ().size ();
+        buildZonesFromKeyMap (toneGroup, samples, keyMaps.get (waveNumber - 1));
+
+        final boolean hasVelocityWindow = partial.velLow > 1 || partial.velHigh < 127;
+        final List<ISampleZone> zones = toneGroup.getSampleZones ();
+        for (int i = sizeBefore; i < zones.size (); i++)
+        {
+            final ISampleZone zone = zones.get (i);
+            if (panning != 0)
+                zone.setPanning (Math.clamp (zone.getPanning () + panning, -1, 1));
+            if (hasVelocityWindow)
+            {
+                zone.setVelocityLow (partial.velLow);
+                zone.setVelocityHigh (partial.velHigh);
+            }
+        }
     }
 
 

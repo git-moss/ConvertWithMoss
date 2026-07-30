@@ -46,7 +46,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final Pattern FILE_NAME_QUERY = Pattern.compile ("(.*)_(?<note>[A-Ga-g]#?\\d)(_SW(?<switch>\\d+))?(_V(?<velocity>\\d+))?(_R(?<roundrobin>\\d+))?");
+    private static final Pattern FILE_NAME_QUERY = Pattern.compile ("(.*)_(?<note>[A-Ga-g]#?\\d)(_SW(?<switch>\\d+))?(_V(?<velocity>\\d+))?(_RR?(?<roundrobin>\\d+))?");
 
     /** The number of voices of the disting EX, see its 8 'Voice N detune' parameters. */
     private static final int     MAX_VOICES      = 8;
