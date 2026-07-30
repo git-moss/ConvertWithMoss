@@ -25,9 +25,9 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -40,8 +40,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
-import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emu3DiskImage;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emu3DiskImage;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -49,10 +49,10 @@ import de.mossgrabers.tools.FileUtils;
  * Detects E-mu EIII bank files (*.e3x, *.e3b, *.esi) as well as CD-ROM and hard disk images of the
  * EIII, EIIIX and ESI samplers (*.iso, *.img, *.hda) which use the proprietary E-mu disk filesystem
  * and contain such banks. A bank holds up to 256 presets and 999 samples. Every preset becomes one
- * multi-sample source: it maps each of the 88 keys to a note zone, which references up to two
- * zones - the primary and the secondary layer - and every layer becomes one group. A preset which
- * links to another one collects the layers of the whole chain, which is how the samplers build more
- * than two velocity layers. The format was reverse-engineered by the emu3bm project, see
+ * multi-sample source: it maps each of the 88 keys to a note zone, which references up to two zones
+ * - the primary and the secondary layer - and every layer becomes one group. A preset which links
+ * to another one collects the layers of the whole chain, which is how the samplers build more than
+ * two velocity layers. The format was reverse-engineered by the emu3bm project, see
  * documentation/design/EIII_FORMAT.md.
  *
  * @author Jürgen Moßgraber
@@ -63,6 +63,10 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
     private int                 numberOfReadBanks         = 0;
 
     private static final String IDS_EIII_MALFORMED_SAMPLE = "IDS_EIII_MALFORMED_SAMPLE";
+    private static final String IDS_EIII_NOT_A_BANK       = "IDS_EIII_NOT_A_BANK";
+
+    /** How many indices a log message lists before it is cut off. */
+    private static final int    MAXIMUM_REPORTED_INDICES  = 10;
 
 
     /** Holds the parsed information of one sample of a bank. */
@@ -111,7 +115,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
                 // Images of other formats are silently ignored, they belong to other detectors
                 final String lowerCaseName = sourceFile.getName ().toLowerCase (Locale.US);
                 if (lowerCaseName.endsWith (".e3x") || lowerCaseName.endsWith (".e3b") || lowerCaseName.endsWith (".esi"))
-                    this.notifier.logError ("IDS_EIII_NOT_A_BANK", sourceFile.getName ());
+                    this.notifier.logError (IDS_EIII_NOT_A_BANK, sourceFile.getName ());
                 return Collections.emptyList ();
             }
             if (Emulator3FloppySet.isFloppyDisk (data))
@@ -193,10 +197,10 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Parse a floppy disk of a bank set. The EIIIX and ESI samplers save a bank onto one or more
-     * floppy disks; the set is assembled and converted into a bank when its first disk is read,
-     * the other disks of the set are skipped. All disks of a set have to be in the same folder;
-     * they are recognized by the bank name of their disk headers since the file names of the sets
-     * in the wild number their disks in different ways.
+     * floppy disks; the set is assembled and converted into a bank when its first disk is read, the
+     * other disks of the set are skipped. All disks of a set have to be in the same folder; they
+     * are recognized by the bank name of their disk headers since the file names of the sets in the
+     * wild number their disks in different ways.
      *
      * @param sourceFile The file which contains the first disk
      * @param data The content of the disk
@@ -226,7 +230,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         disks[0] = data;
         for (int diskIndex = 2; diskIndex <= totalDisks; diskIndex++)
         {
-            final File continuationFile = this.findContinuationDisk (sourceFile, data, diskIndex);
+            final File continuationFile = findContinuationDisk (sourceFile, data, diskIndex);
             if (continuationFile == null)
             {
                 this.notifier.logError ("IDS_EIII_CONTINUATION_DISK_NOT_FOUND", Integer.toString (diskIndex), Integer.toString (totalDisks));
@@ -240,7 +244,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         final byte [] bank = Emulator3FloppySet.createBank (disks, bankFormat, bankName, this.notifier);
         if (bank == null)
         {
-            this.notifier.logError ("IDS_EIII_NOT_A_BANK", sourceFile.getName ());
+            this.notifier.logError (IDS_EIII_NOT_A_BANK, sourceFile.getName ());
             return Collections.emptyList ();
         }
         return this.parseBank (sourceFile, bankName, bank, bankFormat);
@@ -256,7 +260,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      * @return The file or null if it is not in the folder
      * @throws IOException Could not read a candidate file
      */
-    private File findContinuationDisk (final File sourceFile, final byte [] firstDisk, final int diskNumber) throws IOException
+    private static File findContinuationDisk (final File sourceFile, final byte [] firstDisk, final int diskNumber) throws IOException
     {
         final File [] files = sourceFile.getParentFile ().listFiles ();
         if (files == null)
@@ -292,7 +296,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         final int sampleTable = bankFormat.getSampleTableOffset ();
         if (sampleTable + (maxSamples + 1) * 4 > data.length)
         {
-            this.notifier.logError ("IDS_EIII_NOT_A_BANK", bankName);
+            this.notifier.logError (IDS_EIII_NOT_A_BANK, bankName);
             return Collections.emptyList ();
         }
 
@@ -304,15 +308,20 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         // instead of stopping at the first empty entry - the samples behind such a hole are still
         // in the bank and are still referenced by the presets
         final Map<Integer, Sample> samplesByIndex = new HashMap<> ();
+        final Set<Integer> malformedSamples = new TreeSet<> ();
         for (int i = 0; i < maxSamples; i++)
         {
             final long entry = Emulator3Constants.getU32 (data, sampleTable + i * 4);
             if (entry == 0)
                 continue;
-            final Sample sample = this.parseSample (data, sampleAreaStart + entry - Emulator3Constants.SAMPLE_ADDRESS_OFFSET, i + 1, bankName);
+            final Sample sample = parseSample (data, sampleAreaStart + entry - Emulator3Constants.SAMPLE_ADDRESS_OFFSET, i + 1, malformedSamples);
             if (sample != null)
                 samplesByIndex.put (Integer.valueOf (i + 1), sample);
         }
+        // A bank which holds no samples at all is not a sound bank - the sampler keeps its own
+        // code in one - so reporting every single entry of it says nothing and buries the log
+        if (!malformedSamples.isEmpty ())
+            this.notifier.logError (IDS_EIII_MALFORMED_SAMPLE, Integer.toString (malformedSamples.size ()), bankName, formatIndices (malformedSamples));
 
         // Presets which another preset links to are layered on top of it and are therefore not
         // converted on their own
@@ -366,6 +375,28 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Format a set of indices for a log message, shortened if there are many of them.
+     *
+     * @param indices The indices
+     * @return The indices separated by commas, cut off after the first ten
+     */
+    private static String formatIndices (final Set<Integer> indices)
+    {
+        final List<String> texts = new ArrayList<> ();
+        for (final Integer index: indices)
+        {
+            if (texts.size () == MAXIMUM_REPORTED_INDICES)
+            {
+                texts.add ("...");
+                break;
+            }
+            texts.add (index.toString ());
+        }
+        return String.join (", ", texts);
+    }
+
+
+    /**
      * Check whether a slot of the preset address table holds a preset. A preset which was deleted
      * leaves an empty slot behind, which has the same address as its successor - the presets behind
      * such a slot are still in the bank.
@@ -404,14 +435,14 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param data The content of the bank
      * @param address The address of the sample
      * @param sampleIndex The 1-based index of the sample
-     * @param bankName The name of the bank
+     * @param malformedSamples Indices of samples with a malformed address
      * @return The sample or null if its header is malformed
      */
-    private Sample parseSample (final byte [] data, final long address, final int sampleIndex, final String bankName)
+    private static Sample parseSample (final byte [] data, final long address, final int sampleIndex, final Set<Integer> malformedSamples)
     {
         if (address < 0 || address + Emulator3Constants.SAMPLE_HEADER_SIZE > data.length)
         {
-            this.notifier.logError (IDS_EIII_MALFORMED_SAMPLE, Integer.toString (sampleIndex), bankName);
+            malformedSamples.add (Integer.valueOf (sampleIndex));
             return null;
         }
         final int offset = (int) address;
@@ -431,7 +462,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         final long dataSize = (long) numFrames * 2 * (isStereo ? 2 : 1);
         if (numFrames <= 0 || sampleRate <= 0 || offset + Emulator3Constants.SAMPLE_HEADER_SIZE + dataSize > data.length)
         {
-            this.notifier.logError (IDS_EIII_MALFORMED_SAMPLE, Integer.toString (sampleIndex), bankName);
+            malformedSamples.add (Integer.valueOf (sampleIndex));
             return null;
         }
 
@@ -501,8 +532,8 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         // A bank can hold presets which map no key at all, they are simply dropped
         if (groups.isEmpty ())
             return null;
-        for (final Integer missingSampleIndex: missingSampleIndices)
-            this.notifier.logError ("IDS_EIII_SAMPLE_MISSING", missingSampleIndex.toString (), presetName);
+        if (!missingSampleIndices.isEmpty ())
+            this.notifier.logError ("IDS_EIII_SAMPLE_MISSING", Integer.toString (missingSampleIndices.size ()), presetName, formatIndices (missingSampleIndices));
 
         final boolean prependBankName = !(this.settingsConfiguration instanceof final Emulator3DetectorUI settings) || settings.prependBankName ();
         final String name = presetName.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : presetName;
@@ -750,6 +781,8 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param data The content of the bank
      * @param bankFormat The format of the bank
      * @param offset The offset of the zone
+     * @param keyLow The low key for the key tracking calculation
+     * @param rootKey The root key for the key tracking calculation
      * @return The filter or null if the zone does not use one
      */
     private static IFilter createFilter (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int keyLow, final int rootKey)

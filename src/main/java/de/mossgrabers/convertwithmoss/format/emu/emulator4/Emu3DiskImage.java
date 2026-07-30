@@ -31,17 +31,17 @@ import java.util.Set;
 public class Emu3DiskImage
 {
     /** The magic bytes of the superblock. */
-    public static final byte [] MAGIC               = "EMU3".getBytes ();
+    private static final byte [] MAGIC               = "EMU3".getBytes ();
 
-    private static final int    BLOCK_SIZE          = 512;
-    private static final int    ENTRY_SIZE          = 32;
+    private static final int     BLOCK_SIZE          = 512;
+    private static final int     ENTRY_SIZE          = 32;
     /** The number of dir-content block references of a folder entry. */
-    private static final int    FOLDER_BLOCK_LIST   = 7;
+    private static final int     FOLDER_BLOCK_LIST   = 7;
     /** The end-of-chain marker in the cluster list. */
-    private static final int    LAST_CLUSTER        = 0x7FFF;
+    private static final int     LAST_CLUSTER        = 0x7FFF;
     /** The folder markers: 0x40 = user folder (CD), 0x80 = 'Default Folder' (hard disk). */
-    private static final int    FOLDER_TYPE_USER    = 0x40;
-    private static final int    FOLDER_TYPE_DEFAULT = 0x80;
+    private static final int     FOLDER_TYPE_USER    = 0x40;
+    private static final int     FOLDER_TYPE_DEFAULT = 0x80;
 
 
     /** A file read from the image. */
@@ -299,6 +299,9 @@ public class Emu3DiskImage
                 break;
             }
         }
+        // Can never happen but makes SonarQube happy
+        if (clusterBytes == 0)
+            throw new IOException ("Cluster bytes are 0?!");
         if (clusterSizeExtra < 0)
             throw new IOException ("The files are too large for one image.");
         final int blocksPerCluster = (int) (clusterBytes / BLOCK_SIZE);
