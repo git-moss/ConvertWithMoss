@@ -1,0 +1,3512 @@
+{
+ "data": {
+  "version": 5,
+  "name": "",
+  "volume": 1.0,
+  "volumeKnown": true,
+  "pan": 0.5039370059967041,
+  "panKnown": true,
+  "mute": false,
+  "cvPort": 0,
+  "gatePort": 1,
+  "velocityScale": 1.0,
+  "muteGroup": 0,
+  "transposition": 0,
+  "colour": 8355711,
+  "padsFollowTrackColour": false,
+  "skipFromRowLaunch": false,
+  "samples": [
+   {
+    "version": 1,
+    "name": "",
+    "path": "",
+    "loadImpl": 0,
+    "metadata": {
+     "tempo": 0.0,
+     "rootNote": 60,
+     "tune": 0.0,
+     "key": ""
+    }
+   }
+  ],
+  "program": {
+   "version": 4,
+   "name": "",
+   "type": 1,
+   "programPads": {
+    "Universal": {
+     "value0": true
+    },
+    "Type": {
+     "value0": 2
+    },
+    "universalPad": 8355711,
+    "pads": {
+     "value0": 0,
+     "value1": 0,
+     "value2": 0,
+     "value3": 0,
+     "value4": 0,
+     "value5": 0,
+     "value6": 0,
+     "value7": 0,
+     "value8": 0,
+     "value9": 0,
+     "value10": 0,
+     "value11": 0,
+     "value12": 0,
+     "value13": 0,
+     "value14": 0,
+     "value15": 0,
+     "value16": 0,
+     "value17": 0,
+     "value18": 0,
+     "value19": 0,
+     "value20": 0,
+     "value21": 0,
+     "value22": 0,
+     "value23": 0,
+     "value24": 0,
+     "value25": 0,
+     "value26": 0,
+     "value27": 0,
+     "value28": 0,
+     "value29": 0,
+     "value30": 0,
+     "value31": 0,
+     "value32": 0,
+     "value33": 0,
+     "value34": 0,
+     "value35": 0,
+     "value36": 0,
+     "value37": 0,
+     "value38": 0,
+     "value39": 0,
+     "value40": 0,
+     "value41": 0,
+     "value42": 0,
+     "value43": 0,
+     "value44": 0,
+     "value45": 0,
+     "value46": 0,
+     "value47": 0,
+     "value48": 0,
+     "value49": 0,
+     "value50": 0,
+     "value51": 0,
+     "value52": 0,
+     "value53": 0,
+     "value54": 0,
+     "value55": 0,
+     "value56": 0,
+     "value57": 0,
+     "value58": 0,
+     "value59": 0,
+     "value60": 0,
+     "value61": 0,
+     "value62": 0,
+     "value63": 0,
+     "value64": 0,
+     "value65": 0,
+     "value66": 0,
+     "value67": 0,
+     "value68": 0,
+     "value69": 0,
+     "value70": 0,
+     "value71": 0,
+     "value72": 0,
+     "value73": 0,
+     "value74": 0,
+     "value75": 0,
+     "value76": 0,
+     "value77": 0,
+     "value78": 0,
+     "value79": 0,
+     "value80": 0,
+     "value81": 0,
+     "value82": 0,
+     "value83": 0,
+     "value84": 0,
+     "value85": 0,
+     "value86": 0,
+     "value87": 0,
+     "value88": 0,
+     "value89": 0,
+     "value90": 0,
+     "value91": 0,
+     "value92": 0,
+     "value93": 0,
+     "value94": 0,
+     "value95": 0,
+     "value96": 0,
+     "value97": 0,
+     "value98": 0,
+     "value99": 0,
+     "value100": 0,
+     "value101": 0,
+     "value102": 0,
+     "value103": 0,
+     "value104": 0,
+     "value105": 0,
+     "value106": 0,
+     "value107": 0,
+     "value108": 0,
+     "value109": 0,
+     "value110": 0,
+     "value111": 0,
+     "value112": 0,
+     "value113": 0,
+     "value114": 0,
+     "value115": 0,
+     "value116": 0,
+     "value117": 0,
+     "value118": 0,
+     "value119": 0,
+     "value120": 0,
+     "value121": 0,
+     "value122": 0,
+     "value123": 0,
+     "value124": 0,
+     "value125": 0,
+     "value126": 0,
+     "value127": 0
+    },
+    "UnusedPads": {
+     "value0": 1
+    },
+    "PadsFollowTrackColour": {
+     "value0": false
+    }
+   },
+   "customQLinks": [
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    },
+    {
+     "name": "",
+     "controlType": 0,
+     "targetData": [
+      {
+       "version": 1,
+       "parameter": 2147483647,
+       "track": "String-X Strings",
+       "insertParamIndex": {
+        "initialized": true,
+        "none": true
+       },
+       "instrumentIndex": 2147483647,
+       "paramType": 0,
+       "controlInputRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "parameterRange": {
+        "min": 0.0,
+        "max": 1.0,
+        "stride": 0.0,
+        "deadspot": 2.0,
+        "skew": 1.0
+       },
+       "behaviour": 0
+      }
+     ],
+     "momentary": 0,
+     "controlValue": 0.0
+    }
+   ],
+   "transpose": 0,
+   "midiKillGroup": -1,
+   "chainID": 0,
+   "midiEventsFilter": {
+    "channelFilterData": {
+     "channel": 255
+    },
+    "velocityFilterData": {
+     "min": 0.0,
+     "max": 1.0
+    },
+    "noteFilterData": {
+     "noteRange": {
+      "type": 2,
+      "data": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+     }
+    },
+    "automationFilterData": {
+     "filteredParams": "00000000000000000"
+    }
+   },
+   "mixable": {
+    "version": 1,
+    "audioRoute": {
+     "destination": 2,
+     "audioRouteSubIndex": 0,
+     "channelBitmap": {
+      "type": 0,
+      "data": 3
+     }
+    },
+    "volume": 0.40039101243019104,
+    "mute": false,
+    "solo": false,
+    "pan": 0.6322810053825378,
+    "automationFilter": 1,
+    "sends": [
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "inserts": {
+     "insertsEnabled": true,
+     "effects": [
+      {
+       "index": 0,
+       "plugin": {
+        "version": 2,
+        "is64Bits": true,
+        "description": {
+         "version": 1,
+         "name": "Reverb Large",
+         "descriptiveName": "Reverb Large",
+         "pluginFormatName": "MPC",
+         "category": "",
+         "manufacturerName": "Akai Professional",
+         "fileOrIdentifier": "Reverb Large",
+         "uid": 1094932090,
+         "isInstrument": false,
+         "numInputChannels": 2,
+         "numOutputChannels": 2
+        },
+        "state": "190.AMjUSA....P.I.........................PA.........PTYiEVd...P+X..........DklYlU2b....+X..........D41boQWd....+X..........DIWdWUFcOJb88T..........EElbrkG...vOF..........RoAxP0QWyLybOF..........SuAxP0QWyLybOF..........TxUFQkwVAp0uOI4VZzA.TRUzTEQkSA0TQE.....",
+        "programNumber": 0,
+        "presetName": "Init",
+        "presetEdited": false
+       },
+       "enable": true
+      }
+     ]
+    }
+   },
+   "customisable": {
+    "mapping": []
+   },
+   "renderable": {
+    "sendToCueBus": false
+   },
+   "xfaderRoute": 0,
+   "padNoteMap": {
+    "noteForPad": {
+     "value0": 0,
+     "value1": 1,
+     "value2": 2,
+     "value3": 3,
+     "value4": 4,
+     "value5": 5,
+     "value6": 6,
+     "value7": 7,
+     "value8": 8,
+     "value9": 9,
+     "value10": 10,
+     "value11": 11,
+     "value12": 12,
+     "value13": 13,
+     "value14": 14,
+     "value15": 15,
+     "value16": 16,
+     "value17": 17,
+     "value18": 18,
+     "value19": 19,
+     "value20": 20,
+     "value21": 21,
+     "value22": 22,
+     "value23": 23,
+     "value24": 24,
+     "value25": 25,
+     "value26": 26,
+     "value27": 27,
+     "value28": 28,
+     "value29": 29,
+     "value30": 30,
+     "value31": 31,
+     "value32": 32,
+     "value33": 33,
+     "value34": 34,
+     "value35": 35,
+     "value36": 36,
+     "value37": 37,
+     "value38": 38,
+     "value39": 39,
+     "value40": 40,
+     "value41": 41,
+     "value42": 42,
+     "value43": 43,
+     "value44": 44,
+     "value45": 45,
+     "value46": 46,
+     "value47": 47,
+     "value48": 48,
+     "value49": 49,
+     "value50": 50,
+     "value51": 51,
+     "value52": 52,
+     "value53": 53,
+     "value54": 54,
+     "value55": 55,
+     "value56": 56,
+     "value57": 57,
+     "value58": 58,
+     "value59": 59,
+     "value60": 60,
+     "value61": 61,
+     "value62": 62,
+     "value63": 63,
+     "value64": 64,
+     "value65": 65,
+     "value66": 66,
+     "value67": 67,
+     "value68": 68,
+     "value69": 69,
+     "value70": 70,
+     "value71": 71,
+     "value72": 72,
+     "value73": 73,
+     "value74": 74,
+     "value75": 75,
+     "value76": 76,
+     "value77": 77,
+     "value78": 78,
+     "value79": 79,
+     "value80": 80,
+     "value81": 81,
+     "value82": 82,
+     "value83": 83,
+     "value84": 84,
+     "value85": 85,
+     "value86": 86,
+     "value87": 87,
+     "value88": 88,
+     "value89": 89,
+     "value90": 90,
+     "value91": 91,
+     "value92": 92,
+     "value93": 93,
+     "value94": 94,
+     "value95": 95,
+     "value96": 96,
+     "value97": 97,
+     "value98": 98,
+     "value99": 99,
+     "value100": 100,
+     "value101": 101,
+     "value102": 102,
+     "value103": 103,
+     "value104": 104,
+     "value105": 105,
+     "value106": 106,
+     "value107": 107,
+     "value108": 108,
+     "value109": 109,
+     "value110": 110,
+     "value111": 111,
+     "value112": 112,
+     "value113": 113,
+     "value114": 114,
+     "value115": 115,
+     "value116": 116,
+     "value117": 117,
+     "value118": 118,
+     "value119": 119,
+     "value120": 120,
+     "value121": 121,
+     "value122": 122,
+     "value123": 123,
+     "value124": 124,
+     "value125": 125,
+     "value126": 126,
+     "value127": 127
+    }
+   },
+   "drum": {
+    "version": 8,
+    "pitch": 0.0,
+    "coarseTune": 0,
+    "fineTune": 0,
+    "monophonic": false,
+    "poliphony": 12,
+    "portamentoTime": 0.0,
+    "portamentoLegato": false,
+    "padGroup": {
+     "value0": 0,
+     "value1": 0,
+     "value2": 0,
+     "value3": 0,
+     "value4": 0,
+     "value5": 0,
+     "value6": 0,
+     "value7": 0,
+     "value8": 0,
+     "value9": 0,
+     "value10": 0,
+     "value11": 0,
+     "value12": 0,
+     "value13": 0,
+     "value14": 0,
+     "value15": 0,
+     "value16": 0,
+     "value17": 0,
+     "value18": 0,
+     "value19": 0,
+     "value20": 0,
+     "value21": 0,
+     "value22": 0,
+     "value23": 0,
+     "value24": 0,
+     "value25": 0,
+     "value26": 0,
+     "value27": 0,
+     "value28": 0,
+     "value29": 0,
+     "value30": 0,
+     "value31": 0,
+     "value32": 0,
+     "value33": 0,
+     "value34": 0,
+     "value35": 0,
+     "value36": 0,
+     "value37": 0,
+     "value38": 0,
+     "value39": 0,
+     "value40": 0,
+     "value41": 0,
+     "value42": 0,
+     "value43": 0,
+     "value44": 0,
+     "value45": 0,
+     "value46": 0,
+     "value47": 0,
+     "value48": 0,
+     "value49": 0,
+     "value50": 0,
+     "value51": 0,
+     "value52": 0,
+     "value53": 0,
+     "value54": 0,
+     "value55": 0,
+     "value56": 0,
+     "value57": 0,
+     "value58": 0,
+     "value59": 0,
+     "value60": 0,
+     "value61": 0,
+     "value62": 0,
+     "value63": 0,
+     "value64": 0,
+     "value65": 0,
+     "value66": 0,
+     "value67": 0,
+     "value68": 0,
+     "value69": 0,
+     "value70": 0,
+     "value71": 0,
+     "value72": 0,
+     "value73": 0,
+     "value74": 0,
+     "value75": 0,
+     "value76": 0,
+     "value77": 0,
+     "value78": 0,
+     "value79": 0,
+     "value80": 0,
+     "value81": 0,
+     "value82": 0,
+     "value83": 0,
+     "value84": 0,
+     "value85": 0,
+     "value86": 0,
+     "value87": 0,
+     "value88": 0,
+     "value89": 0,
+     "value90": 0,
+     "value91": 0,
+     "value92": 0,
+     "value93": 0,
+     "value94": 0,
+     "value95": 0,
+     "value96": 0,
+     "value97": 0,
+     "value98": 0,
+     "value99": 0,
+     "value100": 0,
+     "value101": 0,
+     "value102": 0,
+     "value103": 0,
+     "value104": 0,
+     "value105": 0,
+     "value106": 0,
+     "value107": 0,
+     "value108": 0,
+     "value109": 0,
+     "value110": 0,
+     "value111": 0,
+     "value112": 0,
+     "value113": 0,
+     "value114": 0,
+     "value115": 0,
+     "value116": 0,
+     "value117": 0,
+     "value118": 0,
+     "value119": 0,
+     "value120": 0,
+     "value121": 0,
+     "value122": 0,
+     "value123": 0,
+     "value124": 0,
+     "value125": 0,
+     "value126": 0,
+     "value127": 0
+    },
+    "instruments": [
+     {
+      "version": 27,
+      "coarseTune": 0,
+      "fineTune": 0,
+      "monophonic": false,
+      "polyphony": 0,
+      "lowNote": 0,
+      "highNote": 127,
+      "ignoreBaseNote": false,
+      "zonePlayTime": 1,
+      "whichMuteGroup": 0,
+      "muteTargets": {
+       "value0": 0,
+       "value1": 0,
+       "value2": 0,
+       "value3": 0
+      },
+      "simultPlayTargets": {
+       "value0": 0,
+       "value1": 0,
+       "value2": 0,
+       "value3": 0
+      },
+      "synthSection": {
+       "version": 27,
+       "filterData": {
+        "value0": {
+         "version": 27,
+         "filterKeytrack": 0.2578119933605194,
+         "filterType": 5,
+         "filterCutoff": 1.0,
+         "filterResonance": 0.0,
+         "filterEnvelopeAmount": 0.0,
+         "afterTouchToFilter": 0.0,
+         "filterVelocity": 0.65625,
+         "filterEnvelopeVelocity": 0.2265619933605194,
+         "cutoffRandom": 0.0,
+         "resonanceRandom": 0.0,
+         "outputLevel": 1.0,
+         "pressureToFilter": 0.0
+        },
+        "value1": {
+         "version": 27,
+         "filterKeytrack": 0.0,
+         "filterType": 0,
+         "filterCutoff": 1.0,
+         "filterResonance": 0.0,
+         "filterEnvelopeAmount": 0.0,
+         "afterTouchToFilter": 0.0,
+         "filterVelocity": 0.0,
+         "filterEnvelopeVelocity": 0.0,
+         "cutoffRandom": 0.0,
+         "resonanceRandom": 0.0,
+         "outputLevel": 1.0,
+         "pressureToFilter": 0.0
+        }
+       },
+       "filterSerialRouting": false,
+       "filterBlend": 0.5,
+       "lfoData": {
+        "value0": {
+         "version": 27,
+         "lfoPitch": 0.1328119933605194,
+         "lfoAmpLevel": 0.0,
+         "lfoPan": 0.0,
+         "lfoFilterCutOff": {
+          "value0": 0.4921880066394806,
+          "value1": 0.0
+         },
+         "lfoDelay": 0.0,
+         "lfoLevel": 1.0,
+         "lfoFadein": 0.0,
+         "lfoWaveformType": 1,
+         "lfoRate": 0.6299999952316284,
+         "lfoSync": 0,
+         "lfoFreeRunning": false,
+         "lfoDelaySync": 0,
+         "lfoFadeinSync": 0,
+         "lfoReset": false
+        },
+        "value1": {
+         "version": 27,
+         "lfoPitch": 0.0,
+         "lfoAmpLevel": 0.0,
+         "lfoPan": 0.0,
+         "lfoFilterCutOff": {
+          "value0": 0.0,
+          "value1": 0.0
+         },
+         "lfoDelay": 0.0,
+         "lfoLevel": 1.0,
+         "lfoFadein": 0.0,
+         "lfoWaveformType": 0,
+         "lfoRate": 0.5,
+         "lfoSync": 0,
+         "lfoFreeRunning": false,
+         "lfoDelaySync": 0,
+         "lfoFadeinSync": 0,
+         "lfoReset": true
+        }
+       },
+       "velocityToStart": 0.0,
+       "filterEnvelope": {
+        "version": 2,
+        "Attack": {
+         "value0": 0.140625
+        },
+        "VelocityToAttack": {
+         "value0": 0.203125
+        },
+        "Decay": {
+         "value0": 1.0
+        },
+        "Sustain": {
+         "value0": 0.1875
+        },
+        "Release": {
+         "value0": 0.609375
+        },
+        "Hold": {
+         "value0": 0.0
+        },
+        "DecayFromEnd": {
+         "value0": true
+        },
+        "AD": {
+         "value0": true
+        },
+        "OneShot": {
+         "value0": false
+        },
+        "AttackPhase": {
+         "value0": 0.0
+        },
+        "DecayPhase": {
+         "value0": 0.0
+        },
+        "DecayStart": {
+         "value0": 0
+        },
+        "Type": 0,
+        "Delay": {
+         "value0": 0.0
+        },
+        "AttackCurve": {
+         "value0": 0.375
+        },
+        "DecayCurve": {
+         "value0": 0.375
+        },
+        "ReleaseCurve": {
+         "value0": 0.375
+        },
+        "tempoSync": {
+         "value0": "None"
+        },
+        "Looped": {
+         "value0": false
+        },
+        "TimeScaling": {
+         "value0": 0.5
+        }
+       },
+       "ampEnvelope": {
+        "version": 2,
+        "Attack": {
+         "value0": 0.0
+        },
+        "VelocityToAttack": {
+         "value0": 0.0
+        },
+        "Decay": {
+         "value0": 0.2109380066394806
+        },
+        "Sustain": {
+         "value0": 1.0
+        },
+        "Release": {
+         "value0": 0.6796879768371582
+        },
+        "Hold": {
+         "value0": 0.0
+        },
+        "DecayFromEnd": {
+         "value0": true
+        },
+        "AD": {
+         "value0": true
+        },
+        "OneShot": {
+         "value0": false
+        },
+        "AttackPhase": {
+         "value0": 0.0
+        },
+        "DecayPhase": {
+         "value0": 0.0
+        },
+        "DecayStart": {
+         "value0": 0
+        },
+        "Type": 0,
+        "Delay": {
+         "value0": 0.0
+        },
+        "AttackCurve": {
+         "value0": 0.375
+        },
+        "DecayCurve": {
+         "value0": 0.375
+        },
+        "ReleaseCurve": {
+         "value0": 0.375
+        },
+        "tempoSync": {
+         "value0": "None"
+        },
+        "Looped": {
+         "value0": false
+        },
+        "TimeScaling": {
+         "value0": 0.5
+        }
+       },
+       "pitchEnvelope": {
+        "version": 2,
+        "Attack": {
+         "value0": 0.0
+        },
+        "VelocityToAttack": {
+         "value0": 0.0
+        },
+        "Decay": {
+         "value0": 0.04724400117993355
+        },
+        "Sustain": {
+         "value0": 1.0
+        },
+        "Release": {
+         "value0": 0.0
+        },
+        "Hold": {
+         "value0": 0.0
+        },
+        "DecayFromEnd": {
+         "value0": true
+        },
+        "AD": {
+         "value0": true
+        },
+        "OneShot": {
+         "value0": false
+        },
+        "AttackPhase": {
+         "value0": 0.0
+        },
+        "DecayPhase": {
+         "value0": 0.0
+        },
+        "DecayStart": {
+         "value0": 0
+        },
+        "Type": 0,
+        "Delay": {
+         "value0": 0.0
+        },
+        "AttackCurve": {
+         "value0": 0.375
+        },
+        "DecayCurve": {
+         "value0": 0.375
+        },
+        "ReleaseCurve": {
+         "value0": 0.375
+        },
+        "tempoSync": {
+         "value0": "None"
+        },
+        "Looped": {
+         "value0": false
+        },
+        "TimeScaling": {
+         "value0": 0.5
+        }
+       },
+       "pitchEnvelopeAmount": 0.5,
+       "randomisationScale": 1.0,
+       "attackRandom": 0.0,
+       "decayRandom": 0.0,
+       "auxEnvelope": {
+        "version": 2,
+        "Attack": {
+         "value0": 0.0
+        },
+        "VelocityToAttack": {
+         "value0": 0.0
+        },
+        "Decay": {
+         "value0": 0.04724409431219101
+        },
+        "Sustain": {
+         "value0": 1.0
+        },
+        "Release": {
+         "value0": 0.0
+        },
+        "Hold": {
+         "value0": 0.0
+        },
+        "DecayFromEnd": {
+         "value0": true
+        },
+        "AD": {
+         "value0": true
+        },
+        "OneShot": {
+         "value0": false
+        },
+        "AttackPhase": {
+         "value0": 0.0
+        },
+        "DecayPhase": {
+         "value0": 0.0
+        },
+        "DecayStart": {
+         "value0": 0
+        },
+        "Type": 0,
+        "Delay": {
+         "value0": 0.0
+        },
+        "AttackCurve": {
+         "value0": 0.375
+        },
+        "DecayCurve": {
+         "value0": 0.375
+        },
+        "ReleaseCurve": {
+         "value0": 0.375
+        },
+        "tempoSync": {
+         "value0": "None"
+        },
+        "Looped": {
+         "value0": false
+        },
+        "TimeScaling": {
+         "value0": 0.5
+        }
+       },
+       "auxEnvelopeAmount": 0.0,
+       "rampData": {
+        "value0": 0.0,
+        "value1": 0.0
+       },
+       "driftSpeed": 0.0,
+       "velocityToPitch": 0.0,
+       "velocitySensitivity": 1.0,
+       "velocityToPan": 0.0
+      },
+      "triggerMode": 2,
+      "tempo": 120.0,
+      "bpmLock": true,
+      "warpEnable": false,
+      "stretchPercentage": 100,
+      "layersv": [
+       {
+        "active": true,
+        "volume": {
+         "gainCoefficient": 1.0,
+         "controlValue": 1.0,
+         "law": 1
+        },
+        "pan": 0.5,
+        "pitch": 0.0,
+        "coarseTune": 0,
+        "fineTune": 0,
+        "velocityStart": 0,
+        "velocityEnd": 127,
+        "sampleStart": 0,
+        "sampleEnd": 0,
+        "loop": false,
+        "loopStart": 0,
+        "loopEnd": 0,
+        "loopCrossfadeLength": 0,
+        "loopFineTune": 0,
+        "mute": false,
+        "rootNote": 0,
+        "keyTrackEnable": false,
+        "sampleName": "",
+        "sampleFile": "",
+        "sliceIndex": 128,
+        "direction": 0,
+        "offset": 0,
+        "sliceInfo": {
+         "Start": 0,
+         "End": 0,
+         "LoopStart": 0,
+         "LoopMode": 0,
+         "PulsePosition": 0,
+         "LoopCrossfadeLength": 0,
+         "LoopCrossfadeType": 0,
+         "TailLength": 0.0,
+         "TailLoopPosition": 0.5,
+         "NumLoopRepeats": 0
+        },
+        "version": 11,
+        "pitchRandom": 0.0,
+        "VolumeRandom": 0.0,
+        "PanRandom": 0.0,
+        "OffsetRandom": 0.0,
+        "sliceIncrement": 0,
+        "sliceCycleLength": 128,
+        "sliceIncrementRngSeed": 0,
+        "playbackOffset": 0.0,
+        "layerLoopModeOverridesSliceLoopMode": false,
+        "loopMode": 0,
+        "quadrantEnabled": {
+         "value0": true,
+         "value1": true,
+         "value2": true,
+         "value3": true
+        }
+       },
+       {
+        "active": true,
+        "volume": {
+         "gainCoefficient": 1.0,
+         "controlValue": 1.0,
+         "law": 1
+        },
+        "pan": 0.5,
+        "pitch": 0.0,
+        "coarseTune": 0,
+        "fineTune": 0,
+        "velocityStart": 0,
+        "velocityEnd": 127,
+        "sampleStart": 0,
+        "sampleEnd": 0,
+        "loop": false,
+        "loopStart": 0,
+        "loopEnd": 0,
+        "loopCrossfadeLength": 0,
+        "loopFineTune": 0,
+        "mute": false,
+        "rootNote": 0,
+        "keyTrackEnable": false,
+        "sampleName": "",
+        "sampleFile": "",
+        "sliceIndex": 128,
+        "direction": 0,
+        "offset": 0,
+        "sliceInfo": {
+         "Start": 0,
+         "End": 0,
+         "LoopStart": 0,
+         "LoopMode": 0,
+         "PulsePosition": 0,
+         "LoopCrossfadeLength": 0,
+         "LoopCrossfadeType": 0,
+         "TailLength": 0.0,
+         "TailLoopPosition": 0.5,
+         "NumLoopRepeats": 0
+        },
+        "version": 11,
+        "pitchRandom": 0.0,
+        "VolumeRandom": 0.0,
+        "PanRandom": 0.0,
+        "OffsetRandom": 0.0,
+        "sliceIncrement": 0,
+        "sliceCycleLength": 128,
+        "sliceIncrementRngSeed": 0,
+        "playbackOffset": 0.0,
+        "layerLoopModeOverridesSliceLoopMode": false,
+        "loopMode": 0,
+        "quadrantEnabled": {
+         "value0": true,
+         "value1": true,
+         "value2": true,
+         "value3": true
+        }
+       },
+       {
+        "active": true,
+        "volume": {
+         "gainCoefficient": 1.0,
+         "controlValue": 1.0,
+         "law": 1
+        },
+        "pan": 0.5,
+        "pitch": 0.0,
+        "coarseTune": 0,
+        "fineTune": 0,
+        "velocityStart": 0,
+        "velocityEnd": 127,
+        "sampleStart": 0,
+        "sampleEnd": 0,
+        "loop": false,
+        "loopStart": 0,
+        "loopEnd": 0,
+        "loopCrossfadeLength": 0,
+        "loopFineTune": 0,
+        "mute": false,
+        "rootNote": 0,
+        "keyTrackEnable": false,
+        "sampleName": "",
+        "sampleFile": "",
+        "sliceIndex": 128,
+        "direction": 0,
+        "offset": 0,
+        "sliceInfo": {
+         "Start": 0,
+         "End": 0,
+         "LoopStart": 0,
+         "LoopMode": 0,
+         "PulsePosition": 0,
+         "LoopCrossfadeLength": 0,
+         "LoopCrossfadeType": 0,
+         "TailLength": 0.0,
+         "TailLoopPosition": 0.5,
+         "NumLoopRepeats": 0
+        },
+        "version": 11,
+        "pitchRandom": 0.0,
+        "VolumeRandom": 0.0,
+        "PanRandom": 0.0,
+        "OffsetRandom": 0.0,
+        "sliceIncrement": 0,
+        "sliceCycleLength": 128,
+        "sliceIncrementRngSeed": 0,
+        "playbackOffset": 0.0,
+        "layerLoopModeOverridesSliceLoopMode": false,
+        "loopMode": 0,
+        "quadrantEnabled": {
+         "value0": true,
+         "value1": true,
+         "value2": true,
+         "value3": true
+        }
+       },
+       {
+        "active": true,
+        "volume": {
+         "gainCoefficient": 1.0,
+         "controlValue": 1.0,
+         "law": 1
+        },
+        "pan": 0.5,
+        "pitch": 0.0,
+        "coarseTune": 0,
+        "fineTune": 0,
+        "velocityStart": 0,
+        "velocityEnd": 127,
+        "sampleStart": 0,
+        "sampleEnd": 0,
+        "loop": false,
+        "loopStart": 0,
+        "loopEnd": 0,
+        "loopCrossfadeLength": 0,
+        "loopFineTune": 0,
+        "mute": false,
+        "rootNote": 0,
+        "keyTrackEnable": false,
+        "sampleName": "",
+        "sampleFile": "",
+        "sliceIndex": 128,
+        "direction": 0,
+        "offset": 0,
+        "sliceInfo": {
+         "Start": 0,
+         "End": 0,
+         "LoopStart": 0,
+         "LoopMode": 0,
+         "PulsePosition": 0,
+         "LoopCrossfadeLength": 0,
+         "LoopCrossfadeType": 0,
+         "TailLength": 0.0,
+         "TailLoopPosition": 0.5,
+         "NumLoopRepeats": 0
+        },
+        "version": 11,
+        "pitchRandom": 0.0,
+        "VolumeRandom": 0.0,
+        "PanRandom": 0.0,
+        "OffsetRandom": 0.0,
+        "sliceIncrement": 0,
+        "sliceCycleLength": 128,
+        "sliceIncrementRngSeed": 0,
+        "playbackOffset": 0.0,
+        "layerLoopModeOverridesSliceLoopMode": false,
+        "loopMode": 0,
+        "quadrantEnabled": {
+         "value0": true,
+         "value1": true,
+         "value2": true,
+         "value3": true
+        }
+       },
+       {
+        "active": true,
+        "volume": {
+         "gainCoefficient": 1.0,
+         "controlValue": 1.0,
+         "law": 1
+        },
+        "pan": 0.5,
+        "pitch": 0.0,
+        "coarseTune": 0,
+        "fineTune": 0,
+        "velocityStart": 0,
+        "velocityEnd": 127,
+        "sampleStart": 0,
+        "sampleEnd": 0,
+        "loop": false,
+        "loopStart": 0,
+        "loopEnd": 0,
+        "loopCrossfadeLength": 0,
+        "loopFineTune": 0,
+        "mute": false,
+        "rootNote": 0,
+        "keyTrackEnable": false,
+        "sampleName": "",
+        "sampleFile": "",
+        "sliceIndex": 129,
+        "direction": 0,
+        "offset": 0,
+        "sliceInfo": {
+         "Start": 0,
+         "End": 0,
+         "LoopStart": 0,
+         "LoopMode": 0,
+         "PulsePosition": 0,
+         "LoopCrossfadeLength": 0,
+         "LoopCrossfadeType": 0,
+         "TailLength": 0.0,
+         "TailLoopPosition": 0.5,
+         "NumLoopRepeats": 0
+        },
+        "version": 11,
+        "pitchRandom": 0.0,
+        "VolumeRandom": 0.0,
+        "PanRandom": 0.0,
+        "OffsetRandom": 0.0,
+        "sliceIncrement": 0,
+        "sliceCycleLength": 1,
+        "sliceIncrementRngSeed": 0,
+        "playbackOffset": 0.0,
+        "layerLoopModeOverridesSliceLoopMode": false,
+        "loopMode": 0,
+        "quadrantEnabled": {
+         "value0": true,
+         "value1": true,
+         "value2": true,
+         "value3": true
+        }
+       },
+       {
+        "active": true,
+        "volume": {
+         "gainCoefficient": 1.0,
+         "controlValue": 1.0,
+         "law": 1
+        },
+        "pan": 0.5,
+        "pitch": 0.0,
+        "coarseTune": 0,
+        "fineTune": 0,
+        "velocityStart": 0,
+        "velocityEnd": 127,
+        "sampleStart": 0,
+        "sampleEnd": 0,
+        "loop": false,
+        "loopStart": 0,
+        "loopEnd": 0,
+        "loopCrossfadeLength": 0,
+        "loopFineTune": 0,
+        "mute": false,
+        "rootNote": 0,
+        "keyTrackEnable": false,
+        "sampleName": "",
+        "sampleFile": "",
+        "sliceIndex": 129,
+        "direction": 0,
+        "offset": 0,
+        "sliceInfo": {
+         "Start": 0,
+         "End": 0,
+         "LoopStart": 0,
+         "LoopMode": 0,
+         "PulsePosition": 0,
+         "LoopCrossfadeLength": 0,
+         "LoopCrossfadeType": 0,
+         "TailLength": 0.0,
+         "TailLoopPosition": 0.5,
+         "NumLoopRepeats": 0
+        },
+        "version": 11,
+        "pitchRandom": 0.0,
+        "VolumeRandom": 0.0,
+        "PanRandom": 0.0,
+        "OffsetRandom": 0.0,
+        "sliceIncrement": 0,
+        "sliceCycleLength": 1,
+        "sliceIncrementRngSeed": 0,
+        "playbackOffset": 0.0,
+        "layerLoopModeOverridesSliceLoopMode": false,
+        "loopMode": 0,
+        "quadrantEnabled": {
+         "value0": true,
+         "value1": true,
+         "value2": true,
+         "value3": true
+        }
+       },
+       {
+        "active": true,
+        "volume": {
+         "gainCoefficient": 1.0,
+         "controlValue": 1.0,
+         "law": 1
+        },
+        "pan": 0.5,
+        "pitch": 0.0,
+        "coarseTune": 0,
+        "fineTune": 0,
+        "velocityStart": 0,
+        "velocityEnd": 127,
+        "sampleStart": 0,
+        "sampleEnd": 0,
+        "loop": false,
+        "loopStart": 0,
+        "loopEnd": 0,
+        "loopCrossfadeLength": 0,
+        "loopFineTune": 0,
+        "mute": false,
+        "rootNote": 0,
+        "keyTrackEnable": false,
+        "sampleName": "",
+        "sampleFile": "",
+        "sliceIndex": 129,
+        "direction": 0,
+        "offset": 0,
+        "sliceInfo": {
+         "Start": 0,
+         "End": 0,
+         "LoopStart": 0,
+         "LoopMode": 0,
+         "PulsePosition": 0,
+         "LoopCrossfadeLength": 0,
+         "LoopCrossfadeType": 0,
+         "TailLength": 0.0,
+         "TailLoopPosition": 0.5,
+         "NumLoopRepeats": 0
+        },
+        "version": 11,
+        "pitchRandom": 0.0,
+        "VolumeRandom": 0.0,
+        "PanRandom": 0.0,
+        "OffsetRandom": 0.0,
+        "sliceIncrement": 0,
+        "sliceCycleLength": 1,
+        "sliceIncrementRngSeed": 0,
+        "playbackOffset": 0.0,
+        "layerLoopModeOverridesSliceLoopMode": false,
+        "loopMode": 0,
+        "quadrantEnabled": {
+         "value0": true,
+         "value1": true,
+         "value2": true,
+         "value3": true
+        }
+       },
+       {
+        "active": true,
+        "volume": {
+         "gainCoefficient": 1.0,
+         "controlValue": 1.0,
+         "law": 1
+        },
+        "pan": 0.5,
+        "pitch": 0.0,
+        "coarseTune": 0,
+        "fineTune": 0,
+        "velocityStart": 0,
+        "velocityEnd": 127,
+        "sampleStart": 0,
+        "sampleEnd": 0,
+        "loop": false,
+        "loopStart": 0,
+        "loopEnd": 0,
+        "loopCrossfadeLength": 0,
+        "loopFineTune": 0,
+        "mute": false,
+        "rootNote": 0,
+        "keyTrackEnable": false,
+        "sampleName": "",
+        "sampleFile": "",
+        "sliceIndex": 129,
+        "direction": 0,
+        "offset": 0,
+        "sliceInfo": {
+         "Start": 0,
+         "End": 0,
+         "LoopStart": 0,
+         "LoopMode": 0,
+         "PulsePosition": 0,
+         "LoopCrossfadeLength": 0,
+         "LoopCrossfadeType": 0,
+         "TailLength": 0.0,
+         "TailLoopPosition": 0.5,
+         "NumLoopRepeats": 0
+        },
+        "version": 11,
+        "pitchRandom": 0.0,
+        "VolumeRandom": 0.0,
+        "PanRandom": 0.0,
+        "OffsetRandom": 0.0,
+        "sliceIncrement": 0,
+        "sliceCycleLength": 1,
+        "sliceIncrementRngSeed": 0,
+        "playbackOffset": 0.0,
+        "layerLoopModeOverridesSliceLoopMode": false,
+        "loopMode": 0,
+        "quadrantEnabled": {
+         "value0": true,
+         "value1": true,
+         "value2": true,
+         "value3": true
+        }
+       }
+      ],
+      "editAllLayers": false,
+      "articulationUseXY": false,
+      "articulations": {
+       "value0": {
+        "version": 27,
+        "articulationType": 0,
+        "articulationSpeed": 0.5,
+        "articulationDynamics": 0.5,
+        "articulationStereo": 1.0,
+        "articulationSpeedScaling": 1
+       },
+       "value1": {
+        "version": 27,
+        "articulationType": 0,
+        "articulationSpeed": 0.5,
+        "articulationDynamics": 0.5,
+        "articulationStereo": 1.0,
+        "articulationSpeedScaling": 1
+       },
+       "value2": {
+        "version": 27,
+        "articulationType": 0,
+        "articulationSpeed": 0.5,
+        "articulationDynamics": 0.5,
+        "articulationStereo": 1.0,
+        "articulationSpeedScaling": 1
+       },
+       "value3": {
+        "version": 27,
+        "articulationType": 0,
+        "articulationSpeed": 0.5,
+        "articulationDynamics": 0.5,
+        "articulationStereo": 1.0,
+        "articulationSpeedScaling": 1
+       }
+      },
+      "userSelectableWarpPoolIndex": 0,
+      "velocityScale": 1.0,
+      "chopProperties": {
+       "version": 1,
+       "chopMode": 0,
+       "chopThreshold": 65,
+       "chopMinSliceTime": 100,
+       "chopRegions": 16,
+       "chopBars": 1,
+       "chopBeats": 4,
+       "chopTimeSignature": 2
+      },
+      "layerCrossfade": 0,
+      "layerCrossfadeX": 0.0,
+      "layerCrossfadeY": 0.0,
+      "mixable": {
+       "version": 1,
+       "audioRoute": {
+        "destination": 0,
+        "audioRouteSubIndex": 0,
+        "channelBitmap": {
+         "type": 0,
+         "data": 3
+        }
+       },
+       "volume": 0.7079460024833679,
+       "mute": false,
+       "solo": false,
+       "pan": 0.5,
+       "automationFilter": 1,
+       "sends": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+       ],
+       "inserts": {
+        "insertsEnabled": true,
+        "effects": []
+       }
+      },
+      "padEffects": {
+       "padEffectsData": {
+        "value0": {
+         "fxType": 0,
+         "fxValue": 0.0
+        },
+        "value1": {
+         "fxType": 9,
+         "fxValue": 0.0
+        },
+        "value2": {
+         "fxType": 1,
+         "fxValue": 0.0
+        },
+        "value3": {
+         "fxType": 2,
+         "fxValue": 0.0
+        },
+        "value4": {
+         "fxType": 3,
+         "fxValue": 0.0
+        },
+        "value5": {
+         "fxType": 7,
+         "fxValue": 0.0
+        },
+        "value6": {
+         "fxType": 4,
+         "fxValue": 0.0
+        },
+        "value7": {
+         "fxType": 13,
+         "fxValue": 0.0
+        }
+       }
+      },
+      "noteCounters": {
+       "value0": 2,
+       "value1": 2
+      },
+      "modLinks": [],
+      "randomPlaySeed": 0,
+      "midiOutChannel": 0,
+      "midiOutNote": 0,
+      "midiOutBehaviour": 1,
+      "partialPresetName": "<none>"
+     }
+    ],
+    "driftSpeed": 0.0,
+    "portamentoQuantised": false,
+    "monoRetrigger": false,
+    "freeRunningLfoData": {
+     "value0": {
+      "version": 27,
+      "lfoLevel": 1.0,
+      "lfoWaveformType": 0,
+      "lfoRate": 0.5,
+      "lfoSync": 0
+     },
+     "value1": {
+      "version": 27,
+      "lfoLevel": 1.0,
+      "lfoWaveformType": 0,
+      "lfoRate": 0.5,
+      "lfoSync": 0
+     }
+    }
+   },
+   "keygroup": {
+    "transpose": 0,
+    "numKeygroups": 1,
+    "pitchBendRange": 0.17000000178813934,
+    "keygroupVersion": 9,
+    "version": 8,
+    "wheelToLfo": {
+     "value0": 1.0,
+     "value1": 1.0
+    },
+    "afterTouchToFilter": {
+     "value0": 0.0,
+     "value1": 0.0
+    },
+    "modlinksData": {
+     "value0": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value1": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value2": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value3": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value4": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value5": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value6": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value7": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value8": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value9": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value10": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value11": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value12": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value13": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value14": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value15": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value16": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value17": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value18": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value19": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value20": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value21": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value22": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value23": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value24": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value25": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value26": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value27": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value28": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value29": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value30": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     },
+     "value31": {
+      "link.source": 0,
+      "link.target": 0,
+      "link.min": 0.0,
+      "link.max": 1.0,
+      "link.amount": 1.0,
+      "link.viaSource": 0,
+      "link.viaAmount": 1.0,
+      "link.shaper": 0,
+      "link.shaperAmount": 1.0,
+      "version": 1,
+      "link.bipolar": false
+     }
+    },
+    "noteCounters": {
+     "value0": 2,
+     "value1": 2
+    },
+    "legacyMode": true,
+    "timbreShift": 0,
+    "pitchBendPositiveRange": 2,
+    "pitchBendNegativeRange": 2,
+    "synthSection": {
+     "version": 27,
+     "filterData": {
+      "value0": {
+       "version": 27,
+       "filterKeytrack": 0.0,
+       "filterType": 0,
+       "filterCutoff": 1.0,
+       "filterResonance": 0.0,
+       "filterEnvelopeAmount": 0.0,
+       "afterTouchToFilter": 0.0,
+       "filterVelocity": 0.0,
+       "filterEnvelopeVelocity": 0.0,
+       "cutoffRandom": 0.0,
+       "resonanceRandom": 0.0,
+       "outputLevel": 1.0,
+       "pressureToFilter": 0.0
+      },
+      "value1": {
+       "version": 27,
+       "filterKeytrack": 0.0,
+       "filterType": 0,
+       "filterCutoff": 1.0,
+       "filterResonance": 0.0,
+       "filterEnvelopeAmount": 0.0,
+       "afterTouchToFilter": 0.0,
+       "filterVelocity": 0.0,
+       "filterEnvelopeVelocity": 0.0,
+       "cutoffRandom": 0.0,
+       "resonanceRandom": 0.0,
+       "outputLevel": 1.0,
+       "pressureToFilter": 0.0
+      }
+     },
+     "filterSerialRouting": false,
+     "filterBlend": 0.5,
+     "lfoData": {
+      "value0": {
+       "version": 27,
+       "lfoPitch": 0.0,
+       "lfoAmpLevel": 0.0,
+       "lfoPan": 0.0,
+       "lfoFilterCutOff": {
+        "value0": 0.0,
+        "value1": 0.0
+       },
+       "lfoDelay": 0.0,
+       "lfoLevel": 1.0,
+       "lfoFadein": 0.0,
+       "lfoWaveformType": 0,
+       "lfoRate": 0.5,
+       "lfoSync": 0,
+       "lfoFreeRunning": false,
+       "lfoDelaySync": 0,
+       "lfoFadeinSync": 0,
+       "lfoReset": true
+      },
+      "value1": {
+       "version": 27,
+       "lfoPitch": 0.0,
+       "lfoAmpLevel": 0.0,
+       "lfoPan": 0.0,
+       "lfoFilterCutOff": {
+        "value0": 0.0,
+        "value1": 0.0
+       },
+       "lfoDelay": 0.0,
+       "lfoLevel": 1.0,
+       "lfoFadein": 0.0,
+       "lfoWaveformType": 0,
+       "lfoRate": 0.5,
+       "lfoSync": 0,
+       "lfoFreeRunning": false,
+       "lfoDelaySync": 0,
+       "lfoFadeinSync": 0,
+       "lfoReset": true
+      }
+     },
+     "velocityToStart": 0.0,
+     "filterEnvelope": {
+      "version": 2,
+      "Attack": {
+       "value0": 0.0
+      },
+      "VelocityToAttack": {
+       "value0": 0.0
+      },
+      "Decay": {
+       "value0": 0.04724409431219101
+      },
+      "Sustain": {
+       "value0": 1.0
+      },
+      "Release": {
+       "value0": 0.0
+      },
+      "Hold": {
+       "value0": 0.0
+      },
+      "DecayFromEnd": {
+       "value0": true
+      },
+      "AD": {
+       "value0": true
+      },
+      "OneShot": {
+       "value0": true
+      },
+      "AttackPhase": {
+       "value0": 0.0
+      },
+      "DecayPhase": {
+       "value0": 0.0
+      },
+      "DecayStart": {
+       "value0": 0
+      },
+      "Type": 0,
+      "Delay": {
+       "value0": 0.0
+      },
+      "AttackCurve": {
+       "value0": 0.375
+      },
+      "DecayCurve": {
+       "value0": 0.375
+      },
+      "ReleaseCurve": {
+       "value0": 0.375
+      },
+      "tempoSync": {
+       "value0": "None"
+      },
+      "Looped": {
+       "value0": false
+      },
+      "TimeScaling": {
+       "value0": 0.5
+      }
+     },
+     "ampEnvelope": {
+      "version": 2,
+      "Attack": {
+       "value0": 0.0
+      },
+      "VelocityToAttack": {
+       "value0": 0.0
+      },
+      "Decay": {
+       "value0": 0.04724409431219101
+      },
+      "Sustain": {
+       "value0": 1.0
+      },
+      "Release": {
+       "value0": 0.0
+      },
+      "Hold": {
+       "value0": 0.0
+      },
+      "DecayFromEnd": {
+       "value0": true
+      },
+      "AD": {
+       "value0": true
+      },
+      "OneShot": {
+       "value0": true
+      },
+      "AttackPhase": {
+       "value0": 0.0
+      },
+      "DecayPhase": {
+       "value0": 0.0
+      },
+      "DecayStart": {
+       "value0": 0
+      },
+      "Type": 0,
+      "Delay": {
+       "value0": 0.0
+      },
+      "AttackCurve": {
+       "value0": 0.375
+      },
+      "DecayCurve": {
+       "value0": 0.375
+      },
+      "ReleaseCurve": {
+       "value0": 0.375
+      },
+      "tempoSync": {
+       "value0": "None"
+      },
+      "Looped": {
+       "value0": false
+      },
+      "TimeScaling": {
+       "value0": 0.5
+      }
+     },
+     "pitchEnvelope": {
+      "version": 2,
+      "Attack": {
+       "value0": 0.0
+      },
+      "VelocityToAttack": {
+       "value0": 0.0
+      },
+      "Decay": {
+       "value0": 0.04724409431219101
+      },
+      "Sustain": {
+       "value0": 1.0
+      },
+      "Release": {
+       "value0": 0.0
+      },
+      "Hold": {
+       "value0": 0.0
+      },
+      "DecayFromEnd": {
+       "value0": true
+      },
+      "AD": {
+       "value0": true
+      },
+      "OneShot": {
+       "value0": true
+      },
+      "AttackPhase": {
+       "value0": 0.0
+      },
+      "DecayPhase": {
+       "value0": 0.0
+      },
+      "DecayStart": {
+       "value0": 0
+      },
+      "Type": 0,
+      "Delay": {
+       "value0": 0.0
+      },
+      "AttackCurve": {
+       "value0": 0.375
+      },
+      "DecayCurve": {
+       "value0": 0.375
+      },
+      "ReleaseCurve": {
+       "value0": 0.375
+      },
+      "tempoSync": {
+       "value0": "None"
+      },
+      "Looped": {
+       "value0": false
+      },
+      "TimeScaling": {
+       "value0": 0.5
+      }
+     },
+     "pitchEnvelopeAmount": 0.5,
+     "randomisationScale": 1.0,
+     "attackRandom": 0.0,
+     "decayRandom": 0.0,
+     "auxEnvelope": {
+      "version": 2,
+      "Attack": {
+       "value0": 0.0
+      },
+      "VelocityToAttack": {
+       "value0": 0.0
+      },
+      "Decay": {
+       "value0": 0.04724409431219101
+      },
+      "Sustain": {
+       "value0": 1.0
+      },
+      "Release": {
+       "value0": 0.0
+      },
+      "Hold": {
+       "value0": 0.0
+      },
+      "DecayFromEnd": {
+       "value0": true
+      },
+      "AD": {
+       "value0": true
+      },
+      "OneShot": {
+       "value0": true
+      },
+      "AttackPhase": {
+       "value0": 0.0
+      },
+      "DecayPhase": {
+       "value0": 0.0
+      },
+      "DecayStart": {
+       "value0": 0
+      },
+      "Type": 0,
+      "Delay": {
+       "value0": 0.0
+      },
+      "AttackCurve": {
+       "value0": 0.375
+      },
+      "DecayCurve": {
+       "value0": 0.375
+      },
+      "ReleaseCurve": {
+       "value0": 0.375
+      },
+      "tempoSync": {
+       "value0": "None"
+      },
+      "Looped": {
+       "value0": false
+      },
+      "TimeScaling": {
+       "value0": 0.5
+      }
+     },
+     "auxEnvelopeAmount": 0.0,
+     "rampData": {
+      "value0": 0.0,
+      "value1": 0.0
+     },
+     "driftSpeed": 0.0,
+     "velocityToPitch": 0.0,
+     "velocitySensitivity": 0.0,
+     "velocityToPan": 0.0
+    },
+    "filterEnvelopeGlobal": false,
+    "ampEnvelopeGlobal": false,
+    "pitchEnvelopeGlobal": false,
+    "auxEnvelopeGlobal": false,
+    "CurrentStackProcessor": 0,
+    "unisonProcessor": {
+     "mode": 0,
+     "voices": 0,
+     "detuneAmount": 0.0,
+     "stereoSpread": 0.0
+    },
+    "harmoniserProcessor": {
+     "version": 1,
+     "voicesData": {
+      "value0": {
+       "version": 1,
+       "voiceData.enabled": true,
+       "voiceData.shift": 0,
+       "voiceData.detune": 0.0,
+       "voiceData.pan": 0.0,
+       "voiceData.velScale": 1.0,
+       "voiceData.volume": 0.25,
+       "voiceData.delay": 0.0,
+       "voiceData.delaySync": 0
+      },
+      "value1": {
+       "version": 1,
+       "voiceData.enabled": true,
+       "voiceData.shift": 0,
+       "voiceData.detune": 0.0,
+       "voiceData.pan": 0.0,
+       "voiceData.velScale": 1.0,
+       "voiceData.volume": 0.25,
+       "voiceData.delay": 0.0,
+       "voiceData.delaySync": 0
+      },
+      "value2": {
+       "version": 1,
+       "voiceData.enabled": true,
+       "voiceData.shift": 0,
+       "voiceData.detune": 0.0,
+       "voiceData.pan": 0.0,
+       "voiceData.velScale": 1.0,
+       "voiceData.volume": 0.25,
+       "voiceData.delay": 0.0,
+       "voiceData.delaySync": 0
+      },
+      "value3": {
+       "version": 1,
+       "voiceData.enabled": true,
+       "voiceData.shift": 0,
+       "voiceData.detune": 0.0,
+       "voiceData.pan": 0.0,
+       "voiceData.velScale": 1.0,
+       "voiceData.volume": 0.25,
+       "voiceData.delay": 0.0,
+       "voiceData.delaySync": 0
+      }
+     },
+     "harmonizerMix": 0.5
+    },
+    "channelPressureToFilter": {
+     "value0": 0.0,
+     "value1": 0.0
+    }
+   },
+   "fxRackQLinks": [],
+   "customMacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "fxRackMacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.customXFaders": [],
+   "base.customXFaderMacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.fxRackXFaders": [],
+   "base.fxRackXFaderMacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.customXYPad1": [],
+   "base.customXYPad1MacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.fxRackXYPad1": [],
+   "base.fxRackXYPad1MacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.customXYPad2": [],
+   "base.customXYPad2MacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.fxRackXYPad2": [],
+   "base.fxRackXYPad2MacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.customXYPad3": [],
+   "base.customXYPad3MacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.fxRackXYPad3": [],
+   "base.fxRackXYPad3MacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.customXYPad4": [],
+   "base.customXYPad4MacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.fxRackXYPad4": [],
+   "base.fxRackXYPad4MacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.customPadGrid": [],
+   "base.customPadGridMacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.fxRackPadGrid": [],
+   "base.fxRackPadGridMacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.customEnvFollower": [],
+   "base.customEnvFollowerMacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.fxRackEnvFollower": [],
+   "base.fxRackEnvFollowerMacroSceneData": {
+    "value0": {
+     "first": "",
+     "second": []
+    },
+    "value1": {
+     "first": "",
+     "second": []
+    },
+    "value2": {
+     "first": "",
+     "second": []
+    },
+    "value3": {
+     "first": "",
+     "second": []
+    },
+    "value4": {
+     "first": "",
+     "second": []
+    },
+    "value5": {
+     "first": "",
+     "second": []
+    },
+    "value6": {
+     "first": "",
+     "second": []
+    },
+    "value7": {
+     "first": "",
+     "second": []
+    }
+   },
+   "base.customPhysicalPadsAssignments": [],
+   "base.fxRackPhysicalPadsAssignments": []
+  },
+  "length": 0,
+  "lengthFollowsSequenceLength": true,
+  "midiEventsFilter": {
+   "channelFilterData": {
+    "channel": 255
+   },
+   "velocityFilterData": {
+    "min": 0.0,
+    "max": 1.0
+   },
+   "noteFilterData": {
+    "noteRange": {
+     "type": 2,
+     "data": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    }
+   },
+   "automationFilterData": {
+    "filteredParams": "00000000000000000"
+   }
+  },
+  "arrangementClipMap": [],
+  "sharedClipMap": [],
+  "recordArm": false,
+  "midiBankAndProgramNumber": {
+   "midiBankEnable": false,
+   "midiBankMsb": 0,
+   "midiBankLsb": 0,
+   "midiProgramNumberEnable": false,
+   "midiProgramNumber": 0
+  },
+  "midiInputRoute": {
+   "inputPort": {
+    "type": 0,
+    "deviceName": "All Ports",
+    "deviceId": "",
+    "os": "Linux"
+   },
+   "inputChannel": 0
+  },
+  "midiOutputRoute": {
+   "outputPort": {
+    "type": 1,
+    "deviceName": "<none>",
+    "deviceId": "",
+    "os": "Linux"
+   },
+   "outputChannel": 0
+  },
+  "midiMonitorable": {
+   "state": 2
+  }
+ }
+}

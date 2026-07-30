@@ -501,12 +501,10 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         if (zone.isOneShot ())
             element.setReceiveNoteOff (0);
 
-        // Tuning
-
-        final double tune = zone.getTuning ();
-        final int semitones = (int) Math.round (tune);
-        element.setCoarseTune (semitones + 64);
-        element.setFineTune ((int) Math.round ((tune - semitones) * 100) + 64);
+        // Tuning is already written to the keybank (the reader sums the keybank and element
+        // tuning, therefore it must only be set on one of them), keep the element neutral
+        element.setCoarseTune (64);
+        element.setFineTune (64);
         element.setPitchKeyFollowSensitivity ((int) Math.round (zone.getKeyTracking () * 100));
 
         element.setPan (MathUtils.denormalizeIntegerRange (zone.getPanning (), -63, 63, 64));

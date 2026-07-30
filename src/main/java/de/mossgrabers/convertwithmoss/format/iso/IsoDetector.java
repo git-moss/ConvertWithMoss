@@ -5,6 +5,8 @@
 package de.mossgrabers.convertwithmoss.format.iso;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -12,6 +14,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
+import de.mossgrabers.convertwithmoss.format.emu.emulator3.Emulator3Detector;
 import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emulator4Detector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
@@ -28,6 +31,7 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
     private static final String         IDS_ISO_PROCESSING_FORMAT = "IDS_ISO_PROCESSING_FORMAT";
 
     private final EnsoniqEpsAsrDetector ensoniqDetector;
+    private final Emulator3Detector     emulator3Detector;
     private final Emulator4Detector     emulator4Detector;
     private final S5xxDetector          rolandS5xxDetector;
     private final S770Detector          rolandS7xxDetector;
@@ -42,6 +46,7 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
     {
         super ("ISO/IMG file", "ISO", notifier, new MetadataSettingsUI ("ISO"), ".iso", ".img", ".out", ".sdk", ".hda");
 
+        this.emulator3Detector = new Emulator3Detector (notifier);
         this.emulator4Detector = new Emulator4Detector (notifier);
         this.ensoniqDetector = new EnsoniqEpsAsrDetector (notifier);
         this.rolandS5xxDetector = new S5xxDetector (notifier);
@@ -68,9 +73,7 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
 
             case EMU3:
                 this.notifier.log (IDS_ISO_PROCESSING_FORMAT, IsoFormat.getName (isoFormat));
-                this.emulator4Detector.setSourceFolder (this.sourceFolder);
-                this.emulator4Detector.setSettings (this.settingsConfiguration);
-                return this.emulator4Detector.readPresetFile (sourceFile);
+                return this.processEmuDisk (sourceFile);
 
             case ENSONIQ:
                 this.ensoniqDetector.setSourceFolder (this.sourceFolder);
@@ -95,6 +98,39 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
             default:
                 this.notifier.logError ("IDS_ISO_UNSUPPORTED_FORMAT", IsoFormat.getName (isoFormat));
                 return Collections.emptyList ();
+        }
+    }
+
+
+    /**
+     * Read an image which uses the proprietary E-mu disk filesystem. The Emulator III and the EOS
+     * samplers both write it, and neither of them can read the banks of the other, so both are
+     * tried on the same image. Reporting is left to this method, since a format which finds nothing
+     * only means that the image belongs to the other one.
+     *
+     * @param sourceFile The image file
+     * @return The multi-sample sources of whichever format the image holds
+     */
+    private List<IMultisampleSource> processEmuDisk (final File sourceFile)
+    {
+        try
+        {
+            this.emulator4Detector.setSourceFolder (this.sourceFolder);
+            this.emulator4Detector.setSettings (this.settingsConfiguration);
+            final List<IMultisampleSource> results = new ArrayList<> (this.emulator4Detector.readImageBanks (sourceFile));
+
+            this.emulator3Detector.setSourceFolder (this.sourceFolder);
+            this.emulator3Detector.setSettings (this.settingsConfiguration);
+            results.addAll (this.emulator3Detector.readImageBanks (sourceFile));
+
+            if (results.isEmpty ())
+                this.notifier.logError ("IDS_ISO_NO_EMU_BANKS", sourceFile.getName ());
+            return results;
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            return Collections.emptyList ();
         }
     }
 }

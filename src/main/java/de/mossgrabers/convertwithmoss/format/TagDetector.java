@@ -209,13 +209,15 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_CHROMATIC_PERCUSSION, new String []
         {
             CATEGORY_CHROMATIC_PERCUSSION,
-            "Marimba",
-            "Xylophone",
-            "Vibraphone",
             "Glockenspiel",
+            "Vibraphone",
+            "Xylophone",
+            "Marimba",
             "Celesta",
-            "Mallet",
-            "Kalimba"
+            "Kalimba",
+            "Balafon",
+            "Barafon",
+            "Mallet"
         });
         CATEGORIES.put (CATEGORY_CLAP, new String []
         {
@@ -237,6 +239,7 @@ public class TagDetector
             "Drum-Set",
             "Drumset",
             "Cymbal",
+            "Crash",
             "CR78",
             "Gong",
             "Ride",
@@ -265,6 +268,8 @@ public class TagDetector
             "Stadium",
             "Cricket",
             "Thunder",
+            "Effect",
+            "Animal",
             "Bubble",
             "Stream",
             "Scream",
@@ -278,10 +283,13 @@ public class TagDetector
             "Noise",
             "Horse",
             "Siren",
+            "Glass",
             "Wind",
             "Rain",
             "Bird",
             "Door",
+            "Yell",
+            "Cow",
             "Gun",
             "Car",
             "Dog",
@@ -378,40 +386,55 @@ public class TagDetector
             "Woodblock",
             "Triangle",
             "Castanets",
+            "Angklung",
             "Cowbell",
             "Timbale",
             "Timpani",
             "Maracas",
             "Djembe",
             "Shaker",
+            "Chimes",
+            "Tombak",
+            "Tonbak",
+            "Goblet",
+            "Dombac",
+            "Dombak",
+            "Donbak",
+            "Dumbek",
             "Agogo",
             "Bongo",
-            "Chimes",
             "Conga",
             "Cuica",
             "Tabla",
             "Taiko",
-            "Perc"
+            "Perc",
+            "Zarb",
+            "Zap"
         });
         CATEGORIES.put (CATEGORY_PIANO, new String []
         {
             CATEGORY_PIANO,
-            "Grand",
             "Electric Piano",
-            "Honky-Tonk",
-            "E-Piano",
-            "Upright",
             "Digital Piano",
-            "Klavier",
             "Harpsichord",
-            "Spinet",
-            "Clav",
+            "Honky-Tonk",
+            "GrandPiano",
+            "UpperGrand",
             "Suitcase",
-            "SCase",
-            "Whirly",
+            "Steinway",
             "Wurlitz",
+            "E-Piano",
+            "AcPiano",
+            "Upright",
+            "Klavier",
+            "Spinet",
+            "Whirly",
             "Mark I",
             "Rhodes",
+            "Grand",
+            "SCase",
+            "Clav",
+            "Pno",
             "EP"
         });
         CATEGORIES.put (CATEGORY_PIPE, new String []
@@ -419,11 +442,16 @@ public class TagDetector
             "Didgeridoo",
             "Shakuhachi",
             "Shakuhashi",
+            "Shinobue",
             "Recorder",
             "Whistle",
             "Piccolo",
-            CATEGORY_PIPE,
-            "Flute"
+            "Bansuri",
+            "Bansri",
+            "Flute",
+            "Basri",
+            "Shino",
+            CATEGORY_PIPE
         });
         CATEGORIES.put (CATEGORY_PLUCK, new String []
         {
@@ -433,6 +461,10 @@ public class TagDetector
             "Dulcimer",
             "Mandolin",
             "Shamisen",
+            "Berimbau",
+            "Birimbau",
+            "Yangchin",
+            "Yangqin",
             "Zither",
             "Santur",
             "Sitar",
@@ -440,6 +472,7 @@ public class TagDetector
             "Koto",
             "Lyre",
             "Erhu",
+            "Biwa",
             "Oud"
         });
         CATEGORIES.put (CATEGORY_SNARE, new String []

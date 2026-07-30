@@ -255,7 +255,9 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
         if (tune != 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_TUNE);
-            final float val = (float) Math.clamp (tune * 1000, -999, 999);
+            // The value is in cents in the range of [-99.9..99.9] (the field is named
+            // 'tune_cents' in the format's schema)
+            final float val = (float) Math.clamp (tune * 100.0, -99.9, 99.9);
             writeFloatLittleEndian (sampleOutput, val);
         }
 

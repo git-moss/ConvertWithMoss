@@ -57,6 +57,9 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final Pattern NOTE_SUFFIX_PATTERN = Pattern.compile ("_([A-G]#?)(-?\\d+)$");
 
+    /** How many banks the last image read held, which decides whether it is reported as empty. */
+    private int                  numberOfReadBanks   = 0;
+
 
     /** Holds the parsed information of one E3S1 sample chunk. */
     private static class Sample
@@ -124,8 +127,28 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      */
     private List<IMultisampleSource> parseImage (final File sourceFile) throws IOException
     {
+        final List<IMultisampleSource> results = this.readImageBanks (sourceFile);
+        if (this.numberOfReadBanks == 0)
+            this.notifier.logError ("IDS_E4B_NO_BANKS_IN_IMAGE", sourceFile.getName ());
+        else
+            this.notifier.log ("IDS_E4B_READING_IMAGE", sourceFile.getName (), Integer.toString (this.numberOfReadBanks));
+        return results;
+    }
+
+
+    /**
+     * Read all Emulator IV banks of an EOS disk image without reporting an image which holds none.
+     * The EIII and the EOS samplers share this filesystem, so the generic ISO/IMG format has to try
+     * both of them on the same image and can only report an empty result once.
+     *
+     * @param sourceFile The image file
+     * @return The multi-sample sources, empty if the image holds no Emulator IV bank
+     * @throws IOException Could not read the image
+     */
+    public List<IMultisampleSource> readImageBanks (final File sourceFile) throws IOException
+    {
         final List<IMultisampleSource> results = new ArrayList<> ();
-        int numBanks = 0;
+        this.numberOfReadBanks = 0;
         for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
         {
             // Skip files which are not Emulator IV banks, e.g. the banks of the older EIII
@@ -133,13 +156,9 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             final byte [] content = imageFile.getContent ();
             if (!Emulator4Constants.hasMagic (content, 0, Emulator4Constants.FORM_MAGIC) || !Emulator4Constants.hasMagic (content, 8, Emulator4Constants.FORM_TYPE))
                 continue;
-            numBanks++;
+            this.numberOfReadBanks++;
             results.addAll (this.parseBank (sourceFile, imageFile.getName (), content));
         }
-        if (numBanks == 0)
-            this.notifier.logError ("IDS_E4B_NO_BANKS_IN_IMAGE", sourceFile.getName ());
-        else
-            this.notifier.log ("IDS_E4B_READING_IMAGE", sourceFile.getName (), Integer.toString (numBanks));
         return results;
     }
 
@@ -499,30 +518,8 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
                 filterKeyTracking = Math.clamp (amount / 127.0 * Emulator4Constants.FULL_KEY_TRACKING, 0, 1);
         }
 
-        // The amplitude envelope: 6 rate/level stages in the primary zone table, which are attack
-        // 1, attack 2, decay 1, decay 2, release 1 and release 2. The model has one attack, hold,
-        // decay and release stage, so the pairs are added up; a decay 1 stage which stays at the
-        // level of attack 2 is a plateau and therefore the hold stage. This is the same envelope
-        // as the one of the Emulator X and is mapped in the same way. Stopping at decay 1 loses
-        // the decay of more than half of the EOS library, and a voice whose decay 1 keeps the peak
-        // - a plucked instrument which rings for a while and then fades away - even sustains
-        // forever instead of ever decaying
         final int pztOffset = offset + Emulator4Constants.VOICE_PZT_OFFSET;
-        final double [] times = new double [6];
-        final int [] levels = new int [6];
-        for (int stage = 0; stage < 6; stage++)
-        {
-            times[stage] = Emulator4Constants.envelopeRateToTime (body[pztOffset + stage * 2] & 0xFF);
-            levels[stage] = body[pztOffset + stage * 2 + 1];
-        }
-
-        final IEnvelope amplitudeEnvelope = new DefaultEnvelope ();
-        amplitudeEnvelope.setAttackTime (times[0] + times[1]);
-        final boolean isPlateau = levels[2] == levels[1];
-        amplitudeEnvelope.setHoldTime (isPlateau ? times[2] : 0);
-        amplitudeEnvelope.setDecayTime (isPlateau ? times[3] : times[2] + times[3]);
-        amplitudeEnvelope.setSustainLevel (Math.clamp (levels[3] / 127.0, 0, 1));
-        amplitudeEnvelope.setReleaseTime (times[4] + times[5]);
+        final IEnvelope amplitudeEnvelope = parseEnvelope (body, pztOffset + Emulator4Constants.PZT_AMPLITUDE_ENVELOPE);
 
         final IFilter filter = createFilter (body, offset, pztOffset, filterEnvelopeDepth, filterKeyTracking);
 
@@ -672,18 +669,49 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
         if (filterEnvelopeDepth != 0)
         {
-            final IEnvelope envelope = new DefaultEnvelope ();
-            envelope.setAttackTime (Emulator4Constants.envelopeRateToTime (body[pztOffset + 14] & 0xFF));
-            envelope.setDecayTime (Emulator4Constants.envelopeRateToTime (body[pztOffset + 18] & 0xFF));
-            envelope.setSustainLevel (Math.clamp (body[pztOffset + 19] / 127.0, 0, 1));
-            envelope.setReleaseTime (Emulator4Constants.envelopeRateToTime (body[pztOffset + 22] & 0xFF));
-
             final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
-            cutoffModulator.setSource (envelope);
+            cutoffModulator.setSource (parseEnvelope (body, pztOffset + Emulator4Constants.PZT_FILTER_ENVELOPE));
             cutoffModulator.setDepth (filterEnvelopeDepth);
         }
 
         return filter;
+    }
+
+
+    /**
+     * Parse one of the envelopes of the primary zone table. An EOS envelope has 6 rate/level stages
+     * - attack 1, attack 2, decay 1, decay 2, release 1 and release 2 - while the model has one
+     * attack, hold, decay and release stage, so the pairs are added up. A decay 1 stage which stays
+     * at the level of attack 2 is a plateau and therefore the hold stage. The operations manual
+     * describes the envelope as holding at the end of decay 2 until the key is released, so that
+     * level and not the one of decay 1 is the sustain. This is the same envelope as the one of the
+     * Emulator X and is mapped in the same way. Stopping at the first stage of each pair loses the
+     * second half of every envelope of the EOS library: a voice whose decay 1 keeps the peak - a
+     * plucked instrument which rings for a while and then fades away - would sustain forever
+     * instead of ever decaying.
+     *
+     * @param body The content of the preset chunk
+     * @param offset The offset of the envelope in the primary zone table
+     * @return The envelope
+     */
+    private static IEnvelope parseEnvelope (final byte [] body, final int offset)
+    {
+        final double [] times = new double [Emulator4Constants.NUM_ENVELOPE_STAGES];
+        final int [] levels = new int [Emulator4Constants.NUM_ENVELOPE_STAGES];
+        for (int stage = 0; stage < Emulator4Constants.NUM_ENVELOPE_STAGES; stage++)
+        {
+            times[stage] = Emulator4Constants.envelopeRateToTime (body[offset + stage * 2] & 0xFF);
+            levels[stage] = body[offset + stage * 2 + 1];
+        }
+
+        final IEnvelope envelope = new DefaultEnvelope ();
+        envelope.setAttackTime (times[0] + times[1]);
+        final boolean isPlateau = levels[2] == levels[1];
+        envelope.setHoldTime (isPlateau ? times[2] : 0);
+        envelope.setDecayTime (isPlateau ? times[3] : times[2] + times[3]);
+        envelope.setSustainLevel (Math.clamp (levels[3] / 127.0, 0, 1));
+        envelope.setReleaseTime (times[4] + times[5]);
+        return envelope;
     }
 
 

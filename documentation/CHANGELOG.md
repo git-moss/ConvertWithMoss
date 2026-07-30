@@ -4,35 +4,130 @@
 
 * Many thanks to David García Goñi for providing specifications of the E-mu formats and refined Kurzweil specifications!
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
-* New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
+* New: Added support for the Arturia Synclavier V format (reading and writing of SYNX preset and bank exports; partials which play a sound file become sample zones).
 * New: Added support for the E-mu Emulator III/IIIX/ESI bank format (E3B, E3X, ESI).
-* New: E-mu Emulator III banks can also be read directly from CD-ROM and hard disk images of the samplers (ISO, IMG, HDA), which use the same proprietary E-mu disk filesystem as the EOS samplers.
-* New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
 * New: Added support for the E-mu Emulator IV bank format (E4B). Banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format. New: Writing creates a bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7. Written banks have not been tested on real hardware yet.
+* New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
+* New: Added support for the Roland S-550 CD-Rom format.
+* New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
 * User Interface
   * New: Added tooltips to format lists to be able to see the full text of an entry.
+  * New: Next to the *Select* button of the source there is now a *Batch* toggle. It is on by default and everything works as before. Switching it off converts one single file instead. *Select* then opens a file dialog whose filter box lists every source format with its file endings, the current one preselected, and the source format is set from the picked file afterwards (a switched filter wins, otherwise the file ending decides; disk images go to the generic ISO/IMG format). Each mode keeps a path history of its own, which is exchanged along with the entered path when the toggle is used.
 * Backend
   * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: Added support for a LFO modulating the volume (tremolo) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: The Korg KSC/KMP/KSF, Kurzweil K2x00, Roland MV-8000 and Roland ZEN-Core destinations have an option to shorten a name to its last separated segment for the short name field of the device (e.g. 'Greek Bazouki - Dark Tremolo' becomes 'Dark Tremolo'), which otherwise cuts off exactly the part that tells the presets apart. Disabled by default.
+  * New: Added more instrument names to the category detector.
   * Fixed: Detecting a source which contains many presets was dominated by a fixed 10 millisecond pause taken after every single detected preset. A CD-ROM image of an E-mu sampler with 812 presets needed 11 seconds, of which 8 were that pause; two of them with 2339 presets needed 36 seconds. The pause is now taken every 64 presets, which keeps a cancellation responsive but takes the two images down to 1.4 seconds.
-* E-mu Emulator III
+* 1010music blackbox / bento
+  * Fixed: The loop cross-fade of a blackbox pad was read from the loop-end attribute instead of the fade-amount attribute - virtually every looped pad got a cross-fade spanning the entire loop, which destinations that bake cross-fades into the audio smeared audibly.
+  * Fixed: A performance instrument on OMNI was written into a bento project with MIDI input channel 'Off', so the track received no MIDI at all - the same defect was fixed for the blackbox in 19.1.0.
+  * Fixed: The loop type and cross-fade of a bento cell were assigned from themselves instead of the cell's default loop - a ping-pong loop read as a forward loop.
+  * Fixed: The sample length attribute of a bento cell was treated as an absolute end position although it is the play-back length (the blackbox reading is correct) - a cell with a moved sample start lost that many frames from its end.
+  * Fixed: The root velocity written into a bento project was half of the velocity range's width instead of its mid-point, which for a layer of 80..127 lies outside of the layer.
+* Ableton
+  * Fixed: An unset envelope start or end level was written as 1.0 although Live's default is silence - a slow-attack pad converted with no swell at all (the envelope ramped from full to full), and unset pitch-envelope levels became a full-depth offset. Unset start/end levels are now written as 0, unset hold/sustain levels as 1.
+  * Fixed: The sign of the filter and pitch (aux) envelope amounts was stripped when reading, so downward sweeps inverted - converting an ADV with a negative filter envelope back to ADV flipped it to positive.
+  * Fixed: The detune of the sustain loop was read from the multi-sample part (which is the zone tuning, already applied) instead of the sustain loop element, so the zone detune was applied twice after a round trip.
+* Akai AKP/AKM
+  * Fixed: The pitch bend range was passed as semitones into the model's cents field, so the bend wheel effectively did nothing on converted programs.
+  * Fixed: The volume of a multi part was multiplied onto the dB gain of the zones (a no-op for 0dB zones) instead of being added as a dB offset, and the part panning was scaled twice as wide as the field allows.
+* Akai MPC
+  * New: The destination can now write MPC 3 track files (*.xty) with their '_[TrackData]' sample folder as an alternative to MPC 2 keygroup folders (new 'Output Format' option, issue #117). The files replicate the complete track structure of MPC firmware 3.7 from a template - the firmware's own reader is strict about its serialized object tree - and only the multi-sample fields are patched in. Not verified in the MPC 3 software itself yet.
+  * Fixed: The pitch bend range of a MPC 3 track or project was read as cents but the file stores semitones, so the default of 2 semitones became 2 cents. The fraction of an octave stored next to it confirms the unit.
+  * Fixed: The tuning of a MPC 3 layer was read from the coarse and fine tune of its instrument, which the caller had already applied - the instrument tuning was doubled and the layer's own tuning was lost.
+  * New: The volume of a MPC 3 layer (an object holding the linear gain coefficient) is now read.
+* Akai MPC2000/3000
+  * Fixed: The tune of a program pad and of a SND sample were read unsigned - every negatively tuned pad of e.g. the factory library CD came out drastically sharp (a -0.05 semitone pad read as more than +600 semitones and was clamped to +12).
+* Akai MPC60
+  * Fixed: The 12 bit sample data was unpacked with the low nibble at 1/16 of its weight and the result byte-swapped, which reduced the audio to roughly 8 bit quality with a signal-correlated error. The 12 bits are now left-justified as in the reference implementation.
+* Akai S1000/S3000
+  * Fixed: The pitch bend range was passed as semitones into the model's cents field - the bend wheel effectively did nothing.
+  * Fixed: The program volume (a 0..1 value) was written directly as the dB gain of every zone, overwriting the per-layer loudness set before - the velocity-layer balance of every program was discarded.
+  * Fixed: The fraction byte of the keygroup and keygroup-sample fixed point tunings was treated as signed, so negative fine tunes came out about a semitone flat (e.g. -0.05 semitones read as -1.05). The sample header tuning in literal cents is no longer rescaled.
+* Akai S900/S950
+  * Fixed: The fractional part of the nominal pitch was applied with an inverted sign: a sample recorded e.g. a quarter tone sharp was played another quarter tone sharp instead of being corrected. Also the loudness offset was read unsigned, so any attenuation became a boost.
+* CWITEC TX16Wx
+  * Fixed: The wave IDs of a written program restarted at 0 for every group, although they must be unique across the program - in a program with several groups all regions resolved to the waves of the last group when read (also in the TX16Wx plug-in itself). Additionally the reader now creates an own zone object per region, since several regions may reference the same wave; before, such regions shared one object and overwrote each other's key and velocity ranges.
+  * Fixed: The depth of a pitch envelope was written in cents of the full model depth (12000 cents) but read as a fraction of 4800 cents, inflating the depth 2.5 times in a round trip.
+* DecentSampler
+  * Fixed: A volume value without a dB unit is a linear amplitude but was scaled as 'value times 6dB' - volume="0.5" (-6dB) read as +3dB and an explicit volume="1.0" differed from an absent attribute.
+* Disting EX
+  * Fixed: The creator names round-robin samples with an '_RR<n>' suffix but the detector's file name pattern only accepted '_R<n>' - such file names did not match at all, so the note and velocity information of every round-robin sample was lost when reading. Both spellings are accepted now.
+* DLS
+  * Fixed: The pitch envelope was built from the times of EG1 (the amplitude envelope) instead of its own EG2 times.
+  * Fixed: The fine tune of a region (stored in cents) was divided by 32768 as if it were a semi-tone fraction - a -50 cent detune shrank to -0.15 cents, erasing the detune of every region.
+  * Fixed: The signed 16 bit accessor of the RIFF chunk framework read big-endian although RIFF is little-endian throughout; the region fine tune (its only user) additionally came out byte-swapped.* E-mu Emulator III
   * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.
   * Fixed: The preset link is a single byte followed by a separate parameter, not a 16 bit value. A few presets whose second byte is set lost the preset which is layered on top of them.
   * Fixed: The cutoff parameter reaches up to 74 kHz and the banks switch their filter off by parking it anywhere above the audible range, but only the single value 0xFF was taken as that bypass. Every other parked value created a filter which cannot be heard; the frequency now decides. About 3200 zones of the EIIIX library CD-ROMs lose such a filter.
   * Fixed: A zone without a filter was written with a filter tracking of 0x40, which the operations manual shows as +1.00 and not as the neutral value. Such a bank was read back with a filter, so a source without one did not survive a round trip. No tracking is written now.
-* E-mu Emulator IV
-  * Fixed: Presets which park their cutoff at an end of its range and open it up again with a modulation cord were converted to silence. Only the filter envelope and the key tracking of such a cord have a counterpart in the model - velocity, the assignable MIDI controllers and the LFOs are lost - so what was left was a filter which removes the whole signal (the reported '3DPads - 3DreamSwells' held a high-pass at 14.5 kHz, and every single low-pass voice of 'Old World Instruments' sits at the bottom of its range). Such a voice now gets no filter at all, which is much closer to the original than the silence; a voice whose filter envelope does open the cutoff up again keeps its filter. This affects 10390 of the 38783 filter voices of the E4 factory library.
 * Kurzweil K2x00
   * Fixed: An envelope stage with both a zero time and a zero level is unused on the device and keeps the level of the previous stage, but was read literally. A program which leaves its decay stage unused - like the reported FM basses, which sustain at the attack level and only fade out with a long release - was therefore converted to a silent preset. Additionally, the attack velocity is now converted as a cutoff modulation source of the F1 slot in both directions; the same programs open their nearly closed cutoff by velocity and converted very dull without it.
+* Synclavier Regen
+  * Fixed: A source with more than 12 groups lost everything beyond the first 12 - many sources deliver one group per sample zone, so nearly the whole key map was dropped and large multi-samples converted silent. Groups whose zones share the same velocity range and do not overlap on the keyboard are now packed into shared partials (a partial holds a whole key map in its patch list), so such sources fit completely; only genuine layers beyond 12 are still dropped.
+* Logic EXS24
+  * Fixed: The velocity sensitivity of the volume envelope was read and written inverted: a file with full sensitivity (-60dB, which is also the format default) was read as no velocity response at all and vice versa. Since both directions were inverted, the defect was invisible in a round trip but e.g. a written EXS did not respond to velocity in Logic.
+  * Fixed: The parameters with IDs above 255 (among them the envelope delay and attack slope) were written in a layout which neither the reader nor Logic understands and their padding leaked 4 additional zero bytes per unused slot into the old parameter block - the affected parameters were lost from every written file.
+  * Fixed: The velocity modulation of the filter cutoff was formatted but never added to the written file.
+  * Fixed: The panning of a group was decoded twice, so every left-panned group ended up hard left (the flattened per-zone panning was correct, only the group offset was affected).
+* NI Kontakt
+  * Fixed: The filter cutoff of a Kontakt 1 file is stored logarithmically normalized to [0..1] but was read as a frequency in Hertz - a mid-range filter became a low-pass below 1 Hz and the converted preset was practically silent. Writing was already correct, which is why round trips through ConvertWithMoss hid it.
+  * Fixed: The upper key limit of an instrument in a Kontakt 1 multi (NKM) was stored as the lower clip key - the clip range became [high..127] and destinations which apply it dropped or mis-clipped most zones of a performance conversion.
+  * Fixed: The upper velocity crossfade of a written Kontakt 1 file was calculated from the lower velocity crossfade value.
+  * Fixed: The loop cross-fade of a written Kontakt 1 file was the cross-fade fraction cast to a whole number, so every cross-fade became 0 samples. The field is a length in samples.
+  * Fixed: The lower velocity crossfade of a Kontakt 4.2/5+ zone was read from the lower key crossfade field.
+  * Fixed: Muted and soloed groups were ignored when reading Kontakt 4.2/5+ files - the zones of muted groups (often alternate articulations parked by the sound designer) stacked onto the active ones. Zones of muted groups are now skipped, and if any group is soloed only the soloed groups are converted.
+* NI Maschine
+  * Fixed: The velocity to volume amount was written from the amplitude envelope modulation depth instead of the velocity modulation amount (both the Maschine 1 and 2 writers) - a source without velocity response became fully velocity sensitive.
+* Reason NN-XT
+  * Fixed: The velocity fade-out was read raw although it is stored inverted (0x80 = off, otherwise 127 minus the fade range, as the writer encodes it) - a zone without a fade read as a fade over the whole velocity range and an SXT round trip turned 'off' into a full-range fade.
+* Roland S-5xx
+  * Fixed: Removed Null-characters from description texts.
+  * Fixed: The TVF key follow used an integer division, so any tracking below the maximum was rounded down to none; the value was also read unsigned, so negative tracking was impossible.
+  * Fixed: The unison detune of a patch (documented -50..50 cents) was read unsigned, so a negative detune turned into more than 2 semitones upwards.
+* Roland S-7xx
+  * Fixed: The three panning stages (patch, partial and sample mix) were multiplied instead of added, so a centered stage - the default - erased the panning of all others: the stereo image of every factory patch built from hard-panned sample pairs collapsed to doubled mono, and two same-side pans flipped to the other side. On a library CD-ROM all 3765 panned zones were read dead center.
+  * Fixed: Five signed parameters (the TVF envelope depth, the pitch envelope depth, the cutoff velocity sensitivity, the cutoff key follow and the TVA level key follow, all -63..63) were read unsigned - a negative value such as a downward filter sweep of -20 became +3.75 with the direction inverted.
+  * Fixed: The envelope time law missed that 0 means instant, so every stage was at least 302 ms long - including a fabricated 302 ms delay before every note, which 3204 zones of the same CD-ROM carried into the converted files. Envelope times which are really programmed are unchanged.
+  * Fixed: A loop cross-fade was fabricated from the fractional address bytes of the loop points; the S-7xx has no loop cross-fade parameter.
 * Roland ZEN-Core
   * Fixed: A bank (a SVZ which holds one tone per preset, as written by the preset library destination) was read as one single multi-sample: all samples of the file were merged into it and only the shaping of its first tone was applied, so every preset but the first was lost. Each tone is now read as a multi-sample of its own, built from the multi-samples which its partials play. A SVZ with one tone is unchanged.
+  * Fixed: The pan and the velocity window of the tone partials were ignored when reading, so a stereo instrument (two hard-panned partials over two mono multi-samples) collapsed into stacked centered zones and velocity layers all sounded at once. Each partial's zones now carry its pan and velocity range; a partial whose right wave differs from its left one is read as a stereo pair.
+  * Fixed: The levels of the pitch and filter (TVF) envelopes are signed 16 bit values but were read unsigned, so e.g. a pitch envelope starting at -1023 (a classic pitch drop) read as starting at the positive maximum.
 * Renoise
   * Fixed: A modulation set was created for every key zone. Now zones with identical modulation share one set, which gives the usual single instrument-wide modulation set; additional sets are only created for zones which genuinely modulate differently.
   * New: A pitch LFO (vibrato) is read from and written as a LFO modulation device (waveform, rate, depth and onset time; the value curves were calibrated against Renoise 3.5.4).
   * New: A volume LFO (tremolo) is read from and written as a LFO modulation device targeting the volume; since the volume chain is linear, the depth in decibels is expressed as the linear swing whose lowest point lies that many decibels below full volume.
+* New: A volume LFO (tremolo) is read from and written as a LFO modulation device targeting the volume; since the volume chain is linear, the depth in decibels is expressed as the linear swing whose lowest point lies that many decibels below full volume.
+  * Fixed: The depth of a pitch envelope was read as the model maximum of 120 semitones instead of the pitch modulation range of the modulation set (12 semitones by default) and was dropped entirely when writing - a 2 semitone pitch envelope e.g. inflated to 120 semitones in a round trip. The depth is now read from and written as the pitch modulation range of the mixer device, which also keeps the pitch LFO consistent.
+* Sample Files
+  * Fixed: When building a multi-sample from plain sample files, an embedded root note (e.g. from the WAV 'smpl' chunk) was ignored since the key mapping ran before the file metadata was loaded - file name digits won instead ("Marimba-01..03" mapped to the MIDI notes 1..3) or the detection failed although every file carries its root. The file's own root note now takes precedence over the name.
+* SFZ
+  * Fixed: The key and velocity crossfade ranges (xfin/xfout) were written outside of the zone's range, where the zone does not even play - and for zones at the edges the 0/127 clamps collapsed the fade range entirely (e.g. a fade at the top of a full-velocity zone was written as the empty range 127..127 and lost). The fades are now anchored inside the zone's range.
+  * Fixed: A negative filter envelope depth (a downward sweep, e.g. of an 808-style kick) was silently dropped when writing; the fileg_depth opcode is now also written for negative depths.
+* SoundFont 2
+  * Fixed: Generators which only appear on the preset level were dropped entirely when the instrument level did not carry the same generator, although the specification defines them as offsets to the default value in that case. A preset whose global zone transposes a plain instrument down an octave was read an octave too high, preset-level attenuation and envelope offsets vanished, and a preset-level filter offset never created a filter. Such generators are routine in commercial and General MIDI SoundFonts.
+  * Fixed: A preset-level generator offset was added without the signed conversion when the instrument level carried the generator and the value was looked up unsigned - a negative offset (e.g. lowering the filter cutoff) was added as a huge positive number.
+  * Fixed: The filter resonance was read as centibels divided by 100 instead of 10, so every resonance came out ten times too small (20 dB read as 2 dB) and each SoundFont-to-SoundFont round trip divided it by ten again. Writing was already correct.
+  * Fixed: Negative pitch and filter envelope modulation amounts (downward sweeps, e.g. the pitch drop of an 808-style kick) were dropped when writing; both generators are signed in the format and reading them was already correct.
+* Synthstrom Deluge
+  * Fixed: The velocity sensitivity of the volume (the velocity to volume patch cable) was read into and written from the amplitude envelope modulation depth instead of the velocity modulation amount - a source without velocity response became fully velocity sensitive and vice versa.
+  * Fixed: An instrument without loops which is not a one-shot was written with the loop mode ONCE, which ignores a note-off on the device (and was read back as a one-shot). Such instruments are now written with CUT, which stops the play-back on a note-off.
+  * Fixed: The transpose and detune of a kit drum were discarded when reading a kit, so pitched kit drums lost their tuning even in a Deluge to Deluge conversion.
+* TAL Sampler
+  * Fixed: The creator omitted the volume attribute for 0dB zones but the reader decodes a missing attribute as about -21.8dB, so every zone of a read-back .talsmpl dropped by that amount. The volume is now always written and the reader's default is the raw value which represents 0dB.
 * Waldorf Quantum/Iridium
   * New: A source which carries its bank in front of its name is written without it in the preset name, since the device shows the bank in a field of its own. The file name keeps the full name. An explicit Bank from the settings replaces the source's bank, in which case the name keeps it.
+  * Fixed: The amount of a matrix entry modulating the oscillator pitch (the pitch envelope) was read with the wrong offset: a positive amount was read as a negative one (e.g. +50% as -25%) and +100% was dropped entirely.
+  * Fixed: The velocity modulation of the volume was written from the amplitude envelope modulation depth instead of the velocity modulation amount. E.g. a source with a velocity amount of 0% was written as +100%.
+* WAV
+  * Fixed: The sample chunk stores a note with a negative fine tuning as the next higher unity note with the complementary positive fraction, but the correction was applied in the wrong direction on both sides: reading added 1 to the unity note where 1 must be subtracted and writing subtracted where it must add. The two errors cancelled between ConvertWithMoss' own reader and writer, which is why round trips never showed it - but any WAV from another tool whose pitch fraction is above 50 cents was read two semitones off, and every written WAV with a negative fine tuning carried a unity note two semitones below what conforming samplers expect.
+  * Fixed: A sample chunk whose pitch fraction is above 50 cents overwrote the root key which the preset format itself supplied (e.g. the root of a Bitwig multisample's XML), since the fine-tuning merge was not gated on the root being unset - combined with the direction error above, such a zone ended up more than two octaves off. The root key and fine tuning of the sample chunk are now only used when the format does not provide a root of its own.
+* Yamaha YSFC
+  * Fixed: Envelope times were quantized to whole seconds when writing, since the lookup into the time table compared against truncated table entries - every sub-second time became about 0.9 seconds (e.g. a release of 0.3s tripled) in all written amplitude, filter and pitch envelopes.
+  * Fixed: The tuning of a zone was written to both the keybank and the element although the two stack on the device (and when reading), which doubled the detune of every written zone. The element tuning is now left neutral.
+  * Fixed: When reading performances, a performance was added to the result once per part, so a multi-part performance was converted multiple times.
 
 ## 19.1.0
 
