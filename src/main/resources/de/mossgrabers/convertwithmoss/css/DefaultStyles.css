@@ -125,3 +125,9 @@
 .contentsToolbar {
     -fx-spacing: 5.0;
 }
+
+/** The rows above and below the preset tree of the contents dialog: without a gap their
+    buttons touch the border of the tree. */
+.contentsDialogRow {
+    -fx-padding: 6.0 0.0 6.0 0.0;
+}
