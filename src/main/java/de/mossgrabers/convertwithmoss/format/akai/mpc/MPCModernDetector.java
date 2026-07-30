@@ -796,7 +796,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             if (keygroupNode != null)
             {
                 keygroupTranspose = programTranspose + keygroupNode.get ("transpose").asDouble ();
-                // The ranges are semitones, e.g. the default of 2 (the fraction of an octave
+                // The ranges are semi-tones, e.g. the default of 2 (the fraction of an octave
                 // in 'pitchBendRange' confirms it)
                 pitchBendUp = keygroupNode.get ("pitchBendPositiveRange").asInt () * 100;
                 pitchBendDown = keygroupNode.get ("pitchBendNegativeRange").asInt () * 100;

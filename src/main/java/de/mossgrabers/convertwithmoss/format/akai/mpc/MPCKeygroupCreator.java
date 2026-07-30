@@ -83,7 +83,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 
         // Create the metadata file
         final File multiFile = new File (sampleFolder, sampleName + ".xpm");
-        final Optional<String> metadata = this.createMetadata (multisampleSource, sampleName);
+        final Optional<String> metadata = this.createXmlDocument (multisampleSource, sampleName);
         if (metadata.isEmpty ())
             return;
 
@@ -149,7 +149,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
      * @param sampleName The name of the multi-sample
      * @return The XML structure
      */
-    private Optional<String> createMetadata (final IMultisampleSource multisampleSource, final String sampleName)
+    private Optional<String> createXmlDocument (final IMultisampleSource multisampleSource, final String sampleName)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -364,7 +364,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         {
             final IFilter filter = optFilter.get ();
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_TYPE, Integer.toString (MPCFilter.getFilterIndex (filter)));
-            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_CUTOFF, formatDouble (MathUtils.normalizeFrequency (filter.getCutoff (), IFilter.MAX_FREQUENCY), 2));
+            XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_CUTOFF, formatDouble (MathUtils.normalizeCutoff (filter.getCutoff ()), 2));
             XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_RESONANCE, formatDouble (filter.getResonance (), 2));
 
             final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();

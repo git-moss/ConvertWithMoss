@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.akai.mpc;
 
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -110,7 +111,7 @@ public class MPCFilter extends DefaultFilter
      */
     public MPCFilter (final int id, final double cutoff, final double resonance)
     {
-        super (null, 0, cutoff * MAX_FREQUENCY, resonance);
+        super (null, 0, MathUtils.denormalizeCutoff (cutoff), resonance);
 
         if (id >= MAX)
             return;
