@@ -6,7 +6,10 @@ package de.mossgrabers.convertwithmoss.core;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -17,20 +20,27 @@ import java.util.List;
 public class DetectSettings
 {
     /** The folder where to start the detection process. */
-    public File             sourceFolder;
+    public File                          sourceFolder;
     /**
      * If not empty, only these files are converted instead of searching the source folder, which is
      * then only the reference for all sub-path calculations.
      */
-    public final List<File> sourceFiles = new ArrayList<> ();
+    public final List<File>              sourceFiles     = new ArrayList<> ();
+    /**
+     * If not empty, only the listed sources of the listed files are converted. A source is
+     * addressed by its index inside of its file, which is deterministic and therefore identical in
+     * the contents run which created the selection. Its files narrow down the files to read even
+     * further, since all other files contain nothing which was selected.
+     */
+    public final Map<File, Set<Integer>> selectedSources = new HashMap<> ();
     /** Where to write the result to. */
-    public File             outputFolder;
+    public File                          outputFolder;
     /** The name to use in case that a library will be created. */
-    public String           libraryName;
+    public String                        libraryName;
     /** True, if all files should be returned at once. */
-    public boolean          wantsMultipleFiles;
+    public boolean                       wantsMultipleFiles;
     /** True, if the source folder structure should be replicated in the output folder. */
-    public boolean          createFolderStructure;
+    public boolean                       createFolderStructure;
 
     // Parameters for Processing
 
