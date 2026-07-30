@@ -116,10 +116,11 @@ public class Emulator3SampleIndexRepair
      * @param data The content of the bank
      * @param presetOffsets The offsets of all presets of the bank
      * @param sampleNames The names of the samples of the bank by their 1-based slot
+     * @param indexMask The mask which extracts the sample index from the 16 bit field of a zone
      * @return For each preset offset which needs repairs, the mapping from the stored (masked) zone
      *         sample index to the resolved slot; presets whose indices are kept are absent
      */
-    public static Map<Integer, Map<Integer, Integer>> resolveBank (final byte [] data, final List<Integer> presetOffsets, final Map<Integer, String> sampleNames)
+    public static Map<Integer, Map<Integer, Integer>> resolveBank (final byte [] data, final List<Integer> presetOffsets, final Map<Integer, String> sampleNames, final int indexMask)
     {
         final Map<Integer, Map<Integer, Integer>> repairs = new HashMap<> ();
         if (sampleNames.isEmpty ())
@@ -138,7 +139,7 @@ public class Emulator3SampleIndexRepair
 
         for (final Integer presetOffset: presetOffsets)
         {
-            final Map<Integer, Integer> mapping = resolvePreset (data, presetOffset.intValue (), sampleNames, parsedNotes, maxSlot);
+            final Map<Integer, Integer> mapping = resolvePreset (data, presetOffset.intValue (), sampleNames, parsedNotes, maxSlot, indexMask);
             if (!mapping.isEmpty ())
                 repairs.put (presetOffset, mapping);
         }
@@ -154,13 +155,14 @@ public class Emulator3SampleIndexRepair
      * @param sampleNames The names of the samples of the bank by their 1-based slot
      * @param parsedNotes The notes parsed from the sample names, where a name carries one
      * @param maxSlot The highest occupied sample slot of the bank
+     * @param indexMask The mask which extracts the sample index from the 16 bit field of a zone
      * @return The mapping from the stored index to the resolved slot; empty to keep all indices
      */
-    private static Map<Integer, Integer> resolvePreset (final byte [] data, final int presetOffset, final Map<Integer, String> sampleNames, final Map<Integer, Note> parsedNotes, final int maxSlot)
+    private static Map<Integer, Integer> resolvePreset (final byte [] data, final int presetOffset, final Map<Integer, String> sampleNames, final Map<Integer, Note> parsedNotes, final int maxSlot, final int indexMask)
     {
         // The distinct (original key, stored index) pairs of the preset - a pair which repeats
         // across note zones is one piece of evidence, not many
-        final Set<Long> pairSet = collectZonePairs (data, presetOffset);
+        final Set<Long> pairSet = collectZonePairs (data, presetOffset, indexMask);
         if (pairSet.isEmpty ())
             return Map.of ();
         final int numPairs = pairSet.size ();
@@ -300,9 +302,10 @@ public class Emulator3SampleIndexRepair
      *
      * @param data The content of the bank
      * @param presetOffset The offset of the preset
+     * @param indexMask The mask which extracts the sample index from the 16 bit field of a zone
      * @return The pairs, encoded as (key << 16) | index
      */
-    private static Set<Long> collectZonePairs (final byte [] data, final int presetOffset)
+    private static Set<Long> collectZonePairs (final byte [] data, final int presetOffset, final int indexMask)
     {
         final Set<Long> pairs = new HashSet<> ();
         if (presetOffset + Emulator3Constants.PRESET_SIZE > data.length)
@@ -334,7 +337,7 @@ public class Emulator3SampleIndexRepair
             final int zone = zonesOffset + zoneIndex * Emulator3Constants.ZONE_SIZE;
             if (zone + Emulator3Constants.ZONE_SIZE > data.length)
                 break;
-            final int stored = Emulator3Constants.getU16 (data, zone + Emulator3Constants.ZONE_SAMPLE_INDEX) & Emulator3Constants.ZONE_SAMPLE_INDEX_MASK;
+            final int stored = Emulator3Constants.getU16 (data, zone + Emulator3Constants.ZONE_SAMPLE_INDEX) & indexMask;
             if (stored == 0)
                 continue;
             final int root = (data[zone + Emulator3Constants.ZONE_ORIGINAL_KEY] & 0xFF) + Emulator3Constants.KEY_OFFSET;

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -74,7 +75,10 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
     {
         String  name;
         byte [] bankData;
+        /** The data of the left channel or of the only channel of a mono sample. */
         int     dataOffset;
+        /** The data of the right channel of a stereo sample. */
+        int     rightDataOffset;
         int     numFrames;
         int     sampleRate;
         boolean isStereo;
@@ -309,11 +313,15 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         // in the bank and are still referenced by the presets
         final Map<Integer, Sample> samplesByIndex = new HashMap<> ();
         final Set<Integer> malformedSamples = new TreeSet<> ();
+        final Set<Integer> emptySlots = new HashSet<> ();
         for (int i = 0; i < maxSamples; i++)
         {
             final long entry = Emulator3Constants.getU32 (data, sampleTable + i * 4);
             if (entry == 0)
+            {
+                emptySlots.add (Integer.valueOf (i + 1));
                 continue;
+            }
             final Sample sample = parseSample (data, sampleAreaStart + entry - Emulator3Constants.SAMPLE_ADDRESS_OFFSET, i + 1, malformedSamples);
             if (sample != null)
                 samplesByIndex.put (Integer.valueOf (i + 1), sample);
@@ -348,7 +356,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         final Map<Integer, String> sampleNames = new HashMap<> ();
         for (final Map.Entry<Integer, Sample> entry: samplesByIndex.entrySet ())
             sampleNames.put (entry.getKey (), entry.getValue ().name);
-        final Map<Integer, Map<Integer, Integer>> repairsByPresetOffset = Emulator3SampleIndexRepair.resolveBank (data, presetOffsets, sampleNames);
+        final Map<Integer, Map<Integer, Integer>> repairsByPresetOffset = Emulator3SampleIndexRepair.resolveBank (data, presetOffsets, sampleNames, bankFormat.getZoneSampleIndexMask ());
         if (!repairsByPresetOffset.isEmpty ())
         {
             int repairedReferences = 0;
@@ -362,7 +370,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         {
             if (!isPresetPresent (data, bankFormat, i) || linkedPresets.contains (Integer.valueOf (i)))
                 continue;
-            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, data, bankFormat, i, maxPresets, samplesByIndex, repairsByPresetOffset);
+            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, data, bankFormat, i, maxPresets, samplesByIndex, emptySlots, repairsByPresetOffset);
             if (multisampleSource != null)
                 results.add (multisampleSource);
         }
@@ -451,16 +459,25 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         final boolean isStereo = (options & Emulator3Constants.OPTION_STEREO) == Emulator3Constants.OPTION_STEREO;
         // Some samples only hold their right channel, they use the second set of positions
         final boolean hasLeft = (options & Emulator3Constants.OPTION_CHANNEL_LEFT) > 0;
+        final int startField = hasLeft ? Emulator3Constants.SAMPLE_START_LEFT : Emulator3Constants.SAMPLE_START_RIGHT;
         final int endField = hasLeft ? Emulator3Constants.SAMPLE_END_LEFT : Emulator3Constants.SAMPLE_END_RIGHT;
         final int loopStartField = hasLeft ? Emulator3Constants.SAMPLE_LOOP_START_LEFT : Emulator3Constants.SAMPLE_LOOP_START_RIGHT;
         final int loopEndField = hasLeft ? Emulator3Constants.SAMPLE_LOOP_END_LEFT : Emulator3Constants.SAMPLE_LOOP_END_RIGHT;
 
-        // All positions are byte offsets which are relative to the start of the sample header
+        // All positions are byte offsets which are relative to the start of the sample header.
+        // Each channel carries its own start and end; which channel comes first in the bank is
+        // arbitrary - the library CD-ROMs store stereo samples in both orders - so the number of
+        // frames has to be computed from the channel's own start instead of the end of the header
+        final long start = Emulator3Constants.getU32 (data, offset + startField);
         final long end = Emulator3Constants.getU32 (data, offset + endField);
-        final int numFrames = (int) ((end + 2 - Emulator3Constants.SAMPLE_HEADER_SIZE) / 2);
+        final long startRight = Emulator3Constants.getU32 (data, offset + Emulator3Constants.SAMPLE_START_RIGHT);
+        final long endRight = Emulator3Constants.getU32 (data, offset + Emulator3Constants.SAMPLE_END_RIGHT);
+        int numFrames = (int) ((end + 2 - start) / 2);
+        if (isStereo)
+            numFrames = Math.min (numFrames, (int) ((endRight + 2 - startRight) / 2));
         final int sampleRate = (int) Emulator3Constants.getU32 (data, offset + Emulator3Constants.SAMPLE_RATE);
-        final long dataSize = (long) numFrames * 2 * (isStereo ? 2 : 1);
-        if (numFrames <= 0 || sampleRate <= 0 || offset + Emulator3Constants.SAMPLE_HEADER_SIZE + dataSize > data.length)
+        final boolean invalidRight = isStereo && (startRight < Emulator3Constants.SAMPLE_HEADER_SIZE || offset + endRight + 2 > data.length);
+        if (numFrames <= 0 || sampleRate <= 0 || start < Emulator3Constants.SAMPLE_HEADER_SIZE || offset + end + 2 > data.length || invalidRight)
         {
             malformedSamples.add (Integer.valueOf (sampleIndex));
             return null;
@@ -471,20 +488,21 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         if (sample.name.isBlank ())
             sample.name = "Sample " + sampleIndex;
         sample.bankData = data;
-        sample.dataOffset = offset + Emulator3Constants.SAMPLE_HEADER_SIZE;
+        sample.dataOffset = (int) (offset + start);
+        sample.rightDataOffset = (int) (offset + startRight);
         sample.numFrames = numFrames;
         sample.sampleRate = sampleRate;
         sample.isStereo = isStereo;
 
         if ((options & Emulator3Constants.OPTION_LOOP) > 0)
         {
-            sample.loopStart = (int) ((Emulator3Constants.getU32 (data, offset + loopStartField) - Emulator3Constants.SAMPLE_HEADER_SIZE) / 2);
+            sample.loopStart = (int) ((Emulator3Constants.getU32 (data, offset + loopStartField) - start) / 2);
             // The stored position is the frame before the last one of the loop while the model
             // counts the end as inclusive. Measuring the step at the loop seam of 2798 looped
             // samples of the library CD-ROMs shows a clear optimum at this one frame: the median
             // step falls from 4.6% to 0.2% of the peak amplitude and the share of seams which
             // step by more than a third of it from 13% to 2%.
-            sample.loopEnd = (int) ((Emulator3Constants.getU32 (data, offset + loopEndField) - Emulator3Constants.SAMPLE_HEADER_SIZE) / 2) + 1;
+            sample.loopEnd = (int) ((Emulator3Constants.getU32 (data, offset + loopEndField) - start) / 2) + 1;
             sample.hasLoop = sample.loopStart >= 0 && sample.loopEnd > sample.loopStart && sample.loopStart < numFrames;
             sample.loopEnd = Math.min (sample.loopEnd, numFrames - 1);
             // Without this flag the loop stops as soon as the key is released
@@ -504,10 +522,11 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param presetIndex The index of the preset
      * @param numPresets The number of presets of the bank
      * @param samplesByIndex The samples of the bank by their 1-based index
+     * @param emptySlots The slots of the sample table which hold no sample (deleted samples)
      * @param repairsByPresetOffset The repaired zone sample indices by preset offset
      * @return The multi-sample source or null if the preset has no usable zones
      */
-    private IMultisampleSource parsePreset (final File sourceFile, final String bankName, final byte [] data, final Emulator3BankFormat bankFormat, final int presetIndex, final int numPresets, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Map<Integer, Integer>> repairsByPresetOffset)
+    private IMultisampleSource parsePreset (final File sourceFile, final String bankName, final byte [] data, final Emulator3BankFormat bankFormat, final int presetIndex, final int numPresets, final Map<Integer, Sample> samplesByIndex, final Set<Integer> emptySlots, final Map<Integer, Map<Integer, Integer>> repairsByPresetOffset)
     {
         final int presetOffset = getPresetOffset (data, bankFormat, presetIndex);
         if (presetOffset < 0)
@@ -532,8 +551,24 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         // A bank can hold presets which map no key at all, they are simply dropped
         if (groups.isEmpty ())
             return null;
+
+        // A reference to an empty table slot is part of the stored data - the device finds
+        // nothing there either and keeps those keys silent, so it is reported as a note and not
+        // as an error
+        final Set<Integer> deletedSampleIndices = new TreeSet<> ();
+        for (final Iterator<Integer> iterator = missingSampleIndices.iterator (); iterator.hasNext ();)
+        {
+            final Integer index = iterator.next ();
+            if (emptySlots.contains (index))
+            {
+                deletedSampleIndices.add (index);
+                iterator.remove ();
+            }
+        }
         if (!missingSampleIndices.isEmpty ())
             this.notifier.logError ("IDS_EIII_SAMPLE_MISSING", Integer.toString (missingSampleIndices.size ()), presetName, formatIndices (missingSampleIndices));
+        if (!deletedSampleIndices.isEmpty ())
+            this.notifier.log ("IDS_EIII_DELETED_SAMPLE", Integer.toString (deletedSampleIndices.size ()), presetName, formatIndices (deletedSampleIndices));
 
         final boolean prependBankName = !(this.settingsConfiguration instanceof final Emulator3DetectorUI settings) || settings.prependBankName ();
         final String name = presetName.isBlank () ? FileUtils.getNameWithoutType (sourceFile) : presetName;
@@ -685,7 +720,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      */
     private ISampleZone parseZone (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int presetOffset, final int keyLow, final int keyHigh, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Integer> indexRepairs, final Set<Integer> missingSampleIndices, final String bankName)
     {
-        final int storedIndex = Emulator3Constants.getU16 (data, offset + Emulator3Constants.ZONE_SAMPLE_INDEX) & Emulator3Constants.ZONE_SAMPLE_INDEX_MASK;
+        final int storedIndex = Emulator3Constants.getU16 (data, offset + Emulator3Constants.ZONE_SAMPLE_INDEX) & bankFormat.getZoneSampleIndexMask ();
         if (storedIndex == 0)
             return null;
         final int sampleIndex = indexRepairs.getOrDefault (Integer.valueOf (storedIndex), Integer.valueOf (storedIndex)).intValue ();
@@ -847,8 +882,8 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Create the audio data of a sample. The two channels of a stereo sample are stored one after
-     * the other in the bank and are interleaved here. A zone which mutes one of the two sides only
-     * gets the other one.
+     * the other in the bank (in either order) and are interleaved here. A zone which mutes one of
+     * the two sides only gets the other one.
      *
      * @param sample The sample
      * @param disableLeft True if the zone mutes the left channel
@@ -867,7 +902,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
 
         if (useBothChannels)
         {
-            final int rightOffset = sample.dataOffset + numFrames * 2;
+            final int rightOffset = sample.rightDataOffset;
             for (int i = 0; i < numFrames; i++)
             {
                 pcm[i * 4] = bankData[sample.dataOffset + i * 2];
@@ -878,8 +913,8 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         }
         else
         {
-            // A muted left side leaves the right channel, which follows the left one in the bank
-            final int channelOffset = sample.isStereo && disableLeft ? sample.dataOffset + numFrames * 2 : sample.dataOffset;
+            // A muted left side leaves the right channel
+            final int channelOffset = sample.isStereo && disableLeft ? sample.rightDataOffset : sample.dataOffset;
             System.arraycopy (bankData, channelOffset, pcm, 0, numFrames * 2);
         }
 
