@@ -141,14 +141,18 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
     /**
      * The MIDI unity note value has the same meaning as the instrument chunk's MIDI Unshifted Note
      * field which specifies the musical note at which the sample will be played at it's original
-     * sample rate (the sample rate specified in the format chunk).
+     * sample rate (the sample rate specified in the format chunk). Since the pitch fraction can
+     * only tune upwards, a note with a negative fine tuning is stored as the next higher unity
+     * note with the complementary positive fraction (see {@link #getMIDIPitchFraction()}); this
+     * getter reverses that encoding, so together with
+     * {@link #getMIDIPitchFractionAsCents()} it returns the intended root key and fine tuning.
      *
      * @return The four bytes converted to an integer
      */
     public int getMIDIUnityNote ()
     {
         final int unityNote = this.rawRiffChunk.getFourBytesAsUnsignedInt (0x0C);
-        return this.getMIDIPitchFractionAsCents () < 0 ? unityNote + 1 : unityNote;
+        return this.getMIDIPitchFractionAsCents () < 0 ? unityNote - 1 : unityNote;
     }
 
 
@@ -205,13 +209,15 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      */
     public void setPitch (final int unityNote, final int cent)
     {
-        // Needs to be inverted since this is the play-back root!
+        // Whole semitones are folded into the unity note; the fraction tunes the play-back
+        // upwards, so a tuning of a semitone up is one unity note down
         int rootNote = unityNote - cent / 100;
         int pitchOffset = cent % 100;
-        // Pitch fraction can only be positive (0-99 cents)!
+        // The pitch fraction can only be positive (0-99 cents): a negative remainder is stored
+        // as the next higher unity note with the complementary positive fraction
         if (pitchOffset < 0)
         {
-            rootNote--;
+            rootNote++;
             pitchOffset += 100;
         }
         this.setMIDIUnityNote (rootNote);

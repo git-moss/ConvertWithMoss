@@ -79,6 +79,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
 
         final List<File> files = this.lookupFiles (filePaths, multiSample.getSourceFile ().getParent (), isMonolith);
         final Map<Integer, Pair<IGroup, Group>> indexedGroups = createGroups (program);
+        final boolean hasSoloedGroup = program.getGroups ().stream ().anyMatch (Group::isSoloed);
         for (final Zone kontaktZone: program.getZones ())
         {
             // Zones without a sample file might be present
@@ -89,6 +90,13 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             final Pair<IGroup, Group> groupPair = indexedGroups.get (groupIndex);
             if (groupPair == null)
                 throw new IOException (Functions.getMessage ("IDS_NKI5_MISSING_GROUP", groupIndex.toString ()));
+
+            // A muted group does not sound; if any group is soloed only the soloed groups sound.
+            // Without this, alternate articulations stored in muted groups stack onto the active
+            // ones
+            final Group zoneKontaktGroup = groupPair.getValue ();
+            if (hasSoloedGroup ? !zoneKontaktGroup.isSoloed () : zoneKontaktGroup.isMuted ())
+                continue;
 
             final IGroup group = groupPair.getKey ();
             final Group kontaktGroup = groupPair.getValue ();
@@ -116,7 +124,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
 
             zone.setNoteCrossfadeLow (kontaktZone.getFadeLowKey ());
             zone.setNoteCrossfadeHigh (kontaktZone.getFadeHighKey ());
-            zone.setVelocityCrossfadeLow (kontaktZone.getFadeLowKey ());
+            zone.setVelocityCrossfadeLow (kontaktZone.getFadeLowVelocity ());
             zone.setVelocityCrossfadeHigh (kontaktZone.getFadeHighVelocity ());
 
             // Only on a group level...

@@ -374,7 +374,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         loop.setEnd (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_END, zone.getStop ()));
         loop.setCrossfadeInSamples (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_LOOP_CROSSFADE, 0));
         loop.setType (loopMode == 1 ? LoopType.FORWARDS : LoopType.ALTERNATING);
-        loop.setTuning (getIntegerValueAttribute (multiSamplePartElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
+        // The loop detune is a child of the sustain loop element; the detune of the multi-sample
+        // part is the zone tuning which was already applied above
+        loop.setTuning (getIntegerValueAttribute (sustainLoopElement, AbletonTag.TAG_DETUNE, 0) / 100.0);
         zone.getLoops ().add (loop);
 
         final Element releaseLoopElement = XMLUtils.getChildElementByName (multiSamplePartElement, AbletonTag.TAG_RELEASE_LOOP);
@@ -465,7 +467,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 final Element releaseSlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_SLOPE);
 
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
-                cutoffModulator.setDepth (Math.abs (getDoubleValueAttribute (amountElement, AbletonTag.TAG_MANUAL, 0) / 72.0));
+                cutoffModulator.setDepth (getDoubleValueAttribute (amountElement, AbletonTag.TAG_MANUAL, 0) / 72.0);
 
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
                 filterEnvelope.setAttackTime (getDoubleValueAttribute (attackTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
@@ -574,7 +576,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 if (destination == 6)
                 {
                     auxEnvelope = new DefaultEnvelope ();
-                    auxDepth = Math.abs (getDoubleValueAttribute (auxConnectionElement, AbletonTag.TAG_AMOUNT, 0) / 100.0);
+                    auxDepth = getDoubleValueAttribute (auxConnectionElement, AbletonTag.TAG_AMOUNT, 0) / 100.0;
 
                     auxEnvelope.setAttackTime (getDoubleValueAttribute (auxAttackTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);
                     auxEnvelope.setDecayTime (getDoubleValueAttribute (auxDecayTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);

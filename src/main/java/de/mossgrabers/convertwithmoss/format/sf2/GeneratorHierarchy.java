@@ -173,22 +173,22 @@ public class GeneratorHierarchy
 
         Integer value = this.instrumentZone.get (key);
         if (value == null)
-        {
             value = this.instrumentZoneGlobal.get (key);
-            if (value == null)
-                return Generator.getDefaultValue (key);
-        }
+        int result = value == null ? Generator.getDefaultValue (key).intValue () : value.intValue ();
 
+        // A preset level generator is a signed offset which is added to the value of the
+        // instrument level - or to the default value when the instrument level does not use
+        // the generator at all
         if (!Generator.isOnlyInstrument (generator))
         {
             Integer offset = this.presetZone.get (key);
             if (offset == null)
                 offset = this.presetZoneGlobal.get (key);
             if (offset != null)
-                return Integer.valueOf (value.intValue () + offset.intValue ());
+                result += MathUtils.fromSignedComplement (offset.intValue ());
         }
 
-        return value;
+        return Integer.valueOf (result);
     }
 
 
@@ -205,24 +205,22 @@ public class GeneratorHierarchy
 
         Integer value = this.instrumentZone.get (key);
         if (value == null)
-        {
             value = this.instrumentZoneGlobal.get (key);
-            if (value == null)
-                return Generator.getDefaultValue (key);
-        }
+        int result = value == null ? Generator.getDefaultValue (key).intValue () : MathUtils.fromSignedComplement (value.intValue ());
 
-        int v = MathUtils.fromSignedComplement (value.intValue ());
-
+        // A preset level generator is a signed offset which is added to the value of the
+        // instrument level - or to the default value when the instrument level does not use
+        // the generator at all
         if (!Generator.isOnlyInstrument (generator))
         {
             Integer offset = this.presetZone.get (key);
             if (offset == null)
                 offset = this.presetZoneGlobal.get (key);
             if (offset != null)
-                v = v + MathUtils.fromSignedComplement (offset.intValue ());
+                result += MathUtils.fromSignedComplement (offset.intValue ());
         }
 
-        return Integer.valueOf (v);
+        return Integer.valueOf (result);
     }
 
 

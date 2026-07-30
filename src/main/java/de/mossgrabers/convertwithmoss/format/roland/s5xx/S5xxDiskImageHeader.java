@@ -6,6 +6,9 @@ package de.mossgrabers.convertwithmoss.format.roland.s5xx;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
@@ -17,9 +20,9 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class S5xxDiskImageHeader
 {
-    private final S5xxSamplerType samplerType;
-    private final String          osVersionString;
-    private final String          mediaType;
+    private final S5xxSamplerType           samplerType;
+    private final String                    osVersionString;
+    private final List<S5xxCDSectionHeader> sectionHeaders = new ArrayList<> ();
 
 
     /**
@@ -41,11 +44,30 @@ public class S5xxDiskImageHeader
 
         input.skipNBytes (24);
 
-        this.osVersionString = StreamUtils.readAscii (input, 30);
+        this.osVersionString = cleanText (StreamUtils.readAscii (input, 30));
 
         input.skipNBytes (194);
 
-        this.mediaType = StreamUtils.readAscii (input, 10);
+        if (this.samplerType == S5xxSamplerType.LAND)
+        {
+            for (int i = 0; i < 3; i++)
+                this.sectionHeaders.add (new S5xxCDSectionHeader (input));
+        }
+    }
+
+
+    /**
+     * Looks up the section header with the given ID.
+     * 
+     * @param headerID SECTION_INSTRUMENT_GROUP, SECTION_SOUND_DIRECTORY or SECTION_INSTRUMENT_MAP
+     * @return The section header if present
+     */
+    public Optional<S5xxCDSectionHeader> getSectionHeader (final String headerID)
+    {
+        for (final S5xxCDSectionHeader sectionheader: this.sectionHeaders)
+            if (headerID.equals (sectionheader.getName ()))
+                return Optional.of (sectionheader);
+        return Optional.empty ();
     }
 
 
@@ -67,43 +89,14 @@ public class S5xxDiskImageHeader
      */
     public String getOsVersionString ()
     {
-        return cleanText (this.osVersionString);
-    }
-
-
-    /**
-     * Get the Media-type flag from bytes 256–265, trimmed.
-     *
-     * @return The media flag
-     */
-    public String getMediaTypeFlag ()
-    {
-        return cleanText (this.mediaType);
-    }
-
-
-    /**
-     * Returns {@code true} when the media-type flag equals {@code "Instrument"}, indicating this is
-     * a CD-ROM container (LAND type).
-     *
-     * @return True if it is a CD-ROM
-     */
-    public boolean isCdRom ()
-    {
-        return "Instrument".equals (this.getMediaTypeFlag ());
+        return this.osVersionString;
     }
 
 
     private static String cleanText (final String s)
     {
-        return s == null ? "(none)" : s.trim ().replaceAll ("\\s+", " ");
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public String toString ()
-    {
-        return String.format ("DiskImageHeader{type=\"%s\", os=\"%s\", media=\"%s\", cdRom=%b}", this.samplerType, this.getOsVersionString (), this.getMediaTypeFlag (), Boolean.valueOf (this.isCdRom ()));
+        if (s != null && !s.trim ().isBlank ())
+            return s.trim ().replaceAll ("\\s+", " ");
+        return "none";
     }
 }

@@ -197,6 +197,11 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                     group.addSampleZone (sampleZone);
                     sampleFileType.fillInstrumentData (sampleZone, fileSampleData);
                     filenames.add (new File (fileSampleData.getFilename ()).getName ());
+
+                    // Merge the metadata of the sample file itself (e.g. WAV 'smpl' chunks) on top
+                    final Optional<ISampleData> sampleDataOpt = sampleZone.getSampleData ();
+                    if (sampleDataOpt.isPresent ())
+                        sampleDataOpt.get ().addZoneData (sampleZone, true, true);
                 }
                 name = KeyMapping.findCommonPrefix (filenames);
                 if (name.isBlank ())
@@ -222,14 +227,6 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
                 name = FileUtils.getNameWithoutType (sampleData.get (0).getFilename ());
             }
             name = cleanupName (name, this.settingsConfiguration.getPostfixTexts ());
-
-            for (final IGroup group: groups)
-                for (final ISampleZone zone: group.getSampleZones ())
-                {
-                    final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
-                    if (sampleDataOpt.isPresent ())
-                        sampleDataOpt.get ().addZoneData (zone, true, true);
-                }
 
             // Remove all loops if requested
             if (this.settingsConfiguration.isShouldIgnoreLoops ())

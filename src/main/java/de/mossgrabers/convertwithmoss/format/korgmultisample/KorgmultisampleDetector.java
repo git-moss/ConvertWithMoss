@@ -381,8 +381,9 @@ public class KorgmultisampleDetector extends AbstractDetector<MetadataSettingsUI
                     break;
                 case KorgmultisampleConstants.ID_TUNE:
                     r -= 4;
-                    // Read value is in the range of [-999..999]
-                    zone.setTuning (StreamUtils.readFloatLE (in.readNBytes (4)) / 1000.0);
+                    // The value is in cents in the range of [-99.9..99.9] (the field is named
+                    // 'tune_cents' in the format's schema)
+                    zone.setTuning (StreamUtils.readFloatLE (in.readNBytes (4)) / 100.0);
                     break;
                 case KorgmultisampleConstants.ID_LEVEL_LEFT:
                     r -= 4;

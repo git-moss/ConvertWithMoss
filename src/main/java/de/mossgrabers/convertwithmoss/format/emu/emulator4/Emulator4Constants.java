@@ -50,6 +50,12 @@ public class Emulator4Constants
     protected static final int     VOICE_SIZE                 = 284;
     /** The offset of the primary zone table inside a voice block. */
     protected static final int     VOICE_PZT_OFFSET           = 110;
+    /** The offset of the amplitude envelope inside the primary zone table. */
+    protected static final int     PZT_AMPLITUDE_ENVELOPE     = 0;
+    /** The offset of the filter envelope inside the primary zone table. */
+    protected static final int     PZT_FILTER_ENVELOPE        = 14;
+    /** The stages of an envelope: attack 1 and 2, decay 1 and 2, release 1 and 2. */
+    protected static final int     NUM_ENVELOPE_STAGES        = 6;
     /** The offset of the modulation cord table inside a voice block. */
     protected static final int     VOICE_MOD_OFFSET           = 190;
     /** The size of the modulation cord table (20 cords of 4 bytes). */

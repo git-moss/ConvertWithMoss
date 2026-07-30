@@ -374,7 +374,7 @@ public class Program
 
             final byte [] privateData = new byte [ZONE_PRIVATE_DATA.length];
 
-            // TODO
+            // TODO Understand how to create the private data section
             final byte [] privateData2 = ZONE_PRIVATE_DATA;// zoneListChunk.getChildren ().get
             // (z).getPrivateData ();
             System.out.println (StringUtils.formatArray (privateData2));

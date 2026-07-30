@@ -176,7 +176,7 @@ public class S5xxTone
         // Dummy on S-50 start ->
         this.tvfCutOff = StreamUtils.readUnsigned8 (input);
         this.tvfResonance = StreamUtils.readUnsigned8 (input);
-        this.tvfKeyFollow = StreamUtils.readUnsigned8 (input);
+        this.tvfKeyFollow = StreamUtils.readSigned8 (input);
         input.skipNBytes (1);
         this.tvfLfoDepth = StreamUtils.readUnsigned8 (input);
         this.tvfEgDepth = StreamUtils.readUnsigned8 (input);

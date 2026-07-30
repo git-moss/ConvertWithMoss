@@ -16,43 +16,56 @@ import java.io.InputStream;
 public class S5xxWaveData
 {
     /** The number samples contained in one Wave Data segment. */
-    public static final int  SAMPLES_PER_SEGMENT    = 12288;
+    public static final int  SAMPLES_PER_SEGMENT       = 12288;
 
-    private static final int RAW_SAMPLE_DATA_LENGTH = SAMPLES_PER_SEGMENT * 3 / 2;
+    private static final int SAMPLE_DATA_LENGTH_12_BIT = SAMPLES_PER_SEGMENT * 3 / 2;
+    private static final int SAMPLE_DATA_LENGTH_16_BIT = SAMPLES_PER_SEGMENT * 2;
 
-    private final byte []    data                   = new byte [RAW_SAMPLE_DATA_LENGTH];
+    private final byte []    data;
+    private final boolean    is12Bit;
 
 
     /**
      * Constructor.
      *
      * @param input The input stream from which to read the wave data
+     * @param resolution The bit resolution 12 or 16-bit
      * @throws IOException Could not read the data
      */
-    public S5xxWaveData (final InputStream input) throws IOException
+    public S5xxWaveData (final InputStream input, final int resolution) throws IOException
     {
+        this.is12Bit = resolution == 12;
+        this.data = new byte [this.is12Bit ? SAMPLE_DATA_LENGTH_12_BIT : SAMPLE_DATA_LENGTH_16_BIT];
         input.readNBytes (this.data, 0, this.data.length);
     }
 
 
     /**
      * Get the extracted samples.
-     *
+     * 
      * @return The samples, each array entry contains a 12-bit sample
      */
     public short [] getSamples ()
     {
         final short [] result = new short [SAMPLES_PER_SEGMENT];
-        for (int i = 0; i < result.length; i++)
+        if (this.is12Bit)
         {
-            final int idx = i * 3 / 2;
-            final byte lo = this.data[idx];
-            final byte hi = this.data[idx + 1];
-            if (i % 2 == 0)
-                result[i] = (short) (Byte.toUnsignedInt (lo) << 8 | hi & 0xF0);
-            else
-                result[i] = (short) (Byte.toUnsignedInt (hi) << 8 | (lo & 0x0F) << 4);
+            for (int i = 0; i < result.length; i++)
+            {
+                final int idx = i * 3 / 2;
+                final byte lo = this.data[idx];
+                final byte hi = this.data[idx + 1];
+                if (i % 2 == 0)
+                    result[i] = (short) (Byte.toUnsignedInt (lo) << 8 | hi & 0xF0);
+                else
+                    result[i] = (short) (Byte.toUnsignedInt (hi) << 8 | (lo & 0x0F) << 4);
+            }
+            return result;
         }
+
+        // 16-bit
+        for (int i = 0; i < result.length; i++)
+            result[i] = (short) (Byte.toUnsignedInt (this.data[i * 2]) | (Byte.toUnsignedInt (this.data[i * 2 + 1]) << 8));
         return result;
     }
 

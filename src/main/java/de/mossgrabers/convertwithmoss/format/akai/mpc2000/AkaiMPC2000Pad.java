@@ -83,7 +83,7 @@ public class AkaiMPC2000Pad
         this.voiceOverlap = input.read ();
         this.polyNote1 = input.read ();
         this.polyNote2 = input.read ();
-        this.tune = StreamUtils.readUnsigned16 (input, false);
+        this.tune = StreamUtils.readSigned16 (input, false);
         this.attack = input.read ();
         this.decay = input.read ();
         this.decayMode = input.read ();

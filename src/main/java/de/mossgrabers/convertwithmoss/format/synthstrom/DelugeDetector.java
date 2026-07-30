@@ -413,7 +413,12 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         final double rootNote = fixedRootNote >= 0 ? fixedRootNote : DelugeValues.rootNoteFromTranspose (transpose, cents);
         final int keyRoot = (int) Math.round (rootNote);
         zone.setKeyRoot (keyRoot);
-        zone.setTuning (rootNote - keyRoot);
+        // A kit drum plays on its own pad, so its oscillator transpose is not a keyboard mapping
+        // but a pitch offset relative to the natural pitch
+        if (fixedRootNote >= 0)
+            zone.setTuning (DelugeValues.rootNoteFromTranspose (transpose, cents) - DelugeValues.REFERENCE_NOTE);
+        else
+            zone.setTuning (rootNote - keyRoot);
 
         // A Deluge oscillator in STRETCH (time-stretch) mode sustains by looping its sample through
         // the granular time-stretch engine. ConvertWithMoss cannot reproduce the time-stretch, but
@@ -569,7 +574,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
             if (envelope1.isPresent ())
                 readEnvelope (envelope1.get (), amplitudeModulator.getSource ());
-            amplitudeModulator.setDepth (amplitudeVelocityDepth);
+            zone.getAmplitudeVelocityModulator ().setDepth (amplitudeVelocityDepth);
             zone.setAmplitudeKeyTracking (amplitudeKeyTracking);
 
             // A fresh filter is read per zone so the zones do not share mutable modulators.

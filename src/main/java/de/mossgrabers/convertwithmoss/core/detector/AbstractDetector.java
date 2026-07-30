@@ -625,27 +625,52 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     protected IMultisampleSource createMultisampleSource (final File sourceFile, final String multisampleSourceName, final List<IGroup> groups)
     {
+        return createMultisampleSource (sourceFile, multisampleSourceName, groups, "");
+    }
+
+
+    protected IMultisampleSource createMultisampleSource (final File sourceFile, final String multisampleSourceName, final List<IGroup> groups, final String metadataDescription)
+    {
         final String n = this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings && metadataSettings.isPreferFolderName () ? this.sourceFolder.getName () : multisampleSourceName;
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
-        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups);
+        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups, metadataDescription);
     }
 
 
     protected IMultisampleSource createMultisampleSource (final File sourceFile, final String [] parts, final String multisampleSourceName, final List<IGroup> groups)
     {
-        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups);
+        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups, "");
+    }
+
+
+    protected IMultisampleSource createMultisampleSource (final File sourceFile, final String [] parts, final String multisampleSourceName, final List<IGroup> groups, final String metadataDescription)
+    {
+        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups, metadataDescription);
     }
 
 
     protected static IMultisampleSource createMultisampleSource (final IMetadataConfig configuration, final File sourceFile, final String [] parts, final String multisampleSourceName, final List<IGroup> groups)
     {
+        return createMultisampleSource (configuration, sourceFile, parts, multisampleSourceName, groups, "");
+    }
+
+
+    protected static IMultisampleSource createMultisampleSource (final IMetadataConfig configuration, final File sourceFile, final String [] parts, final String multisampleSourceName, final List<IGroup> groups, final String metadataDescription)
+    {
         final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, multisampleSourceName);
         multisampleSource.setGroups (groups);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
-        final String [] tokens = java.util.Arrays.copyOf (parts, parts.length + 1);
-        tokens[tokens.length - 1] = multisampleSourceName;
-        createMetadata (configuration, metadata, getFirstSample (groups), tokens);
+        if (metadataDescription != null && !metadataDescription.isBlank ())
+            metadata.setDescription (metadataDescription);
+
+        final List<String> tokens = new ArrayList<> ();
+        tokens.addAll (Arrays.asList (parts));
+        tokens.add (multisampleSourceName);
+        final String [] descriptionTokens = metadata.getDescription ().split ("\\W");
+        tokens.addAll (Arrays.asList (descriptionTokens));
+
+        createMetadata (configuration, metadata, getFirstSample (groups), tokens.toArray (new String [tokens.size ()]));
         updateCreationDateTime (metadata, sourceFile);
 
         return multisampleSource;
