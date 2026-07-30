@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -22,6 +23,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import de.mossgrabers.convertwithmoss.core.ContentsEntry;
 import de.mossgrabers.convertwithmoss.core.ConverterBackend;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
@@ -53,6 +55,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuBar;
@@ -131,6 +134,10 @@ public class MainFrame extends AbstractFrame implements INotifier
     private Button                 settingsButton;
     private Button                 sourceFolderSelectButton;
     private ToggleButton           batchModeButton;
+    private Button                 contentsButton;
+    private Button                 clearSelectionButton;
+    private Label                  selectionLabel;
+    private HBox                   selectionPane;
     private Button                 destinationFolderSelectButton;
 
     private final TabPane          destinationTypeTabPane              = new TabPane ();
@@ -151,6 +158,10 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private SettingsDialog         settingsDialog;
     private ProcessingDialog       processingDialog;
+    private ContentsDialog         contentsDialog;
+    private boolean                isContentsRun                       = false;
+    private int                    numberOfFoundSources                = 0;
+    private int                    numberOfSelectedSources             = 0;
     private final DetectSettings   detectSettings                      = new DetectSettings ();
 
     // Parameters of Settings dialog
@@ -182,6 +193,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final Stage theStage = this.getStage ();
         this.settingsDialog = new SettingsDialog (theStage);
         this.processingDialog = new ProcessingDialog (theStage);
+        this.contentsDialog = new ContentsDialog (theStage);
 
         // The main button panel
         final ButtonPanel upperButtonPanel = new ButtonPanel (Orientation.VERTICAL);
@@ -211,17 +223,52 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.batchModeButton.setSelected (true);
         this.batchModeButton.setOnAction (_ -> this.toggleBatchMode ());
 
-        final HBox sourceSelectButtons = new HBox (this.sourceFolderSelectButton, this.batchModeButton);
+        this.contentsButton = new Button (Functions.getText ("@IDS_MAIN_CONTENTS"));
+        this.contentsButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_CONTENTS_TOOLTIP")));
+        this.contentsButton.setOnAction (_ -> this.openContents ());
+        // Collapse the layout when the contents button is hidden
+        this.contentsButton.managedProperty ().bind (this.contentsButton.visibleProperty ());
+        this.contentsButton.focusTraversableProperty ().bind (this.contentsButton.visibleProperty ());
+
+        final HBox sourceSelectButtons = new HBox (this.sourceFolderSelectButton, this.batchModeButton, this.contentsButton);
         sourceSelectButtons.getStyleClass ().add ("sourceSelectButtons");
+
+        // Shows how many of the found presets are converted, as long as a selection is active
+        this.selectionLabel = new Label ();
+        this.clearSelectionButton = new Button (Functions.getText ("@IDS_MAIN_SELECTION_CLEAR"));
+        this.clearSelectionButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECTION_CLEAR_TOOLTIP")));
+        this.clearSelectionButton.setOnAction (_ -> this.clearSelection ());
+        this.selectionPane = new HBox (this.selectionLabel, this.clearSelectionButton);
+        this.selectionPane.getStyleClass ().add ("sourceSelectButtons");
+        // Centred below the source path, where it reads as a statement about that path
+        this.selectionPane.setAlignment (Pos.CENTER);
+        this.selectionPane.setMaxWidth (Double.MAX_VALUE);
+        this.selectionPane.managedProperty ().bind (this.selectionPane.visibleProperty ());
+        this.selectionLabel.setLabelFor (this.clearSelectionButton);
+        this.clearSelectionButton.focusTraversableProperty ().bind (this.selectionPane.visibleProperty ());
+
+        // Any change of the source discards the selection, which addresses the presets by their
+        // position in the detection run of exactly that source
+        this.sourcePathField.getEditor ().textProperty ().addListener ((_, _, _) -> this.clearSelection ());
 
         final BoxPanel sourceUpperPane = new BoxPanel (Orientation.VERTICAL);
         final TitledSeparator sourceTitle = new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER"));
         sourceTitle.setLabelFor (this.sourcePathField);
         sourceUpperPane.addComponent (sourceTitle);
         sourceUpperPane.addComponent (new BorderPane (this.sourcePathField, null, sourceSelectButtons, null, null));
+        sourceUpperPane.addComponent (this.selectionPane);
         this.sourcePathField.setMaxWidth (Double.MAX_VALUE);
+        this.updateSelectionPane ();
 
         this.sourceTaskPane = new TaskPane (this.backend.getDetectors (), true);
+        // A selection addresses the sources by their position in the detection run, which changes
+        // completely if another source format or another destination type is detected
+        this.sourceTaskPane.formatList.getSelectionModel ().selectedItemProperty ().addListener ((_, _, _) -> {
+            this.clearSelection ();
+            this.updateContentsButton ();
+        });
+        this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ().addListener ((_, _, _) -> this.clearSelection ());
+        this.updateContentsButton ();
         final BorderPane sourcePane = new BorderPane ();
         sourcePane.setTop (sourceUpperPane.getPane ());
         sourcePane.setCenter (this.sourceTaskPane.formatPane);
@@ -357,6 +404,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.traversalManager.add (this.sourcePathField);
         this.traversalManager.add (this.sourceFolderSelectButton);
         this.traversalManager.add (this.batchModeButton);
+        this.traversalManager.add (this.contentsButton);
+        this.traversalManager.add (this.clearSelectionButton);
 
         this.traversalManager.add (this.sourceTaskPane.search);
         this.traversalManager.add (this.sourceTaskPane.formatList);
@@ -706,6 +755,108 @@ public class MainFrame extends AbstractFrame implements INotifier
 
 
     /**
+     * Detect all sources of the source and show them for selection, so that only some of them can
+     * be converted. No files are written.
+     */
+    private void openContents ()
+    {
+        // The source is required but the output folder is not, since nothing is written. The
+        // source is read exactly as the conversion reads it: a folder in batch mode and the one
+        // picked file otherwise
+        if (!this.applySourcePath ())
+            return;
+
+        final int selectedDetector = this.sourceTaskPane.getSelectedFormat ();
+        if (selectedDetector < 0)
+        {
+            Functions.message ("@IDS_NOTIFY_SELECT_SOURCE_FORMAT");
+            return;
+        }
+        final IDetector<?> detector = this.backend.getDetectors ().get (selectedDetector);
+        if (!detector.getSettings ().checkSettingsUI (this))
+            return;
+
+        this.loggingArea.clear ();
+        this.loggingArea.autoScrollToTailProperty ().set (true);
+        this.mainPane.setVisible (false);
+        this.executePane.setVisible (true);
+        this.isContentsRun = true;
+
+        final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
+        final boolean detectPerformances = selectedType == DEST_TYPE_PERFORMANCE || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY;
+        Platform.runLater (() -> this.backend.detectContents (detector, this.detectSettings, detectPerformances));
+    }
+
+
+    /**
+     * Show the sources which were found by the contents run for selection.
+     */
+    private void showContentsDialog ()
+    {
+        this.closeExecution ();
+
+        final List<ContentsEntry> entries = this.backend.getContentsEntries ();
+        if (entries.isEmpty ())
+        {
+            Functions.message ("@IDS_NOTIFY_CONTENTS_NOTHING_FOUND");
+            return;
+        }
+
+        this.contentsDialog.setEntries (entries);
+        this.contentsDialog.display ().thenAccept (result -> {
+            if (!result.booleanValue ())
+                return;
+            this.detectSettings.selectedSources.clear ();
+            // Selecting everything is the same as having no selection at all
+            if (!this.contentsDialog.areAllSelected ())
+                for (final ContentsEntry entry: this.contentsDialog.getSelectedEntries ())
+                    this.detectSettings.selectedSources.computeIfAbsent (entry.getSourceFile (), _ -> new HashSet<> ()).add (Integer.valueOf (entry.getIndexInFile ()));
+            this.numberOfSelectedSources = this.contentsDialog.getSelectedEntries ().size ();
+            this.numberOfFoundSources = entries.size ();
+            this.updateSelectionPane ();
+        });
+    }
+
+
+    /**
+     * Only show the contents button for a source format where one file can contain more than one
+     * preset. For all other formats one file simply is one preset, so there is nothing to select.
+     */
+    private void updateContentsButton ()
+    {
+        final int selectedDetector = this.sourceTaskPane.getSelectedFormat ();
+        this.contentsButton.setVisible (selectedDetector >= 0 && ConverterBackend.containsMultiplePresets (this.backend.getDetectors ().get (selectedDetector)));
+    }
+
+
+    /**
+     * Discard the selection of presets and convert everything of the source again.
+     */
+    private void clearSelection ()
+    {
+        if (this.detectSettings.selectedSources.isEmpty ())
+            return;
+        this.detectSettings.selectedSources.clear ();
+        this.numberOfSelectedSources = 0;
+        this.updateSelectionPane ();
+    }
+
+
+    /**
+     * Show how many of the found presets the conversion is narrowed down to, if it is.
+     */
+    private void updateSelectionPane ()
+    {
+        this.selectionPane.setVisible (!this.detectSettings.selectedSources.isEmpty ());
+        if (this.detectSettings.selectedSources.isEmpty ())
+            return;
+        final String text = Functions.getMessage ("IDS_MAIN_SELECTION_PRESETS", Integer.toString (this.numberOfSelectedSources), Integer.toString (this.numberOfFoundSources));
+        this.selectionLabel.setText (text);
+        this.selectionPane.setAccessibleText (text);
+    }
+
+
+    /**
      * Cancel button was pressed.
      */
     private void cancelExecution ()
@@ -731,6 +882,9 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private boolean verifyFolders ()
     {
+        if (!this.applySourcePath ())
+            return false;
+        this.activeSourceHistory ().add (0, this.sourcePathField.getEditor ().getText ());
         // Check source folder. A file can be entered as well - which is what switching Batch off
         // does - and is then the only file to convert.
         final File sourcePath = new File (this.sourcePathField.getEditor ().getText ());
@@ -770,6 +924,33 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         // Output folder must be empty or add new must be active
         return this.addNewFiles || this.isEmptyFolder (this.detectSettings.outputFolder.getPath ());
+    }
+
+
+    /**
+     * Take the entered source over into the detection settings. A file can be entered as well -
+     * which is what switching Batch off does - and is then the only file to convert.
+     *
+     * @return True if the source exists
+     */
+    private boolean applySourcePath ()
+    {
+        final File sourcePath = new File (this.sourcePathField.getEditor ().getText ());
+        this.detectSettings.sourceFiles.clear ();
+        if (sourcePath.isFile ())
+        {
+            this.detectSettings.sourceFolder = sourcePath.getAbsoluteFile ().getParentFile ();
+            this.detectSettings.sourceFiles.add (sourcePath.getAbsoluteFile ());
+            return true;
+        }
+        if (!sourcePath.isDirectory ())
+        {
+            Functions.message ("@IDS_NOTIFY_SOURCE_DOES_NOT_EXIST", sourcePath.getAbsolutePath ());
+            this.sourcePathField.requestFocus ();
+            return false;
+        }
+        this.detectSettings.sourceFolder = sourcePath;
+        return true;
     }
 
 
@@ -1097,6 +1278,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final List<String> history = isBatchMode ? this.sourcePathHistory : this.sourceFileHistory;
         this.sourcePathField.getItems ().setAll (history);
         this.sourcePathField.getEditor ().setText (history.isEmpty () ? "" : history.get (0));
+        this.clearSelection ();
     }
 
 
@@ -1129,6 +1311,15 @@ public class MainFrame extends AbstractFrame implements INotifier
     @Override
     public void finished (final boolean cancelled)
     {
+        if (this.isContentsRun)
+        {
+            this.isContentsRun = false;
+            this.updateButtonStates (true);
+            if (!cancelled)
+                Platform.runLater (this::showContentsDialog);
+            return;
+        }
+
         // Creates libraries if requested
         this.backend.finish (cancelled);
 
