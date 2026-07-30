@@ -12,6 +12,7 @@
 * New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
 * User Interface
   * New: Added tooltips to format lists to be able to see the full text of an entry.
+  * New: Next to the *Select* button of the source there is now a *Batch* toggle. It is on by default and everything works as before. Switching it off converts one single file instead. *Select* then opens a file dialog whose filter box lists every source format with its file endings, the current one preselected, and the source format is set from the picked file afterwards (a switched filter wins, otherwise the file ending decides; disk images go to the generic ISO/IMG format). Each mode keeps a path history of its own, which is exchanged along with the entered path when the toggle is used.
 * Backend
   * New: Added support for a LFO (low frequency oscillator) modulating pitch (vibrato) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
   * New: Added support for a LFO modulating the volume (tremolo) with its rate, depth and delay: DecentSampler, DLS, Renoise, SFZ, SoundFont 2. Other formats pending.
