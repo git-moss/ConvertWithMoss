@@ -52,6 +52,7 @@ The following multi-sample formats are supported:
 * [Akai MPC2000/MPC2000XL/MPC3000](#akai-mpc2000mpc2000xlmpc3000) - read only
 * [Akai S900/S950 image](#akai-s900s950-series-disk-image) - read only
 * [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
+* [Arturia Synclavier V](#arturia-synclavier-v)
 * [Bitwig Multisample](#bitwig-multisample)
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
@@ -59,6 +60,7 @@ The following multi-sample formats are supported:
 * [Downloadable Sounds (DLS)](#downloadable-sounds-dls) - read only
 * [Elektron Tonverk Multisample & Preset](#elektron-tonverk)
 * [E-mu Emulator III/IIIX/ESI](#e-mu-emulator-iiiiiixesi)
+* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [E-mu Emulator X](#e-mu-emulator-x)
 * [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
@@ -290,29 +292,6 @@ The DLS format (*.dls) is a standardized file format developed for storing and d
 There is no write support.
 
 The amplitude and pitch envelopes, the sample loops and a pitch LFO (vibrato) are read. The vibrato's depth, its frequency (converted from absolute pitch cents to Hertz) and its start delay are carried over to the pitch LFO. Only a connection which is not modulated by a controller is read as the vibrato; the format normally contains a second one controlled by the modulation wheel, which is the amount the wheel can dial in and would sound permanently if it were converted. A volume LFO (tremolo) is read from an uncontrolled connection of the oscillator to the gain under the same rule; it shares the frequency and delay of the vibrato since the format has only one modulation oscillator.
-## E-mu Emulator IV
-
-The E-mu Emulator IV series (Emulator 4, E4X, E4XT, E4K, e-Synth, e-6400 and the other EOS samplers, 1994-2002) stores its banks in single *.e4b* files which contain all presets, their parameters and the sample data. A preset layers several voices; each voice maps a set of zones (a key/velocity range referencing a sample) and carries the tuning, volume, filter, envelope and modulation settings for them. The format is not documented by E-mu, the layout was reverse-engineered by the mpc2emu project from hardware-saved E4XT banks and commercial EOS CD-ROMs (see *documentation/design/E4B_FORMAT.md*).
-
-Banks can be read from single *.e4b* files and also directly from CD-ROM and hard disk images of the EOS samplers (*.iso*, *.img*, *.hda* - e.g. images for SCSI emulators like the ZuluSCSI or dumps of commercial E-mu CD-ROMs), which use the proprietary E-mu disk filesystem. All banks of an image are read; files of the older EIII samplers, which use the same filesystem for their banks, are skipped.
-
-When reading, every preset of a bank becomes one multi-sample and every voice becomes a group. Names, key and velocity ranges, root keys, tuning, volume, panning, loops, the amplitude envelope with its velocity modulation, the filter (type, cutoff, resonance, key tracking and envelope with its depth) and the 16-bit sample data are read. The per-zone offsets for fine tuning, volume and panning are applied on top of the settings of their voice, and the pitch offset of a sample is applied as a fine tuning as far as it detunes the sample beyond compensating its sample rate. The EOS effect filter types (phasers, flangers, vocal formants, EQ morphs) have no model equivalent, such voices are converted without a filter.
-
-The name of the bank is passed on as the description of the multi-sample, which the formats that have a field of their own for the bank take it from - the Waldorf Quantum/Iridium for example shows it next to the preset name.
-
-The presets of the commercial EOS libraries are named after the articulation or the variation they provide (*Dark Tremolo*, *Long Release*, ...) while the instrument they actually play is only given by the name of their bank. The name of the bank is therefore prepended to the name of the preset as well, except when the preset name already starts with it - the *Dark Tremolo* preset of the *Greek Bazouki* bank becomes *Greek Bazouki - Dark Tremolo* while *Greek Bazouki XS* is kept unchanged. This also keeps the presets of different banks apart, which would otherwise overwrite each other since a name like *Natural Range* is used in many banks. If the folder structure of the source is created, each bank additionally gets a folder of its own.
-
-A written bank does not repeat this in its preset names, since the file itself is that bank and its preset names hold only 16 characters - which the bank alone would fill. The file name of the bank keeps the full name.
-
-#### Source Options
-
-* Prepend the bank name to the preset name: Enabled by default, see above. Disable it to keep the preset names exactly as they are in the bank - the bank is then only carried in the description, and the written file names are the bare preset names.
-
-When writing, each multi-sample becomes one preset; a library collects all multi-samples into a single bank (up to 1000 presets and 1000 samples). Every zone is written as its own voice, which keeps all per-zone settings; the panning, which only exists per zone, is written into the zone entry. Samples are stored as 16-bit mono PCM with their original sample rate (rates above 48kHz, the EOS maximum, are down-sampled); stereo samples are mixed down to mono. Identical samples mapped to multiple zones are stored only once. Since EOS only has a sample-level forward loop, alternating loops are written as forward loops and only the first loop of a zone is kept. Written banks validate against the reference parser of the mpc2emu project but have not been verified on real hardware yet.
-
-#### Destination Options
-
-* Create CD-ROM image (.iso) for SCSI CD-ROM emulators: The bank is wrapped into a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem. Copy the image to the SD card of a SCSI emulator (e.g. rename it to *CD1.iso* for a ZuluSCSI in CD-ROM mode) and load the bank on the sampler from the emulated CD-ROM drive. This works on all EOS versions and on units which cannot read FAT hard disks (EOS before 4.7); a plain bank file instead requires a FAT formatted hard disk and EOS 4.7 or later.
 
 ## Elektron Tonverk
 
@@ -375,6 +354,31 @@ Note: written banks have not been verified on hardware yet. They round-trip thro
 #### Destination Options
 
 * Target Device: Selects the bank format to write: *Emulator IIIX (e3x)* or *ESI-32/2000/4000 (esi)*. The Emulator IIIX format is the more compatible one since the ESI samplers read it as well; the ESI format additionally enables the real-time control of the filter Q, which is what the ESI factory banks do.
+
+## E-mu Emulator IV
+
+The E-mu Emulator IV series (Emulator 4, E4X, E4XT, E4K, e-Synth, e-6400 and the other EOS samplers, 1994-2002) stores its banks in single *.e4b* files which contain all presets, their parameters and the sample data. A preset layers several voices; each voice maps a set of zones (a key/velocity range referencing a sample) and carries the tuning, volume, filter, envelope and modulation settings for them. The format is not documented by E-mu, the layout was reverse-engineered by the mpc2emu project from hardware-saved E4XT banks and commercial EOS CD-ROMs (see *documentation/design/E4B_FORMAT.md*).
+
+Banks can be read from single *.e4b* files and also directly from CD-ROM and hard disk images of the EOS samplers (*.iso*, *.img*, *.hda* - e.g. images for SCSI emulators like the ZuluSCSI or dumps of commercial E-mu CD-ROMs), which use the proprietary E-mu disk filesystem. All banks of an image are read; files of the older EIII samplers, which use the same filesystem for their banks, are skipped.
+
+When reading, every preset of a bank becomes one multi-sample and every voice becomes a group. Names, key and velocity ranges, root keys, tuning, volume, panning, loops, the amplitude envelope with its velocity modulation, the filter (type, cutoff, resonance, key tracking and envelope with its depth) and the 16-bit sample data are read. The per-zone offsets for fine tuning, volume and panning are applied on top of the settings of their voice, and the pitch offset of a sample is applied as a fine tuning as far as it detunes the sample beyond compensating its sample rate. The EOS effect filter types (phasers, flangers, vocal formants, EQ morphs) have no model equivalent, such voices are converted without a filter.
+
+The name of the bank is passed on as the description of the multi-sample, which the formats that have a field of their own for the bank take it from - the Waldorf Quantum/Iridium for example shows it next to the preset name.
+
+The presets of the commercial EOS libraries are named after the articulation or the variation they provide (*Dark Tremolo*, *Long Release*, ...) while the instrument they actually play is only given by the name of their bank. The name of the bank is therefore prepended to the name of the preset as well, except when the preset name already starts with it - the *Dark Tremolo* preset of the *Greek Bazouki* bank becomes *Greek Bazouki - Dark Tremolo* while *Greek Bazouki XS* is kept unchanged. This also keeps the presets of different banks apart, which would otherwise overwrite each other since a name like *Natural Range* is used in many banks. If the folder structure of the source is created, each bank additionally gets a folder of its own.
+
+A written bank does not repeat this in its preset names, since the file itself is that bank and its preset names hold only 16 characters - which the bank alone would fill. The file name of the bank keeps the full name.
+
+#### Source Options
+
+* Prepend the bank name to the preset name: Enabled by default, see above. Disable it to keep the preset names exactly as they are in the bank - the bank is then only carried in the description, and the written file names are the bare preset names.
+
+When writing, each multi-sample becomes one preset; a library collects all multi-samples into a single bank (up to 1000 presets and 1000 samples). Every zone is written as its own voice, which keeps all per-zone settings; the panning, which only exists per zone, is written into the zone entry. Samples are stored as 16-bit mono PCM with their original sample rate (rates above 48kHz, the EOS maximum, are down-sampled); stereo samples are mixed down to mono. Identical samples mapped to multiple zones are stored only once. Since EOS only has a sample-level forward loop, alternating loops are written as forward loops and only the first loop of a zone is kept. Written banks validate against the reference parser of the mpc2emu project but have not been verified on real hardware yet.
+
+#### Destination Options
+
+* Create CD-ROM image (.iso) for SCSI CD-ROM emulators: The bank is wrapped into a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem. Copy the image to the SD card of a SCSI emulator (e.g. rename it to *CD1.iso* for a ZuluSCSI in CD-ROM mode) and load the bank on the sampler from the emulated CD-ROM drive. This works on all EOS versions and on units which cannot read FAT hard disks (EOS before 4.7); a plain bank file instead requires a FAT formatted hard disk and EOS 4.7 or later.
+
 ## E-mu Emulator X
 
 The Emulator X (2004), Emulator X2 (2005) and Emulator X3 (2008) were the software samplers with which E-mu moved its Emulator line from hardware to the PC. They kept the Z-plane filters and the modulation cord architecture of the EOS hardware samplers and were sold both on their own and bundled with E-mu sound cards, together with a large library of sound banks - many of which are conversions of the classic E-mu ROM modules like Vintage Keys, PROcussion and the SP-1200 library.
@@ -640,6 +644,8 @@ When writing patches, samples are converted to 16-bit/44.1kHz. Since the note ra
 The Roland S-50 series (S-50, S-330, S-550, W-30), introduced in the mid-1980s, represented a significant development in digital sampling technology. Based on 12-bit pulse-code modulation (PCM) sampling, the system combined waveform acquisition, editing, and keyboard performance capabilities within a single instrument. The series was notable for its integration of video-based graphical editing, enabling detailed visualization and manipulation of sampled waveforms.
 
 The format of the S-50 is slightly different to the one used on the other models. All of them store 12-bit samples with 15/30kHz sample rate. It is a good idea to up-sample them (with the Processing feature) to e.g. 16-bit/44.1kHz to prevent compatibility issues. Only reading is supported.
+
+There was a specific CD-ROM drive for the S-550 (CD-5). This format can be read as well. The main difference to the diskette format is that it uses 16-bit samples.
 
 ## Roland S-770 Series
 
