@@ -338,9 +338,9 @@ public class CLIBackend implements INotifier
 
 
     /**
-     * Split the given paths into the source(s) and the destination folder, check them for
-     * existence and apply them to the detection settings. The last path is always the destination
-     * folder. The source is either one folder to search or one or more files to convert.
+     * Split the given paths into the source(s) and the destination folder, check them for existence
+     * and apply them to the detection settings. The last path is always the destination folder. The
+     * source is either one folder to search or one or more files to convert.
      *
      * @param detectSettings Where to apply the paths to
      * @param paths The source path(s) followed by the destination folder

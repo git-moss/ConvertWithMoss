@@ -25,14 +25,14 @@ public class DetectSettings
      * If not empty, only these files are converted instead of searching the source folder, which is
      * then only the reference for all sub-path calculations.
      */
-    public final List<File>              sourceFiles     = new ArrayList<> ();
+    public final List<File>              sourceFiles        = new ArrayList<> ();
     /**
      * If not empty, only the listed sources of the listed files are converted. A source is
      * addressed by its index inside of its file, which is deterministic and therefore identical in
      * the contents run which created the selection. Its files narrow down the files to read even
      * further, since all other files contain nothing which was selected.
      */
-    public final Map<File, Set<Integer>> selectedSources = new HashMap<> ();
+    public final Map<File, Set<Integer>> selectedSources    = new HashMap<> ();
     /** Where to write the result to. */
     public File                          outputFolder;
     /** The name to use in case that a library will be created. */
@@ -45,27 +45,27 @@ public class DetectSettings
     // Parameters for Processing
 
     /** Enable overall processing. */
-    public boolean enableProcessing;
+    public boolean                       enableProcessing;
     /** Enable normalizing samples. */
-    public boolean enableNormalize;
+    public boolean                       enableNormalize;
     /** Enable making all samples mono. */
-    public boolean enableMakeMono;
+    public boolean                       enableMakeMono;
     /** Enable to trim sample start and end. */
-    public boolean enableTrimSample;
+    public boolean                       enableTrimSample;
     /** The maximum number of samples to limit to. */
-    public int     maxNumberOfSamples;
+    public int                           maxNumberOfSamples;
     /** The bit depth to reduce to. 0 is off. */
-    public int     reduceBitDepth     = 0;
+    public int                           reduceBitDepth     = 0;
     /** The frequency to reduce to. 0 is off. */
-    public int     reduceFrequency    = 0;
+    public int                           reduceFrequency    = 0;
     /** Does up-sampling as well. */
-    public boolean alwaysResample     = false;
+    public boolean                       alwaysResample     = false;
     /** The fixed loop cross-fade. 0 is off. */
-    public int     loopCrossfades     = 0;
+    public int                           loopCrossfades     = 0;
     /** Snap forward loop boundaries to the nearest zero-crossing to avoid loop clicks. */
-    public boolean snapLoopsToZero    = false;
+    public boolean                       snapLoopsToZero    = false;
     /** Transpose playback by this number of semitones by moving the sample root keys. 0 is off. */
-    public int     transposeSemitones = 0;
+    public int                           transposeSemitones = 0;
 
 
     /**

@@ -32,6 +32,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
+import de.mossgrabers.tools.OperatingSystem;
 import de.mossgrabers.tools.ui.AbstractFrame;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
@@ -55,6 +56,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -65,7 +67,6 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.effect.BlendMode;
 import javafx.scene.image.Image;
@@ -134,7 +135,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private Button                 processingButton;
     private Button                 settingsButton;
     private Button                 sourceFolderSelectButton;
-    private ToggleButton           batchModeButton;
+    private ChoiceBox<String>      sourceModeChoiceBox;
     private Button                 contentsButton;
     private Button                 clearSelectionButton;
     private Label                  selectionLabel;
@@ -205,7 +206,9 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.processingDialog = new ProcessingDialog (theStage);
         this.contentsDialog = new ContentsDialog (theStage);
 
+        // -----------------------------------------------------------
         // The main button panel
+
         final ButtonPanel upperButtonPanel = new ButtonPanel (Orientation.VERTICAL);
         this.convertButton = setupButton (upperButtonPanel, "Convert", "@IDS_MAIN_CONVERT", "@IDS_MAIN_CONVERT_TOOLTIP");
         this.convertButton.setDefaultButton (true);
@@ -219,8 +222,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.settingsButton = setupButton (lowerButtonPanel, "Settings", "@IDS_MAIN_SETTINGS", "@IDS_MAIN_SETTINGS_TOOLTIP");
         this.settingsButton.setOnAction (_ -> this.openSettings ());
 
+        // -----------------------------------------------------------
         // Source pane
-        //
 
         this.sourceFolderSelectButton = new Button (Functions.getText ("@IDS_MAIN_SELECT_SOURCE"));
         this.sourceFolderSelectButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SELECT_SOURCE_TOOLTIP")));
@@ -228,10 +231,9 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         // Batch converts all files of a folder, which is the default; switching it off converts one
         // single picked file and keeps a history of its own
-        this.batchModeButton = new ToggleButton (Functions.getText ("@IDS_MAIN_SOURCE_BATCH"));
-        this.batchModeButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SOURCE_BATCH_TOOLTIP")));
-        this.batchModeButton.setSelected (true);
-        this.batchModeButton.setOnAction (_ -> this.toggleBatchMode ());
+        this.sourceModeChoiceBox = new ChoiceBox<> (FXCollections.observableArrayList (Functions.getText ("@IDS_MAIN_SOURCE_FOLDER"), Functions.getText ("@IDS_MAIN_SOURCE_FILE")));
+        this.sourceModeChoiceBox.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_SOURCE_BATCH_TOOLTIP")));
+        this.sourceModeChoiceBox.setOnAction (_ -> this.toggleBatchMode ());
 
         this.contentsButton = new Button (Functions.getText ("@IDS_MAIN_CONTENTS"));
         this.contentsButton.setTooltip (new Tooltip (Functions.getText ("@IDS_MAIN_CONTENTS_TOOLTIP")));
@@ -240,7 +242,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.contentsButton.managedProperty ().bind (this.contentsButton.visibleProperty ());
         this.contentsButton.focusTraversableProperty ().bind (this.contentsButton.visibleProperty ());
 
-        final HBox sourceSelectButtons = new HBox (this.sourceFolderSelectButton, this.batchModeButton, this.contentsButton);
+        final HBox sourceSelectButtons = new HBox (this.sourceFolderSelectButton, this.contentsButton);
         sourceSelectButtons.getStyleClass ().add ("sourceSelectButtons");
 
         // Shows how many of the found presets are converted, as long as a selection is active
@@ -250,7 +252,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.clearSelectionButton.setOnAction (_ -> this.clearSelection ());
         this.selectionPane = new HBox (this.selectionLabel, this.clearSelectionButton);
         this.selectionPane.getStyleClass ().add ("sourceSelectButtons");
-        // Centred below the source path, where it reads as a statement about that path
+        // Centered below the source path, where it reads as a statement about that path
         this.selectionPane.setAlignment (Pos.CENTER);
         this.selectionPane.setMaxWidth (Double.MAX_VALUE);
         this.selectionPane.managedProperty ().bind (this.selectionPane.visibleProperty ());
@@ -265,7 +267,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final TitledSeparator sourceTitle = new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER"));
         sourceTitle.setLabelFor (this.sourcePathField);
         sourceUpperPane.addComponent (sourceTitle);
-        sourceUpperPane.addComponent (new BorderPane (this.sourcePathField, null, sourceSelectButtons, null, null));
+        sourceUpperPane.addComponent (new BorderPane (this.sourcePathField, null, sourceSelectButtons, null, this.sourceModeChoiceBox));
         sourceUpperPane.addComponent (this.selectionPane);
         this.sourcePathField.setMaxWidth (Double.MAX_VALUE);
         this.updateSelectionPane ();
@@ -283,8 +285,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         sourcePane.setTop (sourceUpperPane.getPane ());
         sourcePane.setCenter (this.sourceTaskPane.formatPane);
 
+        // -----------------------------------------------------------
         // Destination pane
-        //
 
         final BorderPane destinationFolderPanel = new BorderPane (this.destinationPathField);
 
@@ -327,7 +329,9 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.mainPane.setCenter (grid);
         this.mainPane.setRight (buttonColumn);
 
+        // -----------------------------------------------------------
         // Execution pane
+
         this.executePane = new BorderPane ();
 
         // The execution button panel
@@ -411,9 +415,9 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private void configureTraversalManager ()
     {
+        this.traversalManager.add (this.sourceModeChoiceBox);
         this.traversalManager.add (this.sourcePathField);
         this.traversalManager.add (this.sourceFolderSelectButton);
-        this.traversalManager.add (this.batchModeButton);
         this.traversalManager.add (this.contentsButton);
         this.traversalManager.add (this.clearSelectionButton);
 
@@ -503,8 +507,8 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void loadConfiguration ()
     {
+        // -----------------------------------------------------------
         // Source configuration
-        //
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
         {
@@ -522,7 +526,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             if (!this.sourceFileHistory.contains (sourceFile))
                 this.sourceFileHistory.add (sourceFile);
         }
-        this.batchModeButton.setSelected (this.config.getBoolean (SOURCE_BATCH_MODE, true));
+        this.sourceModeChoiceBox.getSelectionModel ().select (this.config.getBoolean (SOURCE_BATCH_MODE, true) ? 0 : 1);
         final List<String> activeHistory = this.activeSourceHistory ();
         this.sourcePathField.getItems ().addAll (activeHistory);
         this.sourcePathField.setEditable (true);
@@ -534,8 +538,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         final int sourceFormat = this.config.getInteger (SOURCE_TYPE, 0);
         this.sourceTaskPane.setSelectedFormat (sourceFormat);
 
+        // -----------------------------------------------------------
         // Destination Configuration
-        //
 
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
         {
@@ -561,8 +565,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.presetLibraryFilename.setText (this.config.getProperty (PRESET_LIBRARY_FILENAME, ""));
         this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
 
+        // -----------------------------------------------------------
         // Processing
-        //
 
         this.detectSettings.enableProcessing = this.config.getBoolean (PROCESSING_ENABLE, false);
         this.detectSettings.enableNormalize = this.config.getBoolean (PROCESSING_ENABLE_NORMALIZE, false);
@@ -576,8 +580,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.detectSettings.snapLoopsToZero = this.config.getBoolean (PROCESSING_SNAP_LOOPS, false);
         this.detectSettings.transposeSemitones = this.config.getInteger (PROCESSING_TRANSPOSE, 0);
 
+        // -----------------------------------------------------------
         // Options
-        //
 
         this.detectSettings.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
         this.addNewFiles = this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false);
@@ -597,7 +601,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.config.setProperty (SOURCE_PATH + i, this.sourcePathHistory.size () > i ? this.sourcePathHistory.get (i) : "");
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
             this.config.setProperty (SOURCE_FILE + i, this.sourceFileHistory.size () > i ? this.sourceFileHistory.get (i) : "");
-        this.config.setBoolean (SOURCE_BATCH_MODE, this.batchModeButton.isSelected ());
+        this.config.setBoolean (SOURCE_BATCH_MODE, this.isBatchMode ());
 
         updateHistory (this.destinationPathField.getEditor ().getText (), this.destinationPathHistory);
         for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
@@ -1003,7 +1007,13 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private List<String> activeSourceHistory ()
     {
-        return this.batchModeButton.isSelected () ? this.sourcePathHistory : this.sourceFileHistory;
+        return this.isBatchMode () ? this.sourcePathHistory : this.sourceFileHistory;
+    }
+
+
+    private boolean isBatchMode ()
+    {
+        return this.sourceModeChoiceBox.getSelectionModel ().getSelectedIndex () == 0;
     }
 
 
@@ -1182,7 +1192,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void selectSource ()
     {
-        if (this.batchModeButton.isSelected ())
+        if (this.isBatchMode ())
             this.selectSourceFolder ();
         else
             this.selectSourceFile ();
@@ -1325,7 +1335,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void toggleBatchMode ()
     {
-        final boolean isBatchMode = this.batchModeButton.isSelected ();
+        final boolean isBatchMode = this.isBatchMode ();
         // The entered path belongs to the mode which is being left
         updateHistory (this.sourcePathField.getEditor ().getText (), isBatchMode ? this.sourceFileHistory : this.sourcePathHistory);
 

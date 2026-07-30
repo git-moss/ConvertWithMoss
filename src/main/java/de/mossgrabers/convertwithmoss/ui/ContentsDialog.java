@@ -197,7 +197,7 @@ public class ContentsDialog extends PseudoModalDialog
         this.auditionLabel.setText (Functions.getMessage ("IDS_CONTENTS_AUDITION_READING", entry.getName ()));
         this.updateAuditionButton ();
 
-        final Thread readThread = new Thread ( () -> {
+        final Thread readThread = new Thread (() -> {
 
             String message = "";
             try
@@ -214,7 +214,7 @@ public class ContentsDialog extends PseudoModalDialog
             }
 
             final String labelText = message;
-            Platform.runLater ( () -> {
+            Platform.runLater (() -> {
 
                 this.isReading = false;
                 this.auditionLabel.setText (labelText);

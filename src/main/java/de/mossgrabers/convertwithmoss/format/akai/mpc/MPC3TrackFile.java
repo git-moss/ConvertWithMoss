@@ -157,7 +157,7 @@ public class MPC3TrackFile
         {
             final ObjectNode instrumentNode = instrumentPrototype.deepCopy ();
             if (i < numKeygroups)
-                this.patchInstrument (instrumentNode, keygroups.get (i));
+                patchInstrument (instrumentNode, keygroups.get (i));
             instrumentsNode.add (instrumentNode);
         }
 
@@ -186,7 +186,7 @@ public class MPC3TrackFile
      * @param instrumentNode The instrument node to patch
      * @param zones The zones which are stacked as the layers of the key-group
      */
-    private void patchInstrument (final ObjectNode instrumentNode, final List<ISampleZone> zones)
+    private static void patchInstrument (final ObjectNode instrumentNode, final List<ISampleZone> zones)
     {
         final ISampleZone firstZone = zones.get (0);
         instrumentNode.put ("lowNote", limitToDefault (firstZone.getKeyLow (), 0));
@@ -195,11 +195,11 @@ public class MPC3TrackFile
         // 0 is one-shot, 1 is note-off and 2 is note-on
         instrumentNode.put ("triggerMode", firstZone.isOneShot () ? 0 : 2);
 
-        this.patchSynthSection ((ObjectNode) instrumentNode.get ("synthSection"), firstZone);
+        patchSynthSection ((ObjectNode) instrumentNode.get ("synthSection"), firstZone);
 
         final ArrayNode layersNode = (ArrayNode) instrumentNode.get ("layersv");
         for (int i = 0; i < zones.size () && i < layersNode.size (); i++)
-            this.patchLayer ((ObjectNode) layersNode.get (i), zones.get (i));
+            patchLayer ((ObjectNode) layersNode.get (i), zones.get (i));
     }
 
 
@@ -209,7 +209,7 @@ public class MPC3TrackFile
      * @param layerNode The layer node to patch
      * @param zone The sample zone
      */
-    private void patchLayer (final ObjectNode layerNode, final ISampleZone zone)
+    private static void patchLayer (final ObjectNode layerNode, final ISampleZone zone)
     {
         layerNode.put ("active", true);
         layerNode.put ("sampleName", zone.getName ());
@@ -265,7 +265,7 @@ public class MPC3TrackFile
      * @param synthNode The synthesizer section node to patch
      * @param zone The sample zone
      */
-    private void patchSynthSection (final ObjectNode synthNode, final ISampleZone zone)
+    private static void patchSynthSection (final ObjectNode synthNode, final ISampleZone zone)
     {
         patchEnvelope ((ObjectNode) synthNode.get ("ampEnvelope"), zone.getAmplitudeEnvelopeModulator ().getSource ());
 
@@ -302,9 +302,9 @@ public class MPC3TrackFile
 
 
     /**
-     * Patch an envelope node. Only the parameters which the model carries are overwritten, the
-     * rest keeps the values of the template. All parameters are wrapped in 'value0' objects, the
-     * times are normalized logarithmically.
+     * Patch an envelope node. Only the parameters which the model carries are overwritten, the rest
+     * keeps the values of the template. All parameters are wrapped in 'value0' objects, the times
+     * are normalized logarithmically.
      *
      * @param envelopeNode The envelope node to patch
      * @param envelope The envelope values to set
@@ -367,7 +367,12 @@ public class MPC3TrackFile
     }
 
 
-    /** The created JSON document and the number of key-groups it holds. */
+    /**
+     * The created JSON document and the number of key-groups it holds.
+     * 
+     * @param json The JSON code
+     * @param numKeygroups The number of key-groups
+     */
     public record TrackDocument (String json, int numKeygroups)
     {
         // Intentionally empty

@@ -52,7 +52,7 @@ public class AuditionPlayer
 
         this.isCancelled = false;
         this.isStreaming = true;
-        this.playThread = new Thread ( () -> {
+        this.playThread = new Thread (() -> {
 
             // The playing state is cleared before the callback runs, so that it already sees that
             // the note has ended

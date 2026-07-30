@@ -16,22 +16,22 @@ import java.util.TreeMap;
 
 /**
  * Reads and writes Arturia Synclavier V preset files. A preset is a Boost text archive: one long
- * line of white-space separated tokens where strings are stored as
- * <i>&lt;length&gt; &lt;bytes&gt;</i> (exactly one separating blank, the bytes may contain any
- * character). The archive contains a metadata header, a string map, a parameter map (name to a
- * normalized float) and a blob map (name to raw bytes) which holds the per-partial sound file
- * references (<i>AudioSampleObjectN</i>), the resynthesis frames and the MIDI mappings.
+ * line of white-space separated tokens where strings are stored as <i>&lt;length&gt;
+ * &lt;bytes&gt;</i> (exactly one separating blank, the bytes may contain any character). The
+ * archive contains a metadata header, a string map, a parameter map (name to a normalized float)
+ * and a blob map (name to raw bytes) which holds the per-partial sound file references
+ * (<i>AudioSampleObjectN</i>), the resynthesis frames and the MIDI mappings.
  *
  * @author Jürgen Moßgraber
  */
 public class SynclavierVFile
 {
-    private static final String     SIGNATURE            = "serialization::archive";
-    private static final String     ARCHIVE_VERSION      = "10";
-    private static final String     SCHEMA_VERSION       = "15";
+    private static final String       SIGNATURE            = "serialization::archive";
+    private static final String       ARCHIVE_VERSION      = "10";
+    private static final String       SCHEMA_VERSION       = "15";
 
     /** The audio sample object blob header: 0x01, length 22, the signature, 0x01, version 10. */
-    private static final byte []    SAMPLE_BLOB_HEADER   = new byte []
+    private static final byte []      SAMPLE_BLOB_HEADER   = new byte []
     {
         0x01,
         0x16,
@@ -64,7 +64,7 @@ public class SynclavierVFile
         0
     };
     /** The default trailer of an audio sample object: the Boost varints 0, -1, -1. */
-    private static final byte []    SAMPLE_BLOB_TRAILER  = new byte []
+    private static final byte []      SAMPLE_BLOB_TRAILER  = new byte []
     {
         0,
         (byte) 0xFF,
@@ -72,14 +72,14 @@ public class SynclavierVFile
         (byte) 0xFF,
         1
     };
-    private static final int        SAMPLE_PATH_LENGTH   = 256;
+    private static final int          SAMPLE_PATH_LENGTH   = 256;
 
     /**
      * The Synclavier time table ('Sync30_000', 1251 positions): a normalized time parameter is an
      * interpolated index into this piece-wise linear list. Each row is the first index of the
      * segment, the seconds at that index and the seconds per index step.
      */
-    private static final double [][] TIME_SEGMENTS       = new double [] []
+    private static final double [] [] TIME_SEGMENTS        = new double [] []
     {
         {
             0,
@@ -132,28 +132,28 @@ public class SynclavierVFile
             0.2
         }
     };
-    private static final int        TIME_TABLE_POSITIONS = 1250;
-    private static final double     TIME_TABLE_MAXIMUM   = 30.0;
+    private static final int          TIME_TABLE_POSITIONS = 1250;
+    private static final double       TIME_TABLE_MAXIMUM   = 30.0;
 
-    String                          name                 = "";
-    String                          library              = "";
-    String                          author               = "";
-    String                          type                 = "";
-    final List<String>              tags                 = new ArrayList<> ();
-    String                          description          = "";
-    long                            timestamp            = 0;
-    String                          version              = "";
-    final Map<String, String>       metadata             = new TreeMap<> ();
-    final Map<String, String>       parameters           = new TreeMap<> ();
-    final Map<String, byte []>      blobs                = new TreeMap<> ();
+    String                            name                 = "";
+    String                            library              = "";
+    String                            author               = "";
+    String                            type                 = "";
+    final List<String>                tags                 = new ArrayList<> ();
+    String                            description          = "";
+    long                              timestamp            = 0;
+    String                            version              = "";
+    final Map<String, String>         metadata             = new TreeMap<> ();
+    final Map<String, String>         parameters           = new TreeMap<> ();
+    final Map<String, byte []>        blobs                = new TreeMap<> ();
     /** The embedded sound files of an export: the referenced path mapped to the audio file. */
-    final Map<String, byte []>      samples              = new LinkedHashMap<> ();
+    final Map<String, byte []>        samples              = new LinkedHashMap<> ();
 
 
     /**
-     * Checks if the given data starts like a preset archive. Exports wrap other payloads (the
-     * pack image, the embedded sound files) in archives as well but those continue with
-     * <i>10 0 0</i> where a preset has the class version tokens <i>10 0 7</i>.
+     * Checks if the given data starts like a preset archive. Exports wrap other payloads (the pack
+     * image, the embedded sound files) in archives as well but those continue with <i>10 0 0</i>
+     * where a preset has the class version tokens <i>10 0 7</i>.
      *
      * @param data The data to check
      * @return True if it is a preset archive
@@ -470,7 +470,7 @@ public class SynclavierVFile
         final float floatValue = (float) value;
         if (floatValue == Math.rint (floatValue) && Math.abs (floatValue) < 1e8)
             return Integer.toString ((int) floatValue);
-        String text = String.format (java.util.Locale.US, "%.8g", floatValue);
+        String text = String.format (java.util.Locale.US, "%.8g", Float.valueOf (floatValue));
         // Trim trailing zeros but keep at least one digit after the point
         if (text.contains ("."))
         {
