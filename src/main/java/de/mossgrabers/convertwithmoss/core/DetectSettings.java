@@ -5,6 +5,8 @@
 package de.mossgrabers.convertwithmoss.core;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -15,15 +17,20 @@ import java.io.File;
 public class DetectSettings
 {
     /** The folder where to start the detection process. */
-    public File    sourceFolder;
+    public File             sourceFolder;
+    /**
+     * If not empty, only these files are converted instead of searching the source folder, which is
+     * then only the reference for all sub-path calculations.
+     */
+    public final List<File> sourceFiles = new ArrayList<> ();
     /** Where to write the result to. */
-    public File    outputFolder;
+    public File             outputFolder;
     /** The name to use in case that a library will be created. */
-    public String  libraryName;
+    public String           libraryName;
     /** True, if all files should be returned at once. */
-    public boolean wantsMultipleFiles;
+    public boolean          wantsMultipleFiles;
     /** True, if the source folder structure should be replicated in the output folder. */
-    public boolean createFolderStructure;
+    public boolean          createFolderStructure;
 
     // Parameters for Processing
 

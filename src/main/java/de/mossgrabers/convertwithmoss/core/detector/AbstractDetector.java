@@ -89,6 +89,9 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     protected final Map<String, Set<String>>  unsupportedAttributes               = new HashMap<> ();
 
     private final AtomicBoolean               isCancelled                         = new AtomicBoolean (false);
+    /** If not empty, only these files are processed instead of searching the full source folder. */
+    private final List<File>                  sourceFiles                         = new ArrayList<> ();
+
     private int                               deliveryCounter                     = 0;
 
 
@@ -109,7 +112,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     /** {@inheritDoc} */
     @Override
-    public final void detect (final File sourceFolder, final Consumer<IMultisampleSource> multisampleSourceConsumer, final Consumer<IPerformanceSource> performanceSourceConsumer, final boolean detectPerformances)
+    public final void detect (final File sourceFolder, final List<File> sourceFiles, final Consumer<IMultisampleSource> multisampleSourceConsumer, final Consumer<IPerformanceSource> performanceSourceConsumer, final boolean detectPerformances)
     {
         this.configureFileEndings (detectPerformances);
 
@@ -118,8 +121,18 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         this.sourceFolder = sourceFolder;
         this.detectPerformances = detectPerformances;
 
+        // If specific files are given, only these are processed instead of searching the source
+        // folder. The source folder is still required since it is the reference for all sub-path
+        // calculations.
+        this.sourceFiles.clear ();
+        if (sourceFiles != null)
+            this.sourceFiles.addAll (sourceFiles);
+        // Process the files in the same stable alphabetical order as the folder search does
+        this.sourceFiles.sort (Comparator.comparing (File::getName, String.CASE_INSENSITIVE_ORDER));
+
         this.unsupportedElements.clear ();
         this.unsupportedAttributes.clear ();
+        this.isCancelled.set (false);
 
         this.startDetection ();
     }
@@ -214,6 +227,68 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     }
 
 
+    /**
+     * Detect the multi-sample(s) in the given source files. This is called instead of
+     * {@link #detect(File)} if the user selected specific files instead of a folder as the source.
+     * Overwrite, if a detector does not process its source files individually.
+     *
+     * @param files The files to process
+     */
+    protected void detectFiles (final List<File> files)
+    {
+        for (final File file: files)
+        {
+            if (this.isCancelled ())
+                break;
+            this.detectSingleFile (file);
+        }
+    }
+
+
+    /**
+     * Detect the multi-sample(s) in one single source file.
+     *
+     * @param file The file to process
+     */
+    protected void detectSingleFile (final File file)
+    {
+        this.notifier.log ("IDS_NOTIFY_ANALYZING", file.getAbsolutePath ());
+        if (this.waitForDelivery ())
+            return;
+
+        if (!this.matchesFileEnding (file))
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_WRONG_FILE_ENDING", file.getName (), this.getName (), String.join (", ", this.fileEndings));
+            return;
+        }
+
+        if (this.detectPerformances)
+            this.handlePerformanceFile (file);
+        else
+            this.handlePresetFile (file);
+    }
+
+
+    /**
+     * Test if the name of the given file matches one of the file endings which are currently
+     * configured for this detector.
+     *
+     * @param file The file to check
+     * @return True if it matches or if the detector has no file endings configured at all
+     */
+    protected boolean matchesFileEnding (final File file)
+    {
+        if (this.fileEndings.length == 0)
+            return true;
+
+        final String lower = file.getName ().toLowerCase (Locale.US);
+        for (final String ending: this.fileEndings)
+            if (lower.endsWith (ending))
+                return true;
+        return false;
+    }
+
+
     private void handlePresetFile (final File file)
     {
         try
@@ -286,7 +361,10 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     {
         try
         {
-            this.detect (this.sourceFolder);
+            if (this.sourceFiles.isEmpty ())
+                this.detect (this.sourceFolder);
+            else
+                this.detectFiles (this.sourceFiles);
         }
         catch (final RuntimeException | OutOfMemoryError err)
         {

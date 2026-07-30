@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.core.detector;
 
 import java.io.File;
+import java.util.List;
 import java.util.function.Consumer;
 
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
@@ -26,12 +27,14 @@ public interface IDetector<T extends ICoreTaskSettings> extends ICoreTask<T>, Ru
     /**
      * Start the detection.
      *
-     * @param folder The folder where to start the detection
+     * @param sourceFolder The folder where to start the detection
+     * @param sourceFiles If not empty, only these files are processed instead of searching the
+     *            source folder, which is then only the reference for all sub-path calculations
      * @param multisampleSourceConsumer Where to report the found multi-samples sources
      * @param performanceSourceConsumer Where to report the found performance sources
      * @param detectPerformances If true, performances are detected otherwise presets
      */
-    void detect (File folder, Consumer<IMultisampleSource> multisampleSourceConsumer, Consumer<IPerformanceSource> performanceSourceConsumer, boolean detectPerformances);
+    void detect (File sourceFolder, List<File> sourceFiles, Consumer<IMultisampleSource> multisampleSourceConsumer, Consumer<IPerformanceSource> performanceSourceConsumer, boolean detectPerformances);
 
 
     /**
