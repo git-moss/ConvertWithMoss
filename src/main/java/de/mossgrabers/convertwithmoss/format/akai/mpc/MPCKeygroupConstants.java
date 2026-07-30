@@ -17,6 +17,10 @@ public class MPCKeygroupConstants
     public static final String FILE_VERSION         = "2.1";
     /** Application version. */
     public static final String APP_VERSION          = "v2.11.6.6";
+    /** The version line of a created MPC 3 track file, the firmware whose structure is written. */
+    public static final String TRACK_FILE_VERSION   = "3.7.0.38";
+    /** The platform line of a created MPC 3 track file. */
+    public static final String TRACK_FILE_PLATFORM  = "Linux";
 
     /** Value for -12dB. */
     public static final double MINUS_12_DB          = 0.353000;

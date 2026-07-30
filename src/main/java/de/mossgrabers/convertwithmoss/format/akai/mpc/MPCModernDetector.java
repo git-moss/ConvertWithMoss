@@ -796,8 +796,10 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             if (keygroupNode != null)
             {
                 keygroupTranspose = programTranspose + keygroupNode.get ("transpose").asDouble ();
-                pitchBendUp = keygroupNode.get ("pitchBendPositiveRange").asInt ();
-                pitchBendDown = keygroupNode.get ("pitchBendNegativeRange").asInt ();
+                // The ranges are semitones, e.g. the default of 2 (the fraction of an octave
+                // in 'pitchBendRange' confirms it)
+                pitchBendUp = keygroupNode.get ("pitchBendPositiveRange").asInt () * 100;
+                pitchBendDown = keygroupNode.get ("pitchBendNegativeRange").asInt () * 100;
                 final JsonNode synthSectionNode = keygroupNode.get ("synthSection");
                 globalEnvelopesAndFilter = new MPCEnvelopesAndFilter (synthSectionNode, true);
             }
@@ -893,10 +895,20 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         else if (sampleInfo != null)
             sampleZone.setKeyRoot (sampleInfo.rootNote);
 
-        final int layerCoarseTune = instrumentNode.get ("coarseTune").asInt ();
-        final int layerFineTune = instrumentNode.get ("fineTune").asInt ();
+        // The instrument tuning is already part of the tuning parameter, the layer adds its own
+        final int layerCoarseTune = layerNode.path ("coarseTune").asInt ();
+        final int layerFineTune = layerNode.path ("fineTune").asInt ();
         final double layerTuning = layerCoarseTune + layerFineTune / 100.0;
         sampleZone.setTuning (layerTuning + tuning + (sampleInfo != null ? sampleInfo.tuning : 0));
+
+        // The volume of a layer is an object; the gain coefficient is the linear amplitude
+        final JsonNode volumeNode = layerNode.get ("volume");
+        if (volumeNode != null)
+        {
+            final double gainCoefficient = volumeNode.path ("gainCoefficient").asDouble (1);
+            if (gainCoefficient > 0)
+                sampleZone.setGain (20.0 * Math.log10 (gainCoefficient));
+        }
 
         sampleZone.setPanning (layerNode.get ("pan").asDouble () * 2.0 - 1.0);
         sampleZone.setKeyLow (lowNote);

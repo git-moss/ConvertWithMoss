@@ -29,9 +29,14 @@ import javafx.scene.layout.Pane;
 public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
 {
     private static final String MPC_LAYER_LIMIT_USE_8 = "MPCLayerLimitUse8";
+    private static final String MPC_OUTPUT_FORMAT     = "MPCOutputFormat";
+    private static final String FORMAT_XPM            = "XPM";
+    private static final String FORMAT_XTY            = "XTY";
 
+    private ToggleGroup         outputFormatGroup;
     private ToggleGroup         layerLimitGroup;
     private int                 layerLimit;
+    private boolean             writeTrackFile;
 
 
     /**
@@ -50,6 +55,16 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     public Pane getEditPane ()
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
+
+        panel.createSeparator ("@IDS_MPC_OUTPUT_FORMAT");
+
+        this.outputFormatGroup = new ToggleGroup ();
+        final RadioButton formatXpm = panel.createRadioButton ("@IDS_MPC_OUTPUT_FORMAT_XPM");
+        formatXpm.setAccessibleHelp (Functions.getMessage ("IDS_MPC_OUTPUT_FORMAT"));
+        formatXpm.setToggleGroup (this.outputFormatGroup);
+        final RadioButton formatXty = panel.createRadioButton ("@IDS_MPC_OUTPUT_FORMAT_XTY");
+        formatXty.setAccessibleHelp (Functions.getMessage ("IDS_MPC_OUTPUT_FORMAT"));
+        formatXty.setToggleGroup (this.outputFormatGroup);
 
         panel.createSeparator ("@IDS_MPC_LAYER_LIMIT");
 
@@ -72,6 +87,9 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
+        final boolean isTrackFile = FORMAT_XTY.equals (config.getProperty (MPC_OUTPUT_FORMAT, FORMAT_XPM));
+        this.outputFormatGroup.selectToggle (this.outputFormatGroup.getToggles ().get (isTrackFile ? 1 : 0));
+
         final boolean use8Layers = config.getBoolean (MPC_LAYER_LIMIT_USE_8, true);
         this.layerLimitGroup.selectToggle (this.layerLimitGroup.getToggles ().get (use8Layers ? 1 : 0));
 
@@ -83,6 +101,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     @Override
     public void saveSettings (final BasicConfig config)
     {
+        config.setProperty (MPC_OUTPUT_FORMAT, this.writeTrackFile ? FORMAT_XTY : FORMAT_XPM);
         config.setBoolean (MPC_LAYER_LIMIT_USE_8, this.getLayerLimit () == 8);
 
         super.saveSettings (config);
@@ -96,6 +115,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsUI (notifier))
             return false;
 
+        this.writeTrackFile = this.outputFormatGroup.getToggles ().get (1).isSelected ();
         this.layerLimit = this.layerLimitGroup.getToggles ().get (1).isSelected () ? 8 : 4;
         return true;
     }
@@ -107,6 +127,17 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     {
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
+
+        final String formatValue = parameters.remove (MPC_OUTPUT_FORMAT);
+        if (formatValue == null || formatValue.isBlank () || FORMAT_XPM.equalsIgnoreCase (formatValue))
+            this.writeTrackFile = false;
+        else if (FORMAT_XTY.equalsIgnoreCase (formatValue))
+            this.writeTrackFile = true;
+        else
+        {
+            notifier.logError ("IDS_CLI_UNKNOWN_OUTPUT_FORMAT", formatValue);
+            return false;
+        }
 
         try
         {
@@ -138,6 +169,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     public String [] getCLIParameterNames ()
     {
         final List<String> parameterNames = new ArrayList<> (Arrays.asList (super.getCLIParameterNames ()));
+        parameterNames.add (MPC_OUTPUT_FORMAT);
         parameterNames.add (MPC_LAYER_LIMIT_USE_8);
         return parameterNames.toArray (new String [parameterNames.size ()]);
     }
@@ -151,5 +183,16 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     public int getLayerLimit ()
     {
         return this.layerLimit;
+    }
+
+
+    /**
+     * Should a MPC 3 track file (*.xty) be written instead of a key-group folder (*.xpm)?
+     *
+     * @return True to write a track file
+     */
+    public boolean isWriteTrackFile ()
+    {
+        return this.writeTrackFile;
     }
 }
