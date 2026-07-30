@@ -44,25 +44,25 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 public class PresetRenderer
 {
     /** The sample rate at which a preview is rendered. */
-    public static final int      SAMPLE_RATE           = 44100;
+    public static final int         SAMPLE_RATE               = 44100;
     /** The format of a rendered preview: 16 bit stereo at the preview sample rate. */
-    public static final AudioFormat PREVIEW_FORMAT     = new AudioFormat (SAMPLE_RATE, 16, 2, true, false);
+    public static final AudioFormat PREVIEW_FORMAT            = new AudioFormat (SAMPLE_RATE, 16, 2, true, false);
 
-    private static final double  DEFAULT_HOLD_SECONDS  = 2.0;
-    private static final double  MAXIMUM_SECONDS       = 8.0;
-    private static final int     DEFAULT_VELOCITY      = 100;
+    private static final double     DEFAULT_HOLD_SECONDS      = 2.0;
+    private static final double     MAXIMUM_SECONDS           = 8.0;
+    private static final int        DEFAULT_VELOCITY          = 100;
     /** Below this level the release is over and the rendering stops. */
-    private static final double  SILENCE_LEVEL         = 0.0001;
+    private static final double     SILENCE_LEVEL             = 0.0001;
     /** The resonance of a filter at its lowest, which is a Butterworth response. */
-    private static final double  MINIMUM_Q             = 0.707;
+    private static final double     MINIMUM_Q                 = 0.707;
     /** The resonance of a filter at its highest. */
-    private static final double  MAXIMUM_Q             = 12.0;
+    private static final double     MAXIMUM_Q                 = 12.0;
     /** How far the filter envelope and the velocity may move the cutoff, in octaves. */
-    private static final double  CUTOFF_MODULATION_OCTAVES = 6.0;
+    private static final double     CUTOFF_MODULATION_OCTAVES = 6.0;
     /** The reference key of the filter cutoff key tracking. */
-    private static final int     CUTOFF_KEY_CENTER     = 60;
+    private static final int        CUTOFF_KEY_CENTER         = 60;
     /** A short fade whenever the signal ends, so that a note never stops with a click. */
-    private static final double  FADE_OUT_SECONDS      = 0.01;
+    private static final double     FADE_OUT_SECONDS          = 0.01;
 
 
     /**
@@ -405,7 +405,7 @@ public class PresetRenderer
 
     private static void writeSample (final byte [] pcm, final int offset, final double value)
     {
-        final int sample = (int) Math.clamp (Math.round (value * 32767.0), -32768, 32767);
+        final int sample = Math.clamp (Math.round (value * 32767.0), -32768, 32767);
         pcm[offset] = (byte) sample;
         pcm[offset + 1] = (byte) (sample >> 8);
     }
@@ -419,7 +419,13 @@ public class PresetRenderer
     }
 
 
-    /** The forward loop of a zone. */
+    /**
+     * The forward loop of a zone.
+     * 
+     * @param start The start of the loop
+     * @param end The end of the loop
+     * @param untilRelease True if it is played until release
+     */
     private record Loop (int start, int end, boolean untilRelease)
     {
         // Intentionally empty
@@ -439,10 +445,10 @@ public class PresetRenderer
         private final double holdLevel;
         private final double depth;
 
-        private double       time            = 0;
-        private double       releaseTime     = -1;
-        private double       levelAtRelease  = 0;
-        private double       currentLevel    = 0;
+        private double       time           = 0;
+        private double       releaseTime    = -1;
+        private double       levelAtRelease = 0;
+        private double       currentLevel   = 0;
 
 
         EnvelopeRunner (final IEnvelope envelope, final double depth)

@@ -129,7 +129,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Stores one preset file and its samples in the ZIP output stream.
      *
-     * @param zipOutputStream The ZIP output stream
+     * @param zipWriter The ZIP output writer
      * @param libraryFolder The ZIP folder of the library including the trailing slash
      * @param libraryName The library name
      * @param presetName The unique name of the preset
@@ -194,7 +194,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
 
             final String samplePath = sampleFolder + "/" + sampleName + ".wav";
             preset.samples.put (samplePath, this.createSampleFileContent (multisampleSource, zone));
-            this.fillPartial (preset, index + 1, zone, samplePath);
+            fillPartial (preset, index + 1, zone, samplePath);
         }
 
         zipWriter.addEntry (libraryFolder + presetName, preset.write ());
@@ -339,7 +339,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
      * @param samplePath The path of the sample file relative to the preset file
      * @throws IOException Could not create the sample reference
      */
-    private void fillPartial (final SynclavierVFile preset, final int partial, final ISampleZone zone, final String samplePath) throws IOException
+    private static void fillPartial (final SynclavierVFile preset, final int partial, final ISampleZone zone, final String samplePath) throws IOException
     {
         preset.blobs.put ("AudioSampleObject" + partial, SynclavierVFile.createSampleBlob (samplePath));
         preset.setParameter ("Partial " + partial + " Carrier Mode", CARRIER_MODE_AUDITION);
@@ -458,7 +458,8 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
             // Intentionally empty
         }
 
-        private final List<Entry> entries = new ArrayList<> ();
+
+        private final List<Entry> entries  = new ArrayList<> ();
         private int               position = 0;
 
 

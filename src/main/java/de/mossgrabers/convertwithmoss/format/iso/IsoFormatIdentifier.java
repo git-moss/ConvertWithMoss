@@ -106,7 +106,7 @@ public class IsoFormatIdentifier
         {
             final S5xxDiskImageHeader header = new S5xxDiskImageHeader (new ByteArrayInputStream (data));
             final S5xxSamplerType samplerType = header.getSamplerType ();
-            if (samplerType != S5xxSamplerType.UNKNOWN && samplerType != S5xxSamplerType.LAND)
+            if (samplerType != S5xxSamplerType.UNKNOWN)
             {
                 if (samplerType == S5xxSamplerType.S770)
                     return IsoFormat.ROLAND_S7XX;

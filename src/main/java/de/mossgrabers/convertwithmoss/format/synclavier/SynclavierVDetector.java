@@ -36,11 +36,10 @@ import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Detects Arturia Synclavier V preset and bank exports (*.synx). A synx file is a ZIP archive
- * which contains one preset file per exported preset (a bank export contains several). A partial
- * whose carrier is in <i>Audition</i> mode plays a referenced sound file and becomes a sample
- * zone; synthesis-only presets (FM / resynthesis frames) contain no audio to convert and are
- * skipped.
+ * Detects Arturia Synclavier V preset and bank exports (*.synx). A synx file is a ZIP archive which
+ * contains one preset file per exported preset (a bank export contains several). A partial whose
+ * carrier is in <i>Audition</i> mode plays a referenced sound file and becomes a sample zone;
+ * synthesis-only presets (FM / resynthesis frames) contain no audio to convert and are skipped.
  *
  * @author Jürgen Moßgraber
  */
@@ -161,7 +160,7 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
                     this.notifier.logError ("IDS_SYNCLAVIER_SAMPLE_NOT_FOUND", samplePath);
                     continue;
                 }
-                zone = this.createZone (preset, partial, samplePath, sampleData.get (), volumeNormalized, hasVelocitySource);
+                zone = createZone (preset, partial, samplePath, sampleData.get (), volumeNormalized, hasVelocitySource);
             }
             catch (final IOException ex)
             {
@@ -225,7 +224,7 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
      * @return The zone
      * @throws IOException Could not read the audio metadata
      */
-    private ISampleZone createZone (final SynclavierVFile preset, final int partial, final String samplePath, final ISampleData sampleData, final double volumeNormalized, final boolean hasVelocitySource) throws IOException
+    private static ISampleZone createZone (final SynclavierVFile preset, final int partial, final String samplePath, final ISampleData sampleData, final double volumeNormalized, final boolean hasVelocitySource) throws IOException
     {
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (new File (fileName (samplePath))), sampleData);
 

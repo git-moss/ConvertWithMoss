@@ -94,8 +94,8 @@ public class ContentsEntry
     /**
      * Get the index of the source inside of its file. Since the detection of a file is
      * deterministic, the same index addresses the same source in a following conversion run. The
-     * index is counted per file and not across the whole detection run, so that files which
-     * contain no selected source can be skipped entirely without shifting the indices.
+     * index is counted per file and not across the whole detection run, so that files which contain
+     * no selected source can be skipped entirely without shifting the indices.
      *
      * @return The index inside of the file
      */
