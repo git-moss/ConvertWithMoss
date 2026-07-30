@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 
@@ -192,8 +194,11 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
             timbre.append (TIMBRE_VERSION).append (LINE_FEED);
 
             int partialMask = 0;
-            final List<IGroup> allGroups = source.getNonEmptyGroups (false);
-            // A timbre has at most 12 partials (= 12 velocity layers)
+            // A timbre has at most 12 partials (= 12 velocity layers), but a partial holds a
+            // whole keyboard map in its patch list. Groups whose zones do not collide are
+            // therefore packed together first - many sources deliver one group per zone and would
+            // otherwise lose everything beyond the first 12 zones
+            final List<IGroup> allGroups = packGroups (source.getNonEmptyGroups (false));
             if (allGroups.size () > MAX_PARTIALS)
                 this.notifier.logError ("IDS_SYNCLAVIER_PARTIAL_CAP", source.getName (), Integer.toString (allGroups.size ()));
             final List<IGroup> groups = allGroups.size () > MAX_PARTIALS ? allGroups.subList (0, MAX_PARTIALS) : allGroups;
@@ -349,6 +354,100 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
         appendPartial (timbre, partial, "Peak", peak < 0 ? 100.0 : Math.clamp (peak * 100.0, 0, 100));
         final double sustain = envelope.getSustainLevel ();
         appendPartial (timbre, partial, "Sust", sustain < 0 ? 100.0 : Math.clamp (sustain * 100.0, 0, 100));
+    }
+
+
+    /**
+     * Packs groups into as few partials as possible. A partial holds a whole keyboard map in its
+     * patch list but has only one velocity (crossfade) window, so groups are merged when their
+     * zones share the same velocity range and their key ranges do not overlap. Sources which
+     * deliver one group per zone - a common detector layout - collapse to one partial per velocity
+     * layer this way; genuine layers (overlapping keys, e.g. round robins) stay separate.
+     *
+     * @param groups The groups of the source
+     * @return The packed groups (the input when nothing can be merged)
+     */
+    private static List<IGroup> packGroups (final List<IGroup> groups)
+    {
+        if (groups.size () <= MAX_PARTIALS)
+            return groups;
+
+        final List<DefaultGroup> bins = new ArrayList<> ();
+        for (final IGroup group: groups)
+        {
+            DefaultGroup target = null;
+            for (final DefaultGroup bin: bins)
+                if (hasSameVelocityRange (bin, group) && !hasKeyOverlap (bin, group))
+                {
+                    target = bin;
+                    break;
+                }
+            if (target == null)
+            {
+                target = new DefaultGroup (group.getName ());
+                bins.add (target);
+            }
+            for (final ISampleZone zone: group.getSampleZones ())
+                target.addSampleZone (zone);
+        }
+        return new ArrayList<> (bins);
+    }
+
+
+    /**
+     * Checks if the zones of the bin and the group cover the identical velocity range.
+     *
+     * @param bin The bin with the already packed zones
+     * @param group The group to add
+     * @return True if both cover the same velocity range
+     */
+    private static boolean hasSameVelocityRange (final IGroup bin, final IGroup group)
+    {
+        final int [] binRange = velocityRange (bin);
+        final int [] groupRange = velocityRange (group);
+        return binRange[0] == groupRange[0] && binRange[1] == groupRange[1];
+    }
+
+
+    private static int [] velocityRange (final IGroup group)
+    {
+        int low = 128;
+        int high = -1;
+        for (final ISampleZone zone: group.getSampleZones ())
+        {
+            low = Math.min (low, Math.max (0, zone.getVelocityLow ()));
+            high = Math.max (high, zone.getVelocityHigh () < 0 ? 127 : zone.getVelocityHigh ());
+        }
+        return new int []
+        {
+            low,
+            high
+        };
+    }
+
+
+    /**
+     * Checks if a zone of the group overlaps the key range of any zone already in the bin.
+     *
+     * @param bin The bin with the already packed zones
+     * @param group The group to add
+     * @return True if any key ranges overlap
+     */
+    private static boolean hasKeyOverlap (final IGroup bin, final IGroup group)
+    {
+        for (final ISampleZone packed: bin.getSampleZones ())
+        {
+            final int packedLow = Math.max (0, packed.getKeyLow ());
+            final int packedHigh = packed.getKeyHigh () < 0 ? 127 : packed.getKeyHigh ();
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final int low = Math.max (0, zone.getKeyLow ());
+                final int high = zone.getKeyHigh () < 0 ? 127 : zone.getKeyHigh ();
+                if (low <= packedHigh && high >= packedLow)
+                    return true;
+            }
+        }
+        return false;
     }
 
 
