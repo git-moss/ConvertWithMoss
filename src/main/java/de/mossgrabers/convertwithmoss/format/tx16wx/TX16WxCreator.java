@@ -645,7 +645,8 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 {
                     final Element envElement = XMLUtils.addElement (document, soundshapeElement, TX16WxTag.ENVELOPE_1);
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                    // An envelope starts and ends at zero, and level 1 is the level which is reached
+                    // An envelope starts and ends at zero, and level 1 is the level which is
+                    // reached
                     // at the end of the attack phase - the model has no explicit peak level,
                     // therefore fall back to the full level there
                     envElement.setAttribute (TX16WxTag.ENV_LEVEL0, formatLevel (filterEnvelope.getStartLevel (), 0));
@@ -666,7 +667,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     addModulationEntry (document, modulationElement, "Vel", FILTER_1_FREQ, (int) Math.round (filterVelocityDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
                 final double cutoffKeyTracking = filter.getCutoffKeyTracking ();
                 if (cutoffKeyTracking != 0)
-                    addModulationEntry (document, modulationElement, "Key", FILTER_1_FREQ, (int) Math.round (cutoffKeyTracking * 1200) + "Ct");
+                    addModulationEntry (document, modulationElement, "Key", FILTER_1_FREQ, (int) Math.round (cutoffKeyTracking * 24000) + "Ct");
             }
 
             // -----------------------------------------------------------

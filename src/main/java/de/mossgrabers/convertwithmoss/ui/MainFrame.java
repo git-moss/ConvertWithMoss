@@ -1546,18 +1546,17 @@ public class MainFrame extends AbstractFrame implements INotifier
             {
                 // Install once, reuse
                 private final Tooltip tip = new Tooltip ();
-                {
-                    this.setTooltip (this.tip);
-                }
 
 
                 /** {@inheritDoc} */
                 @Override
                 protected void updateItem (final String item, final boolean empty)
                 {
+
                     super.updateItem (item, empty);
                     this.setText (empty ? null : item);
                     this.tip.setText (empty ? null : item);
+                    this.setTooltip (empty ? null : this.tip);
                 }
             });
         }

@@ -755,7 +755,7 @@
       "data": 3
      }
     },
-    "volume": 0.40039101243019104,
+    "volume": 0.7079457640647888,
     "mute": false,
     "solo": false,
     "pan": 0.6322810053825378,
@@ -938,7 +938,7 @@
    },
    "drum": {
     "version": 8,
-    "pitch": 0.0,
+    "pitch": 1.0,
     "coarseTune": 0,
     "fineTune": 0,
     "monophonic": false,
@@ -1104,14 +1104,14 @@
        "filterData": {
         "value0": {
          "version": 27,
-         "filterKeytrack": 0.2578119933605194,
+         "filterKeytrack": 0.0,
          "filterType": 5,
          "filterCutoff": 1.0,
          "filterResonance": 0.0,
          "filterEnvelopeAmount": 0.0,
          "afterTouchToFilter": 0.0,
-         "filterVelocity": 0.65625,
-         "filterEnvelopeVelocity": 0.2265619933605194,
+         "filterVelocity": 0.0,
+         "filterEnvelopeVelocity": 0.0,
          "cutoffRandom": 0.0,
          "resonanceRandom": 0.0,
          "outputLevel": 1.0,
@@ -1184,7 +1184,7 @@
          "value0": 0.140625
         },
         "VelocityToAttack": {
-         "value0": 0.203125
+         "value0": 0.0
         },
         "Decay": {
          "value0": 1.0

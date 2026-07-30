@@ -53,6 +53,7 @@
 * CWITEC TX16Wx
   * Fixed: The wave IDs of a written program restarted at 0 for every group, although they must be unique across the program - in a program with several groups all regions resolved to the waves of the last group when read (also in the TX16Wx plug-in itself). Additionally the reader now creates an own zone object per region, since several regions may reference the same wave; before, such regions shared one object and overwrote each other's key and velocity ranges.
   * Fixed: The depth of a pitch envelope was written in cents of the full model depth (12000 cents) but read as a fraction of 4800 cents, inflating the depth 2.5 times in a round trip.
+  * Fixed: Cutoff Key-Tracking is now adjusted to 24000ct maximum range (was only 1200ct maximum).
 * DecentSampler
   * Fixed: A volume value without a dB unit is a linear amplitude but was scaled as 'value times 6dB' - volume="0.5" (-6dB) read as +3dB and an explicit volume="1.0" differed from an absent attribute.
 * Disting EX

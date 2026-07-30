@@ -223,9 +223,12 @@ public class MPC3TrackFile
 
         layerNode.put ("pan", (Math.clamp (zone.getPanning (), -1.0d, 1.0d) + 1.0d) / 2.0d);
 
+        // Ensure that a root note is set, if this is not the case it is read from the WAV file
+        // which is not forced to contain a SMPL chunk!
+        layerNode.put ("rootNote", limitToDefault (zone.getKeyRoot (), limitToDefault (zone.getKeyLow (), 0)));
+
         final double tuneSemitones = zone.getTuning ();
         final int coarseTune = (int) Math.round (tuneSemitones);
-        layerNode.put ("pitch", tuneSemitones);
         layerNode.put ("coarseTune", coarseTune);
         layerNode.put ("fineTune", (int) Math.round ((tuneSemitones - coarseTune) * 100.0));
 
@@ -283,7 +286,7 @@ public class MPC3TrackFile
         final IFilter filter = optFilter.get ();
         final ObjectNode filterValueNode = (ObjectNode) synthNode.get ("filterData").get (VALUE0);
         filterValueNode.put ("filterType", MPCFilter.getFilterIndex (filter));
-        filterValueNode.put ("filterCutoff", MathUtils.normalizeFrequency (filter.getCutoff (), IFilter.MAX_FREQUENCY));
+        filterValueNode.put ("filterCutoff", MathUtils.normalizeCutoff (filter.getCutoff ()));
         filterValueNode.put ("filterResonance", filter.getResonance ());
         filterValueNode.put ("filterKeytrack", filter.getCutoffKeyTracking ());
         final double filterCutoffVelocityAmount = filter.getCutoffVelocityModulator ().getDepth ();

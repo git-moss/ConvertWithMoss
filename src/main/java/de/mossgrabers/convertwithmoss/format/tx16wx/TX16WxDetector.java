@@ -45,8 +45,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataWithSearchHeightSettingsUI;
 import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -677,7 +677,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             if (modulator.isSource ("Vel"))
                 filter.getCutoffVelocityModulator ().setDepth (amount);
             else if (modulator.isSource ("Key"))
-                filter.setCutoffKeyTracking (Math.clamp (modAmount / 1200.0, -1, 1));
+                filter.setCutoffKeyTracking (Math.clamp (modAmount / 24000.0, -1, 1));
             else if (modulator.isSource ("ENV1", "ENV2"))
             {
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
