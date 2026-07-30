@@ -84,7 +84,7 @@ Finally, have fun.
 
 ## Build from sources
 
-Ensure to have the required `JVM`, `JRE`, `JavaFX` and `Maven` dependencies preinstalled and set the `JAVA_HOME` environment variable to specify which Java version to use; the minimum required version is `24`. Then use `mvn install` command to start the build.
+Ensure to have the required `JDK` and latest `Maven` software installed and set the `JAVA_HOME` environment variable to specify which Java version to use; the minimum required version is `25`. Then use `mvn install` command to start the build.
 
 See also the various build scripts in this directory as references on how to build the documentation and/or the application source files.
 
