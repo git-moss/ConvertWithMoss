@@ -37,6 +37,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 
 import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
@@ -135,6 +136,48 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         this.isCancelled.set (false);
 
         this.startDetection ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public synchronized Optional<IMultisampleSource> readSource (final File sourceFolder, final File sourceFile, final int indexInFile, final boolean detectPerformances)
+    {
+        this.configureFileEndings (detectPerformances);
+
+        this.sourceFolder = sourceFolder;
+        this.detectPerformances = detectPerformances;
+        this.sourceFiles.clear ();
+        this.unsupportedElements.clear ();
+        this.unsupportedAttributes.clear ();
+        this.isCancelled.set (false);
+
+        final SourcePicker picker = new SourcePicker (indexInFile);
+        // Reading is stopped as soon as the wanted source was delivered
+        this.multisampleSourceConsumer = multisampleSource -> {
+            if (picker.accept (multisampleSource))
+                this.isCancelled.set (true);
+        };
+        this.performanceSourceConsumer = performanceSource -> {
+            final List<IInstrumentSource> instrumentSources = performanceSource.getInstruments ();
+            if (!instrumentSources.isEmpty () && picker.accept (instrumentSources.get (0).getMultisampleSource ()))
+                this.isCancelled.set (true);
+        };
+
+        try
+        {
+            this.detectFiles (List.of (sourceFile));
+        }
+        catch (final RuntimeException | OutOfMemoryError err)
+        {
+            this.notifier.logError (err);
+        }
+        finally
+        {
+            this.isCancelled.set (false);
+        }
+
+        return Optional.ofNullable (picker.getSource ());
     }
 
 
@@ -1029,6 +1072,64 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         catch (final IOException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_BROKEN_WAV", ex);
+        }
+    }
+
+
+    /**
+     * Picks one specific source out of all the sources which a file delivers. The index is counted
+     * exactly like a detection run counts it - per file and in the order of delivery - so that both
+     * address the same source.
+     */
+    private static class SourcePicker
+    {
+        private final int          wantedIndex;
+
+        private File               currentFile = null;
+        private int                indexInFile = 0;
+        private IMultisampleSource source      = null;
+
+
+        /**
+         * Constructor.
+         *
+         * @param wantedIndex The index of the source to pick
+         */
+        SourcePicker (final int wantedIndex)
+        {
+            this.wantedIndex = wantedIndex;
+        }
+
+
+        /**
+         * Check the next delivered source.
+         *
+         * @param multisampleSource The delivered source
+         * @return True if this was the wanted source and nothing else needs to be read
+         */
+        boolean accept (final IMultisampleSource multisampleSource)
+        {
+            final File sourceFile = multisampleSource.getSourceFile ();
+            if (this.currentFile == null || !this.currentFile.equals (sourceFile))
+            {
+                this.currentFile = sourceFile;
+                this.indexInFile = 0;
+            }
+            if (this.indexInFile++ != this.wantedIndex)
+                return false;
+            this.source = multisampleSource;
+            return true;
+        }
+
+
+        /**
+         * Get the picked source.
+         *
+         * @return The source, null if the file delivered no source with the wanted index
+         */
+        IMultisampleSource getSource ()
+        {
+            return this.source;
         }
     }
 }

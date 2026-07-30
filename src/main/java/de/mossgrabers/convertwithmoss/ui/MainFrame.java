@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.ContentsEntry;
 import de.mossgrabers.convertwithmoss.core.ConverterBackend;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.ICoreTask;
+import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
@@ -163,6 +164,15 @@ public class MainFrame extends AbstractFrame implements INotifier
     private int                    numberOfFoundSources                = 0;
     private int                    numberOfSelectedSources             = 0;
     private final DetectSettings   detectSettings                      = new DetectSettings ();
+
+    // The format of the last contents run, which is the one to read from when listening to a preset
+    private IDetector<?>           contentsDetector;
+    private boolean                contentsDetectPerformances          = false;
+    // Keeps the last source which was listened to, so that playing it again is instant. Only one is
+    // kept, since the samples of a preset of a disk image can be quite large
+    private ContentsEntry          auditionEntry;
+    private IMultisampleSource     auditionSource;
+    private volatile boolean       isLoggingSuppressed                 = false;
 
     // Parameters of Settings dialog
     private boolean                addNewFiles;
@@ -784,6 +794,12 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
         final boolean detectPerformances = selectedType == DEST_TYPE_PERFORMANCE || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY;
+
+        // Remember what is read, so that a preset can be read again to listen to it
+        this.contentsDetector = detector;
+        this.contentsDetectPerformances = detectPerformances;
+        this.clearAuditionCache ();
+
         Platform.runLater (() -> this.backend.detectContents (detector, this.detectSettings, detectPerformances));
     }
 
@@ -802,8 +818,10 @@ public class MainFrame extends AbstractFrame implements INotifier
             return;
         }
 
-        this.contentsDialog.setEntries (entries);
+        this.contentsDialog.setEntries (entries, this::readAuditionSource);
         this.contentsDialog.display ().thenAccept (result -> {
+            this.contentsDialog.stopAudition ();
+            this.clearAuditionCache ();
             if (!result.booleanValue ())
                 return;
             this.detectSettings.selectedSources.clear ();
@@ -815,6 +833,50 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.numberOfFoundSources = entries.size ();
             this.updateSelectionPane ();
         });
+    }
+
+
+    /**
+     * Read the source of one entry of the contents dialog again, so that it can be listened to. The
+     * entries only hold the information to display, since keeping all sources of e.g. a disk image
+     * would need far too much memory. Called from a background thread of the dialog.
+     *
+     * @param entry The entry to read
+     * @return The source, null if it could not be read
+     */
+    private synchronized IMultisampleSource readAuditionSource (final ContentsEntry entry)
+    {
+        if (entry.equals (this.auditionEntry))
+            return this.auditionSource;
+        if (this.contentsDetector == null)
+            return null;
+
+        // The detector reports everything it reads, which would end up in a message dialog since
+        // the log is not shown while the contents dialog is
+        this.isLoggingSuppressed = true;
+        final Optional<IMultisampleSource> source;
+        try
+        {
+            source = this.contentsDetector.readSource (this.detectSettings.sourceFolder, entry.getSourceFile (), entry.getIndexInFile (), this.contentsDetectPerformances);
+        }
+        finally
+        {
+            this.isLoggingSuppressed = false;
+        }
+
+        this.auditionEntry = entry;
+        this.auditionSource = source.orElse (null);
+        return this.auditionSource;
+    }
+
+
+    /**
+     * Forget the source which was listened to last, so that its samples can be freed.
+     */
+    private synchronized void clearAuditionCache ()
+    {
+        this.auditionEntry = null;
+        this.auditionSource = null;
     }
 
 
@@ -885,26 +947,6 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.applySourcePath ())
             return false;
         this.activeSourceHistory ().add (0, this.sourcePathField.getEditor ().getText ());
-        // Check source folder. A file can be entered as well - which is what switching Batch off
-        // does - and is then the only file to convert.
-        final File sourcePath = new File (this.sourcePathField.getEditor ().getText ());
-        this.detectSettings.sourceFiles.clear ();
-        if (sourcePath.isFile ())
-        {
-            this.detectSettings.sourceFolder = sourcePath.getAbsoluteFile ().getParentFile ();
-            this.detectSettings.sourceFiles.add (sourcePath.getAbsoluteFile ());
-        }
-        else
-        {
-            if (!sourcePath.isDirectory ())
-            {
-                Functions.message ("@IDS_NOTIFY_SOURCE_DOES_NOT_EXIST", sourcePath.getAbsolutePath ());
-                this.sourcePathField.requestFocus ();
-                return false;
-            }
-            this.detectSettings.sourceFolder = sourcePath;
-        }
-        this.activeSourceHistory ().add (0, sourcePath.getAbsolutePath ());
 
         // Check output folder
         this.detectSettings.outputFolder = new File (this.destinationPathField.getEditor ().getText ());
@@ -1006,6 +1048,12 @@ public class MainFrame extends AbstractFrame implements INotifier
     @Override
     public void logText (final String text)
     {
+        if (this.isLoggingSuppressed)
+        {
+            this.logToFile (text);
+            return;
+        }
+
         final boolean combine = this.combineWithPreviousMessage;
         this.combineWithPreviousMessage = !text.endsWith ("\n");
         if (this.executePane.isVisible ())
@@ -1063,6 +1111,12 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private void logErrorText (final String message)
     {
+        if (this.isLoggingSuppressed)
+        {
+            this.logToFile (message);
+            return;
+        }
+
         if (this.executePane.isVisible ())
             this.logger.error (message);
         else
