@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
@@ -113,8 +114,7 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-Zs", "--ProcessSnapLoops").paramLabel ("PROCESS_SNAP_LOOPS").type (Boolean.class).description ("Snaps forward loop boundaries to the nearest zero-crossing to remove loop clicks, if processing is enabled.").build ());
             spec.addOption (OptionSpec.builder ("-Zp", "--ProcessTranspose").paramLabel ("PROCESS_TRANSPOSE").type (Integer.class).description ("Transposes playback by the given number of semitones (-24 to 24) by moving the sample root keys, if processing is enabled. The key ranges are not changed.").build ());
 
-            spec.addPositional (PositionalParamSpec.builder ().paramLabel ("SOURCE_FOLDER").type (File.class).description ("The source folder to process.").required (true).build ());
-            spec.addPositional (PositionalParamSpec.builder ().paramLabel ("DESTINATION_FOLDER").type (File.class).description ("The destination folder to write to.").required (true).build ());
+            spec.addPositional (PositionalParamSpec.builder ().paramLabel ("SOURCE... DESTINATION_FOLDER").hideParamSyntax (true).type (List.class).auxiliaryTypes (File.class).index ("0..*").arity ("2..*").description ("The source folder to process or, instead, one or more source files to convert only these (e.g. by using a wildcard), followed by the destination folder to write to.").required (true).build ());
 
             final CommandLine commandLine = new CommandLine (spec);
 
@@ -207,11 +207,9 @@ public class CLIBackend implements INotifier
         }
 
         // Renaming option & folder check
-        detectSettings.sourceFolder = parseResult.matchedPositionalValue (0, null);
-        detectSettings.outputFolder = parseResult.matchedPositionalValue (1, null);
         try
         {
-            verifyFolders (detectSettings.sourceFolder, detectSettings.outputFolder);
+            applyPaths (detectSettings, parseResult.matchedPositionalValue (0, Collections.<File> emptyList ()));
         }
         catch (final IllegalArgumentException ex)
         {
@@ -340,22 +338,62 @@ public class CLIBackend implements INotifier
 
 
     /**
-     * Set and check folder for existence.
+     * Split the given paths into the source(s) and the destination folder, check them for
+     * existence and apply them to the detection settings. The last path is always the destination
+     * folder. The source is either one folder to search or one or more files to convert.
      *
-     * @param sourceFolder The source folder to check
-     * @param destinationFolder The destination folder to check
-     * @throws IllegalArgumentException Source of destination folder has a problem
+     * @param detectSettings Where to apply the paths to
+     * @param paths The source path(s) followed by the destination folder
+     * @throws IllegalArgumentException One of the paths has a problem
      */
-    private static void verifyFolders (final File sourceFolder, final File destinationFolder) throws IllegalArgumentException
+    private static void applyPaths (final DetectSettings detectSettings, final List<File> paths) throws IllegalArgumentException
     {
-        // Check source folder
-        if (!sourceFolder.exists () || !sourceFolder.isDirectory ())
-            throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_FOLDER_DOES_NOT_EXIST", sourceFolder.getAbsolutePath ()));
+        final List<File> sources = paths.subList (0, paths.size () - 1);
+        final File destinationFolder = paths.get (paths.size () - 1);
+
+        // Check source folder or files
+        final File firstSource = sources.get (0);
+        if (sources.size () == 1 && firstSource.isDirectory ())
+            detectSettings.sourceFolder = firstSource;
+        else
+        {
+            for (final File source: sources)
+            {
+                if (!source.isFile ())
+                    throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_SOURCE_DOES_NOT_EXIST", source.getAbsolutePath ()));
+                detectSettings.sourceFiles.add (source.getAbsoluteFile ());
+            }
+            // All sub-paths are calculated relative to the folder which contains the files
+            detectSettings.sourceFolder = getCommonFolder (detectSettings.sourceFiles);
+        }
+        if (detectSettings.sourceFolder == null || !detectSettings.sourceFolder.isDirectory ())
+            throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_SOURCE_DOES_NOT_EXIST", firstSource.getAbsolutePath ()));
 
         // Check output folder
         if (!destinationFolder.exists () && !destinationFolder.mkdirs ())
             throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", destinationFolder.getAbsolutePath ()));
         if (!destinationFolder.isDirectory ())
             throw new IllegalArgumentException (Functions.getMessage ("IDS_NOTIFY_FOLDER_DESTINATION_NOT_A_FOLDER", destinationFolder.getAbsolutePath ()));
+        detectSettings.outputFolder = destinationFolder;
+    }
+
+
+    /**
+     * Get the deepest folder which contains all of the given files. This is simply the parent
+     * folder if all files are located in the same folder, which is the normal case.
+     *
+     * @param files The files
+     * @return The common folder or null if there is none
+     */
+    private static File getCommonFolder (final List<File> files)
+    {
+        File commonFolder = files.get (0).getParentFile ();
+        for (final File file: files)
+        {
+            final String path = file.getParentFile ().getAbsolutePath ();
+            while (commonFolder != null && !path.equals (commonFolder.getAbsolutePath ()) && !path.startsWith (commonFolder.getAbsolutePath () + File.separator))
+                commonFolder = commonFolder.getParentFile ();
+        }
+        return commonFolder;
     }
 }

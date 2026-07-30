@@ -60,6 +60,11 @@
 	-fx-padding: 0.0;
 }
 
+/** The 'Folder' and 'File' buttons next to the source path. */
+.sourceSelectButtons {
+    -fx-spacing: 5.0;
+}
+
 .tile-pane {
     -fx-hgap: 15.0;
     -fx-vgap: 15.0;
