@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -126,20 +127,23 @@ import de.mossgrabers.tools.ui.Functions;
 public class ConverterBackend
 {
     private static final String            IDS_NOTIFY_SAVE_FAILED      = "IDS_NOTIFY_SAVE_FAILED";
-
-    /**
-     * The prefixes of the formats where one source file contains more than one preset, e.g. a bank,
-     * a disk image or a library. Selecting the contents of a source is only useful for these, since
-     * for all other formats one file simply is one preset, which can already be picked as a file.
-     *
-     * This is kept in one place to have the whole classification reviewable at a glance. It could
-     * as well become a method of the detectors themselves, like it is done for performances.
-     */
-    private static final Set<String>       MULTI_PRESET_FORMATS        = Set.of (
-            // Banks and disk images of hardware samplers
-            "EIII", "E4B", "EXB", "ISO", "Ensoniq", "Mirage", "S900", "S1000", "MPC2000", "MPC60", "Kurzweil", "KMP", "S5xx", "S7xx",
-            // Projects and libraries which hold several presets
-            "MC707", "SP404MK2", "ZenCore", "1010music", "Bento", "Ysfc", "Nki", "Sf2", "DLS", "ZBP", "DecentSampler", "Ableton");
+    /** The MIDI note at the middle of the keyboard. */
+    private static final int               MIDDLE_KEY                  = 60;
+    private static final String []         NOTE_NAMES                  =
+    {
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B"
+    };
 
     protected INotifier                    notifier;
     protected final List<IDetector<?>>     detectors;
@@ -363,19 +367,6 @@ public class ConverterBackend
 
 
     /**
-     * Check if one source file of the format of the given detector can contain more than one
-     * preset, which makes it useful to display and select the contents of a source.
-     *
-     * @param detector The detector to check
-     * @return True if one file can contain several presets
-     */
-    public static boolean containsMultiplePresets (final IDetector<?> detector)
-    {
-        return MULTI_PRESET_FORMATS.contains (detector.getPrefix ());
-    }
-
-
-    /**
      * Get the sources which were found by the last contents detection run.
      *
      * @return The found sources
@@ -437,7 +428,7 @@ public class ConverterBackend
 
         if (this.onlyContents)
         {
-            this.contentsEntries.add (new ContentsEntry (index, multisampleSource));
+            this.contentsEntries.add (new ContentsEntry (index, multisampleSource, this.detectionSettings.sourceFolder));
             this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", multisampleSource.getName ());
             return;
         }
@@ -491,7 +482,7 @@ public class ConverterBackend
 
         if (this.onlyContents)
         {
-            this.contentsEntries.add (new ContentsEntry (index, performanceSource.getName (), instrumentSources.get (0).getMultisampleSource ()));
+            this.contentsEntries.add (new ContentsEntry (index, performanceSource.getName (), instrumentSources.get (0).getMultisampleSource (), this.detectionSettings.sourceFolder));
             this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", performanceSource.getName ());
             return;
         }
@@ -572,6 +563,75 @@ public class ConverterBackend
         ensureSafeSampleFileNames (multisampleSource);
         this.processSamples (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
+        this.checkOffCenterMapping (multisampleSource);
+    }
+
+
+    /**
+     * Log a note when the key in the middle of the keyboard plays the samples of the multi-sample
+     * an octave or more transposed. Vintage phrase and vocal presets - one recording or its
+     * velocity layers stretched across the keyboard - are often rooted far off-center, since they
+     * were triggered from drum machines and sequencers rather than played on keys. The conversion
+     * keeps the mapping faithfully; the note prevents mistaking it for a conversion error. A
+     * preset with more than two distinct roots is a crafted multi-sample whose placement is a
+     * design decision and gets no note.
+     *
+     * @param multisampleSource The multi-sample to check
+     */
+    private void checkOffCenterMapping (final IMultisampleSource multisampleSource)
+    {
+        final int middleRoot = getMiddleRoot (multisampleSource);
+        if (middleRoot < 0 || Math.abs (middleRoot - MIDDLE_KEY) < 12)
+            return;
+
+        final Set<Integer> distinctRoots = new HashSet<> ();
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final int root = zone.getKeyRoot ();
+                if (root >= 0 && zone.getKeyTracking () != 0)
+                    distinctRoots.add (Integer.valueOf (root));
+            }
+        if (distinctRoots.size () <= 2)
+            this.notifier.log ("IDS_NOTIFY_OFF_CENTER_MAPPING", multisampleSource.getName (), formatNote (middleRoot));
+    }
+
+
+    /**
+     * Get the root key of the zone which sounds at the middle of the keyboard - the zone whose
+     * root lies closest to the middle among those covering it. Fixed-pitch zones play untransposed
+     * everywhere and are ignored.
+     *
+     * @param multisampleSource The multi-sample
+     * @return The root key or -1 if no key-tracked zone covers the middle of the keyboard
+     */
+    private static int getMiddleRoot (final IMultisampleSource multisampleSource)
+    {
+        int bestRoot = -1;
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final int keyLow = Math.max (0, zone.getKeyLow ());
+                final int keyHigh = zone.getKeyHigh () < 0 ? 127 : zone.getKeyHigh ();
+                if (keyLow > MIDDLE_KEY || keyHigh < MIDDLE_KEY || zone.getKeyTracking () == 0)
+                    continue;
+                final int root = zone.getKeyRoot ();
+                if (root >= 0 && root < 128 && (bestRoot < 0 || Math.abs (root - MIDDLE_KEY) < Math.abs (bestRoot - MIDDLE_KEY)))
+                    bestRoot = root;
+            }
+        return bestRoot;
+    }
+
+
+    /**
+     * Format a MIDI note as its note name (middle C 60 = C3) with the MIDI number.
+     *
+     * @param midiNote The MIDI note [0..127]
+     * @return The formatted note
+     */
+    private static String formatNote (final int midiNote)
+    {
+        return NOTE_NAMES[midiNote % 12] + (midiNote / 12 - 2) + " (MIDI " + midiNote + ")";
     }
 
 

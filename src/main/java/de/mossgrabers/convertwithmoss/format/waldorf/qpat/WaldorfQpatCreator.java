@@ -226,9 +226,20 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final String author = this.settingsConfiguration.getAuthor ();
         if (author != null && !author.isBlank ())
             metadata.setCreator (author);
-        // An explicit bank from the settings replaces the one of the source
+        // The device has a field of its own for the bank, so the preset name does not need to
+        // repeat it - only the file name keeps it, for the user to tell the files apart. An
+        // explicit bank from the settings replaces the source's one, which is then no longer
+        // written anywhere, so in that case the name keeps it - but only as long as the qualified
+        // name fits into the name field. What does not fit is cut off, and that is exactly the part
+        // which tells the presets of one bank apart: 'Full Arco String - Arco Strings Lo' and
+        // '... Hi' both end up as 'Full Arco String - Arco Strings' on the display of the device.
+        // Losing the bank is the better trade in that case, since the preset name is what is looked
+        // for and the bank of the source is still in the file name.
         final String bank = this.settingsConfiguration.getBank ();
-        if (bank != null && !bank.isBlank ())
+        final boolean replacesSourceBank = bank != null && !bank.isBlank ();
+        final String nameWithoutBank = createNameWithoutBank (multisampleSource);
+        final String presetName = replacesSourceBank ? this.fitIntoNameField (multisampleSource.getName (), nameWithoutBank) : nameWithoutBank;
+        if (replacesSourceBank)
             metadata.setDescription (bank);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
