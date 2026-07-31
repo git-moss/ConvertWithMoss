@@ -130,6 +130,25 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
+     * Choose the name to write into the name field of the preset. The field holds a fixed number of
+     * characters and everything beyond that is cut off, therefore the alternative is used as soon
+     * as the preferred name does not fit.
+     *
+     * @param preferredName The name to use if it fits into the field
+     * @param alternativeName The name to use otherwise
+     * @return The name to write
+     */
+    private String fitIntoNameField (final String preferredName, final String alternativeName)
+    {
+        // The name is converted to ASCII before it is written, which can change its length
+        if (StringUtils.fixASCII (preferredName).length () <= WaldorfQpatConstants.MAX_STRING_LENGTH)
+            return preferredName;
+        this.notifier.log ("IDS_QPAT_NOTIFY_NAME_WITHOUT_BANK", preferredName, alternativeName);
+        return alternativeName;
+    }
+
+
+    /**
      * Create the QPAT file and store it.
      *
      * @param multisampleSource The multi-sample source
@@ -155,10 +174,16 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // The device has a field of its own for the bank, so the preset name does not need to
         // repeat it - only the file name keeps it, for the user to tell the files apart. An
         // explicit bank from the settings replaces the source's one, which is then no longer
-        // written anywhere, so in that case the name keeps it
+        // written anywhere, so in that case the name keeps it - but only as long as the qualified
+        // name fits into the name field. What does not fit is cut off, and that is exactly the part
+        // which tells the presets of one bank apart: 'Full Arco String - Arco Strings Lo' and
+        // '... Hi' both end up as 'Full Arco String - Arco Strings' on the display of the device.
+        // Losing the bank is the better trade in that case, since the preset name is what is looked
+        // for and the bank of the source is still in the file name.
         final String bank = this.settingsConfiguration.getBank ();
         final boolean replacesSourceBank = bank != null && !bank.isBlank ();
-        final String presetName = replacesSourceBank ? multisampleSource.getName () : createNameWithoutBank (multisampleSource);
+        final String nameWithoutBank = createNameWithoutBank (multisampleSource);
+        final String presetName = replacesSourceBank ? this.fitIntoNameField (multisampleSource.getName (), nameWithoutBank) : nameWithoutBank;
         if (replacesSourceBank)
             metadata.setDescription (bank);
 
