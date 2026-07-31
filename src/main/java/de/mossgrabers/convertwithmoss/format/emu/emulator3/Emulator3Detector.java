@@ -183,17 +183,18 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         this.numberOfReadBanks = 0;
         for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
         {
-            // Skip the files which are not EIII banks, e.g. the operating system of the sampler or
-            // the banks of the newer EOS samplers, which share the filesystem but not the format
+            // Skip the files which are not EIII banks, e.g. the banks of the newer EOS samplers,
+            // which share the filesystem but not the format
             final byte [] content = imageFile.getContent ();
             final Emulator3BankFormat bankFormat = Emulator3BankFormat.get (content);
             if (bankFormat == null)
                 continue;
-            // The CD-ROM mastering tools store the name of the disk as an empty bank; the sampler
-            // and other tools show that name as the name of the volume
+            // The CD-ROM mastering tools store the name of the disk - and on several volumes
+            // the names of the sections of the bank list - as empty banks; the sampler shows
+            // them as labels between the banks
             if (isBankEmpty (content, bankFormat))
             {
-                this.notifier.log ("IDS_EIII_DISK_NAME", imageFile.getName ());
+                this.notifier.log ("IDS_EIII_LABEL_BANK", imageFile.getName ());
                 continue;
             }
             this.numberOfReadBanks++;
@@ -412,13 +413,15 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Check whether a bank holds neither presets nor samples. The CD-ROM mastering tools store the
-     * name of a disk as such an empty bank ('E-mu Banks 1-44' on the first library CD-ROM), which
-     * the sampler shows as the name of the volume.
+     * Check whether a bank holds neither playable presets nor samples. The CD-ROM mastering tools
+     * store the name of a disk as such an empty bank ('E-mu Banks 1-44' on the first library
+     * CD-ROM), which the sampler shows as the name of the volume. The stubs of several volumes
+     * hold one preset which maps no key at all, so a preset only counts when it maps keys.
      *
      * @param data The content of the bank
      * @param bankFormat The format of the bank
-     * @return True if the bank holds the address tables of its format but no preset and no sample
+     * @return True if the bank holds the address tables of its format but no playable preset and
+     *         no sample
      */
     private static boolean isBankEmpty (final byte [] data, final Emulator3BankFormat bankFormat)
     {
@@ -430,8 +433,13 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
             if (Emulator3Constants.getU32 (data, sampleTable + i * 4) != 0)
                 return false;
         for (int i = 0; i < bankFormat.getMaxPresets (); i++)
-            if (isPresetPresent (data, bankFormat, i))
+        {
+            if (!isPresetPresent (data, bankFormat, i))
+                continue;
+            final int presetOffset = getPresetOffset (data, bankFormat, i);
+            if (presetOffset < 0 || (data[presetOffset + Emulator3Constants.PRESET_NUM_NOTE_ZONES] & 0xFF) != 0)
                 return false;
+        }
         return true;
     }
 
@@ -572,6 +580,12 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         int currentIndex = presetIndex;
         while (currentIndex >= 0 && visited.add (Integer.valueOf (currentIndex)))
         {
+            // A link to a slot which holds no preset ends the chain. Several library CD-ROMs
+            // leave the link of the last element of a preset chain dangling; an empty slot has
+            // the address of its successor, so following it would read zones from behind the
+            // last preset and report their garbage as missing samples
+            if (!isPresetPresent (data, bankFormat, currentIndex))
+                break;
             final int offset = getPresetOffset (data, bankFormat, currentIndex);
             if (offset < 0)
                 break;
