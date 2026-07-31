@@ -74,7 +74,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         TYPE_LOOKUP.put (Integer.valueOf (2), WaldorfQpatResourceType.USER_SAMPLE_MAP3);
     }
 
-    private int                                                nextImportNumber       = 0;
+    private int nextImportNumber = 0;
 
 
     /**
@@ -237,8 +237,6 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // for and the bank of the source is still in the file name.
         final String bank = this.settingsConfiguration.getBank ();
         final boolean replacesSourceBank = bank != null && !bank.isBlank ();
-        final String nameWithoutBank = createNameWithoutBank (multisampleSource);
-        final String presetName = replacesSourceBank ? this.fitIntoNameField (multisampleSource.getName (), nameWithoutBank) : nameWithoutBank;
         if (replacesSourceBank)
             metadata.setDescription (bank);
 

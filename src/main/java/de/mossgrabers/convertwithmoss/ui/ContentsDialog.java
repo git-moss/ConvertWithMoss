@@ -219,7 +219,7 @@ public class ContentsDialog extends PseudoModalDialog
                 else if (!this.auditionPlayer.play (source, () -> Platform.runLater (this::endAudition)))
                     message = Functions.getMessage ("IDS_CONTENTS_AUDITION_SILENT", entry.getName ());
             }
-            catch (final IOException | RuntimeException | OutOfMemoryError ex)
+            catch (final IOException | RuntimeException | OutOfMemoryError _)
             {
                 message = Functions.getMessage ("IDS_CONTENTS_AUDITION_FAILED", entry.getName ());
             }

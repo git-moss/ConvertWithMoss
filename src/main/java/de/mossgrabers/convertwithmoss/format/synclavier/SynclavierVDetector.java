@@ -45,8 +45,11 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
 {
+    private static final String TAG_PARTIAL           = "Partial ";
+
     private static final String MACOS_METADATA_FOLDER = "__MACOSX/";
     private static final String SAMPLE_OBJECT_PREFIX  = "AudioSampleObject";
+
     /** The Arturia sample pool of Synclavier V on macOS. */
     private static final File   MACOS_SAMPLE_POOL     = new File ("/Library/Arturia/Samples/Synclavier V");
     /** The Arturia sample pool of Synclavier V on Windows. */
@@ -142,7 +145,7 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
 
             // Only partials whose carrier plays the sound file ('Audition') provide audio; in
             // 'Synthesis' mode the file was only the source of the resynthesis frames
-            final int carrierMode = (int) Math.round (preset.getParameter ("Partial " + partial + " Carrier Mode", 0) * 2);
+            final int carrierMode = (int) Math.round (preset.getParameter (TAG_PARTIAL + partial + " Carrier Mode", 0) * 2);
             if (carrierMode != CARRIER_MODE_AUDITION)
                 continue;
 
@@ -162,12 +165,12 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
                 }
                 zone = createZone (preset, partial, samplePath, sampleData.get (), volumeNormalized, hasVelocitySource);
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 this.notifier.logError ("IDS_SYNCLAVIER_SAMPLE_NOT_FOUND", samplePath);
                 continue;
             }
-            final DefaultGroup group = new DefaultGroup ("Partial " + partial);
+            final DefaultGroup group = new DefaultGroup (TAG_PARTIAL + partial);
             // Record the per-partial settings on the group as well; they are already applied to
             // the zone, therefore a creator must use either the group or the zone value
             group.setPanning (zone.getPanning ());
@@ -190,7 +193,7 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
         int synthesisPartials = 0;
         for (int partial = 1; partial <= MAX_PARTIALS; partial++)
         {
-            final int carrierMode = (int) Math.round (preset.getParameter ("Partial " + partial + " Carrier Mode", 0) * 2);
+            final int carrierMode = (int) Math.round (preset.getParameter (TAG_PARTIAL + partial + " Carrier Mode", 0) * 2);
             if (carrierMode != CARRIER_MODE_AUDITION && preset.getParameter ("Partial Volume " + partial, 0) > 0)
                 synthesisPartials++;
         }
@@ -259,18 +262,18 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
         zone.setTuning (fileTuneCents / 100.0 + partialTuning (preset, partial));
 
         final int frames = sampleData.getAudioMetadata ().getNumberOfSamples ();
-        zone.setStart ((int) Math.round (preset.getParameter ("Partial " + partial + " File Start", 0) * frames));
-        zone.setStop ((int) Math.round (preset.getParameter ("Partial " + partial + " File End", 1) * frames));
+        zone.setStart ((int) Math.round (preset.getParameter (TAG_PARTIAL + partial + " File Start", 0) * frames));
+        zone.setStop ((int) Math.round (preset.getParameter (TAG_PARTIAL + partial + " File End", 1) * frames));
 
-        if (preset.getParameter ("Partial " + partial + " File Loop Mode", 0) >= 0.5)
+        if (preset.getParameter (TAG_PARTIAL + partial + " File Loop Mode", 0) >= 0.5)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
             loop.setType (LoopType.FORWARDS);
-            loop.setStart ((int) Math.round (preset.getParameter ("Partial " + partial + " File Loop Start", 0) * frames));
-            loop.setEnd ((int) Math.round (preset.getParameter ("Partial " + partial + " File Loop End", 1) * frames));
+            loop.setStart ((int) Math.round (preset.getParameter (TAG_PARTIAL + partial + " File Loop Start", 0) * frames));
+            loop.setEnd ((int) Math.round (preset.getParameter (TAG_PARTIAL + partial + " File Loop End", 1) * frames));
             zone.addLoop (loop);
         }
-        else if (preset.getParameter ("Partial " + partial + " Intrinsic File Loop", 1) >= 0.5 && sampleData instanceof final WavFileSampleData wavData)
+        else if (preset.getParameter (TAG_PARTIAL + partial + " Intrinsic File Loop", 1) >= 0.5 && sampleData instanceof final WavFileSampleData wavData)
             // Without an explicit loop the file's own loop applies
             wavData.addZoneData (zone, false, true);
 

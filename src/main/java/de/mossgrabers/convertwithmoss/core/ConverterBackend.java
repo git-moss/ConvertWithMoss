@@ -126,7 +126,9 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class ConverterBackend
 {
+    private static final String            IDS_NOTIFY_ANALYZE_OK       = "IDS_NOTIFY_ANALYZE_OK";
     private static final String            IDS_NOTIFY_SAVE_FAILED      = "IDS_NOTIFY_SAVE_FAILED";
+
     /** The MIDI note at the middle of the keyboard. */
     private static final int               MIDDLE_KEY                  = 60;
     private static final String []         NOTE_NAMES                  =
@@ -429,7 +431,7 @@ public class ConverterBackend
         if (this.onlyContents)
         {
             this.contentsEntries.add (new ContentsEntry (index, multisampleSource, this.detectionSettings.sourceFolder));
-            this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", multisampleSource.getName ());
+            this.notifier.log (IDS_NOTIFY_ANALYZE_OK, multisampleSource.getName ());
             return;
         }
 
@@ -448,7 +450,7 @@ public class ConverterBackend
 
         if (this.onlyAnalyse)
         {
-            this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", multisampleSource.getName ());
+            this.notifier.log (IDS_NOTIFY_ANALYZE_OK, multisampleSource.getName ());
             return;
         }
 
@@ -483,7 +485,7 @@ public class ConverterBackend
         if (this.onlyContents)
         {
             this.contentsEntries.add (new ContentsEntry (index, performanceSource.getName (), instrumentSources.get (0).getMultisampleSource (), this.detectionSettings.sourceFolder));
-            this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", performanceSource.getName ());
+            this.notifier.log (IDS_NOTIFY_ANALYZE_OK, performanceSource.getName ());
             return;
         }
 
@@ -572,9 +574,9 @@ public class ConverterBackend
      * an octave or more transposed. Vintage phrase and vocal presets - one recording or its
      * velocity layers stretched across the keyboard - are often rooted far off-center, since they
      * were triggered from drum machines and sequencers rather than played on keys. The conversion
-     * keeps the mapping faithfully; the note prevents mistaking it for a conversion error. A
-     * preset with more than two distinct roots is a crafted multi-sample whose placement is a
-     * design decision and gets no note.
+     * keeps the mapping faithfully; the note prevents mistaking it for a conversion error. A preset
+     * with more than two distinct roots is a crafted multi-sample whose placement is a design
+     * decision and gets no note.
      *
      * @param multisampleSource The multi-sample to check
      */
@@ -598,8 +600,8 @@ public class ConverterBackend
 
 
     /**
-     * Get the root key of the zone which sounds at the middle of the keyboard - the zone whose
-     * root lies closest to the middle among those covering it. Fixed-pitch zones play untransposed
+     * Get the root key of the zone which sounds at the middle of the keyboard - the zone whose root
+     * lies closest to the middle among those covering it. Fixed-pitch zones play untransposed
      * everywhere and are ignored.
      *
      * @param multisampleSource The multi-sample

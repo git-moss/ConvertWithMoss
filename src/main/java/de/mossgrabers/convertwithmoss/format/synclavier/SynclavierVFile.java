@@ -26,6 +26,7 @@ import java.util.TreeMap;
  */
 public class SynclavierVFile
 {
+    private static final String       DOUBLE_0             = " 0 0 ";
     private static final String       SIGNATURE            = "serialization::archive";
     private static final String       ARCHIVE_VERSION      = "10";
     private static final String       SCHEMA_VERSION       = "15";
@@ -266,7 +267,7 @@ public class SynclavierVFile
         writeString (out, this.author);
         writeSeparator (out);
         writeString (out, this.type);
-        writeTokens (out, " 0 0 " + this.tags.size () + " 0");
+        writeTokens (out, DOUBLE_0 + this.tags.size () + " 0");
         for (final String tag: this.tags)
         {
             writeSeparator (out);
@@ -281,7 +282,7 @@ public class SynclavierVFile
         writeTokens (out, " 0 0 0 0 0 0 0");
         writeSeparator (out);
         writeString (out, "");
-        writeTokens (out, " 0 0 " + this.metadata.size () + " 0 0 0");
+        writeTokens (out, DOUBLE_0 + this.metadata.size () + " 0 0 0");
         for (final Map.Entry<String, String> entry: this.metadata.entrySet ())
         {
             writeSeparator (out);
@@ -313,7 +314,7 @@ public class SynclavierVFile
         if (!this.samples.isEmpty ())
         {
             writeString (out, SIGNATURE);
-            writeTokens (out, " " + ARCHIVE_VERSION + " 0 0 " + this.samples.size () + " 1 0");
+            writeTokens (out, " " + ARCHIVE_VERSION + DOUBLE_0 + this.samples.size () + " 1 0");
             boolean isFirst = true;
             for (final Map.Entry<String, byte []> entry: this.samples.entrySet ())
             {
@@ -352,7 +353,7 @@ public class SynclavierVFile
         {
             return Double.parseDouble (value);
         }
-        catch (final NumberFormatException ex)
+        catch (final NumberFormatException _)
         {
             return defaultValue;
         }
@@ -532,7 +533,7 @@ public class SynclavierVFile
             {
                 return Integer.parseInt (token);
             }
-            catch (final NumberFormatException ex)
+            catch (final NumberFormatException _)
             {
                 throw new IOException ("Expected an integer but found: " + token);
             }
@@ -546,7 +547,7 @@ public class SynclavierVFile
             {
                 return Long.parseLong (token);
             }
-            catch (final NumberFormatException ex)
+            catch (final NumberFormatException _)
             {
                 throw new IOException ("Expected an integer but found: " + token);
             }
