@@ -885,13 +885,14 @@ public class MainFrame extends AbstractFrame implements INotifier
 
 
     /**
-     * Only show the contents button for a source format where one file can contain more than one
-     * preset. For all other formats one file simply is one preset, so there is nothing to select.
+     * Show the contents button as soon as a source format is chosen. It is useful for every format:
+     * a bank or a disk image is broken down into its presets, and a folder of files which each hold
+     * one preset is listed with the names of the presets - which are not necessarily the names of
+     * their files - their zones, key ranges and categories, all of which can be listened to.
      */
     private void updateContentsButton ()
     {
-        final int selectedDetector = this.sourceTaskPane.getSelectedFormat ();
-        this.contentsButton.setVisible (selectedDetector >= 0 && ConverterBackend.containsMultiplePresets (this.backend.getDetectors ().get (selectedDetector)));
+        this.contentsButton.setVisible (this.sourceTaskPane.getSelectedFormat () >= 0);
     }
 
 

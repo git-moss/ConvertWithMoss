@@ -166,7 +166,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
         try
         {
-            this.detectFiles (List.of (sourceFile));
+            this.detectSources (List.of (sourceFile));
         }
         catch (final RuntimeException | OutOfMemoryError err)
         {
@@ -267,6 +267,29 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                 else
                     this.handlePresetFile (file);
             }
+    }
+
+
+    /**
+     * Detect the multi-sample(s) in the given sources. A source is normally a file, but a format
+     * whose presets are not files at all - the sample files of a folder become one multi-sample -
+     * reports its folder as the source of a multi-sample, which is then detected as that folder.
+     *
+     * @param sources The files and folders to process
+     */
+    private void detectSources (final List<File> sources)
+    {
+        final List<File> files = new ArrayList<> (sources.size ());
+        for (final File source: sources)
+            if (source.isDirectory ())
+            {
+                if (!this.isCancelled ())
+                    this.detect (source);
+            }
+            else
+                files.add (source);
+        if (!files.isEmpty () && !this.isCancelled ())
+            this.detectFiles (files);
     }
 
 
@@ -407,7 +430,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             if (this.sourceFiles.isEmpty ())
                 this.detect (this.sourceFolder);
             else
-                this.detectFiles (this.sourceFiles);
+                this.detectSources (this.sourceFiles);
         }
         catch (final RuntimeException | OutOfMemoryError err)
         {
