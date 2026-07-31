@@ -28,6 +28,12 @@ an E-mu formatted one; on an E-mu disk the files carry no extension at all.
 later variants use no bias. The `EMULATOR 3X` banks still carry a (empty) `EMULATOR THREE` preset
 address table at 0x6C.
 
+A CD-ROM additionally stores the name of the disk as an *empty* bank: only the header, the empty
+address tables and the filler byte (0x74B bytes in the `EMULATOR THREE` format). The first library
+CD-ROM names it `E-mu Banks 1-44`; the sampler and tools like Awave Studio show that name as the
+name of the volume. Such a stub holds nothing to convert and is reported as the disk name, not as
+a bank.
+
 ## Bank header
 
 ```

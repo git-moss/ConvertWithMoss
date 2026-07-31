@@ -189,6 +189,13 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
             final Emulator3BankFormat bankFormat = Emulator3BankFormat.get (content);
             if (bankFormat == null)
                 continue;
+            // The CD-ROM mastering tools store the name of the disk as an empty bank; the sampler
+            // and other tools show that name as the name of the volume
+            if (isBankEmpty (content, bankFormat))
+            {
+                this.notifier.log ("IDS_EIII_DISK_NAME", imageFile.getName ());
+                continue;
+            }
             this.numberOfReadBanks++;
             results.addAll (this.parseBank (sourceFile, imageFile.getName (), content, bankFormat));
 
@@ -401,6 +408,31 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
             texts.add (index.toString ());
         }
         return String.join (", ", texts);
+    }
+
+
+    /**
+     * Check whether a bank holds neither presets nor samples. The CD-ROM mastering tools store the
+     * name of a disk as such an empty bank ('E-mu Banks 1-44' on the first library CD-ROM), which
+     * the sampler shows as the name of the volume.
+     *
+     * @param data The content of the bank
+     * @param bankFormat The format of the bank
+     * @return True if the bank holds the address tables of its format but no preset and no sample
+     */
+    private static boolean isBankEmpty (final byte [] data, final Emulator3BankFormat bankFormat)
+    {
+        final int maxSamples = bankFormat.getMaxSamples ();
+        final int sampleTable = bankFormat.getSampleTableOffset ();
+        if (sampleTable + (maxSamples + 1) * 4 > data.length)
+            return false;
+        for (int i = 0; i < maxSamples; i++)
+            if (Emulator3Constants.getU32 (data, sampleTable + i * 4) != 0)
+                return false;
+        for (int i = 0; i < bankFormat.getMaxPresets (); i++)
+            if (isPresetPresent (data, bankFormat, i))
+                return false;
+        return true;
     }
 
 
