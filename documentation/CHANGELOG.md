@@ -10,9 +10,11 @@
 * New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
 * New: Added support for the Roland S-550 CD-ROM format.
 * New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
+* New: When a converted preset plays its samples an octave or more from the middle of the keyboard (common for vintage phrase and vocal presets, which were triggered from drum machines rather than played on keys), a log line names the root it plays at, so the faithful mapping is not mistaken for a conversion error. The existing Transpose processing option can move it.
 * User Interface
   * New: There is now a toggle switch before the source field to switch between batch conversion (as it worked before) or only picking a single file to convert. Each mode keeps a history of its own, which is exchanged along with the entered path when the toggle is used.
   * New: A source format where one file contains several presets - a bank, a disk image or a library - has a *Contents...* button, which shows all presets found in the source as a tree of their file and their containers. Each entry shows its number of zones, its key range and its category, so that an unknown bank can be explored, and only the ticked presets are converted. One note of the preset highlighted in the *Contents...* dialog can be played with the *Play* button or a double-click. It is rendered from the preset as it was read - amplitude and filter envelopes, filter, pitch and volume LFOs, velocity and panning - so it tells what the conversion will produce, which allows to pick the presets of an unknown bank by ear. This works for every source format, since it renders the model and not the format.
+  * New: The *Play* button plays the note of a sample root close to the keyboard middle, so that phrase and vocal presets are heard as they were recorded.
   * New: Added tooltips to format lists to be able to see the full text of an entry.
 * Command Line Interface
   * New: One or more source files can be given instead of the source folder, which converts only these files (e.g. `ConvertWithMoss -s exs24 -d 1010music MySampler/Piano*.exs Output`). The last given path stays the destination folder.

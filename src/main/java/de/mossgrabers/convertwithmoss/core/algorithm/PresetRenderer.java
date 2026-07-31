@@ -109,7 +109,10 @@ public class PresetRenderer
 
 
     /**
-     * Get the key which shows a multi-sample best, which is the middle of the range it covers.
+     * Get the key which shows a multi-sample best. That is the root key closest to the middle of
+     * the covered range, since a zone plays its sample as recorded at its root - a phrase or
+     * vocal preset rooted far off-center is then heard unpitched. Without a playable root it is
+     * the middle of the covered keys.
      *
      * @param source The multi-sample
      * @return The key
@@ -132,11 +135,28 @@ public class PresetRenderer
             return CUTOFF_KEY_CENTER;
 
         // The middle of the covered keys, which is the most representative note of the preset
+        int middle = CUTOFF_KEY_CENTER;
         int remaining = count / 2;
         for (int key = 0; key < covered.length; key++)
             if (covered[key] && remaining-- == 0)
-                return key;
-        return CUTOFF_KEY_CENTER;
+            {
+                middle = key;
+                break;
+            }
+
+        // Prefer the root which its own zone plays and which lies closest to that middle
+        int best = -1;
+        for (final IGroup group: source.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final int root = zone.getKeyRoot ();
+                final int keyHigh = zone.getKeyHigh () < 0 ? 127 : Math.min (127, zone.getKeyHigh ());
+                if (root < Math.max (0, zone.getKeyLow ()) || root > keyHigh)
+                    continue;
+                if (best < 0 || Math.abs (root - middle) < Math.abs (best - middle))
+                    best = root;
+            }
+        return best < 0 ? middle : best;
     }
 
 
