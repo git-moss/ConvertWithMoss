@@ -61,7 +61,8 @@
 * DLS
   * Fixed: The pitch envelope was built from the times of EG1 (the amplitude envelope) instead of its own EG2 times.
   * Fixed: The fine tune of a region (stored in cents) was divided by 32768 as if it were a semi-tone fraction - a -50 cent detune shrank to -0.15 cents, erasing the detune of every region.
-  * Fixed: The signed 16 bit accessor of the RIFF chunk framework read big-endian although RIFF is little-endian throughout; the region fine tune (its only user) additionally came out byte-swapped.* E-mu Emulator III
+  * Fixed: The signed 16 bit accessor of the RIFF chunk framework read big-endian although RIFF is little-endian throughout; the region fine tune (its only user) additionally came out byte-swapped.
+* E-mu Emulator III
   * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.
   * Fixed: The preset link is a single byte followed by a separate parameter, not a 16 bit value. A few presets whose second byte is set lost the preset which is layered on top of them.
   * Fixed: The cutoff parameter reaches up to 74 kHz and the banks switch their filter off by parking it anywhere above the audible range, but only the single value 0xFF was taken as that bypass. Every other parked value created a filter which cannot be heard; the frequency now decides. About 3200 zones of the EIIIX library CD-ROMs lose such a filter.
