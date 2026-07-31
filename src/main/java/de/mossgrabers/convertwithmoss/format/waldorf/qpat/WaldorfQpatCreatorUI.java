@@ -31,6 +31,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private static final String QPAT_AUTHOR             = "QPATAuthor";
     private static final String QPAT_BANK               = "QPATBank";
     private static final String QPAT_NUMBER_PREFIX      = "QPATNumberPrefix";
+    private static final String QPAT_SHORT_FILE_NAMES   = "QPATShortFileNames";
     private static final String QPAT_NUMBER_PREFIX_START = "QPATNumberPrefixStart";
 
     private CheckBox            limitTo16441CheckBox;
@@ -38,11 +39,13 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private TextField           bankField;
     private CheckBox            numberPrefixCheckBox;
     private TextField           numberPrefixStartField;
+    private CheckBox            shortFileNamesCheckBox;
     private boolean             limitTo16441;
     private String              author                  = "";
     private String              bank                    = "";
     private boolean             numberPrefix;
     private int                 numberPrefixStart       = 0;
+    private boolean             shortFileNames;
 
 
     /**
@@ -69,6 +72,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.numberPrefixCheckBox = panel.createCheckBox ("@IDS_QPAT_NUMBER_PREFIX");
         this.numberPrefixStartField = panel.createPositiveIntegerField ("@IDS_QPAT_NUMBER_PREFIX_START");
         this.numberPrefixStartField.disableProperty ().bind (this.numberPrefixCheckBox.selectedProperty ().not ());
+        this.shortFileNamesCheckBox = panel.createCheckBox ("@IDS_QPAT_SHORT_FILE_NAMES");
 
         final TitledSeparator separator = this.addWavChunkOptions (panel);
         separator.getStyleClass ().add ("titled-separator-pane");
@@ -85,6 +89,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.bankField.setText (config.getProperty (QPAT_BANK, ""));
         this.numberPrefixCheckBox.setSelected (config.getBoolean (QPAT_NUMBER_PREFIX, false));
         this.numberPrefixStartField.setText (Integer.toString (config.getInteger (QPAT_NUMBER_PREFIX_START, 0)));
+        this.shortFileNamesCheckBox.setSelected (config.getBoolean (QPAT_SHORT_FILE_NAMES, false));
 
         super.loadSettings (config);
     }
@@ -99,6 +104,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         config.setProperty (QPAT_BANK, this.bankField.getText ());
         config.setBoolean (QPAT_NUMBER_PREFIX, this.numberPrefixCheckBox.isSelected ());
         config.setInteger (QPAT_NUMBER_PREFIX_START, this.parseNumberPrefixStart ());
+        config.setBoolean (QPAT_SHORT_FILE_NAMES, this.shortFileNamesCheckBox.isSelected ());
 
         super.saveSettings (config);
     }
@@ -116,6 +122,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.bank = this.bankField.getText ();
         this.numberPrefix = this.numberPrefixCheckBox.isSelected ();
         this.numberPrefixStart = this.parseNumberPrefixStart ();
+        this.shortFileNames = this.shortFileNamesCheckBox.isSelected ();
         return true;
     }
 
@@ -150,6 +157,8 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
                 return false;
             }
 
+        this.shortFileNames = "1".equals (parameters.remove (QPAT_SHORT_FILE_NAMES));
+
         return true;
     }
 
@@ -164,6 +173,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         parameterNames.add (QPAT_BANK);
         parameterNames.add (QPAT_NUMBER_PREFIX);
         parameterNames.add (QPAT_NUMBER_PREFIX_START);
+        parameterNames.add (QPAT_SHORT_FILE_NAMES);
         return parameterNames.toArray (new String [parameterNames.size ()]);
     }
 
@@ -226,6 +236,19 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     public boolean addNumberPrefix ()
     {
         return this.numberPrefix;
+    }
+
+
+    /**
+     * Should the file name be shortened to the name which the device displays? A preset which comes
+     * from a bank carries the bank in front of its name, and the file name normally keeps that
+     * whole name, which is far more than the import screen of the device shows.
+     *
+     * @return True to use the displayed name as the file name
+     */
+    public boolean useShortFileNames ()
+    {
+        return this.shortFileNames;
     }
 
 
