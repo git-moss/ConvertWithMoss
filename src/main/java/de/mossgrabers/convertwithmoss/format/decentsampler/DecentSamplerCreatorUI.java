@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
+import de.mossgrabers.convertwithmoss.ui.SystemShortcuts;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
@@ -126,6 +127,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
         }
         this.templateFolderPathField.getItems ().addAll (this.templateFolderPathHistory);
         this.templateFolderPathField.setEditable (true);
+        SystemShortcuts.keepWorkingIn (this.templateFolderPathField);
         if (!this.templateFolderPathHistory.isEmpty ())
             this.templateFolderPathField.getEditor ().setText (this.templateFolderPathHistory.get (0));
 
