@@ -284,8 +284,9 @@ Root:     32-byte folder entries: name[16], 0, type (0x40 = user folder,
 Dircon:   16 x 32-byte file entries per block: name[16], 0, id, u16 start
           cluster (1-based), u16 clusters, u16 blocks used in the last
           cluster (a partial block counts as a whole one!), u16 bytes used
-          in the last block (1..512, never 0 - see below), type (0x81),
-          5 bytes props (0x00 'E4B0')
+          in the last block (1..512, never 0 - see below), type (0x00 =
+          deleted, 0x80 = system file, 0x81 = file, 0x83 = first file
+          behind a deleted one), 5 bytes props (0x00 'E4B0')
 Data:     cluster c starts at block 'data start' + (c - 1) * blocks/cluster
 ```
 
@@ -295,6 +296,11 @@ cluster count under the 1279 the 5 FAT blocks can hold; 512 KB is preferred as
 larger clusters caused read errors on hardware); the hard disk variant uses
 FAT=2+4, root=6+7, dircon=13+169, data=182. The reader takes all geometry
 from the superblock and therefore reads both.
+
+System files (type 0x80) hold the operating system of the sampler ('E3 Main
+Code' on the EIII volumes). Their content is a memory dump which can itself
+begin with an EIII bank identifier and stale preset structures, so the reader
+skips them.
 
 The 'bytes used in the last block' of a file entry must be counted together
 with the block count, so that it is 1..512 and never 0: a file whose last

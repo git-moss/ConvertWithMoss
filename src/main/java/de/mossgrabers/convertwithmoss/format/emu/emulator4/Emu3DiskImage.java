@@ -42,6 +42,8 @@ public class Emu3DiskImage
     /** The folder markers: 0x40 = user folder (CD), 0x80 = 'Default Folder' (hard disk). */
     private static final int     FOLDER_TYPE_USER    = 0x40;
     private static final int     FOLDER_TYPE_DEFAULT = 0x80;
+    /** The file type of the operating system of the sampler. */
+    private static final int     FILE_TYPE_SYS       = 0x80;
 
 
     /** A file read from the image. */
@@ -197,7 +199,9 @@ public class Emu3DiskImage
         final int lastClusterBlocks = Emulator4Constants.getU16LE (entries, offset + 22);
         final int lastBlockBytes = Emulator4Constants.getU16LE (entries, offset + 24);
         final int fileType = entries[offset + 26] & 0xFF;
-        if (fileType == 0 || startCluster < 1 || numClusters < 1 || lastClusterBlocks < 1 && lastBlockBytes == 0)
+        // A system file holds the operating system of the sampler - a memory dump whose content
+        // can look like a sound bank; the samplers do not offer it as one either
+        if (fileType == 0 || fileType == FILE_TYPE_SYS || startCluster < 1 || numClusters < 1 || lastClusterBlocks < 1 && lastBlockBytes == 0)
             return null;
 
         // The size of the data in the last cluster: a partially filled last block still counts
