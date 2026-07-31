@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.ui;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.ContentsEntry;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.PseudoModalDialog;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -50,12 +52,14 @@ public class ContentsDialog extends PseudoModalDialog
     private Label                    selectionLabel;
     private Label                    auditionLabel;
     private Button                   auditionButton;
-    private List<ContentsEntry>      entries         = new ArrayList<> ();
-    private final Set<ContentsEntry> selectedEntries = new HashSet<> ();
+    private List<ContentsEntry>      entries            = new ArrayList<> ();
+    private final Set<ContentsEntry> selectedEntries    = new HashSet<> ();
+    private final Map<File, Integer> entriesPerFile     = new HashMap<> ();
+    private final Set<File>          filesWithOwnFolder = new HashSet<> ();
 
-    private final AuditionPlayer     auditionPlayer  = new AuditionPlayer ();
+    private final AuditionPlayer     auditionPlayer     = new AuditionPlayer ();
     private ISourceReader            sourceReader;
-    private boolean                  isReading       = false;
+    private boolean                  isReading          = false;
 
 
     /**
@@ -91,7 +95,7 @@ public class ContentsDialog extends PseudoModalDialog
 
         this.treeView = new TreeView<> ();
         this.treeView.setShowRoot (false);
-        this.treeView.setCellFactory (CheckBoxTreeCell.forTreeView (item -> ((CheckBoxTreeItem<Object>) item).selectedProperty (), new ContentsStringConverter ()));
+        this.treeView.setCellFactory (CheckBoxTreeCell.forTreeView (item -> ((CheckBoxTreeItem<Object>) item).selectedProperty (), new ContentsStringConverter (this.filesWithOwnFolder)));
         this.treeView.setPrefHeight (520);
         this.treeView.setPrefWidth (760);
         this.treeView.getSelectionModel ().selectedItemProperty ().addListener ((_, _, _) -> this.updateAuditionButton ());
@@ -149,6 +153,13 @@ public class ContentsDialog extends PseudoModalDialog
         this.sourceReader = sourceReader;
         this.selectedEntries.clear ();
         this.selectedEntries.addAll (entries);
+
+        // Counted over all entries and not only over the displayed ones, so that the shape of the
+        // tree does not change while a search is typed
+        this.entriesPerFile.clear ();
+        for (final ContentsEntry entry: entries)
+            this.entriesPerFile.merge (entry.getSourceFile (), Integer.valueOf (1), Integer::sum);
+
         this.searchField.setText ("");
         this.auditionLabel.setText ("");
         this.fillTree ();
@@ -298,25 +309,32 @@ public class ContentsDialog extends PseudoModalDialog
 
 
     /**
-     * Create the tree from the found sources. Each source file and each of its containers becomes a
-     * folder, the sources themselves are the leaves.
+     * Create the tree from the found sources. The folders of the source folder, each source file
+     * which holds more than the source itself and each of its containers become a folder, the
+     * sources themselves are the leaves.
      */
     private void fillTree ()
     {
         final String filterText = this.searchField.getText ().toLowerCase ();
         final CheckBoxTreeItem<Object> root = new CheckBoxTreeItem<> ("");
         final Map<String, CheckBoxTreeItem<Object>> folders = new HashMap<> ();
+        this.filesWithOwnFolder.clear ();
 
         for (final ContentsEntry entry: this.entries)
         {
             if (!filterText.isBlank () && !entry.getName ().toLowerCase ().contains (filterText))
                 continue;
 
-            // Create the folders of the file and of all containers of the source
+            // Create the folders of the source folder, of the file and of all containers of the
+            // source
             CheckBoxTreeItem<Object> parent = root;
             final StringBuilder path = new StringBuilder ();
-            final List<String> folderNames = new ArrayList<> ();
-            folderNames.add (entry.getSourceFile ().getName ());
+            final List<String> folderNames = new ArrayList<> (entry.getFolderPath ());
+            if (this.hasOwnFolder (entry))
+            {
+                this.filesWithOwnFolder.add (entry.getSourceFile ());
+                folderNames.add (entry.getSourceFile ().getName ());
+            }
             folderNames.addAll (entry.getContainerPath ());
             for (final String folderName: folderNames)
             {
@@ -350,6 +368,24 @@ public class ContentsDialog extends PseudoModalDialog
     }
 
 
+    /**
+     * Check if the file of a source becomes a folder of its own in the tree. This is only useful if
+     * the file holds more than the one source, e.g. a bank or a disk image. A format where one file
+     * simply is one preset would otherwise add a folder for each of its files, which only doubles
+     * the presets in the tree.
+     *
+     * @param entry The source to check
+     * @return True if the file becomes a folder
+     */
+    private boolean hasOwnFolder (final ContentsEntry entry)
+    {
+        if (!entry.getContainerPath ().isEmpty ())
+            return true;
+        final Integer count = this.entriesPerFile.get (entry.getSourceFile ());
+        return count != null && count.intValue () > 1;
+    }
+
+
     private void updateSelectionLabel ()
     {
         this.selectionLabel.setText (Functions.getMessage ("IDS_CONTENTS_SELECTED", Integer.toString (this.selectedEntries.size ()), Integer.toString (this.entries.size ())));
@@ -379,14 +415,48 @@ public class ContentsDialog extends PseudoModalDialog
      */
     private static class ContentsStringConverter extends StringConverter<TreeItem<Object>>
     {
+        private final Set<File> filesWithOwnFolder;
+
+
+        /**
+         * Constructor.
+         *
+         * @param filesWithOwnFolder The files which are displayed as a folder of their own
+         */
+        ContentsStringConverter (final Set<File> filesWithOwnFolder)
+        {
+            this.filesWithOwnFolder = filesWithOwnFolder;
+        }
+
+
         /** {@inheritDoc} */
         @Override
         public String toString (final TreeItem<Object> item)
         {
             final Object value = item == null ? null : item.getValue ();
             if (value instanceof final ContentsEntry entry)
-                return entry.getName () + "   (" + entry.getInfo () + ")";
+                return entry.getName () + "   (" + entry.getInfo () + this.formatFileName (entry) + ")";
             return value == null ? "" : value.toString ();
+        }
+
+
+        /**
+         * Get the name of the file of a source, if it is not displayed anyway. The file is only
+         * shown as a folder of its own when it holds more than the one source; otherwise its name
+         * is the only hint which file a preset comes from, which matters when the preset is named
+         * differently than its file.
+         *
+         * @param entry The source
+         * @return The formatted file name, empty if the file is displayed as a folder or is named
+         *         like the preset
+         */
+        private String formatFileName (final ContentsEntry entry)
+        {
+            final File sourceFile = entry.getSourceFile ();
+            if (sourceFile == null || this.filesWithOwnFolder.contains (sourceFile))
+                return "";
+            final String fileName = sourceFile.getName ();
+            return FileUtils.getNameWithoutType (sourceFile).equalsIgnoreCase (entry.getName ()) ? "" : ", " + fileName;
         }
 
 
