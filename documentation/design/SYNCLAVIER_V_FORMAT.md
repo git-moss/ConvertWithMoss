@@ -145,6 +145,19 @@ Note the second archive starts with the tokens `10 0 0` where a preset starts wi
 is the way to tell the archive kinds apart. The wrapped cover image (§1) uses the same `10 0 0`
 map structure with the image file name as its single key and the PNG bytes as the value.
 
+### 4.1 What the import does with the embedded samples
+
+The application's import writes the preset into the browser database **without** the appended
+sample archive (the database copy is exactly the preset part) and extracts the embedded files to
+their reference path - resolved against the **working directory of the host process**, not
+against the sample pool. A DAW-hosted plugin therefore imports successfully and leaves the
+extracted `User/<preset>/` folders wherever the DAW's working directory points (Bitwig on macOS:
+`~/Library/Logs/Bitwig/User/...`), while the standalone application, whose working directory is
+not writable, fails the import altogether. Since the pool is never populated, a database preset
+opened in a later session reports its samples as missing at the pool path. This is why the
+creator offers to write the samples additionally as plain files under `User/<preset>/`: merged
+into the pool, the imported presets become permanent.
+
 ## 5. Parameter scaling
 
 Stored values are normalized `0..1`. The engine range of every parameter is defined in a

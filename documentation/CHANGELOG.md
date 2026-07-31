@@ -53,6 +53,8 @@
   * Fixed: The pitch bend range was passed as semitones into the model's cents field - the bend wheel effectively did nothing.
   * Fixed: The program volume (a 0..1 value) was written directly as the dB gain of every zone, overwriting the per-layer loudness set before - the velocity-layer balance of every program was discarded.
   * Fixed: The fraction byte of the keygroup and keygroup-sample fixed point tunings was treated as signed, so negative fine tunes came out about a semitone flat (e.g. -0.05 semitones read as -1.05). The sample header tuning in literal cents is no longer rescaled.
+* Arturia Synclavier V
+  * New: Added an option to write the samples additionally as plain WAV files in the layout of the sample pool ('User/&lt;preset&gt;'): the application's import loads the embedded samples but does not copy them into its sample pool, so imported presets loaded in a later session report them as missing. Merging the written 'User' folder into the pool makes them permanent.
 * CWITEC TX16Wx
   * Fixed: The wave IDs of a written program restarted at 0 for every group, although they must be unique across the program - in a program with several groups all regions resolved to the waves of the last group when read (also in the TX16Wx plug-in itself). Additionally the reader now creates an own zone object per region, since several regions may reference the same wave; before, such regions shared one object and overwrote each other's key and velocity ranges.
   * Fixed: The depth of a pitch envelope was written in cents of the full model depth (12000 cents) but read as a fraction of 4800 cents, inflating the depth 2.5 times in a round trip.
