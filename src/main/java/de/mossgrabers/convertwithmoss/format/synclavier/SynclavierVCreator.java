@@ -45,6 +45,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
 {
+    private static final String TAG_PARTIAL           = "Partial ";
     private static final String SYNX_ENDING           = "synx";
     private static final String TEMPLATE_NAME         = "SynclavierVTemplate.preset.gz";
     private static final String ZIP_ROOT              = "Synclavier/User/";
@@ -248,7 +249,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
                     high = (root + rootKey (kept.get (j))) / 2;
                     break;
                 }
-            zone.setKeyLow (Math.min (Math.max (zone.getKeyLow (), 0), low));
+            zone.setKeyLow (Math.clamp (zone.getKeyLow (), 0, low));
             zone.setKeyHigh (Math.max (zone.getKeyHigh () < 0 ? 127 : zone.getKeyHigh (), high));
         }
 
@@ -342,7 +343,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
     private static void fillPartial (final SynclavierVFile preset, final int partial, final ISampleZone zone, final String samplePath) throws IOException
     {
         preset.blobs.put ("AudioSampleObject" + partial, SynclavierVFile.createSampleBlob (samplePath));
-        preset.setParameter ("Partial " + partial + " Carrier Mode", CARRIER_MODE_AUDITION);
+        preset.setParameter (TAG_PARTIAL + partial + " Carrier Mode", CARRIER_MODE_AUDITION);
 
         // Split the zone gain into the partial volume (-50..0 dB) and the file volume
         // (-12..+24 dB)
@@ -375,16 +376,16 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
         final int keyLow = Math.clamp (zone.getKeyLow () < 0 ? 0 : zone.getKeyLow (), 0, 127);
         final int keyHigh = Math.clamp (zone.getKeyHigh () < 0 ? 127 : zone.getKeyHigh (), 0, 127);
         preset.setParameter ("Keyboard Envelope Start " + partial, keyLow / 127.0);
-        preset.setParameter ("Keyboard Envelope In " + partial, Math.clamp (keyLow + Math.max (0, zone.getNoteCrossfadeLow ()), 0, 127) / 127.0);
-        preset.setParameter ("Keyboard Envelope Out " + partial, Math.clamp (keyHigh - Math.max (0, zone.getNoteCrossfadeHigh ()), 0, 127) / 127.0);
+        preset.setParameter ("Keyboard Envelope In " + partial, Math.clamp (keyLow + (long) Math.max (0, zone.getNoteCrossfadeLow ()), 0, 127) / 127.0);
+        preset.setParameter ("Keyboard Envelope Out " + partial, Math.clamp (keyHigh - (long) Math.max (0, zone.getNoteCrossfadeHigh ()), 0, 127) / 127.0);
         preset.setParameter ("Keyboard Envelope End " + partial, keyHigh / 127.0);
 
         // The cross-fade envelope window forms the velocity range
         final int velocityLow = Math.clamp (zone.getVelocityLow () < 0 ? 0 : zone.getVelocityLow (), 0, 127);
         final int velocityHigh = Math.clamp (zone.getVelocityHigh () < 0 ? 127 : zone.getVelocityHigh (), 0, 127);
         preset.setParameter ("Crossfade Envelope Start " + partial, velocityLow / 127.0);
-        preset.setParameter ("Crossfade Envelope In " + partial, Math.clamp (velocityLow + Math.max (0, zone.getVelocityCrossfadeLow ()), 0, 127) / 127.0);
-        preset.setParameter ("Crossfade Envelope Out " + partial, Math.clamp (velocityHigh - Math.max (0, zone.getVelocityCrossfadeHigh ()), 0, 127) / 127.0);
+        preset.setParameter ("Crossfade Envelope In " + partial, Math.clamp (velocityLow + (long) Math.max (0, zone.getVelocityCrossfadeLow ()), 0, 127) / 127.0);
+        preset.setParameter ("Crossfade Envelope Out " + partial, Math.clamp (velocityHigh - (long) Math.max (0, zone.getVelocityCrossfadeHigh ()), 0, 127) / 127.0);
         preset.setParameter ("Crossfade Envelope End " + partial, velocityHigh / 127.0);
 
         // Sample start / end and the loop as fractions of the sample length
@@ -395,19 +396,19 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
         if (frames > 0)
         {
             if (zone.getStart () > 0)
-                preset.setParameter ("Partial " + partial + " File Start", Math.clamp (zone.getStart () / (double) frames, 0, 1));
+                preset.setParameter (TAG_PARTIAL + partial + " File Start", Math.clamp (zone.getStart () / (double) frames, 0, 1));
             if (zone.getStop () > 0)
-                preset.setParameter ("Partial " + partial + " File End", Math.clamp (zone.getStop () / (double) frames, 0, 1));
+                preset.setParameter (TAG_PARTIAL + partial + " File End", Math.clamp (zone.getStop () / (double) frames, 0, 1));
 
             final List<ISampleLoop> loops = zone.getLoops ();
             if (!loops.isEmpty ())
             {
                 final ISampleLoop loop = loops.get (0);
-                preset.setParameter ("Partial " + partial + " File Loop Mode", 1);
-                preset.setParameter ("Partial " + partial + " File Loop Start", Math.clamp (loop.getStart () / (double) frames, 0, 1));
-                preset.setParameter ("Partial " + partial + " File Loop End", Math.clamp (loop.getEnd () / (double) frames, 0, 1));
+                preset.setParameter (TAG_PARTIAL + partial + " File Loop Mode", 1);
+                preset.setParameter (TAG_PARTIAL + partial + " File Loop Start", Math.clamp (loop.getStart () / (double) frames, 0, 1));
+                preset.setParameter (TAG_PARTIAL + partial + " File Loop End", Math.clamp (loop.getEnd () / (double) frames, 0, 1));
                 if (loop.getCrossfade () > 0)
-                    preset.setParameter ("Partial " + partial + " File Loop Decay", 1);
+                    preset.setParameter (TAG_PARTIAL + partial + " File Loop Decay", 1);
             }
         }
 

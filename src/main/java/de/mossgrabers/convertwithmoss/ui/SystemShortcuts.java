@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.ui;
 
 import de.mossgrabers.tools.OperatingSystem;
-
 import javafx.event.EventDispatcher;
 import javafx.scene.control.ComboBox;
 import javafx.scene.input.KeyCode;
@@ -51,7 +50,7 @@ public final class SystemShortcuts
             return;
 
         final EventDispatcher comboBoxDispatcher = comboBox.getEventDispatcher ();
-        comboBox.setEventDispatcher ( (event, tail) -> {
+        comboBox.setEventDispatcher ((event, tail) -> {
 
             if (event instanceof final KeyEvent keyEvent && isApplicationMenuShortcut (keyEvent))
                 return tail.dispatchEvent (event);

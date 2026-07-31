@@ -73,7 +73,9 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public abstract class AbstractDetector<T extends ICoreTaskSettings> extends AbstractCoreTask<T> implements IDetector<T>
 {
+    private static final String               IDS_NOTIFY_ANALYZING                = "IDS_NOTIFY_ANALYZING";
     private static final String               IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED = "IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED";
+
     private static final AudioFileFormat.Type OGG_TYPE                            = new AudioFileFormat.Type ("OGG", "ogg");
     private static final AudioFileFormat.Type FLAC_TYPE                           = new AudioFileFormat.Type ("FLAC", "flac");
     /** Yield to the rest of the application after this number of delivered sources. */
@@ -243,7 +245,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     {
         this.isCancelled.set (false);
 
-        this.notifier.log ("IDS_NOTIFY_ANALYZING", folder.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_ANALYZING, folder.getAbsolutePath ());
         if (this.waitForDelivery ())
             return;
 
@@ -257,7 +259,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             // Ignore MacOS crap
             if (!file.getName ().startsWith ("._"))
             {
-                this.notifier.log ("IDS_NOTIFY_ANALYZING", file.getAbsolutePath ());
+                this.notifier.log (IDS_NOTIFY_ANALYZING, file.getAbsolutePath ());
 
                 if (this.waitForDelivery ())
                     break;
@@ -318,7 +320,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     protected void detectSingleFile (final File file)
     {
-        this.notifier.log ("IDS_NOTIFY_ANALYZING", file.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_ANALYZING, file.getAbsolutePath ());
         if (this.waitForDelivery ())
             return;
 

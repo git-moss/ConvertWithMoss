@@ -415,7 +415,7 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
         int high = -1;
         for (final ISampleZone zone: group.getSampleZones ())
         {
-            low = Math.min (low, Math.max (0, zone.getVelocityLow ()));
+            low = Math.clamp (zone.getVelocityLow (), 0, low);
             high = Math.max (high, zone.getVelocityHigh () < 0 ? 127 : zone.getVelocityHigh ());
         }
         return new int []

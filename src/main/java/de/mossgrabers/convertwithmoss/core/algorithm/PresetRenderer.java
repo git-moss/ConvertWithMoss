@@ -110,9 +110,9 @@ public class PresetRenderer
 
     /**
      * Get the key which shows a multi-sample best. That is the root key closest to the middle of
-     * the covered range, since a zone plays its sample as recorded at its root - a phrase or
-     * vocal preset rooted far off-center is then heard unpitched. Without a playable root it is
-     * the middle of the covered keys.
+     * the covered range, since a zone plays its sample as recorded at its root - a phrase or vocal
+     * preset rooted far off-center is then heard unpitched. Without a playable root it is the
+     * middle of the covered keys.
      *
      * @param source The multi-sample
      * @return The key
@@ -264,7 +264,7 @@ public class PresetRenderer
             right[frame] += value * amount * rightGain;
 
             position += step * (pitchLfo == null ? 1 : pitchLfo.nextPitchFactor ());
-            position = advance (position, loop, stop, isReleased);
+            position = advance (position, loop, isReleased);
             if (position >= stop)
                 break;
         }
@@ -277,24 +277,23 @@ public class PresetRenderer
      *
      * @param position The position after the step
      * @param loop The loop of the zone or null
-     * @param stop The last frame of the zone
      * @param isReleased True if the key is already released
      * @return The position to read from next
      */
-    private static double advance (final double position, final Loop loop, final int stop, final boolean isReleased)
+    private static double advance (final double position, final Loop loop, final boolean isReleased)
     {
         if (loop == null || position < loop.end)
             return position;
         // A loop which only sustains the note stops looping as soon as the key is released
         if (isReleased && loop.untilRelease)
             return position;
-        final double length = loop.end - loop.start;
+        final double length = loop.end - (double) loop.start;
         return length <= 0 ? position : loop.start + (position - loop.start) % length;
     }
 
 
     /**
-     * Read one frame with a linear interpolation between its neighbours.
+     * Read one frame with a linear interpolation between its neighbors.
      *
      * @param sample The channels of the sample
      * @param position The position to read at
@@ -361,7 +360,7 @@ public class PresetRenderer
                 };
             }
         }
-        catch (final UnsupportedAudioFileException | IllegalArgumentException ex)
+        catch (final UnsupportedAudioFileException | IllegalArgumentException _)
         {
             return null;
         }

@@ -2,8 +2,9 @@
 
 ## 19.2.0 (work-in-progress)
 
-* Many thanks to David García Goñi for providing specifications of the E-mu formats and refined Kurzweil specifications!
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
+* Many thanks to David García Goñi for providing specifications of the E-mu formats and refined Kurzweil specifications!
+* Many thanks to Linus Wileryd for the improved icon set!
 * New: Added support for the Arturia Synclavier V format (reading and writing of SYNX preset and bank exports; partials which play a sound file become sample zones).
 * New: Added support for the E-mu Emulator III/IIIX/ESI bank format (E3B, E3X, ESI).
 * New: Added support for the E-mu Emulator IV bank format (E4B). Banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format. New: Writing creates a bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7. Written banks have not been tested on real hardware yet.
@@ -46,12 +47,12 @@
   * Fixed: The tune of a program pad and of a SND sample were read unsigned - every negatively tuned pad of e.g. the factory library CD came out drastically sharp (a -0.05 semitone pad read as more than +600 semitones and was clamped to +12).
 * Akai MPC60
   * Fixed: The 12 bit sample data was unpacked with the low nibble at 1/16 of its weight and the result byte-swapped, which reduced the audio to roughly 8 bit quality with a signal-correlated error. The 12 bits are now left-justified as in the reference implementation.
+* Akai S900/S950
+  * Fixed: The fractional part of the nominal pitch was applied with an inverted sign: a sample recorded e.g. a quarter tone sharp was played another quarter tone sharp instead of being corrected. Also the loudness offset was read unsigned, so any attenuation became a boost.
 * Akai S1000/S3000
   * Fixed: The pitch bend range was passed as semitones into the model's cents field - the bend wheel effectively did nothing.
   * Fixed: The program volume (a 0..1 value) was written directly as the dB gain of every zone, overwriting the per-layer loudness set before - the velocity-layer balance of every program was discarded.
   * Fixed: The fraction byte of the keygroup and keygroup-sample fixed point tunings was treated as signed, so negative fine tunes came out about a semitone flat (e.g. -0.05 semitones read as -1.05). The sample header tuning in literal cents is no longer rescaled.
-* Akai S900/S950
-  * Fixed: The fractional part of the nominal pitch was applied with an inverted sign: a sample recorded e.g. a quarter tone sharp was played another quarter tone sharp instead of being corrected. Also the loudness offset was read unsigned, so any attenuation became a boost.
 * CWITEC TX16Wx
   * Fixed: The wave IDs of a written program restarted at 0 for every group, although they must be unique across the program - in a program with several groups all regions resolved to the waves of the last group when read (also in the TX16Wx plug-in itself). Additionally the reader now creates an own zone object per region, since several regions may reference the same wave; before, such regions shared one object and overwrote each other's key and velocity ranges.
   * Fixed: The depth of a pitch envelope was written in cents of the full model depth (12000 cents) but read as a fraction of 4800 cents, inflating the depth 2.5 times in a round trip.
@@ -64,11 +65,6 @@
   * Fixed: The pitch envelope was built from the times of EG1 (the amplitude envelope) instead of its own EG2 times.
   * Fixed: The fine tune of a region (stored in cents) was divided by 32768 as if it were a semi-tone fraction - a -50 cent detune shrank to -0.15 cents, erasing the detune of every region.
   * Fixed: The signed 16 bit accessor of the RIFF chunk framework read big-endian although RIFF is little-endian throughout; the region fine tune (its only user) additionally came out byte-swapped.
-* E-mu Emulator III
-  * New: Banks which the EIIIX and ESI samplers saved onto floppy disks are now read, including banks which span several disks. All disks of a set need to be in the same folder.
-  * Fixed: The preset link is a single byte followed by a separate parameter, not a 16 bit value. A few presets whose second byte is set lost the preset which is layered on top of them.
-  * Fixed: The cutoff parameter reaches up to 74 kHz and the banks switch their filter off by parking it anywhere above the audible range, but only the single value 0xFF was taken as that bypass. Every other parked value created a filter which cannot be heard; the frequency now decides. About 3200 zones of the EIIIX library CD-ROMs lose such a filter.
-  * Fixed: A zone without a filter was written with a filter tracking of 0x40, which the operations manual shows as +1.00 and not as the neutral value. Such a bank was read back with a filter, so a source without one did not survive a round trip. No tracking is written now.
 * Kurzweil K2x00
   * Fixed: An envelope stage with both a zero time and a zero level is unused on the device and keeps the level of the previous stage, but was read literally. A program which leaves its decay stage unused - like the reported FM basses, which sustain at the attack level and only fade out with a long release - was therefore converted to a silent preset. Additionally, the attack velocity is now converted as a cutoff modulation source of the F1 slot in both directions; the same programs open their nearly closed cutoff by velocity and converted very dull without it.
 * Logic EXS24
