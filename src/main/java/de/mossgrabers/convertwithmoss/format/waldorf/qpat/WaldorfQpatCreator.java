@@ -51,6 +51,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final String                                SLOPE_EXP_ALT          = "Exp alt";
 
     private static final int                                   PRESET_VERSION         = 14;
+
+    /** What the import screen of an Iridium MK2 can show of a file name, minus a small margin. */
+    private static final int                                   FILE_NAME_BUDGET       = 40;
+    /** The length of the '.qpat' file ending. */
+    private static final int                                   FILE_ENDING_LENGTH     = 5;
+    /** The length of the import number prefix, e.g. '05002-'. */
+    private static final int                                   NUMBER_PREFIX_LENGTH   = 6;
     private static final WaldorfQpatResourceHeader             EMPTY_RESOURCE_HEADER  = new WaldorfQpatResourceHeader ();
 
     private static final DestinationAudioFormat                OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
@@ -95,7 +102,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        // The name which the device displays. The file name normally keeps the full name of the
+        // source instead, which tells the presets of different banks apart on the computer, but is
+        // longer than what the import screen of the device can show
+        final String deviceName = this.createDeviceName (multisampleSource);
+        final String sampleName = createSafeFilename (this.settingsConfiguration.useShortFileNames () ? this.limitToFileNameBudget (deviceName) : multisampleSource.getName ());
         final String fileName;
         if (this.settingsConfiguration.addNumberPrefix ())
         {
@@ -114,7 +125,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final List<IGroup> groups = reduceGroups (splitLayers (this.combineSplitStereo (multisampleSource)));
         multisampleSource.setGroups (groups);
 
-        this.storeMultisample (multisampleSource, multiFile, groups, relativeSamplePath);
+        this.storeMultisample (multisampleSource, multiFile, groups, relativeSamplePath, deviceName);
 
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeSamplePath);
@@ -126,6 +137,49 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT);
 
         this.progress.notifyDone ();
+    }
+
+
+    /**
+     * Create the name to write into the name field of the preset, which is the name the device
+     * displays. The device has a field of its own for the bank, so the name does not need to repeat
+     * the bank which a preset of a bank carries in front of its name - only the file name keeps it,
+     * for the user to tell the files apart. An explicit bank from the settings replaces the bank of
+     * the source, which is then no longer written anywhere, so in that case the name keeps it - but
+     * only as long as the qualified name fits into the name field. What does not fit is cut off,
+     * and that is exactly the part which tells the presets of one bank apart: 'Full Arco String -
+     * Arco Strings Lo' and '... Hi' both end up as 'Full Arco String - Arco Strings' on the display
+     * of the device. Losing the bank is the better trade in that case, since the preset name is
+     * what is looked for and the bank of the source is still in the file name.
+     *
+     * @param multisampleSource The source to name
+     * @return The name for the name field
+     */
+    private String createDeviceName (final IMultisampleSource multisampleSource)
+    {
+        final String nameWithoutBank = createNameWithoutBank (multisampleSource);
+        final String bank = this.settingsConfiguration.getBank ();
+        if (bank == null || bank.isBlank ())
+            return nameWithoutBank;
+        return this.fitIntoNameField (multisampleSource.getName (), nameWithoutBank);
+    }
+
+
+    /**
+     * Cut a name down so that the whole file name stays readable on the import screen of the
+     * device. Measured on the display of an Iridium MK2, the file list of the import screen shows
+     * about 43 characters, everything longer is cut off at the edge of the list. A budget of 40 for
+     * the complete file name leaves a little margin; the name shares it with the '.qpat' ending and
+     * - when enabled - the 6 characters of the import number prefix.
+     *
+     * @param name The name to limit
+     * @return The limited name
+     */
+    private String limitToFileNameBudget (final String name)
+    {
+        final int budget = FILE_NAME_BUDGET - FILE_ENDING_LENGTH - (this.settingsConfiguration.addNumberPrefix () ? NUMBER_PREFIX_LENGTH : 0);
+        final String strippedName = name.strip ();
+        return strippedName.length () <= budget ? strippedName : strippedName.substring (0, budget).strip ();
     }
 
 
@@ -155,9 +209,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param multiFile The file in which to store
      * @param groups The pre-processed groups
      * @param relativeSamplePath The relative sample path
+     * @param deviceName The name to write into the name field, which the device displays
      * @throws IOException Could not store the file
      */
-    private void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<IGroup> groups, final String relativeSamplePath) throws IOException
+    private void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<IGroup> groups, final String relativeSamplePath, final String deviceName) throws IOException
     {
         // A zero-attack/zero-decay amplitude envelope that sustains below full level makes the
         // device pop at the start of each note: it snaps to the 100% attack peak and then instantly
@@ -171,25 +226,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final String author = this.settingsConfiguration.getAuthor ();
         if (author != null && !author.isBlank ())
             metadata.setCreator (author);
-        // The device has a field of its own for the bank, so the preset name does not need to
-        // repeat it - only the file name keeps it, for the user to tell the files apart. An
-        // explicit bank from the settings replaces the source's one, which is then no longer
-        // written anywhere, so in that case the name keeps it - but only as long as the qualified
-        // name fits into the name field. What does not fit is cut off, and that is exactly the part
-        // which tells the presets of one bank apart: 'Full Arco String - Arco Strings Lo' and
-        // '... Hi' both end up as 'Full Arco String - Arco Strings' on the display of the device.
-        // Losing the bank is the better trade in that case, since the preset name is what is looked
-        // for and the bank of the source is still in the file name.
+        // An explicit bank from the settings replaces the one of the source
         final String bank = this.settingsConfiguration.getBank ();
-        final boolean replacesSourceBank = bank != null && !bank.isBlank ();
-        final String nameWithoutBank = createNameWithoutBank (multisampleSource);
-        final String presetName = replacesSourceBank ? this.fitIntoNameField (multisampleSource.getName (), nameWithoutBank) : nameWithoutBank;
-        if (replacesSourceBank)
+        if (bank != null && !bank.isBlank ())
             metadata.setDescription (bank);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            writeHeader (out, metadata, presetName);
+            writeHeader (out, metadata, deviceName);
 
             StreamUtils.writeUnsigned16 (out, parameters.size (), false);
             StreamUtils.padBytes (out, 2);
