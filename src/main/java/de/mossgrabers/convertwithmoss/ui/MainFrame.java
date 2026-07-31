@@ -530,6 +530,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final List<String> activeHistory = this.activeSourceHistory ();
         this.sourcePathField.getItems ().addAll (activeHistory);
         this.sourcePathField.setEditable (true);
+        SystemShortcuts.keepWorkingIn (this.sourcePathField);
         if (!activeHistory.isEmpty ())
             this.sourcePathField.getEditor ().setText (activeHistory.get (0));
 
@@ -551,6 +552,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         }
         this.destinationPathField.getItems ().addAll (this.destinationPathHistory);
         this.destinationPathField.setEditable (true);
+        SystemShortcuts.keepWorkingIn (this.destinationPathField);
         if (!this.destinationPathHistory.isEmpty ())
             this.destinationPathField.getEditor ().setText (this.destinationPathHistory.get (0));
 
