@@ -28,6 +28,12 @@ an E-mu formatted one; on an E-mu disk the files carry no extension at all.
 later variants use no bias. The `EMULATOR 3X` banks still carry a (empty) `EMULATOR THREE` preset
 address table at 0x6C.
 
+A CD-ROM additionally stores the name of the disk as an *empty* bank: only the header, the empty
+address tables and the filler byte (0x74B bytes in the `EMULATOR THREE` format). The first library
+CD-ROM names it `E-mu Banks 1-44`; the sampler and tools like Awave Studio show that name as the
+name of the volume. Such a stub holds nothing to convert and is reported as the disk name, not as
+a bank.
+
 ## Bank header
 
 ```
@@ -82,6 +88,12 @@ presets this is not a terminator: 6 of the 24 examined banks have such holes and
 2593 entries behind them holds a valid sample which the presets still reference. The terminating
 entry points behind the last sample and therefore equals the file size.
 
+The library banks also ship presets whose zones still **reference an empty slot** - deleting a
+sample does not touch the zones which used it. `Vol. 1 - Emulator Standards` alone carries 23
+such presets (the trombone presets of `Brass Bank` reference the deleted slot 55 for their top
+key, the string layers of `Groupo Sinfonia` the deleted slot 10). The device finds nothing there
+either, so those keys are simply silent; the reference is stored data and not a read error.
+
 ## Preset
 
 ```
@@ -130,7 +142,8 @@ which no note zone references may hold stale data and must not be read.
 
 ```
 0   uint8  original key (0..87), the key at which the sample plays at its recorded pitch
-1   uint16 1-based sample number; the ESI samplers use bits 14 and 15 as flags (see below)
+1   uint16 1-based sample number; the ESI samplers use bits 14 and 15 as flags (see below);
+           the original Emulator III only reads the low byte (see below)
 3   int8   unknown - the EIIIX writes 0x1F here, the ESI samplers 0x00
 4   5      amplifier envelope: attack, hold, decay, sustain, release
 9   uint8  LFO rate
@@ -174,6 +187,15 @@ CD-ROM carries the same bank in both the EIIIX and the ESI-4000 variant (`Orbit 
 exactly 0x4000 (1192x) or 0x8000 (87x) while every other parameter is identical. The index is
 therefore the low 14 bits; the meaning of the two flags is unknown.
 
+**The original Emulator III reads only the low byte.** An `EMULATOR THREE` bank addresses at
+most 99 samples, and the byte behind the sample number is not part of it: on the library CD-ROMs
+(`Vol. 1 - Emulator Standards`) it holds unrelated values in many banks. `Full Arco String`,
+`Dance Club` and `Groupo Sinfonia` carry values like 0x06, 0x08 or 0x0C there over low bytes
+which resolve to the correct samples - the note names in the sample names match the zones'
+original keys at the low byte and nowhere else - and the affected numbers read as u16 (1537..3128)
+are impossible slots for the format. Masking to the low byte resolves all of them without any
+heuristics; the high-byte repair below only applies to the u16 formats.
+
 **Truncated sample numbers on the library CD-ROMs.** Many banks of the E-mu library CD-ROMs -
 the Formula 4000 volumes, the General MIDI volume and a few banks of the classic volumes - were
 mastered with a tool chain which wrote the 16 bit sample number through 8 bits. The low byte of
@@ -213,7 +235,7 @@ indices, not linear values; the tables are in `Emulator3Constants`. Envelope tim
 offset size
 0    16   char   sample name, padded with spaces
 16   4    uint32 unknown
-20   4    uint32 position of the first frame of the left channel (always 92)
+20   4    uint32 position of the first frame of the left channel
 24   4    uint32 position of the first frame of the right channel, 0 if mono
 28   4    uint32 position of the last frame of the left channel
 32   4    uint32 position of the last frame of the right channel, 0 if mono
@@ -231,10 +253,16 @@ offset size
 ```
 
 All positions are byte offsets **relative to the start of this 92 byte header**, so the number of
-frames is `(endLeft + 2 - 92) / 2` and a loop position in frames is `(loopStart - 92) / 2`.
+frames of a channel is `(end + 2 - start) / 2` and a loop position in frames is
+`(loopStart - start) / 2` with the start of the channel the loop fields belong to.
 
-The two channels of a stereo sample are stored one after the other, not interleaved: the left
-channel occupies `92 .. 92 + frames * 2`, the right one follows it.
+The two channels of a stereo sample are stored one after the other, not interleaved - **in either
+order**. The first channel starts at 92 and the other one follows it, but which of the two comes
+first is arbitrary: most samples store the left channel first, while for example slots 1-8 of
+`Stereo Strings` and slots 8-16 of `4 Piece Horns 8M` on the `Vol. 1 - Emulator Standards` CD-ROM
+store the right channel at 92 and the left one behind it. The number of frames must therefore be
+computed from the channel's own start and end - reading a right-first sample with an assumed
+start of 92 doubles its length and mixes the channels.
 
 Option flags:
 

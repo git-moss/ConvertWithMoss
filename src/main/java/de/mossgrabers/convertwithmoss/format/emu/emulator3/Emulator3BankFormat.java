@@ -165,6 +165,20 @@ public enum Emulator3BankFormat
 
 
     /**
+     * Get the mask which extracts the sample index from the 16 bit field of a zone. The original
+     * Emulator III addresses at most 99 samples and only reads the low byte - the high byte holds
+     * unrelated values in many banks of the library CD-ROMs and must not be taken as part of the
+     * index. The larger banks of the later samplers use 14 bits.
+     *
+     * @return The mask
+     */
+    public int getZoneSampleIndexMask ()
+    {
+        return this.isCompact () ? 0xFF : Emulator3Constants.ZONE_SAMPLE_INDEX_MASK;
+    }
+
+
+    /**
      * Identify the format of a bank from its first bytes.
      *
      * @param data The content of the bank, at least {@link #IDENTIFIER_LENGTH} bytes
