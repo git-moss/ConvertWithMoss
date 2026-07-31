@@ -145,20 +145,6 @@ public class ConverterBackend
         "B"
     };
 
-    /**
-     * The prefixes of the formats where one source file contains more than one preset, e.g. a bank,
-     * a disk image or a library. Selecting the contents of a source is only useful for these, since
-     * for all other formats one file simply is one preset, which can already be picked as a file.
-     *
-     * This is kept in one place to have the whole classification reviewable at a glance. It could
-     * as well become a method of the detectors themselves, like it is done for performances.
-     */
-    private static final Set<String>       MULTI_PRESET_FORMATS        = Set.of (
-            // Banks and disk images of hardware samplers
-            "EIII", "E4B", "EXB", "ISO", "Ensoniq", "Mirage", "S900", "S1000", "MPC2000", "MPC60", "Kurzweil", "KMP", "S5xx", "S7xx",
-            // Projects and libraries which hold several presets
-            "MC707", "SP404MK2", "ZenCore", "1010music", "Bento", "Ysfc", "Nki", "Sf2", "DLS", "ZBP", "DecentSampler", "Ableton");
-
     protected INotifier                    notifier;
     protected final List<IDetector<?>>     detectors;
     protected final List<ICreator<?>>      creators;
@@ -381,19 +367,6 @@ public class ConverterBackend
 
 
     /**
-     * Check if one source file of the format of the given detector can contain more than one
-     * preset, which makes it useful to display and select the contents of a source.
-     *
-     * @param detector The detector to check
-     * @return True if one file can contain several presets
-     */
-    public static boolean containsMultiplePresets (final IDetector<?> detector)
-    {
-        return MULTI_PRESET_FORMATS.contains (detector.getPrefix ());
-    }
-
-
-    /**
      * Get the sources which were found by the last contents detection run.
      *
      * @return The found sources
@@ -455,7 +428,7 @@ public class ConverterBackend
 
         if (this.onlyContents)
         {
-            this.contentsEntries.add (new ContentsEntry (index, multisampleSource));
+            this.contentsEntries.add (new ContentsEntry (index, multisampleSource, this.detectionSettings.sourceFolder));
             this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", multisampleSource.getName ());
             return;
         }
@@ -509,7 +482,7 @@ public class ConverterBackend
 
         if (this.onlyContents)
         {
-            this.contentsEntries.add (new ContentsEntry (index, performanceSource.getName (), instrumentSources.get (0).getMultisampleSource ()));
+            this.contentsEntries.add (new ContentsEntry (index, performanceSource.getName (), instrumentSources.get (0).getMultisampleSource (), this.detectionSettings.sourceFolder));
             this.notifier.log ("IDS_NOTIFY_ANALYZE_OK", performanceSource.getName ());
             return;
         }

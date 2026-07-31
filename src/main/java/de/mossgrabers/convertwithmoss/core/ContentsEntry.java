@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.core;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -41,6 +42,7 @@ public class ContentsEntry
     private final int              indexInFile;
     private final String           name;
     private final File             sourceFile;
+    private final List<String>     folderPath;
     private final List<String>     containerPath;
     private final int              numberOfZones;
     private final int              lowestKey;
@@ -53,10 +55,11 @@ public class ContentsEntry
      *
      * @param indexInFile The index of the source inside of its file, which identifies it
      * @param source The detected source
+     * @param sourceFolder The folder which was searched, the reference for the folder path
      */
-    public ContentsEntry (final int indexInFile, final IMultisampleSource source)
+    public ContentsEntry (final int indexInFile, final IMultisampleSource source, final File sourceFolder)
     {
-        this (indexInFile, source.getName (), source);
+        this (indexInFile, source.getName (), source, sourceFolder);
     }
 
 
@@ -66,14 +69,16 @@ public class ContentsEntry
      * @param indexInFile The index of the source inside of its file, which identifies it
      * @param name The name to display, e.g. the name of a performance
      * @param source The detected source from which to read the information to display
+     * @param sourceFolder The folder which was searched, the reference for the folder path
      */
-    public ContentsEntry (final int indexInFile, final String name, final IMultisampleSource source)
+    public ContentsEntry (final int indexInFile, final String name, final IMultisampleSource source, final File sourceFolder)
     {
         this.indexInFile = indexInFile;
         this.name = name;
         this.sourceFile = source.getSourceFile ();
         this.category = source.getMetadata ().getCategory ();
-        this.containerPath = createContainerPath (source.getSubPath ());
+        this.folderPath = createFolderPath (this.sourceFile, sourceFolder);
+        this.containerPath = createContainerPath (source.getSubPath (), this.folderPath);
 
         int zoneCount = 0;
         int lowest = Integer.MAX_VALUE;
@@ -128,10 +133,24 @@ public class ContentsEntry
 
 
     /**
-     * Get the path of the containers in which the source is located, e.g. the name of the bank of a
-     * preset inside of a disk image. Ordered from the outermost to the innermost container.
+     * Get the folders between the searched source folder and the file of the source, e.g. a preset
+     * in '&lt;source&gt;/Bass/Deep.tvpst' is located in the folder 'Bass'. Ordered from the
+     * outermost to the innermost folder.
      *
-     * @return The container names, might be empty
+     * @return The folder names, empty if the file is located directly in the source folder
+     */
+    public List<String> getFolderPath ()
+    {
+        return this.folderPath;
+    }
+
+
+    /**
+     * Get the path of the containers inside of the file in which the source is located, e.g. the
+     * name of the bank of a preset inside of a disk image. Ordered from the outermost to the
+     * innermost container.
+     *
+     * @return The container names, empty if the file itself is the only container
      */
     public List<String> getContainerPath ()
     {
@@ -191,20 +210,57 @@ public class ContentsEntry
 
 
     /**
+     * Get the folders in which the file of the source is located, relative to the folder which was
+     * searched. The names are collected by walking up from the file until the source folder is
+     * reached and are therefore reversed.
+     *
+     * @param sourceFile The file which contains the source
+     * @param sourceFolder The folder which was searched
+     * @return The folder names, empty if the file is located directly in the source folder or is
+     *         not located below it at all
+     */
+    private static List<String> createFolderPath (final File sourceFile, final File sourceFolder)
+    {
+        if (sourceFile == null || sourceFolder == null)
+            return new ArrayList<> ();
+
+        final File searchedFolder = sourceFolder.getAbsoluteFile ();
+        final List<String> folders = new ArrayList<> ();
+        File folder = sourceFile.getAbsoluteFile ().getParentFile ();
+        while (folder != null && !folder.equals (searchedFolder))
+        {
+            folders.add (folder.getName ());
+            folder = folder.getParentFile ();
+        }
+        // The searched folder is not part of the path of the file, e.g. because a sample of a
+        // library is located somewhere else, therefore there is no folder path to display
+        if (folder == null)
+            return new ArrayList<> ();
+        Collections.reverse (folders);
+        return folders;
+    }
+
+
+    /**
      * Get the names of the containers of the source. The sub-path additionally contains the name of
      * the source at the first position and the source folder at the last, which are both removed.
      * The remaining parts are ordered from the innermost to the outermost container and therefore
-     * reversed.
+     * reversed. They start with the folders of the file, which are already known from the folder
+     * path and are removed as well, so that only the containers inside of the file are left.
      *
      * @param subPath The sub-path of the source
+     * @param folderPath The folders in which the file of the source is located
      * @return The container names
      */
-    private static List<String> createContainerPath (final String [] subPath)
+    private static List<String> createContainerPath (final String [] subPath, final List<String> folderPath)
     {
         if (subPath == null || subPath.length < 3)
             return new ArrayList<> ();
         final List<String> containers = new ArrayList<> (Arrays.asList (subPath).subList (1, subPath.length - 1));
-        java.util.Collections.reverse (containers);
+        Collections.reverse (containers);
+        final int folderCount = folderPath.size ();
+        if (folderCount > 0 && containers.size () >= folderCount && containers.subList (0, folderCount).equals (folderPath))
+            return new ArrayList<> (containers.subList (folderCount, containers.size ()));
         return containers;
     }
 }
