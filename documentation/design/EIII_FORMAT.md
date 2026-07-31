@@ -28,10 +28,12 @@ an E-mu formatted one; on an E-mu disk the files carry no extension at all.
 later variants use no bias. The `EMULATOR 3X` banks still carry a (empty) `EMULATOR THREE` preset
 address table at 0x6C.
 
-A CD-ROM additionally stores the name of the disk as an *empty* bank: only the header, the empty
-address tables and the filler byte (0x74B bytes in the `EMULATOR THREE` format). The first library
-CD-ROM names it `E-mu Banks 1-44`; the sampler and tools like Awave Studio show that name as the
-name of the volume. Such a stub holds nothing to convert and is reported as the disk name, not as
+A CD-ROM additionally stores its name - and on several volumes the names of the sections of its
+bank list (`INSTRUMENTS`, `EFFECTS`, `Credits`, a revision marker) - as *empty* label banks: the
+header, the empty address tables and the filler byte (0x74B bytes in the `EMULATOR THREE` format,
+`E-mu Banks 1-44` on the first library CD-ROM). The stubs of many volumes additionally hold one
+to three presets which map no key at all. The sampler and tools like Awave Studio show these
+names in the bank list; such a stub holds nothing to convert and is reported as a label, not as
 a bank.
 
 ## Bank header
@@ -124,6 +126,13 @@ reads offsets 49-50 as one uint16, but the byte at 50 is a parameter of its own:
 library presets set it together with a link (e.g. `Stick Combo III` of the `Chapman Stick` bank,
 link 51 and parameter 61), which makes the 16 bit value look out of range and would lose the
 layered preset.
+
+Several library CD-ROMs leave the link of the last element of a chain **dangling**: it points at
+a slot which holds no preset (`CONCRT PERC2   X` of Vol. 16 chains 25 percussion presets and both
+its ends link to the empty slots 126/127). An empty slot has the same table address as its
+successor, so following such a link reads whatever lies behind the last preset as note zones and
+zones - on these volumes garbage which references impossible sample numbers like 16356. A chain
+therefore ends at the first slot which holds no preset, which is also what the device does.
 
 ### Note zone (4 bytes)
 
