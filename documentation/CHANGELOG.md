@@ -11,7 +11,7 @@
 * New: Added support for the E-mu Emulator X format (EXB banks with their EBL sample pool).
 * New: Added support for the Roland S-550 CD-ROM format.
 * New: Added support for the Roland SP-404MK2 format (reading and writing of projects; each bank of pads becomes a multi-sample).
-* New: When a converted preset plays its samples an octave or more from the middle of the keyboard (common for vintage phrase and vocal presets, which were triggered from drum machines rather than played on keys), a log line names the root it plays at, so the faithful mapping is not mistaken for a conversion error. The existing Transpose processing option can move it.
+* New: When a converted preset plays its samples an octave or more from the middle of the keyboard (common for vintage phrase and vocal presets, which were triggered from drum machines rather than played on keys), a log line names the root it plays at, so the faithful mapping is not mistaken for a conversion error.
 * User Interface
   * New: There is now a toggle switch before the source field to switch between batch conversion (as it worked before) or only picking a single file to convert. Each mode keeps a history of its own, which is exchanged along with the entered path when the toggle is used.
   * New: A source format where one file contains several presets - a bank, a disk image or a library - has a *Contents...* button, which shows all presets found in the source as a tree of their file and their containers. Each entry shows its number of zones, its key range and its category, so that an unknown bank can be explored, and only the ticked presets are converted. One note of the preset highlighted in the *Contents...* dialog can be played with the *Play* button or a double-click. It is rendered from the preset as it was read - amplitude and filter envelopes, filter, pitch and volume LFOs, velocity and panning - so it tells what the conversion will produce, which allows to pick the presets of an unknown bank by ear. This works for every source format, since it renders the model and not the format.
@@ -41,9 +41,9 @@
   * Fixed: The volume of a multi part was multiplied onto the dB gain of the zones (a no-op for 0dB zones) instead of being added as a dB offset, and the part panning was scaled twice as wide as the field allows.
 * Akai MPC
   * New: The destination can now write MPC 3 track files (*.xty) with their '_[TrackData]' sample folder as an alternative to MPC 2 keygroup folders (new 'Output Format' option, issue #117). The files replicate the complete track structure of MPC firmware 3.7 from a template - the firmware's own reader is strict about its serialized object tree - and only the multi-sample fields are patched in.
+  * New: The volume of a MPC 3 layer (an object holding the linear gain coefficient) is now read.
   * Fixed: The pitch bend range of a MPC 3 track or project was read as cents but the file stores semitones, so the default of 2 semitones became 2 cents. The fraction of an octave stored next to it confirms the unit.
   * Fixed: The tuning of a MPC 3 layer was read from the coarse and fine tune of its instrument, which the caller had already applied - the instrument tuning was doubled and the layer's own tuning was lost.
-  * New: The volume of a MPC 3 layer (an object holding the linear gain coefficient) is now read.
 * Akai MPC2000/3000
   * Fixed: The tune of a program pad and of a SND sample were read unsigned - every negatively tuned pad of e.g. the factory library CD came out drastically sharp (a -0.05 semitone pad read as more than +600 semitones and was clamped to +12).
 * Akai MPC60
