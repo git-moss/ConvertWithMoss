@@ -190,6 +190,19 @@ public class DirectWaveChunk
 
 
     /**
+     * Read a 32 bit little-endian float from a byte array.
+     *
+     * @param data The data to read from
+     * @param offset The offset at which to read
+     * @return The value
+     */
+    public static float readFloatLE (final byte [] data, final int offset)
+    {
+        return Float.intBitsToFloat (readIntLE (data, offset));
+    }
+
+
+    /**
      * Serialize a list of chunks into a byte array.
      *
      * @param chunks The chunks to serialize

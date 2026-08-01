@@ -19,6 +19,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -189,11 +190,45 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_AUDIO_FORMAT, createAudioFormat (chunk.getPayload (), zone, audioMetadata));
                     break;
 
+                case DirectWaveTag.TAG_AMP_ENVELOPE:
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_AMP_ENVELOPE, createAmplitudeEnvelope (chunk.getPayload (), zone));
+                    break;
+
                 default:
                     DirectWaveChunk.writeChunk (out, chunk.getTag (), chunk.getPayload ());
                     break;
             }
         return out.toByteArray ();
+    }
+
+
+    /**
+     * Fill the amplitude envelope block with the envelope of the zone. The four floats are the
+     * attack, decay, sustain and release knob positions; the time knobs are mapped with the
+     * provisional cubic law described in the design document. Fields which are not set in the
+     * source keep the template default.
+     *
+     * @param template The template payload of the amplitude envelope block
+     * @param zone The sample zone
+     * @return The filled block payload
+     */
+    private static byte [] createAmplitudeEnvelope (final byte [] template, final ISampleZone zone)
+    {
+        final byte [] payload = template.clone ();
+        final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+        writeEnvelopeTime (payload, 0, envelope.getAttackTime ());
+        writeEnvelopeTime (payload, 4, envelope.getDecayTime ());
+        if (envelope.getSustainLevel () >= 0)
+            DirectWaveChunk.writeFloatLE (payload, 8, (float) Math.clamp (envelope.getSustainLevel (), 0, 1));
+        writeEnvelopeTime (payload, 12, envelope.getReleaseTime ());
+        return payload;
+    }
+
+
+    private static void writeEnvelopeTime (final byte [] payload, final int offset, final double time)
+    {
+        if (time >= 0)
+            DirectWaveChunk.writeFloatLE (payload, offset, (float) Math.clamp (Math.cbrt (time / DirectWaveTag.ENVELOPE_MAX_TIME), 0, 1));
     }
 
 

@@ -18,6 +18,7 @@ import java.util.Map;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -70,7 +71,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             {
                 final List<DirectWaveChunk> chunks = DirectWaveChunk.parseAll (content, DirectWaveTag.PREAMBLE_SIZE);
                 if (chunks != null)
-                    return this.parseChunks (file, chunks);
+                    return this.parseChunks (file, chunks, content[DirectWaveTag.PREAMBLE_VERSION_OFFSET] & 0xFF);
             }
 
             // No parseable DWP structure (e.g. a bank): reconstruct the mapping from the names
@@ -90,10 +91,11 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param file The DWP file
      * @param chunks The parsed top level chunks
+     * @param version The format version (the byte at offset 4)
      * @return The multi-sample source
      * @throws IOException Could not read the sample files
      */
-    private List<IMultisampleSource> parseChunks (final File file, final List<DirectWaveChunk> chunks) throws IOException
+    private List<IMultisampleSource> parseChunks (final File file, final List<DirectWaveChunk> chunks, final int version) throws IOException
     {
         String name = FileUtils.getNameWithoutType (file);
         final IGroup group = new DefaultGroup ("Group #1");
@@ -110,7 +112,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
                 case DirectWaveTag.TAG_SAMPLE_CONTAINER:
                     containerCount++;
-                    final ISampleZone zone = this.parseSampleContainer (file, chunk);
+                    final ISampleZone zone = this.parseSampleContainer (file, chunk, version);
                     if (zone != null)
                         group.addSampleZone (zone);
                     break;
@@ -137,10 +139,11 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param file The DWP file
      * @param containerChunk The sample container chunk
+     * @param version The format version (the byte at offset 4)
      * @return The zone or null if the sample file could not be found
      * @throws IOException Could not read the sample file
      */
-    private ISampleZone parseSampleContainer (final File file, final DirectWaveChunk containerChunk) throws IOException
+    private ISampleZone parseSampleContainer (final File file, final DirectWaveChunk containerChunk, final int version) throws IOException
     {
         final List<DirectWaveChunk> chunks = DirectWaveChunk.parseAll (containerChunk.getPayload (), 0);
         if (chunks == null)
@@ -151,6 +154,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
         byte [] mapping = null;
         byte [] audioFormat = null;
+        byte [] ampEnvelope = null;
         String sampleName = null;
         String samplePath = null;
         final List<byte []> unknownChunks = new ArrayList<> ();
@@ -169,7 +173,10 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
                 case DirectWaveTag.TAG_AUDIO_FORMAT:
                     audioFormat = chunk.getPayload ();
                     break;
-                case DirectWaveTag.TAG_BLOCK_01F8, DirectWaveTag.TAG_BLOCK_01F9, DirectWaveTag.TAG_BLOCK_01FA, DirectWaveTag.TAG_BLOCK_01FB, DirectWaveTag.TAG_BLOCK_01FC, DirectWaveTag.TAG_BLOCK_01FD, DirectWaveTag.TAG_BLOCK_01FE, DirectWaveTag.TAG_BLOCK_01FF, DirectWaveTag.TAG_BLOCK_0200, DirectWaveTag.TAG_BLOCK_0201, DirectWaveTag.TAG_BLOCK_0202, DirectWaveTag.TAG_BLOCK_0203, DirectWaveTag.TAG_BLOCK_0204, DirectWaveTag.TAG_SAMPLE_TERMINATOR:
+                case DirectWaveTag.TAG_AMP_ENVELOPE:
+                    ampEnvelope = chunk.getPayload ();
+                    break;
+                case DirectWaveTag.TAG_BLOCK_01F8, DirectWaveTag.TAG_BLOCK_01F9, DirectWaveTag.TAG_BLOCK_01FA, DirectWaveTag.TAG_BLOCK_01FB, DirectWaveTag.TAG_BLOCK_01FC, DirectWaveTag.TAG_BLOCK_01FE, DirectWaveTag.TAG_BLOCK_01FF, DirectWaveTag.TAG_BLOCK_0200, DirectWaveTag.TAG_BLOCK_0201, DirectWaveTag.TAG_BLOCK_0202, DirectWaveTag.TAG_BLOCK_0203, DirectWaveTag.TAG_BLOCK_0204, DirectWaveTag.TAG_SAMPLE_TERMINATOR:
                     // Known parameter blocks which contain no information required for the
                     // conversion
                     break;
@@ -220,10 +227,54 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             zone.getLoops ().add (loop);
         }
 
+        applyAmplitudeEnvelope (zone, ampEnvelope, version);
+
         // The root key is taken from the mapping above; look for loops in the sample chunks only
         // when the program has none
         sampleData.addZoneData (zone, false, zone.getLoops ().isEmpty ());
         return zone;
+    }
+
+
+    /**
+     * Apply the amplitude envelope of the zone. The four floats of the envelope block are the
+     * attack, decay, sustain and release knob positions. When they are exactly the defaults of
+     * the format version nothing is set, so that the default envelope handling of the conversion
+     * applies. The time knobs are mapped with the provisional cubic law described in the design
+     * document; the sustain is a level and therefore exact.
+     *
+     * @param zone The zone
+     * @param ampEnvelope The payload of the amplitude envelope block
+     * @param version The format version (the byte at offset 4)
+     */
+    private static void applyAmplitudeEnvelope (final ISampleZone zone, final byte [] ampEnvelope, final int version)
+    {
+        if (ampEnvelope == null || ampEnvelope.length < 16)
+            return;
+
+        final float [] positions = new float [4];
+        final float [] defaults = version == DirectWaveTag.VERSION_26 ? DirectWaveTag.ENVELOPE_DEFAULTS_V26 : DirectWaveTag.ENVELOPE_DEFAULTS_V25;
+        boolean isDefault = true;
+        for (int i = 0; i < 4; i++)
+        {
+            positions[i] = Math.clamp (DirectWaveChunk.readFloatLE (ampEnvelope, i * 4), 0, 1);
+            if (Math.abs (positions[i] - defaults[i]) > 0.005)
+                isDefault = false;
+        }
+        if (isDefault)
+            return;
+
+        final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+        envelope.setAttackTime (knobToTime (positions[0]));
+        envelope.setDecayTime (knobToTime (positions[1]));
+        envelope.setSustainLevel (positions[2]);
+        envelope.setReleaseTime (knobToTime (positions[3]));
+    }
+
+
+    private static double knobToTime (final float position)
+    {
+        return DirectWaveTag.ENVELOPE_MAX_TIME * position * position * position;
     }
 
 

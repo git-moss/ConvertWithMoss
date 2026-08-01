@@ -95,7 +95,7 @@ The payload is a nested block stream with the same envelope. Blocks in order:
 | 0x01FA | 48 | opaque parameters (factory: `0.5, 0.5, 0.5, 1.0` floats then zeros; the 0x26 specimen instead holds zeros, 1.0 at +12 and what looks like uninitialized heap noise) |
 | 0x01FB | 20 | opaque, varies per program (twice) |
 | 0x01FC | 2 | zeroed |
-| 0x01FD | 16 | opaque parameters, varies per program |
+| 0x01FD | 16 | **the amplitude envelope**: 4 floats attack, decay, sustain, release (see below) |
 | 0x01FE-0x0201 | 9 | opaque parameters (one each) |
 | 0x0202 | 16 | opaque parameters (twice) |
 | 0x0203 | 20 | opaque, varies per program (twice) |
@@ -192,10 +192,53 @@ dialog offers (16 or 32-bit float) and converted to 24 bit. This path is verifie
 synthesized monolithic files only — a real monolithic file has not been available yet. If
 no block matches, the detector reports that the samples were not found.
 
+## Amplitude envelope (0x01FD)
+
+Four floats: attack, decay, sustain, release as knob positions 0..1. Identified by
+differential analysis of the factory programs:
+
+* Attack is 0 in all seven specimens (sampled content plays instantly).
+* Sustain is 1.0 everywhere except the 'Electric' piano, where it is **0.0** — and the
+  Electric samples are looped, so sustain 0 with a long decay is exactly how a sampler
+  makes a looped electric piano die away.
+* Decay is 0.5 by default; Electric raises it to 0.81 (the long e-piano decay); the
+  version 0x26 default is 1.0.
+* Release is 0.25 by default and is nudged up on precisely the two sustained factory
+  instruments (Rhodes 0.32, Strings 0.325); the version 0x26 default is 0.18.
+
+The defaults differ per version: 0x25 = `0, 0.5, 1.0, 0.25`, 0x26 = `0, 1.0, 1.0, 0.18`.
+The detector skips the envelope when the block equals the version defaults.
+
+**The knob-to-time law is provisional**: the time knobs are mapped as
+`seconds = 10 * position^3` (the documented top of DirectWave time knobs is 10 seconds,
+"down is fast, up is slow" suggests a strong taper). It could not be measured without a
+saving-capable DirectWave. The sustain is a level and therefore exact. To calibrate the
+law: load a factory program in DirectWave, hover/turn the AMP knobs and note the displayed
+seconds for a few knob positions (e.g. the default D=50% and R=25% and Electric's D=81%).
+
+## Parameter block hypotheses (not wired, single tweaked specimen)
+
+The DirectWave manual gives the structure that matches the remaining blocks: two filters
+per zone, two LFOs and a 4x4 modulation matrix.
+
+* 0x01FB (twice, 20 bytes) = **Filter 1 / Filter 2**: 5 floats. The 'Electric' program
+  changes filter 1 from the default `0, 0.4724, 0.5, 0, 0` to `0, 0.405, 0.0, 0, 0`
+  (frequency and emphasis knobs), but **the type field is 0 (Off) in every available
+  specimen**, so neither the position of the type field nor the enum order
+  (Off/Lowpass/Highpass/Bandpass/Notch/Allpass/MiniSynth/Vox) can be verified — the
+  filter is therefore not converted yet.
+* 0x0204 (16 of them, 8 bytes) = **the 4x4 modulation matrix**: `u16 source, u16 target,
+  f32 amount`. Default routings in all factory programs: `(2,2,+1.0)`, `(3,34,+0.75)`,
+  `(12,1,+0.5)`; 'Electric' adds `(11,3,0.86)`, `(2,7,1.0)`, `(1,7,0.865)`. The
+  source/target enums are unknown (the UI shows names, not indices).
+* 0x0202 (twice, 16 bytes) and 0x0203 (twice, 20 bytes) = **LFO 1 / LFO 2** parameter
+  candidates ('Electric' raises 0x0203#1 field 1 from 0.1 to 0.355 — plausibly an LFO
+  rate for its tremolo, routed via its extra matrix slots).
+
 ## Not yet decoded
 
-* Envelopes, filters, effects: they live somewhere in the opaque parameter blocks (or the
-  99/100 parameter slots), which only hold defaults in the available specimens.
+* The filter type enum, the LFO layout and the modulation matrix enums (see the
+  hypotheses above) — a specimen with an engaged filter would settle the filter.
 * Trigger groups (round-robin/random cycles) and their location in the opaque bytes.
 * The tag and placement of the embedded audio block of monolithic files (see above) and
   the structure of .dwb banks — no specimens. The file-name fall-back of the detector

@@ -75,8 +75,8 @@ public class DirectWaveTag
     public static final int      TAG_BLOCK_01FB         = 0x01FB;
     /** The tag of the 2 byte zeroed block inside of a sample container. */
     public static final int      TAG_BLOCK_01FC         = 0x01FC;
-    /** The tag of the 16 byte parameter block inside of a sample container. */
-    public static final int      TAG_BLOCK_01FD         = 0x01FD;
+    /** The tag of the amplitude envelope block (4 floats: attack, decay, sustain, release). */
+    public static final int      TAG_AMP_ENVELOPE       = 0x01FD;
     /** The first of the four 9 byte zeroed blocks inside of a sample container. */
     public static final int      TAG_BLOCK_01FE         = 0x01FE;
     /** The second of the four 9 byte zeroed blocks inside of a sample container. */
@@ -125,6 +125,38 @@ public class DirectWaveTag
 
     /** The offset of the sample count in the preamble. */
     public static final int      PREAMBLE_COUNT_OFFSET  = 0x4A;
+
+    /**
+     * The maximum envelope time in seconds for an envelope knob at its maximum. The knob positions
+     * are mapped with a cubic taper: time = maximum * position^3. This law is provisional (the
+     * DirectWave time hints could not be measured yet); the documented top of the DirectWave time
+     * knobs is 10 seconds.
+     */
+    public static final double   ENVELOPE_MAX_TIME      = 10.0;
+
+    /** The default amplitude envelope knob positions of version 0x25 files. */
+    public static final float [] ENVELOPE_DEFAULTS_V25  =
+    {
+        0f,
+        0.5f,
+        1f,
+        0.25f
+    };
+    /** The default amplitude envelope knob positions of version 0x26 files. */
+    public static final float [] ENVELOPE_DEFAULTS_V26  =
+    {
+        0f,
+        1f,
+        1f,
+        0.18f
+    };
+
+    /** The version byte value of the FL Studio Mobile factory files. */
+    public static final int      VERSION_25             = 0x25;
+    /** The version byte value of the FL Studio Desktop 20.x specimen. */
+    public static final int      VERSION_26             = 0x26;
+    /** The offset of the version byte in the preamble. */
+    public static final int      PREAMBLE_VERSION_OFFSET = 4;
 
     /** The fixed length of the zeroed shadow block of the name (tag 0x0068). */
     public static final int      SHADOW_NAME_LENGTH     = 10;

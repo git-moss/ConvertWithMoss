@@ -4822,8 +4822,8 @@
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce12"/>
-     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO envelope blocks not decoded</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17"/>
+     <table:table-cell table:style-name="ce17" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>A/D/S/R knob positions (provisional time law)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
@@ -4894,7 +4894,7 @@
      <table:covered-table-cell/>
      <table:covered-table-cell/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce12"/>
+     <table:table-cell table:style-name="ce17"/>
      <table:covered-table-cell/>
      <table:covered-table-cell/>
      <table:covered-table-cell/>
