@@ -528,7 +528,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         }
         this.sourceModeChoiceBox.getSelectionModel ().select (this.config.getBoolean (SOURCE_BATCH_MODE, true) ? 0 : 1);
         final List<String> activeHistory = this.activeSourceHistory ();
-        this.sourcePathField.getItems ().addAll (activeHistory);
+        this.sourcePathField.getItems ().setAll (activeHistory);
         this.sourcePathField.setEditable (true);
         SystemShortcuts.keepWorkingIn (this.sourcePathField);
         if (!activeHistory.isEmpty ())
@@ -953,7 +953,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     {
         if (!this.applySourcePath ())
             return false;
-        this.activeSourceHistory ().add (0, this.sourcePathField.getEditor ().getText ());
+        updateHistory (this.sourcePathField.getEditor ().getText (), this.activeSourceHistory ());
 
         // Check output folder
         this.detectSettings.outputFolder = new File (this.destinationPathField.getEditor ().getText ());
@@ -969,7 +969,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.destinationPathField.requestFocus ();
             return false;
         }
-        this.destinationPathHistory.add (0, this.detectSettings.outputFolder.getAbsolutePath ());
+        updateHistory (this.detectSettings.outputFolder.getAbsolutePath (), this.destinationPathHistory);
 
         // Output folder must be empty or add new must be active
         return this.addNewFiles || this.isEmptyFolder (this.detectSettings.outputFolder.getPath ());
@@ -1424,6 +1424,8 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private static void updateHistory (final String newItem, final List<String> history)
     {
+        if (newItem.isBlank ())
+            return;
         history.remove (newItem);
         history.add (0, newItem);
     }
