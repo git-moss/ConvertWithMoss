@@ -21,6 +21,15 @@ Sources of this specification:
   tokenize completely, the preamble size rule and the zone mapping layout hold, and they
   add data points marked below. Differences of the older version: 100 parameter slot
   blocks instead of 99, and the bytes-per-frame field holds other values (see below).
+* 85 monolithic programs of a commercial library (version 0x26, 288 sample containers),
+  which pin down the embedded audio (see below).
+* The 26 DirectWave programs of the legacy patch pack of FL Studio
+  (`Data/Patches/Packs/Legacy`, version byte **0x24**). They are the only known files of
+  that version; its preamble is 4 bytes longer, so the block stream starts at 0x5E instead
+  of 0x5A. They also contain the only zones with an engaged filter found anywhere: 111
+  zones with a low-pass, which confirm the filter type encoding described below. Their
+  samples are WAV files with the Ogg Vorbis codec (format tag 0x674F), which the sample
+  loader of ConvertWithMoss cannot decode, so their audio is not converted.
 
 Everything below is little-endian.
 
@@ -28,8 +37,8 @@ Everything below is little-endian.
 
 ```
 offset 0x00: 'DwPr' magic (4 bytes ASCII)
-offset 0x04: fixed header/preamble up to 0x5A (see below)
-offset 0x5A: flat, gapless stream of blocks until end of file
+offset 0x04: fixed header/preamble (up to 0x5A; up to 0x5E in the version 0x24)
+after it:    flat, gapless stream of blocks until end of file
 ```
 
 ### Block envelope
@@ -171,26 +180,31 @@ the WAV files. The detector therefore looks for each sample (last path component
 0x01F6) next to the .dwp file, then in a `<dwp base name>` sub-folder, then in a sub-folder
 named like the second-to-last component of the stored path.
 
-## Monolithic files (structural inference, no specimen)
+## Monolithic files
 
-No monolithic specimen was available, but two structural facts are known: the
-[dwsanitizer](https://github.com/kachine/dwsanitizer) project (which rewrites path strings
-inside monolithic files) hardcodes the offsets 0x5E for the program name length and 0x66
-for the program name — exactly the length field and payload of the first block of the
-stream starting at 0x5A — and scans monolithic files for the byte pattern
-`F6 01 00 00 [len] 00 00 00 00 00 00 00`, which is precisely the envelope of a 0x01F6
-sample path block. Monolithic files therefore keep the same preamble and block structure,
-and the embedded audio has to live in additional blocks.
+A program saved with the *Monolithic file* option keeps exactly the same preamble and block
+structure; the samples are added as one extra block per sample container:
 
-The detector exploits that the audio format block describes the audio: when the external
-sample file of a container cannot be found, any block with an unknown tag whose payload
-size is exactly `frameCount * channelCount * bytesPerSample` for a bytes-per-sample of 2,
-3 or 4 is taken as the embedded audio (a check that cannot match by accident; the
-unreliable bytes-per-frame field is not used). 2 or 3 bytes per sample are integer PCM; 4
-bytes per sample are interpreted as the 32-bit float format which the DirectWave sampling
-dialog offers (16 or 32-bit float) and converted to 24 bit. This path is verified against
-synthesized monolithic files only — a real monolithic file has not been available yet. If
-no block matches, the detector reports that the samples were not found.
+| tag | position | content |
+|----:|----------|---------|
+| 0x0206 | the last block of a sample container, after the sixteen 0x0204 blocks and before the 0x0004 terminator | `u32 length, u32 0, FLAC stream` |
+
+The audio is therefore **FLAC compressed** - the block payload carries the length of the
+FLAC data, four unused bytes and then a complete FLAC stream starting with its `fLaC`
+magic. The sample path block (0x01F6) is still present and still holds the path of the
+machine which saved the program, which is why the
+[dwsanitizer](https://github.com/kachine/dwsanitizer) project can mask paths in monolithic
+files; it is ignored when the embedded audio is present.
+
+This was confirmed on 85 monolithic programs (288 sample containers): in every one of them
+the length field equals the payload size minus 8, the field at offset 4 is 0, and the block
+sits between the last 0x0204 block and the terminator. Both reading and writing use it.
+
+The tag was found before a specimen was available by dumping the block writer of the
+plug-in binary (see below): the payload length is a constant 8 bytes before the tag for
+every block of fixed size, so the blocks *without* such a constant are the variable-length
+ones - the sample name, the sample path and the two otherwise unused tags 0x0205 and
+0x0206.
 
 ## Amplitude envelope (0x01FD)
 
@@ -374,8 +388,9 @@ Studio, not the 47 DirectWave parameters.
 
 * The LFO block layout and the source/target enums of the modulation matrix.
 * Trigger groups (round-robin/random cycles) and their location in the opaque bytes.
-* The tag and placement of the embedded audio block of monolithic files (see above) and
-  the structure of .dwb banks — no specimens. The file-name fall-back of the detector
+* The purpose of the tag 0x0205, which the block writer of the plug-in knows but which
+  appears in none of the available specimens.
+* The structure of .dwb banks — no specimens. The file-name fall-back of the detector
   (see below) covers non-monolithic .dwb exports.
 
 ## Detector fall-back: sampled/Automap file names

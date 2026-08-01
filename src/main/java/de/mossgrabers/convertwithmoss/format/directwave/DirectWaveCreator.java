@@ -32,7 +32,8 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
-import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -44,7 +45,7 @@ import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
  *
  * @author Jürgen Moßgraber
  */
-public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
+public class DirectWaveCreator extends AbstractWavCreator<DirectWaveCreatorUI>
 {
     private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -68,7 +69,7 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
      */
     public DirectWaveCreator (final INotifier notifier)
     {
-        super ("DirectWave", "DirectWave", notifier, new WavChunkSettingsUI ("DirectWave"));
+        super ("DirectWave", "DirectWave", notifier, new DirectWaveCreatorUI ("DirectWave"));
     }
 
 
@@ -77,6 +78,18 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final String safeName = createSafeFilename (multisampleSource.getName ());
+
+        this.filterRoundRobinZones (multisampleSource);
+
+        if (this.settingsConfiguration.isMonolithic ())
+        {
+            final File multiFile = this.createUniqueFilename (destinationFolder, safeName, "dwp");
+            this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+            renameZonesToConvention (FileUtils.getNameWithoutType (multiFile), multisampleSource);
+            Files.write (multiFile.toPath (), createDwpContent (FileUtils.getNameWithoutType (multiFile), multisampleSource, true));
+            this.progress.notifyDone ();
+            return;
+        }
 
         // The folder, the DWP file and the sample names must all carry the same name, therefore
         // make the folder unique instead of only the DWP file
@@ -98,11 +111,10 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final File multiFile = new File (folder, name + ".dwp");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
-        this.filterRoundRobinZones (multisampleSource);
         renameZonesToConvention (name, multisampleSource);
 
         this.writeSamples (folder, multisampleSource, DESTINATION_FORMAT);
-        Files.write (multiFile.toPath (), createDwpContent (name, multisampleSource));
+        Files.write (multiFile.toPath (), createDwpContent (name, multisampleSource, false));
 
         this.progress.notifyDone ();
     }
@@ -116,7 +128,7 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @return The bytes of the DWP file
      * @throws IOException Could not create the content
      */
-    private static byte [] createDwpContent (final String name, final IMultisampleSource multisampleSource) throws IOException
+    private static byte [] createDwpContent (final String name, final IMultisampleSource multisampleSource, final boolean monolithic) throws IOException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
@@ -143,7 +155,7 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
         for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SAMPLE_CONTAINER, createSampleContainer (name, zone));
+                DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SAMPLE_CONTAINER, createSampleContainer (name, zone, monolithic));
                 sampleCount++;
             }
 
@@ -170,7 +182,7 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @return The bytes of the container
      * @throws IOException Could not create the content
      */
-    private static byte [] createSampleContainer (final String instrumentName, final ISampleZone zone) throws IOException
+    private static byte [] createSampleContainer (final String instrumentName, final ISampleZone zone, final boolean monolithic) throws IOException
     {
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
@@ -220,11 +232,36 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_FILTER, isFirstFilter.getAndSet (false) ? createFilter (chunk.getPayload (), zone) : chunk.getPayload ());
                     break;
 
+                case DirectWaveTag.TAG_SAMPLE_TERMINATOR:
+                    // The embedded audio is the last block of the container
+                    if (monolithic)
+                        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_EMBEDDED_AUDIO, createEmbeddedAudio (sampleData.get ()));
+                    DirectWaveChunk.writeChunk (out, chunk.getTag (), chunk.getPayload ());
+                    break;
+
                 default:
                     DirectWaveChunk.writeChunk (out, chunk.getTag (), chunk.getPayload ());
                     break;
             }
         return out.toByteArray ();
+    }
+
+
+    /**
+     * Create the payload of the embedded audio block: the length of the audio data as a 32-bit
+     * integer, 4 unused bytes and the audio as a FLAC stream.
+     *
+     * @param sampleData The sample data to embed
+     * @return The payload
+     * @throws IOException Could not compress the audio
+     */
+    private static byte [] createEmbeddedAudio (final ISampleData sampleData) throws IOException
+    {
+        final byte [] flac = AudioFileUtils.compressToFLAC (sampleData);
+        final byte [] payload = new byte [DirectWaveTag.EMBEDDED_AUDIO_OFFSET + flac.length];
+        DirectWaveChunk.writeIntLE (payload, 0, flac.length);
+        System.arraycopy (flac, 0, payload, DirectWaveTag.EMBEDDED_AUDIO_OFFSET, flac.length);
+        return payload;
     }
 
 

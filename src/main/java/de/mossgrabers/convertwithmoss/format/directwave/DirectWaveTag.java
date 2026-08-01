@@ -19,8 +19,12 @@ public class DirectWaveTag
     /** The magic bytes at the start of a DWP file. */
     public static final byte []  MAGIC                  = "DwPr".getBytes ();
 
-    /** The length of the fixed header before the block stream starts. */
+    /** The length of the fixed header before the block stream starts (versions 0x25 and 0x26). */
     public static final int      PREAMBLE_SIZE          = 0x5A;
+    /** The smallest preamble length to look for when reading. */
+    public static final int      PREAMBLE_MIN_SIZE      = 0x50;
+    /** The largest preamble length to look for when reading (0x5E for the version 0x24). */
+    public static final int      PREAMBLE_MAX_SIZE      = 0x70;
 
     /**
      * The offset of the size field in the preamble. It contains the file size minus 48 (= the size
@@ -64,6 +68,17 @@ public class DirectWaveTag
     public static final int      TAG_AUDIO_FORMAT       = 0x01F7;
     /** The tag of the terminator block of a sample container. */
     public static final int      TAG_SAMPLE_TERMINATOR  = 0x0004;
+
+    /**
+     * The tag of the block which contains the embedded audio of a monolithic program. It is the
+     * last block of a sample container before its terminator. The payload is the length of the
+     * audio data as a 32-bit integer, 4 unused bytes and then the audio as a FLAC stream.
+     */
+    public static final int      TAG_EMBEDDED_AUDIO     = 0x0206;
+    /** The size of the header before the FLAC stream in the embedded audio block. */
+    public static final int      EMBEDDED_AUDIO_OFFSET  = 8;
+    /** The magic bytes of a FLAC stream. */
+    public static final byte []  FLAC_MAGIC             = "fLaC".getBytes ();
 
     /** The tag of the 8 byte parameter block inside of a sample container. */
     public static final int      TAG_BLOCK_01F8         = 0x01F8;

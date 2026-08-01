@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.format.directwave;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,7 +37,9 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.directwave.DirectWaveFileNameParser.ParsedZone;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -81,9 +85,9 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         try
         {
             final byte [] content = Files.readAllBytes (file.toPath ());
-            if (content.length >= DirectWaveTag.PREAMBLE_SIZE + 12 && Arrays.equals (content, 0, DirectWaveTag.MAGIC.length, DirectWaveTag.MAGIC, 0, DirectWaveTag.MAGIC.length))
+            if (content.length >= DirectWaveTag.PREAMBLE_MAX_SIZE + 12 && Arrays.equals (content, 0, DirectWaveTag.MAGIC.length, DirectWaveTag.MAGIC, 0, DirectWaveTag.MAGIC.length))
             {
-                final List<DirectWaveChunk> chunks = DirectWaveChunk.parseAll (content, DirectWaveTag.PREAMBLE_SIZE);
+                final List<DirectWaveChunk> chunks = parseBlockStream (content);
                 if (chunks != null)
                     return this.parseChunks (file, chunks, content[DirectWaveTag.PREAMBLE_VERSION_OFFSET] & 0xFF);
             }
@@ -97,6 +101,28 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
             return Collections.emptyList ();
         }
+    }
+
+
+    /**
+     * Parse the block stream which follows the preamble. The length of the preamble depends on the
+     * format version (0x5A for the versions 0x25 and 0x26, 0x5E for the version 0x24 of the legacy
+     * FL Studio packs), therefore the start of the stream is located by looking for the instrument
+     * name block and requiring that the stream then accounts for all bytes of the file.
+     *
+     * @param content The content of the DWP file
+     * @return The parsed top level chunks or null if the file has no valid block stream
+     */
+    private static List<DirectWaveChunk> parseBlockStream (final byte [] content)
+    {
+        for (int offset = DirectWaveTag.PREAMBLE_MIN_SIZE; offset <= DirectWaveTag.PREAMBLE_MAX_SIZE; offset++)
+            if (DirectWaveChunk.readIntLE (content, offset) == DirectWaveTag.TAG_INSTRUMENT_NAME)
+            {
+                final List<DirectWaveChunk> chunks = DirectWaveChunk.parseAll (content, offset);
+                if (chunks != null)
+                    return chunks;
+            }
+        return null;
     }
 
 
@@ -170,6 +196,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         byte [] audioFormat = null;
         byte [] ampEnvelope = null;
         byte [] filter = null;
+        byte [] embeddedAudio = null;
         String sampleName = null;
         String samplePath = null;
         final List<byte []> unknownChunks = new ArrayList<> ();
@@ -197,6 +224,10 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
                         filter = chunk.getPayload ();
                     break;
 
+                case DirectWaveTag.TAG_EMBEDDED_AUDIO:
+                    embeddedAudio = chunk.getPayload ();
+                    break;
+
                 case DirectWaveTag.TAG_BLOCK_01F8, DirectWaveTag.TAG_BLOCK_01F9, DirectWaveTag.TAG_BLOCK_01FA, DirectWaveTag.TAG_BLOCK_01FC, DirectWaveTag.TAG_BLOCK_01FE, DirectWaveTag.TAG_BLOCK_01FF, DirectWaveTag.TAG_BLOCK_0200, DirectWaveTag.TAG_BLOCK_0201, DirectWaveTag.TAG_BLOCK_0202, DirectWaveTag.TAG_BLOCK_0203, DirectWaveTag.TAG_BLOCK_0204, DirectWaveTag.TAG_SAMPLE_TERMINATOR:
                     // Known parameter blocks which contain no information required for the
                     // conversion
@@ -218,7 +249,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         else
         {
             // Monolithic file: the audio is embedded in the container
-            sampleData = createEmbeddedSampleData (unknownChunks, audioFormat);
+            sampleData = embeddedAudio == null ? createEmbeddedSampleData (unknownChunks, audioFormat) : createEmbeddedSampleData (embeddedAudio);
             if (sampleData == null)
             {
                 this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleName == null ? file.getAbsolutePath () : sampleName);
@@ -357,6 +388,33 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
     {
         final double range = IFilter.MAX_FREQUENCY / DirectWaveTag.FILTER_MIN_FREQUENCY;
         return Math.clamp (DirectWaveTag.FILTER_MIN_FREQUENCY * Math.pow (range, Math.clamp (position, 0, 1)), DirectWaveTag.FILTER_MIN_FREQUENCY, IFilter.MAX_FREQUENCY);
+    }
+
+
+    /**
+     * Create the sample data from the embedded audio block of a monolithic program. The block
+     * starts with the length of the audio data as a 32-bit integer and 4 unused bytes, followed by
+     * the audio as a FLAC stream.
+     *
+     * @param embeddedAudio The payload of the embedded audio block
+     * @return The sample data or null if the block does not contain a FLAC stream
+     * @throws IOException Could not decode the audio
+     */
+    private static ISampleData createEmbeddedSampleData (final byte [] embeddedAudio) throws IOException
+    {
+        final int offset = DirectWaveTag.EMBEDDED_AUDIO_OFFSET;
+        if (embeddedAudio.length <= offset + DirectWaveTag.FLAC_MAGIC.length)
+            return null;
+        if (!Arrays.equals (embeddedAudio, offset, offset + DirectWaveTag.FLAC_MAGIC.length, DirectWaveTag.FLAC_MAGIC, 0, DirectWaveTag.FLAC_MAGIC.length))
+            return null;
+
+        // The stored length must not be trusted blindly, clip it to what is present
+        final int storedLength = DirectWaveChunk.readIntLE (embeddedAudio, 0);
+        final int length = storedLength > 0 && storedLength <= embeddedAudio.length - offset ? storedLength : embeddedAudio.length - offset;
+
+        final ByteArrayOutputStream wavStream = new ByteArrayOutputStream ();
+        AudioFileUtils.decompressToWav (new ByteArrayInputStream (embeddedAudio, offset, length), wavStream);
+        return new WavFileSampleData (new ByteArrayInputStream (wavStream.toByteArray ()));
     }
 
 
