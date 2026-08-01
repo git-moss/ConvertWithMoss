@@ -215,11 +215,13 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Identify the embedded audio of a monolithic file among the unknown blocks of a sample
-     * container. The audio format block is fully decoded (frame count, channels, bytes per frame
-     * and sample rate), therefore the audio data is the block whose size is exactly frame count
-     * times bytes per frame - a check which cannot match by accident. 16 and 24 bit integer data
-     * is taken over as-is, 4 bytes per sample are the 32-bit float format of DirectWave and are
-     * converted to 24 bit.
+     * container. The audio format block provides the frame count, the channel count and the
+     * sample rate, therefore the audio data is the block whose size is exactly frame count times
+     * channel count times 2, 3 or 4 bytes per sample - a check which cannot match by accident.
+     * (The bytes-per-frame field of the audio format block is not used since it does not hold
+     * bytes-per-frame in all DirectWave versions, see the design document.) 16 and 24 bit integer
+     * data is taken over as-is, 4 bytes per sample are the 32-bit float format of DirectWave and
+     * are converted to 24 bit.
      *
      * @param unknownChunks The payloads of all unknown blocks of the sample container
      * @param audioFormat The payload of the audio format block
@@ -232,27 +234,19 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
         final int frames = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_FRAME_COUNT);
         final int channels = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_CHANNELS);
-        final int bytesPerFrame = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_BYTES_PER_FRAME);
         final float sampleRate = Float.intBitsToFloat (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_SAMPLE_RATE));
-        if (frames <= 0 || channels < 1 || channels > 8 || bytesPerFrame <= 0 || bytesPerFrame % channels != 0 || sampleRate <= 0)
+        if (frames <= 0 || channels < 1 || channels > 8 || sampleRate <= 0)
             return null;
 
-        final long dataSize = (long) frames * bytesPerFrame;
         for (final byte [] payload: unknownChunks)
-        {
-            if (payload.length != dataSize)
-                continue;
-            final int bytesPerSample = bytesPerFrame / channels;
-            switch (bytesPerSample)
+            for (int bytesPerSample = 2; bytesPerSample <= 4; bytesPerSample++)
             {
-                case 2, 3:
-                    return new InMemorySampleData (new DefaultAudioMetadata (channels, Math.round (sampleRate), bytesPerSample * 8, frames), payload);
-                case 4:
+                if (payload.length != (long) frames * channels * bytesPerSample)
+                    continue;
+                if (bytesPerSample == 4)
                     return new InMemorySampleData (new DefaultAudioMetadata (channels, Math.round (sampleRate), 24, frames), convertFloat32ToInt24 (payload));
-                default:
-                    return null;
+                return new InMemorySampleData (new DefaultAudioMetadata (channels, Math.round (sampleRate), bytesPerSample * 8, frames), payload);
             }
-        }
         return null;
     }
 

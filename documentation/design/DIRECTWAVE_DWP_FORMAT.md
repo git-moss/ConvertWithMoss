@@ -16,6 +16,11 @@ Sources of this specification:
   file). Note: that project documents the key-range bytes as low/root/high — the specimen
   disproves this, see below.
 * The DirectWave manual (Automap file-name token syntax, see the detector fall-back).
+* The six factory programs of FL Studio Mobile (`FL Studio Mobile Factory Data/DirectWave
+  Samples`, version byte 0x25 instead of the 0x26 of the specimen above): all of them
+  tokenize completely, the preamble size rule and the zone mapping layout hold, and they
+  add data points marked below. Differences of the older version: 100 parameter slot
+  blocks instead of 99, and the bytes-per-frame field holds other values (see below).
 
 Everything below is little-endian.
 
@@ -47,7 +52,7 @@ Mostly opaque global settings, copied verbatim by the creator. Known/derived fie
 | offset | type | value in specimen | meaning |
 |-------:|------|------------------:|---------|
 | 0x00 | char[4] | `DwPr` | magic |
-| 0x04 | u32 | 38 | unknown (version?) |
+| 0x04 | u32 | 38 | version (38 = FL Studio 20.x specimen, 37 = FL Studio Mobile factory files) |
 | 0x08 | u32 | 6 | unknown |
 | 0x0C | u32 | 16 | unknown |
 | 0x24 | u32 | 1 | unknown (program count?) |
@@ -101,12 +106,12 @@ The payload is a nested block stream with the same envelope. Blocks in order:
 u8  rootKey
 u8  lowKey
 u8  highKey
-u8  lowVelocity      (0 in the specimen)
-u8  highVelocity     (127 in the specimen)
+u8  lowVelocity      (0 in all specimens)
+u8  highVelocity     (127 in all specimens)
 u8  zero[4]
-f32 1.0 at offset 9  (suspected zone gain/level)
-f32 0.5 at offset 13 (suspected pan, center)
-u8  0x01 at offset 17
+f32 zone gain at offset 9  (1.0 in most zones; a factory zone holds 0.675)
+f32 0.5 at offset 13       (suspected pan, center)
+u8  flag at offset 17      (0x01 in the specimen, 0x00 in the factory files)
 u8  zero[4]
 u8  0x02 at offset 22
 u8  zero[2]
@@ -127,17 +132,23 @@ This also pins the note-name convention to Image-Line's: `C3` ↔ MIDI 36, i.e.
 ```
 u32 frameCount        (verified: WAV data-chunk size / bytes per frame)
 u32 0
-u32 channelCount      (2 in the specimen)
-u32 bytesPerFrame     (4 = stereo 16 bit)
+u32 channelCount      (1 and 2 verified)
+u32 bytesPerFrame     (4 = stereo 16 bit in the 0x26 specimen - but NOT reliable, see below)
 f32 sampleRate        (44100.0 — the rate is stored as a float!)
 u8  zero[16]
 u32 32                (unknown, kept verbatim)
 ```
 
+The field at offset 12 holds the bytes per frame only in the version 0x26 specimen. In the
+version 0x25 factory files it holds varying powers of two (4 to 128, differing between the
+samples of one program, loosely following the frame count — possibly a waveform display
+cache stride). It must therefore not be used to derive the sample resolution when reading.
+
 ## Sample resolution
 
-The stored paths are absolute paths of the machine that saved the program and must be
-ignored. DirectWave desktop saves the program as `<Name>.dwp` next to a `<Name>` folder
+The stored paths are absolute paths of the machine that saved the program (the factory
+files use environment-variable prefixes like `%ILSharedData%\...` and `%USERPROFILE%\...`)
+and must be ignored. DirectWave desktop saves the program as `<Name>.dwp` next to a `<Name>` folder
 containing the WAV files; the FL Studio Mobile import layout (as used by Dwp-Creator's
 export and FLM zip imports) is a single `<Name>` folder containing both `<Name>.dwp` and
 the WAV files. The detector therefore looks for each sample (last path component of tag
@@ -155,12 +166,13 @@ stream starting at 0x5A — and scans monolithic files for the byte pattern
 sample path block. Monolithic files therefore keep the same preamble and block structure,
 and the embedded audio has to live in additional blocks.
 
-The detector exploits that the audio format block fully describes the audio: when the
-external sample file of a container cannot be found, any block with an unknown tag whose
-payload size is exactly `frameCount * bytesPerFrame` is taken as the embedded audio (a
-check that cannot match by accident). 2 or 3 bytes per sample are integer PCM; 4 bytes per
-sample are interpreted as the 32-bit float format which the DirectWave sampling dialog
-offers (16 or 32-bit float) and converted to 24 bit. This path is verified against
+The detector exploits that the audio format block describes the audio: when the external
+sample file of a container cannot be found, any block with an unknown tag whose payload
+size is exactly `frameCount * channelCount * bytesPerSample` for a bytes-per-sample of 2,
+3 or 4 is taken as the embedded audio (a check that cannot match by accident; the
+unreliable bytes-per-frame field is not used). 2 or 3 bytes per sample are integer PCM; 4
+bytes per sample are interpreted as the 32-bit float format which the DirectWave sampling
+dialog offers (16 or 32-bit float) and converted to 24 bit. This path is verified against
 synthesized monolithic files only — a real monolithic file has not been available yet. If
 no block matches, the detector reports that the samples were not found.
 
