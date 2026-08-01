@@ -65,7 +65,7 @@ public class DirectWaveCreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        this.monolithicCheckBox.setSelected (config.getBoolean (this.prefix + MONOLITHIC, false));
+        this.monolithicCheckBox.setSelected (config.getBoolean (this.prefix + MONOLITHIC, true));
 
         super.loadSettings (config);
     }
@@ -100,7 +100,8 @@ public class DirectWaveCreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        this.monolithic = "1".equals (parameters.remove (this.prefix + MONOLITHIC));
+        final String value = parameters.remove (this.prefix + MONOLITHIC);
+        this.monolithic = value == null || !"0".equals (value);
         return true;
     }
 

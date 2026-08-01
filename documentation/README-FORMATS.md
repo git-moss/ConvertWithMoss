@@ -461,7 +461,7 @@ As a destination, a folder is created which contains the DWP file and all sample
 
 ### Destination Options
 
-* *Monolithic file*: writes one DWP file with all samples embedded as FLAC compressed audio instead of a folder with the DWP file and its WAV files. A single file is easier to transfer, e.g. to FL Studio Mobile. Disabled by default. Only the first round-robin cycle is kept since trigger groups cannot be written.
+* *Monolithic file*: writes one DWP file per instrument with all samples embedded as FLAC compressed audio. Enabled by default, since a single file is what FL Studio Mobile is easiest to transfer to. Disable it to get a folder with the DWP file and its samples as separate WAV files instead, which keeps the samples editable. Only the first round-robin cycle is kept since trigger groups cannot be written.
 
 ## ISO/IMG Files
 
