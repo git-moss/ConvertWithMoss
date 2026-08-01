@@ -71,7 +71,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public DirectWaveDetector (final INotifier notifier)
     {
-        super ("DirectWave", "DirectWave", notifier, new MetadataSettingsUI ("DirectWave"), ".dwp", ".dwb");
+        super ("FL Studio DirectWave", "DirectWave", notifier, new MetadataSettingsUI ("DirectWave"), ".dwp", ".dwb");
     }
 
 

@@ -64,7 +64,7 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
      */
     public DirectWaveCreator (final INotifier notifier)
     {
-        super ("DirectWave", "DirectWave", notifier, EmptySettingsUI.INSTANCE);
+        super ("FL Studio DirectWave", "DirectWave", notifier, EmptySettingsUI.INSTANCE);
     }
 
 
