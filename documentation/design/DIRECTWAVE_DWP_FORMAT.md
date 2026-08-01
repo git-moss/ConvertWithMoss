@@ -144,14 +144,35 @@ the WAV files. The detector therefore looks for each sample (last path component
 0x01F6) next to the .dwp file, then in a `<dwp base name>` sub-folder, then in a sub-folder
 named like the second-to-last component of the stored path.
 
+## Monolithic files (structural inference, no specimen)
+
+No monolithic specimen was available, but two structural facts are known: the
+[dwsanitizer](https://github.com/kachine/dwsanitizer) project (which rewrites path strings
+inside monolithic files) hardcodes the offsets 0x5E for the program name length and 0x66
+for the program name — exactly the length field and payload of the first block of the
+stream starting at 0x5A — and scans monolithic files for the byte pattern
+`F6 01 00 00 [len] 00 00 00 00 00 00 00`, which is precisely the envelope of a 0x01F6
+sample path block. Monolithic files therefore keep the same preamble and block structure,
+and the embedded audio has to live in additional blocks.
+
+The detector exploits that the audio format block fully describes the audio: when the
+external sample file of a container cannot be found, any block with an unknown tag whose
+payload size is exactly `frameCount * bytesPerFrame` is taken as the embedded audio (a
+check that cannot match by accident). 2 or 3 bytes per sample are integer PCM; 4 bytes per
+sample are interpreted as the 32-bit float format which the DirectWave sampling dialog
+offers (16 or 32-bit float) and converted to 24 bit. This path is verified against
+synthesized monolithic files only — a real monolithic file has not been available yet. If
+no block matches, the detector reports that the samples were not found.
+
 ## Not yet decoded (single specimen limits)
 
 * Loop points, envelopes, filters, effects: all candidate blocks are zero/default in the
   specimen (it is a plain unlooped auto-sampling export). Loops still travel in the
   standard WAV `smpl` chunks of the sample files themselves, which DirectWave reads.
 * Trigger groups (round-robin/random cycles) and their location in the opaque bytes.
-* Monolithic .dwp (embedded audio) and .dwb banks — no specimen. The file-name
-  fall-back of the detector (see below) covers non-monolithic .dwb exports.
+* The tag and placement of the embedded audio block of monolithic files (see above) and
+  the structure of .dwb banks — no specimens. The file-name fall-back of the detector
+  (see below) covers non-monolithic .dwb exports.
 
 ## Detector fall-back: sampled/Automap file names
 

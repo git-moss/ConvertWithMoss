@@ -22,8 +22,10 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.directwave.DirectWaveFileNameParser.ParsedZone;
 import de.mossgrabers.tools.FileUtils;
@@ -145,8 +147,10 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         byte [] mapping = null;
+        byte [] audioFormat = null;
         String sampleName = null;
         String samplePath = null;
+        final List<byte []> unknownChunks = new ArrayList<> ();
         for (final DirectWaveChunk chunk: chunks)
             switch (chunk.getTag ())
             {
@@ -159,20 +163,40 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
                 case DirectWaveTag.TAG_SAMPLE_PATH:
                     samplePath = chunk.getPayloadAsText ().trim ();
                     break;
+                case DirectWaveTag.TAG_AUDIO_FORMAT:
+                    audioFormat = chunk.getPayload ();
+                    break;
+                case DirectWaveTag.TAG_BLOCK_01F8, DirectWaveTag.TAG_BLOCK_01F9, DirectWaveTag.TAG_BLOCK_01FA, DirectWaveTag.TAG_BLOCK_01FB, DirectWaveTag.TAG_BLOCK_01FC, DirectWaveTag.TAG_BLOCK_01FD, DirectWaveTag.TAG_BLOCK_01FE, DirectWaveTag.TAG_BLOCK_01FF, DirectWaveTag.TAG_BLOCK_0200, DirectWaveTag.TAG_BLOCK_0201, DirectWaveTag.TAG_BLOCK_0202, DirectWaveTag.TAG_BLOCK_0203, DirectWaveTag.TAG_BLOCK_0204, DirectWaveTag.TAG_SAMPLE_TERMINATOR:
+                    // Known parameter blocks which contain no information required for the
+                    // conversion
+                    break;
                 default:
-                    // All other blocks contain no information required for the conversion
+                    // In a monolithic file one of the unknown blocks is the embedded audio
+                    unknownChunks.add (chunk.getPayload ());
                     break;
             }
 
         final File sampleFile = findSampleFile (file, sampleName, samplePath);
-        if (sampleFile == null)
+        final ISampleData sampleData;
+        final String zoneName;
+        if (sampleFile != null)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleName == null ? file.getAbsolutePath () : sampleName);
-            return null;
+            sampleData = createSampleData (sampleFile, this.notifier);
+            zoneName = FileUtils.getNameWithoutType (sampleFile);
+        }
+        else
+        {
+            // Monolithic file: the audio is embedded in the container
+            sampleData = createEmbeddedSampleData (unknownChunks, audioFormat);
+            if (sampleData == null)
+            {
+                this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleName == null ? file.getAbsolutePath () : sampleName);
+                return null;
+            }
+            zoneName = sampleName == null || sampleName.isEmpty () ? FileUtils.getNameWithoutType (file) : sampleName;
         }
 
-        final ISampleData sampleData = createSampleData (sampleFile, this.notifier);
-        final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
+        final ISampleZone zone = new DefaultSampleZone (zoneName, sampleData);
 
         if (mapping != null && mapping.length > DirectWaveTag.MAPPING_HIGH_VELOCITY)
         {
@@ -186,6 +210,72 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         // Read the loops from the sample chunks; the root key is taken from the mapping above
         sampleData.addZoneData (zone, false, true);
         return zone;
+    }
+
+
+    /**
+     * Identify the embedded audio of a monolithic file among the unknown blocks of a sample
+     * container. The audio format block is fully decoded (frame count, channels, bytes per frame
+     * and sample rate), therefore the audio data is the block whose size is exactly frame count
+     * times bytes per frame - a check which cannot match by accident. 16 and 24 bit integer data
+     * is taken over as-is, 4 bytes per sample are the 32-bit float format of DirectWave and are
+     * converted to 24 bit.
+     *
+     * @param unknownChunks The payloads of all unknown blocks of the sample container
+     * @param audioFormat The payload of the audio format block
+     * @return The sample data or null if no block matches
+     */
+    private static ISampleData createEmbeddedSampleData (final List<byte []> unknownChunks, final byte [] audioFormat)
+    {
+        if (audioFormat == null || audioFormat.length < 20)
+            return null;
+
+        final int frames = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_FRAME_COUNT);
+        final int channels = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_CHANNELS);
+        final int bytesPerFrame = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_BYTES_PER_FRAME);
+        final float sampleRate = Float.intBitsToFloat (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_SAMPLE_RATE));
+        if (frames <= 0 || channels < 1 || channels > 8 || bytesPerFrame <= 0 || bytesPerFrame % channels != 0 || sampleRate <= 0)
+            return null;
+
+        final long dataSize = (long) frames * bytesPerFrame;
+        for (final byte [] payload: unknownChunks)
+        {
+            if (payload.length != dataSize)
+                continue;
+            final int bytesPerSample = bytesPerFrame / channels;
+            switch (bytesPerSample)
+            {
+                case 2, 3:
+                    return new InMemorySampleData (new DefaultAudioMetadata (channels, Math.round (sampleRate), bytesPerSample * 8, frames), payload);
+                case 4:
+                    return new InMemorySampleData (new DefaultAudioMetadata (channels, Math.round (sampleRate), 24, frames), convertFloat32ToInt24 (payload));
+                default:
+                    return null;
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * Convert 32-bit float samples to 24-bit integer samples.
+     *
+     * @param data The float samples as bytes (little-endian)
+     * @return The 24-bit samples as bytes (little-endian)
+     */
+    private static byte [] convertFloat32ToInt24 (final byte [] data)
+    {
+        final int numSamples = data.length / 4;
+        final byte [] result = new byte [numSamples * 3];
+        for (int i = 0; i < numSamples; i++)
+        {
+            final float value = Float.intBitsToFloat (DirectWaveChunk.readIntLE (data, i * 4));
+            final int intValue = Math.clamp (Math.round (value * 8388607.0), -8388608, 8388607);
+            result[i * 3] = (byte) (intValue & 0xFF);
+            result[i * 3 + 1] = (byte) (intValue >> 8 & 0xFF);
+            result[i * 3 + 2] = (byte) (intValue >> 16 & 0xFF);
+        }
+        return result;
     }
 
 

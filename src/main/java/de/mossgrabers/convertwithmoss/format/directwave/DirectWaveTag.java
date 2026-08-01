@@ -77,8 +77,14 @@ public class DirectWaveTag
     public static final int      TAG_BLOCK_01FC         = 0x01FC;
     /** The tag of the 16 byte parameter block inside of a sample container. */
     public static final int      TAG_BLOCK_01FD         = 0x01FD;
-    /** The tags of the four 9 byte zeroed blocks inside of a sample container. */
+    /** The first of the four 9 byte zeroed blocks inside of a sample container. */
     public static final int      TAG_BLOCK_01FE         = 0x01FE;
+    /** The second of the four 9 byte zeroed blocks inside of a sample container. */
+    public static final int      TAG_BLOCK_01FF         = 0x01FF;
+    /** The third of the four 9 byte zeroed blocks inside of a sample container. */
+    public static final int      TAG_BLOCK_0200         = 0x0200;
+    /** The fourth of the four 9 byte zeroed blocks inside of a sample container. */
+    public static final int      TAG_BLOCK_0201         = 0x0201;
     /** The tag of the two 16 byte zeroed blocks inside of a sample container. */
     public static final int      TAG_BLOCK_0202         = 0x0202;
     /** The tag of the two 20 byte zeroed blocks inside of a sample container. */
