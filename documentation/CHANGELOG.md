@@ -1,6 +1,6 @@
 # Changes
 
-## 19.2.0 (work-in-progress)
+## 20.0.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * Many thanks to David García Goñi for providing specifications of the E-mu formats and refined Kurzweil specifications!
