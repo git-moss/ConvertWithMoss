@@ -253,13 +253,13 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         final String bankName = Emulator3Constants.decodeName (data, Emulator3Constants.BANK_NAME);
-        final byte [] bank = Emulator3FloppySet.createBank (disks, bankFormat, bankName, this.notifier);
-        if (bank == null)
+        final Optional<byte []> bank = Emulator3FloppySet.createBank (disks, bankFormat, bankName, this.notifier);
+        if (bank.isEmpty ())
         {
             this.notifier.logError (IDS_EIII_NOT_A_BANK, sourceFile.getName ());
             return Collections.emptyList ();
         }
-        return this.parseBank (sourceFile, bankName, bank, bankFormat);
+        return this.parseBank (sourceFile, bankName, bank.get (), bankFormat);
     }
 
 
@@ -415,13 +415,13 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Check whether a bank holds neither playable presets nor samples. The CD-ROM mastering tools
      * store the name of a disk as such an empty bank ('E-mu Banks 1-44' on the first library
-     * CD-ROM), which the sampler shows as the name of the volume. The stubs of several volumes
-     * hold one preset which maps no key at all, so a preset only counts when it maps keys.
+     * CD-ROM), which the sampler shows as the name of the volume. The stubs of several volumes hold
+     * one preset which maps no key at all, so a preset only counts when it maps keys.
      *
      * @param data The content of the bank
      * @param bankFormat The format of the bank
-     * @return True if the bank holds the address tables of its format but no playable preset and
-     *         no sample
+     * @return True if the bank holds the address tables of its format but no playable preset and no
+     *         sample
      */
     private static boolean isBankEmpty (final byte [] data, final Emulator3BankFormat bankFormat)
     {

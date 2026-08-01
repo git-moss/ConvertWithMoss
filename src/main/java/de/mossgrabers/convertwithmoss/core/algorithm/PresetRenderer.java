@@ -204,8 +204,11 @@ public class PresetRenderer
      */
     private static int renderZone (final ISampleZone zone, final int key, final int velocity, final int holdFrames, final int maximumFrames, final double [] left, final double [] right) throws IOException
     {
-        final double [] [] sample = readSample (zone);
-        if (sample == null || sample[0].length == 0)
+        final Optional<double [] []> sampleOpt = readSample (zone);
+        if (sampleOpt.isEmpty ())
+            return 0;
+        final double [] [] sample = sampleOpt.get ();
+        if (sample[0].length == 0)
             return 0;
         final double sampleRate = sample[2][0];
 
@@ -324,11 +327,11 @@ public class PresetRenderer
      *         a single element array, null if the data cannot be read
      * @throws IOException Could not read the audio data
      */
-    private static double [] [] readSample (final ISampleZone zone) throws IOException
+    private static Optional<double [] []> readSample (final ISampleZone zone) throws IOException
     {
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
-            return null;
+            return Optional.empty ();
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         sampleData.get ().writeSample (out);
@@ -350,19 +353,19 @@ public class PresetRenderer
                     if (channels > 1)
                         right[i] = toSample (bytes, i * 2 * channels + 2);
                 }
-                return new double [] []
+                return Optional.of (new double [] []
                 {
                     left,
                     right,
                     {
                         format.getSampleRate ()
                     }
-                };
+                });
             }
         }
         catch (final UnsupportedAudioFileException | IllegalArgumentException _)
         {
-            return null;
+            return Optional.empty ();
         }
     }
 

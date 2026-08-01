@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.emu.emulator3;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
 
@@ -161,7 +162,7 @@ public class Emulator3FloppySet
      * @param notifier Where to report malformed samples
      * @return The bank or null if the payload cannot be a bank
      */
-    public static byte [] createBank (final byte [] [] disks, final Emulator3BankFormat bankFormat, final String bankName, final INotifier notifier)
+    public static Optional<byte []> createBank (final byte [] [] disks, final Emulator3BankFormat bankFormat, final String bankName, final INotifier notifier)
     {
         // Concatenate the payloads of the disks
         final int payloadSize = FLOPPY_SIZE - DISK_HEADER_SIZE;
@@ -181,11 +182,11 @@ public class Emulator3FloppySet
         {
             presetEntries[i] = getU32BE (stream, presetTable + i * 4);
             if (i > 0 && presetEntries[i] < presetEntries[i - 1])
-                return null;
+                return Optional.empty ();
         }
         final long presetAreaSize = presetEntries[maxPresets] - presetEntries[0];
         if (presetArea + presetAreaSize + 1 > stream.length)
-            return null;
+            return Optional.empty ();
 
         // The payload is organized in 512 byte blocks: the region up to the end of the presets is
         // followed by the sample data and the table of the 92 byte sample headers. The EIIIX
@@ -209,7 +210,7 @@ public class Emulator3FloppySet
             headerTableOffset = recordBlocks + blockAligned (pcmSize);
         }
         if (headerTableOffset < 0 || headerTableOffset + (maxSamples + 1) * Emulator3Constants.SAMPLE_HEADER_SIZE > stream.length)
-            return null;
+            return Optional.empty ();
 
         // Collect the samples; a slot whose header flags neither channel is a deleted leftover
         final FloppySample [] samples = new FloppySample [maxSamples + 1];
@@ -229,7 +230,7 @@ public class Emulator3FloppySet
         // Assemble the bank
         final long bankSize = bankFormat.getPresetAreaOffset () + presetAreaSize + 1 + sampleAreaSize;
         if (bankSize > Integer.MAX_VALUE)
-            return null;
+            return Optional.empty ();
         final byte [] bank = new byte [(int) bankSize];
         final byte [] identifier = bankFormat.getIdentifier ().getBytes (StandardCharsets.US_ASCII);
         System.arraycopy (identifier, 0, bank, 0, identifier.length);
@@ -262,7 +263,7 @@ public class Emulator3FloppySet
             writeOffset = sample.write (stream, bank, writeOffset);
         }
         Emulator3Constants.putU32 (bank, bankFormat.getSampleTableOffset () + maxSamples * 4, writeOffset - sampleArea + (long) Emulator3Constants.SAMPLE_ADDRESS_OFFSET);
-        return bank;
+        return Optional.of (bank);
     }
 
 
