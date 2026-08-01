@@ -56,11 +56,13 @@ Mostly opaque global settings, copied verbatim by the creator. Known/derived fie
 | 0x08 | u32 | 6 | unknown |
 | 0x0C | u32 | 16 | unknown |
 | 0x24 | u32 | 1 | unknown (program count?) |
-| 0x28 | u32 | 47259 | **file size − 48** (verified: 47307 − 48); patched by the creator |
+| 0x28 | u32 | 47259 | **file size − 48** (verified in all seven specimens); patched by the creator |
 | 0x30 | u32 | 100 | unknown (a volume?) |
 | 0x34 | u32 | 30 | unknown |
+| 0x42 | f32 | 1.0 | unknown, probably the master volume (1.0 in five factory files, 0.83/0.45 elsewhere) |
+| 0x4A | u32 | 48 | **the number of sample containers** - verified in all seven specimens. DirectWave trusts this count: writing a wrong value crashes FL Studio with an access violation when the program is loaded (observed with FL Studio 2026 on macOS), so it must always match the number of 0x0003 blocks. |
 
-The remaining bytes are unaligned/unknown and kept as-is from the specimen.
+The remaining bytes are unknown and kept as-is from the factory files.
 
 ## Top-level blocks (in file order)
 
@@ -68,14 +70,14 @@ The remaining bytes are unaligned/unknown and kept as-is from the specimen.
 |----:|------:|-------:|---------|
 | 0x0066 | 1 | n | instrument name (ASCII, no terminator) |
 | 0x0067 | 1 | n | path of the .dwp itself, backslashes doubled: `D:\\Instrument.dwp` |
-| 0x0068 | 1 | len(0x0066) | zeroed shadow of the name (length tracks the name!) |
-| 0x0069 | 1 | len(0x0067) | zeroed shadow of the path (length tracks the path!) |
+| 0x0068 | 1 | 10 | zeroed (fixed size - it matching the name length in the first specimen was a coincidence) |
+| 0x0069 | 1 | 18 | zeroed (fixed size) |
 | 0x006A | 1 | 17 | zeroed (metadata slot, e.g. author) |
 | 0x006B | 1 | 17 | zeroed (metadata slot) |
 | 0x006C | 2 | 20 | zeroed (metadata slots) |
 | 0x006D | 4 | 4 | zeroed |
-| 0x006E | 99 | 13 | parameter slot: `u32 id (1..99), u8 0, f32 1.0, u32 0` |
-| 0x0003 | N | var | one nested sample container per sample zone |
+| 0x006E | 99/100 | 13 | parameter slot: `u32 id, u8 0, f32 1.0, u32 0` - version 0x25 has 100 slots with the ids 0..99, version 0x26 has 99 slots with the ids 1..99 |
+| 0x0003 | N | var | one nested sample container per sample zone (N = the count at preamble 0x4A) |
 | 0x0002 | 1 | 0 | terminator |
 
 ## Sample container (tag 0x0003)
@@ -88,17 +90,21 @@ The payload is a nested block stream with the same envelope. Blocks in order:
 | 0x01F5 | n | sample name without extension, e.g. `Instrument_C3_127` |
 | 0x01F6 | n | sample path, single backslashes: `D:\Instrument\Instrument_C3_127.wav` |
 | 0x01F7 | 40 | audio format, see below |
-| 0x01F8 | 8 | `f32 0.5, u8 0, u8 0, u8 100, u8 0` (defaults, opaque) |
-| 0x01F9 | 14 | zeroed |
-| 0x01FA | 48 | opaque; contains f32 1.0 at +12 and u32 1 at +44, plus what looks like uninitialized heap noise at +20/+28/+36 in the specimen (suspected loop/edit state) |
-| 0x01FB | 20 | zeroed (twice) |
+| 0x01F8 | 8 | `f32 0.5, u8 0, u8 0, u8 100, u8 0` (identical in all seven specimens) |
+| 0x01F9 | 14 | opaque parameters (zeroed in the 0x26 specimen; `0, 0.5, 0.5, 1.0` floats in the factory files) |
+| 0x01FA | 48 | opaque parameters (factory: `0.5, 0.5, 0.5, 1.0` floats then zeros; the 0x26 specimen instead holds zeros, 1.0 at +12 and what looks like uninitialized heap noise) |
+| 0x01FB | 20 | opaque, varies per program (twice) |
 | 0x01FC | 2 | zeroed |
-| 0x01FD | 16 | `f32 0.0, f32 1.0, f32 1.0, f32 0.18` (defaults, opaque) |
-| 0x01FE-0x0201 | 9 | zeroed (one each) |
-| 0x0202 | 16 | zeroed (twice) |
-| 0x0203 | 20 | zeroed (twice) |
-| 0x0204 | 8 | 16 of them; the first is `u16 2, u16 2, u32 0`, the rest zeroed |
+| 0x01FD | 16 | opaque parameters, varies per program |
+| 0x01FE-0x0201 | 9 | opaque parameters (one each) |
+| 0x0202 | 16 | opaque parameters (twice) |
+| 0x0203 | 20 | opaque, varies per program (twice) |
+| 0x0204 | 8 | 16 of them: `u16, u16, f32` triples, opaque parameters |
 | 0x0004 | 0 | container terminator |
+
+The creator copies all opaque blocks verbatim from the first sample container of the
+factory 'Nylon Guitar' program, so written files stay inside the byte patterns of the six
+known-good Image-Line files.
 
 ### Zone mapping (0x01F4, 25 bytes)
 
@@ -130,14 +136,24 @@ This also pins the note-name convention to Image-Line's: `C3` ↔ MIDI 36, i.e.
 ### Audio format (0x01F7, 40 bytes)
 
 ```
-u32 frameCount        (verified: WAV data-chunk size / bytes per frame)
-u32 0
-u32 channelCount      (1 and 2 verified)
-u32 bytesPerFrame     (4 = stereo 16 bit in the 0x26 specimen - but NOT reliable, see below)
-f32 sampleRate        (44100.0 — the rate is stored as a float!)
-u8  zero[16]
-u32 32                (unknown, kept verbatim)
+offset 0:  u32 frameCount   (verified: WAV data-chunk size / bytes per frame)
+offset 4:  u32 0
+offset 8:  u32 channelCount (1 and 2 verified)
+offset 12: u32 bytesPerFrame (4 = stereo 16 bit in the 0x26 specimen - but NOT reliable, see below)
+offset 16: f32 sampleRate   (44100.0 — the rate is stored as a float!)
+offset 20: u32 loopMode     (0 = no loop, 2 = looped)
+offset 24: u32 loopStart    (frames)
+offset 28: u32 loopEnd      (frames)
+offset 32: u32 0
+offset 36: u32 sourceBitDepth (16; 32 for the two programs sampled as 32-bit float)
 ```
+
+**The loop lives here** (not in a separate block): all sustained factory programs are
+looped — the Strings Section loops 66224..132300, the Rhodes from roughly half, the Nylon
+Guitar in a short tail — and all percussive programs (Picked Bass, Club Pluck) have
+mode/start/end 0/0/0. Two trimmed Rhodes zones have a loop end slightly beyond their frame
+count, so readers should tolerate that. Note the factory WAV files carry no `smpl` chunks;
+the DWP is the only loop source there.
 
 The field at offset 12 holds the bytes per frame only in the version 0x26 specimen. In the
 version 0x25 factory files it holds varying powers of two (4 to 128, differing between the
@@ -176,11 +192,10 @@ dialog offers (16 or 32-bit float) and converted to 24 bit. This path is verifie
 synthesized monolithic files only — a real monolithic file has not been available yet. If
 no block matches, the detector reports that the samples were not found.
 
-## Not yet decoded (single specimen limits)
+## Not yet decoded
 
-* Loop points, envelopes, filters, effects: all candidate blocks are zero/default in the
-  specimen (it is a plain unlooped auto-sampling export). Loops still travel in the
-  standard WAV `smpl` chunks of the sample files themselves, which DirectWave reads.
+* Envelopes, filters, effects: they live somewhere in the opaque parameter blocks (or the
+  99/100 parameter slots), which only hold defaults in the available specimens.
 * Trigger groups (round-robin/random cycles) and their location in the opaque bytes.
 * The tag and placement of the embedded audio block of monolithic files (see above) and
   the structure of .dwb banks — no specimens. The file-name fall-back of the detector

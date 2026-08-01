@@ -4814,11 +4814,11 @@
      <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>In the smpl chunk of the WAV files</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>smpl chunk</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4"/>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Forward (audio format block)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
-     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>smpl chunk</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>smpl chunk</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Loop start (audio format block)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Loop end (audio format block)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce23"/>
@@ -4886,7 +4886,7 @@
      <table:covered-table-cell/>
      <table:covered-table-cell/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>In the smpl chunk of the WAV files</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4"/>
      <table:covered-table-cell/>
      <table:covered-table-cell/>
      <table:covered-table-cell/>

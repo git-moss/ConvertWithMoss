@@ -92,8 +92,8 @@ public class DirectWaveTag
     /** The tag of the sixteen 8 byte blocks inside of a sample container. */
     public static final int      TAG_BLOCK_0204         = 0x0204;
 
-    /** The number of parameter slot blocks. */
-    public static final int      NUM_PARAMETER_SLOTS    = 99;
+    /** The number of parameter slot blocks (version 0x25; their ids are 0-based). */
+    public static final int      NUM_PARAMETER_SLOTS    = 100;
 
     /** The offset of the root key in the zone mapping block. */
     public static final int      MAPPING_ROOT_KEY       = 0;
@@ -114,29 +114,41 @@ public class DirectWaveTag
     public static final int      FORMAT_BYTES_PER_FRAME = 12;
     /** The offset of the sample rate (stored as a 32-bit float!) in the audio format block. */
     public static final int      FORMAT_SAMPLE_RATE     = 16;
+    /** The offset of the loop mode (0: off, 2: looped) in the audio format block. */
+    public static final int      FORMAT_LOOP_MODE       = 20;
+    /** The offset of the loop start (in frames) in the audio format block. */
+    public static final int      FORMAT_LOOP_START      = 24;
+    /** The offset of the loop end (in frames) in the audio format block. */
+    public static final int      FORMAT_LOOP_END        = 28;
+    /** The loop mode value of a looped sample. */
+    public static final int      LOOP_MODE_ON           = 2;
+
+    /** The offset of the sample count in the preamble. */
+    public static final int      PREAMBLE_COUNT_OFFSET  = 0x4A;
+
+    /** The fixed length of the zeroed shadow block of the name (tag 0x0068). */
+    public static final int      SHADOW_NAME_LENGTH     = 10;
+    /** The fixed length of the zeroed shadow block of the path (tag 0x0069). */
+    public static final int      SHADOW_PATH_LENGTH     = 18;
 
     private static final HexFormat HEX                  = HexFormat.of ();
 
-    /** The fixed 90 byte header. The size field at 0x28 needs to be patched when writing. */
-    public static final byte []  TEMPLATE_PREAMBLE      = HEX.parseHex ("447750722600000006000000100000000000000000000000000000000000000000000000010000000000000000000000640000001e000000000000000000000000006666e63e00000000300000003f000000faff000000000000");
+    /**
+     * The fixed 90 byte header, taken from the 'Nylon Guitar' program of the FL Studio Mobile
+     * factory data. The size field at 0x28 and the sample count at 0x4A are zeroed here and need
+     * to be patched when writing.
+     */
+    public static final byte []  TEMPLATE_PREAMBLE      = HEX.parseHex ("447750722500000006000000100000000000000000000000000000000000000000000000010000000000000000000000640000001e000000000000000000000000000000803f0000000000000000000000000000000000000000");
 
-    /** The 25 byte zone mapping block. Bytes 0-4 need to be patched when writing. */
-    public static final byte []  TEMPLATE_ZONE_MAPPING  = HEX.parseHex ("240024007f000000000000803f0000003f0100000000020000");
-
-    /** The 40 byte audio format block. Frame count, channels, bytes/frame and rate are patched. */
-    public static final byte []  TEMPLATE_AUDIO_FORMAT  = HEX.parseHex ("90c4050000000000020000000400000000442c470000000000000000000000000000000020000000");
-
-    /** The 8 byte block with the tag 0x01F8. */
-    public static final byte []  TEMPLATE_BLOCK_01F8    = HEX.parseHex ("0000003f00006400");
-
-    /** The 48 byte block with the tag 0x01FA. */
-    public static final byte []  TEMPLATE_BLOCK_01FA    = HEX.parseHex ("0000000000000000000000000000803f0000000000e235040000000070f7390400000000e0c520000000000001000000");
-
-    /** The 16 byte block with the tag 0x01FD. */
-    public static final byte []  TEMPLATE_BLOCK_01FD    = HEX.parseHex ("000000000000803f0000803fec51383e");
-
-    /** The first of the sixteen 8 byte blocks with the tag 0x0204. The other 15 are zeroed. */
-    public static final byte []  TEMPLATE_BLOCK_0204    = HEX.parseHex ("0200020000000000");
+    /**
+     * A complete sample container block stream, taken verbatim from the first sample of the
+     * 'Nylon Guitar' program of the FL Studio Mobile factory data. When writing, the zone mapping
+     * is patched, the name and path payloads are replaced and the audio format block gets the
+     * frame count, channels, sample rate and loop of the zone; all other blocks are copied
+     * unchanged, which keeps every written program inside the byte patterns of the known-good
+     * factory files.
+     */
+    public static final byte []  TEMPLATE_CONTAINER     = HEX.parseHex ("f4010000190000000000000039003b007f000000000000803f0000003f0000000000020000f50100000f000000000000004e796c6f6e20477569746172206133f60100003a0000000000000025494c53686172656444617461255c446972656374576176655c4e796c6f6e204775697461725c4e796c6f6e204775697461722061332e776176f70100002800000000000000f2fe010000000000010000001000000000442c4702000000a5f80100f2fe01000000000010000000f801000008000000000000000000003f00006400f90100000e0000000000000000000000003f0000003f0000803ffa01000030000000000000000000003f0000003f0000003f0000803f0000000000000000000000000000000000000000000000000000000000000000fb010000140000000000000000000000c8e3f13e0000003f0000000000000000fb010000140000000000000000000000c8e3f13e0000003f0000000000000000fc01000002000000000000000000fd0100001000000000000000000000000000003f0000803f0000803efe010000090000000000000000000000000000803fff010000090000000000000000000000000000803f00020000090000000000000000000000000000803f010200000900000000000000000000003f0000803f020200001000000000000000000000000000003f0000003f0000803e020200001000000000000000000000000000003f0000003f0000803e03020000140000000000000000000000cdcccc3d0000803f000000000000000003020000140000000000000000000000cdcc0c3f0000803f0000000000000000040200000800000000000000020002000000803f040200000800000000000000030022000000403f0402000008000000000000000c0001000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040200000800000000000000000000000000003f040000000000000000000000");
 
 
     /**

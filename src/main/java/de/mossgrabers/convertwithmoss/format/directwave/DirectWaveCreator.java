@@ -21,6 +21,7 @@ import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -104,10 +105,9 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
         DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_INSTRUMENT_NAME, name);
-        final String dwpPath = "D:\\\\" + name + ".dwp";
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_INSTRUMENT_PATH, dwpPath);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_SHADOW_NAME, name.length ());
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_SHADOW_PATH, dwpPath.length ());
+        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_INSTRUMENT_PATH, "D:\\\\" + name + ".dwp");
+        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_SHADOW_NAME, DirectWaveTag.SHADOW_NAME_LENGTH);
+        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_SHADOW_PATH, DirectWaveTag.SHADOW_PATH_LENGTH);
         DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_METADATA_1, 17);
         DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_METADATA_2, 17);
         DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_METADATA_3, 20);
@@ -115,7 +115,7 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
         for (int i = 0; i < 4; i++)
             DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_METADATA_4, 4);
 
-        for (int i = 1; i <= DirectWaveTag.NUM_PARAMETER_SLOTS; i++)
+        for (int i = 0; i < DirectWaveTag.NUM_PARAMETER_SLOTS; i++)
         {
             final byte [] slot = new byte [13];
             DirectWaveChunk.writeIntLE (slot, 0, i);
@@ -123,24 +123,31 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
             DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_PARAMETER_SLOT, slot);
         }
 
+        int sampleCount = 0;
         for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
             for (final ISampleZone zone: group.getSampleZones ())
+            {
                 DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SAMPLE_CONTAINER, createSampleContainer (name, zone));
+                sampleCount++;
+            }
 
         DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_TERMINATOR, 0);
 
-        // Assemble the file and patch the size field in the preamble
+        // Assemble the file and patch the size and sample count fields in the preamble
         final byte [] blockStream = out.toByteArray ();
         final byte [] content = new byte [DirectWaveTag.TEMPLATE_PREAMBLE.length + blockStream.length];
         System.arraycopy (DirectWaveTag.TEMPLATE_PREAMBLE, 0, content, 0, DirectWaveTag.TEMPLATE_PREAMBLE.length);
         System.arraycopy (blockStream, 0, content, DirectWaveTag.TEMPLATE_PREAMBLE.length, blockStream.length);
         DirectWaveChunk.writeIntLE (content, DirectWaveTag.PREAMBLE_SIZE_OFFSET, content.length - DirectWaveTag.PREAMBLE_SIZE_DELTA);
+        DirectWaveChunk.writeIntLE (content, DirectWaveTag.PREAMBLE_COUNT_OFFSET, sampleCount);
         return content;
     }
 
 
     /**
-     * Create the content of one sample container block.
+     * Create the content of one sample container block. All blocks are copied from the container
+     * template of a factory program; only the zone mapping, the name, the path and the audio
+     * format (frame count, channels, sample rate and loop) are filled from the zone.
      *
      * @param instrumentName The name of the instrument
      * @param zone The sample zone
@@ -149,52 +156,81 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
      */
     private static byte [] createSampleContainer (final String instrumentName, final ISampleZone zone) throws IOException
     {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
-
-        final byte [] mapping = DirectWaveTag.TEMPLATE_ZONE_MAPPING.clone ();
-        mapping[DirectWaveTag.MAPPING_ROOT_KEY] = (byte) getAdjustedRootKey (zone);
-        mapping[DirectWaveTag.MAPPING_LOW_KEY] = (byte) Math.clamp (limitToDefault (zone.getKeyLow (), 0), 0, 127);
-        mapping[DirectWaveTag.MAPPING_HIGH_KEY] = (byte) Math.clamp (limitToDefault (zone.getKeyHigh (), 127), 0, 127);
-        final int velocityLow = Math.clamp (limitToDefault (zone.getVelocityLow (), 1), 1, 127);
-        mapping[DirectWaveTag.MAPPING_LOW_VELOCITY] = (byte) (velocityLow <= 1 ? 0 : velocityLow);
-        mapping[DirectWaveTag.MAPPING_HIGH_VELOCITY] = (byte) Math.clamp (limitToDefault (zone.getVelocityHigh (), 127), 1, 127);
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_ZONE_MAPPING, mapping);
-
-        final String sampleName = createSafeFilename (zone.getName ());
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SAMPLE_NAME, sampleName);
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SAMPLE_PATH, "D:\\" + instrumentName + "\\" + sampleName + ".wav");
-
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
             throw new IOException ("Empty sample data in zone: " + zone.getName ());
         final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
-        final byte [] audioFormat = DirectWaveTag.TEMPLATE_AUDIO_FORMAT.clone ();
-        DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_FRAME_COUNT, audioMetadata.getNumberOfSamples ());
+        final String sampleName = createSafeFilename (zone.getName ());
+
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        for (final DirectWaveChunk chunk: DirectWaveChunk.parseAll (DirectWaveTag.TEMPLATE_CONTAINER, 0))
+            switch (chunk.getTag ())
+            {
+                case DirectWaveTag.TAG_ZONE_MAPPING:
+                    final byte [] mapping = chunk.getPayload ().clone ();
+                    mapping[DirectWaveTag.MAPPING_ROOT_KEY] = (byte) getAdjustedRootKey (zone);
+                    mapping[DirectWaveTag.MAPPING_LOW_KEY] = (byte) Math.clamp (limitToDefault (zone.getKeyLow (), 0), 0, 127);
+                    mapping[DirectWaveTag.MAPPING_HIGH_KEY] = (byte) Math.clamp (limitToDefault (zone.getKeyHigh (), 127), 0, 127);
+                    final int velocityLow = Math.clamp (limitToDefault (zone.getVelocityLow (), 1), 1, 127);
+                    mapping[DirectWaveTag.MAPPING_LOW_VELOCITY] = (byte) (velocityLow <= 1 ? 0 : velocityLow);
+                    mapping[DirectWaveTag.MAPPING_HIGH_VELOCITY] = (byte) Math.clamp (limitToDefault (zone.getVelocityHigh (), 127), 1, 127);
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_ZONE_MAPPING, mapping);
+                    break;
+
+                case DirectWaveTag.TAG_SAMPLE_NAME:
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SAMPLE_NAME, sampleName);
+                    break;
+
+                case DirectWaveTag.TAG_SAMPLE_PATH:
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SAMPLE_PATH, "D:\\" + instrumentName + "\\" + sampleName + ".wav");
+                    break;
+
+                case DirectWaveTag.TAG_AUDIO_FORMAT:
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_AUDIO_FORMAT, createAudioFormat (chunk.getPayload (), zone, audioMetadata));
+                    break;
+
+                default:
+                    DirectWaveChunk.writeChunk (out, chunk.getTag (), chunk.getPayload ());
+                    break;
+            }
+        return out.toByteArray ();
+    }
+
+
+    /**
+     * Fill the audio format block with the frame count, channels, sample rate and the loop of the
+     * zone.
+     *
+     * @param template The template payload of the audio format block
+     * @param zone The sample zone
+     * @param audioMetadata The metadata of the audio of the zone
+     * @return The filled block payload
+     */
+    private static byte [] createAudioFormat (final byte [] template, final ISampleZone zone, final IAudioMetadata audioMetadata)
+    {
+        final byte [] audioFormat = template.clone ();
+        final int frames = audioMetadata.getNumberOfSamples ();
+        DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_FRAME_COUNT, frames);
         DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_CHANNELS, audioMetadata.getChannels ());
         // The samples are always written as 16-bit
         DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_BYTES_PER_FRAME, audioMetadata.getChannels () * 2);
         DirectWaveChunk.writeFloatLE (audioFormat, DirectWaveTag.FORMAT_SAMPLE_RATE, audioMetadata.getSampleRate ());
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_AUDIO_FORMAT, audioFormat);
 
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_BLOCK_01F8, DirectWaveTag.TEMPLATE_BLOCK_01F8);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_01F9, 14);
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_BLOCK_01FA, DirectWaveTag.TEMPLATE_BLOCK_01FA);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_01FB, 20);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_01FB, 20);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_01FC, 2);
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_BLOCK_01FD, DirectWaveTag.TEMPLATE_BLOCK_01FD);
-        for (int i = 0; i < 4; i++)
-            DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_01FE + i, 9);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_0202, 16);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_0202, 16);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_0203, 20);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_0203, 20);
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_BLOCK_0204, DirectWaveTag.TEMPLATE_BLOCK_0204);
-        for (int i = 0; i < 15; i++)
-            DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_BLOCK_0204, 8);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_SAMPLE_TERMINATOR, 0);
-
-        return out.toByteArray ();
+        final List<ISampleLoop> loops = zone.getLoops ();
+        if (loops.isEmpty ())
+        {
+            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE, 0);
+            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_START, 0);
+            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_END, 0);
+        }
+        else
+        {
+            final ISampleLoop loop = loops.get (0);
+            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE, DirectWaveTag.LOOP_MODE_ON);
+            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_START, Math.clamp (loop.getStart (), 0, frames));
+            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_END, Math.clamp (loop.getEnd (), 0, frames));
+        }
+        return audioFormat;
     }
 
 

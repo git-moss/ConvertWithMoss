@@ -20,10 +20,13 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
@@ -207,8 +210,19 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             zone.setVelocityHigh (Math.clamp (mapping[DirectWaveTag.MAPPING_HIGH_VELOCITY] & 0xFF, 1, 127));
         }
 
-        // Read the loops from the sample chunks; the root key is taken from the mapping above
-        sampleData.addZoneData (zone, false, true);
+        // The loop is stored in the audio format block
+        if (audioFormat != null && audioFormat.length > DirectWaveTag.FORMAT_LOOP_END + 3 && DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE) != 0)
+        {
+            final ISampleLoop loop = new DefaultSampleLoop ();
+            loop.setType (LoopType.FORWARDS);
+            loop.setStart (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_START));
+            loop.setEnd (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_END));
+            zone.getLoops ().add (loop);
+        }
+
+        // The root key is taken from the mapping above; look for loops in the sample chunks only
+        // when the program has none
+        sampleData.addZoneData (zone, false, zone.getLoops ().isEmpty ());
         return zone;
     }
 
