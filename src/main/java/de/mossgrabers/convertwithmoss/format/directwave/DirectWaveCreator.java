@@ -247,8 +247,14 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final int frames = audioMetadata.getNumberOfSamples ();
         DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_FRAME_COUNT, frames);
         DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_CHANNELS, audioMetadata.getChannels ());
-        // The samples are always written as 16-bit
-        DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_BYTES_PER_FRAME, audioMetadata.getChannels () * 2);
+        // The field at offset 12 is not bytes-per-frame in the factory files but a power of two
+        // which loosely follows the frame count (a waveform cache stride?); values below 4 were
+        // never observed, therefore stay inside the observed value population
+        final int blocks = (frames + 8191) / 8192;
+        int stride = Integer.highestOneBit (blocks);
+        if (stride < blocks)
+            stride <<= 1;
+        DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_BYTES_PER_FRAME, Math.max (4, stride));
         DirectWaveChunk.writeFloatLE (audioFormat, DirectWaveTag.FORMAT_SAMPLE_RATE, audioMetadata.getSampleRate ());
 
         final List<ISampleLoop> loops = zone.getLoops ();
