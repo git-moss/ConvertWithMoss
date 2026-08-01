@@ -78,14 +78,20 @@ The remaining bytes are unknown and kept as-is from the factory files.
 | tag | count | length | content |
 |----:|------:|-------:|---------|
 | 0x0066 | 1 | n | instrument name (ASCII, no terminator) |
-| 0x0067 | 1 | n | path of the .dwp itself, backslashes doubled: `D:\\Instrument.dwp` |
+| 0x0067 | 1 | n | path of the .dwp itself, single backslashes: `G:\5\Instrument.dwp` |
 | 0x0068 | 1 | 10 | zeroed (fixed size - it matching the name length in the first specimen was a coincidence) |
-| 0x0069 | 1 | 18 | zeroed (fixed size) |
-| 0x006A | 1 | 17 | zeroed (metadata slot, e.g. author) |
-| 0x006B | 1 | 17 | zeroed (metadata slot) |
-| 0x006C | 2 | 20 | zeroed (metadata slots) |
+| 0x0069 | 1 | 18 | `u16 0` and the four floats `0.75, 0.75, 0.5, 0.75` |
+| 0x006A | 1 | 17 | `u8 0` and the four floats `0.25, 0.5, 0.75, 0.25` |
+| 0x006B | 1 | 17 | `u8 0` and the four floats `0.25, 0.5, 0.25, 0.0` |
+| 0x006C | 2 | 20 | `u32 0` and the floats `0.1, 1.0, 0.0, 0.0` |
 | 0x006D | 4 | 4 | zeroed |
-| 0x006E | 99/100 | 13 | parameter slot: `u32 id, u8 0, f32 1.0, u32 0` - version 0x25 has 100 slots with the ids 0..99, version 0x26 has 99 slots with the ids 1..99 |
+| 0x006E | 100 | 13 | parameter slot: `u32 id, u8 0, f32 1.0, u32 0` with the ids 0..99 |
+
+The blocks 0x0069 to 0x006C are **program parameters, not metadata** - all 117 available
+programs of all three format versions carry exactly the payloads above (the version 0x24
+programs of the legacy pack are the only ones which deviate, and only where the program
+actually uses the parameter). Writing them zeroed produces a program which loads and plays
+but does not sound like its source; that was how the values were found.
 | 0x0003 | N | var | one nested sample container per sample zone (N = the count at preamble 0x4A) |
 | 0x0002 | 1 | 0 | terminator |
 
@@ -196,9 +202,21 @@ machine which saved the program, which is why the
 [dwsanitizer](https://github.com/kachine/dwsanitizer) project can mask paths in monolithic
 files; it is ignored when the embedded audio is present.
 
-This was confirmed on 85 monolithic programs (288 sample containers): in every one of them
+This was confirmed on 85 monolithic programs (2040 sample containers): in every one of them
 the length field equals the payload size minus 8, the field at offset 4 is 0, and the block
-sits between the last 0x0204 block and the terminator. Both reading and writing use it.
+sits between the last 0x0204 block and the terminator. Both reading and writing use it. Every
+one of the 2040 embedded samples is 16 bit, stereo and 44.1 kHz, but the resolution is not a
+constraint - a written program with 24 bit audio loads and plays.
+
+### The audio is stored in blocks of 512 frames
+
+The frame count of every one of the 2040 embedded samples is a **multiple of 512**, and the
+FLAC stream always holds exactly 512 frames *more* than the frame count in the audio format
+block. Samples in the non-monolithic programs have arbitrary lengths, so the rule belongs to
+the embedded-audio path. A program whose samples do not fill their last block crashes the
+plug-in while loading (see the crash section below), therefore written audio is padded with
+silence up to a full block and the encoded stream gets one block more, which reproduces what
+DirectWave itself writes.
 
 The tag was found before a specimen was available by dumping the block writer of the
 plug-in binary (see below): the payload length is a constant 8 bytes before the tag for
@@ -275,8 +293,18 @@ ignores a note-off), *Sustained* (loop while the key is held, then play the rema
 the model's loop-until-release) and *Bounce* (= alternating/ping-pong). All five are
 converted in both directions.
 
-A fourth table right after them lists the 47 modulation targets, which doubles as the
-names of the automatable parameters:
+A fourth table right after them holds the modulation **sources** and **targets** in one
+list of 14 byte entries. The first 24 entries are the sources:
+
+```
+ 1 Note Key      5 Program Lfo 1   9 Zone Env 1    13 Amp Follower
+ 2 Note Velocity 6 Program Lfo 2  10 Zone Env 2    14 Sample Pos
+ 3 Mod Wheel     7 <Reserved>     11 Zone Lfo 1    15 Random Value
+ 4 Pitch Bend    8 <Reserved>     12 Zone Lfo 2    16-19 Mod Val 1-4
+```
+
+Entry 24 is a `---` separator and the rest are the 47 modulation targets, which double as
+the names of the automatable parameters:
 
 ```
  0 Voice Pitch      12 Amp Env Att      24 Delay Send
@@ -296,7 +324,8 @@ names of the automatable parameters:
 This confirms the structure the manual describes - two filters with cutoff/resonance/shape
 per zone, an ADSR amplitude envelope, and a 4x4 modulation matrix - and matches the block
 inventory below (two 0x01FB filter blocks, the 0x01FD envelope, sixteen 0x0204 matrix
-slots).
+slots). In a matrix slot the source is the source index above and the **target is the index
+in this table plus one** (the separator is target 0 = no target).
 
 ## Filter blocks (0x01FB, twice - filter 1 and filter 2)
 
@@ -331,9 +360,13 @@ zone; the second block is left at its template default (Off).
 The DirectWave manual gives the structure that matches the remaining blocks: two LFOs and
 a 4x4 modulation matrix.
 * 0x0204 (16 of them, 8 bytes) = **the 4x4 modulation matrix**: `u16 source, u16 target,
-  f32 amount`. Default routings in all factory programs: `(2,2,+1.0)`, `(3,34,+0.75)`,
-  `(12,1,+0.5)`; 'Electric' adds `(11,3,0.86)`, `(2,7,1.0)`, `(1,7,0.865)`. The
-  source/target enums are unknown (the UI shows names, not indices).
+  f32 amount`. Both indices address the source/target table of the plug-in binary (see the
+  enumeration section), the target with an offset of one. That decoding makes the two
+  defaults of the desktop programs read correctly: `(2,2,0.5)` = Note Velocity to Voice Gain
+  and `(4,1,0.5714)` = Pitch Bend to Voice Pitch. The FL Studio Mobile programs default to
+  `(2,2,1.0)`, `(3,34,0.75)` = Mod Wheel to Mod Amt P1-3 and `(12,1,0.5)` = Zone LFO 2 to
+  Voice Pitch instead, which is why their containers must not be used as a template for
+  programs written for the desktop plug-in.
 * 0x0202 (twice, 16 bytes) and 0x0203 (twice, 20 bytes) = **LFO 1 / LFO 2** parameter
   candidates ('Electric' raises 0x0203#1 field 1 from 0.1 to 0.355 — plausibly an LFO
   rate for its tremolo, routed via its extra matrix slots).
@@ -350,10 +383,23 @@ where the real files only ever show a different value population:
   while real files hold powers of two from 4 to 128 (the DirectWave zone list shows this
   field in its 'Ticks' column). The loader accepted it, but the editor crashed when it
   drew the zone.
+* A sample whose frame count is not a multiple of 512 crashes the loader with an access
+  violation a few bytes past the end of a heap block. The lengths of the samples of a
+  converted instrument are whatever the source has - resampling 48 kHz material to 44.1 kHz
+  produced 25 ragged lengths out of 63 and crashed; the same instrument converted without
+  resampling happened to land on 128 frame boundaries and loaded. See the block rule above.
 
 Therefore: **never write a value outside the population observed in real files** unless
 the meaning is confirmed from a table inside the plug-in binary (as the loop modes above
 are).
+
+A quieter version of the same mistake costs sound instead of a crash: the first version of
+the creator built its programs from the container of an FL Studio Mobile factory program and
+zeroed the program parameter blocks 0x0069 to 0x006C. Every written program loaded, but the
+percussive attack of the source instrument was gone. The templates therefore come from a real
+**monolithic desktop** program; a written file now equals a real program byte for byte except
+for the six blocks which carry the converted content (zone mapping, sample name, sample path,
+audio format, amplitude envelope, embedded audio).
 
 ## The knob laws are not in the binary (searched)
 

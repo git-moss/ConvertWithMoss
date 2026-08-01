@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
+import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -33,21 +35,32 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Creator for DirectWave programs. A program is written as a folder which contains the DWP file
- * and all samples as 16-bit WAV files, the layout which FL Studio Mobile imports (the folder can
- * also be packed into a ZIP file for the transfer). FL Studio Desktop loads the DWP file directly.
- * The DWP file is created from the block structure of a real DirectWave export, see
+ * Creator for DirectWave programs. A program is always written as a monolithic DWP file, which
+ * carries all of its samples as FLAC compressed audio and is therefore self-contained. The file is
+ * created from the block structure of a real monolithic DirectWave export, see
  * DIRECTWAVE_DWP_FORMAT.md in the design documentation.
  *
  * @author Jürgen Moßgraber
  */
 public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 {
-    private static final Map<FilterType, Integer> FILTER_TYPES     = new EnumMap<> (FilterType.class);
+    /** FLAC supports at maximum a resolution of 24 bit. */
+    private static final DestinationAudioFormat   EMBEDDED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
+    {
+        8,
+        16,
+        24
+    }, -1, false);
+
+    private static final Map<FilterType, Integer> FILTER_TYPES          = new EnumMap<> (FilterType.class);
     static
     {
         FILTER_TYPES.put (FilterType.LOW_PASS, Integer.valueOf (DirectWaveTag.FILTER_TYPE_LOW_PASS));
@@ -98,13 +111,13 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
         DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_INSTRUMENT_NAME, name);
-        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_INSTRUMENT_PATH, "D:\\\\" + name + ".dwp");
+        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_INSTRUMENT_PATH, "D:\\" + name + ".dwp");
         DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_SHADOW_NAME, DirectWaveTag.SHADOW_NAME_LENGTH);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_SHADOW_PATH, DirectWaveTag.SHADOW_PATH_LENGTH);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_METADATA_1, 17);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_METADATA_2, 17);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_METADATA_3, 20);
-        DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_METADATA_3, 20);
+        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SHADOW_PATH, DirectWaveTag.TEMPLATE_PROGRAM_1);
+        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_METADATA_1, DirectWaveTag.TEMPLATE_PROGRAM_2);
+        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_METADATA_2, DirectWaveTag.TEMPLATE_PROGRAM_3);
+        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_METADATA_3, DirectWaveTag.TEMPLATE_PROGRAM_4);
+        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_METADATA_3, DirectWaveTag.TEMPLATE_PROGRAM_4);
         for (int i = 0; i < 4; i++)
             DirectWaveChunk.writeZeroedChunk (out, DirectWaveTag.TAG_METADATA_4, 4);
 
@@ -154,6 +167,9 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
             throw new IOException ("Empty sample data in zone: " + zone.getName ());
         final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
         final String sampleName = createSafeFilename (zone.getName ());
+        // Round the length up to a full audio block, see EMBEDDED_AUDIO_BLOCK
+        final int blockSize = DirectWaveTag.EMBEDDED_AUDIO_BLOCK;
+        final int frames = (audioMetadata.getNumberOfSamples () + blockSize - 1) / blockSize * blockSize;
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         final AtomicBoolean isFirstFilter = new AtomicBoolean (true);
@@ -185,7 +201,7 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
                     break;
 
                 case DirectWaveTag.TAG_AUDIO_FORMAT:
-                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_AUDIO_FORMAT, createAudioFormat (chunk.getPayload (), zone, audioMetadata));
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_AUDIO_FORMAT, createAudioFormat (chunk.getPayload (), zone, audioMetadata, frames));
                     break;
 
                 case DirectWaveTag.TAG_AMP_ENVELOPE:
@@ -199,7 +215,7 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 
                 case DirectWaveTag.TAG_SAMPLE_TERMINATOR:
                     // The embedded audio is the last block of the container
-                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_EMBEDDED_AUDIO, createEmbeddedAudio (sampleData.get ()));
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_EMBEDDED_AUDIO, createEmbeddedAudio (sampleData.get (), frames + DirectWaveTag.EMBEDDED_AUDIO_BLOCK));
                     DirectWaveChunk.writeChunk (out, chunk.getTag (), chunk.getPayload ());
                     break;
 
@@ -216,16 +232,40 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
      * integer, 4 unused bytes and the audio as a FLAC stream.
      *
      * @param sampleData The sample data to embed
+     * @param frames The number of frames to write, the audio is padded with silence to that length
      * @return The payload
      * @throws IOException Could not compress the audio
      */
-    private static byte [] createEmbeddedAudio (final ISampleData sampleData) throws IOException
+    private static byte [] createEmbeddedAudio (final ISampleData sampleData, final int frames) throws IOException
     {
-        final byte [] flac = AudioFileUtils.compressToFLAC (sampleData);
+        final byte [] flac = AudioFileUtils.compressToFLAC (padWithSilence (sampleData, frames));
         final byte [] payload = new byte [DirectWaveTag.EMBEDDED_AUDIO_OFFSET + flac.length];
         DirectWaveChunk.writeIntLE (payload, 0, flac.length);
         System.arraycopy (flac, 0, payload, DirectWaveTag.EMBEDDED_AUDIO_OFFSET, flac.length);
         return payload;
+    }
+
+
+    /**
+     * Extend the audio with silence up to the given number of frames. DirectWave reads the embedded
+     * audio in blocks, a sample which does not fill its last block crashes the plug-in when the
+     * program is loaded.
+     *
+     * @param sampleData The sample data to extend
+     * @param frames The number of frames of the result
+     * @return The extended sample data
+     * @throws IOException Could not read the sample data
+     */
+    private static ISampleData padWithSilence (final ISampleData sampleData, final int frames) throws IOException
+    {
+        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, EMBEDDED_AUDIO_FORMAT);
+        final FormatChunk formatChunk = waveFile.getFormatChunk ();
+        final int frameSize = formatChunk.getNumberOfChannels () * (formatChunk.getSignificantBitsPerSample () / 8);
+        final byte [] data = waveFile.getDataChunk ().getData ();
+        final int length = frames * frameSize;
+        if (length <= data.length)
+            return sampleData;
+        return new WavFileSampleData (new WaveFile (formatChunk, new DataChunk (formatChunk, Arrays.copyOf (data, length))));
     }
 
 
@@ -307,12 +347,12 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
      * @param template The template payload of the audio format block
      * @param zone The sample zone
      * @param audioMetadata The metadata of the audio of the zone
+     * @param frames The number of frames of the audio, rounded up to a full audio block
      * @return The filled block payload
      */
-    private static byte [] createAudioFormat (final byte [] template, final ISampleZone zone, final IAudioMetadata audioMetadata)
+    private static byte [] createAudioFormat (final byte [] template, final ISampleZone zone, final IAudioMetadata audioMetadata, final int frames)
     {
         final byte [] audioFormat = template.clone ();
-        final int frames = audioMetadata.getNumberOfSamples ();
         DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_FRAME_COUNT, frames);
         DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_CHANNELS, audioMetadata.getChannels ());
         // The field at offset 12 is not bytes-per-frame in the factory files but a power of two
