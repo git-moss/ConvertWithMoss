@@ -322,6 +322,32 @@ Therefore: **never write a value outside the population observed in real files**
 the meaning is confirmed from a table inside the plug-in binary (as the loop modes above
 are).
 
+## The knob laws are not in the binary (searched)
+
+The cutoff and envelope-time laws were searched for in the plug-in binary and are **not
+stored as data**:
+
+* No lookup tables: a scan for monotonically rising float arrays of 48 entries or more in
+  an audio-plausible range returns nothing.
+* No range pairs: no adjacent (minimum, maximum) frequency constants in single or double
+  precision anywhere in either library.
+* The parameters do have ranges - the binary contains the source file name
+  `DirectWaveParameters.cpp` and the assertion text `RangeMin < RangeMax` - but no data
+  table of parameter descriptors references the parameter name strings, so the ranges are
+  passed as immediates when the parameter list is built in code. Extracting them would
+  require disassembling that constructor.
+
+What the search did yield is the display formatting of the parameters, which corroborates
+several decodings: `%.1f dB` and `-oo dB` for gains (so the gain really is a level with a
+silent bottom, as the -96 dB parked layers of converted E-mu presets assume), `%.2d L` /
+`Center` / `+%.2d R` for panning (0.5 is the center), `%d Ticks` for the field at offset
+12 of the audio format block (which the zone list shows in its *Ticks* column), and
+`%.1f Hz` / `%.2f kHz` / `%.2f sec` / `%.2f ms` / `%d Cents` for the remaining units.
+
+A single reading of a knob value would pin each law. The values are reachable without the
+Zone tab through the plug-in wrapper's parameter list (the cog menu of the plug-in window),
+which shows every one of the 47 parameters with its current value and unit.
+
 ## Not yet decoded
 
 * The exact frequency law of the filter cutoff knob and the time law of the envelope
