@@ -287,10 +287,15 @@ silenced the zone (a low-pass at a near-minimum cutoff mutes a 220 Hz saw wave),
 control zone in the same program stayed audible. The variant which put the type into the
 2-byte block 0x01FC changed nothing.
 
-The cutoff knob is mapped exponentially from 20 Hz to 20 kHz. That law is consistent with
-the probe (a knob at 0.05 is ca. 28 Hz, which mutes the saw) but it is **not calibrated
-against the frequency display of DirectWave** - a specimen or a reading of the knob hint
-would refine it. Only the first filter is converted since the model has one filter per
+The cutoff knob is mapped exponentially **from 45 Hz to 20 kHz**. Since the knob laws are
+not stored in the binary (see below), the range was measured by listening: a program with
+ten zones was written which play the same 220 Hz saw wave through a low-pass filter with
+the cutoff knob at 0.10, 0.18, 0.26 … 1.0. The fundamental starts to pass at the zone with
+the knob at **0.26** - which puts the cutoff at 220 Hz there - and the wave is fully open
+at **0.66**. A range of 45 Hz to 20 kHz reproduces the first (219.7 Hz) almost exactly and
+puts the second at ca. 2.5 kHz, i.e. about the 11th harmonic, which is consistent with
+'fully open'; it also explains the two quiet zones below (83 Hz and 135 Hz cutoff against a
+220 Hz fundamental). The remaining uncertainty is roughly ±10 %. Only the first filter is converted since the model has one filter per
 zone; the second block is left at its template default (Off).
 
 ## Parameter block hypotheses (single tweaked specimen)
@@ -344,14 +349,17 @@ silent bottom, as the -96 dB parked layers of converted E-mu presets assume), `%
 12 of the audio format block (which the zone list shows in its *Ticks* column), and
 `%.1f Hz` / `%.2f kHz` / `%.2f sec` / `%.2f ms` / `%d Cents` for the remaining units.
 
-A single reading of a knob value would pin each law. The values are reachable without the
-Zone tab through the plug-in wrapper's parameter list (the cog menu of the plug-in window),
-which shows every one of the 47 parameters with its current value and unit.
+The cutoff law was therefore measured by listening instead (see the filter section above);
+the same method - a program whose zones differ in one knob only, played from the on-screen
+keyboard of the plug-in - can calibrate the envelope times as well. The plug-in wrapper's
+own parameter list is *not* a way to read the values: it shows the channel settings of FL
+Studio, not the 47 DirectWave parameters.
 
 ## Not yet decoded
 
-* The exact frequency law of the filter cutoff knob and the time law of the envelope
-  knobs (both are currently sensible approximations, see above).
+* The time law of the envelope knobs. It is currently a cubic taper up to 10 seconds,
+  which produces musical values for the factory programs but is not measured; the cutoff
+  law above shows how to measure it.
 * The LFO block layout and the source/target enums of the modulation matrix.
 * Trigger groups (round-robin/random cycles) and their location in the opaque bytes.
 * The tag and placement of the embedded audio block of monolithic files (see above) and

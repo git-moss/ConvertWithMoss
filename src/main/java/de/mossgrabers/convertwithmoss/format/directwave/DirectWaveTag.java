@@ -94,11 +94,12 @@ public class DirectWaveTag
 
     /**
      * The lowest frequency of the filter cutoff knob. The knob is mapped exponentially from this
-     * frequency up to {@link de.mossgrabers.convertwithmoss.core.model.IFilter#MAX_FREQUENCY},
-     * which matches the observed behavior (a knob at 0.05 mutes a 220 Hz saw wave through a
-     * low-pass filter) but is not calibrated to the exact display values of DirectWave.
+     * frequency up to {@link de.mossgrabers.convertwithmoss.core.model.IFilter#MAX_FREQUENCY}. The
+     * value was measured by listening: a 220 Hz saw wave through a low-pass filter starts to pass
+     * its fundamental at a knob position of 0.26, which puts the cutoff at 220 Hz there, and the
+     * wave is fully open at 0.66. Both are reproduced by this range within a few percent.
      */
-    public static final double   FILTER_MIN_FREQUENCY   = 20.0;
+    public static final double   FILTER_MIN_FREQUENCY   = 45.0;
     /** The tag of the 2 byte zeroed block inside of a sample container. */
     public static final int      TAG_BLOCK_01FC         = 0x01FC;
     /** The tag of the amplitude envelope block (4 floats: attack, decay, sustain, release). */
