@@ -451,6 +451,14 @@ Voice Files (*.VC) store individual instrument subvoices (samples) and synthesis
 
 Note that this will not work with IIx or earlier versions despite the same VC file extension was used. Only reading is supported.
 
+## FL Studio DirectWave
+
+DirectWave is the software sampler of Image-Line's FL Studio; FL Studio Mobile plays its programs as well. A program is stored in a DWP file, a bank of programs in a DWB file. When a program is saved with the *Monolithic file* option disabled, the samples are stored as WAV files in a folder named like the program.
+
+As a source, non-monolithic DWP programs are read from their binary structure (see DIRECTWAVE_DWP_FORMAT.md in the design documentation): name, key/velocity ranges and root of each zone. The samples are searched next to the DWP file and in the sub-folder named like the program; loops are read from the sample chunks of the WAV files. Monolithic files are not supported - save them again with the option disabled. For files without the known binary structure (e.g. DWB banks) the mapping is reconstructed from the names of the sample files, which supports both the names written when sampling a plugin (e.g. *Piano 4xCycles_C5_100_2.wav*, round-robin cycles become groups) and the Automap tokens documented in the DirectWave manual (e.g. *sample_C4+KA3-F#4+V64-95.wav*). Note that DirectWave note names follow the FL Studio convention where the middle C (MIDI note 60) is called C5.
+
+As a destination, a folder is created which contains the DWP file and all samples as 16-bit WAV files. FL Studio Desktop loads the DWP directly; for FL Studio Mobile copy (or ZIP) the whole folder into its user files. The DWP structure carries name, key/velocity ranges and root per zone; loops travel inside the WAV files. Envelopes and filters are not written (the fields are not decoded yet) and only the first round-robin cycle is kept since trigger groups cannot be written.
+
 ## ISO/IMG Files
 
 Searches for files ending with *.ISO, *.IMG or *.HDA. Currently, the following formats can be handled:

@@ -46,6 +46,8 @@ import de.mossgrabers.convertwithmoss.format.bliss.BlissDetector;
 import de.mossgrabers.convertwithmoss.format.cmi3.FairlightCmi3Detector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
+import de.mossgrabers.convertwithmoss.format.directwave.DirectWaveCreator;
+import de.mossgrabers.convertwithmoss.format.directwave.DirectWaveDetector;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExCreator;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExDetector;
 import de.mossgrabers.convertwithmoss.format.dls.DlsDetector;
@@ -193,6 +195,7 @@ public class ConverterBackend
         this.detectors.add (new TX16WxDetector (notifier));
         this.detectors.add (new DecentSamplerDetector (notifier));
         this.detectors.add (new DlsDetector (notifier));
+        this.detectors.add (new DirectWaveDetector (notifier));
         this.detectors.add (new Emulator3Detector (notifier));
         this.detectors.add (new Emulator4Detector (notifier));
         this.detectors.add (new EmulatorXDetector (notifier));
@@ -238,6 +241,7 @@ public class ConverterBackend
         this.creators.add (new BlissCreator (notifier));
         this.creators.add (new TX16WxCreator (notifier));
         this.creators.add (new DecentSamplerCreator (notifier));
+        this.creators.add (new DirectWaveCreator (notifier));
         this.creators.add (new DistingExCreator (notifier));
         this.creators.add (new Emulator3Creator (notifier));
         this.creators.add (new Emulator4Creator (notifier));
