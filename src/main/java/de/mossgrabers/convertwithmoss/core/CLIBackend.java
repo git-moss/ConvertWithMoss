@@ -224,6 +224,23 @@ public class CLIBackend implements INotifier
         detectSettings.createFolderStructure = parseResult.matchedOptionValue ('f', null) == null;
         final boolean onlyAnalyse = parseResult.matchedOptionValue ('a', null) != null;
 
+        // Creating a library or a performance is an empty operation for a destination which does
+        // not support it - everything detected would be collected and then silently dropped.
+        // Therefore fail before the detection starts.
+        if (!onlyAnalyse)
+        {
+            if (detectSettings.wantsMultipleFiles && !(detectPerformances ? creator.supportsPerformanceLibraries () : creator.supportsPresetLibraries ()))
+            {
+                System.err.println (Functions.getMessage ("IDS_CLI_NO_LIBRARY_SUPPORT", creator.getName ()));
+                return 0;
+            }
+            if (detectPerformances && !(creator.supportsPerformances () || creator.supportsPerformanceLibraries ()))
+            {
+                System.err.println (Functions.getMessage ("IDS_CLI_NO_PERFORMANCE_SUPPORT", creator.getName ()));
+                return 0;
+            }
+        }
+
         this.backend.detect (detector, creator, detectSettings, detectPerformances, onlyAnalyse);
 
         while (!this.hasFinished)
