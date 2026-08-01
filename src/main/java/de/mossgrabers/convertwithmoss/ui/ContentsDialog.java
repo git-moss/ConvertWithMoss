@@ -52,14 +52,14 @@ public class ContentsDialog extends PseudoModalDialog
     private Label                    selectionLabel;
     private Label                    auditionLabel;
     private Button                   auditionButton;
-    private List<ContentsEntry>      entries            = new ArrayList<> ();
-    private final Set<ContentsEntry> selectedEntries    = new HashSet<> ();
-    private final Map<File, Integer> entriesPerFile     = new HashMap<> ();
-    private final Set<File>          filesWithOwnFolder = new HashSet<> ();
+    private List<ContentsEntry>      entries         = new ArrayList<> ();
+    private final Set<ContentsEntry> selectedEntries = new HashSet<> ();
+    private final Map<File, Integer> entriesPerFile  = new HashMap<> ();
+    private Set<File>                filesWithOwnFolder;
 
-    private final AuditionPlayer     auditionPlayer     = new AuditionPlayer ();
+    private final AuditionPlayer     auditionPlayer  = new AuditionPlayer ();
     private ISourceReader            sourceReader;
-    private boolean                  isReading          = false;
+    private boolean                  isReading       = false;
 
 
     /**
@@ -95,6 +95,8 @@ public class ContentsDialog extends PseudoModalDialog
 
         this.treeView = new TreeView<> ();
         this.treeView.setShowRoot (false);
+        // Make sure filesWithOwnFolder already exists
+        this.filesWithOwnFolder = new HashSet<> ();
         this.treeView.setCellFactory (CheckBoxTreeCell.forTreeView (item -> ((CheckBoxTreeItem<Object>) item).selectedProperty (), new ContentsStringConverter (this.filesWithOwnFolder)));
         this.treeView.setPrefHeight (520);
         this.treeView.setPrefWidth (760);

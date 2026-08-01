@@ -94,20 +94,8 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
                 {
                     content = in.readAllBytes ();
                 }
-                if (!SynclavierVFile.isArchive (content))
-                    continue;
-
-                try
-                {
-                    final SynclavierVFile preset = SynclavierVFile.parse (content);
-                    final Optional<IMultisampleSource> source = this.parsePreset (file, zipFile, entry, preset);
-                    if (source.isPresent ())
-                        results.add (source.get ());
-                }
-                catch (final IOException ex)
-                {
-                    this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
-                }
+                if (SynclavierVFile.isArchive (content))
+                    this.readPreset (file, results, zipFile, entry, content);
             }
         }
         catch (final IOException ex)
@@ -115,6 +103,22 @@ public class SynclavierVDetector extends AbstractDetector<EmptySettingsUI>
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
         }
         return results;
+    }
+
+
+    private void readPreset (final File file, final List<IMultisampleSource> results, final ZipFile zipFile, final ZipEntry entry, final byte [] content)
+    {
+        try
+        {
+            final SynclavierVFile preset = SynclavierVFile.parse (content);
+            final Optional<IMultisampleSource> source = this.parsePreset (file, zipFile, entry, preset);
+            if (source.isPresent ())
+                results.add (source.get ());
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+        }
     }
 
 
