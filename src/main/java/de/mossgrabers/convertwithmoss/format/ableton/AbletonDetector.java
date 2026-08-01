@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -263,6 +264,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         final Element samplePartsElement = getRequiredElement (mapElement, AbletonTag.TAG_SAMPLE_PARTS);
 
         final IGroup group = new DefaultGroup ("Group #1");
+        final Map<ISampleZone, int []> selectorRanges = new HashMap<> ();
 
         for (final Element multiSamplePartElement: XMLUtils.getChildElementsByName (samplePartsElement, AbletonTag.TAG_MULTI_SAMPLE_PART, false))
         {
@@ -277,12 +279,18 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 final String name = FileUtils.getNameWithoutType (new File (zoneName));
                 final ISampleZone zone = new DefaultSampleZone (name, sampleData);
                 readZone (zone, multiSamplePartElement);
+                selectorRanges.put (zone, readSelectorRange (multiSamplePartElement));
                 group.addSampleZone (zone);
             }
         }
 
         // Round-robin support
-        multisampleSource.setGroups (getBooleanValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_ENABLE) ? applyRoundRobin (mapElement, group) : Collections.singletonList (group));
+        final List<IGroup> groups;
+        if (getBooleanValueAttribute (mapElement, AbletonTag.TAG_ROUND_ROBIN_ENABLE))
+            groups = applyRoundRobin (mapElement, group);
+        else
+            groups = applySelectorRoundRobin (group, selectorRanges);
+        multisampleSource.setGroups (groups);
 
         final Optional<IFilter> filter = readFilter (deviceElement);
         if (filter.isPresent ())
@@ -610,6 +618,115 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         {
             // Ignore missing elements
         }
+    }
+
+
+    /**
+     * Read the sample-select (selector) range of a multi-sample part.
+     *
+     * @param multiSamplePartElement The multi-sample part element
+     * @return Low, high, cross-fade low and cross-fade high of the selector range
+     */
+    private static int [] readSelectorRange (final Element multiSamplePartElement)
+    {
+        final Element selectorRangeElement = XMLUtils.getChildElementByName (multiSamplePartElement, AbletonTag.TAG_SELECTOR_RANGE);
+        if (selectorRangeElement == null)
+            return new int []
+            {
+                0,
+                127,
+                0,
+                127
+            };
+        final int low = getIntegerValueAttribute (selectorRangeElement, AbletonTag.TAG_MINIMUM, 0);
+        final int high = getIntegerValueAttribute (selectorRangeElement, AbletonTag.TAG_MAXIMUM, 127);
+        return new int []
+        {
+            low,
+            high,
+            getIntegerValueAttribute (selectorRangeElement, AbletonTag.TAG_CROSSFADE_MINIMUM, low),
+            getIntegerValueAttribute (selectorRangeElement, AbletonTag.TAG_CROSSFADE_MAXIMUM, high)
+        };
+    }
+
+
+    /**
+     * Detect round-robin cycles which are stored on the sample-select (selector) axis, the only
+     * way to store them before the round-robin flag was added in Live 12: zones which occupy the
+     * same key and velocity range but disjoint selector ranges play one at a time depending on the
+     * selector position. Such zones are split into one group per selector slice in ascending
+     * selector order. Zones with overlapping selector ranges or with selector cross-fades (a
+     * morphing setup rather than round-robin) are left as they are.
+     *
+     * @param group The group with all read zones
+     * @param selectorRanges The selector range of each zone
+     * @return The resulting groups
+     */
+    private static List<IGroup> applySelectorRoundRobin (final IGroup group, final Map<ISampleZone, int []> selectorRanges)
+    {
+        final Map<String, List<ISampleZone>> clusters = new LinkedHashMap<> ();
+        for (final ISampleZone zone: group.getSampleZones ())
+            clusters.computeIfAbsent (zone.getKeyLow () + "," + zone.getKeyHigh () + "," + zone.getVelocityLow () + "," + zone.getVelocityHigh (), _ -> new ArrayList<> ()).add (zone);
+
+        final Set<List<ISampleZone>> roundRobinClusters = new HashSet<> ();
+        for (final List<ISampleZone> cluster: clusters.values ())
+            if (isSelectorRoundRobin (cluster, selectorRanges))
+                roundRobinClusters.add (cluster);
+        if (roundRobinClusters.isEmpty ())
+            return Collections.singletonList (group);
+
+        final List<IGroup> groups = new ArrayList<> ();
+        for (final List<ISampleZone> cluster: clusters.values ())
+        {
+            if (roundRobinClusters.contains (cluster))
+                cluster.sort ((zone1, zone2) -> Integer.compare (selectorRanges.get (zone1)[0], selectorRanges.get (zone2)[0]));
+            for (int i = 0; i < cluster.size (); i++)
+            {
+                final ISampleZone zone = cluster.get (i);
+                final int groupIndex;
+                if (roundRobinClusters.contains (cluster))
+                {
+                    zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                    zone.setSequencePosition (i + 1);
+                    groupIndex = i;
+                }
+                else
+                    groupIndex = 0;
+                while (groups.size () <= groupIndex)
+                    groups.add (new DefaultGroup ("Group #" + (groups.size () + 1)));
+                groups.get (groupIndex).addSampleZone (zone);
+            }
+        }
+        return groups;
+    }
+
+
+    /**
+     * Check if the zones of the cluster form a round-robin setup on the selector axis: at least
+     * two zones which all have no selector cross-fade and do not overlap each other.
+     *
+     * @param cluster The zones which occupy the same key and velocity range
+     * @param selectorRanges The selector range of each zone
+     * @return True if the cluster is a round-robin setup
+     */
+    private static boolean isSelectorRoundRobin (final List<ISampleZone> cluster, final Map<ISampleZone, int []> selectorRanges)
+    {
+        if (cluster.size () < 2)
+            return false;
+
+        final List<int []> ranges = new ArrayList<> ();
+        for (final ISampleZone zone: cluster)
+        {
+            final int [] range = selectorRanges.get (zone);
+            if (range[2] != range[0] || range[3] != range[1])
+                return false;
+            ranges.add (range);
+        }
+        ranges.sort ((range1, range2) -> Integer.compare (range1[0], range2[0]));
+        for (int i = 1; i < ranges.size (); i++)
+            if (ranges.get (i)[0] <= ranges.get (i - 1)[1])
+                return false;
+        return true;
     }
 
 
