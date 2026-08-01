@@ -857,7 +857,7 @@ The OP-XY is a portable sampler and sequencer from Teenage Engineering. Its mult
 
 Reading a preset gives the key range, root key, tuning, gain, play range and loop of every region, plus the amplitude envelope and the pitch bend range which the device stores once for the whole preset.
 
-Writing creates such a folder, which only needs to be copied to the device. Note the limits of the format: it maps a preset only across the keyboard, so of several zones which cover the same keys only the one which plays at the highest velocity is kept, and the device plays at most 24 regions per preset. The regions are written as the device expects them, i.e. covering the keyboard without gaps: a region ends at its own upper key and starts one key above the previous one. Samples are written as 16 bit WAV files with at most 44.1 kHz.
+Writing creates such a folder, which only needs to be copied to the device. Note the limits which the device manual states: a preset holds at most 24 zones, a sample may be at most 20 seconds long (longer ones are reported), and multiple velocities are not supported - of several zones which cover the same keys only the one which plays at the highest velocity is kept. The regions are written as the device expects them, i.e. covering the keyboard without gaps: a region ends at its own upper key and starts one key above the previous one. Samples are written as 16 bit WAV files with at most 44.1 kHz.
 
 ## Waldorf Quantum MkI, MkII / Iridium / Iridium Core
 

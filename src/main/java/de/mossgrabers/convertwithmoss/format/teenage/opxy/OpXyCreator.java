@@ -86,6 +86,7 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
             return;
         }
 
+        this.checkSampleLengths (zones);
         this.writeSamples (presetFolder, multisampleSource, DESTINATION_FORMAT);
         Files.write (patchFile.toPath (), this.createPatch (zones).getBytes (StandardCharsets.UTF_8));
 
@@ -133,6 +134,30 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
             return zones.subList (0, MAX_REGIONS);
         }
         return zones;
+    }
+
+
+    /**
+     * Warn about samples which are longer than the device plays.
+     *
+     * @param zones The zones to check
+     * @throws IOException Could not read the audio metadata
+     */
+    private void checkSampleLengths (final List<ISampleZone> zones) throws IOException
+    {
+        int tooLong = 0;
+        for (final ISampleZone zone: zones)
+        {
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isEmpty ())
+                continue;
+            final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+            final int sampleRate = audioMetadata.getSampleRate ();
+            if (sampleRate > 0 && audioMetadata.getNumberOfSamples () / (double) sampleRate > OpXyTag.MAX_SAMPLE_SECONDS)
+                tooLong++;
+        }
+        if (tooLong > 0)
+            this.notifier.log ("IDS_OPXY_SAMPLE_TOO_LONG", Integer.toString (tooLong), Integer.toString ((int) OpXyTag.MAX_SAMPLE_SECONDS));
     }
 
 

@@ -113,6 +113,8 @@ public class OpXyTag
     public static final double ENVELOPE_TIME_EXPONENT = 2.0;
     /** The maximum pitch bend range of the device in semitones. */
     public static final int    MAX_BEND_RANGE        = 24;
+    /** The longest sample the device plays, in seconds. */
+    public static final double MAX_SAMPLE_SECONDS    = 20.0;
 
 
     /**
