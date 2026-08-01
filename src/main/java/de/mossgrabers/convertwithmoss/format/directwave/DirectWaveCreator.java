@@ -19,8 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
-import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
+import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -32,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.tools.FileUtils;
 
@@ -45,13 +45,8 @@ import de.mossgrabers.tools.FileUtils;
  *
  * @author Jürgen Moßgraber
  */
-public class DirectWaveCreator extends AbstractWavCreator<DirectWaveCreatorUI>
+public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 {
-    private static final DestinationAudioFormat DESTINATION_FORMAT = new DestinationAudioFormat (new int []
-    {
-        16
-    }, -1, false);
-
     private static final Map<FilterType, Integer> FILTER_TYPES     = new EnumMap<> (FilterType.class);
     static
     {
@@ -69,7 +64,7 @@ public class DirectWaveCreator extends AbstractWavCreator<DirectWaveCreatorUI>
      */
     public DirectWaveCreator (final INotifier notifier)
     {
-        super ("DirectWave", "DirectWave", notifier, new DirectWaveCreatorUI ("DirectWave"));
+        super ("DirectWave", "DirectWave", notifier, EmptySettingsUI.INSTANCE);
     }
 
 
@@ -77,44 +72,14 @@ public class DirectWaveCreator extends AbstractWavCreator<DirectWaveCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String safeName = createSafeFilename (multisampleSource.getName ());
-
-        this.filterRoundRobinZones (multisampleSource);
-
-        if (this.settingsConfiguration.isMonolithic ())
-        {
-            final File multiFile = this.createUniqueFilename (destinationFolder, safeName, "dwp");
-            this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
-            renameZonesToConvention (FileUtils.getNameWithoutType (multiFile), multisampleSource);
-            Files.write (multiFile.toPath (), createDwpContent (FileUtils.getNameWithoutType (multiFile), multisampleSource, true));
-            this.progress.notifyDone ();
-            return;
-        }
-
-        // The folder, the DWP file and the sample names must all carry the same name, therefore
-        // make the folder unique instead of only the DWP file
-        String name = safeName;
-        File folder = new File (destinationFolder, name);
-        int counter = 2;
-        while (folder.exists ())
-        {
-            name = safeName + " (" + counter + ")";
-            folder = new File (destinationFolder, name);
-            counter++;
-        }
-        if (!folder.mkdirs ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", folder.getAbsolutePath ());
-            return;
-        }
-
-        final File multiFile = new File (folder, name + ".dwp");
+        final File multiFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "dwp");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
+        this.filterRoundRobinZones (multisampleSource);
+        final String name = FileUtils.getNameWithoutType (multiFile);
         renameZonesToConvention (name, multisampleSource);
 
-        this.writeSamples (folder, multisampleSource, DESTINATION_FORMAT);
-        Files.write (multiFile.toPath (), createDwpContent (name, multisampleSource, false));
+        Files.write (multiFile.toPath (), createDwpContent (name, multisampleSource));
 
         this.progress.notifyDone ();
     }
@@ -128,7 +93,7 @@ public class DirectWaveCreator extends AbstractWavCreator<DirectWaveCreatorUI>
      * @return The bytes of the DWP file
      * @throws IOException Could not create the content
      */
-    private static byte [] createDwpContent (final String name, final IMultisampleSource multisampleSource, final boolean monolithic) throws IOException
+    private static byte [] createDwpContent (final String name, final IMultisampleSource multisampleSource) throws IOException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
@@ -155,7 +120,7 @@ public class DirectWaveCreator extends AbstractWavCreator<DirectWaveCreatorUI>
         for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SAMPLE_CONTAINER, createSampleContainer (name, zone, monolithic));
+                DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_SAMPLE_CONTAINER, createSampleContainer (name, zone));
                 sampleCount++;
             }
 
@@ -182,7 +147,7 @@ public class DirectWaveCreator extends AbstractWavCreator<DirectWaveCreatorUI>
      * @return The bytes of the container
      * @throws IOException Could not create the content
      */
-    private static byte [] createSampleContainer (final String instrumentName, final ISampleZone zone, final boolean monolithic) throws IOException
+    private static byte [] createSampleContainer (final String instrumentName, final ISampleZone zone) throws IOException
     {
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
@@ -234,8 +199,7 @@ public class DirectWaveCreator extends AbstractWavCreator<DirectWaveCreatorUI>
 
                 case DirectWaveTag.TAG_SAMPLE_TERMINATOR:
                     // The embedded audio is the last block of the container
-                    if (monolithic)
-                        DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_EMBEDDED_AUDIO, createEmbeddedAudio (sampleData.get ()));
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_EMBEDDED_AUDIO, createEmbeddedAudio (sampleData.get ()));
                     DirectWaveChunk.writeChunk (out, chunk.getTag (), chunk.getPayload ());
                     break;
 
