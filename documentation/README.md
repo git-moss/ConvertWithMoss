@@ -211,6 +211,6 @@ Finally, an example for creating a library of performances:
 
 ```./ConvertWithMoss -s nki -d ysfc -l Pads -t performance D:\MySampler\Kontakt C:\ConversionOutput```
 
-A destination format which cannot hold what was asked for - a library of several presets, or performances at all - writes single presets instead and reports that in the log. The user interface only offers the output types which the chosen destination supports, so this applies to the command line, where '-l' and '-t performance' are accepted for every destination.
+A destination format which cannot hold what was asked for - a library of several presets, or performances at all - is reported as an error and nothing is converted. The user interface only offers the output types which the chosen destination supports; the command line accepts '-l' and '-t performance' for every destination, so they are checked before the detection starts.
 
 Additionally, there are several parameters for processing the samples as well. They use 2 letters and always start with a 'Z'. Note that processing needs to be enabled by adding '-Ze'.

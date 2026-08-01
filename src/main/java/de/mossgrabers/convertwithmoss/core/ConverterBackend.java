@@ -150,10 +150,6 @@ public class ConverterBackend
     private DetectSettings                 detectionSettings;
     private boolean                        onlyAnalyse;
     private boolean                        onlyContents;
-    /** True if the destination can write the requested library, otherwise single presets are written. */
-    private boolean                        collectsLibrary;
-    /** True if the destination can write performances, otherwise their presets are written. */
-    private boolean                        writesPerformances;
     private int                            indexInFile;
     private File                           currentSourceFile;
 
@@ -335,14 +331,6 @@ public class ConverterBackend
         this.collectedPerformanceSources.clear ();
         this.contentsEntries.clear ();
 
-        // A destination which cannot write what was asked for used to write nothing at all, which
-        // is worse than writing the presets one by one: the sources were read, collected and then
-        // silently dropped. Fall back to single presets instead and say so.
-        final boolean writesFiles = creator != null && !onlyAnalyse;
-        final boolean supportsLibrary = writesFiles && (detectPerformances ? creator.supportsPerformanceLibraries () : creator.supportsPresetLibraries ());
-        this.collectsLibrary = detectionSettings.wantsMultipleFiles && supportsLibrary;
-        this.writesPerformances = writesFiles && (creator.supportsPerformances () || creator.supportsPerformanceLibraries ());
-
         this.notifier.log ("TITLE");
         if (this.onlyContents)
             this.notifier.log ("IDS_NOTIFY_DETECTING_CONTENTS", detector.getName ());
@@ -350,10 +338,6 @@ public class ConverterBackend
             this.notifier.log ("IDS_NOTIFY_DETECTING_NO_CONVERSION", detector.getName ());
         else
             this.notifier.log ("IDS_NOTIFY_DETECTING", detector.getName (), creator.getName ());
-        if (detectionSettings.wantsMultipleFiles && writesFiles && !supportsLibrary)
-            this.notifier.log ("IDS_NOTIFY_NO_LIBRARY_SUPPORT", creator.getName ());
-        if (detectPerformances && writesFiles && !this.writesPerformances)
-            this.notifier.log ("IDS_NOTIFY_NO_PERFORMANCE_SUPPORT", creator.getName ());
         if (this.creator != null)
             this.creator.clearCancelled ();
         this.detector.detect (detectionSettings.sourceFolder, getFilesToRead (detectionSettings, onlyContents), this::acceptMultisample, this::acceptPerformance, detectPerformances);
@@ -463,7 +447,7 @@ public class ConverterBackend
 
         this.processSource (multisampleSource);
 
-        if (this.collectsLibrary || this.onlyAnalyse && this.detectionSettings.wantsMultipleFiles)
+        if (this.detectionSettings.wantsMultipleFiles)
         {
             if (!this.onlyAnalyse)
                 this.collectedPresetSources.add (multisampleSource);
@@ -518,7 +502,7 @@ public class ConverterBackend
         for (final IInstrumentSource instrumentSource: instrumentSources)
             this.processSource (instrumentSource.getMultisampleSource ());
 
-        if (this.collectsLibrary || this.onlyAnalyse && this.detectionSettings.wantsMultipleFiles)
+        if (this.detectionSettings.wantsMultipleFiles)
         {
             if (!this.onlyAnalyse)
                 this.collectedPerformanceSources.add (performanceSource);
@@ -535,13 +519,7 @@ public class ConverterBackend
         try
         {
             final File multisampleOutputFolder = calcOutputFolder (this.detectionSettings.outputFolder, instrumentSources.get (0).getMultisampleSource ().getSubPath (), this.detectionSettings.createFolderStructure);
-            if (this.writesPerformances)
-                this.creator.createPerformance (multisampleOutputFolder, performanceSource);
-            else
-                // The destination knows no performances at all, so its instruments are the only
-                // thing which can be written - one preset each
-                for (final IInstrumentSource instrumentSource: instrumentSources)
-                    this.creator.createPreset (multisampleOutputFolder, instrumentSource.getMultisampleSource ());
+            this.creator.createPerformance (multisampleOutputFolder, performanceSource);
         }
         catch (final NoSuchFileException | FileNotFoundException ex)
         {
