@@ -141,7 +141,7 @@ offset 4:  u32 0
 offset 8:  u32 channelCount (1 and 2 verified)
 offset 12: u32 bytesPerFrame (4 = stereo 16 bit in the 0x26 specimen - but NOT reliable, see below)
 offset 16: f32 sampleRate   (44100.0 — the rate is stored as a float!)
-offset 20: u32 loopMode     (0 = no loop, 2 = looped)
+offset 20: u32 loopMode     (see the loop mode enum below)
 offset 24: u32 loopStart    (frames)
 offset 28: u32 loopEnd      (frames)
 offset 32: u32 0
@@ -216,17 +216,75 @@ saving-capable DirectWave. The sustain is a level and therefore exact. To calibr
 law: load a factory program in DirectWave, hover/turn the AMP knobs and note the displayed
 seconds for a few knob positions (e.g. the default D=50% and R=25% and Electric's D=81%).
 
+## Enumerations from the plugin binary
+
+The DirectWave plug-in binary (`DirectWave_x64.dylib` of FL Studio 2026) contains its
+enumerations as fixed-width (10 byte, NUL terminated) string tables, which makes them
+authoritative rather than inferred. Search the binary for `Off      ` to find them; the
+three tables follow each other:
+
+| index | filter type | LFO waveform | loop mode |
+|------:|-------------|--------------|-----------|
+| 0 | Off | Sine | Disabled |
+| 1 | Lowpass | Abs Sine | One-Shot |
+| 2 | Highpass | Triangle | Forward |
+| 3 | Bandpass | Square | Sustained |
+| 4 | Notch | Saw | Bounce |
+| 5 | Allpass | Inv Saw | |
+| 6 | Minisynth | Random | |
+| 7 | Vox | LP Random | |
+
+The filter list is confirmed a second time by the editor library (`libeditor.dylib`), which
+carries the plug-in's menus as Delphi VCL form data: the *FilterTypeMenu* holds one
+`TQuickMenuItem` per type whose `Tag` property is the enum value (`Off` has no Tag, i.e.
+0, then Lowpass = 1 … Vox = 7). That extraction is trustworthy because the *LoopTypeMenu*
+right next to it yields exactly the loop values which the real files prove
+(Disabled = 0, Forward = 2).
+
+The loop mode table confirms the decoding of the loop mode field: the 0 and 2 of the
+specimens are *Disabled* and *Forward*, and it adds *One-Shot* (plays to the end and
+ignores a note-off), *Sustained* (loop while the key is held, then play the remainder =
+the model's loop-until-release) and *Bounce* (= alternating/ping-pong). All five are
+converted in both directions.
+
+A fourth table right after them lists the 47 modulation targets, which doubles as the
+names of the automatable parameters:
+
+```
+ 0 Voice Pitch      12 Amp Env Att      24 Delay Send
+ 1 Voice Gain       13 Amp Env Dec      25 Chorus Send
+ 2 Voice Pan        14 Amp Env Sus      26 Reverb Send
+ 3 Sample Start     15 Amp Env Rel      27 Dry Amount
+ 4 Loop Start       16 Ring Mod Rate    28 Ts. Time
+ 5 Loop End         17 Ring Mod Mix     29 Ts. Grain
+ 6 Fl1 Cutoff       18 Decimator Stp    30 Ts. Smooth
+ 7 Fl1 Resonance    19 Decimator Mix    31-46 Mod Amt P1-1 .. P4-4
+ 8 Fl1 Shape        20 Reducer Bits
+ 9 Fl2 Cutoff       21 Reducer Mix
+10 Fl2 Resonance    22 Phaser Freq
+11 Fl2 Shape        23 Phaser Mix
+```
+
+This confirms the structure the manual describes - two filters with cutoff/resonance/shape
+per zone, an ADSR amplitude envelope, and a 4x4 modulation matrix - and matches the block
+inventory below (two 0x01FB filter blocks, the 0x01FD envelope, sixteen 0x0204 matrix
+slots).
+
 ## Parameter block hypotheses (not wired, single tweaked specimen)
 
 The DirectWave manual gives the structure that matches the remaining blocks: two filters
 per zone, two LFOs and a 4x4 modulation matrix.
 
-* 0x01FB (twice, 20 bytes) = **Filter 1 / Filter 2**: 5 floats. The 'Electric' program
-  changes filter 1 from the default `0, 0.4724, 0.5, 0, 0` to `0, 0.405, 0.0, 0, 0`
-  (frequency and emphasis knobs), but **the type field is 0 (Off) in every available
-  specimen**, so neither the position of the type field nor the enum order
-  (Off/Lowpass/Highpass/Bandpass/Notch/Allpass/MiniSynth/Vox) can be verified — the
-  filter is therefore not converted yet.
+* 0x01FB (twice, 20 bytes) = **Filter 1 / Filter 2**: 5 floats, which matches the
+  cutoff/resonance/shape parameter triple of the target table plus a type and one more
+  field. The 'Electric' program changes filter 1 from the default `0, 0.4724, 0.5, 0, 0`
+  to `0, 0.405, 0.0, 0, 0` (plausibly cutoff and resonance). The enum is now known from
+  the binary (0 = Off, 1 = Lowpass, …), but **field 0 is 0.0 in every available specimen
+  and so are fields 3 and 4**, so which of them holds the type - and whether it is stored
+  as a float or an integer - cannot be decided from the specimens. Writing a guess into
+  the wrong field would put a value into a field where only 0.0 was ever observed, which
+  is exactly what crashed FL Studio twice (see below), therefore **the filter is not
+  written**. A single specimen with an engaged filter would settle it.
 * 0x0204 (16 of them, 8 bytes) = **the 4x4 modulation matrix**: `u16 source, u16 target,
   f32 amount`. Default routings in all factory programs: `(2,2,+1.0)`, `(3,34,+0.75)`,
   `(12,1,+0.5)`; 'Electric' adds `(11,3,0.86)`, `(2,7,1.0)`, `(1,7,0.865)`. The
@@ -234,6 +292,23 @@ per zone, two LFOs and a 4x4 modulation matrix.
 * 0x0202 (twice, 16 bytes) and 0x0203 (twice, 20 bytes) = **LFO 1 / LFO 2** parameter
   candidates ('Electric' raises 0x0203#1 field 1 from 0.1 to 0.355 — plausibly an LFO
   rate for its tremolo, routed via its extra matrix slots).
+
+## Two crashes, one lesson
+
+Both crashes seen while developing this support came from writing a value into a field
+where the real files only ever show a different value population:
+
+* The sample count at preamble 0x4A kept the template's value instead of the real number
+  of containers - DirectWave trusts the count and reads past the end of the container
+  list, which crashes the plug-in loader with an access violation.
+* The field at offset 12 of the audio format block was written as 2 (bytes per frame),
+  while real files hold powers of two from 4 to 128 (the DirectWave zone list shows this
+  field in its 'Ticks' column). The loader accepted it, but the editor crashed when it
+  drew the zone.
+
+Therefore: **never write a value outside the population observed in real files** unless
+the meaning is confirmed from a table inside the plug-in binary (as the loop modes above
+are).
 
 ## Not yet decoded
 

@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
@@ -265,14 +266,19 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
         {
-            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE, 0);
+            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE, zone.isOneShot () ? DirectWaveTag.LOOP_MODE_ONE_SHOT : DirectWaveTag.LOOP_MODE_DISABLED);
             DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_START, 0);
             DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_END, 0);
         }
         else
         {
             final ISampleLoop loop = loops.get (0);
-            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE, DirectWaveTag.LOOP_MODE_ON);
+            final int loopMode;
+            if (loop.getType () == LoopType.ALTERNATING)
+                loopMode = DirectWaveTag.LOOP_MODE_BOUNCE;
+            else
+                loopMode = loop.isLoopUntilRelease () ? DirectWaveTag.LOOP_MODE_SUSTAINED : DirectWaveTag.LOOP_MODE_FORWARD;
+            DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE, loopMode);
             DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_START, Math.clamp (loop.getStart (), 0, frames));
             DirectWaveChunk.writeIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_END, Math.clamp (loop.getEnd (), 0, frames));
         }

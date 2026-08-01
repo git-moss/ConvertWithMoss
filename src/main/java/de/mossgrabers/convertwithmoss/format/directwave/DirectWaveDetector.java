@@ -228,15 +228,28 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
-        // The loop is stored in the audio format block
-        if (audioFormat != null && audioFormat.length > DirectWaveTag.FORMAT_LOOP_END + 3 && DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE) != 0)
-        {
-            final ISampleLoop loop = new DefaultSampleLoop ();
-            loop.setType (LoopType.FORWARDS);
-            loop.setStart (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_START));
-            loop.setEnd (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_END));
-            zone.getLoops ().add (loop);
-        }
+        // The loop and the one-shot play-back are stored in the audio format block
+        if (audioFormat != null && audioFormat.length > DirectWaveTag.FORMAT_LOOP_END + 3)
+            switch (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE))
+            {
+                case DirectWaveTag.LOOP_MODE_ONE_SHOT:
+                    zone.setOneShot (true);
+                    break;
+
+                case DirectWaveTag.LOOP_MODE_FORWARD, DirectWaveTag.LOOP_MODE_SUSTAINED, DirectWaveTag.LOOP_MODE_BOUNCE:
+                    final int loopMode = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE);
+                    final ISampleLoop loop = new DefaultSampleLoop ();
+                    loop.setType (loopMode == DirectWaveTag.LOOP_MODE_BOUNCE ? LoopType.ALTERNATING : LoopType.FORWARDS);
+                    loop.setLoopUntilRelease (loopMode == DirectWaveTag.LOOP_MODE_SUSTAINED);
+                    loop.setStart (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_START));
+                    loop.setEnd (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_END));
+                    zone.getLoops ().add (loop);
+                    break;
+
+                default:
+                    // No loop
+                    break;
+            }
 
         applyAmplitudeEnvelope (zone, ampEnvelope, version);
 

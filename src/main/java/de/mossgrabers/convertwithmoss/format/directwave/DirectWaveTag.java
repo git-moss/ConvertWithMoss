@@ -124,8 +124,19 @@ public class DirectWaveTag
     public static final int      FORMAT_LOOP_START      = 24;
     /** The offset of the loop end (in frames) in the audio format block. */
     public static final int      FORMAT_LOOP_END        = 28;
-    /** The loop mode value of a looped sample. */
-    public static final int      LOOP_MODE_ON           = 2;
+    /** The loop mode value of a sample which is not looped. */
+    public static final int      LOOP_MODE_DISABLED     = 0;
+    /** The loop mode value which plays the sample to its end and ignores a note-off. */
+    public static final int      LOOP_MODE_ONE_SHOT     = 1;
+    /** The loop mode value of a continuous forward loop. */
+    public static final int      LOOP_MODE_FORWARD      = 2;
+    /**
+     * The loop mode value of a loop which runs while the key is held and then plays the remainder
+     * of the sample.
+     */
+    public static final int      LOOP_MODE_SUSTAINED    = 3;
+    /** The loop mode value of an alternating (ping-pong) loop. */
+    public static final int      LOOP_MODE_BOUNCE       = 4;
 
     /** The offset of the sample count in the preamble. */
     public static final int      PREAMBLE_COUNT_OFFSET  = 0x4A;
