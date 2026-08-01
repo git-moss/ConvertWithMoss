@@ -9,10 +9,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -20,10 +23,12 @@ import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -45,6 +50,15 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
     {
         16
     }, -1, false);
+
+    private static final Map<FilterType, Integer> FILTER_TYPES     = new EnumMap<> (FilterType.class);
+    static
+    {
+        FILTER_TYPES.put (FilterType.LOW_PASS, Integer.valueOf (DirectWaveTag.FILTER_TYPE_LOW_PASS));
+        FILTER_TYPES.put (FilterType.HIGH_PASS, Integer.valueOf (DirectWaveTag.FILTER_TYPE_HIGH_PASS));
+        FILTER_TYPES.put (FilterType.BAND_PASS, Integer.valueOf (DirectWaveTag.FILTER_TYPE_BAND_PASS));
+        FILTER_TYPES.put (FilterType.BAND_REJECTION, Integer.valueOf (DirectWaveTag.FILTER_TYPE_NOTCH));
+    }
 
 
     /**
@@ -165,6 +179,7 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final String sampleName = createSafeFilename (zone.getName ());
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        final AtomicBoolean isFirstFilter = new AtomicBoolean (true);
         for (final DirectWaveChunk chunk: DirectWaveChunk.parseAll (DirectWaveTag.TEMPLATE_CONTAINER, 0))
             switch (chunk.getTag ())
             {
@@ -198,6 +213,11 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
                 case DirectWaveTag.TAG_AMP_ENVELOPE:
                     DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_AMP_ENVELOPE, createAmplitudeEnvelope (chunk.getPayload (), zone));
+                    break;
+
+                case DirectWaveTag.TAG_FILTER:
+                    // Only the first of the two filter blocks is filled
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_FILTER, isFirstFilter.getAndSet (false) ? createFilter (chunk.getPayload (), zone) : chunk.getPayload ());
                     break;
 
                 default:
@@ -235,6 +255,47 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
     {
         if (time >= 0)
             DirectWaveChunk.writeFloatLE (payload, offset, (float) Math.clamp (Math.cbrt (time / DirectWaveTag.ENVELOPE_MAX_TIME), 0, 1));
+    }
+
+
+    /**
+     * Fill the filter block from the filter of the zone. The type is a 32-bit integer, the cutoff
+     * and the resonance are knob positions.
+     *
+     * @param template The template payload of the filter block
+     * @param zone The sample zone
+     * @return The filled block payload
+     */
+    private static byte [] createFilter (final byte [] template, final ISampleZone zone)
+    {
+        final Optional<IFilter> filterOpt = zone.getFilter ();
+        if (filterOpt.isEmpty ())
+            return template;
+        final IFilter filter = filterOpt.get ();
+        final Integer type = FILTER_TYPES.get (filter.getType ());
+        if (type == null)
+            return template;
+
+        final byte [] payload = template.clone ();
+        DirectWaveChunk.writeIntLE (payload, DirectWaveTag.FILTER_TYPE, type.intValue ());
+        DirectWaveChunk.writeFloatLE (payload, DirectWaveTag.FILTER_CUTOFF, frequencyToKnob (filter.getCutoff ()));
+        DirectWaveChunk.writeFloatLE (payload, DirectWaveTag.FILTER_RESONANCE, (float) Math.clamp (filter.getResonance () / IFilter.MAX_RESONANCE, 0, 1));
+        return payload;
+    }
+
+
+    /**
+     * Convert a frequency into a cutoff knob position, see
+     * {@link DirectWaveTag#FILTER_MIN_FREQUENCY}.
+     *
+     * @param frequency The frequency in Hertz
+     * @return The knob position (0-1)
+     */
+    private static float frequencyToKnob (final double frequency)
+    {
+        final double range = IFilter.MAX_FREQUENCY / DirectWaveTag.FILTER_MIN_FREQUENCY;
+        final double position = Math.log (Math.max (DirectWaveTag.FILTER_MIN_FREQUENCY, frequency) / DirectWaveTag.FILTER_MIN_FREQUENCY) / Math.log (range);
+        return (float) Math.clamp (position, 0, 1);
     }
 
 

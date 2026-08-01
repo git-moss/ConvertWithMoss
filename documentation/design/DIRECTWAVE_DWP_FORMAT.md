@@ -93,7 +93,7 @@ The payload is a nested block stream with the same envelope. Blocks in order:
 | 0x01F8 | 8 | `f32 0.5, u8 0, u8 0, u8 100, u8 0` (identical in all seven specimens) |
 | 0x01F9 | 14 | opaque parameters (zeroed in the 0x26 specimen; `0, 0.5, 0.5, 1.0` floats in the factory files) |
 | 0x01FA | 48 | opaque parameters (factory: `0.5, 0.5, 0.5, 1.0` floats then zeros; the 0x26 specimen instead holds zeros, 1.0 at +12 and what looks like uninitialized heap noise) |
-| 0x01FB | 20 | opaque, varies per program (twice) |
+| 0x01FB | 20 | **filter 1 / filter 2** (twice), see below |
 | 0x01FC | 2 | zeroed |
 | 0x01FD | 16 | **the amplitude envelope**: 4 floats attack, decay, sustain, release (see below) |
 | 0x01FE-0x0201 | 9 | opaque parameters (one each) |
@@ -270,21 +270,33 @@ per zone, an ADSR amplitude envelope, and a 4x4 modulation matrix - and matches 
 inventory below (two 0x01FB filter blocks, the 0x01FD envelope, sixteen 0x0204 matrix
 slots).
 
-## Parameter block hypotheses (not wired, single tweaked specimen)
+## Filter blocks (0x01FB, twice - filter 1 and filter 2)
 
-The DirectWave manual gives the structure that matches the remaining blocks: two filters
-per zone, two LFOs and a 4x4 modulation matrix.
+```
+offset 0: u32 type   (the filter type enum above - an INTEGER, not a float)
+offset 4: f32 cutoff (knob position 0-1)
+offset 8: f32 resonance (knob position 0-1)
+offset 12: f32 unknown (0.0 in all specimens; the 'Shape' of the parameter table?)
+offset 16: f32 unknown (0.0 in all specimens)
+```
 
-* 0x01FB (twice, 20 bytes) = **Filter 1 / Filter 2**: 5 floats, which matches the
-  cutoff/resonance/shape parameter triple of the target table plus a type and one more
-  field. The 'Electric' program changes filter 1 from the default `0, 0.4724, 0.5, 0, 0`
-  to `0, 0.405, 0.0, 0, 0` (plausibly cutoff and resonance). The enum is now known from
-  the binary (0 = Off, 1 = Lowpass, …), but **field 0 is 0.0 in every available specimen
-  and so are fields 3 and 4**, so which of them holds the type - and whether it is stored
-  as a float or an integer - cannot be decided from the specimens. Writing a guess into
-  the wrong field would put a value into a field where only 0.0 was ever observed, which
-  is exactly what crashed FL Studio twice (see below), therefore **the filter is not
-  written**. A single specimen with an engaged filter would settle it.
+Every specimen has both filters Off, so the layout was settled by experiment: three probe
+programs were written which put a Lowpass into the candidate fields, and only the variant
+with the **type as a 32-bit integer at offset 0 combined with a low cutoff at offset 4**
+silenced the zone (a low-pass at a near-minimum cutoff mutes a 220 Hz saw wave), while the
+control zone in the same program stayed audible. The variant which put the type into the
+2-byte block 0x01FC changed nothing.
+
+The cutoff knob is mapped exponentially from 20 Hz to 20 kHz. That law is consistent with
+the probe (a knob at 0.05 is ca. 28 Hz, which mutes the saw) but it is **not calibrated
+against the frequency display of DirectWave** - a specimen or a reading of the knob hint
+would refine it. Only the first filter is converted since the model has one filter per
+zone; the second block is left at its template default (Off).
+
+## Parameter block hypotheses (single tweaked specimen)
+
+The DirectWave manual gives the structure that matches the remaining blocks: two LFOs and
+a 4x4 modulation matrix.
 * 0x0204 (16 of them, 8 bytes) = **the 4x4 modulation matrix**: `u16 source, u16 target,
   f32 amount`. Default routings in all factory programs: `(2,2,+1.0)`, `(3,34,+0.75)`,
   `(12,1,+0.5)`; 'Electric' adds `(11,3,0.86)`, `(2,7,1.0)`, `(1,7,0.865)`. The
@@ -312,8 +324,9 @@ are).
 
 ## Not yet decoded
 
-* The filter type enum, the LFO layout and the modulation matrix enums (see the
-  hypotheses above) — a specimen with an engaged filter would settle the filter.
+* The exact frequency law of the filter cutoff knob and the time law of the envelope
+  knobs (both are currently sensible approximations, see above).
+* The LFO block layout and the source/target enums of the modulation matrix.
 * Trigger groups (round-robin/random cycles) and their location in the opaque bytes.
 * The tag and placement of the embedded audio block of monolithic files (see above) and
   the structure of .dwb banks — no specimens. The file-name fall-back of the detector

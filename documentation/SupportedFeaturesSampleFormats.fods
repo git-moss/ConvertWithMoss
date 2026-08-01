@@ -4811,12 +4811,12 @@
      <table:table-cell table:style-name="ce10" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Zone panning (float, 0.5 = center)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Round-robin / random, only via the file-name fall-back</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
-     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce56" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>One-Shot loop mode</text:p></table:table-cell>
      <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce4"/>
      <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Forward (audio format block)</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce56" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Sustained loop mode</text:p></table:table-cell>
      <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Loop start (audio format block)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Loop end (audio format block)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
@@ -4835,11 +4835,11 @@
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
      <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
      <table:table-cell table:style-name="ce21"/>
-     <table:table-cell table:style-name="ce14"/>
-     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO filter blocks not decoded</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17"/>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Lowpass / Highpass / Bandpass / Notch</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
-     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
-     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce17" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Cutoff knob (law approximated)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Resonance knob</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
@@ -4907,7 +4907,7 @@
      <table:covered-table-cell/>
      <table:covered-table-cell/>
      <table:table-cell table:style-name="ce21"/>
-     <table:table-cell table:style-name="ce14"/>
+     <table:table-cell table:style-name="ce17"/>
      <table:covered-table-cell/>
      <table:covered-table-cell/>
      <table:covered-table-cell/>

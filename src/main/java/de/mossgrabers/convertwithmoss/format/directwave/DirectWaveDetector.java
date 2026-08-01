@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -19,13 +20,16 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -46,6 +50,16 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    private static final Map<Integer, FilterType> FILTER_TYPES = new HashMap<> ();
+    static
+    {
+        FILTER_TYPES.put (Integer.valueOf (DirectWaveTag.FILTER_TYPE_LOW_PASS), FilterType.LOW_PASS);
+        FILTER_TYPES.put (Integer.valueOf (DirectWaveTag.FILTER_TYPE_HIGH_PASS), FilterType.HIGH_PASS);
+        FILTER_TYPES.put (Integer.valueOf (DirectWaveTag.FILTER_TYPE_BAND_PASS), FilterType.BAND_PASS);
+        FILTER_TYPES.put (Integer.valueOf (DirectWaveTag.FILTER_TYPE_NOTCH), FilterType.BAND_REJECTION);
+    }
+
+
     /**
      * Constructor.
      *
@@ -155,6 +169,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         byte [] mapping = null;
         byte [] audioFormat = null;
         byte [] ampEnvelope = null;
+        byte [] filter = null;
         String sampleName = null;
         String samplePath = null;
         final List<byte []> unknownChunks = new ArrayList<> ();
@@ -176,7 +191,13 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
                 case DirectWaveTag.TAG_AMP_ENVELOPE:
                     ampEnvelope = chunk.getPayload ();
                     break;
-                case DirectWaveTag.TAG_BLOCK_01F8, DirectWaveTag.TAG_BLOCK_01F9, DirectWaveTag.TAG_BLOCK_01FA, DirectWaveTag.TAG_BLOCK_01FB, DirectWaveTag.TAG_BLOCK_01FC, DirectWaveTag.TAG_BLOCK_01FE, DirectWaveTag.TAG_BLOCK_01FF, DirectWaveTag.TAG_BLOCK_0200, DirectWaveTag.TAG_BLOCK_0201, DirectWaveTag.TAG_BLOCK_0202, DirectWaveTag.TAG_BLOCK_0203, DirectWaveTag.TAG_BLOCK_0204, DirectWaveTag.TAG_SAMPLE_TERMINATOR:
+                case DirectWaveTag.TAG_FILTER:
+                    // Only the first of the two filter blocks is converted
+                    if (filter == null)
+                        filter = chunk.getPayload ();
+                    break;
+
+                case DirectWaveTag.TAG_BLOCK_01F8, DirectWaveTag.TAG_BLOCK_01F9, DirectWaveTag.TAG_BLOCK_01FA, DirectWaveTag.TAG_BLOCK_01FC, DirectWaveTag.TAG_BLOCK_01FE, DirectWaveTag.TAG_BLOCK_01FF, DirectWaveTag.TAG_BLOCK_0200, DirectWaveTag.TAG_BLOCK_0201, DirectWaveTag.TAG_BLOCK_0202, DirectWaveTag.TAG_BLOCK_0203, DirectWaveTag.TAG_BLOCK_0204, DirectWaveTag.TAG_SAMPLE_TERMINATOR:
                     // Known parameter blocks which contain no information required for the
                     // conversion
                     break;
@@ -252,6 +273,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             }
 
         applyAmplitudeEnvelope (zone, ampEnvelope, version);
+        applyFilter (zone, filter);
 
         // The root key is taken from the mapping above; look for loops in the sample chunks only
         // when the program has none
@@ -299,6 +321,42 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
     private static double knobToTime (final float position)
     {
         return DirectWaveTag.ENVELOPE_MAX_TIME * position * position * position;
+    }
+
+
+    /**
+     * Apply the filter of the zone. The filter block starts with the type as a 32-bit integer
+     * followed by the cutoff and the resonance as knob positions.
+     *
+     * @param zone The zone
+     * @param filter The payload of the first filter block
+     */
+    private static void applyFilter (final ISampleZone zone, final byte [] filter)
+    {
+        if (filter == null || filter.length < 12)
+            return;
+
+        final FilterType type = FILTER_TYPES.get (Integer.valueOf (DirectWaveChunk.readIntLE (filter, DirectWaveTag.FILTER_TYPE)));
+        if (type == null)
+            return;
+
+        final double cutoff = knobToFrequency (DirectWaveChunk.readFloatLE (filter, DirectWaveTag.FILTER_CUTOFF));
+        final double resonance = Math.clamp (DirectWaveChunk.readFloatLE (filter, DirectWaveTag.FILTER_RESONANCE), 0, 1) * IFilter.MAX_RESONANCE;
+        zone.setFilter (new DefaultFilter (type, 4, cutoff, resonance));
+    }
+
+
+    /**
+     * Convert a cutoff knob position into a frequency. The knob is mapped exponentially from
+     * {@link DirectWaveTag#FILTER_MIN_FREQUENCY} up to {@link IFilter#MAX_FREQUENCY}.
+     *
+     * @param position The knob position (0-1)
+     * @return The frequency in Hertz
+     */
+    private static double knobToFrequency (final float position)
+    {
+        final double range = IFilter.MAX_FREQUENCY / DirectWaveTag.FILTER_MIN_FREQUENCY;
+        return Math.clamp (DirectWaveTag.FILTER_MIN_FREQUENCY * Math.pow (range, Math.clamp (position, 0, 1)), DirectWaveTag.FILTER_MIN_FREQUENCY, IFilter.MAX_FREQUENCY);
     }
 
 

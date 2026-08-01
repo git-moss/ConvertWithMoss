@@ -71,8 +71,34 @@ public class DirectWaveTag
     public static final int      TAG_BLOCK_01F9         = 0x01F9;
     /** The tag of the 48 byte parameter block inside of a sample container. */
     public static final int      TAG_BLOCK_01FA         = 0x01FA;
-    /** The tag of the two 20 byte zeroed blocks inside of a sample container. */
-    public static final int      TAG_BLOCK_01FB         = 0x01FB;
+    /** The tag of the two filter blocks (filter 1 and filter 2) inside of a sample container. */
+    public static final int      TAG_FILTER             = 0x01FB;
+
+    /** The offset of the filter type (a 32-bit integer!) in a filter block. */
+    public static final int      FILTER_TYPE            = 0;
+    /** The offset of the filter cutoff (a float knob position) in a filter block. */
+    public static final int      FILTER_CUTOFF          = 4;
+    /** The offset of the filter resonance (a float knob position) in a filter block. */
+    public static final int      FILTER_RESONANCE       = 8;
+
+    /** The filter type value of a disabled filter. */
+    public static final int      FILTER_TYPE_OFF        = 0;
+    /** The filter type value of a low-pass filter. */
+    public static final int      FILTER_TYPE_LOW_PASS   = 1;
+    /** The filter type value of a high-pass filter. */
+    public static final int      FILTER_TYPE_HIGH_PASS  = 2;
+    /** The filter type value of a band-pass filter. */
+    public static final int      FILTER_TYPE_BAND_PASS  = 3;
+    /** The filter type value of a band-rejection (notch) filter. */
+    public static final int      FILTER_TYPE_NOTCH      = 4;
+
+    /**
+     * The lowest frequency of the filter cutoff knob. The knob is mapped exponentially from this
+     * frequency up to {@link de.mossgrabers.convertwithmoss.core.model.IFilter#MAX_FREQUENCY},
+     * which matches the observed behavior (a knob at 0.05 mutes a 220 Hz saw wave through a
+     * low-pass filter) but is not calibrated to the exact display values of DirectWave.
+     */
+    public static final double   FILTER_MIN_FREQUENCY   = 20.0;
     /** The tag of the 2 byte zeroed block inside of a sample container. */
     public static final int      TAG_BLOCK_01FC         = 0x01FC;
     /** The tag of the amplitude envelope block (4 floats: attack, decay, sustain, release). */
