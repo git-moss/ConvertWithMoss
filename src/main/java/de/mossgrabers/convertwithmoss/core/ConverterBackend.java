@@ -109,6 +109,8 @@ import de.mossgrabers.convertwithmoss.format.synthstrom.DelugeCreator;
 import de.mossgrabers.convertwithmoss.format.synthstrom.DelugeDetector;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.tal.TALSamplerDetector;
+import de.mossgrabers.convertwithmoss.format.teenage.opxy.OpXyCreator;
+import de.mossgrabers.convertwithmoss.format.teenage.opxy.OpXyDetector;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxCreator;
 import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxDetector;
 import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatCreator;
@@ -225,6 +227,7 @@ public class ConverterBackend
         this.detectors.add (new SynclavierRegenDetector (notifier));
         this.detectors.add (new SynclavierVDetector (notifier));
         this.detectors.add (new DelugeDetector (notifier));
+        this.detectors.add (new OpXyDetector (notifier));
         this.detectors.add (new TALSamplerDetector (notifier));
         this.detectors.add (new WaldorfQpatDetector (notifier));
         this.detectors.add (new YamahaYsfcDetector (notifier));
@@ -264,6 +267,7 @@ public class ConverterBackend
         this.creators.add (new SynclavierRegenCreator (notifier));
         this.creators.add (new SynclavierVCreator (notifier));
         this.creators.add (new DelugeCreator (notifier));
+        this.creators.add (new OpXyCreator (notifier));
         this.creators.add (new TALSamplerCreator (notifier));
         this.creators.add (new WaldorfQpatCreator (notifier));
         this.creators.add (new YamahaYsfcCreator (notifier));

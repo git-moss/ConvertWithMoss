@@ -5,6 +5,7 @@
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * Many thanks to David García Goñi for providing specifications of the E-mu formats and refined Kurzweil specifications!
 * Many thanks to Linus Wileryd for the improved icon set!
+* New: Added support for the Teenage Engineering OP-XY multi-sample preset format (reading and writing of the *.preset folders with their patch.json description file).
 * New: Added support for the Arturia Synclavier V format (reading and writing of SYNX preset and bank exports; partials which play a sound file become sample zones).
 * New: Added support for the E-mu Emulator III/IIIX/ESI bank format (E3B, E3X, ESI).
 * New: Added support for the E-mu Emulator IV bank format (E4B). Banks can also be read directly from CD-ROM and hard disk images of the EOS samplers (ISO, IMG, HDA), including via the ISO/IMG source format. New: Writing creates a bank as a ready-to-use CD-ROM image for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to load banks on units running EOS versions before 4.7. Written banks have not been tested on real hardware yet.

@@ -851,6 +851,14 @@ TAL-Sampler is an analog modeled synthesizer with a sampler engine as the sound 
 Choosing TAL Sampler as the destination format, creates a *talsmpl*
 file and stores all samples in a sub-folder by the same name. The samples of the source groups are distributed across the 4 layers of TAL Sampler in such a way that the key and velocity splits do not overlap. This is a workaround for the fact that TAL Sampler does not support overlapping samples. Since groups have only the name and trigger type as attributes, which are not supported in TAL Sampler anyway, this should work in most cases. If there are still overlapping samples a warning is displayed.
 
+## Teenage Engineering OP-XY
+
+The OP-XY is a portable sampler and sequencer from Teenage Engineering. Its multi-sample presets are open: a preset is a folder with the ending *.preset* which contains all samples as WAV files and a *patch.json* file with the mapping and the settings of the synthesizer engine.
+
+Reading a preset gives the key range, root key, tuning, gain, play range and loop of every region, plus the amplitude envelope and the pitch bend range which the device stores once for the whole preset.
+
+Writing creates such a folder, which only needs to be copied to the device. Note the limits of the format: it maps a preset only across the keyboard, so of several zones which cover the same keys only the one which plays at the highest velocity is kept, and the device plays at most 24 regions per preset. The regions are written as the device expects them, i.e. covering the keyboard without gaps: a region ends at its own upper key and starts one key above the previous one. Samples are written as 16 bit WAV files with at most 44.1 kHz.
+
 ## Waldorf Quantum MkI, MkII / Iridium / Iridium Core
 
 This family of Waldorf synthesizers supports the playback of multi-samples. One preset can contain 2 layers. A layer is a complete preset in itself and simply concatenates 2 single presets. Each preset can have up to 3 oscillators of which each oscillator can contain its own multi-sample.
