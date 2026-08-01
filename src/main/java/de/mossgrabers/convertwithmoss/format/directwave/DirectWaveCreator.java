@@ -175,6 +175,11 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     final int velocityLow = Math.clamp (limitToDefault (zone.getVelocityLow (), 1), 1, 127);
                     mapping[DirectWaveTag.MAPPING_LOW_VELOCITY] = (byte) (velocityLow <= 1 ? 0 : velocityLow);
                     mapping[DirectWaveTag.MAPPING_HIGH_VELOCITY] = (byte) Math.clamp (limitToDefault (zone.getVelocityHigh (), 127), 1, 127);
+                    // The gain float is a linear amplitude; values above 0 dB are clamped since
+                    // only values up to 1.0 were observed. This mutes the layers which E-mu
+                    // presets park at -96 dB.
+                    DirectWaveChunk.writeFloatLE (mapping, DirectWaveTag.MAPPING_GAIN, (float) Math.clamp (Math.pow (10, zone.getGain () / 20.0), 0, 1));
+                    DirectWaveChunk.writeFloatLE (mapping, DirectWaveTag.MAPPING_PANNING, (float) Math.clamp (zone.getPanning () / 2.0 + 0.5, 0, 1));
                     DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_ZONE_MAPPING, mapping);
                     break;
 

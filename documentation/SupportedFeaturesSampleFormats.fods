@@ -4807,8 +4807,8 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>TODO tuning field not decoded</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
-     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO zone gain float at offset 9, law unverified</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO pan float at offset 13, law unverified</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Zone gain (linear amplitude float)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce10" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Zone panning (float, 0.5 = center)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Round-robin / random, only via the file-name fall-back</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
      <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>

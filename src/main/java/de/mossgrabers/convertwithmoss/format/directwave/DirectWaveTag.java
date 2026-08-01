@@ -105,6 +105,10 @@ public class DirectWaveTag
     public static final int      MAPPING_LOW_VELOCITY   = 3;
     /** The offset of the high velocity in the zone mapping block. */
     public static final int      MAPPING_HIGH_VELOCITY  = 4;
+    /** The offset of the zone gain (a float, linear amplitude, 1.0 = 0 dB) in the mapping block. */
+    public static final int      MAPPING_GAIN           = 9;
+    /** The offset of the zone panning (a float, 0.5 = center) in the zone mapping block. */
+    public static final int      MAPPING_PANNING        = 13;
 
     /** The offset of the frame count in the audio format block. */
     public static final int      FORMAT_FRAME_COUNT     = 0;

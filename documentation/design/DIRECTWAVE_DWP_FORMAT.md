@@ -115,8 +115,8 @@ u8  highKey
 u8  lowVelocity      (0 in all specimens)
 u8  highVelocity     (127 in all specimens)
 u8  zero[4]
-f32 zone gain at offset 9  (1.0 in most zones; a factory zone holds 0.675)
-f32 0.5 at offset 13       (suspected pan, center)
+f32 zone gain at offset 9  (linear amplitude, 1.0 = 0 dB; a factory zone holds 0.675 = ca. -3.4 dB)
+f32 zone panning at offset 13 (0.5 = center)
 u8  flag at offset 17      (0x01 in the specimen, 0x00 in the factory files)
 u8  zero[4]
 u8  0x02 at offset 22

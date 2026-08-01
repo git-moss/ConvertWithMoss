@@ -215,6 +215,17 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             zone.setKeyHigh (Math.min (127, mapping[DirectWaveTag.MAPPING_HIGH_KEY] & 0xFF));
             zone.setVelocityLow (Math.clamp (mapping[DirectWaveTag.MAPPING_LOW_VELOCITY] & 0xFF, 1, 127));
             zone.setVelocityHigh (Math.clamp (mapping[DirectWaveTag.MAPPING_HIGH_VELOCITY] & 0xFF, 1, 127));
+
+            if (mapping.length > DirectWaveTag.MAPPING_PANNING + 3)
+            {
+                // The gain float is a linear amplitude (1.0 = 0 dB)
+                final float gain = DirectWaveChunk.readFloatLE (mapping, DirectWaveTag.MAPPING_GAIN);
+                if (gain >= 0 && Math.abs (gain - 1f) > 0.001)
+                    zone.setGain (Math.max (-96.0, 20.0 * Math.log10 (Math.max (0.0000158, gain))));
+                final float panning = DirectWaveChunk.readFloatLE (mapping, DirectWaveTag.MAPPING_PANNING);
+                if (Math.abs (panning - 0.5f) > 0.001)
+                    zone.setPanning (Math.clamp ((panning - 0.5) * 2.0, -1, 1));
+            }
         }
 
         // The loop is stored in the audio format block
