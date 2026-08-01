@@ -11,10 +11,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.zip.CRC32;
@@ -29,7 +31,6 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -39,11 +40,12 @@ import de.mossgrabers.tools.ui.Functions;
  * 'Export Preset'/'Export Bank' functions. Each sample zone becomes a partial whose carrier is set
  * to <i>Audition</i> mode (raw sound file playback); the samples are bundled in the archive and
  * referenced relative to the preset file. Since a Synclavier timbre has 12 partials, at most 12
- * zones can be stored.
+ * zones can be stored. Optionally, the samples are additionally written as plain WAV files in the
+ * layout of the Arturia sample pool, since the application's import does not fill its pool.
  *
  * @author Jürgen Moßgraber
  */
-public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
+public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
 {
     private static final String TAG_PARTIAL           = "Partial ";
     private static final String SYNX_ENDING           = "synx";
@@ -66,7 +68,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
      */
     public SynclavierVCreator (final INotifier notifier)
     {
-        super ("Arturia Synclavier V", "SynclavierV", notifier, EmptySettingsUI.INSTANCE);
+        super ("Arturia Synclavier V", "SynclavierV", notifier, new SynclavierVCreatorUI ());
     }
 
 
@@ -118,7 +120,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
             while (!usedPresetNames.add (presetName))
                 presetName = createSafeFilename (multisampleSource.getName ()) + " " + counter++;
 
-            this.storePreset (zipWriter, libraryFolder, safeLibraryName, presetName, multisampleSource);
+            this.storePreset (destinationFolder, zipWriter, libraryFolder, safeLibraryName, presetName, multisampleSource);
         }
         try (final FileOutputStream out = new FileOutputStream (synxFile))
         {
@@ -130,6 +132,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Stores one preset file and its samples in the ZIP output stream.
      *
+     * @param destinationFolder The output folder, used for the optional sample pool folder
      * @param zipWriter The ZIP output writer
      * @param libraryFolder The ZIP folder of the library including the trailing slash
      * @param libraryName The library name
@@ -137,7 +140,7 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
      * @param multisampleSource The preset content
      * @throws IOException Could not store the preset
      */
-    private void storePreset (final MinimalZipWriter zipWriter, final String libraryFolder, final String libraryName, final String presetName, final IMultisampleSource multisampleSource) throws IOException
+    private void storePreset (final File destinationFolder, final MinimalZipWriter zipWriter, final String libraryFolder, final String libraryName, final String presetName, final IMultisampleSource multisampleSource) throws IOException
     {
         final SynclavierVFile preset = SynclavierVFile.parse (getTemplate ());
 
@@ -199,6 +202,32 @@ public class SynclavierVCreator extends AbstractCreator<EmptySettingsUI>
         }
 
         zipWriter.addEntry (libraryFolder + presetName, preset.write ());
+
+        if (this.settingsConfiguration.isWriteSamplePool ())
+            this.writeSamplePoolFolder (destinationFolder, preset);
+    }
+
+
+    /**
+     * Writes the embedded samples of a preset additionally as plain WAV files, in the folder
+     * layout of the Arturia sample pool (<i>User/&lt;preset&gt;/&lt;sample&gt;.wav</i>). The
+     * import of Synclavier V does not copy the embedded samples into its sample pool, so a preset
+     * loaded from the browser database after the import session cannot resolve them; merging the
+     * written 'User' folder into the sample pool makes the imported presets permanent.
+     *
+     * @param destinationFolder The output folder
+     * @param preset The stored preset
+     * @throws IOException Could not write a sample file
+     */
+    private void writeSamplePoolFolder (final File destinationFolder, final SynclavierVFile preset) throws IOException
+    {
+        for (final Map.Entry<String, byte []> entry: preset.samples.entrySet ())
+        {
+            final File sampleFile = new File (destinationFolder, entry.getKey ());
+            safeCreateDirectory (sampleFile.getParentFile ());
+            this.notifier.log ("IDS_NOTIFY_STORING", sampleFile.getAbsolutePath ());
+            Files.write (sampleFile.toPath (), entry.getValue ());
+        }
     }
 
 
