@@ -320,7 +320,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
     private static double knobToTime (final float position)
     {
-        return DirectWaveTag.ENVELOPE_MAX_TIME * position * position * position;
+        return DirectWaveTag.ENVELOPE_MAX_TIME * Math.pow (position, DirectWaveTag.ENVELOPE_TIME_EXPONENT);
     }
 
 

@@ -254,7 +254,7 @@ public class DirectWaveCreator extends AbstractWavCreator<WavChunkSettingsUI>
     private static void writeEnvelopeTime (final byte [] payload, final int offset, final double time)
     {
         if (time >= 0)
-            DirectWaveChunk.writeFloatLE (payload, offset, (float) Math.clamp (Math.cbrt (time / DirectWaveTag.ENVELOPE_MAX_TIME), 0, 1));
+            DirectWaveChunk.writeFloatLE (payload, offset, (float) Math.clamp (Math.pow (time / DirectWaveTag.ENVELOPE_MAX_TIME, 1.0 / DirectWaveTag.ENVELOPE_TIME_EXPONENT), 0, 1));
     }
 
 

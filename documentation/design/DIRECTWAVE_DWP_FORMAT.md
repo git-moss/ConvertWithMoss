@@ -209,12 +209,26 @@ differential analysis of the factory programs:
 The defaults differ per version: 0x25 = `0, 0.5, 1.0, 0.25`, 0x26 = `0, 1.0, 1.0, 0.18`.
 The detector skips the envelope when the block equals the version defaults.
 
-**The knob-to-time law is provisional**: the time knobs are mapped as
-`seconds = 10 * position^3` (the documented top of DirectWave time knobs is 10 seconds,
-"down is fast, up is slow" suggests a strong taper). It could not be measured without a
-saving-capable DirectWave. The sustain is a level and therefore exact. To calibrate the
-law: load a factory program in DirectWave, hover/turn the AMP knobs and note the displayed
-seconds for a few knob positions (e.g. the default D=50% and R=25% and Electric's D=81%).
+The knob-to-time law was measured the same way as the filter cutoff: a program was written
+whose six zones differ only in the decay knob (0.20 … 0.95, sustain 0, so the note dies
+while the key is held) next to five reference zones whose fade-out is baked into their
+audio at exactly 0.5, 1, 2, 4 and 8 seconds. A recording of all of them gives
+
+| decay knob | 0.20 | 0.35 | 0.50 | 0.65 | 0.80 | 0.95 |
+|---|---|---|---|---|---|---|
+| measured | 0.016 s | 0.14 s | 0.57 s | 1.65 s | 3.73 s | 7.49 s |
+
+(measured to -40 dB and corrected by the 3 % which the reference zones show that metric to
+be short - the 0.5 s reference measures 0.49 s and the 1 s reference 0.96 s). A
+least-squares fit gives
+
+```
+seconds = 9.07 * position ^ 3.96
+```
+
+which reproduces every point within 3 %; the nearby round law `9 * position^4` is within
+6.5 %. The previously assumed `10 * position^3` was wrong by up to a factor of three at
+short times. The sustain is a level and therefore exact.
 
 ## Enumerations from the plugin binary
 
@@ -349,17 +363,15 @@ silent bottom, as the -96 dB parked layers of converted E-mu presets assume), `%
 12 of the audio format block (which the zone list shows in its *Ticks* column), and
 `%.1f Hz` / `%.2f kHz` / `%.2f sec` / `%.2f ms` / `%d Cents` for the remaining units.
 
-The cutoff law was therefore measured by listening instead (see the filter section above);
-the same method - a program whose zones differ in one knob only, played from the on-screen
-keyboard of the plug-in - can calibrate the envelope times as well. The plug-in wrapper's
+Both the cutoff and the envelope time law were therefore measured by listening instead
+(see the filter and envelope sections above): a program whose zones differ in one knob
+only, played from the on-screen keyboard of the plug-in, with reference zones whose
+behavior is baked into their audio to calibrate the measurement. The plug-in wrapper's
 own parameter list is *not* a way to read the values: it shows the channel settings of FL
 Studio, not the 47 DirectWave parameters.
 
 ## Not yet decoded
 
-* The time law of the envelope knobs. It is currently a cubic taper up to 10 seconds,
-  which produces musical values for the factory programs but is not measured; the cutoff
-  law above shows how to measure it.
 * The LFO block layout and the source/target enums of the modulation matrix.
 * Trigger groups (round-robin/random cycles) and their location in the opaque bytes.
 * The tag and placement of the embedded audio block of monolithic files (see above) and

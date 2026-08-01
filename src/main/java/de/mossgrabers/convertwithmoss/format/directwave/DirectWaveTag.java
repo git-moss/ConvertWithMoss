@@ -169,12 +169,14 @@ public class DirectWaveTag
     public static final int      PREAMBLE_COUNT_OFFSET  = 0x4A;
 
     /**
-     * The maximum envelope time in seconds for an envelope knob at its maximum. The knob positions
-     * are mapped with a cubic taper: time = maximum * position^3. This law is provisional (the
-     * DirectWave time hints could not be measured yet); the documented top of the DirectWave time
-     * knobs is 10 seconds.
+     * The envelope time in seconds of an envelope knob at its maximum. The knob positions are
+     * mapped with the taper {@link #ENVELOPE_TIME_EXPONENT}. Both values were measured by playing
+     * a program whose zones differ only in the decay knob against reference zones whose fade-out
+     * is part of their audio; they reproduce the six measured decay times within 3 %.
      */
-    public static final double   ENVELOPE_MAX_TIME      = 10.0;
+    public static final double   ENVELOPE_MAX_TIME      = 9.07;
+    /** The exponent of the envelope knob taper: time = maximum * position^exponent. */
+    public static final double   ENVELOPE_TIME_EXPONENT = 3.96;
 
     /** The default amplitude envelope knob positions of version 0x25 files. */
     public static final float [] ENVELOPE_DEFAULTS_V25  =
