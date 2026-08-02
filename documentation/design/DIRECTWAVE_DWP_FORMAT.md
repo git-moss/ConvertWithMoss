@@ -419,9 +419,21 @@ which the pitch tracker can no longer follow; they are not part of the fit.
 
 **A gain modulation is linear**, not in decibels: the strength is the modulation index of
 the linear gain, so a strength of 1 lets the gain reach zero. Measured as the index of a
-sinusoid fitted to the envelope: strength 0.512 gives 0.517, strength 1 gives 0.95 (the
-trough is digital silence there, which the fit cannot reach), and the two small strengths
-disappear into the noise floor of the measurement, as the law predicts.
+sinusoid fitted to the recorded envelope:
+
+| strength | 0.008 | 0.064 | 0.125 | 0.216 | 0.343 | 0.512 | 0.729 | 1.0 |
+|---|---|---|---|---|---|---|---|---|
+| measured index | 0.026 | 0.065 | 0.120 | 0.229 | 0.347 | 0.533 | 0.746 | 0.926 |
+
+The mean absolute error is 0.019 and the only real deviation is at the full strength, where
+the trough of the modulation is digital silence which the fit cannot reach.
+
+**Both laws were confirmed through the plug-in itself**: a converted program with a 5 Hz
+vibrato of 100 cent and a 4 Hz tremolo of 12 dB plays back at 4.99 Hz and 93.9 cent against
+the 5.00 Hz and 94.4 cent of a reference rendered from the written program, and its
+modulation index measures 0.5996 against the 0.6063 of the reference. Measure the depth by
+fitting a sinusoid to the envelope, not as its peak-to-peak swing - the release tail of a
+played note inflates the latter by several decibels.
 
 Both directions convert the two zone LFOs: LFO 1 to the pitch (vibrato) and LFO 2 to the
 gain (tremolo). A volume depth in decibels maps to the modulation index the same way the
