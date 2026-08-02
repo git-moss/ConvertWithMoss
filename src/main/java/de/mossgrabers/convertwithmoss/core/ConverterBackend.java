@@ -46,6 +46,8 @@ import de.mossgrabers.convertwithmoss.format.bliss.BlissDetector;
 import de.mossgrabers.convertwithmoss.format.cmi3.FairlightCmi3Detector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
+import de.mossgrabers.convertwithmoss.format.directwave.DirectWaveCreator;
+import de.mossgrabers.convertwithmoss.format.directwave.DirectWaveDetector;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExCreator;
 import de.mossgrabers.convertwithmoss.format.disting.DistingExDetector;
 import de.mossgrabers.convertwithmoss.format.dls.DlsDetector;
@@ -202,6 +204,7 @@ public class ConverterBackend
         this.detectors.add (new EnsoniqEpsAsrDetector (notifier));
         this.detectors.add (new MirageDetector (notifier));
         this.detectors.add (new FairlightCmi3Detector (notifier));
+        this.detectors.add (new DirectWaveDetector (notifier));
         this.detectors.add (new IsoDetector (notifier));
         this.detectors.add (new KMPDetector (notifier));
         this.detectors.add (new KorgmultisampleDetector (notifier));
@@ -244,6 +247,7 @@ public class ConverterBackend
         this.creators.add (new EmulatorXCreator (notifier));
         this.creators.add (new TonverkMultiCreator (notifier));
         this.creators.add (new TonverkPresetCreator (notifier));
+        this.creators.add (new DirectWaveCreator (notifier));
         this.creators.add (new KMPCreator (notifier));
         this.creators.add (new KorgmultisampleCreator (notifier));
         this.creators.add (new KurzweilCreator (notifier));
