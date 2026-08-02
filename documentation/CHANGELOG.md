@@ -2,6 +2,8 @@
 
 ## 20.1.0 (work-in-progress)
 
+* Ableton
+  * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
 * NI Kontakt
   * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
 
@@ -167,7 +169,6 @@
   * Fixed: The choke group attribute of an unused template slot was written as "okegrp" instead of "chokegrp".
   * Fixed: The MIDI channel of a performance was written one channel too high and MIDI channel 16 was turned into "Off". The value is the MIDI channel 1-16 (where channel 1 doubles as the OMNI mode) and not an additionally offset one; OMNI is now written as channel 1 instead of switching MIDI input off.
 * Ableton
-  * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
   * Fixed: The warning that the round-robin configuration could not be translated was logged when it could be translated and not when it could not. The written file is not affected.
   * Fixed: No preset was written at all (the conversion failed with a "sample file not found" error) when a zone name contained one of the characters & . ' : / \ * ? " < > | - the sample file is written with those characters replaced by an underscore, but the preset looked it up and referenced it under the unchanged name.
   * Fixed: The upper velocity crossfade was calculated from the lower velocity crossfade value.
