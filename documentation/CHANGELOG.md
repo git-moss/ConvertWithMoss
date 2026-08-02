@@ -6,6 +6,8 @@
   * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
 * NI Kontakt
   * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
+* WAV
+  * New: WAV files which contain a complete Ogg stream instead of PCM data (marked with one of the Ogg Vorbis WAVE format codes, e.g. the samples of the legacy DirectWave packs of FL Studio) are read by de-compressing the embedded stream. They were rejected as an unsupported source format before.
 
 ## 20.0.0
 
@@ -135,7 +137,6 @@
   * Fixed: The amount of a matrix entry modulating the oscillator pitch (the pitch envelope) was read with the wrong offset: a positive amount was read as a negative one (e.g. +50% as -25%) and +100% was dropped entirely.
   * Fixed: The velocity modulation of the volume was written from the amplitude envelope modulation depth instead of the velocity modulation amount. E.g. a source with a velocity amount of 0% was written as +100%.
 * WAV
-  * New: WAV files which contain a complete Ogg stream instead of PCM data (marked with one of the Ogg Vorbis WAVE format codes, e.g. the samples of the legacy DirectWave packs of FL Studio) are read by de-compressing the embedded stream. They were rejected as an unsupported source format before.
   * Fixed: The sample chunk stores a note with a negative fine tuning as the next higher unity note with the complementary positive fraction, but the correction was applied in the wrong direction on both sides: reading added 1 to the unity note where 1 must be subtracted and writing subtracted where it must add. The two errors cancelled between ConvertWithMoss' own reader and writer, which is why round trips never showed it - but any WAV from another tool whose pitch fraction is above 50 cents was read two semitones off, and every written WAV with a negative fine tuning carried a unity note two semitones below what conforming samplers expect.
   * Fixed: A sample chunk whose pitch fraction is above 50 cents overwrote the root key which the preset format itself supplied (e.g. the root of a Bitwig multisample's XML), since the fine-tuning merge was not gated on the root being unset - combined with the direction error above, such a zone ended up more than two octaves off. The root key and fine tuning of the sample chunk are now only used when the format does not provide a root of its own.
 * Yamaha YSFC
