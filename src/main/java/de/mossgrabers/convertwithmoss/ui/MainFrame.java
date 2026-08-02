@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.tools.OperatingSystem;
 import de.mossgrabers.tools.ui.AbstractFrame;
+import de.mossgrabers.tools.ui.ControlFunctions;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.TraversalManager;
@@ -50,7 +51,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
-import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -456,6 +456,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.traversalManager.add (this.loggingArea);
 
         this.traversalManager.register (this.getStage ());
+        TraversalManager.enable (this.traversalManager);
     }
 
 
@@ -1537,7 +1538,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             });
 
             final BorderPane sidebar = new BorderPane ();
-            sidebar.setTop (addClearButton (this.search));
+            sidebar.setTop (ControlFunctions.addClearButton (this.search, "IDS_MAIN_SEARCH_FORMAT", "text-field-with-clear", "text-field-clear-button"));
             sidebar.setCenter (this.formatList);
             this.formatPane.setLeft (sidebar);
             this.formatPane.setCenter (this.contentArea);
@@ -1627,23 +1628,6 @@ public class MainFrame extends AbstractFrame implements INotifier
                 return selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_PRESET_LIBRARY && creator.supportsPresetLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances () || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY && creator.supportsPerformanceLibraries ();
             }
             return false;
-        }
-
-
-        private static StackPane addClearButton (final TextField textField)
-        {
-            final Button clearButton = new Button ("✕");
-            clearButton.getStyleClass ().add ("text-field-clear-button");
-            clearButton.visibleProperty ().bind (textField.textProperty ().isNotEmpty ());
-            clearButton.setOnAction (_ -> textField.clear ());
-
-            StackPane.setAlignment (clearButton, Pos.CENTER_RIGHT);
-            StackPane.setMargin (clearButton, new Insets (0, 5, 0, 0));
-
-            // Prevent the button from stealing focus from the text field
-            clearButton.setFocusTraversable (false);
-
-            return new StackPane (textField, clearButton);
         }
     }
 }
