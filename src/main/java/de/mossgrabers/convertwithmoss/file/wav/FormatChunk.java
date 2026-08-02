@@ -56,6 +56,18 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
     public static final int                   WAVE_IBM_FORMAT_ADPCM      = 0x0103;
     /** SX7383 data format. */
     public static final int                   WAVE_FORMAT_SX7383         = 0x1C07;
+    /** Ogg Vorbis data format, mode 1. */
+    public static final int                   WAVE_FORMAT_OGG_VORBIS_1   = 0x674F;
+    /** Ogg Vorbis data format, mode 2. */
+    public static final int                   WAVE_FORMAT_OGG_VORBIS_2   = 0x6750;
+    /** Ogg Vorbis data format, mode 3. */
+    public static final int                   WAVE_FORMAT_OGG_VORBIS_3   = 0x6751;
+    /** Ogg Vorbis data format, mode 1+. */
+    public static final int                   WAVE_FORMAT_OGG_VORBIS_1P  = 0x676F;
+    /** Ogg Vorbis data format, mode 2+. */
+    public static final int                   WAVE_FORMAT_OGG_VORBIS_2P  = 0x6770;
+    /** Ogg Vorbis data format, mode 3+. */
+    public static final int                   WAVE_FORMAT_OGG_VORBIS_3P  = 0x6771;
     /** Extensible data format. */
     public static final int                   WAVE_FORMAT_EXTENSIBLE     = 0xFFFE;
     /** Experimental data format. */
@@ -65,6 +77,12 @@ public class FormatChunk extends AbstractSpecificRIFFChunk
     static
     {
         COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_UNKNOWN), "Unknown");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_OGG_VORBIS_1), "Ogg Vorbis mode 1");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_OGG_VORBIS_2), "Ogg Vorbis mode 2");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_OGG_VORBIS_3), "Ogg Vorbis mode 3");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_OGG_VORBIS_1P), "Ogg Vorbis mode 1+");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_OGG_VORBIS_2P), "Ogg Vorbis mode 2+");
+        COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_OGG_VORBIS_3P), "Ogg Vorbis mode 3+");
         COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_PCM), "PCM/uncompressed");
         COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_ADPCM), "Microsoft ADPCM");
         COMPRESSION_NAMES.put (Integer.valueOf (WAVE_FORMAT_IEEE_FLOAT), "IEEE Float");
