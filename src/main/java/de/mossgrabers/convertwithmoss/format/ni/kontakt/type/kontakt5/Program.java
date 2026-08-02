@@ -585,6 +585,18 @@ public class Program
 
 
     /**
+     * Is the solo of groups active? The soloed state of the individual groups is only in effect
+     * if this is enabled.
+     *
+     * @return True if group solo is active
+     */
+    public boolean isGroupSolo ()
+    {
+        return this.groupSolo;
+    }
+
+
+    /**
      * Get the volume of the instrument.
      *
      * @return The volume in the range of [0..1]
