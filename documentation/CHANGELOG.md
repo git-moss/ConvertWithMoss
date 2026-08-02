@@ -1,5 +1,14 @@
 # Changes
 
+## 20.1.0 (work-in-progress)
+
+* Ableton
+  * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
+* NI Kontakt
+  * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
+* WAV
+  * New: WAV files which contain a complete Ogg stream instead of PCM data (marked with one of the Ogg Vorbis WAVE format codes, e.g. the samples of the legacy DirectWave packs of FL Studio) are read by de-compressing the embedded stream. They were rejected as an unsupported source format before.
+
 ## 20.0.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!

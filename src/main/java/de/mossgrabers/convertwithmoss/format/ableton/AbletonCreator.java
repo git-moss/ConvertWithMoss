@@ -9,11 +9,14 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeSet;
 import java.util.zip.GZIPOutputStream;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -118,12 +121,19 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
     {
         try
         {
+            final boolean isVersion12 = this.settingsConfiguration.getAbletonVersion () == 12;
+            final boolean nativeRoundRobin = isVersion12 && multisampleSource.hasRoundRobin () && multisampleSource.isFullRoundRobin ();
+            // Without the native round-robin flag the cycles are spread across the sample-select
+            // (selector) axis, otherwise all cycles would play at the same time
+            final boolean selectorRoundRobin = !nativeRoundRobin && multisampleSource.hasRoundRobin ();
+            if (selectorRoundRobin)
+                this.notifier.log ("IDS_ADV_ROUND_ROBIN_VIA_SELECTOR");
+
             // Add all groups
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
             final String multiSamplePartTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ADV-MultiSamplePart-Template.xml");
-            final String multisampleParts = addGroups (groups, multiSamplePartTemplate, createSafeFilename (multisampleSource.getName ()), writtenSamples);
+            final String multisampleParts = addGroups (groups, multiSamplePartTemplate, createSafeFilename (multisampleSource.getName ()), writtenSamples, selectorRoundRobin);
 
-            final boolean isVersion12 = this.settingsConfiguration.getAbletonVersion () == 12;
             String text = Functions.textFileFor (TEMPLATE_FOLDER + (isVersion12 ? "ADV12-Template.xml" : "ADV11-Template.xml"));
 
             int pitchBend = 2;
@@ -186,7 +196,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             text = text.replace ("%MULTI_SAMPLE_PARTS%", multisampleParts);
             if (isVersion12)
             {
-                text = text.replace ("%ROUND_ROBIN%", this.checkRoundRobin (multisampleSource) ? "true" : FALSE);
+                text = text.replace ("%ROUND_ROBIN%", nativeRoundRobin ? "true" : FALSE);
                 text = text.replace ("%ROUND_ROBIN_MODE%", Integer.toString (getRoundRobinMode (multisampleSource)));
             }
             text = text.replace ("%PITCHBEND_RANGE%", Integer.toString (pitchBend));
@@ -247,8 +257,10 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
     }
 
 
-    private static String addGroups (final List<IGroup> groups, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples) throws IOException
+    private static String addGroups (final List<IGroup> groups, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples, final boolean selectorRoundRobin) throws IOException
     {
+        final Map<ISampleZone, int []> selectorRanges = selectorRoundRobin ? calculateSelectorRanges (groups) : Collections.emptyMap ();
+
         int zoneCount = 0;
         final StringBuilder result = new StringBuilder ();
         for (final IGroup group: groups)
@@ -256,14 +268,72 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             {
                 if (zoneCount > 0)
                     result.append ('\n');
-                result.append (addZoneData (zone, zoneCount, multiSamplePartTemplate, sampleSubFolder, writtenSamples));
+                result.append (addZoneData (zone, zoneCount, multiSamplePartTemplate, sampleSubFolder, writtenSamples, selectorRanges.get (zone)));
                 zoneCount++;
             }
         return result.toString ();
     }
 
 
-    private static String addZoneData (final ISampleZone zone, final int zoneCount, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples) throws IOException
+    /**
+     * Calculate the sample-select (selector) range of each alternating (round-robin or random)
+     * zone. The cycles are spread evenly across the 0-127 selector axis, therefore only the zones
+     * of the first cycle are heard at the default selector position and the other cycles can be
+     * reached by modulating the sample selector. Zones which always play keep the full range.
+     *
+     * @param groups The groups with the zones
+     * @return The selector range (low, high) of each alternating zone
+     */
+    private static Map<ISampleZone, int []> calculateSelectorRanges (final List<IGroup> groups)
+    {
+        // Collect the distinct cycle positions of all alternating zones
+        final TreeSet<Integer> positions = new TreeSet<> ();
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+                if (zone.getPlayLogic () != PlayLogic.ALWAYS)
+                    positions.add (Integer.valueOf (Math.max (1, zone.getSequencePosition ())));
+
+        final Map<ISampleZone, int []> selectorRanges = new HashMap<> ();
+        if (positions.size () > 1)
+        {
+            final List<Integer> orderedPositions = new ArrayList<> (positions);
+            for (final IGroup group: groups)
+                for (final ISampleZone zone: group.getSampleZones ())
+                    if (zone.getPlayLogic () != PlayLogic.ALWAYS)
+                        selectorRanges.put (zone, calculateSelectorSlice (orderedPositions.indexOf (Integer.valueOf (Math.max (1, zone.getSequencePosition ()))), orderedPositions.size ()));
+            return selectorRanges;
+        }
+
+        // Without sequence positions each group which contains alternating zones is one cycle
+        final List<IGroup> cycleGroups = new ArrayList<> ();
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+                if (zone.getPlayLogic () != PlayLogic.ALWAYS)
+                {
+                    cycleGroups.add (group);
+                    break;
+                }
+        final int count = cycleGroups.size ();
+        if (count > 1)
+            for (int i = 0; i < count; i++)
+                for (final ISampleZone zone: cycleGroups.get (i).getSampleZones ())
+                    if (zone.getPlayLogic () != PlayLogic.ALWAYS)
+                        selectorRanges.put (zone, calculateSelectorSlice (i, count));
+        return selectorRanges;
+    }
+
+
+    private static int [] calculateSelectorSlice (final int index, final int count)
+    {
+        return new int []
+        {
+            index * 128 / count,
+            (index + 1) * 128 / count - 1
+        };
+    }
+
+
+    private static String addZoneData (final ISampleZone zone, final int zoneCount, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples, final int [] selectorRange) throws IOException
     {
         // Must use the same sanitized name which was used for writing the sample file
         final String zoneFileName = createSafeFilename (zone.getName ()) + ".wav";
@@ -300,6 +370,9 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         zoneContent = zoneContent.replace ("%KEY_RANGE_HIGH_CROSSFADE%", Integer.toString (Math.min (127, keyHigh + zone.getNoteCrossfadeHigh ())));
         zoneContent = zoneContent.replace ("%VEL_RANGE_LOW_CROSSFADE%", Integer.toString (Math.max (0, velLow - zone.getVelocityCrossfadeLow ())));
         zoneContent = zoneContent.replace ("%VEL_RANGE_HIGH_CROSSFADE%", Integer.toString (Math.min (127, velHigh + zone.getVelocityCrossfadeHigh ())));
+
+        zoneContent = zoneContent.replace ("%SELECTOR_LOW%", Integer.toString (selectorRange == null ? 0 : selectorRange[0]));
+        zoneContent = zoneContent.replace ("%SELECTOR_HIGH%", Integer.toString (selectorRange == null ? 127 : selectorRange[1]));
 
         final double tune = zone.getTuning ();
         int semitones = (int) Math.round (tune);
@@ -361,17 +434,6 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
                 if (zone.getPlayLogic () == PlayLogic.RANDOM)
                     return AbletonTag.ROUND_ROBIN_MODE_RANDOM;
         return AbletonTag.ROUND_ROBIN_MODE_FORWARD;
-    }
-
-
-    private boolean checkRoundRobin (final IMultisampleSource multisampleSource)
-    {
-        if (!multisampleSource.hasRoundRobin ())
-            return false;
-        final boolean fullRoundRobin = multisampleSource.isFullRoundRobin ();
-        if (!fullRoundRobin)
-            this.notifier.logError ("IDS_ADV_ROUND_ROBIN_GROUPS_DO_NOT_MATCH");
-        return fullRoundRobin;
     }
 
 
