@@ -332,8 +332,8 @@ public class AudioSampleReducer
     /**
      * Re-sample frequency with a band-limited interpolation, see {@link SincResampler}. Linear
      * interpolation was used before, which folds the frequencies above the new Nyquist frequency
-     * back into the audible range when down-sampling and leaves images of the source spectrum
-     * above the source Nyquist frequency when up-sampling.
+     * back into the audible range when down-sampling and leaves images of the source spectrum above
+     * the source Nyquist frequency when up-sampling.
      *
      * @param wavData The WAV data structure
      * @param targetRate The maximum sample rate
@@ -352,8 +352,6 @@ public class AudioSampleReducer
                 return wavData;
 
             final byte [] sourceData = ais.readAllBytes ();
-
-            final double ratio = targetRate / sourceRate;
             final int channels = sourceFormat.getChannels ();
             final int sampleSizeInBits = sourceFormat.getSampleSizeInBits ();
             final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
@@ -380,7 +378,7 @@ public class AudioSampleReducer
             for (int frame = 0; frame < convertedFrames; frame++)
                 for (int channel = 0; channel < channels; channel++)
                 {
-                    final int sample = (int) Math.clamp (Math.round (converted[channel][frame]), minimum, maximum);
+                    final int sample = Math.clamp (Math.round (converted[channel][frame]), minimum, maximum);
                     writeSample (targetData, frame * frameSize + channel * bytesPerSample, sample, sampleSizeInBits, bigEndian);
                 }
 

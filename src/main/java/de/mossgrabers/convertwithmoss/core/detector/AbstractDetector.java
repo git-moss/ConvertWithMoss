@@ -650,7 +650,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     protected IMultisampleSource createMultisampleSource (final File sourceFile, final String multisampleSourceName, final List<IGroup> groups)
     {
-        return createMultisampleSource (sourceFile, multisampleSourceName, groups, "");
+        return this.createMultisampleSource (sourceFile, multisampleSourceName, groups, "");
     }
 
 
