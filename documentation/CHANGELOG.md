@@ -7,6 +7,7 @@
 * New: Added support for the Teenage Engineering OP-XY multi-sample preset format (reading and writing of the *.preset folders with their patch.json description file).
 * User Interface
   * New: Contents dialog: The filter field can now be cleared with 'X' and has the focus when the dialog is opened.
+  * Fixed: Contents dialog: Using 'Select All' on filtered content did still select all presets not only the filtered ones.
   * Fixed: Tabbing in dialogs did not work.
   * Fixed: Processing dialog: the Enable option could not be reached with tab.
 * Ableton
