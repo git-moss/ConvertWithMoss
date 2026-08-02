@@ -141,6 +141,8 @@ ConvertWithMoss can extract Sampler and Simpler presets from ADV files as well a
 
 ADV files and their samples need to be placed in the Ableton user library in the correct folders to allow Ableton to open it. Therefore, ConvertWithMoss creates the necessary folder structure which can be simply copied to the user library. If the source has sub-folders the global option *Create folder structure* should be deactivated otherwise it can be quite tedious to collect all the results files with their additional Ableton sub-folder structure.
 
+Round-robin is supported in both representations: the native round-robin flag of Live 12 and the classic Sampler way of spreading the cycles across the sample-select (selector) ranges of otherwise identical zones. When writing, the selector representation is used whenever the native flag is not available (Ableton 11) or does not apply (only some of the groups alternate); at the default selector position only the first cycle is heard and the other cycles can be reached by modulating the sample selector.
+
 ### Destination Options
 
 * Option to set the *Ableton Version*. Setting it to *12* will add additional Round-Robin information (but cannot be loaded in Ableton 11).
@@ -450,6 +452,14 @@ The Fairlight CMI (**C**omputer **M**usical **I**nstrument) Series III, introduc
 Voice Files (*.VC) store individual instrument subvoices (samples) and synthesis data. The file is split into headers/control parameters followed by raw linear 8-bit audio samples (or 16-bit for Series III). Fairlight CMI IIx used variable rates from 2.1 kHz to 32 kHz (default 14.08 kHz). Series III expanded up to 100 kHz at 16 bits. Early CMI memory was limited (e.g., 16KB per channel).
 
 Note that this will not work with IIx or earlier versions despite the same VC file extension was used. Only reading is supported.
+
+## FL Studio DirectWave
+
+DirectWave is the software sampler of Image-Line's FL Studio; FL Studio Mobile plays its programs as well. A program is stored in a DWP file, a bank of programs in a DWB file. When a program is saved with the *Monolithic file* option disabled, the samples are stored as WAV files in a folder named like the program.
+
+As a source, DWP programs are read from their binary structure (see DIRECTWAVE_DWP_FORMAT.md in the design documentation): name, key/velocity ranges, root, gain, panning, loop (all five loop modes including one-shot and loop-until-release), amplitude envelope, filter, pitch LFO (vibrato) and volume LFO (tremolo) of each zone (the sample chunks of the WAV files are used as the loop fall-back). The cutoff law of the filter was measured by listening (45 Hz to 20 kHz, exponential); the time law of the envelope knobs was measured the same way. The samples are searched next to the DWP file and in the sub-folder named like the program. Monolithic programs, which carry their samples inside the DWP file as FLAC compressed audio, are read as well. For files without the known binary structure (e.g. DWB banks) the mapping is reconstructed from the names of the sample files, which supports both the names written when sampling a plugin (e.g. *Piano 4xCycles_C5_100_2.wav*, round-robin cycles become groups) and the Automap tokens documented in the DirectWave manual (e.g. *sample_C4+KA3-F#4+V64-95.wav*). Note that DirectWave note names follow the FL Studio convention where the middle C (MIDI note 60) is called C5.
+
+As a destination, one monolithic DWP file is written per instrument, i.e. a single self-contained file which carries all its samples as FLAC compressed audio. FL Studio Desktop loads it directly and for FL Studio Mobile it only needs to be copied into its user files. The DWP structure carries name, key/velocity ranges, root, gain, panning, loop, amplitude envelope, a low-pass/high-pass/band-pass/notch filter and the two zone LFOs (LFO 1 modulates the pitch, LFO 2 the volume) per zone. Only the first round-robin cycle is kept since trigger groups cannot be written.
 
 ## ISO/IMG Files
 

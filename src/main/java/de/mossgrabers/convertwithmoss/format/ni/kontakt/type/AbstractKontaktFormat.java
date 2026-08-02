@@ -79,7 +79,9 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
 
         final List<File> files = this.lookupFiles (filePaths, multiSample.getSourceFile ().getParent (), isMonolith);
         final Map<Integer, Pair<IGroup, Group>> indexedGroups = createGroups (program);
-        final boolean hasSoloedGroup = program.getGroups ().stream ().anyMatch (Group::isSoloed);
+        // The soloed state of the groups is only in effect if the program has group solo enabled;
+        // otherwise the flags of the groups are left-overs of a previously active solo
+        final boolean hasSoloedGroup = program.isGroupSolo () && program.getGroups ().stream ().anyMatch (Group::isSoloed);
         for (final Zone kontaktZone: program.getZones ())
         {
             // Zones without a sample file might be present
