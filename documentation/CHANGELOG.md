@@ -14,6 +14,7 @@
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * Many thanks to David García Goñi for providing specifications of the E-mu formats and refined Kurzweil specifications!
 * Many thanks to Linus Wileryd for the improved icon set!
+* New: Added support for the Teenage Engineering OP-XY multi-sample preset format (reading and writing of the *.preset folders with their patch.json description file).
 * New: Added support for the Arturia Synclavier V format (reading and writing of SYNX preset and bank exports; partials which play a sound file become sample zones).
 * New: Added support for the FL Studio DirectWave format (reading of DWP programs with their key/velocity ranges, gain, panning, loops, amplitude envelope, filter and the pitch and volume LFOs, including monolithic programs which carry all their samples inside of the file; the mapping of DWB banks and of sampled plug-ins is reconstructed from the names of their sample files; written programs are always monolithic, i.e. one self-contained file per instrument which stores all of its samples as FLAC compressed audio).
 * New: Added support for the E-mu Emulator III/IIIX/ESI bank format (E3B, E3X, ESI).

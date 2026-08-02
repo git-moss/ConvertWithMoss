@@ -9067,6 +9067,150 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce7" table:number-columns-repeated="16248"/>
     </table:table-row>
+    <table:table-row table:style-name="ro5">
+     <table:table-cell table:style-name="ce2" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Teenage Engineering OP-XY</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string"><text:p>Read</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce10" office:value-type="string" calcext:value-type="string"><text:p>preset folder</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce13" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce13" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string"><text:p>All</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string"><text:p>All</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce3"/>
+     <table:table-cell table:style-name="ce17"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>from the preset folder name</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>from filename</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>from filename</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce4"/>
+     <table:table-cell table:style-name="ce10" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>pitch.keycenter</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>lokey / hikey</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>The format has no velocity ranges</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>sample.start</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>sample.end</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce56" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>tune (semitones)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce10" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>reverse</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>gain</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>loop.enabled</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>Forward only</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce56" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>loop.onrelease</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>loop.start</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce4" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>loop.end</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce10" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>loop.crossfade</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Global only</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>envelope.amp (global, A/D/S/R)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce21"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Global only</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>engine.bendrange (global)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>engine.bendrange (global)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce12" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce21"/>
+     <table:table-cell table:style-name="ce14"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1" office:value-type="string" calcext:value-type="string"><text:p>TODO Check for support</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" table:number-columns-spanned="1"/>
+     <table:table-cell table:number-columns-repeated="16315"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro10">
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string"><text:p>Write</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce10" office:value-type="string" calcext:value-type="string"><text:p>preset folder</text:p></table:table-cell>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>16</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Up to 44.1 kHz</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce3"/>
+     <table:table-cell table:style-name="ce17"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>the preset folder name</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce12"/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce12"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce4"/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>loop.enabled</text:p></table:table-cell>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Global only</text:p></table:table-cell>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce21"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Global only</text:p></table:table-cell>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce21"/>
+     <table:table-cell table:style-name="ce14"/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:covered-table-cell/>
+     <table:table-cell table:number-columns-repeated="16315"/>
+    </table:table-row>
     <table:table-row table:style-name="ro2">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Waldorf Qpat</text:p>
