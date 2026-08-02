@@ -75,6 +75,8 @@ public class AbletonTag
     public static final String TAG_KEY_RANGE               = "KeyRange";
     /** The velocity-range tag. */
     public static final String TAG_VELOCITY_RANGE          = "VelocityRange";
+    /** The sample-select (selector) range tag. */
+    public static final String TAG_SELECTOR_RANGE          = "SelectorRange";
     /** The minimum tag. */
     public static final String TAG_MINIMUM                 = "Min";
     /** The maximum tag. */

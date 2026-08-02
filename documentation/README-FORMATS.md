@@ -141,6 +141,8 @@ ConvertWithMoss can extract Sampler and Simpler presets from ADV files as well a
 
 ADV files and their samples need to be placed in the Ableton user library in the correct folders to allow Ableton to open it. Therefore, ConvertWithMoss creates the necessary folder structure which can be simply copied to the user library. If the source has sub-folders the global option *Create folder structure* should be deactivated otherwise it can be quite tedious to collect all the results files with their additional Ableton sub-folder structure.
 
+Round-robin is supported in both representations: the native round-robin flag of Live 12 and the classic Sampler way of spreading the cycles across the sample-select (selector) ranges of otherwise identical zones. When writing, the selector representation is used whenever the native flag is not available (Ableton 11) or does not apply (only some of the groups alternate); at the default selector position only the first cycle is heard and the other cycles can be reached by modulating the sample selector.
+
 ### Destination Options
 
 * Option to set the *Ableton Version*. Setting it to *12* will add additional Round-Robin information (but cannot be loaded in Ableton 11).

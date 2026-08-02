@@ -17,10 +17,10 @@
 							<CrossfadeMax Value="%VEL_RANGE_HIGH_CROSSFADE%" />
 						</VelocityRange>
 						<SelectorRange>
-							<Min Value="0" />
-							<Max Value="127" />
-							<CrossfadeMin Value="0" />
-							<CrossfadeMax Value="127" />
+							<Min Value="%SELECTOR_LOW%" />
+							<Max Value="%SELECTOR_HIGH%" />
+							<CrossfadeMin Value="%SELECTOR_LOW%" />
+							<CrossfadeMax Value="%SELECTOR_HIGH%" />
 						</SelectorRange>
 						<RootKey Value="%ROOT_KEY%" />
 						<Detune Value="%DETUNE%" />
