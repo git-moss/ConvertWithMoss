@@ -26,10 +26,13 @@ import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -59,6 +62,17 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         16,
         24
     }, -1, false);
+
+    private static final Map<LfoWaveform, Integer> LFO_WAVEFORMS        = new EnumMap<> (LfoWaveform.class);
+    static
+    {
+        LFO_WAVEFORMS.put (LfoWaveform.SINE, Integer.valueOf (DirectWaveTag.LFO_WAVEFORM_SINE));
+        LFO_WAVEFORMS.put (LfoWaveform.TRIANGLE, Integer.valueOf (DirectWaveTag.LFO_WAVEFORM_TRIANGLE));
+        LFO_WAVEFORMS.put (LfoWaveform.SQUARE, Integer.valueOf (DirectWaveTag.LFO_WAVEFORM_SQUARE));
+        LFO_WAVEFORMS.put (LfoWaveform.SAWTOOTH_UP, Integer.valueOf (DirectWaveTag.LFO_WAVEFORM_SAW));
+        LFO_WAVEFORMS.put (LfoWaveform.SAWTOOTH_DOWN, Integer.valueOf (DirectWaveTag.LFO_WAVEFORM_INV_SAW));
+        LFO_WAVEFORMS.put (LfoWaveform.RANDOM, Integer.valueOf (DirectWaveTag.LFO_WAVEFORM_RANDOM));
+    }
 
     private static final Map<FilterType, Integer> FILTER_TYPES          = new EnumMap<> (FilterType.class);
     static
@@ -171,8 +185,28 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         final int blockSize = DirectWaveTag.EMBEDDED_AUDIO_BLOCK;
         final int frames = (audioMetadata.getNumberOfSamples () + blockSize - 1) / blockSize * blockSize;
 
+        // Zone LFO 1 modulates the pitch, Zone LFO 2 the volume; both are routed in the modulation
+        // matrix, which is why an LFO block is only written together with its matrix slot
+        final ILfo [] lfoSources = new ILfo [2];
+        final List<byte []> modulations = new ArrayList<> ();
+        final ILfoModulator pitchModulator = zone.getPitchLfoModulator ();
+        if (isModulating (pitchModulator))
+        {
+            lfoSources[0] = pitchModulator.getSource ();
+            // The depth of the model is relative to MAX_ENVELOPE_DEPTH cent, DirectWave reaches
+            // PITCH_MODULATION_RANGE cent at its full strength
+            modulations.add (createModulation (DirectWaveTag.MODULATION_SOURCE_LFO1, DirectWaveTag.MODULATION_TARGET_PITCH, pitchModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / DirectWaveTag.PITCH_MODULATION_RANGE));
+        }
+        final ILfoModulator volumeModulator = zone.getAmplitudeLfoModulator ();
+        if (isModulating (volumeModulator))
+        {
+            lfoSources[1] = volumeModulator.getSource ();
+            modulations.add (createModulation (DirectWaveTag.MODULATION_SOURCE_LFO2, DirectWaveTag.MODULATION_TARGET_GAIN, volumeStrength (volumeModulator.getDepth ())));
+        }
+
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         final AtomicBoolean isFirstFilter = new AtomicBoolean (true);
+        final int [] lfoIndex = new int [1];
         for (final DirectWaveChunk chunk: DirectWaveChunk.parseAll (DirectWaveTag.TEMPLATE_CONTAINER, 0))
             switch (chunk.getTag ())
             {
@@ -211,6 +245,19 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
                 case DirectWaveTag.TAG_FILTER:
                     // Only the first of the two filter blocks is filled
                     DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_FILTER, isFirstFilter.getAndSet (false) ? createFilter (chunk.getPayload (), zone) : chunk.getPayload ());
+                    break;
+
+                case DirectWaveTag.TAG_LFO:
+                    final ILfo lfo = lfoIndex[0] < lfoSources.length ? lfoSources[lfoIndex[0]] : null;
+                    lfoIndex[0]++;
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_LFO, lfo == null ? chunk.getPayload () : createLfo (chunk.getPayload (), lfo));
+                    break;
+
+                case DirectWaveTag.TAG_MODULATION:
+                    // Fill the unused slots of the matrix, the used ones are program defaults
+                    final byte [] slot = chunk.getPayload ();
+                    final boolean isFree = DirectWaveChunk.readIntLE (slot, DirectWaveTag.MODULATION_SOURCE) == 0;
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_MODULATION, isFree && !modulations.isEmpty () ? modulations.remove (0) : slot);
                     break;
 
                 case DirectWaveTag.TAG_SAMPLE_TERMINATOR:
@@ -337,6 +384,74 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         final double range = IFilter.MAX_FREQUENCY / DirectWaveTag.FILTER_MIN_FREQUENCY;
         final double position = Math.log (Math.max (DirectWaveTag.FILTER_MIN_FREQUENCY, frequency) / DirectWaveTag.FILTER_MIN_FREQUENCY) / Math.log (range);
         return (float) Math.clamp (position, 0, 1);
+    }
+
+
+    /**
+     * Check if a modulator has a depth and a source which is set.
+     *
+     * @param modulator The modulator to check
+     * @return True if it modulates
+     */
+    private static boolean isModulating (final ILfoModulator modulator)
+    {
+        return modulator != null && Math.abs (modulator.getDepth ()) > 0.0001 && modulator.getSource () != null && modulator.getSource ().isSet ();
+    }
+
+
+    /**
+     * Fill the LFO block with the waveform and the rate of the given LFO. The rate knob follows
+     * <code>Hertz = 20 * position^2</code>, see the design document.
+     *
+     * @param template The template payload of the LFO block
+     * @param lfo The LFO
+     * @return The filled block payload
+     */
+    private static byte [] createLfo (final byte [] template, final ILfo lfo)
+    {
+        final byte [] payload = template.clone ();
+        final Integer waveform = LFO_WAVEFORMS.get (lfo.getWaveform ());
+        DirectWaveChunk.writeIntLE (payload, DirectWaveTag.LFO_WAVEFORM, waveform == null ? DirectWaveTag.LFO_WAVEFORM_SINE : waveform.intValue ());
+        final double rate = lfo.getRate ();
+        if (rate >= 0)
+            DirectWaveChunk.writeFloatLE (payload, DirectWaveTag.LFO_RATE, (float) Math.clamp (Math.sqrt (rate / DirectWaveTag.LFO_MAX_RATE), 0, 1));
+        return payload;
+    }
+
+
+    /**
+     * Create the payload of one modulation matrix slot. The amount is bipolar around
+     * {@link DirectWaveTag#MODULATION_NEUTRAL} and the strength is the cube of the distance from
+     * it, see the design document.
+     *
+     * @param source The modulation source
+     * @param target The modulation target
+     * @param strength The modulation strength in the range of [-1..1]
+     * @return The payload
+     */
+    private static byte [] createModulation (final int source, final int target, final double strength)
+    {
+        final byte [] payload = new byte [8];
+        DirectWaveChunk.writeShortLE (payload, DirectWaveTag.MODULATION_SOURCE, source);
+        DirectWaveChunk.writeShortLE (payload, DirectWaveTag.MODULATION_TARGET, target);
+        final double clamped = Math.clamp (strength, -1, 1);
+        final double distance = Math.cbrt (Math.abs (clamped)) / 2.0;
+        DirectWaveChunk.writeFloatLE (payload, DirectWaveTag.MODULATION_AMOUNT, (float) (DirectWaveTag.MODULATION_NEUTRAL + Math.signum (clamped) * distance));
+        return payload;
+    }
+
+
+    /**
+     * Convert a volume modulation depth of the model into the modulation strength of DirectWave,
+     * which modulates the linear gain: a strength of 1 lets the gain reach zero.
+     *
+     * @param depth The depth in the range of [-1..1], 1 is {@link ILfoModulator#MAX_VOLUME_DEPTH}
+     * @return The strength in the range of [-1..1]
+     */
+    private static double volumeStrength (final double depth)
+    {
+        final double decibels = Math.abs (depth) * ILfoModulator.MAX_VOLUME_DEPTH;
+        return Math.signum (depth) * (1.0 - Math.pow (10, -decibels / 20.0));
     }
 
 

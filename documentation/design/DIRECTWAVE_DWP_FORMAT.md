@@ -367,9 +367,77 @@ a 4x4 modulation matrix.
   `(2,2,1.0)`, `(3,34,0.75)` = Mod Wheel to Mod Amt P1-3 and `(12,1,0.5)` = Zone LFO 2 to
   Voice Pitch instead, which is why their containers must not be used as a template for
   programs written for the desktop plug-in.
-* 0x0202 (twice, 16 bytes) and 0x0203 (twice, 20 bytes) = **LFO 1 / LFO 2** parameter
-  candidates ('Electric' raises 0x0203#1 field 1 from 0.1 to 0.355 — plausibly an LFO
-  rate for its tremolo, routed via its extra matrix slots).
+* 0x0202 (twice, 16 bytes) = **Zone Env 1 / Zone Env 2**, four floats each. The four
+  Acoustic Guitar programs which route Zone Env 1 to the filter cutoff are the only ones
+  whose first block differs from the default, which is what identifies it.
+* 0x0203 (twice, 20 bytes) = **Zone LFO 1 / Zone LFO 2**, see below.
+
+## LFOs (0x0203, twice) and the modulation matrix (0x0204)
+
+```
+offset 0: u32 waveform (the LFO waveform enum above)
+offset 4: f32 rate     (knob position 0-1)
+offset 8: 3 unknown floats (1.0, 0.0, 0.0 in the factory programs)
+```
+
+An LFO does nothing on its own; it has to be routed in the modulation matrix, so a slot and
+its LFO block are always read and written together. Of the whole corpus only 'Electric'
+routes a zone LFO to something audible (Zone LFO 1 to Voice Pan) and it is also the only
+program whose LFO 1 rate differs from the default 0.1 - which identifies the rate field.
+
+Three probe programs pinned the laws, each with eight zones on the eight white keys of one
+octave, all playing the same 220 Hz sine, differing in exactly one value; a recording of the
+eight notes gives the law directly, since the modulation rate is the cycle rate of the
+recorded envelope and the depth is its peak-to-peak swing.
+
+**The rate** knob is quadratic:
+
+| knob | 0.0 | 0.3 | 0.45 | 0.6 | 0.75 | 0.9 | 1.0 |
+|---|---|---|---|---|---|---|---|
+| measured | off | 1.79 Hz | 4.07 Hz | 7.19 Hz | 11.23 Hz | 16.20 Hz | 19.98 Hz |
+| `20 * knob^2` | 0 | 1.80 | 4.05 | 7.20 | 11.25 | 16.20 | 20.00 |
+
+Every point lands on the law, and the law predicts the 2.52 Hz which both depth probes show
+at their knob position of 0.355 - an independent confirmation, since those two recordings
+were made for a different purpose. A knob of 0 is off.
+
+**The modulation amount is bipolar**: 0.5 is no modulation, the distance from it is the
+strength and the side is the sign. The strength is the **cube** of that distance doubled,
+`strength = (2 * |amount - 0.5|)^3`, which is why the 22 factory programs which carry a
+`Zone LFO 2 -> Voice Pitch` slot at exactly 0.5 do not wobble. Measured against the pitch,
+where the deviation of the recorded sine can be read in cent:
+
+| amount | 0.4 / 0.6 | 0.25 / 0.75 | 0.9 |
+|---|---|---|---|
+| strength | 0.008 | 0.125 | 0.512 |
+| measured | 19.3 / 19.6 ct | 299.3 / 298.8 ct | 1220.7 ct |
+| `2400 * strength` | 19.2 ct | 300.0 ct | 1228.8 ct |
+
+So a pitch modulation reaches **2400 cent at the full strength** and the law holds within
+2 % over a range of 60:1. The two zones at the amounts 0 and 1 sweep two octaves at 2.5 Hz,
+which the pitch tracker can no longer follow; they are not part of the fit.
+
+**A gain modulation is linear**, not in decibels: the strength is the modulation index of
+the linear gain, so a strength of 1 lets the gain reach zero. Measured as the index of a
+sinusoid fitted to the recorded envelope:
+
+| strength | 0.008 | 0.064 | 0.125 | 0.216 | 0.343 | 0.512 | 0.729 | 1.0 |
+|---|---|---|---|---|---|---|---|---|
+| measured index | 0.026 | 0.065 | 0.120 | 0.229 | 0.347 | 0.533 | 0.746 | 0.926 |
+
+The mean absolute error is 0.019 and the only real deviation is at the full strength, where
+the trough of the modulation is digital silence which the fit cannot reach.
+
+**Both laws were confirmed through the plug-in itself**: a converted program with a 5 Hz
+vibrato of 100 cent and a 4 Hz tremolo of 12 dB plays back at 4.99 Hz and 93.9 cent against
+the 5.00 Hz and 94.4 cent of a reference rendered from the written program, and its
+modulation index measures 0.5996 against the 0.6063 of the reference. Measure the depth by
+fitting a sinusoid to the envelope, not as its peak-to-peak swing - the release tail of a
+played note inflates the latter by several decibels.
+
+Both directions convert the two zone LFOs: LFO 1 to the pitch (vibrato) and LFO 2 to the
+gain (tremolo). A volume depth in decibels maps to the modulation index the same way the
+Decent Sampler support does it, `index = 1 - 10^(-dB/20)`.
 
 ## Two crashes, one lesson
 

@@ -84,6 +84,66 @@ public class DirectWaveTag
      * when the program is loaded, therefore written audio is padded with silence.
      */
     public static final int      EMBEDDED_AUDIO_BLOCK   = 512;
+    /** The offset of the waveform (a 32-bit integer) in an LFO block. */
+    public static final int      LFO_WAVEFORM           = 0;
+    /** The offset of the rate (a float knob position) in an LFO block. */
+    public static final int      LFO_RATE               = 4;
+
+    /** The LFO waveform value of a sine. */
+    public static final int      LFO_WAVEFORM_SINE      = 0;
+    /** The LFO waveform value of an absolute sine. */
+    public static final int      LFO_WAVEFORM_ABS_SINE  = 1;
+    /** The LFO waveform value of a triangle. */
+    public static final int      LFO_WAVEFORM_TRIANGLE  = 2;
+    /** The LFO waveform value of a square. */
+    public static final int      LFO_WAVEFORM_SQUARE    = 3;
+    /** The LFO waveform value of a saw-tooth. */
+    public static final int      LFO_WAVEFORM_SAW       = 4;
+    /** The LFO waveform value of an inverted saw-tooth. */
+    public static final int      LFO_WAVEFORM_INV_SAW   = 5;
+    /** The LFO waveform value of a random value. */
+    public static final int      LFO_WAVEFORM_RANDOM    = 6;
+    /** The LFO waveform value of a low-pass filtered random value. */
+    public static final int      LFO_WAVEFORM_LP_RANDOM = 7;
+
+    /**
+     * The rate of an LFO at the top of its knob range in Hertz. The law was measured by recording
+     * one zone per knob position of a tremolo: <code>Hertz = 20 * position^2</code>, which
+     * reproduces all measured positions exactly and predicts the 2.52 Hz which the two depth
+     * probes show at their knob position of 0.355.
+     */
+    public static final double   LFO_MAX_RATE           = 20.0;
+
+    /** The offset of the modulation source (a 16-bit integer) in a modulation matrix slot. */
+    public static final int      MODULATION_SOURCE      = 0;
+    /** The offset of the modulation target (a 16-bit integer) in a modulation matrix slot. */
+    public static final int      MODULATION_TARGET      = 2;
+    /** The offset of the modulation amount (a float) in a modulation matrix slot. */
+    public static final int      MODULATION_AMOUNT      = 4;
+
+    /** The modulation source value of Zone LFO 1. */
+    public static final int      MODULATION_SOURCE_LFO1 = 11;
+    /** The modulation source value of Zone LFO 2. */
+    public static final int      MODULATION_SOURCE_LFO2 = 12;
+    /** The modulation target value of the pitch of the voice. */
+    public static final int      MODULATION_TARGET_PITCH = 1;
+    /** The modulation target value of the gain of the voice. */
+    public static final int      MODULATION_TARGET_GAIN = 2;
+
+    /**
+     * The modulation amount is bipolar: this value is no modulation at all, the distance from it
+     * is the strength and the side is the sign. Measured on all eight probe zones, which are
+     * symmetric around it.
+     */
+    public static final double   MODULATION_NEUTRAL     = 0.5;
+
+    /**
+     * The pitch modulation in cent at the full modulation strength. The strength is the cube of
+     * the distance from the neutral amount; measured at four amounts, which the law
+     * <code>cent = 2400 * strength</code> reproduces within 2 %.
+     */
+    public static final double   PITCH_MODULATION_RANGE = 2400.0;
+
     /** The magic bytes of a FLAC stream. */
     public static final byte []  FLAC_MAGIC             = "fLaC".getBytes ();
 
@@ -136,10 +196,18 @@ public class DirectWaveTag
     public static final int      TAG_BLOCK_0201         = 0x0201;
     /** The tag of the two 16 byte zeroed blocks inside of a sample container. */
     public static final int      TAG_BLOCK_0202         = 0x0202;
-    /** The tag of the two 20 byte zeroed blocks inside of a sample container. */
-    public static final int      TAG_BLOCK_0203         = 0x0203;
-    /** The tag of the sixteen 8 byte blocks inside of a sample container. */
-    public static final int      TAG_BLOCK_0204         = 0x0204;
+    /**
+     * The tag of the two LFO blocks (Zone LFO 1 and Zone LFO 2) inside of a sample container:
+     * <code>u32 waveform, f32 rate, 3 unknown floats</code>. An LFO does nothing on its own, it
+     * has to be routed to a target in the modulation matrix.
+     */
+    public static final int      TAG_LFO                = 0x0203;
+    /**
+     * The tag of the sixteen modulation matrix slots inside of a sample container:
+     * <code>u16 source, u16 target, f32 amount</code>. Source and target address the name table of
+     * the plug-in binary, the target with an offset of one; an unused slot has both of them at 0.
+     */
+    public static final int      TAG_MODULATION         = 0x0204;
 
     /** The number of parameter slot blocks (version 0x25; their ids are 0-based). */
     public static final int      NUM_PARAMETER_SLOTS    = 100;
