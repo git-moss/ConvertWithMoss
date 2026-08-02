@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -50,8 +51,8 @@ import de.mossgrabers.tools.FileUtils;
  * Detects recursively DirectWave program files in folders. Files must end with <i>.dwp</i> or
  * <i>.dwb</i>. Programs saved with the 'Monolithic file' option disabled are read from the binary
  * block structure; for files which do not follow that structure (e.g. banks) the mapping is
- * reconstructed from the names of the WAV files which DirectWave writes when sampling a plugin
- * (see DIRECTWAVE_DWP_FORMAT.md in the design documentation).
+ * reconstructed from the names of the WAV files which DirectWave writes when sampling a plugin (see
+ * DIRECTWAVE_DWP_FORMAT.md in the design documentation).
  *
  * @author Jürgen Moßgraber
  */
@@ -103,9 +104,9 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             final byte [] content = Files.readAllBytes (file.toPath ());
             if (content.length >= DirectWaveTag.PREAMBLE_MAX_SIZE + 12 && Arrays.equals (content, 0, DirectWaveTag.MAGIC.length, DirectWaveTag.MAGIC, 0, DirectWaveTag.MAGIC.length))
             {
-                final List<DirectWaveChunk> chunks = parseBlockStream (content);
-                if (chunks != null)
-                    return this.parseChunks (file, chunks, content[DirectWaveTag.PREAMBLE_VERSION_OFFSET] & 0xFF);
+                final Optional<List<DirectWaveChunk>> chunks = parseBlockStream (content);
+                if (chunks.isPresent ())
+                    return this.parseChunks (file, chunks.get (), content[DirectWaveTag.PREAMBLE_VERSION_OFFSET] & 0xFF);
             }
 
             // No parseable DWP structure (e.g. a bank): reconstruct the mapping from the names
@@ -129,16 +130,16 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
      * @param content The content of the DWP file
      * @return The parsed top level chunks or null if the file has no valid block stream
      */
-    private static List<DirectWaveChunk> parseBlockStream (final byte [] content)
+    private static Optional<List<DirectWaveChunk>> parseBlockStream (final byte [] content)
     {
         for (int offset = DirectWaveTag.PREAMBLE_MIN_SIZE; offset <= DirectWaveTag.PREAMBLE_MAX_SIZE; offset++)
             if (DirectWaveChunk.readIntLE (content, offset) == DirectWaveTag.TAG_INSTRUMENT_NAME)
             {
-                final List<DirectWaveChunk> chunks = DirectWaveChunk.parseAll (content, offset);
-                if (chunks != null)
-                    return chunks;
+                final Optional<List<DirectWaveChunk>> chunks = DirectWaveChunk.parseAll (content, offset);
+                if (chunks.isPresent ())
+                    return Optional.of (chunks.get ());
             }
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -201,8 +202,8 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private ISampleZone parseSampleContainer (final File file, final DirectWaveChunk containerChunk, final int version) throws IOException
     {
-        final List<DirectWaveChunk> chunks = DirectWaveChunk.parseAll (containerChunk.getPayload (), 0);
-        if (chunks == null)
+        final Optional<List<DirectWaveChunk>> chunks = DirectWaveChunk.parseAll (containerChunk.getPayload (), 0);
+        if (chunks.isEmpty ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", file.getAbsolutePath ());
             return null;
@@ -218,7 +219,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         final List<byte []> lfoBlocks = new ArrayList<> ();
         final List<byte []> modulations = new ArrayList<> ();
         final List<byte []> unknownChunks = new ArrayList<> ();
-        for (final DirectWaveChunk chunk: chunks)
+        for (final DirectWaveChunk chunk: chunks.get ())
             switch (chunk.getTag ())
             {
                 case DirectWaveTag.TAG_ZONE_MAPPING:
@@ -342,8 +343,8 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Apply the pitch and volume modulations of the zone. An LFO only has an effect when the
-     * modulation matrix routes it to a target, therefore the matrix slots are the starting point:
-     * a slot which routes one of the two zone LFOs to the pitch or to the gain of the voice is
+     * modulation matrix routes it to a target, therefore the matrix slots are the starting point: a
+     * slot which routes one of the two zone LFOs to the pitch or to the gain of the voice is
      * converted with the LFO block it names. The amount is bipolar around
      * {@link DirectWaveTag#MODULATION_NEUTRAL} and the strength is the cube of the distance from
      * it, see the design document.
@@ -369,20 +370,23 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
 
             final ILfoModulator modulator;
-            if (target == DirectWaveTag.MODULATION_TARGET_PITCH)
+            switch (target)
             {
-                modulator = zone.getPitchLfoModulator ();
-                // DirectWave reaches PITCH_MODULATION_RANGE cent at its full strength, the depth
-                // of the model is relative to MAX_ENVELOPE_DEPTH cent
-                modulator.setDepth (Math.clamp (strength * DirectWaveTag.PITCH_MODULATION_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1));
+                case DirectWaveTag.MODULATION_TARGET_PITCH:
+                    modulator = zone.getPitchLfoModulator ();
+                    // DirectWave reaches PITCH_MODULATION_RANGE cent at its full strength, the
+                    // depth of the model is relative to MAX_ENVELOPE_DEPTH cent
+                    modulator.setDepth (Math.clamp (strength * DirectWaveTag.PITCH_MODULATION_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1));
+                    break;
+
+                case DirectWaveTag.MODULATION_TARGET_GAIN:
+                    modulator = zone.getAmplitudeLfoModulator ();
+                    modulator.setDepth (volumeDepth (strength));
+                    break;
+
+                default:
+                    continue;
             }
-            else if (target == DirectWaveTag.MODULATION_TARGET_GAIN)
-            {
-                modulator = zone.getAmplitudeLfoModulator ();
-                modulator.setDepth (volumeDepth (strength));
-            }
-            else
-                continue;
 
             applyLfo (modulator.getSource (), lfoBlocks.get (lfoIndex));
         }
@@ -439,8 +443,8 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Apply the amplitude envelope of the zone. The four floats of the envelope block are the
-     * attack, decay, sustain and release knob positions. When they are exactly the defaults of
-     * the format version nothing is set, so that the default envelope handling of the conversion
+     * attack, decay, sustain and release knob positions. When they are exactly the defaults of the
+     * format version nothing is set, so that the default envelope handling of the conversion
      * applies. The time knobs are mapped with the provisional cubic law described in the design
      * document; the sustain is a level and therefore exact.
      *
@@ -544,10 +548,10 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Identify the embedded audio of a monolithic file among the unknown blocks of a sample
-     * container. The audio format block provides the frame count, the channel count and the
-     * sample rate, therefore the audio data is the block whose size is exactly frame count times
-     * channel count times 2, 3 or 4 bytes per sample - a check which cannot match by accident.
-     * (The bytes-per-frame field of the audio format block is not used since it does not hold
+     * container. The audio format block provides the frame count, the channel count and the sample
+     * rate, therefore the audio data is the block whose size is exactly frame count times channel
+     * count times 2, 3 or 4 bytes per sample - a check which cannot match by accident. (The
+     * bytes-per-frame field of the audio format block is not used since it does not hold
      * bytes-per-frame in all DirectWave versions, see the design document.) 16 and 24 bit integer
      * data is taken over as-is, 4 bytes per sample are the 32-bit float format of DirectWave and
      * are converted to 24 bit.

@@ -12,12 +12,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
@@ -345,10 +346,9 @@ public final class AudioFileUtils
     }
 
 
-
     /**
-     * Read a WAV file which does not contain PCM data but a complete Ogg stream, as written by
-     * some hosts with one of the Ogg Vorbis WAVE format codes (e.g. the sample files of the legacy
+     * Read a WAV file which does not contain PCM data but a complete Ogg stream, as written by some
+     * hosts with one of the Ogg Vorbis WAVE format codes (e.g. the sample files of the legacy
      * DirectWave packs of FL Studio). The Ogg stream is taken out of the data chunk and decoded
      * with the normal Ogg support; the result is a WAV file with PCM data.
      *
@@ -356,14 +356,14 @@ public final class AudioFileUtils
      * @return The de-compressed WAV data or null if the file is not such a WAV file
      * @throws IOException Could not read or decode the file
      */
-    public static byte [] decompressOggInWav (final File wavFile) throws IOException
+    public static Optional<byte []> decompressOggInWav (final File wavFile) throws IOException
     {
-        final byte [] oggData = extractOggStream (wavFile);
-        if (oggData == null)
-            return null;
+        final Optional<byte []> oggData = extractOggStream (wavFile);
+        if (oggData.isEmpty ())
+            return Optional.empty ();
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
-        decompressToWav (new ByteArrayInputStream (oggData), out);
-        return out.toByteArray ();
+        decompressToWav (new ByteArrayInputStream (oggData.get ()), out);
+        return Optional.of (out.toByteArray ());
     }
 
 
@@ -375,11 +375,11 @@ public final class AudioFileUtils
      * @return The Ogg stream or null if the file does not contain one
      * @throws IOException Could not read the file
      */
-    private static byte [] extractOggStream (final File wavFile) throws IOException
+    private static Optional<byte []> extractOggStream (final File wavFile) throws IOException
     {
         final byte [] content = Files.readAllBytes (wavFile.toPath ());
         if (content.length < 12 || !"RIFF".equals (new String (content, 0, 4, StandardCharsets.US_ASCII)) || !"WAVE".equals (new String (content, 8, 4, StandardCharsets.US_ASCII)))
-            return null;
+            return Optional.empty ();
 
         boolean isOggFormat = false;
         int position = 12;
@@ -397,19 +397,19 @@ public final class AudioFileUtils
             else if ("data".equals (chunkID))
             {
                 if (!isOggFormat)
-                    return null;
+                    return Optional.empty ();
                 final int length = (int) Math.min (chunkSize, content.length - (long) dataStart);
                 // Only a complete Ogg stream can be decoded, other modes store raw Vorbis packets
                 if (length < 4 || !"OggS".equals (new String (content, dataStart, 4, StandardCharsets.US_ASCII)))
-                    return null;
+                    return Optional.empty ();
                 final byte [] oggData = new byte [length];
                 System.arraycopy (content, dataStart, oggData, 0, length);
-                return oggData;
+                return Optional.of (oggData);
             }
 
             position = dataStart + (int) chunkSize + ((chunkSize & 1) == 0 ? 0 : 1);
         }
-        return null;
+        return Optional.empty ();
     }
 
 
@@ -417,6 +417,7 @@ public final class AudioFileUtils
     {
         return data[offset] & 0xFF | (data[offset + 1] & 0xFF) << 8 | (data[offset + 2] & 0xFF) << 16 | (data[offset + 3] & 0xFF) << 24;
     }
+
 
     /**
      * De-compresses the input file and writes audio data in WAV format to the given output stream.
