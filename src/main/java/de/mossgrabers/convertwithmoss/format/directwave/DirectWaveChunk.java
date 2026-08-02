@@ -177,6 +177,33 @@ public class DirectWaveChunk
 
 
     /**
+     * Read an unsigned 16 bit little-endian integer from a byte array.
+     *
+     * @param data The data to read from
+     * @param offset The offset at which to read
+     * @return The value
+     */
+    public static int readShortLE (final byte [] data, final int offset)
+    {
+        return data[offset] & 0xFF | (data[offset + 1] & 0xFF) << 8;
+    }
+
+
+    /**
+     * Write an unsigned 16 bit little-endian integer into a byte array.
+     *
+     * @param data The data to write to
+     * @param offset The offset at which to write
+     * @param value The value to write
+     */
+    public static void writeShortLE (final byte [] data, final int offset, final int value)
+    {
+        data[offset] = (byte) (value & 0xFF);
+        data[offset + 1] = (byte) (value >> 8 & 0xFF);
+    }
+
+
+    /**
      * Write a 32 bit little-endian float into a byte array.
      *
      * @param data The data to write to
