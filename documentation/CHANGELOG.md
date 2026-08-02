@@ -1,5 +1,10 @@
 # Changes
 
+## 20.1.0 (work-in-progress)
+
+* NI Kontakt
+  * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
+
 ## 20.0.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
@@ -82,7 +87,6 @@
   * Fixed: The loop cross-fade of a written Kontakt 1 file was the cross-fade fraction cast to a whole number, so every cross-fade became 0 samples. The field is a length in samples.
   * Fixed: The lower velocity crossfade of a Kontakt 4.2/5+ zone was read from the lower key crossfade field.
   * Fixed: Muted and soloed groups were ignored when reading Kontakt 4.2/5+ files - the zones of muted groups (often alternate articulations parked by the sound designer) stacked onto the active ones. Zones of muted groups are now skipped, and if any group is soloed only the soloed groups are converted.
-  * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
 * NI Maschine
   * Fixed: The velocity to volume amount was written from the amplitude envelope modulation depth instead of the velocity modulation amount (both the Maschine 1 and 2 writers) - a source without velocity response became fully velocity sensitive.
 * Reason NN-XT
