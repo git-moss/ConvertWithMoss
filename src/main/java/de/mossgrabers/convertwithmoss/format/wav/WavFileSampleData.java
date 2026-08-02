@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.format.wav;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -101,6 +102,36 @@ public class WavFileSampleData extends AbstractFileSampleData
         super (file);
     }
 
+
+
+    /**
+     * Constructor for a sample whose file does not contain the PCM data itself, e.g. a WAV file
+     * which wraps an Ogg stream. The name of the file is kept but the audio is taken from the
+     * already de-compressed WAV data.
+     *
+     * @param file The file where the sample is stored
+     * @param wavContent The de-compressed WAV data
+     * @throws IOException Could not read the data
+     */
+    public WavFileSampleData (final File file, final byte [] wavContent) throws IOException
+    {
+        super (file);
+
+        this.waveFile = new WaveFile ();
+        try (final InputStream inputStream = new ByteArrayInputStream (wavContent))
+        {
+            this.waveFile.read (inputStream, true);
+            final FormatChunk formatChunk = this.waveFile.getFormatChunk ();
+            this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels (), formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), this.waveFile.getDataChunk ().calculateLength (formatChunk));
+        }
+        catch (final ParseException | CompressionNotSupportedException ex)
+        {
+            throw new IOException (ex);
+        }
+
+        // The file on disk is not plain PCM, therefore it must never be copied as-is
+        this.hasWavSourceFile = false;
+    }
 
     /**
      * Constructor for a sample stored in a ZIP file.

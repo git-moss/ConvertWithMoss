@@ -774,6 +774,12 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             if (fileEnding.endsWith (".ncw"))
                 return new NcwFileSampleData (sampleFile);
 
+            // Some hosts store a complete Ogg stream inside a WAV file (e.g. the sample files of
+            // the legacy DirectWave packs of FL Studio); de-compress it to PCM first
+            final byte [] oggInWav = AudioFileUtils.decompressOggInWav (sampleFile);
+            if (oggInWav != null)
+                return new WavFileSampleData (sampleFile, oggInWav);
+
             IFileBasedSampleData sampleData = null;
             final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);
             final AudioFileFormat.Type type = audioFileFormat.getType ();
