@@ -66,6 +66,7 @@ The following multi-sample formats are supported:
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [Fairlight CMI 3](#fairlight-cmi-3)
+* [FL Studio DirectWave](#fl-studio-directwave)
 * [ISO/IMG Files](#isoimg-files)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
@@ -89,6 +90,7 @@ The following multi-sample formats are supported:
 * [Synclavier Regen](#synclavier-regen)
 * [Synthstrom Deluge](#synthstrom-deluge)
 * [TAL Sampler](#tal-sampler)
+* [Teenage Engineering OP-XY](#teenage-engineering-op-xy)
 * [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
 * [Yamaha YSFC](#yamaha-ysfc)
 
@@ -461,13 +463,16 @@ As a source, DWP programs are read from their binary structure (see DIRECTWAVE_D
 
 As a destination, one monolithic DWP file is written per instrument, i.e. a single self-contained file which carries all its samples as FLAC compressed audio. FL Studio Desktop loads it directly and for FL Studio Mobile it only needs to be copied into its user files. The DWP structure carries name, key/velocity ranges, root, gain, panning, loop, amplitude envelope, a low-pass/high-pass/band-pass/notch filter and the two zone LFOs (LFO 1 modulates the pitch, LFO 2 the volume) per zone. Only the first round-robin cycle is kept since trigger groups cannot be written.
 
+To import a DWP file into FL Studio Mobile, copy it to the iOS device and open it with FL Studio Mobile. This will copy the file to the user instrument folder.
+
 ## ISO/IMG Files
 
 Searches for files ending with *.ISO, *.IMG or *.HDA. Currently, the following formats can be handled:
 
-* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
-* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
+* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [E-mu Emulator III](#e-mu-emulator-iiiiiixesi)
+* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
 * [Roland S-50 series](#roland-s-50-series)
 * [Roland S-770 series](#roland-s-770-series)
