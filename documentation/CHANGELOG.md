@@ -1,5 +1,10 @@
 # Changes
 
+## 20.1.0 (work-in-progress)
+
+* NI Kontakt
+  * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
+
 ## 20.0.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
