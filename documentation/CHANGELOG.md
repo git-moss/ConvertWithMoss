@@ -9,6 +9,8 @@
   * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
 * NI Kontakt
   * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
+* Processing
+  * Fixed: Changing the sample rate of the samples used a linear interpolation, which is not band-limited: reducing the rate folded all frequencies above the new Nyquist frequency back into the audible range (measured on a sweep which lies entirely above it: -9 dB instead of silence) and raising it left images of the source spectrum above the original Nyquist frequency. Both are now converted with a windowed sinc interpolation, which lowers the aliasing of that sweep by 92 dB and the images of a 32 kHz sample raised to 48 kHz from -41 dB to -84 dB.
 * WAV
   * New: WAV files which contain a complete Ogg stream instead of PCM data (marked with one of the Ogg Vorbis WAVE format codes, e.g. the samples of the legacy DirectWave packs of FL Studio) are read by de-compressing the embedded stream. They were rejected as an unsupported source format before.
 
