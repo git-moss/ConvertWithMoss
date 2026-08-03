@@ -82,6 +82,9 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
     /** Page 7 parameter block: the damping (release) and volume, stored 0-based. */
     private static final int                    QBV2_DAMPING_OFFSET   = 0xD3DD;
     private static final int                    QBV2_VOLUME_OFFSET    = 0xD3CB;
+    /** The measured fade-out time of the damping: 0.0255 * dial value^0.741 seconds. */
+    private static final double                 QBV2_DAMPING_TIME_SCALE    = 0.0255;
+    private static final double                 QBV2_DAMPING_TIME_EXPONENT = 0.741;
 
     private static final DestinationAudioFormat DESTINATION_FORMAT    = new DestinationAudioFormat (new int []
     {
@@ -821,11 +824,14 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
         out[QBV2_CONTROL_OFFSET + 12] = (byte) (renderedVoice.isLooped ? 1 : 0);
 
         // Damping (release) and volume are stored 0-based like all Page 7 values. The time law of
-        // the damping is not known yet, the mapping is provisional
+        // the damping was measured from two QasarBeach recordings (dial value 23 fades with a time
+        // constant of 0.087s, 128 with 0.311s): fade-out time = 0.0255 * value^0.741 seconds. The
+        // damping of the format maxes out at roughly 0.9 seconds
         final IEnvelopeModulator modulator = zone.getAmplitudeEnvelopeModulator ();
         final IEnvelope envelope = modulator.getDepth () > 0 ? modulator.getSource () : null;
         final double release = limitToDefault (envelope == null ? 0 : envelope.getReleaseTime (), 0);
-        out[QBV2_DAMPING_OFFSET] = (byte) Math.clamp (Math.round (release * 32.0), 4, 127);
+        final long dampingValue = Math.round (Math.pow (release / QBV2_DAMPING_TIME_SCALE, 1.0 / QBV2_DAMPING_TIME_EXPONENT));
+        out[QBV2_DAMPING_OFFSET] = (byte) (Math.clamp (dampingValue, 5, 128) - 1);
         out[QBV2_VOLUME_OFFSET] = (byte) Math.clamp (Math.round (128.0 * Math.pow (10, zone.getGain () / 20.0)) - 1, 0, 127);
         return out;
     }

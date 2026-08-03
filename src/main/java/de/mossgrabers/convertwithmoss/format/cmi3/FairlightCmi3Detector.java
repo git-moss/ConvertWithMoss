@@ -307,13 +307,13 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         // Damping (release) and volume from the parameter block, stored 0-based. A value with the
-        // top bit set is patched to a modulator and is skipped. The damping time law is not known
-        // yet, the mapping is provisional
+        // top bit set is patched to a modulator and is skipped. The time law of the damping was
+        // measured from QasarBeach recordings: fade-out time = 0.0255 * dial value^0.741 seconds
         if (inBytes.length > QBV2_DAMPING_OFFSET)
         {
             final int damping = Byte.toUnsignedInt (inBytes[QBV2_DAMPING_OFFSET]);
             if (damping < 0x80)
-                zone.getAmplitudeEnvelopeModulator ().getSource ().setReleaseTime (damping / 32.0);
+                zone.getAmplitudeEnvelopeModulator ().getSource ().setReleaseTime (0.0255 * Math.pow (damping + 1.0, 0.741));
             final int volume = Byte.toUnsignedInt (inBytes[QBV2_VOLUME_OFFSET]);
             if (volume < 0x80)
                 zone.setGain (20.0 * Math.log10 ((volume + 1) / 128.0));
