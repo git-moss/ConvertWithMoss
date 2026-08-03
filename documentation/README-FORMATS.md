@@ -83,7 +83,7 @@ The following multi-sample formats are supported:
 * [Roland S-770 Series](#roland-s-770-series) - read only
 * [Roland SP-404MK2](#roland-sp-404mk2)
 * [Roland ZEN-Core](#roland-zen-core)
-* [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
+* [Sample files (AIFF, CAF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-caf-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
 * [Spectrasonics Omnisphere 3](#spectrasonics-omnisphere-3)
@@ -697,19 +697,21 @@ User samples are written at the device-native 48 kHz / 16-bit. As the ZEN-Core v
 
 * Shorten the name for the device display: Keeps only the last separated part of the name (after " - ", " / ", " : " or " | "), e.g. *Greek Bazouki - Dark Tremolo* becomes *Dark Tremolo*. The name field of this format holds only 16 characters, so a source whose name is qualified with the bank it comes from otherwise loses exactly the part which tells its presets apart. The dropped part is not written anywhere else, therefore this is disabled by default. CLI: `ZenCoreShortenName=1`.
 
-## Sample files (AIFF, FLAC, NCW, OGG, WAV)
+## Sample files (AIFF, CAF, FLAC, NCW, OGG, WAV)
 
 This powerful algorithm allows to create multi-samples from single sample files incl. detection of metadata.
 
 All files of the same type located in the same folder are considered as a part of one multi-sample. You can also select a top folder. If you do so, all sub-folders are checked for potential multi-sample folders.
 
-WAV files can already contain metadata to configure a complete multi-sample (but sadly rarely used). Therefore, all WAV files of a folder are checked if they contain instrument chunks. If this is the case they are used to create the layout of the multi-sample (range and velocity splits as well as gain and pitch settings). If no such information is available the same algorithm is applied as for the other supported formats: it tries to detect the necessary key range and velocity information from the names of the WAV files as well as metadata:
+WAV files can already contain metadata to configure a complete multi-sample (but sadly rarely used). Therefore, all WAV files of a folder are checked if they contain instrument chunks. If this is the case they are used to create the layout of the multi-sample (range and velocity splits as well as gain and pitch settings). The Instrument chunks of AIFF and CAF files are used in the same way. If no such information is available the same algorithm is applied as for the other supported formats: it tries to detect the necessary key range and velocity information from the names of the WAV files as well as metadata:
 
 * Notes are first detected from the files metadata (if supported by the format). If none is present, different parser settings are applied on the file name to detect a note name (or MIDI note value).
 * A category is extracted from the file name as well based on a list of several synonyms and abbreviations (e.g. Solo as a synonym for Lead). If this fails the same logic is applied to the folder names (e.g. you might have sorted your lead sounds in a folder called *Lead*).
 * Characterizations like *hard* are extracted as well with a similar algorithm as for the category.
 
-As a destination only WAV files are supported.
+CAF (Apple Core Audio Format) files are read when they contain linear PCM (integer or float in either byte order), IMA4 (Apple's IMA 4:1 ADPCM), µLaw, aLaw or Apple Lossless (ALAC) audio data. This includes the sample files which the instruments of Logic Pro reference. Files with other codecs (e.g. AAC) are reported with the name of their codec. Root note, key/velocity ranges, gain and tuning are read from the Instrument chunk, loops from the referenced regions or the sustain loop markers and metadata texts from the Information chunk.
+
+As the destination, the audio file format of the written sample files can be selected: WAV, AIFF, CAF (with linear PCM), CAF-ALAC (CAF compressed with Apple Lossless) or FLAC. This turns the format into a general audio file converter, e.g. from WAV to AIFF or from AIFF to FLAC. All conversions are lossless with one exception: FLAC supports at maximum 24-bit, therefore 32-bit samples are reduced. Float samples are converted to 16-bit integer for AIFF, CAF-ALAC and FLAC (WAV and CAF keep them as float). The WAV chunk options are applied to the other formats accordingly: the instrument and sample (loop) information is written to the Instrument and Marker chunks of AIFF files and to the Instrument and Region chunks of CAF files, the metadata texts to the Author/Annotation chunks of AIFF files and to the Information chunk of CAF files. FLAC files carry no instrument information.
 
 ### Source Options - Groups
 
@@ -730,6 +732,10 @@ WAV file can contain different sample formats. This converter supports (split) s
 * Crossfade velocities: You can automatically create crossfades between the different groups. This makes especially sense if you sampled several sample groups with different velocity values. Set the number of velocity steps (0-127), which should be crossfaded between two samples. If you set a too high number the crossfade is automatically limited to the maximum number of velocity steps between the two neighbouring samples.
 * Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multi-sample but there might be further text at the end of the name, which you might want to remove. For example the multi-samples I created with SampleRobot have a group information like "_ms0_0". You can set a comma separated list of such post-fix texts in that field.
 * Ignore loops: Sometimes the source files contain wrong loops. Especially helpful for one-shot samples.
+
+### Destination Options
+
+* Audio file format: The format of the written sample files: WAV, AIFF, CAF, CAF-ALAC (CAF compressed with Apple Lossless) or FLAC.
 
 ## SFZ
 

@@ -58,6 +58,9 @@ import de.mossgrabers.convertwithmoss.file.OggFileSampleData;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffCommonChunk;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffFile;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffFileSampleData;
+import de.mossgrabers.convertwithmoss.file.caf.CafAudioDescriptionChunk;
+import de.mossgrabers.convertwithmoss.file.caf.CafFile;
+import de.mossgrabers.convertwithmoss.file.caf.CafFileSampleData;
 import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
@@ -735,6 +738,9 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
             return new AiffFileSampleData (zipFile, sampleFile);
 
+        if (fileEnding.endsWith (".caf"))
+            return new CafFileSampleData (zipFile, sampleFile);
+
         throw new IOException (Functions.getMessage (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, sampleFile.getName ()));
 
     }
@@ -755,6 +761,10 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
 
         final String fileEnding = sampleFile.getName ().toLowerCase ();
+
+        if (fileEnding.endsWith (".caf"))
+            return createCafSampleData (sampleFile);
+
         try
         {
             // Note: only AIF ending is picked up as correct ending below and it also does not
@@ -803,6 +813,37 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         {
             throw new IOException (Functions.getMessage (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, sampleFile.getName ()), ex);
         }
+    }
+
+
+    /**
+     * Create the sample data object for a CAF file. Checks for an audio data format which cannot
+     * be decoded and reports it accordingly. CAF files with linear PCM, IMA4, µLaw, aLaw or
+     * Apple Lossless sound data are supported.
+     *
+     * @param sampleFile The CAF file
+     * @return The sample data
+     * @throws IOException The file could not be parsed or its audio data cannot be decoded
+     */
+    private static IFileBasedSampleData createCafSampleData (final File sampleFile) throws IOException
+    {
+        final CafFile cafFile;
+        try
+        {
+            cafFile = new CafFile (sampleFile);
+        }
+        catch (final IOException ex)
+        {
+            throw new IOException (Functions.getMessage (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, sampleFile.getName ()), ex);
+        }
+
+        if (!cafFile.canDecodeAudioData ())
+        {
+            final CafAudioDescriptionChunk descriptionChunk = cafFile.getAudioDescriptionChunk ();
+            throw new IOException (Functions.getMessage ("IDS_ERR_UNSUPPORTED_CAF_CODEC", sampleFile.getName (), descriptionChunk.getFormatName (), descriptionChunk.getFormatID ()));
+        }
+
+        return new CafFileSampleData (sampleFile);
     }
 
 
