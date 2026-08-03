@@ -5,6 +5,7 @@
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * New: Added support for the FL Studio DirectWave format (reading of DWP programs with their key/velocity ranges, gain, panning, loops, amplitude envelope, filter and the pitch and volume LFOs, including monolithic programs which carry all their samples inside of the file; the mapping of DWB banks and of sampled plug-ins is reconstructed from the names of their sample files; written programs are always monolithic, i.e. one self-contained file per instrument which stores all of its samples as FLAC compressed audio).
 * New: Added support for the Teenage Engineering OP-XY multi-sample preset format (reading and writing of the *.preset folders with their patch.json description file).
+* New: Added support for the Casio FZ-1/FZ-10M/FZ-20M format (reading of floppy disk images (IMG, HFE) and bare dump files (FZF, FZV, FZB) with banks, voices, loops, envelopes and filters; writing creates a ready-to-use floppy disk image with a full dump, e.g. for a Gotek/HxC floppy emulator - not yet verified on real hardware).
 * Ableton
   * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
 * NI Kontakt

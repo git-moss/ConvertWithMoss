@@ -43,6 +43,8 @@ import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.bliss.BlissCreator;
 import de.mossgrabers.convertwithmoss.format.bliss.BlissDetector;
+import de.mossgrabers.convertwithmoss.format.casio.CasioFZCreator;
+import de.mossgrabers.convertwithmoss.format.casio.CasioFZDetector;
 import de.mossgrabers.convertwithmoss.format.cmi3.FairlightCmi3Detector;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerCreator;
 import de.mossgrabers.convertwithmoss.format.decentsampler.DecentSamplerDetector;
@@ -194,6 +196,7 @@ public class ConverterBackend
         this.detectors.add (new AkaiS1000Detector (notifier));
         this.detectors.add (new BitwigMultisampleDetector (notifier));
         this.detectors.add (new BlissDetector (notifier));
+        this.detectors.add (new CasioFZDetector (notifier));
         this.detectors.add (new TX16WxDetector (notifier));
         this.detectors.add (new DecentSamplerDetector (notifier));
         this.detectors.add (new DlsDetector (notifier));
@@ -242,6 +245,7 @@ public class ConverterBackend
         this.creators.add (new MPCKeygroupCreator (notifier));
         this.creators.add (new BitwigMultisampleCreator (notifier));
         this.creators.add (new BlissCreator (notifier));
+        this.creators.add (new CasioFZCreator (notifier));
         this.creators.add (new TX16WxCreator (notifier));
         this.creators.add (new DecentSamplerCreator (notifier));
         this.creators.add (new DistingExCreator (notifier));
