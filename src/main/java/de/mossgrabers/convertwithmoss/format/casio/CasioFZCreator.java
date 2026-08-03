@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -63,7 +64,7 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String name = createSafeFilename (multisampleSource.getName ());
+        final String name = FileUtils.createSafeFilename (multisampleSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, name, "img");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
