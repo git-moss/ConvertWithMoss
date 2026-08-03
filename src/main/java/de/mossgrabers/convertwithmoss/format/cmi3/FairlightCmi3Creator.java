@@ -211,7 +211,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             return null;
         }
 
-        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
+        final WaveFile waveFile = convertZoneAudio (sampleData.get (), DESTINATION_FORMAT);
         final int numChannels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (numChannels > 2)
         {
@@ -511,6 +511,29 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
 
     /**
+     * Convert the audio of a zone to 16-bit PCM. An 8-bit source is unsigned (the WAV convention)
+     * and stays unsigned when the audio system widens it to 16-bit - the sign bit is corrected
+     * here so that the returned data is always signed PCM.
+     *
+     * @param sampleData The sample data of the zone
+     * @param format The destination format
+     * @return The converted WAV file
+     * @throws IOException Could not convert the sample data
+     */
+    private static WaveFile convertZoneAudio (final ISampleData sampleData, final DestinationAudioFormat format) throws IOException
+    {
+        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, format);
+        if (sampleData.getAudioMetadata ().getBitResolution () == 8)
+        {
+            final byte [] data = waveFile.getDataChunk ().getData ();
+            for (int i = 1; i < data.length; i += 2)
+                data[i] ^= 0x80;
+        }
+        return waveFile;
+    }
+
+
+    /**
      * Extract one channel from interleaved little-endian 16-bit PCM data as big-endian data.
      *
      * @param pcmData The interleaved little-endian PCM data
@@ -539,8 +562,8 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
     /**
      * Write each sample zone as a voice file of the 8-bit CMI I/II/IIx dialect. Since the format
-     * does not store a sample rate, the audio is re-sampled so that it plays at the correct pitch
-     * when the middle C of the written voice is the configured reference rate.
+     * does not store a sample rate, the audio is re-sampled so that the voice plays at its
+     * original pitch on the root key of the zone.
      *
      * @param destinationFolder Where to store the files
      * @param multisampleSource The multi-sample source
@@ -602,14 +625,16 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             return null;
         }
 
-        // Re-sample so that the pitch of the zone is kept relative to the reference rate at middle
-        // C. A zone without key tracking plays as recorded instead
+        // The CMI II reads one 128 sample segment per waveform period, i.e. the playback rate is
+        // the frequency of the played note times 128 (the 14080 Hz default rate of the IIx is
+        // exactly 128 times the 110 Hz A). A voice therefore plays at its original pitch on its
+        // root key when the audio is re-sampled to the root frequency times 128
         final int sourceRate = sampleData.get ().getAudioMetadata ().getSampleRate ();
         final int root = Math.clamp (zone.getKeyRoot () < 0 ? zone.getKeyLow () : zone.getKeyRoot (), 0, 127);
-        final double pitchOffset = zone.getKeyTracking () == 0 ? 0 : root - zone.getTuning () - 60.0;
-        final int targetRate = Math.clamp (Math.round (this.settingsConfiguration.getIIxSampleRate () * Math.pow (2, pitchOffset / 12.0)), 2100, 192000);
+        final double rootFrequency = 440.0 * Math.pow (2, (root - zone.getTuning () - 69.0) / 12.0);
+        final int targetRate = Math.clamp (Math.round (rootFrequency * 128.0), 2100, 100000);
 
-        final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), new DestinationAudioFormat (new int []
+        final WaveFile waveFile = convertZoneAudio (sampleData.get (), new DestinationAudioFormat (new int []
         {
             16
         }, targetRate, true));

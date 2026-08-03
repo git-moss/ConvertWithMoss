@@ -55,7 +55,12 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     private static final int IIX_LOOP_MODE_OFFSET  = 0x133B;
     /** The IIx dialect stores no sample rate - the documented default sampling rate of the IIx. */
     private static final int IIX_SAMPLE_RATE       = 14080;
-    private static final int IIX_ROOT_KEY          = 60;
+    /**
+     * The CMI II reads one 128 sample segment per waveform period, therefore a voice plays at its
+     * original pitch on the key with the frequency of the sample rate divided by 128. For the
+     * 14080 Hz default rate this is the 110 Hz A below the middle C.
+     */
+    private static final int IIX_ROOT_KEY          = 45;
 
 
     /** All parsed properties of a single CMI3 sub-voice. */

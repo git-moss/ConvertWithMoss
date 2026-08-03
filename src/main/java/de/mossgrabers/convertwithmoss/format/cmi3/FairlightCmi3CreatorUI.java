@@ -34,24 +34,10 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
     }
 
 
-    private static final String    CMI3_TARGET_FORMAT   = "CMI3TargetFormat";
-    private static final String    CMI3_IIX_SAMPLE_RATE = "CMI3IIxSampleRate";
+    private static final String CMI3_TARGET_FORMAT = "CMI3TargetFormat";
 
-    /** Sample rates the CMI I/II/IIx supported (2.1-32 kHz, 14080 Hz is the documented default). */
-    private static final Integer [] IIX_SAMPLE_RATES    =
-    {
-        Integer.valueOf (14080),
-        Integer.valueOf (16000),
-        Integer.valueOf (22050),
-        Integer.valueOf (30208),
-        Integer.valueOf (32000),
-        Integer.valueOf (8000)
-    };
-
-    private ComboBox<String>       targetFormatBox;
-    private ComboBox<Integer>      iixSampleRateBox;
-    private TargetFormat           targetFormat         = TargetFormat.SERIES_III;
-    private int                    iixSampleRate        = IIX_SAMPLE_RATES[0].intValue ();
+    private ComboBox<String>    targetFormatBox;
+    private TargetFormat        targetFormat       = TargetFormat.SERIES_III;
 
 
     /** {@inheritDoc} */
@@ -66,12 +52,6 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
         this.targetFormatBox.setMaxWidth (Double.MAX_VALUE);
         panel.addComponent (this.targetFormatBox);
 
-        panel.createSeparator ("@IDS_CMI3_IIX_SAMPLE_RATE");
-        this.iixSampleRateBox = new ComboBox<> ();
-        this.iixSampleRateBox.getItems ().addAll (IIX_SAMPLE_RATES);
-        this.iixSampleRateBox.setMaxWidth (Double.MAX_VALUE);
-        panel.addComponent (this.iixSampleRateBox);
-
         return panel.getPane ();
     }
 
@@ -81,9 +61,6 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
     public void loadSettings (final BasicConfig config)
     {
         this.targetFormatBox.getSelectionModel ().select (Math.clamp (config.getInteger (CMI3_TARGET_FORMAT, 0), 0, TargetFormat.values ().length - 1));
-        this.iixSampleRateBox.getSelectionModel ().select (Integer.valueOf (config.getInteger (CMI3_IIX_SAMPLE_RATE, IIX_SAMPLE_RATES[0].intValue ())));
-        if (this.iixSampleRateBox.getSelectionModel ().getSelectedIndex () < 0)
-            this.iixSampleRateBox.getSelectionModel ().select (IIX_SAMPLE_RATES[0]);
     }
 
 
@@ -92,8 +69,6 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
     public void saveSettings (final BasicConfig config)
     {
         config.setInteger (CMI3_TARGET_FORMAT, this.targetFormatBox.getSelectionModel ().getSelectedIndex ());
-        final Integer sampleRate = this.iixSampleRateBox.getSelectionModel ().getSelectedItem ();
-        config.setInteger (CMI3_IIX_SAMPLE_RATE, sampleRate == null ? IIX_SAMPLE_RATES[0].intValue () : sampleRate.intValue ());
     }
 
 
@@ -102,8 +77,6 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
     public boolean checkSettingsUI (final INotifier notifier)
     {
         this.targetFormat = TargetFormat.values ()[Math.clamp (this.targetFormatBox.getSelectionModel ().getSelectedIndex (), 0, TargetFormat.values ().length - 1)];
-        final Integer sampleRate = this.iixSampleRateBox.getSelectionModel ().getSelectedItem ();
-        this.iixSampleRate = sampleRate == null ? IIX_SAMPLE_RATES[0].intValue () : sampleRate.intValue ();
         return true;
     }
 
@@ -114,35 +87,22 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
     {
         final String formatValue = parameters.remove (CMI3_TARGET_FORMAT);
         if (formatValue == null)
-            this.targetFormat = TargetFormat.SERIES_III;
-        else
-            switch (formatValue.trim ().toLowerCase (Locale.US))
-            {
-                case "iii", "3", "seriesiii":
-                    this.targetFormat = TargetFormat.SERIES_III;
-                    break;
-                case "iix", "2x", "2", "qasarbeach":
-                    this.targetFormat = TargetFormat.SERIES_IIX;
-                    break;
-                default:
-                    notifier.logError ("IDS_CLI_UNKNOWN_OUTPUT_FORMAT", formatValue);
-                    return false;
-            }
-
-        final String rateValue = parameters.remove (CMI3_IIX_SAMPLE_RATE);
-        if (rateValue == null)
         {
-            this.iixSampleRate = IIX_SAMPLE_RATES[0].intValue ();
+            this.targetFormat = TargetFormat.SERIES_III;
             return true;
         }
-        try
+
+        switch (formatValue.trim ().toLowerCase (Locale.US))
         {
-            this.iixSampleRate = Math.clamp (Integer.parseInt (rateValue.trim ()), 2100, 96000);
-        }
-        catch (final NumberFormatException ex)
-        {
-            notifier.logError ("IDS_CLI_VALUE_MUST_BE_INTEGER", CMI3_IIX_SAMPLE_RATE);
-            return false;
+            case "iii", "3", "seriesiii":
+                this.targetFormat = TargetFormat.SERIES_III;
+                break;
+            case "iix", "2x", "2", "qasarbeach":
+                this.targetFormat = TargetFormat.SERIES_IIX;
+                break;
+            default:
+                notifier.logError ("IDS_CLI_UNKNOWN_OUTPUT_FORMAT", formatValue);
+                return false;
         }
         return true;
     }
@@ -154,8 +114,7 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
     {
         return new String []
         {
-            CMI3_TARGET_FORMAT,
-            CMI3_IIX_SAMPLE_RATE
+            CMI3_TARGET_FORMAT
         };
     }
 
@@ -168,17 +127,5 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
     public TargetFormat getTargetFormat ()
     {
         return this.targetFormat;
-    }
-
-
-    /**
-     * Get the sample rate at which IIx voice files are written. The IIx format does not store a
-     * sample rate, therefore this is the reference rate of the written audio data.
-     *
-     * @return The sample rate in Hertz
-     */
-    public int getIIxSampleRate ()
-    {
-        return this.iixSampleRate;
     }
 }
