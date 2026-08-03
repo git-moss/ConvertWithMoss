@@ -36,8 +36,8 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
  * mapping table, with 16-bit mono or stereo audio, loop points, tuning and the amplitude envelope.
  * Alternatively the 8-bit voice format of the CMI I/II/IIx is written (one fixed-size file per
  * sample zone with the control (CO) file it references), which is the format read by the
- * QasarBeach recreation and the Arturia CMI V, or the native 16-bit format of QasarBeach itself,
- * which carries the loop, release and level in the file.
+ * QasarBeach recreation, or the native 16-bit format of QasarBeach itself, which carries the loop,
+ * release and level in the file.
  *
  * @author Jürgen Moßgraber
  */
