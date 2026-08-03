@@ -465,7 +465,17 @@ The Fairlight CMI (**C**omputer **M**usical **I**nstrument) Series III, introduc
 
 Voice Files (*.VC) store individual instrument subvoices (samples) and synthesis data. The file is split into headers/control parameters followed by raw linear 8-bit audio samples (or 16-bit for Series III). Fairlight CMI IIx used variable rates from 2.1 kHz to 32 kHz (default 14.08 kHz). Series III expanded up to 100 kHz at 16 bits. Early CMI memory was limited (e.g., 16KB per channel).
 
-Note that this will not work with IIx or earlier versions despite the same VC file extension was used. Only reading is supported.
+As a source, both dialects of the voice files are read: the 16-bit Series III files with all of their sub-voices (key ranges, loops, tuning, gain and the amplitude envelope) and the fixed-size 8-bit files of the CMI I/II/IIx (16384 samples with their loop segments), which are e.g. written by the QasarBeach recreation of the IIx - both with the full header as well as bare 16 KB audio-only files. When the control (CO) file referenced by an 8-bit voice is present next to it, its parameters win (as on the CMI itself): the loop, the attack and the damping, which becomes the release of the amplitude envelope. Voices saved by QasarBeach itself (its own 16-bit format marked with a 'QBV2' tag) are read as well, with their name and loop. The 8-bit dialect stores no sample rate: the CMI II reads one 128-sample segment per waveform period, so a voice plays at its original pitch on the key with the frequency of its sampling rate divided by 128. Such a voice is therefore read with the documented default rate of the IIx (14080 Hz) and its root on the matching 110 Hz A below the middle C.
+
+### Destination Options
+
+* Target Format:
+  * Series III: One voice file per multi-sample. Each sample zone becomes a sub-voice with its key range in the 128-key mapping table, with 16-bit mono or stereo audio, loop, tuning, gain and amplitude envelope. Since the format has no velocity dimension, the loudest velocity layer wins where zones overlap. Up to 127 sub-voices fit into a file.
+  * IIx with CO control file: One fixed-size 8-bit voice file per sample zone, as read by the CMI itself and the Arturia CMI V. The audio is mixed to mono, re-sampled to the root frequency of the zone times 128 - which makes the voice play at its original pitch on its root key (verified against QasarBeach) - and cut to the 16384 samples of a voice. The loop is stored in segments of 128 samples. Each voice comes with the control (CO) file it references, which carries the loop, the attack and damping (release) of the amplitude envelope and the level - the CMI and QasarBeach take the control parameters from this file, therefore both files have to stay together. Note that the fixed voice length limits a voice to 16384 samples, e.g. half a second at the rate of a middle C root.
+
+  * QasarBeach (QBV2): One voice file per sample zone in the native 16-bit format of the QasarBeach recreation, which carries the loop, the release (damping) and the level inside the file - a voice loads into QasarBeach ready to play. The unknown parts of the format are filled from a template captured from a QasarBeach save; the time law of the damping is measured only roughly yet.
+
+Written files have not been tested on real Fairlight hardware yet.
 
 ## FL Studio DirectWave
 
