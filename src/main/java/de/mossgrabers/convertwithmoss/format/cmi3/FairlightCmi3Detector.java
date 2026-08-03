@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,17 +34,42 @@ import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * Detector for Fairlight CMI3 Voice (VC) files.
+ * Detector for Fairlight CMI Voice (VC) files. Two dialects are supported: the Series III voice
+ * files with their sub-voices and the fixed-size 8-bit voice files of the CMI I/II/IIx, which are
+ * also read and written by the QasarBeach recreation and read by the Arturia CMI V.
  *
  * @author Jürgen Moßgraber
  */
 public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final int VC_VERSION_A       = 768;
-    private static final int VC_VERSION_B       = 769;
-    private static final int VC_NAME_SIZE       = 16;
-    private static final int FUNC_BLOCK_BASE    = 768;
-    private static final int SAMPLE_DATA_OFFSET = 2304;
+    private static final int VC_VERSION_A          = 768;
+    private static final int VC_VERSION_B          = 769;
+    private static final int VC_NAME_SIZE          = 16;
+    private static final int FUNC_BLOCK_BASE       = 768;
+    private static final int SAMPLE_DATA_OFFSET    = 2304;
+
+    private static final int IIX_FILE_SIZE         = 21888;
+    private static final int IIX_HEADER_SIZE       = 0x1500;
+    private static final int IIX_NUM_SAMPLES       = 16384;
+    private static final int IIX_SEGMENT_SIZE      = 128;
+    private static final int IIX_LOOP_START_OFFSET = 0x1332;
+    private static final int IIX_LOOP_END_OFFSET   = 0x1333;
+    private static final int IIX_LOOP_MODE_OFFSET  = 0x133B;
+    /** The IIx dialect stores no sample rate - the documented default sampling rate of the IIx. */
+    private static final int IIX_SAMPLE_RATE       = 14080;
+    /** The native voice format of the QasarBeach recreation: 16-bit audio at offset 0x11. */
+    private static final int QBV2_AUDIO_OFFSET     = 0x11;
+    /** The control chunk of a QasarBeach voice follows directly after the audio data. */
+    private static final int QBV2_CONTROL_OFFSET   = QBV2_AUDIO_OFFSET + IIX_NUM_SAMPLES * 2;
+    /** The damping (release) and volume in the parameter block of a QasarBeach voice. */
+    private static final int QBV2_DAMPING_OFFSET   = 0xD3DD;
+    private static final int QBV2_VOLUME_OFFSET    = 0xD3CB;
+    /**
+     * The CMI II reads one 128 sample segment per waveform period, therefore a voice plays at its
+     * original pitch on the key with the frequency of the sample rate divided by 128. For the
+     * 14080 Hz default rate this is the 110 Hz A below the middle C.
+     */
+    private static final int IIX_ROOT_KEY          = 45;
 
 
     /** All parsed properties of a single CMI3 sub-voice. */
@@ -118,7 +145,18 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     {
         final byte [] inBytes = inputStream.readAllBytes ();
 
-        validateHeader (inBytes);
+        // Files of the 8-bit CMI I/II/IIx dialect (e.g. from QasarBeach or the original library
+        // floppies) have no version word; they are identified by their fixed file sizes. The
+        // QasarBeach recreation saves voices in its own 16-bit format with a magic tag
+        final int version = readBE16 (inBytes, 0);
+        if (version != VC_VERSION_A && version != VC_VERSION_B)
+        {
+            if (isQasarBeachFile (inBytes))
+                return this.readQasarBeach (inBytes, sourceFile);
+            if (isIIxFile (inBytes.length))
+                return this.readIIx (inBytes, sourceFile);
+            throw new ParseException (Functions.getMessage ("IDS_CMI3_UNKNOWN_VERSION", Integer.toString (version)));
+        }
 
         final int channels = Byte.toUnsignedInt (inBytes[16]) >= 127 ? 2 : 1;
 
@@ -157,16 +195,188 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Verifies the two-byte version word at the start of the file.
+     * Read the control (CO) file referenced by a IIx voice file and apply its parameters: the
+     * loop switch with its 1-based start segment and length, the attack and the damping (release)
+     * times in milliseconds. The parameters are stored in 8 byte entries at fixed addresses with
+     * the patch type in the third byte (0xB1 = a value, 0xC0/0xC1 = a boolean which is on/off) and
+     * a big-endian value in the fourth and fifth byte.
      *
-     * @param data The data of the header
-     * @throws ParseException Found unsupported version
+     * @param vcData The content of the voice file
+     * @param sourceFile The voice file, the control file is searched next to it
+     * @param zone The zone to apply the parameters to
+     * @return True if a control file was found and applied
      */
-    private static void validateHeader (final byte [] data) throws ParseException
+    private boolean applyIIxControlFile (final byte [] vcData, final File sourceFile, final ISampleZone zone)
     {
-        final int version = readBE16 (data, 0);
-        if (version != VC_VERSION_A && version != VC_VERSION_B)
-            throw new ParseException (Functions.getMessage ("IDS_CMI3_UNKNOWN_VERSION", Integer.toString (version)));
+        final String name = new String (vcData, 0x00A0, 8, StandardCharsets.US_ASCII).trim ();
+        if (name.isEmpty () || name.chars ().anyMatch (c -> c < 32 || c > 126))
+            return false;
+
+        final File folder = sourceFile.getParentFile ();
+        File controlFile = new File (folder, name + ".CO");
+        if (!controlFile.exists ())
+            controlFile = new File (folder, name + ".co");
+        if (!controlFile.exists ())
+            return false;
+
+        try
+        {
+            final byte [] controlData = Files.readAllBytes (controlFile.toPath ());
+            if (controlData.length < 0x150)
+                return false;
+
+            // LOOP CNTRL at 0xE8, LOOP START at 0xF0 and LOOP LNGTH at 0xF8
+            if ((controlData[0xE8 + 2] & 0xFF) == 0xC0)
+            {
+                final int startSegment = readBE16 (controlData, 0xF0 + 3);
+                final int length = readBE16 (controlData, 0xF8 + 3);
+                if (startSegment >= 1 && startSegment <= 128 && length >= 1)
+                {
+                    final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                    loop.setStart ((startSegment - 1) * IIX_SEGMENT_SIZE);
+                    loop.setEnd (Math.min ((startSegment - 1 + length) * IIX_SEGMENT_SIZE, IIX_NUM_SAMPLES) - 1);
+                    if (loop.getStart () < loop.getEnd ())
+                        zone.addLoop (loop);
+                }
+            }
+
+            // ATTACK at 0xA8 and DAMPING-1 at 0xA0, both in milliseconds
+            final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+            if ((controlData[0xA8 + 2] & 0xFF) == 0xB1)
+                envelope.setAttackTime (readBE16 (controlData, 0xA8 + 3) / 1000.0);
+            if ((controlData[0xA0 + 2] & 0xFF) == 0xB1)
+                envelope.setReleaseTime (readBE16 (controlData, 0xA0 + 3) / 1000.0);
+            return true;
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (ex);
+            return false;
+        }
+    }
+
+
+    /**
+     * Check if this is a voice file saved by the QasarBeach recreation of the IIx, marked with the
+     * 'QBV2' tag.
+     *
+     * @param data The content of the file
+     * @return True if it is a QasarBeach voice file
+     */
+    private static boolean isQasarBeachFile (final byte [] data)
+    {
+        return data.length >= QBV2_CONTROL_OFFSET && data[0] == 'Q' && data[1] == 'B' && data[2] == 'V' && data[3] == '2';
+    }
+
+
+    /**
+     * Read a voice file saved by the QasarBeach recreation: 'QBV2', the voice name, 16-bit
+     * little-endian audio of 16384 samples and a control ('QBC9') chunk with the mode and the
+     * 0-based inclusive loop segments. The same segment playback law as for the 8-bit dialect
+     * applies, therefore the voice gets the same default rate and root.
+     *
+     * @param inBytes The content of the file
+     * @param sourceFile The source file
+     * @return The multi-sample source
+     */
+    private IMultisampleSource readQasarBeach (final byte [] inBytes, final File sourceFile)
+    {
+        String name = new String (inBytes, 4, 8, StandardCharsets.US_ASCII).trim ();
+        if (name.isEmpty ())
+            name = FileUtils.getNameWithoutType (sourceFile);
+
+        final ISampleZone zone = new DefaultSampleZone (name, 0, 127);
+        zone.setKeyRoot (IIX_ROOT_KEY);
+        zone.setKeyTracking (1);
+        final byte [] audio = Arrays.copyOfRange (inBytes, QBV2_AUDIO_OFFSET, QBV2_CONTROL_OFFSET);
+        zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (1, IIX_SAMPLE_RATE, 16, IIX_NUM_SAMPLES), audio));
+
+        // The control chunk: [5] = mode, [7] = loop start segment, [8] = loop end segment, [12]
+        // is the loop switch
+        if (inBytes.length >= QBV2_CONTROL_OFFSET + 16 && inBytes[QBV2_CONTROL_OFFSET] == 'Q' && inBytes[QBV2_CONTROL_OFFSET + 1] == 'B' && inBytes[QBV2_CONTROL_OFFSET + 2] == 'C')
+        {
+            final int startSegment = Byte.toUnsignedInt (inBytes[QBV2_CONTROL_OFFSET + 7]);
+            final int endSegment = Byte.toUnsignedInt (inBytes[QBV2_CONTROL_OFFSET + 8]);
+            if (inBytes[QBV2_CONTROL_OFFSET + 12] == 1 && startSegment <= endSegment && endSegment < 128)
+            {
+                final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                loop.setStart (startSegment * IIX_SEGMENT_SIZE);
+                loop.setEnd ((endSegment + 1) * IIX_SEGMENT_SIZE - 1);
+                zone.addLoop (loop);
+            }
+        }
+
+        // Damping (release) and volume from the parameter block, stored 0-based. A value with the
+        // top bit set is patched to a modulator and is skipped. The time law of the damping was
+        // measured from QasarBeach recordings: fade-out time = 0.0255 * dial value^0.741 seconds
+        if (inBytes.length > QBV2_DAMPING_OFFSET)
+        {
+            final int damping = Byte.toUnsignedInt (inBytes[QBV2_DAMPING_OFFSET]);
+            if (damping < 0x80)
+                zone.getAmplitudeEnvelopeModulator ().getSource ().setReleaseTime (0.0255 * Math.pow (damping + 1.0, 0.741));
+            final int volume = Byte.toUnsignedInt (inBytes[QBV2_VOLUME_OFFSET]);
+            if (volume < 0x80)
+                zone.setGain (20.0 * Math.log10 ((volume + 1) / 128.0));
+        }
+
+        final IGroup group = new DefaultGroup ("IIx");
+        group.addSampleZone (zone);
+        return this.createMultisampleSource (sourceFile, name, Collections.singletonList (group));
+    }
+
+
+    /**
+     * Check if the file size matches one of the fixed sizes of the 8-bit voice file dialect: the
+     * bare 16 KB audio data, or the audio data with the header and optionally the footer.
+     *
+     * @param length The length of the file
+     * @return True if it is a IIx voice file
+     */
+    private static boolean isIIxFile (final int length)
+    {
+        return length == IIX_NUM_SAMPLES || length == IIX_HEADER_SIZE + IIX_NUM_SAMPLES || length == IIX_FILE_SIZE;
+    }
+
+
+    /**
+     * Read a voice file of the 8-bit CMI I/II/IIx dialect. The audio data is 16384 bytes of 8-bit
+     * unsigned samples. Since the dialect stores no sample rate or root note, the documented
+     * default rate of the IIx is used with the root at middle C.
+     *
+     * @param inBytes The content of the file
+     * @param sourceFile The source file
+     * @return The multi-sample source
+     */
+    private IMultisampleSource readIIx (final byte [] inBytes, final File sourceFile)
+    {
+        final int audioOffset = inBytes.length == IIX_NUM_SAMPLES ? 0 : IIX_HEADER_SIZE;
+        final byte [] audio = Arrays.copyOfRange (inBytes, audioOffset, audioOffset + IIX_NUM_SAMPLES);
+
+        final String name = FileUtils.getNameWithoutType (sourceFile);
+        final ISampleZone zone = new DefaultSampleZone (name, 0, 127);
+        zone.setKeyRoot (IIX_ROOT_KEY);
+        zone.setKeyTracking (1);
+        zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (1, IIX_SAMPLE_RATE, 8, IIX_NUM_SAMPLES), audio));
+
+        // The control parameters live in the referenced control (CO) file, which wins over the
+        // loop bytes cached in the voice file when it is present next to it
+        if (audioOffset > 0 && !this.applyIIxControlFile (inBytes, sourceFile, zone) && inBytes[IIX_LOOP_MODE_OFFSET] == 1)
+        {
+            // The loop is stored as 128 sample segments with an inclusive end segment
+            final int startSegment = Byte.toUnsignedInt (inBytes[IIX_LOOP_START_OFFSET]);
+            final int endSegment = Byte.toUnsignedInt (inBytes[IIX_LOOP_END_OFFSET]);
+            if (startSegment < 128 && endSegment < 128 && startSegment <= endSegment)
+            {
+                final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                loop.setStart (startSegment * IIX_SEGMENT_SIZE);
+                loop.setEnd ((endSegment + 1) * IIX_SEGMENT_SIZE - 1);
+                zone.addLoop (loop);
+            }
+        }
+
+        final IGroup group = new DefaultGroup ("IIx");
+        group.addSampleZone (zone);
+        return this.createMultisampleSource (sourceFile, name, Collections.singletonList (group));
     }
 
 

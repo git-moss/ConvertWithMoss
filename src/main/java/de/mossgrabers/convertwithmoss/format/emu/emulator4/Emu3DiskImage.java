@@ -11,20 +11,22 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 
 /**
- * Reads the proprietary E-mu disk filesystem which the EOS samplers use on their CD-ROMs and hard
- * disks (and which their CD-ROM/SCSI emulators like the ZuluSCSI serve from raw image files). It is
- * a simple FAT-like filesystem of 512 byte blocks: a superblock, a cluster chain list, a root
- * directory of folders and dir-content blocks with the file entries. The layout was
- * reverse-engineered by the mpc2emu project from commercial E-mu CD-ROMs and EOS formatted disks,
- * cross-checked against the emu3fs Linux kernel module; see documentation/design/E4B_FORMAT.md. All
- * geometry is read from the superblock, so both the CD-ROM and the hard disk variant of the
- * filesystem are supported.
+ * Reads and writes the proprietary E-mu disk filesystem which the EIII and the EOS samplers use on
+ * their CD-ROMs and hard disks (and which their CD-ROM/SCSI emulators like the ZuluSCSI serve from
+ * raw image files). It is a simple FAT-like filesystem of 512 byte blocks: a superblock, a cluster
+ * chain list, a root directory of folders and dir-content blocks with the file entries. The layout
+ * was reverse-engineered by the mpc2emu project from commercial E-mu CD-ROMs and EOS formatted
+ * disks, cross-checked against the emu3fs Linux kernel module; see
+ * documentation/design/E4B_FORMAT.md. All geometry is read from the superblock, so both the CD-ROM
+ * and the hard disk variant of the filesystem are supported. Both sampler generations use the same
+ * filesystem for their banks but fill a few of its fields differently, see {@link ImageLayout}.
  *
  * @author Jürgen Moßgraber
  */
@@ -44,6 +46,8 @@ public class Emu3DiskImage
     private static final int     FOLDER_TYPE_DEFAULT = 0x80;
     /** The file type of the operating system of the sampler. */
     private static final int     FILE_TYPE_SYS       = 0x80;
+    /** The file type of a bank, which is what all volumes of both sampler generations use. */
+    private static final int     FILE_TYPE_BANK      = 0x81;
 
 
     /** A file read from the image. */
@@ -257,20 +261,107 @@ public class Emu3DiskImage
     // -----------------------------------------------------------
     // Writing - the CD-ROM variant of the filesystem with its fixed geometry, which is
     // what the firmware expects of a CD-ROM volume (a computed 'tighter' layout is not
-    // mountable). Matches the hardware-verified reference builder of the mpc2emu project.
+    // mountable).
 
 
-    private static final int FAT_START     = 2;
-    private static final int FAT_BLOCKS    = 5;
-    private static final int ROOT_START    = 7;
-    private static final int ROOT_BLOCKS   = 4;
-    private static final int DIRCON_START  = 11;
-    private static final int DIRCON_BLOCKS = 125;
-    private static final int DATA_START    = 136;
-    /** 5 FAT blocks hold 1280 entries of which entry 0 is reserved. */
-    private static final int MAX_CLUSTERS  = FAT_BLOCKS * (BLOCK_SIZE / 2) - 1;
-    /** The number of files the written single dir-content block can hold. */
-    public static final int  MAX_FILES     = BLOCK_SIZE / ENTRY_SIZE;
+    /** The number of file entries which one dir-content block holds. */
+    private static final int    ENTRIES_PER_BLOCK   = BLOCK_SIZE / ENTRY_SIZE;
+    /** The first block of the cluster chain list, which follows the superblock and its padding. */
+    private static final int    FAT_START           = 2;
+    /** The name of the folder which holds the written files. */
+    public static final String  DEFAULT_FOLDER_NAME = "Default Folder";
+
+
+    /**
+     * The geometry which is written. All of it is read back from the superblock - the volumes in
+     * the wild differ in it - but the firmware checks several of the other fields of a volume, so
+     * each layout copies the CD-ROMs of the sampler generation it is meant for.
+     */
+    public enum ImageLayout
+    {
+        /**
+         * The layout of the EOS CD-ROMs, which matches the hardware-verified reference builder of
+         * the mpc2emu project.
+         */
+        EOS(5, 4, 125, Emulator4Constants.FORM_TYPE, (byte) 0x00, true),
+        /**
+         * The layout of the Emulator IIIX library CD-ROMs, which the EIII, EIIIX and ESI samplers
+         * read. Their file entries carry no form type and their superblock holds the size of the
+         * medium where the EOS volumes have a flag byte.
+         */
+        EMULATOR_3(7, 6, 192, new byte [4], (byte) 0x80, false);
+
+
+        private final int     fatBlocks;
+        private final int     rootBlocks;
+        private final int     dirBlocks;
+        private final byte [] fileType;
+        private final byte    paddingFill;
+        private final boolean hasEosFlag;
+
+
+        /**
+         * Constructor.
+         *
+         * @param fatBlocks The number of blocks of the cluster chain list
+         * @param rootBlocks The number of blocks of the root directory
+         * @param dirBlocks The number of dir-content blocks
+         * @param fileType The 4 bytes which every file entry carries behind its block counts
+         * @param paddingFill The byte with which the padding block behind the superblock is filled
+         * @param hasEosFlag Whether the superblock carries the flag byte of the EOS volumes
+         */
+        private ImageLayout (final int fatBlocks, final int rootBlocks, final int dirBlocks, final byte [] fileType, final byte paddingFill, final boolean hasEosFlag)
+        {
+            this.fatBlocks = fatBlocks;
+            this.rootBlocks = rootBlocks;
+            this.dirBlocks = dirBlocks;
+            this.fileType = fileType;
+            this.paddingFill = paddingFill;
+            this.hasEosFlag = hasEosFlag;
+        }
+
+
+        /**
+         * Get the number of files which fit into one image. All of them go into the single folder
+         * of the image, which references at most 7 dir-content blocks of 16 entries each.
+         *
+         * @return The number of files
+         */
+        public int getMaximumFiles ()
+        {
+            return ENTRIES_PER_BLOCK * Math.min (FOLDER_BLOCK_LIST, this.dirBlocks);
+        }
+
+
+        /**
+         * Get the number of clusters which the cluster chain list can address; its entry 0 is the
+         * reserved media descriptor.
+         *
+         * @return The number of clusters
+         */
+        private int getMaximumClusters ()
+        {
+            return this.fatBlocks * (BLOCK_SIZE / 2) - 1;
+        }
+
+
+        private int getRootStart ()
+        {
+            return FAT_START + this.fatBlocks;
+        }
+
+
+        private int getDirStart ()
+        {
+            return this.getRootStart () + this.rootBlocks;
+        }
+
+
+        private int getDataStart ()
+        {
+            return this.getDirStart () + this.dirBlocks;
+        }
+    }
 
 
     /**
@@ -278,12 +369,14 @@ public class Emu3DiskImage
      * the SD card of a SCSI emulator like the ZuluSCSI to be served as a CD-ROM.
      *
      * @param outputFile The image file to write
-     * @param files The files to store, at most {@link #MAX_FILES}
+     * @param files The files to store, at most {@link ImageLayout#getMaximumFiles ()}
+     * @param layout The geometry to write
+     * @param folderName The name of the folder which holds the files
      * @throws IOException Could not write the image or the files are too large for one image
      */
-    public static void writeImage (final File outputFile, final List<ImageFile> files) throws IOException
+    public static void writeImage (final File outputFile, final List<ImageFile> files, final ImageLayout layout, final String folderName) throws IOException
     {
-        if (files.size () > MAX_FILES)
+        if (files.size () > layout.getMaximumFiles ())
             throw new IOException ("Too many files for one image: " + files.size ());
 
         // The smallest cluster size (512 KB, 1 MB or 2 MB) which keeps the clusters of all files
@@ -297,7 +390,7 @@ public class Emu3DiskImage
             numClusters = 0;
             for (final ImageFile file: files)
                 numClusters += (file.getContent ().length + clusterBytes - 1) / clusterBytes;
-            if (numClusters <= MAX_CLUSTERS)
+            if (numClusters <= layout.getMaximumClusters ())
             {
                 clusterSizeExtra = extra;
                 break;
@@ -309,21 +402,18 @@ public class Emu3DiskImage
         if (clusterSizeExtra < 0)
             throw new IOException ("The files are too large for one image.");
         final int blocksPerCluster = (int) (clusterBytes / BLOCK_SIZE);
-        final long totalBlocks = DATA_START + numClusters * blocksPerCluster;
+        final long totalBlocks = layout.getDataStart () + numClusters * blocksPerCluster;
+        // The files are listed in as many dir-content blocks as they need
+        final int numDirBlocks = Math.max (1, (files.size () + ENTRIES_PER_BLOCK - 1) / ENTRIES_PER_BLOCK);
 
         try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))
         {
-            out.write (createSuperblock (totalBlocks, numClusters, clusterSizeExtra));
-
-            // The padding block after the superblock only holds the next free dir-content block
-            final byte [] padding = new byte [BLOCK_SIZE];
-            padding[0] = DIRCON_START + 1;
-            out.write (padding);
-
-            out.write (createFat (files, clusterBytes));
-            out.write (createRootDirectory ());
-            out.write (createDirContent (files, clusterBytes));
-            out.write (new byte [(DIRCON_BLOCKS - 1) * BLOCK_SIZE]);
+            out.write (createSuperblock (layout, totalBlocks, numClusters, clusterSizeExtra));
+            out.write (createPaddingBlock (layout, numDirBlocks));
+            out.write (createFat (layout, files, clusterBytes));
+            out.write (createRootDirectory (layout, folderName, numDirBlocks));
+            out.write (createDirContent (layout, files, clusterBytes, numDirBlocks));
+            out.write (new byte [(layout.dirBlocks - numDirBlocks) * BLOCK_SIZE]);
 
             // The file data, each file padded to a full cluster
             for (final ImageFile file: files)
@@ -341,28 +431,34 @@ public class Emu3DiskImage
     /**
      * Create the superblock.
      *
+     * @param layout The geometry to write
      * @param totalBlocks The total number of blocks of the image
      * @param numClusters The total number of data clusters
      * @param clusterSizeExtra The cluster size (bytes = 1 &lt;&lt; (15 + value))
      * @return The 512 byte superblock
      */
-    private static byte [] createSuperblock (final long totalBlocks, final long numClusters, final int clusterSizeExtra)
+    private static byte [] createSuperblock (final ImageLayout layout, final long totalBlocks, final long numClusters, final int clusterSizeExtra)
     {
         final byte [] superblock = new byte [BLOCK_SIZE];
         System.arraycopy (MAGIC, 0, superblock, 0, 4);
         Emulator4Constants.putU32LE (superblock, 0x04, totalBlocks - 1);
-        Emulator4Constants.putU32LE (superblock, 0x08, ROOT_START);
-        Emulator4Constants.putU32LE (superblock, 0x0C, ROOT_BLOCKS);
-        Emulator4Constants.putU32LE (superblock, 0x10, DIRCON_START);
-        Emulator4Constants.putU32LE (superblock, 0x14, DIRCON_BLOCKS);
+        Emulator4Constants.putU32LE (superblock, 0x08, layout.getRootStart ());
+        Emulator4Constants.putU32LE (superblock, 0x0C, layout.rootBlocks);
+        Emulator4Constants.putU32LE (superblock, 0x10, layout.getDirStart ());
+        Emulator4Constants.putU32LE (superblock, 0x14, layout.dirBlocks);
         Emulator4Constants.putU32LE (superblock, 0x18, FAT_START);
-        Emulator4Constants.putU32LE (superblock, 0x1C, FAT_BLOCKS);
-        Emulator4Constants.putU32LE (superblock, 0x20, DATA_START);
+        Emulator4Constants.putU32LE (superblock, 0x1C, layout.fatBlocks);
+        Emulator4Constants.putU32LE (superblock, 0x20, layout.getDataStart ());
         Emulator4Constants.putU32LE (superblock, 0x24, numClusters);
         // Flag bytes present in every working reference image; the firmware checks for them
         superblock[0x28] = (byte) clusterSizeExtra;
         superblock[0x29] = 0x01;
-        superblock[0x2D] = 0x08;
+        if (layout.hasEosFlag)
+            superblock[0x2D] = 0x08;
+        else
+            // The volumes of the EIII samplers store the size of the medium here instead, which on
+            // a pressed CD-ROM is a bit larger than the volume itself
+            Emulator4Constants.putU32LE (superblock, 0x2A, totalBlocks);
         superblock[0x32] = 0x01;
         superblock[0x33] = 0x0D;
         // The checksum is verified at mount time; without it the volume does not mount
@@ -375,16 +471,35 @@ public class Emu3DiskImage
 
 
     /**
+     * Create the padding block which follows the superblock. It holds the number of the first
+     * dir-content block which is still free; the volumes of the EIII samplers fill its remainder
+     * with a constant marker byte.
+     *
+     * @param layout The geometry to write
+     * @param numDirBlocks The number of dir-content blocks which are in use
+     * @return The 512 byte padding block
+     */
+    private static byte [] createPaddingBlock (final ImageLayout layout, final int numDirBlocks)
+    {
+        final byte [] padding = new byte [BLOCK_SIZE];
+        Arrays.fill (padding, 4, BLOCK_SIZE, layout.paddingFill);
+        Emulator4Constants.putU32LE (padding, 0, layout.getDirStart () + (long) numDirBlocks);
+        return padding;
+    }
+
+
+    /**
      * Create the cluster chain list. Every file occupies a sequential run of clusters, starting at
      * cluster 1.
      *
+     * @param layout The geometry to write
      * @param files The files
      * @param clusterBytes The size of a cluster in bytes
      * @return The FAT blocks
      */
-    private static byte [] createFat (final List<ImageFile> files, final long clusterBytes)
+    private static byte [] createFat (final ImageLayout layout, final List<ImageFile> files, final long clusterBytes)
     {
-        final byte [] fat = new byte [FAT_BLOCKS * BLOCK_SIZE];
+        final byte [] fat = new byte [layout.fatBlocks * BLOCK_SIZE];
         // Entry 0 is the reserved media descriptor
         Emulator4Constants.putU16LE (fat, 0, 0x8000);
         int cluster = 1;
@@ -402,38 +517,42 @@ public class Emu3DiskImage
 
 
     /**
-     * Create the root directory with the single 'Default Folder' which references the first
-     * dir-content block.
+     * Create the root directory with the single folder which references the dir-content blocks.
      *
+     * @param layout The geometry to write
+     * @param folderName The name of the folder
+     * @param numDirBlocks The number of dir-content blocks which the folder holds
      * @return The root directory blocks
      */
-    private static byte [] createRootDirectory ()
+    private static byte [] createRootDirectory (final ImageLayout layout, final String folderName, final int numDirBlocks)
     {
-        final byte [] root = new byte [ROOT_BLOCKS * BLOCK_SIZE];
-        Emulator4Constants.encodeName (root, 0, "Default Folder");
+        final byte [] root = new byte [layout.rootBlocks * BLOCK_SIZE];
+        Emulator4Constants.encodeName (root, 0, folderName);
         root[17] = FOLDER_TYPE_USER;
-        Emulator4Constants.putU16LE (root, 18, DIRCON_START);
-        for (int i = 1; i < FOLDER_BLOCK_LIST; i++)
-            Emulator4Constants.putU16LE (root, 18 + i * 2, 0xFFFF);
+        for (int i = 0; i < FOLDER_BLOCK_LIST; i++)
+            Emulator4Constants.putU16LE (root, 18 + i * 2, i < numDirBlocks ? layout.getDirStart () + i : 0xFFFF);
         return root;
     }
 
 
     /**
-     * Create the first dir-content block with one entry per file.
+     * Create the dir-content blocks with one entry per file.
      *
+     * @param layout The geometry to write
      * @param files The files
      * @param clusterBytes The size of a cluster in bytes
-     * @return The dir-content block
+     * @param numDirBlocks The number of dir-content blocks to fill
+     * @return The dir-content blocks
      */
-    private static byte [] createDirContent (final List<ImageFile> files, final long clusterBytes)
+    private static byte [] createDirContent (final ImageLayout layout, final List<ImageFile> files, final long clusterBytes, final int numDirBlocks)
     {
-        final byte [] block = new byte [BLOCK_SIZE];
+        final byte [] block = new byte [numDirBlocks * BLOCK_SIZE];
         int cluster = 1;
         for (int i = 0; i < files.size (); i++)
         {
             final ImageFile file = files.get (i);
-            final int offset = i * ENTRY_SIZE;
+            // The entries fill one block after the other but their numbers run through all of them
+            final int offset = i / ENTRIES_PER_BLOCK * BLOCK_SIZE + i % ENTRIES_PER_BLOCK * ENTRY_SIZE;
             final long size = file.getContent ().length;
             final int numClusters = (int) ((size + clusterBytes - 1) / clusterBytes);
             final long lastClusterBytes = size - (numClusters - 1L) * clusterBytes;
@@ -452,8 +571,8 @@ public class Emu3DiskImage
             Emulator4Constants.putU16LE (block, offset + 20, numClusters);
             Emulator4Constants.putU16LE (block, offset + 22, lastClusterBlocks);
             Emulator4Constants.putU16LE (block, offset + 24, lastBlockBytes);
-            block[offset + 26] = (byte) 0x81;
-            System.arraycopy (Emulator4Constants.FORM_TYPE, 0, block, offset + 28, 4);
+            block[offset + 26] = (byte) FILE_TYPE_BANK;
+            System.arraycopy (layout.fileType, 0, block, offset + 28, 4);
             cluster += numClusters;
         }
         return block;

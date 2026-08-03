@@ -361,6 +361,8 @@ When reading, each preset becomes one multi-sample. A preset maps each of the 88
 
 When writing, all groups of a source become presets which are chained with the preset link, one preset per group, and several sources can be collected into one bank as a library. The samples are stored in the bank as 16-bit mono or stereo and are de-duplicated by their content, so a sample which several zones share is only written once. The first and last two frames of every sample are silenced and loop positions are moved away from the sample ends, both of which the samplers require. Note that the key range of the devices is limited to MIDI notes 21-108 and that a bank cannot exceed the 128 MB sample memory of the samplers.
 
+Banks can also be written as a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem, which is how a converted library reaches a sampler of this generation: these units read neither FAT hard disks nor any other file system of a computer, so their own filesystem is the only way in. The image holds one bank per source instead of merging all of them into one bank - a bank is loaded into the memory of the sampler as a whole, which even fully expanded is a fraction of a converted library. Its geometry, its file entries and its directory copy the Emulator IIIX library CD-ROMs, up to the number of banks a folder holds (112).
+
 Note: written banks have not been verified on hardware yet. They round-trip through the reader and match the structure of the E-mu library CD-ROMs.
 
 #### Source Options
@@ -370,6 +372,7 @@ Note: written banks have not been verified on hardware yet. They round-trip thro
 #### Destination Options
 
 * Target Device: Selects the bank format to write: *Emulator IIIX (e3x)* or *ESI-32/2000/4000 (esi)*. The Emulator IIIX format is the more compatible one since the ESI samplers read it as well; the ESI format additionally enables the real-time control of the filter Q, which is what the ESI factory banks do.
+* Create CD-ROM image (.iso) for SCSI CD-ROM emulators: The banks are written into a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem instead of into plain bank files. Copy the image to the SD card of a SCSI emulator (e.g. rename it to *CD1.iso* for a ZuluSCSI in CD-ROM mode) and load the banks on the sampler from the emulated CD-ROM drive, exactly like from a library CD-ROM. Each converted source becomes one bank of the image (at most 112) and the library name becomes the name of its folder; without a library name every source becomes an image of its own.
 
 ## E-mu Emulator IV
 
@@ -462,7 +465,17 @@ The Fairlight CMI (**C**omputer **M**usical **I**nstrument) Series III, introduc
 
 Voice Files (*.VC) store individual instrument subvoices (samples) and synthesis data. The file is split into headers/control parameters followed by raw linear 8-bit audio samples (or 16-bit for Series III). Fairlight CMI IIx used variable rates from 2.1 kHz to 32 kHz (default 14.08 kHz). Series III expanded up to 100 kHz at 16 bits. Early CMI memory was limited (e.g., 16KB per channel).
 
-Note that this will not work with IIx or earlier versions despite the same VC file extension was used. Only reading is supported.
+As a source, both dialects of the voice files are read: the 16-bit Series III files with all of their sub-voices (key ranges, loops, tuning, gain and the amplitude envelope) and the fixed-size 8-bit files of the CMI I/II/IIx (16384 samples with their loop segments), which are e.g. written by the QasarBeach recreation of the IIx - both with the full header as well as bare 16 KB audio-only files. When the control (CO) file referenced by an 8-bit voice is present next to it, its parameters win (as on the CMI itself): the loop, the attack and the damping, which becomes the release of the amplitude envelope. Voices saved by QasarBeach itself (its own 16-bit format marked with a 'QBV2' tag) are read as well, with their name and loop. The 8-bit dialect stores no sample rate: the CMI II reads one 128-sample segment per waveform period, so a voice plays at its original pitch on the key with the frequency of its sampling rate divided by 128. Such a voice is therefore read with the documented default rate of the IIx (14080 Hz) and its root on the matching 110 Hz A below the middle C.
+
+### Destination Options
+
+* Target Format:
+  * Series III: One voice file per multi-sample. Each sample zone becomes a sub-voice with its key range in the 128-key mapping table, with 16-bit mono or stereo audio, loop, tuning, gain and amplitude envelope. Since the format has no velocity dimension, the loudest velocity layer wins where zones overlap. Up to 127 sub-voices fit into a file.
+  * IIx with CO control file: One fixed-size 8-bit voice file per sample zone, as read by the CMI itself and the Arturia CMI V. The audio is mixed to mono, re-sampled to the root frequency of the zone times 128 - which makes the voice play at its original pitch on its root key (verified against QasarBeach) - and cut to the 16384 samples of a voice. The loop is stored in segments of 128 samples. Each voice comes with the control (CO) file it references, which carries the loop, the attack and damping (release) of the amplitude envelope and the level - the CMI and QasarBeach take the control parameters from this file, therefore both files have to stay together. Note that the fixed voice length limits a voice to 16384 samples, e.g. half a second at the rate of a middle C root.
+
+  * QasarBeach (QBV2): One voice file per sample zone in the native 16-bit format of the QasarBeach recreation, which carries the loop, the release (damping) and the level inside the file - a voice loads into QasarBeach ready to play. The unknown parts of the format are filled from a template captured from a QasarBeach save; the time law of the damping is measured only roughly yet.
+
+Written files have not been tested on real Fairlight hardware yet.
 
 ## FL Studio DirectWave
 
