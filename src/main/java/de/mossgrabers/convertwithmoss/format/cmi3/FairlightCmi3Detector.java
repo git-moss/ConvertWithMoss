@@ -57,6 +57,10 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     private static final int IIX_LOOP_MODE_OFFSET  = 0x133B;
     /** The IIx dialect stores no sample rate - the documented default sampling rate of the IIx. */
     private static final int IIX_SAMPLE_RATE       = 14080;
+    /** The native voice format of the QasarBeach recreation: 16-bit audio at offset 0x11. */
+    private static final int QBV2_AUDIO_OFFSET     = 0x11;
+    /** The control chunk of a QasarBeach voice follows directly after the audio data. */
+    private static final int QBV2_CONTROL_OFFSET   = QBV2_AUDIO_OFFSET + IIX_NUM_SAMPLES * 2;
     /**
      * The CMI II reads one 128 sample segment per waveform period, therefore a voice plays at its
      * original pitch on the key with the frequency of the sample rate divided by 128. For the
@@ -139,10 +143,13 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         final byte [] inBytes = inputStream.readAllBytes ();
 
         // Files of the 8-bit CMI I/II/IIx dialect (e.g. from QasarBeach or the original library
-        // floppies) have no version word; they are identified by their fixed file sizes
+        // floppies) have no version word; they are identified by their fixed file sizes. The
+        // QasarBeach recreation saves voices in its own 16-bit format with a magic tag
         final int version = readBE16 (inBytes, 0);
         if (version != VC_VERSION_A && version != VC_VERSION_B)
         {
+            if (isQasarBeachFile (inBytes))
+                return this.readQasarBeach (inBytes, sourceFile);
             if (isIIxFile (inBytes.length))
                 return this.readIIx (inBytes, sourceFile);
             throw new ParseException (Functions.getMessage ("IDS_CMI3_UNKNOWN_VERSION", Integer.toString (version)));
@@ -243,6 +250,62 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
             this.notifier.logError (ex);
             return false;
         }
+    }
+
+
+    /**
+     * Check if this is a voice file saved by the QasarBeach recreation of the IIx, marked with the
+     * 'QBV2' tag.
+     *
+     * @param data The content of the file
+     * @return True if it is a QasarBeach voice file
+     */
+    private static boolean isQasarBeachFile (final byte [] data)
+    {
+        return data.length >= QBV2_CONTROL_OFFSET && data[0] == 'Q' && data[1] == 'B' && data[2] == 'V' && data[3] == '2';
+    }
+
+
+    /**
+     * Read a voice file saved by the QasarBeach recreation: 'QBV2', the voice name, 16-bit
+     * little-endian audio of 16384 samples and a control ('QBC9') chunk with the mode and the
+     * 0-based inclusive loop segments. The same segment playback law as for the 8-bit dialect
+     * applies, therefore the voice gets the same default rate and root.
+     *
+     * @param inBytes The content of the file
+     * @param sourceFile The source file
+     * @return The multi-sample source
+     */
+    private IMultisampleSource readQasarBeach (final byte [] inBytes, final File sourceFile)
+    {
+        String name = new String (inBytes, 4, 8, StandardCharsets.US_ASCII).trim ();
+        if (name.isEmpty ())
+            name = FileUtils.getNameWithoutType (sourceFile);
+
+        final ISampleZone zone = new DefaultSampleZone (name, 0, 127);
+        zone.setKeyRoot (IIX_ROOT_KEY);
+        zone.setKeyTracking (1);
+        final byte [] audio = Arrays.copyOfRange (inBytes, QBV2_AUDIO_OFFSET, QBV2_CONTROL_OFFSET);
+        zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (1, IIX_SAMPLE_RATE, 16, IIX_NUM_SAMPLES), audio));
+
+        // The control chunk: [5] = mode, [7] = loop start segment, [8] = loop end segment, [12]
+        // seems to be the loop switch
+        if (inBytes.length >= QBV2_CONTROL_OFFSET + 16 && inBytes[QBV2_CONTROL_OFFSET] == 'Q' && inBytes[QBV2_CONTROL_OFFSET + 1] == 'B' && inBytes[QBV2_CONTROL_OFFSET + 2] == 'C')
+        {
+            final int startSegment = Byte.toUnsignedInt (inBytes[QBV2_CONTROL_OFFSET + 7]);
+            final int endSegment = Byte.toUnsignedInt (inBytes[QBV2_CONTROL_OFFSET + 8]);
+            if (inBytes[QBV2_CONTROL_OFFSET + 12] == 1 && startSegment <= endSegment && endSegment < 128)
+            {
+                final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                loop.setStart (startSegment * IIX_SEGMENT_SIZE);
+                loop.setEnd ((endSegment + 1) * IIX_SEGMENT_SIZE - 1);
+                zone.addLoop (loop);
+            }
+        }
+
+        final IGroup group = new DefaultGroup ("IIx");
+        group.addSampleZone (zone);
+        return this.createMultisampleSource (sourceFile, name, Collections.singletonList (group));
     }
 
 
