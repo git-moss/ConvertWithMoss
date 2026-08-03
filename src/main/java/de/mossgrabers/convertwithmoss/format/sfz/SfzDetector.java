@@ -701,6 +701,13 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         final double ampVelTrack = this.getDoubleValue (SfzOpcode.AMP_VELOCITY_TRACK, 100);
         sampleZone.getAmplitudeVelocityModulator ().setDepth (ampVelTrack / 100.0);
 
+        // The amplifier velocity curve points describe the amplitude (0..1) at a velocity. Fit
+        // the closest power law x^p to the points and store it as the curve of the modulator,
+        // which describes the response as x^(3^curve)
+        final double velocityCurvePower = this.readVelocityCurvePower ();
+        if (velocityCurvePower > 0)
+            sampleZone.getAmplitudeVelocityModulator ().setCurve (Math.clamp (Math.log (velocityCurvePower) / Math.log (3), -1, 1));
+
         // Amplitude key modulation. The opcode is given in decibels per key, 100% key tracking is
         // defined as 1 dB per key
         sampleZone.setAmplitudeKeyTracking (Math.clamp (this.getDoubleValue (SfzOpcode.AMP_KEY_TRACK, 0), -1, 1));
@@ -902,6 +909,59 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
      * @param key The key of the value to lookup
      * @return The optional value or empty if not found
      */
+    /**
+     * Read all amplifier velocity curve opcodes (amp_velcurve_N) and calculate the power p of the
+     * closest matching power law x^p on the normalized velocity with a least squares fit in the
+     * logarithmic domain.
+     *
+     * @return The power, 0 if no curve points are present
+     */
+    private double readVelocityCurvePower ()
+    {
+        final Map<Integer, Double> curvePoints = new HashMap<> ();
+        this.readVelocityCurvePoints (this.globalAttributes, curvePoints);
+        this.readVelocityCurvePoints (this.masterAttributes, curvePoints);
+        this.readVelocityCurvePoints (this.groupAttributes, curvePoints);
+        this.readVelocityCurvePoints (this.regionAttributes, curvePoints);
+
+        double sumXX = 0;
+        double sumXY = 0;
+        for (final Map.Entry<Integer, Double> point: curvePoints.entrySet ())
+        {
+            final int velocity = point.getKey ().intValue ();
+            final double value = point.getValue ().doubleValue ();
+            // The point at velocity 127 carries no information about the power (x = 1) and very
+            // small values are dominated by their rounding and would bias the fit
+            if (velocity < 1 || velocity >= 127 || value <= 0.001 || value > 1)
+                continue;
+            final double x = Math.log (velocity / 127.0);
+            sumXX += x * x;
+            sumXY += x * Math.log (value);
+        }
+        return sumXX == 0 ? 0 : sumXY / sumXX;
+    }
+
+
+    private void readVelocityCurvePoints (final Map<String, String> attributes, final Map<Integer, Double> curvePoints)
+    {
+        for (final Map.Entry<String, String> entry: attributes.entrySet ())
+        {
+            final String key = entry.getKey ();
+            if (!key.startsWith (SfzOpcode.AMP_VELOCITY_CURVE))
+                continue;
+            this.processedOpcodes.add (key);
+            try
+            {
+                curvePoints.put (Integer.valueOf (key.substring (SfzOpcode.AMP_VELOCITY_CURVE.length ())), Double.valueOf (entry.getValue ()));
+            }
+            catch (final NumberFormatException _)
+            {
+                // Ignore malformed opcodes
+            }
+        }
+    }
+
+
     private Optional<String> getAttribute (final String key)
     {
         String value = this.regionAttributes.get (key);

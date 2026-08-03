@@ -155,6 +155,10 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
                 else if ((sourceType == ExternalModulator.SOURCE_VELOCITY || sourceType == ExternalModulator.SOURCE_VELOCITY2) && (destType == ExternalModulator.DEST_VOLUME || destType == ExternalModulator.DEST_VOLUME2 || destType == ExternalModulator.DEST_VOLUME3))
                 {
                     zone.getAmplitudeVelocityModulator ().setDepth (modulator.getIntensity ());
+                    // The volume of Kontakt maps its normalized value to decibels with
+                    // 60*log10(x). The velocity modulation therefore scales the amplitude with
+                    // x^3, which is a convex curve (+1)
+                    zone.getAmplitudeVelocityModulator ().setCurve (1);
                     foundAmpVelocity = true;
                 }
             }
