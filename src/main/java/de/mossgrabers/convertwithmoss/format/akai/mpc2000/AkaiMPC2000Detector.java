@@ -71,13 +71,20 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
 
         final String lowerCaseName = sourceFile.getName ().toLowerCase ();
 
+        if (lowerCaseName.endsWith (".pgm"))
+            return this.readPgmFile (sourceFile);
+
+        List<IMultisampleSource> multisampleSources = Collections.emptyList ();
         if (lowerCaseName.endsWith (".iso") || lowerCaseName.endsWith (".img"))
-            return this.readIsoFile (sourceFile);
+            multisampleSources = this.readIsoFile (sourceFile);
+        else if (lowerCaseName.endsWith (".hfe"))
+            multisampleSources = this.readHfeFile (sourceFile);
 
-        if (lowerCaseName.endsWith (".hfe"))
-            return this.readHfeFile (sourceFile);
+        final String fileName = FileUtils.getNameWithoutType (sourceFile.getName ());
+        for (final IMultisampleSource multisampleSource: multisampleSources)
+            multisampleSource.extendSubPath (fileName);
 
-        return this.readPgmFile (sourceFile);
+        return multisampleSources;
     }
 
 

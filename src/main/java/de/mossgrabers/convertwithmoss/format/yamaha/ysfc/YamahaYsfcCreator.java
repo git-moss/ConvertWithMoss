@@ -54,6 +54,7 @@ import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPartElem
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformance;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformancePart;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -182,7 +183,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        this.createPresetLibrary (destinationFolder, Collections.singletonList (multisampleSource), AbstractCreator.createSafeFilename (multisampleSource.getName ()));
+        this.createPresetLibrary (destinationFolder, Collections.singletonList (multisampleSource), FileUtils.createSafeFilename (multisampleSource.getName ()));
     }
 
 
@@ -216,7 +217,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final Integer selectedOutputFormat = Integer.valueOf (this.settingsConfiguration.selectedOutputFormat ());
         final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
         final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
-        final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
+        final String libraryName = FileUtils.createSafeFilename (performanceSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
         this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
@@ -602,8 +603,8 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
     /**
      * Applies the key and velocity tracking of the envelope times to an element. The model range of
-     * [-1..1] is de-normalized to [0..127] with 64 as the neutral center, which relates to -64..+63.
-     * Nothing is applied if there is no tracking, which keeps the value of the template.
+     * [-1..1] is de-normalized to [0..127] with 64 as the neutral center, which relates to
+     * -64..+63. Nothing is applied if there is no tracking, which keeps the value of the template.
      *
      * @param envelope The envelope from which to read the tracking amounts
      * @param velocitySensitivitySetter Applies the time velocity sensitivity to the element

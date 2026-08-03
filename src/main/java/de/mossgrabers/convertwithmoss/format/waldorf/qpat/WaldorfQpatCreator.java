@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 
 
@@ -106,7 +107,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // source instead, which tells the presets of different banks apart on the computer, but is
         // longer than what the import screen of the device can show
         final String deviceName = this.createDeviceName (multisampleSource);
-        final String sampleName = createSafeFilename (this.settingsConfiguration.useShortFileNames () ? this.limitToFileNameBudget (deviceName) : multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (this.settingsConfiguration.useShortFileNames () ? this.limitToFileNameBudget (deviceName) : multisampleSource.getName ());
         final String fileName;
         if (this.settingsConfiguration.addNumberPrefix ())
         {
@@ -370,7 +371,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // zone (see AbstractCreator.createSampleFilename), otherwise the device cannot
                 // resolve the sample and shows the "Find Sample Map" screen. The folder part of the
                 // path is created with the same method as well.
-                sb.append ('"').append (relativeSamplePath).append ('/').append (createSafeFilename (zone.getName ())).append (".wav\"\t");
+                sb.append ('"').append (relativeSamplePath).append ('/').append (FileUtils.createSafeFilename (zone.getName ())).append (".wav\"\t");
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
                 // note is lower!

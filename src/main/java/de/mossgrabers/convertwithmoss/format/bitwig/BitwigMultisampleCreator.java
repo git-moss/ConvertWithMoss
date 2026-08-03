@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 
@@ -56,7 +57,7 @@ public class BitwigMultisampleCreator extends AbstractWavCreator<WavChunkSetting
         if (metadata.isEmpty ())
             return;
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "multisample");
+        final File multiFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "multisample");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))

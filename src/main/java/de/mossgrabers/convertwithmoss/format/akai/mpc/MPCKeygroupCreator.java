@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 
@@ -75,7 +76,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
             return;
         }
 
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
 
         // Store all samples and metadata file in one folder
         final File sampleFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
@@ -109,7 +110,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
      */
     private void createTrackPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "xty");
 
         final MPC3TrackFile.TrackDocument document = new MPC3TrackFile (this.settingsConfiguration.getLayerLimit ()).create (multisampleSource, sampleName);

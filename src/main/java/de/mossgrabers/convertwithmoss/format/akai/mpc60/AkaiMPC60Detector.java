@@ -62,6 +62,18 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
         if (this.waitForDelivery ())
             return Collections.emptyList ();
 
+        final List<IMultisampleSource> multisampleFiles = this.readImageFile (sourceFile);
+
+        final String fileName = FileUtils.getNameWithoutType (sourceFile.getName ());
+        for (final IMultisampleSource multisampleSource: multisampleFiles)
+            multisampleSource.extendSubPath (fileName);
+
+        return multisampleFiles;
+    }
+
+
+    private List<IMultisampleSource> readImageFile (final File sourceFile)
+    {
         final String lowerCaseName = sourceFile.getName ().toLowerCase ();
 
         if (lowerCaseName.endsWith (".img"))
