@@ -29,8 +29,10 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
     {
         /** A Series III voice file with sub-voices. */
         SERIES_III,
-        /** An 8-bit CMI I/II/IIx voice file, as read by QasarBeach and the Arturia CMI V. */
-        SERIES_IIX
+        /** An 8-bit CMI I/II/IIx voice file with its control (CO) file. */
+        SERIES_IIX,
+        /** The native 16-bit voice format of the QasarBeach recreation. */
+        QASAR_BEACH
     }
 
 
@@ -48,7 +50,7 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
 
         panel.createSeparator ("@IDS_CMI3_TARGET_FORMAT");
         this.targetFormatBox = new ComboBox<> ();
-        this.targetFormatBox.getItems ().addAll (Functions.getText ("@IDS_CMI3_FORMAT_SERIES_III"), Functions.getText ("@IDS_CMI3_FORMAT_SERIES_IIX"));
+        this.targetFormatBox.getItems ().addAll (Functions.getText ("@IDS_CMI3_FORMAT_SERIES_III"), Functions.getText ("@IDS_CMI3_FORMAT_SERIES_IIX"), Functions.getText ("@IDS_CMI3_FORMAT_QASAR_BEACH"));
         this.targetFormatBox.setMaxWidth (Double.MAX_VALUE);
         panel.addComponent (this.targetFormatBox);
 
@@ -97,8 +99,11 @@ public class FairlightCmi3CreatorUI implements ICoreTaskSettings
             case "iii", "3", "seriesiii":
                 this.targetFormat = TargetFormat.SERIES_III;
                 break;
-            case "iix", "2x", "2", "qasarbeach":
+            case "iix", "2x", "2":
                 this.targetFormat = TargetFormat.SERIES_IIX;
+                break;
+            case "qasarbeach", "qb", "qbv2":
+                this.targetFormat = TargetFormat.QASAR_BEACH;
                 break;
             default:
                 notifier.logError ("IDS_CLI_UNKNOWN_OUTPUT_FORMAT", formatValue);

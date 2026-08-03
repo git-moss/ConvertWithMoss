@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.cmi3;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,11 +31,13 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 
 /**
- * Creator for Fairlight CMI Voice (VC) files. Two dialects can be written. The default is a Series
- * III voice: each sample zone becomes a sub-voice with its key range taken from the 128-key mapping
- * table, with 16-bit mono or stereo audio, loop points, tuning and the amplitude envelope.
+ * Creator for Fairlight CMI Voice (VC) files. Three targets can be written. The default is a
+ * Series III voice: each sample zone becomes a sub-voice with its key range taken from the 128-key
+ * mapping table, with 16-bit mono or stereo audio, loop points, tuning and the amplitude envelope.
  * Alternatively the 8-bit voice format of the CMI I/II/IIx is written (one fixed-size file per
- * sample zone), which is the format read by the QasarBeach recreation and the Arturia CMI V.
+ * sample zone with the control (CO) file it references), which is the format read by the
+ * QasarBeach recreation and the Arturia CMI V, or the native 16-bit format of QasarBeach itself,
+ * which carries the loop, release and level in the file.
  *
  * @author Jürgen Moßgraber
  */
@@ -72,6 +75,14 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
     /** Patch type: a boolean which is off. */
     private static final int                    CO_PATCH_OFF          = 0xC1;
 
+    /** The native format of the QasarBeach recreation: 'QBV2', name, 16-bit audio, 'QBC9' chunk. */
+    private static final int                    QBV2_NAME_OFFSET      = 0x04;
+    private static final int                    QBV2_AUDIO_OFFSET     = 0x11;
+    private static final int                    QBV2_CONTROL_OFFSET   = QBV2_AUDIO_OFFSET + IIX_NUM_SAMPLES * 2;
+    /** Page 7 parameter block: the damping (release) and volume, stored 0-based. */
+    private static final int                    QBV2_DAMPING_OFFSET   = 0xD3DD;
+    private static final int                    QBV2_VOLUME_OFFSET    = 0xD3CB;
+
     private static final DestinationAudioFormat DESTINATION_FORMAT    = new DestinationAudioFormat (new int []
     {
         16
@@ -94,6 +105,9 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
     }
 
 
+    private byte [] qasarBeachTemplate;
+
+
     /**
      * Constructor.
      *
@@ -109,10 +123,18 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        if (this.settingsConfiguration.getTargetFormat () == FairlightCmi3CreatorUI.TargetFormat.SERIES_IIX)
-            this.createIIxFiles (destinationFolder, multisampleSource);
-        else
-            this.createSeries3File (destinationFolder, multisampleSource);
+        switch (this.settingsConfiguration.getTargetFormat ())
+        {
+            case SERIES_IIX:
+                this.createIIxFiles (destinationFolder, multisampleSource, false);
+                break;
+            case QASAR_BEACH:
+                this.createIIxFiles (destinationFolder, multisampleSource, true);
+                break;
+            default:
+                this.createSeries3File (destinationFolder, multisampleSource);
+                break;
+        }
     }
 
 
@@ -573,15 +595,17 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
     // Series IIx
 
     /**
-     * Write each sample zone as a voice file of the 8-bit CMI I/II/IIx dialect. Since the format
-     * does not store a sample rate, the audio is re-sampled so that the voice plays at its
-     * original pitch on the root key of the zone.
+     * Write each sample zone as a voice file of the 8-bit CMI I/II/IIx dialect or of the native
+     * QasarBeach format. Since neither stores a sample rate, the audio is re-sampled so that the
+     * voice plays at its original pitch on the root key of the zone.
      *
      * @param destinationFolder Where to store the files
      * @param multisampleSource The multi-sample source
+     * @param asQasarBeach True to write the native 16-bit QasarBeach format instead of the 8-bit
+     *            dialect with its control (CO) file
      * @throws IOException Could not store the files
      */
-    private void createIIxFiles (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
+    private void createIIxFiles (final File destinationFolder, final IMultisampleSource multisampleSource, final boolean asQasarBeach) throws IOException
     {
         final List<ISampleZone> zones = new ArrayList<> ();
         for (final IGroup group: this.combineSplitStereo (multisampleSource))
@@ -601,8 +625,8 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
                 return;
 
             final ISampleZone zone = zones.get (i);
-            final byte [] fileData = this.createIIxFileData (zone);
-            if (fileData == null)
+            final RenderedVoice renderedVoice = this.renderVoice (zone);
+            if (renderedVoice == null)
                 continue;
 
             String name = zones.size () == 1 || zone.getName () == null || zone.getName ().isBlank () ? multisampleSource.getName () : zone.getName ();
@@ -611,11 +635,22 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             if (zones.size () > 1 && (zone.getName () == null || zone.getName ().isBlank ()))
                 name = name + " " + (i + 1);
 
-            // The control parameters (loop, envelope, level) are read from a control (CO) file
-            // which the voice references by an 8 character name
-            final String controlName = createUniqueDOSFileName (destinationFolder, createSafeFilename (name).replaceAll ("[^A-Za-z0-9_]", "_"), ".CO", controlFileNames, false);
-            for (int c = 0; c < 8; c++)
-                fileData[IIX_CO_NAME_OFFSET + c] = (byte) (c < controlName.length () ? controlName.charAt (c) : ' ');
+            final byte [] fileData;
+            byte [] controlFileData = null;
+            String controlName = null;
+            if (asQasarBeach)
+                fileData = this.createQasarBeachFileData (zone, renderedVoice, name);
+            else
+            {
+                fileData = createIIxFileData (renderedVoice);
+
+                // The control parameters (loop, envelope, level) are read from a control (CO)
+                // file which the voice references by an 8 character name
+                controlName = createUniqueDOSFileName (destinationFolder, createSafeFilename (name).replaceAll ("[^A-Za-z0-9_]", "_"), ".CO", controlFileNames, false);
+                for (int c = 0; c < 8; c++)
+                    fileData[IIX_CO_NAME_OFFSET + c] = (byte) (c < controlName.length () ? controlName.charAt (c) : ' ');
+                controlFileData = createIIxControlFileData (zone, fileData);
+            }
 
             final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (name), "vc");
             this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
@@ -624,25 +659,39 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
                 out.write (fileData);
             }
 
-            final File controlFile = new File (destinationFolder, controlName + ".CO");
-            this.notifier.log ("IDS_NOTIFY_STORING", controlFile.getAbsolutePath ());
-            try (final OutputStream out = new FileOutputStream (controlFile))
+            if (controlFileData != null)
             {
-                out.write (createIIxControlFileData (zone, fileData));
+                final File controlFile = new File (destinationFolder, controlName + ".CO");
+                this.notifier.log ("IDS_NOTIFY_STORING", controlFile.getAbsolutePath ());
+                try (final OutputStream out = new FileOutputStream (controlFile))
+                {
+                    out.write (controlFileData);
+                }
             }
         }
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
 
 
+    /** The mono 16-bit audio and loop segments of a zone rendered for the fixed-size formats. */
+    private static class RenderedVoice
+    {
+        final short [] samples = new short [IIX_NUM_SAMPLES];
+        boolean        isLooped;
+        int            loopStartSegment;
+        int            loopEndSegment;
+    }
+
+
     /**
-     * Create the data of one IIx voice file from a zone.
+     * Render the audio of a zone for the fixed-size voice formats: mixed down to mono, cut to the
+     * 16384 samples of a voice, with the loop as 128 sample segments.
      *
      * @param zone The zone
-     * @return The file data or null if the audio format is not supported
+     * @return The rendered voice or null if the audio format is not supported
      * @throws IOException Could not convert the sample data
      */
-    private byte [] createIIxFileData (final ISampleZone zone) throws IOException
+    private RenderedVoice renderVoice (final ISampleZone zone) throws IOException
     {
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
@@ -681,10 +730,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
         if (numFrames > IIX_NUM_SAMPLES)
             this.notifier.log ("IDS_CMI3_IIX_TRUNCATED", zone.getName (), Integer.toString (numFrames));
 
-        final byte [] out = new byte [IIX_FILE_SIZE];
-
-        // Mix down to mono and convert to 8-bit unsigned, silence is 0x80
-        Arrays.fill (out, IIX_AUDIO_OFFSET, IIX_AUDIO_OFFSET + IIX_NUM_SAMPLES, (byte) 0x80);
+        final RenderedVoice renderedVoice = new RenderedVoice ();
         final int copyFrames = Math.min (numFrames, IIX_NUM_SAMPLES);
         for (int i = 0; i < copyFrames; i++)
         {
@@ -694,11 +740,8 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
                 final int src = ((start + i) * numChannels + channel) * 2;
                 sum += (short) (pcmData[src] & 0xFF | pcmData[src + 1] << 8);
             }
-            out[IIX_AUDIO_OFFSET + i] = (byte) ((sum / numChannels >> 8) + 128);
+            renderedVoice.samples[i] = (short) (sum / numChannels);
         }
-
-        // No control (CO) file is referenced - the field is padded with spaces
-        Arrays.fill (out, IIX_CO_NAME_OFFSET, IIX_CO_NAME_OFFSET + 8, (byte) 0x20);
 
         // The loop is stored as 128 sample segments, the end segment is inclusive
         final List<ISampleLoop> loops = zone.getLoops ();
@@ -709,15 +752,102 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             final long loopEnd = loop.getEnd () > 0 ? Math.round (loop.getEnd () * frameRatio) - start : copyFrames - 1L;
             if (loopStart < IIX_NUM_SAMPLES && loopEnd > loopStart)
             {
-                final int startSegment = Math.clamp (Math.round (Math.max (loopStart, 0) / (double) IIX_SEGMENT_SIZE), 0, 127);
-                final int endSegment = Math.clamp (Math.round ((loopEnd + 1) / (double) IIX_SEGMENT_SIZE) - 1, startSegment, 127);
-                out[IIX_LOOP_START_OFFSET] = (byte) startSegment;
-                out[IIX_LOOP_END_OFFSET] = (byte) endSegment;
-                out[IIX_LOOP_MODE_OFFSET] = 1;
+                renderedVoice.isLooped = true;
+                renderedVoice.loopStartSegment = Math.clamp (Math.round (Math.max (loopStart, 0) / (double) IIX_SEGMENT_SIZE), 0, 127);
+                renderedVoice.loopEndSegment = Math.clamp (Math.round ((loopEnd + 1) / (double) IIX_SEGMENT_SIZE) - 1, renderedVoice.loopStartSegment, 127);
             }
         }
+        return renderedVoice;
+    }
 
+
+    /**
+     * Create the data of one 8-bit IIx voice file from a rendered voice.
+     *
+     * @param renderedVoice The rendered voice
+     * @return The file data
+     */
+    private static byte [] createIIxFileData (final RenderedVoice renderedVoice)
+    {
+        final byte [] out = new byte [IIX_FILE_SIZE];
+
+        // 8-bit unsigned audio, silence is 0x80
+        for (int i = 0; i < IIX_NUM_SAMPLES; i++)
+            out[IIX_AUDIO_OFFSET + i] = (byte) ((renderedVoice.samples[i] >> 8) + 128);
+
+        // No control (CO) file is referenced yet - the field is padded with spaces
+        Arrays.fill (out, IIX_CO_NAME_OFFSET, IIX_CO_NAME_OFFSET + 8, (byte) 0x20);
+
+        if (renderedVoice.isLooped)
+        {
+            out[IIX_LOOP_START_OFFSET] = (byte) renderedVoice.loopStartSegment;
+            out[IIX_LOOP_END_OFFSET] = (byte) renderedVoice.loopEndSegment;
+            out[IIX_LOOP_MODE_OFFSET] = 1;
+        }
         return out;
+    }
+
+
+    /**
+     * Create the data of one voice file in the native format of the QasarBeach recreation. The
+     * unknown parts are taken from a template captured from a QasarBeach save; the name, the
+     * 16-bit audio, the loop, the damping (release) and the volume are patched in.
+     *
+     * @param zone The zone
+     * @param renderedVoice The rendered voice
+     * @param name The name of the voice
+     * @return The file data
+     * @throws IOException Could not load the template
+     */
+    private byte [] createQasarBeachFileData (final ISampleZone zone, final RenderedVoice renderedVoice, final String name) throws IOException
+    {
+        final byte [] out = this.getQasarBeachTemplate ().clone ();
+
+        for (int i = 0; i < 8; i++)
+        {
+            final char c = i < name.length () ? name.charAt (i) : ' ';
+            out[QBV2_NAME_OFFSET + i] = (byte) (c >= 32 && c <= 126 ? c : '_');
+        }
+
+        for (int i = 0; i < IIX_NUM_SAMPLES; i++)
+        {
+            out[QBV2_AUDIO_OFFSET + i * 2] = (byte) (renderedVoice.samples[i] & 0xFF);
+            out[QBV2_AUDIO_OFFSET + i * 2 + 1] = (byte) (renderedVoice.samples[i] >> 8 & 0xFF);
+        }
+
+        // The control chunk: the 0-based inclusive loop segments and the loop switch
+        out[QBV2_CONTROL_OFFSET + 7] = (byte) (renderedVoice.isLooped ? renderedVoice.loopStartSegment : 0);
+        out[QBV2_CONTROL_OFFSET + 8] = (byte) (renderedVoice.isLooped ? renderedVoice.loopEndSegment : 0);
+        out[QBV2_CONTROL_OFFSET + 12] = (byte) (renderedVoice.isLooped ? 1 : 0);
+
+        // Damping (release) and volume are stored 0-based like all Page 7 values. The time law of
+        // the damping is not known yet, the mapping is provisional
+        final IEnvelopeModulator modulator = zone.getAmplitudeEnvelopeModulator ();
+        final IEnvelope envelope = modulator.getDepth () > 0 ? modulator.getSource () : null;
+        final double release = limitToDefault (envelope == null ? 0 : envelope.getReleaseTime (), 0);
+        out[QBV2_DAMPING_OFFSET] = (byte) Math.clamp (Math.round (release * 32.0), 4, 127);
+        out[QBV2_VOLUME_OFFSET] = (byte) Math.clamp (Math.round (128.0 * Math.pow (10, zone.getGain () / 20.0)) - 1, 0, 127);
+        return out;
+    }
+
+
+    /**
+     * Get the template for the native QasarBeach format, which provides all unknown parts of the
+     * format with the defaults of a voice saved by QasarBeach itself.
+     *
+     * @return The template data
+     * @throws IOException Could not load the template resource
+     */
+    private byte [] getQasarBeachTemplate () throws IOException
+    {
+        if (this.qasarBeachTemplate == null)
+            try (final InputStream in = FairlightCmi3Creator.class.getResourceAsStream ("QBV2Template.bin"))
+            {
+                if (in == null)
+                    throw new IOException ("Missing resource QBV2Template.bin");
+                this.qasarBeachTemplate = in.readAllBytes ();
+            }
+        return this.qasarBeachTemplate;
     }
 
 

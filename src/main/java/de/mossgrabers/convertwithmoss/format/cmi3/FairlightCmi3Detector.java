@@ -61,6 +61,9 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     private static final int QBV2_AUDIO_OFFSET     = 0x11;
     /** The control chunk of a QasarBeach voice follows directly after the audio data. */
     private static final int QBV2_CONTROL_OFFSET   = QBV2_AUDIO_OFFSET + IIX_NUM_SAMPLES * 2;
+    /** The damping (release) and volume in the parameter block of a QasarBeach voice. */
+    private static final int QBV2_DAMPING_OFFSET   = 0xD3DD;
+    private static final int QBV2_VOLUME_OFFSET    = 0xD3CB;
     /**
      * The CMI II reads one 128 sample segment per waveform period, therefore a voice plays at its
      * original pitch on the key with the frequency of the sample rate divided by 128. For the
@@ -289,7 +292,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (1, IIX_SAMPLE_RATE, 16, IIX_NUM_SAMPLES), audio));
 
         // The control chunk: [5] = mode, [7] = loop start segment, [8] = loop end segment, [12]
-        // seems to be the loop switch
+        // is the loop switch
         if (inBytes.length >= QBV2_CONTROL_OFFSET + 16 && inBytes[QBV2_CONTROL_OFFSET] == 'Q' && inBytes[QBV2_CONTROL_OFFSET + 1] == 'B' && inBytes[QBV2_CONTROL_OFFSET + 2] == 'C')
         {
             final int startSegment = Byte.toUnsignedInt (inBytes[QBV2_CONTROL_OFFSET + 7]);
@@ -301,6 +304,19 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
                 loop.setEnd ((endSegment + 1) * IIX_SEGMENT_SIZE - 1);
                 zone.addLoop (loop);
             }
+        }
+
+        // Damping (release) and volume from the parameter block, stored 0-based. A value with the
+        // top bit set is patched to a modulator and is skipped. The damping time law is not known
+        // yet, the mapping is provisional
+        if (inBytes.length > QBV2_DAMPING_OFFSET)
+        {
+            final int damping = Byte.toUnsignedInt (inBytes[QBV2_DAMPING_OFFSET]);
+            if (damping < 0x80)
+                zone.getAmplitudeEnvelopeModulator ().getSource ().setReleaseTime (damping / 32.0);
+            final int volume = Byte.toUnsignedInt (inBytes[QBV2_VOLUME_OFFSET]);
+            if (volume < 0x80)
+                zone.setGain (20.0 * Math.log10 ((volume + 1) / 128.0));
         }
 
         final IGroup group = new DefaultGroup ("IIx");
