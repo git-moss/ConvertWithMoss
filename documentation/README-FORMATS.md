@@ -54,6 +54,7 @@ The following multi-sample formats are supported:
 * [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
 * [Arturia Synclavier V](#arturia-synclavier-v)
 * [Bitwig Multisample](#bitwig-multisample)
+* [Casio FZ-1/FZ-10M/FZ-20M](#casio-fz-1fz-10mfz-20m)
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
@@ -240,6 +241,14 @@ It supports multiple groups, key and velocity crossfades as well as several meta
 The parser supports all information from the format except the group color and select parameters 1 to 3, which are not mappable.
 
 This converter supports (split) stereo uncompressed and IEEE float 32 bit formats for the WAV files.
+
+## Casio FZ-1/FZ-10M/FZ-20M
+
+The Casio FZ series are 16-bit samplers from 1987 with a built-in 3.5" floppy drive. The implementation follows the official 'FZ-1 Data Structures' documentation from Casio.
+
+As a source, floppy disk images (*.img*, raw 1,310,720 bytes, or *.hfe* for HxC/Gotek floppy emulators) as well as bare dump files (*.fzf* full dump, *.fzv* voice, *.fzb* bank) are read. Each bank of a dump becomes one multi-sample: its areas define the key splits, velocity splits, area volumes and the root keys; the voices provide the 16-bit samples (36, 18 or 9 kHz) with their sustain loop, loop cross-fade, pitch correction, play mode (normal or reversed), the velocity to amplitude depth, the amplitude and filter envelopes and the filter with its resonance. Dumps without a bank become one multi-sample from the key ranges of the voices. The pitch bend range is read from the effect parameters. The envelope rates and the filter cutoff of the FZ have no documented unit, they are converted with an approximated law.
+
+As the destination, a ready-to-use floppy disk image (*.img*) with one full dump file is written, which can be written to a disk or copied to a floppy emulator. The zones become the areas of a bank with one voice each (up to 64). Samples are converted to 16-bit mono; their sample rate is kept and the difference to the closest FZ hardware rate is compensated with the pitch parameter of the voice, so the samples are stored without any loss. If the samples do not fit onto the 1.25 MB of a floppy disk, zones are dropped from the end with an error message. Writing has not been verified on real hardware yet.
 
 ## CWITEC TX16Wx
 
