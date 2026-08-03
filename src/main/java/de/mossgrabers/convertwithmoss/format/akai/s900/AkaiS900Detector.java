@@ -30,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.akai.s900.AkaiS900Keygroup.KeygroupLayer;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -61,12 +62,15 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         {
             final AkaiS900DiskImage image = new AkaiS900DiskImage (sourceFile);
             final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
+            final String fileName = FileUtils.getNameWithoutType (sourceFile.getName ());
             for (final AkaiS900Program program: image.getPrograms ())
             {
                 final String programName = program.getName ();
                 final IGroup group = new DefaultGroup ();
                 this.createSampleZones (group, program, image.getSamples ());
-                multiSampleSources.add (this.createMultisampleSource (sourceFile, programName, Collections.singletonList (group)));
+                final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, programName, Collections.singletonList (group));
+                multisampleSource.extendSubPath (fileName);
+                multiSampleSources.add (multisampleSource);
             }
             return multiSampleSources;
         }
