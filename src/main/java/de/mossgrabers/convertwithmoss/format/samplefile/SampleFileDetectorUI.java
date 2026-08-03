@@ -50,6 +50,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
     private static final SampleFileType []           FILE_TYPES                         =
     {
         new AiffSampleFileType (),
+        new CafSampleFileType (),
         new FlacSampleFileType (),
         new NcwSampleFileType (),
         new OggSampleFileType (),
@@ -60,10 +61,11 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
     static
     {
         SAMPLE_FILE_TYPES_BY_NAME.put ("AIFF", FILE_TYPES[0]);
-        SAMPLE_FILE_TYPES_BY_NAME.put ("FLAC", FILE_TYPES[1]);
-        SAMPLE_FILE_TYPES_BY_NAME.put ("NCW", FILE_TYPES[2]);
-        SAMPLE_FILE_TYPES_BY_NAME.put ("OGG", FILE_TYPES[3]);
-        SAMPLE_FILE_TYPES_BY_NAME.put ("WAV", FILE_TYPES[4]);
+        SAMPLE_FILE_TYPES_BY_NAME.put ("CAF", FILE_TYPES[1]);
+        SAMPLE_FILE_TYPES_BY_NAME.put ("FLAC", FILE_TYPES[2]);
+        SAMPLE_FILE_TYPES_BY_NAME.put ("NCW", FILE_TYPES[3]);
+        SAMPLE_FILE_TYPES_BY_NAME.put ("OGG", FILE_TYPES[4]);
+        SAMPLE_FILE_TYPES_BY_NAME.put ("WAV", FILE_TYPES[5]);
     }
 
     private TextField                  detectionPatternField;
@@ -312,7 +314,7 @@ public class SampleFileDetectorUI extends MetadataSettingsUI
             this.sampleFileTypes.add (sampleFileType);
         }
         if (this.sampleFileTypes.isEmpty ())
-            this.sampleFileTypes.add (FILE_TYPES[4]);
+            this.sampleFileTypes.add (SAMPLE_FILE_TYPES_BY_NAME.get ("WAV"));
 
         this.crossfadeNotes = parsePositiveInt (notifier, parameters, SAMPLEFILE_CROSSFADE_NOTES, 0);
         if (this.crossfadeNotes < 0)
