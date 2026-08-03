@@ -100,7 +100,7 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final File multiFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "dwp");
+        final File multiFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "dwp");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         this.filterRoundRobinZones (multisampleSource);
@@ -181,7 +181,7 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         if (sampleData.isEmpty ())
             throw new IOException ("Empty sample data in zone: " + zone.getName ());
         final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
-        final String sampleName = createSafeFilename (zone.getName ());
+        final String sampleName = FileUtils.createSafeFilename (zone.getName ());
         // Round the length up to a full audio block, see EMBEDDED_AUDIO_BLOCK
         final int blockSize = DirectWaveTag.EMBEDDED_AUDIO_BLOCK;
         final int frames = (audioMetadata.getNumberOfSamples () + blockSize - 1) / blockSize * blockSize;

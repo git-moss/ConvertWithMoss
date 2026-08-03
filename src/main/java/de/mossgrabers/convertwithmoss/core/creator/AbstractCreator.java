@@ -13,7 +13,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.FileTime;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,6 +53,7 @@ import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.ui.ProgressLogger;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -242,51 +242,6 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
             return name;
         final String prefix = bank + " - ";
         return name.startsWith (prefix) && name.length () > prefix.length () ? name.substring (prefix.length ()) : name;
-    }
-
-
-    /**
-     * Removes illegal characters from file names.
-     *
-     * @param filename A potential filename
-     * @return The filename with illegal characters replaced by an underscore
-     */
-    public static String createSafeFilename (final String filename)
-    {
-        if (filename == null)
-            return "Unnamed";
-
-        // Normalize UNICODE (optional but recommended)
-        String sanitized = Normalizer.normalize (filename, Normalizer.Form.NFKC);
-
-        // Remove control characters
-        sanitized = sanitized.replaceAll ("[\\p{Cntrl}]", "");
-
-        // Replace invalid filename characters
-        // Windows forbidden: \ / : * ? " < > |
-        // Also remove Unix path separator /
-        // A dot is kept - it is a valid file name character (e.g. "My.Sample") and formats which
-        // use the name as a display label, like the Roland SP-404MK2 pad name, would otherwise
-        // lose it; only leading/trailing dots are stripped below.
-        sanitized = sanitized.replaceAll ("[\\\\/:*?\"<>|&']", "_");
-
-        // Remove leading/trailing spaces and dots (Windows issue)
-        sanitized = sanitized.replaceAll ("^[ .]+", "");
-        sanitized = sanitized.replaceAll ("[ .]+$", "");
-        if (sanitized.isBlank ())
-            return "Unnamed";
-
-        // Avoid reserved Windows filenames
-        final String upper = sanitized.toUpperCase ();
-        if (upper.matches ("CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]"))
-            sanitized = "_" + sanitized;
-
-        // Limit length
-        final int MAX_LENGTH = 255;
-        if (sanitized.length () > MAX_LENGTH)
-            sanitized = sanitized.substring (0, MAX_LENGTH);
-
-        return sanitized;
     }
 
 
@@ -483,7 +438,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected String createSampleFilename (final ISampleZone zone, final int zoneIndex, final String fileEnding)
     {
-        return createSafeFilename (zone.getName ()) + fileEnding;
+        return FileUtils.createSafeFilename (zone.getName ()) + fileEnding;
     }
 
 

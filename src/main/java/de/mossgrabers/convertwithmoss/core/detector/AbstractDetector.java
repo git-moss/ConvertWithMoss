@@ -817,9 +817,9 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
 
     /**
-     * Create the sample data object for a CAF file. Checks for an audio data format which cannot
-     * be decoded and reports it accordingly. CAF files with linear PCM, IMA4, µLaw, aLaw or
-     * Apple Lossless sound data are supported.
+     * Create the sample data object for a CAF file. Checks for an audio data format which cannot be
+     * decoded and reports it accordingly. CAF files with linear PCM, IMA4, µLaw, aLaw or Apple
+     * Lossless sound data are supported.
      *
      * @param sampleFile The CAF file
      * @return The sample data

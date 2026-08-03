@@ -19,7 +19,6 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
 import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.algorithm.MultiSampleReducer;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -120,6 +119,7 @@ import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcDetector;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -764,7 +764,7 @@ public class ConverterBackend
     {
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
-                zone.setName (AbstractCreator.createSafeFilename (zone.getName ()));
+                zone.setName (FileUtils.createSafeFilename (zone.getName ()));
     }
 
 
@@ -821,13 +821,13 @@ public class ConverterBackend
     private String getPresetLibraryName (final List<IMultisampleSource> multisampleSources, final String libraryName)
     {
         final String name = this.detectionSettings.wantsMultipleFiles && !libraryName.isEmpty () ? libraryName : multisampleSources.get (0).getName ();
-        return AbstractCreator.createSafeFilename (name);
+        return FileUtils.createSafeFilename (name);
     }
 
 
     private String getPerformanceLibraryName (final List<IPerformanceSource> performanceSources, final String libraryName)
     {
         final String name = this.detectionSettings.wantsMultipleFiles && !libraryName.isEmpty () ? libraryName : performanceSources.get (0).getName ();
-        return AbstractCreator.createSafeFilename (name);
+        return FileUtils.createSafeFilename (name);
     }
 }

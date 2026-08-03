@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -48,7 +49,7 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
 
         // Create a sub-folder for the metadata (might be multiple for each group) and all samples
         final File subFolder = new File (destinationFolder, sampleName);

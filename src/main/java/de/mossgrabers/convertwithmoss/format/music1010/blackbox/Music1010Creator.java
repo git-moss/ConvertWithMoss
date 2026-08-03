@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.format.music1010.AbstractMusic1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -161,7 +162,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
     @Override
     public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
     {
-        final String performanceFolder = createSafeFilename (performanceSource.getName ());
+        final String performanceFolder = FileUtils.createSafeFilename (performanceSource.getName ());
         final File folder = this.createUniqueFilename (destinationFolder, performanceFolder, "");
         if (!folder.exists () && !folder.mkdir ())
         {
@@ -204,7 +205,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
         {
             final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
 
-            final String multisampleName = createSafeFilename (multisampleSource.getName ());
+            final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
             final File presetFolder = this.createUniqueFilename (folder, multisampleName, "");
             if (!presetFolder.mkdir ())
             {
@@ -229,7 +230,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
         final boolean resample = this.settingsConfiguration.resampleTo2448 ();
         final boolean trim = this.settingsConfiguration.trimStartToEnd ();
 
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         final File presetFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         if (!presetFolder.mkdir ())
         {

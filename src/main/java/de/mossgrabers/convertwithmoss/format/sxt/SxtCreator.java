@@ -47,7 +47,7 @@ public class SxtCreator extends AbstractWavCreator<WavChunkSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
 
         final File outputFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         safeCreateDirectory (outputFolder);
@@ -71,7 +71,7 @@ public class SxtCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final ByteArrayOutputStream zoneSampleReferenceOutputStream = new ByteArrayOutputStream ();
         final List<ByteArrayOutputStream> sampleReferenceOutputStreams = new ArrayList<> ();
 
-        final String multiSampleName = createSafeFilename (multisampleSource.getName ());
+        final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
 
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
         writeVersion (groupsOutputStream, SxtChunkConstants.VERSION_2_0_0);

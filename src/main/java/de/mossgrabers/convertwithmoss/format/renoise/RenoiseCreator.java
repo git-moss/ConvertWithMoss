@@ -45,6 +45,7 @@ import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 
@@ -103,7 +104,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         if (metadata.isEmpty ())
             return;
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "xrni");
+        final File multiFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "xrni");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
@@ -710,7 +711,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
      */
     private String sampleBaseName (final int zoneIndex, final ISampleZone zone)
     {
-        return String.format (Locale.US, "Sample%0" + this.padWidth + "d (%s)", Integer.valueOf (zoneIndex), createSafeFilename (zone.getName ()));
+        return String.format (Locale.US, "Sample%0" + this.padWidth + "d (%s)", Integer.valueOf (zoneIndex), FileUtils.createSafeFilename (zone.getName ()));
     }
 
 

@@ -21,7 +21,6 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
@@ -582,7 +581,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
     private static ISampleZone createSampleZone (final String name, final YamahaYsfcKeybank keybank)
     {
         final int rootNote = keybank.getRootNote ();
-        final String sampleName = String.format ("%s_%d_%s", AbstractCreator.createSafeFilename (name), Integer.valueOf (rootNote), NoteParser.formatNoteSharps (rootNote));
+        final String sampleName = String.format ("%s_%d_%s", FileUtils.createSafeFilename (name), Integer.valueOf (rootNote), NoteParser.formatNoteSharps (rootNote));
 
         final ISampleZone zone = new DefaultSampleZone (sampleName, null);
         zone.setKeyRoot (rootNote);
