@@ -451,7 +451,16 @@ The Fairlight CMI (**C**omputer **M**usical **I**nstrument) Series III, introduc
 
 Voice Files (*.VC) store individual instrument subvoices (samples) and synthesis data. The file is split into headers/control parameters followed by raw linear 8-bit audio samples (or 16-bit for Series III). Fairlight CMI IIx used variable rates from 2.1 kHz to 32 kHz (default 14.08 kHz). Series III expanded up to 100 kHz at 16 bits. Early CMI memory was limited (e.g., 16KB per channel).
 
-Note that this will not work with IIx or earlier versions despite the same VC file extension was used. Only reading is supported.
+As a source, both dialects of the voice files are read: the 16-bit Series III files with all of their sub-voices (key ranges, loops, tuning, gain and the amplitude envelope) and the fixed-size 8-bit files of the CMI I/II/IIx (16384 samples with their loop segments), which are e.g. written by the QasarBeach recreation of the IIx - both with the full header as well as bare 16 KB audio-only files. Since the 8-bit dialect stores neither a sample rate nor a root note, such a voice gets the documented default rate of the IIx (14080 Hz) with its root at the middle C.
+
+### Destination Options
+
+* Target Format:
+  * Series III: One voice file per multi-sample. Each sample zone becomes a sub-voice with its key range in the 128-key mapping table, with 16-bit mono or stereo audio, loop, tuning, gain and amplitude envelope. Since the format has no velocity dimension, the loudest velocity layer wins where zones overlap. Up to 127 sub-voices fit into a file.
+  * IIx (QasarBeach): One fixed-size 8-bit voice file per sample zone, as read by QasarBeach and the Arturia CMI V. The audio is mixed to mono and re-sampled relative to the configured sample rate so that the zone keeps its pitch when the voice is played at the middle C, then cut to the 16384 samples of a voice. The loop is stored in segments of 128 samples.
+* IIx Sample Rate (Hz): The reference rate of the written IIx audio data (the dialect itself stores no sample rate). 14080 Hz is the documented default rate of the IIx; higher rates keep more brightness but fit less audio into the fixed 16384 samples.
+
+Written files have not been tested on real Fairlight hardware yet.
 
 ## FL Studio DirectWave
 

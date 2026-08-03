@@ -32,17 +32,30 @@ import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * Detector for Fairlight CMI3 Voice (VC) files.
+ * Detector for Fairlight CMI Voice (VC) files. Two dialects are supported: the Series III voice
+ * files with their sub-voices and the fixed-size 8-bit voice files of the CMI I/II/IIx, which are
+ * also read and written by the QasarBeach recreation and read by the Arturia CMI V.
  *
  * @author Jürgen Moßgraber
  */
 public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final int VC_VERSION_A       = 768;
-    private static final int VC_VERSION_B       = 769;
-    private static final int VC_NAME_SIZE       = 16;
-    private static final int FUNC_BLOCK_BASE    = 768;
-    private static final int SAMPLE_DATA_OFFSET = 2304;
+    private static final int VC_VERSION_A          = 768;
+    private static final int VC_VERSION_B          = 769;
+    private static final int VC_NAME_SIZE          = 16;
+    private static final int FUNC_BLOCK_BASE       = 768;
+    private static final int SAMPLE_DATA_OFFSET    = 2304;
+
+    private static final int IIX_FILE_SIZE         = 21888;
+    private static final int IIX_HEADER_SIZE       = 0x1500;
+    private static final int IIX_NUM_SAMPLES       = 16384;
+    private static final int IIX_SEGMENT_SIZE      = 128;
+    private static final int IIX_LOOP_START_OFFSET = 0x1332;
+    private static final int IIX_LOOP_END_OFFSET   = 0x1333;
+    private static final int IIX_LOOP_MODE_OFFSET  = 0x133B;
+    /** The IIx dialect stores no sample rate - the documented default sampling rate of the IIx. */
+    private static final int IIX_SAMPLE_RATE       = 14080;
+    private static final int IIX_ROOT_KEY          = 60;
 
 
     /** All parsed properties of a single CMI3 sub-voice. */
@@ -118,7 +131,15 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     {
         final byte [] inBytes = inputStream.readAllBytes ();
 
-        validateHeader (inBytes);
+        // Files of the 8-bit CMI I/II/IIx dialect (e.g. from QasarBeach or the original library
+        // floppies) have no version word; they are identified by their fixed file sizes
+        final int version = readBE16 (inBytes, 0);
+        if (version != VC_VERSION_A && version != VC_VERSION_B)
+        {
+            if (isIIxFile (inBytes.length))
+                return this.readIIx (inBytes, sourceFile);
+            throw new ParseException (Functions.getMessage ("IDS_CMI3_UNKNOWN_VERSION", Integer.toString (version)));
+        }
 
         final int channels = Byte.toUnsignedInt (inBytes[16]) >= 127 ? 2 : 1;
 
@@ -157,16 +178,55 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Verifies the two-byte version word at the start of the file.
+     * Check if the file size matches one of the fixed sizes of the 8-bit voice file dialect: the
+     * bare 16 KB audio data, or the audio data with the header and optionally the footer.
      *
-     * @param data The data of the header
-     * @throws ParseException Found unsupported version
+     * @param length The length of the file
+     * @return True if it is a IIx voice file
      */
-    private static void validateHeader (final byte [] data) throws ParseException
+    private static boolean isIIxFile (final int length)
     {
-        final int version = readBE16 (data, 0);
-        if (version != VC_VERSION_A && version != VC_VERSION_B)
-            throw new ParseException (Functions.getMessage ("IDS_CMI3_UNKNOWN_VERSION", Integer.toString (version)));
+        return length == IIX_NUM_SAMPLES || length == IIX_HEADER_SIZE + IIX_NUM_SAMPLES || length == IIX_FILE_SIZE;
+    }
+
+
+    /**
+     * Read a voice file of the 8-bit CMI I/II/IIx dialect. The audio data is 16384 bytes of 8-bit
+     * unsigned samples. Since the dialect stores no sample rate or root note, the documented
+     * default rate of the IIx is used with the root at middle C.
+     *
+     * @param inBytes The content of the file
+     * @param sourceFile The source file
+     * @return The multi-sample source
+     */
+    private IMultisampleSource readIIx (final byte [] inBytes, final File sourceFile)
+    {
+        final int audioOffset = inBytes.length == IIX_NUM_SAMPLES ? 0 : IIX_HEADER_SIZE;
+        final byte [] audio = Arrays.copyOfRange (inBytes, audioOffset, audioOffset + IIX_NUM_SAMPLES);
+
+        final String name = FileUtils.getNameWithoutType (sourceFile);
+        final ISampleZone zone = new DefaultSampleZone (name, 0, 127);
+        zone.setKeyRoot (IIX_ROOT_KEY);
+        zone.setKeyTracking (1);
+        zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (1, IIX_SAMPLE_RATE, 8, IIX_NUM_SAMPLES), audio));
+
+        // The loop is stored as 128 sample segments with an inclusive end segment
+        if (audioOffset > 0 && inBytes[IIX_LOOP_MODE_OFFSET] == 1)
+        {
+            final int startSegment = Byte.toUnsignedInt (inBytes[IIX_LOOP_START_OFFSET]);
+            final int endSegment = Byte.toUnsignedInt (inBytes[IIX_LOOP_END_OFFSET]);
+            if (startSegment < 128 && endSegment < 128 && startSegment <= endSegment)
+            {
+                final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                loop.setStart (startSegment * IIX_SEGMENT_SIZE);
+                loop.setEnd ((endSegment + 1) * IIX_SEGMENT_SIZE - 1);
+                zone.addLoop (loop);
+            }
+        }
+
+        final IGroup group = new DefaultGroup ("IIx");
+        group.addSampleZone (zone);
+        return this.createMultisampleSource (sourceFile, name, Collections.singletonList (group));
     }
 
 

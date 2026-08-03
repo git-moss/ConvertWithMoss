@@ -7,6 +7,9 @@
 * New: Added support for the Teenage Engineering OP-XY multi-sample preset format (reading and writing of the *.preset folders with their patch.json description file).
 * Ableton
   * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
+* Fairlight CMI 3
+  * New: Voice files can now be written: either as a Series III voice (16-bit mono or stereo, up to 127 sub-voices with their key ranges, loops, tuning, gain and amplitude envelope) or as the fixed-size 8-bit voice files of the CMI I/II/IIx with their loop segments (one file per sample zone, e.g. for the QasarBeach recreation and the Arturia CMI V). Written files have not been tested on real hardware yet.
+  * New: Voice files of the 8-bit CMI I/II/IIx dialect are now read as well, both with their full header and as bare 16 KB audio-only files.
 * NI Kontakt
   * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
 * WAV
