@@ -66,6 +66,7 @@ The following multi-sample formats are supported:
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [Fairlight CMI 3](#fairlight-cmi-3)
+* [FL Studio DirectWave](#fl-studio-directwave)
 * [ISO/IMG Files](#isoimg-files)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
@@ -89,6 +90,7 @@ The following multi-sample formats are supported:
 * [Synclavier Regen](#synclavier-regen)
 * [Synthstrom Deluge](#synthstrom-deluge)
 * [TAL Sampler](#tal-sampler)
+* [Teenage Engineering OP-XY](#teenage-engineering-op-xy)
 * [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
 * [Yamaha YSFC](#yamaha-ysfc)
 
@@ -461,13 +463,16 @@ As a source, DWP programs are read from their binary structure (see DIRECTWAVE_D
 
 As a destination, one monolithic DWP file is written per instrument, i.e. a single self-contained file which carries all its samples as FLAC compressed audio. FL Studio Desktop loads it directly and for FL Studio Mobile it only needs to be copied into its user files. The DWP structure carries name, key/velocity ranges, root, gain, panning, loop, amplitude envelope, a low-pass/high-pass/band-pass/notch filter and the two zone LFOs (LFO 1 modulates the pitch, LFO 2 the volume) per zone. Only the first round-robin cycle is kept since trigger groups cannot be written.
 
+To import a DWP file into FL Studio Mobile, copy it to the iOS device and open it with FL Studio Mobile. This will copy the file to the user instrument folder.
+
 ## ISO/IMG Files
 
 Searches for files ending with *.ISO, *.IMG or *.HDA. Currently, the following formats can be handled:
 
-* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
-* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
+* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [E-mu Emulator III](#e-mu-emulator-iiiiiixesi)
+* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
 * [Roland S-50 series](#roland-s-50-series)
 * [Roland S-770 series](#roland-s-770-series)
@@ -550,6 +555,8 @@ However, the format changed many times across the different Kontakt versions. So
 A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the usual multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude, pitch and filter cutoff envelope, filter parameters as well as pitchbend.
 (Most) NCW encoded sample files can be read as well.
 A NKM file contains up to 64 instruments and is supported as well as a source.
+
+The velocity to volume modulator is read with its intensity and its response curve: Kontakt maps its normalized volume value to decibels with *60 · log10(x)*, so the amplitude follows the cube of the velocity. Destination formats which can express the curve reproduce this response, e.g. SFZ writes *amp_velcurve_N* points (see the SFZ section).
 
 Encrypted files are not supported.
 
@@ -739,6 +746,8 @@ The SFZ file contains only the description of the multi-sample. The related samp
 SFZ can only mark a sample as a one-shot (`loop_mode=one_shot`) if it has no loop. A looped zone therefore keeps its loop and is not written as a one-shot.
 
 A pitch LFO (vibrato) is read and written via the `pitchlfo_freq` (Hertz), `pitchlfo_depth` (cent), `pitchlfo_delay` and `pitchlfo_fade` (seconds) opcodes. A volume LFO (tremolo) is read and written via the `amplfo_freq` (Hertz), `amplfo_depth` (decibels), `amplfo_delay` and `amplfo_fade` (seconds) opcodes.
+
+The intensity of the velocity to volume modulation is read and written via the `amp_veltrack` opcode. If the source also describes the response curve of the modulation (e.g. the velocity modulation of Kontakt scales the amplitude with the cube of the velocity), the curve is written as `amp_velcurve_N` points between which the players interpolate linearly. When reading, `amp_velcurve_N` points are fitted to the closest power law and stored as the curve of the modulation, so the response survives a round trip.
 
 ### Source Options
 

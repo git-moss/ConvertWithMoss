@@ -653,7 +653,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     protected IMultisampleSource createMultisampleSource (final File sourceFile, final String multisampleSourceName, final List<IGroup> groups)
     {
-        return createMultisampleSource (sourceFile, multisampleSourceName, groups, "");
+        return this.createMultisampleSource (sourceFile, multisampleSourceName, groups, "");
     }
 
 
@@ -786,9 +786,9 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
             // Some hosts store a complete Ogg stream inside a WAV file (e.g. the sample files of
             // the legacy DirectWave packs of FL Studio); de-compress it to PCM first
-            final byte [] oggInWav = AudioFileUtils.decompressOggInWav (sampleFile);
-            if (oggInWav != null)
-                return new WavFileSampleData (sampleFile, oggInWav);
+            final Optional<byte []> oggInWav = AudioFileUtils.decompressOggInWav (sampleFile);
+            if (oggInWav.isPresent ())
+                return new WavFileSampleData (sampleFile, oggInWav.get ());
 
             IFileBasedSampleData sampleData = null;
             final AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat (sampleFile);

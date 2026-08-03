@@ -330,7 +330,10 @@ public class AudioSampleReducer
 
 
     /**
-     * Re-sample frequency using linear interpolation.
+     * Re-sample frequency with a band-limited interpolation, see {@link SincResampler}. Linear
+     * interpolation was used before, which folds the frequencies above the new Nyquist frequency
+     * back into the audible range when down-sampling and leaves images of the source spectrum above
+     * the source Nyquist frequency when up-sampling.
      *
      * @param wavData The WAV data structure
      * @param targetRate The maximum sample rate
@@ -349,44 +352,38 @@ public class AudioSampleReducer
                 return wavData;
 
             final byte [] sourceData = ais.readAllBytes ();
-
-            final double ratio = targetRate / sourceRate;
             final int channels = sourceFormat.getChannels ();
             final int sampleSizeInBits = sourceFormat.getSampleSizeInBits ();
             final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
             final int frameSize = channels * bytesPerSample;
             final int sourceFrames = sourceData.length / frameSize;
-            final int targetFrames = (int) Math.round (sourceFrames * ratio);
 
-            final byte [] targetData = new byte [targetFrames * frameSize];
             final boolean bigEndian = sourceFormat.isBigEndian ();
 
-            for (int targetFrame = 0; targetFrame < targetFrames; targetFrame++)
+            // De-interleave, convert each channel on its own and interleave again
+            final double [] [] converted = new double [channels] [];
+            for (int channel = 0; channel < channels; channel++)
             {
-                final double sourcePos = targetFrame / ratio;
-                // Can theoretically equal sourceFrames on the last iteration due to floating-point
-                // rounding
-                final int sourceFrame1 = Math.min ((int) sourcePos, sourceFrames - 1);
-                final int sourceFrame2 = Math.min (sourceFrame1 + 1, sourceFrames - 1);
-                final double frac = sourcePos - sourceFrame1;
-
-                for (int ch = 0; ch < channels; ch++)
-                {
-                    final int offset1 = sourceFrame1 * frameSize + ch * bytesPerSample;
-                    final int offset2 = sourceFrame2 * frameSize + ch * bytesPerSample;
-
-                    final int sample1 = readSample (sourceData, offset1, sampleSizeInBits, bigEndian);
-                    final int sample2 = readSample (sourceData, offset2, sampleSizeInBits, bigEndian);
-
-                    final int interpolated = (int) (sample1 * (1 - frac) + sample2 * frac);
-
-                    final int targetOffset = targetFrame * frameSize + ch * bytesPerSample;
-                    writeSample (targetData, targetOffset, interpolated, sampleSizeInBits, bigEndian);
-                }
+                final double [] channelData = new double [sourceFrames];
+                for (int frame = 0; frame < sourceFrames; frame++)
+                    channelData[frame] = readSample (sourceData, frame * frameSize + channel * bytesPerSample, sampleSizeInBits, bigEndian);
+                converted[channel] = SincResampler.resample (channelData, (int) sourceRate, targetRate);
             }
 
+            final int convertedFrames = converted[0].length;
+            final byte [] targetData = new byte [convertedFrames * frameSize];
+            // The kernel overshoots at steep transients, therefore the result needs to be clipped
+            final int maximum = (1 << sampleSizeInBits - 1) - 1;
+            final int minimum = -(1 << sampleSizeInBits - 1);
+            for (int frame = 0; frame < convertedFrames; frame++)
+                for (int channel = 0; channel < channels; channel++)
+                {
+                    final int sample = Math.clamp (Math.round (converted[channel][frame]), minimum, maximum);
+                    writeSample (targetData, frame * frameSize + channel * bytesPerSample, sample, sampleSizeInBits, bigEndian);
+                }
+
             final AudioFormat targetFormat = new AudioFormat (sourceFormat.getEncoding (), targetRate, sampleSizeInBits, channels, frameSize, targetRate, bigEndian);
-            return audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (targetData), targetFormat, targetFrames));
+            return audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (targetData), targetFormat, convertedFrames));
         }
     }
 

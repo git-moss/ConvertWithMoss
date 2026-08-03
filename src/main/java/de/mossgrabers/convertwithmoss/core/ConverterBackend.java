@@ -192,6 +192,7 @@ public class ConverterBackend
         this.detectors.add (new MPCModernDetector (notifier));
         this.detectors.add (new AkaiS900Detector (notifier));
         this.detectors.add (new AkaiS1000Detector (notifier));
+        this.detectors.add (new SynclavierVDetector (notifier));
         this.detectors.add (new BitwigMultisampleDetector (notifier));
         this.detectors.add (new BlissDetector (notifier));
         this.detectors.add (new TX16WxDetector (notifier));
@@ -228,7 +229,6 @@ public class ConverterBackend
         this.detectors.add (new Sf2Detector (notifier));
         this.detectors.add (new OmnisphereDetector (notifier));
         this.detectors.add (new SynclavierRegenDetector (notifier));
-        this.detectors.add (new SynclavierVDetector (notifier));
         this.detectors.add (new DelugeDetector (notifier));
         this.detectors.add (new OpXyDetector (notifier));
         this.detectors.add (new TALSamplerDetector (notifier));
@@ -240,6 +240,7 @@ public class ConverterBackend
         this.creators.add (new Music1010Creator (notifier));
         this.creators.add (new AbletonCreator (notifier));
         this.creators.add (new MPCKeygroupCreator (notifier));
+        this.creators.add (new SynclavierVCreator (notifier));
         this.creators.add (new BitwigMultisampleCreator (notifier));
         this.creators.add (new BlissCreator (notifier));
         this.creators.add (new TX16WxCreator (notifier));
@@ -269,7 +270,6 @@ public class ConverterBackend
         this.creators.add (new Sf2Creator (notifier));
         this.creators.add (new OmnisphereCreator (notifier));
         this.creators.add (new SynclavierRegenCreator (notifier));
-        this.creators.add (new SynclavierVCreator (notifier));
         this.creators.add (new DelugeCreator (notifier));
         this.creators.add (new OpXyCreator (notifier));
         this.creators.add (new TALSamplerCreator (notifier));
