@@ -111,7 +111,7 @@ public class CasioFZDisk
         {
             // A bare dump file: the file head followed by the content blocks
             final byte [] dump = Files.readAllBytes (sourceFile.toPath ());
-            if (dump.length < 2 * SECTOR_SIZE)
+            if (dump.length < SECTOR_SIZE)
                 throw new IOException (Functions.getMessage ("IDS_FZ_MALFORMED_DUMP_FILE", sourceFile.getName ()));
             final int type;
             if (fileName.endsWith (".fzv"))
@@ -124,32 +124,65 @@ public class CasioFZDisk
 
             final byte [] head;
             final byte [] fileContent;
-            if (type == TYPE_FULL_DUMP && !startsWithFileHead (dump))
+            if (isHeadlessDump (dump, type))
             {
-                // Full dumps written by the 'fzdump' MIDI utility (e.g. the factory library)
-                // have no file head, they start directly with the first bank block. The layout
-                // is calculated from the counters in the system parameters at the end of that
-                // block and a file head is synthesized from them.
+                // Dumps written by the 'fzdump' MIDI utility (e.g. the factory, Soundwaves,
+                // Shareware, Livewire and Swedish Users Club libraries) have no file head,
+                // they start directly with the first content block. The layout is calculated
+                // from the counters in the system area at the end of the first block and a
+                // file head is synthesized from them.
                 final int numberOfVoices = CasioFZVoice.readUnsigned16 (dump, 1008);
                 final int contentSectors = CasioFZVoice.readUnsigned16 (dump, 1010);
                 final int numberOfWaveBlocks = CasioFZVoice.readUnsigned16 (dump, 1012);
-                final int numberOfBanks = contentSectors - numberOfWaveBlocks - (numberOfVoices + 3) / 4;
-                if (numberOfVoices < 1 || numberOfVoices > 64 || numberOfBanks < 1 || numberOfBanks > 8)
-                    throw new IOException (Functions.getMessage ("IDS_FZ_MALFORMED_DUMP_FILE", sourceFile.getName ()));
                 head = new byte [SECTOR_SIZE];
                 CasioFZVoice.writeUnsigned16 (head, 1018, numberOfVoices);
-                CasioFZVoice.writeUnsigned16 (head, 1020, numberOfBanks);
+                CasioFZVoice.writeUnsigned16 (head, 1020, contentSectors - numberOfWaveBlocks - (numberOfVoices + 3) / 4);
                 CasioFZVoice.writeUnsigned16 (head, 1022, numberOfWaveBlocks);
                 fileContent = dump;
             }
             else
             {
+                if (dump.length < 2 * SECTOR_SIZE)
+                    throw new IOException (Functions.getMessage ("IDS_FZ_MALFORMED_DUMP_FILE", sourceFile.getName ()));
                 head = new byte [SECTOR_SIZE];
                 System.arraycopy (dump, 0, head, 0, SECTOR_SIZE);
                 fileContent = new byte [dump.length - SECTOR_SIZE];
                 System.arraycopy (dump, SECTOR_SIZE, fileContent, 0, fileContent.length);
             }
             this.files.add (new CasioFZFile (this.diskName, type, head, fileContent));
+        }
+    }
+
+
+    /**
+     * Test if a bare dump file is stored without a file head. The counters in the system area at
+     * the end of the first content block must be consistent with the file type: a voice dump
+     * contains exactly 1 voice and no banks, a bank dump 1 bank and a full dump 0-8 banks. For
+     * full dumps additionally the block pointer table decides: a file head holds sector ranges,
+     * while a head-less dump starts with the area count and the ascending high keys of the first
+     * bank block (or with the wave addresses of a voice block), which can never form a valid
+     * range.
+     *
+     * @param dump The bare dump file
+     * @param type The type of the file, one of the TYPE_* constants
+     * @return True if the dump has no file head
+     */
+    private static boolean isHeadlessDump (final byte [] dump, final int type)
+    {
+        final int numberOfVoices = CasioFZVoice.readUnsigned16 (dump, 1008);
+        final int contentSectors = CasioFZVoice.readUnsigned16 (dump, 1010);
+        final int numberOfWaveBlocks = CasioFZVoice.readUnsigned16 (dump, 1012);
+        final int numberOfBanks = contentSectors - numberOfWaveBlocks - (numberOfVoices + 3) / 4;
+        switch (type)
+        {
+            case TYPE_VOICE:
+                return numberOfVoices == 1 && numberOfBanks == 0;
+            case TYPE_BANK:
+                return numberOfVoices >= 1 && numberOfVoices <= 64 && numberOfBanks == 1;
+            case TYPE_FULL_DUMP:
+                return numberOfVoices >= 1 && numberOfVoices <= 64 && numberOfBanks >= 0 && numberOfBanks <= 8 && !startsWithFileHead (dump);
+            default:
+                return false;
         }
     }
 

@@ -124,10 +124,15 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         // The effect parameters are located in the first bank block; the pitch bend range is
-        // stored in 1/8 semitone steps
+        // stored in 1/8 semitone steps (up to 12 semitones = 96). Only full dumps carry them,
+        // bare voice and bank dumps have stale memory in that area
         int bendRangeCents = -1;
-        if (numberOfBanks > 0)
-            bendRangeCents = (content[960] & 0xFF) * 100 / 8;
+        if (file.type () == CasioFZDisk.TYPE_FULL_DUMP && numberOfBanks > 0)
+        {
+            final int bendRange = content[960] & 0xFF;
+            if (bendRange <= 96)
+                bendRangeCents = bendRange * 100 / 8;
+        }
 
         // Read the voices
         final List<CasioFZVoice> voices = new ArrayList<> ();
@@ -192,6 +197,10 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
             for (int area = 0; area < Math.min (bank.numberOfAreas, CasioFZBank.MAX_AREAS); area++)
             {
                 final int voiceIndex = bank.voicePointer[area];
+                // Bit 15 marks an area without an assigned voice (e.g. the placeholder areas
+                // of the 'YOUR TURN' banks of the Soundwaves library)
+                if ((voiceIndex & 0x8000) != 0)
+                    continue;
                 if (voiceIndex >= voices.size ())
                 {
                     this.notifier.logError ("IDS_FZ_VOICE_OUT_OF_BOUNDS", Integer.toString (voiceIndex), bank.name);
