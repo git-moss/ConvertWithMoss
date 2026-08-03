@@ -13,6 +13,7 @@ import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.layout.Pane;
 
@@ -26,7 +27,8 @@ import javafx.scene.layout.Pane;
  */
 public class Emulator3CreatorUI implements ICoreTaskSettings
 {
-    private static final String       TARGET_DEVICE  = "TargetDevice";
+    private static final String                 TARGET_DEVICE  = "TargetDevice";
+    private static final String                 WRITE_CD_IMAGE = "WriteCdImage";
 
     /** The bank formats which can be written. */
     private static final Emulator3BankFormat [] TARGET_FORMATS =
@@ -35,9 +37,11 @@ public class Emulator3CreatorUI implements ICoreTaskSettings
         Emulator3BankFormat.ESI_32_V3
     };
 
-    private final String              prefix;
-    private ComboBox<String>          targetDeviceBox;
-    private Emulator3BankFormat       targetFormat   = Emulator3BankFormat.EMULATOR_3X;
+    private final String                        prefix;
+    private ComboBox<String>                    targetDeviceBox;
+    private CheckBox                            writeCdImageCheckBox;
+    private Emulator3BankFormat                 targetFormat   = Emulator3BankFormat.EMULATOR_3X;
+    private boolean                             writeCdImage   = false;
 
 
     /**
@@ -63,6 +67,9 @@ public class Emulator3CreatorUI implements ICoreTaskSettings
         this.targetDeviceBox.setMaxWidth (Double.MAX_VALUE);
         panel.addComponent (this.targetDeviceBox);
 
+        panel.createSeparator ("@IDS_EIII_OUTPUT_FORMAT");
+        this.writeCdImageCheckBox = panel.createCheckBox ("@IDS_EIII_WRITE_CD_IMAGE");
+
         return panel.getPane ();
     }
 
@@ -72,6 +79,7 @@ public class Emulator3CreatorUI implements ICoreTaskSettings
     public void loadSettings (final BasicConfig config)
     {
         this.targetDeviceBox.getSelectionModel ().select (Math.clamp (config.getInteger (this.prefix + TARGET_DEVICE, 0), 0, TARGET_FORMATS.length - 1));
+        this.writeCdImageCheckBox.setSelected (config.getBoolean (this.prefix + WRITE_CD_IMAGE, false));
     }
 
 
@@ -80,6 +88,7 @@ public class Emulator3CreatorUI implements ICoreTaskSettings
     public void saveSettings (final BasicConfig config)
     {
         config.setInteger (this.prefix + TARGET_DEVICE, this.targetDeviceBox.getSelectionModel ().getSelectedIndex ());
+        config.setBoolean (this.prefix + WRITE_CD_IMAGE, this.writeCdImageCheckBox.isSelected ());
     }
 
 
@@ -88,6 +97,7 @@ public class Emulator3CreatorUI implements ICoreTaskSettings
     public boolean checkSettingsUI (final INotifier notifier)
     {
         this.targetFormat = TARGET_FORMATS[Math.clamp (this.targetDeviceBox.getSelectionModel ().getSelectedIndex (), 0, TARGET_FORMATS.length - 1)];
+        this.writeCdImage = this.writeCdImageCheckBox.isSelected ();
         return true;
     }
 
@@ -96,6 +106,8 @@ public class Emulator3CreatorUI implements ICoreTaskSettings
     @Override
     public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
+        this.writeCdImage = "1".equals (parameters.remove (this.prefix + WRITE_CD_IMAGE));
+
         final String value = parameters.remove (this.prefix + TARGET_DEVICE);
         if (value == null)
         {
@@ -125,7 +137,8 @@ public class Emulator3CreatorUI implements ICoreTaskSettings
     {
         return new String []
         {
-            this.prefix + TARGET_DEVICE
+            this.prefix + TARGET_DEVICE,
+            this.prefix + WRITE_CD_IMAGE
         };
     }
 
@@ -138,5 +151,16 @@ public class Emulator3CreatorUI implements ICoreTaskSettings
     public Emulator3BankFormat getTargetFormat ()
     {
         return this.targetFormat;
+    }
+
+
+    /**
+     * Should a CD-ROM image be written which contains the banks instead of plain bank files?
+     *
+     * @return True to write a CD-ROM image
+     */
+    public boolean writeCdImage ()
+    {
+        return this.writeCdImage;
     }
 }

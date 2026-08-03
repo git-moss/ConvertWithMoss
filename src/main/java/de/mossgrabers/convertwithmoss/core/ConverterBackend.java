@@ -42,6 +42,7 @@ import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleCreator;
 import de.mossgrabers.convertwithmoss.format.bitwig.BitwigMultisampleDetector;
 import de.mossgrabers.convertwithmoss.format.bliss.BlissCreator;
 import de.mossgrabers.convertwithmoss.format.bliss.BlissDetector;
+import de.mossgrabers.convertwithmoss.format.cmi3.FairlightCmi3Creator;
 import de.mossgrabers.convertwithmoss.format.casio.CasioFZCreator;
 import de.mossgrabers.convertwithmoss.format.casio.CasioFZDetector;
 import de.mossgrabers.convertwithmoss.format.cmi3.FairlightCmi3Detector;
@@ -254,6 +255,7 @@ public class ConverterBackend
         this.creators.add (new EmulatorXCreator (notifier));
         this.creators.add (new TonverkMultiCreator (notifier));
         this.creators.add (new TonverkPresetCreator (notifier));
+        this.creators.add (new FairlightCmi3Creator (notifier));
         this.creators.add (new DistingExCreator (notifier));
         this.creators.add (new DirectWaveCreator (notifier));
         this.creators.add (new KMPCreator (notifier));
