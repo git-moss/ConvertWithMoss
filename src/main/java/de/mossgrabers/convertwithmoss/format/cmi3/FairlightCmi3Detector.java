@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -183,6 +185,68 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Read the control (CO) file referenced by a IIx voice file and apply its parameters: the
+     * loop switch with its 1-based start segment and length, the attack and the damping (release)
+     * times in milliseconds. The parameters are stored in 8 byte entries at fixed addresses with
+     * the patch type in the third byte (0xB1 = a value, 0xC0/0xC1 = a boolean which is on/off) and
+     * a big-endian value in the fourth and fifth byte.
+     *
+     * @param vcData The content of the voice file
+     * @param sourceFile The voice file, the control file is searched next to it
+     * @param zone The zone to apply the parameters to
+     * @return True if a control file was found and applied
+     */
+    private boolean applyIIxControlFile (final byte [] vcData, final File sourceFile, final ISampleZone zone)
+    {
+        final String name = new String (vcData, 0x00A0, 8, StandardCharsets.US_ASCII).trim ();
+        if (name.isEmpty () || name.chars ().anyMatch (c -> c < 32 || c > 126))
+            return false;
+
+        final File folder = sourceFile.getParentFile ();
+        File controlFile = new File (folder, name + ".CO");
+        if (!controlFile.exists ())
+            controlFile = new File (folder, name + ".co");
+        if (!controlFile.exists ())
+            return false;
+
+        try
+        {
+            final byte [] controlData = Files.readAllBytes (controlFile.toPath ());
+            if (controlData.length < 0x150)
+                return false;
+
+            // LOOP CNTRL at 0xE8, LOOP START at 0xF0 and LOOP LNGTH at 0xF8
+            if ((controlData[0xE8 + 2] & 0xFF) == 0xC0)
+            {
+                final int startSegment = readBE16 (controlData, 0xF0 + 3);
+                final int length = readBE16 (controlData, 0xF8 + 3);
+                if (startSegment >= 1 && startSegment <= 128 && length >= 1)
+                {
+                    final DefaultSampleLoop loop = new DefaultSampleLoop ();
+                    loop.setStart ((startSegment - 1) * IIX_SEGMENT_SIZE);
+                    loop.setEnd (Math.min ((startSegment - 1 + length) * IIX_SEGMENT_SIZE, IIX_NUM_SAMPLES) - 1);
+                    if (loop.getStart () < loop.getEnd ())
+                        zone.addLoop (loop);
+                }
+            }
+
+            // ATTACK at 0xA8 and DAMPING-1 at 0xA0, both in milliseconds
+            final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+            if ((controlData[0xA8 + 2] & 0xFF) == 0xB1)
+                envelope.setAttackTime (readBE16 (controlData, 0xA8 + 3) / 1000.0);
+            if ((controlData[0xA0 + 2] & 0xFF) == 0xB1)
+                envelope.setReleaseTime (readBE16 (controlData, 0xA0 + 3) / 1000.0);
+            return true;
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (ex);
+            return false;
+        }
+    }
+
+
+    /**
      * Check if the file size matches one of the fixed sizes of the 8-bit voice file dialect: the
      * bare 16 KB audio data, or the audio data with the header and optionally the footer.
      *
@@ -215,9 +279,11 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         zone.setKeyTracking (1);
         zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (1, IIX_SAMPLE_RATE, 8, IIX_NUM_SAMPLES), audio));
 
-        // The loop is stored as 128 sample segments with an inclusive end segment
-        if (audioOffset > 0 && inBytes[IIX_LOOP_MODE_OFFSET] == 1)
+        // The control parameters live in the referenced control (CO) file, which wins over the
+        // loop bytes cached in the voice file when it is present next to it
+        if (audioOffset > 0 && !this.applyIIxControlFile (inBytes, sourceFile, zone) && inBytes[IIX_LOOP_MODE_OFFSET] == 1)
         {
+            // The loop is stored as 128 sample segments with an inclusive end segment
             final int startSegment = Byte.toUnsignedInt (inBytes[IIX_LOOP_START_OFFSET]);
             final int endSegment = Byte.toUnsignedInt (inBytes[IIX_LOOP_END_OFFSET]);
             if (startSegment < 128 && endSegment < 128 && startSegment <= endSegment)

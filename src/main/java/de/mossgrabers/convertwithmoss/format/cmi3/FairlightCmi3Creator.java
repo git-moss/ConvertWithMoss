@@ -10,8 +10,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -59,6 +61,16 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
     private static final int                    IIX_LOOP_START_OFFSET = 0x1332;
     private static final int                    IIX_LOOP_END_OFFSET   = 0x1333;
     private static final int                    IIX_LOOP_MODE_OFFSET  = 0x133B;
+
+    /** The control (CO) file: 26 parameters of 8 bytes each starting at 0x80. */
+    private static final int                    CO_FILE_SIZE          = 384;
+    private static final int                    CO_PARAM_OFFSET       = 0x80;
+    /** Patch type: a static value. */
+    private static final int                    CO_PATCH_VALUE        = 0xB1;
+    /** Patch type: a boolean which is on. */
+    private static final int                    CO_PATCH_ON           = 0xC0;
+    /** Patch type: a boolean which is off. */
+    private static final int                    CO_PATCH_OFF          = 0xC1;
 
     private static final DestinationAudioFormat DESTINATION_FORMAT    = new DestinationAudioFormat (new int []
     {
@@ -582,6 +594,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
         if (zones.size () > 1)
             this.notifier.log ("IDS_CMI3_IIX_SPLIT", Integer.toString (zones.size ()), multisampleSource.getName ());
 
+        final Set<String> controlFileNames = new HashSet<> ();
         for (int i = 0; i < zones.size (); i++)
         {
             if (this.isCancelled ())
@@ -598,11 +611,24 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             if (zones.size () > 1 && (zone.getName () == null || zone.getName ().isBlank ()))
                 name = name + " " + (i + 1);
 
+            // The control parameters (loop, envelope, level) are read from a control (CO) file
+            // which the voice references by an 8 character name
+            final String controlName = createUniqueDOSFileName (destinationFolder, createSafeFilename (name).replaceAll ("[^A-Za-z0-9_]", "_"), ".CO", controlFileNames, false);
+            for (int c = 0; c < 8; c++)
+                fileData[IIX_CO_NAME_OFFSET + c] = (byte) (c < controlName.length () ? controlName.charAt (c) : ' ');
+
             final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (name), "vc");
             this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
             try (final OutputStream out = new FileOutputStream (outputFile))
             {
                 out.write (fileData);
+            }
+
+            final File controlFile = new File (destinationFolder, controlName + ".CO");
+            this.notifier.log ("IDS_NOTIFY_STORING", controlFile.getAbsolutePath ());
+            try (final OutputStream out = new FileOutputStream (controlFile))
+            {
+                out.write (createIIxControlFileData (zone, fileData));
             }
         }
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
@@ -692,6 +718,89 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
         }
 
         return out;
+    }
+
+
+    /**
+     * Create the data of the control (CO) file of a voice. The control file carries the parameters
+     * which the voice file itself does not: the amplitude envelope (ATTACK and DAMPING in
+     * milliseconds), the level and the loop switch with its 1-based start segment and length. The
+     * loop values are taken from the already encoded voice file data.
+     *
+     * @param zone The zone
+     * @param voiceFileData The encoded voice file data
+     * @return The control file data
+     */
+    private static byte [] createIIxControlFileData (final ISampleZone zone, final byte [] voiceFileData)
+    {
+        final boolean isLooped = voiceFileData[IIX_LOOP_MODE_OFFSET] == 1;
+        final int loopStartSegment = Byte.toUnsignedInt (voiceFileData[IIX_LOOP_START_OFFSET]);
+        final int loopEndSegment = Byte.toUnsignedInt (voiceFileData[IIX_LOOP_END_OFFSET]);
+
+        final IEnvelopeModulator modulator = zone.getAmplitudeEnvelopeModulator ();
+        final IEnvelope envelope = modulator.getDepth () > 0 ? modulator.getSource () : null;
+        final int attack = (int) Math.clamp (Math.round (limitToDefault (envelope == null ? 0 : envelope.getAttackTime (), 0) * 1000.0), 0, 16383);
+        // A minimum release prevents a click when the key is released
+        final int damping = (int) Math.clamp (Math.round (limitToDefault (envelope == null ? 0 : envelope.getReleaseTime (), 0) * 1000.0), 15, 16383);
+        final int level = (int) Math.clamp (Math.round (128.0 * Math.pow (10, zone.getGain () / 20.0)), 1, 255);
+
+        final byte [] out = new byte [CO_FILE_SIZE];
+        int index = 0;
+        // MODE, SUSTAIN, MAIN LEVEL, FILTER, DAMPING-1, ATTACK, VIB DEPTH, VIB SPEED
+        index = writeControlParameter (out, index, 0x0A, 0x06, CO_PATCH_VALUE, 4);
+        index = writeControlParameter (out, index, 0x0B, 0x07, isLooped ? CO_PATCH_ON : CO_PATCH_OFF, 0);
+        index = writeControlParameter (out, index, 0x0C, 0x01, CO_PATCH_VALUE, level);
+        index = writeControlParameter (out, index, 0x0D, 0x02, CO_PATCH_VALUE, 127);
+        index = writeControlParameter (out, index, 0x0E, 0x03, CO_PATCH_VALUE, damping);
+        index = writeControlParameter (out, index, 0x0F, 0x08, CO_PATCH_VALUE, attack);
+        index = writeControlParameter (out, index, 0x10, 0x04, CO_PATCH_VALUE, 0);
+        index = writeControlParameter (out, index, 0x11, 0x05, CO_PATCH_VALUE, 0);
+        // GLISSANDO, PORTAMENTO, SPEED, CONST TIME, SLUR
+        index = writeControlParameter (out, index, 0xA0, 0x0A, CO_PATCH_OFF, 0);
+        index = writeControlParameter (out, index, 0xB0, 0x0C, CO_PATCH_OFF, 0);
+        index = writeControlParameter (out, index, 0xC0, 0x0B, CO_PATCH_VALUE, 1);
+        index = writeControlParameter (out, index, 0xD0, 0x0D, CO_PATCH_OFF, 0);
+        index = writeControlParameter (out, index, 0xE0, 0x0E, CO_PATCH_OFF, 0);
+        // LOOP CNTRL, LOOP START, LOOP LNGTH (1-based segments, in contrast to the voice file),
+        // START SEG, DEAD-SPOT
+        index = writeControlParameter (out, index, 0xF0, 0x0F, isLooped ? CO_PATCH_ON : CO_PATCH_OFF, 0);
+        index = writeControlParameter (out, index, 0xF2, 0x10, CO_PATCH_VALUE, isLooped ? loopStartSegment + 1 : 1);
+        index = writeControlParameter (out, index, 0xF4, 0x11, CO_PATCH_VALUE, isLooped ? loopEndSegment - loopStartSegment + 1 : 1);
+        index = writeControlParameter (out, index, 0xF6, 0x12, CO_PATCH_VALUE, 1);
+        index = writeControlParameter (out, index, 0xF7, 0x13, CO_PATCH_OFF, 0);
+        // PITCHBEND, BENDWIDTH, B/F LOOP, VIB DELAY, VIB ATTACK, AUX LEVEL, DAMP-MODE, DAMPING-2
+        index = writeControlParameter (out, index, 0xF8, 0x14, CO_PATCH_VALUE, 64);
+        index = writeControlParameter (out, index, 0xF9, 0x15, CO_PATCH_VALUE, 0);
+        index = writeControlParameter (out, index, 0xFA, 0x16, CO_PATCH_OFF, 0);
+        index = writeControlParameter (out, index, 0xFB, 0x17, CO_PATCH_VALUE, 0);
+        index = writeControlParameter (out, index, 0xFC, 0x18, CO_PATCH_VALUE, 0);
+        index = writeControlParameter (out, index, 0xFD, 0x19, CO_PATCH_VALUE, 128);
+        index = writeControlParameter (out, index, 0xFE, 0x1A, CO_PATCH_VALUE, 1);
+        writeControlParameter (out, index, 0xFF, 0x1B, CO_PATCH_VALUE, damping);
+        return out;
+    }
+
+
+    /**
+     * Write one 8 byte parameter entry of a control file.
+     *
+     * @param out The control file data
+     * @param index The index of the entry
+     * @param parameterID The ID of the parameter
+     * @param unknown The fixed value of the unknown second byte of the parameter
+     * @param patch What the parameter is patched to, one of the CO_PATCH_* constants
+     * @param value The value of the parameter
+     * @return The index of the next entry
+     */
+    private static int writeControlParameter (final byte [] out, final int index, final int parameterID, final int unknown, final int patch, final int value)
+    {
+        final int offset = CO_PARAM_OFFSET + index * 8;
+        out[offset] = (byte) parameterID;
+        out[offset + 1] = (byte) unknown;
+        out[offset + 2] = (byte) patch;
+        out[offset + 3] = (byte) (value >> 8 & 0xFF);
+        out[offset + 4] = (byte) (value & 0xFF);
+        return index + 1;
     }
 
 
