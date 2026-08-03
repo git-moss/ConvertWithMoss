@@ -36,7 +36,7 @@ import de.mossgrabers.tools.ui.Functions;
 /**
  * Detector for Fairlight CMI Voice (VC) files. Two dialects are supported: the Series III voice
  * files with their sub-voices and the fixed-size 8-bit voice files of the CMI I/II/IIx, which are
- * also read and written by the QasarBeach recreation and read by the Arturia CMI V.
+ * also read and written by the QasarBeach recreation.
  *
  * @author Jürgen Moßgraber
  */
