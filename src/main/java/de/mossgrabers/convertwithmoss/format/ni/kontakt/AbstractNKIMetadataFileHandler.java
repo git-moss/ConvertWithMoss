@@ -990,7 +990,13 @@ public abstract class AbstractNKIMetadataFileHandler
             zone.setPanning (Math.clamp (totalPan, -1.0d, 1.0d));
 
             if (ampVelocityMod >= 0)
+            {
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocityMod);
+                // The volume of Kontakt maps its normalized value to decibels with 60*log10(x).
+                // The velocity modulation therefore scales the amplitude with x^3, which is a
+                // convex curve (+1)
+                zone.getAmplitudeVelocityModulator ().setCurve (1);
+            }
         }
         catch (final ValueNotAvailableException e)
         {
