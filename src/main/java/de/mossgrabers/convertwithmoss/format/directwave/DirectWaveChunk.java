@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
@@ -82,7 +83,7 @@ public class DirectWaveChunk
      * @return The parsed chunks or null if the data is not a valid block stream which accounts for
      *         all bytes of the data
      */
-    public static List<DirectWaveChunk> parseAll (final byte [] data, final int offset)
+    public static Optional<List<DirectWaveChunk>> parseAll (final byte [] data, final int offset)
     {
         final List<DirectWaveChunk> chunks = new ArrayList<> ();
         int cursor = offset;
@@ -92,13 +93,13 @@ public class DirectWaveChunk
             final int length = readIntLE (data, cursor + 4);
             final int payloadStart = cursor + 12;
             if (length < 0 || payloadStart + length > data.length)
-                return null;
+                return Optional.empty ();
             final byte [] payload = new byte [length];
             System.arraycopy (data, payloadStart, payload, 0, length);
             chunks.add (new DirectWaveChunk (tag, payload));
             cursor = payloadStart + length;
         }
-        return cursor == data.length ? chunks : null;
+        return cursor == data.length ? Optional.of (chunks) : Optional.empty ();
     }
 
 

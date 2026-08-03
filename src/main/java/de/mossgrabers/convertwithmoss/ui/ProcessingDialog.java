@@ -262,6 +262,7 @@ public class ProcessingDialog extends PseudoModalDialog
         panel.addComponent (layoutPane (panel5, "@IDS_PROCESSING_PITCH"));
         this.setButtons ("@IDS_SETTINGS_DLG_OK", "@IDS_SETTINGS_DLG_CANCEL");
 
+        this.traversalManager.add (this.enableProcessingCheckbox);
         this.traversalManager.add (this.normalizeCheckbox);
         this.traversalManager.add (this.makeMonoCheckbox);
         this.traversalManager.add (this.trimSample);

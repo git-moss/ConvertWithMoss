@@ -5,6 +5,11 @@
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * New: Added support for the FL Studio DirectWave format (reading of DWP programs with their key/velocity ranges, gain, panning, loops, amplitude envelope, filter and the pitch and volume LFOs, including monolithic programs which carry all their samples inside of the file; the mapping of DWB banks and of sampled plug-ins is reconstructed from the names of their sample files; written programs are always monolithic, i.e. one self-contained file per instrument which stores all of its samples as FLAC compressed audio).
 * New: Added support for the Teenage Engineering OP-XY multi-sample preset format (reading and writing of the *.preset folders with their patch.json description file).
+* User Interface
+  * New: Contents dialog: The filter field can now be cleared with 'X' and has the focus when the dialog is opened.
+  * Fixed: Contents dialog: Using 'Select All' on filtered content did still select all presets not only the filtered ones.
+  * Fixed: Tabbing in dialogs did not work.
+  * Fixed: Processing dialog: the Enable option could not be reached with tab.
 * Ableton
   * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
 * NI Kontakt
@@ -12,6 +17,8 @@
   * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
 * SFZ
   * New: The response curve of the velocity to volume modulation is now written as amp_velcurve_N points when the source describes one (e.g. Kontakt, whose velocity modulation scales the amplitude with the cube of the velocity). When reading, amp_velcurve_N points are fitted to the closest power law, so the response survives a round trip.
+* Processing
+  * Fixed: Changing the sample rate of the samples used a linear interpolation, which is not band-limited: reducing the rate folded all frequencies above the new Nyquist frequency back into the audible range (measured on a sweep which lies entirely above it: -9 dB instead of silence) and raising it left images of the source spectrum above the original Nyquist frequency. Both are now converted with a windowed sinc interpolation, which lowers the aliasing of that sweep by 92 dB and the images of a 32 kHz sample raised to 48 kHz from -41 dB to -84 dB.
 * WAV
   * New: WAV files which contain a complete Ogg stream instead of PCM data (marked with one of the Ogg Vorbis WAVE format codes, e.g. the samples of the legacy DirectWave packs of FL Studio) are read by de-compressing the embedded stream. They were rejected as an unsupported source format before.
 
