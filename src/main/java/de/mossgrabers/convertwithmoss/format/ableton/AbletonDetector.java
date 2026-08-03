@@ -62,8 +62,14 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String                  ERR_MISSING_TAG = "IDS_NOTIFY_ERR_MISSING_TAG";
-    private static final Map<String, FilterType> FILTER_TYPES    = new HashMap<> ();
+    private static final String                  ERR_MISSING_TAG      = "IDS_NOTIFY_ERR_MISSING_TAG";
+
+    /** The name of the folder which is present in every Ableton project folder. */
+    private static final String                  PROJECT_INFO_FOLDER  = "Ableton Project Info";
+    /** The number of folders to move upwards to start a search for a sample file. */
+    private static final int                     SEARCH_LEVELS        = 1;
+
+    private static final Map<String, FilterType> FILTER_TYPES         = new HashMap<> ();
     static
     {
         FILTER_TYPES.put ("0", FilterType.LOW_PASS);
@@ -71,6 +77,8 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         FILTER_TYPES.put ("2", FilterType.BAND_PASS);
         FILTER_TYPES.put ("3", FilterType.BAND_REJECTION);
     }
+
+    private File previousSampleFolder;
 
 
     /**
@@ -88,6 +96,8 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     @Override
     protected List<IMultisampleSource> readPresetFile (final File file)
     {
+        this.previousSampleFolder = null;
+
         try (final InputStream in = new GZIPInputStream (new FileInputStream (file)))
         {
             final String multiSampleFileContent = StreamUtils.readUtf8 (in);
@@ -186,7 +196,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     {
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile));
         parseMetadata (deviceElement, multisampleSource.getMetadata (), creator);
-        this.parseMultiSample (rootPath, multisampleSource, deviceElement);
+        this.parseMultiSample (sourceFile, rootPath, multisampleSource, deviceElement);
         return multisampleSource;
     }
 
@@ -252,12 +262,13 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Parse all zone information from the XML code and store it in the multi-sample.
      *
+     * @param multiSampleFile The multi-sample source file
      * @param rootPath The root path where the samples are located
      * @param multisampleSource Where to store the data
      * @param deviceElement The device element which contains the zone data
      * @throws IOException Could not access the sample
      */
-    private void parseMultiSample (final File rootPath, final IMultisampleSource multisampleSource, final Element deviceElement) throws IOException
+    private void parseMultiSample (final File multiSampleFile, final File rootPath, final IMultisampleSource multisampleSource, final Element deviceElement) throws IOException
     {
         final Element playerElement = getRequiredElement (deviceElement, AbletonTag.TAG_PLAYER);
         final Element mapElement = getRequiredElement (playerElement, AbletonTag.TAG_MULTI_SAMPLE_MAP);
@@ -273,7 +284,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final Element sampleRefElement = getRequiredElement (multiSamplePartElement, AbletonTag.TAG_SAMPLE_REF);
             final Element fileRefElement = getRequiredElement (sampleRefElement, AbletonTag.TAG_FILE_REF);
 
-            final ISampleData sampleData = this.getSampleData (fileRefElement, rootPath);
+            final ISampleData sampleData = this.getSampleData (multiSampleFile, fileRefElement, rootPath);
             if (sampleData != null)
             {
                 final String name = FileUtils.getNameWithoutType (new File (zoneName));
@@ -394,17 +405,43 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Try to locate the sample and create a sample data object from it.
+     * Try to locate the sample and create a sample data object from it. The sample is first looked
+     * up relative to the root path. Since the root path is calculated with heuristics, which can
+     * fail depending on where the preset and its samples are located, the absolute path stored in
+     * the preset is tried next and finally a search by the name of the sample file is started in
+     * the folder of the preset file.
      *
+     * @param multiSampleFile The multi-sample source file
      * @param fileRefElement The file reference element
      * @param rootPath The root path where the samples are located
-     * @return The sample data or null is not found
+     * @return The sample data or null if not found
      * @throws IOException Could not access the sample
      */
-    private ISampleData getSampleData (final Element fileRefElement, final File rootPath) throws IOException
+    private ISampleData getSampleData (final File multiSampleFile, final Element fileRefElement, final File rootPath) throws IOException
     {
         final String relativePath = getValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH);
-        return createSampleData (new File (rootPath, relativePath), this.notifier);
+        File sampleFile = new File (rootPath, relativePath);
+        if (!sampleFile.isFile ())
+        {
+            final String absolutePath = getValueAttribute (fileRefElement, AbletonTag.TAG_PATH);
+            if (!absolutePath.isBlank () && new File (absolutePath).isFile ())
+                sampleFile = new File (absolutePath);
+            else
+            {
+                final String sampleFileName = new File (relativePath).getName ();
+                if (!sampleFileName.isBlank ())
+                    sampleFile = findSampleFile (this.notifier, multiSampleFile.getParentFile (), this.previousSampleFolder, sampleFileName, SEARCH_LEVELS);
+            }
+
+            if (!sampleFile.isFile ())
+            {
+                this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", new File (rootPath, relativePath).getAbsolutePath ());
+                return null;
+            }
+        }
+
+        this.previousSampleFolder = sampleFile.getParentFile ();
+        return createSampleData (sampleFile, this.notifier);
     }
 
 
@@ -855,9 +892,14 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         File folder = multiSampleFile;
         while ((folder = folder.getParentFile ()) != null)
         {
+            final String [] childrenNames = folder.list ();
+            if (childrenNames == null)
+                continue;
             final Set<String> children = new HashSet<> ();
-            Collections.addAll (children, folder.list ());
-            if (children.contains ("Samples"))
+            Collections.addAll (children, childrenNames);
+            // Sample paths are relative to either the location of a 'Samples' folder or the root
+            // folder of an Ableton project which always contains an info folder
+            if (children.contains ("Samples") || children.contains (PROJECT_INFO_FOLDER))
                 return folder;
         }
         return new File ("");
