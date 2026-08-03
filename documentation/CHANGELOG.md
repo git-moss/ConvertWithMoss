@@ -13,7 +13,10 @@
 * Ableton
   * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
 * NI Kontakt
+  * New: The velocity to volume modulator is now converted with its response curve: Kontakt maps its normalized volume to decibels with 60*log10(x), so the amplitude follows the cube of the velocity. Destinations which can express the curve reproduce this response, e.g. SFZ receives matching amp_velcurve_N points.
   * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
+* SFZ
+  * New: The response curve of the velocity to volume modulation is now written as amp_velcurve_N points when the source describes one (e.g. Kontakt, whose velocity modulation scales the amplitude with the cube of the velocity). When reading, amp_velcurve_N points are fitted to the closest power law, so the response survives a round trip.
 * Processing
   * Fixed: Changing the sample rate of the samples used a linear interpolation, which is not band-limited: reducing the rate folded all frequencies above the new Nyquist frequency back into the audible range (measured on a sweep which lies entirely above it: -9 dB instead of silence) and raising it left images of the source spectrum above the original Nyquist frequency. Both are now converted with a windowed sinc interpolation, which lowers the aliasing of that sweep by 92 dB and the images of a 32 kHz sample raised to 48 kHz from -41 dB to -84 dB.
 * WAV
