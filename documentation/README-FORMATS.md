@@ -361,6 +361,8 @@ When reading, each preset becomes one multi-sample. A preset maps each of the 88
 
 When writing, all groups of a source become presets which are chained with the preset link, one preset per group, and several sources can be collected into one bank as a library. The samples are stored in the bank as 16-bit mono or stereo and are de-duplicated by their content, so a sample which several zones share is only written once. The first and last two frames of every sample are silenced and loop positions are moved away from the sample ends, both of which the samplers require. Note that the key range of the devices is limited to MIDI notes 21-108 and that a bank cannot exceed the 128 MB sample memory of the samplers.
 
+Banks can also be written as a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem, which is how a converted library reaches a sampler of this generation: these units read neither FAT hard disks nor any other file system of a computer, so their own filesystem is the only way in. The image holds one bank per source instead of merging all of them into one bank - a bank is loaded into the memory of the sampler as a whole, which even fully expanded is a fraction of a converted library. Its geometry, its file entries and its directory copy the Emulator IIIX library CD-ROMs, up to the number of banks a folder holds (112).
+
 Note: written banks have not been verified on hardware yet. They round-trip through the reader and match the structure of the E-mu library CD-ROMs.
 
 #### Source Options
@@ -370,6 +372,7 @@ Note: written banks have not been verified on hardware yet. They round-trip thro
 #### Destination Options
 
 * Target Device: Selects the bank format to write: *Emulator IIIX (e3x)* or *ESI-32/2000/4000 (esi)*. The Emulator IIIX format is the more compatible one since the ESI samplers read it as well; the ESI format additionally enables the real-time control of the filter Q, which is what the ESI factory banks do.
+* Create CD-ROM image (.iso) for SCSI CD-ROM emulators: The banks are written into a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem instead of into plain bank files. Copy the image to the SD card of a SCSI emulator (e.g. rename it to *CD1.iso* for a ZuluSCSI in CD-ROM mode) and load the banks on the sampler from the emulated CD-ROM drive, exactly like from a library CD-ROM. Each converted source becomes one bank of the image (at most 112) and the library name becomes the name of its folder; without a library name every source becomes an image of its own.
 
 ## E-mu Emulator IV
 

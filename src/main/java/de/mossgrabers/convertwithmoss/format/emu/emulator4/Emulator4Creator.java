@@ -176,7 +176,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         {
             final ByteArrayOutputStream bankData = new ByteArrayOutputStream ();
             writeFile (bankData, presetBodies, presetNames, samples);
-            Emu3DiskImage.writeImage (outputFile, List.of (new Emu3DiskImage.ImageFile (safeName, bankData.toByteArray ())));
+            Emu3DiskImage.writeImage (outputFile, List.of (new Emu3DiskImage.ImageFile (safeName, bankData.toByteArray ())), Emu3DiskImage.ImageLayout.EOS, Emu3DiskImage.DEFAULT_FOLDER_NAME);
         }
         else
             try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))
