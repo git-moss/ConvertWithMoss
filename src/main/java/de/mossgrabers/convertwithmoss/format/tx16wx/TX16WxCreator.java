@@ -37,6 +37,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 
@@ -270,7 +271,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (instruments.isEmpty ())
             return;
 
-        final String libraryName = AbstractCreator.createSafeFilename (performanceSource.getName ());
+        final String libraryName = FileUtils.createSafeFilename (performanceSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "txperf");
         this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
@@ -303,7 +304,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     private Optional<File> createPreset (final File destinationFolder, final IInstrumentSource instrumentSource) throws IOException
     {
         final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         final String relativeFolderName = sampleName + FOLDER_POSTFIX;
 
         final Optional<String> metadata = this.createPresetDocument (relativeFolderName, instrumentSource);

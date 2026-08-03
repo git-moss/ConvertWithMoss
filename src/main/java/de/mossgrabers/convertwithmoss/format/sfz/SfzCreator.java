@@ -38,6 +38,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -48,21 +49,21 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
  */
 public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 {
-    private static final char                      LINE_FEED       = '\n';
-    private static final String                    SFZ_HEADER      = """
+    private static final char                      LINE_FEED             = '\n';
+    private static final String                    SFZ_HEADER            = """
             /////////////////////////////////////////////////////////////////////////////
             ////
             """;
-    private static final String                    SFZ_FOOTER      = """
+    private static final String                    SFZ_FOOTER            = """
             ////
             /////////////////////////////////////////////////////////////////////////////
 
             """;
-    private static final String                    COMMENT_PREFIX  = "//// ";
+    private static final String                    COMMENT_PREFIX        = "//// ";
 
-    private static final Map<FilterType, String>   FILTER_TYPE_MAP = new EnumMap<> (FilterType.class);
-    private static final Map<String, Set<Integer>> FILTER_POLES    = new HashMap<> ();
-    private static final Map<LoopType, String>     LOOP_TYPE_MAP   = new EnumMap<> (LoopType.class);
+    private static final Map<FilterType, String>   FILTER_TYPE_MAP       = new EnumMap<> (FilterType.class);
+    private static final Map<String, Set<Integer>> FILTER_POLES          = new HashMap<> ();
+    private static final Map<LoopType, String>     LOOP_TYPE_MAP         = new EnumMap<> (LoopType.class);
 
     /** The velocities at which a point of the velocity curve is written. */
     private static final int []                    VELOCITY_CURVE_POINTS =
@@ -127,7 +128,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String multiSampleName = createSafeFilename (multisampleSource.getName ());
+        final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         final String safeSampleFolderName = multiSampleName + FOLDER_POSTFIX;
         final Optional<String> metadata = this.createPresetDocument (safeSampleFolderName, multisampleSource);
         if (metadata.isEmpty ())

@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ShortNameSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 
 
@@ -101,7 +102,7 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String name = createSafeFilename (multisampleSource.getName ());
+        final String name = FileUtils.createSafeFilename (multisampleSource.getName ());
         final File outputFile = this.createUniqueFilename (destinationFolder, name, "MV0");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 

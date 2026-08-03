@@ -400,7 +400,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         {
             multisampleSource.getMetadata ().setDescription (bankName);
             // Keep the presets of a bank together if the folder structure of the source is created
-            multisampleSource.setSubPath (addBankFolder (multisampleSource.getSubPath (), bankName));
+            multisampleSource.extendSubPath (bankName);
         }
         return multisampleSource;
     }
@@ -442,24 +442,6 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
                 sb.append (Character.toLowerCase (c));
         }
         return sb.toString ();
-    }
-
-
-    /**
-     * Add the bank as the innermost sub-folder of the path parts. The first entry of the array is
-     * the name of the multi-sample and not part of the path.
-     *
-     * @param parts The path parts
-     * @param bankName The name of the bank
-     * @return The extended path parts
-     */
-    private static String [] addBankFolder (final String [] parts, final String bankName)
-    {
-        final String [] result = new String [parts.length + 1];
-        result[0] = parts[0];
-        result[1] = bankName;
-        System.arraycopy (parts, 1, result, 2, parts.length - 1);
-        return result;
     }
 
 

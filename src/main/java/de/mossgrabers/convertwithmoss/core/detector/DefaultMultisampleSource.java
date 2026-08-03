@@ -17,6 +17,7 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -89,6 +90,19 @@ public class DefaultMultisampleSource extends DefaultSource implements IMultisam
     public void setSubPath (final String [] subFolders)
     {
         this.subPath = subFolders;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void extendSubPath (final String additionalFolder)
+    {
+        final String [] parts = this.getSubPath ();
+        final String [] result = new String [parts.length + 1];
+        result[0] = parts[0];
+        result[1] = FileUtils.createSafeFilename (additionalFolder);
+        System.arraycopy (parts, 1, result, 2, parts.length - 1);
+        this.setSubPath (result);
     }
 
 

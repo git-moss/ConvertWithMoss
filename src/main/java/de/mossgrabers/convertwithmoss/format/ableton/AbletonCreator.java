@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -73,7 +74,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String safeFileName = createSafeFilename (multisampleSource.getName ());
+        final String safeFileName = FileUtils.createSafeFilename (multisampleSource.getName ());
 
         final File sampleFolder = new File (destinationFolder, "Samples/Imported/" + safeFileName);
         if (!sampleFolder.exists () && !sampleFolder.mkdirs ())
@@ -89,7 +90,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             return;
         }
 
-        final File multiFile = this.createUniqueFilename (multiSampleFolder, createSafeFilename (multisampleSource.getName ()), "adv");
+        final File multiFile = this.createUniqueFilename (multiSampleFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "adv");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final Map<String, File> writtenSamples = new HashMap<> ();
@@ -132,7 +133,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             // Add all groups
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
             final String multiSamplePartTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ADV-MultiSamplePart-Template.xml");
-            final String multisampleParts = addGroups (groups, multiSamplePartTemplate, createSafeFilename (multisampleSource.getName ()), writtenSamples, selectorRoundRobin);
+            final String multisampleParts = addGroups (groups, multiSamplePartTemplate, FileUtils.createSafeFilename (multisampleSource.getName ()), writtenSamples, selectorRoundRobin);
 
             String text = Functions.textFileFor (TEMPLATE_FOLDER + (isVersion12 ? "ADV12-Template.xml" : "ADV11-Template.xml"));
 
@@ -336,7 +337,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
     private static String addZoneData (final ISampleZone zone, final int zoneCount, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples, final int [] selectorRange) throws IOException
     {
         // Must use the same sanitized name which was used for writing the sample file
-        final String zoneFileName = createSafeFilename (zone.getName ()) + ".wav";
+        final String zoneFileName = FileUtils.createSafeFilename (zone.getName ()) + ".wav";
 
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())

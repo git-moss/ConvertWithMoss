@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.algorithm.LayerSplitter;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -65,7 +66,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        this.createPresetLibrary (destinationFolder, Collections.singletonList (multisampleSource), AbstractCreator.createSafeFilename (multisampleSource.getName ()));
+        this.createPresetLibrary (destinationFolder, Collections.singletonList (multisampleSource), FileUtils.createSafeFilename (multisampleSource.getName ()));
     }
 
 
@@ -80,7 +81,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
         {
             AbstractCreator.recalculateAllSamplePositions (multisampleSource, 48000, true);
 
-            final String multiSampleName = createSafeFilename (multisampleSource.getName ());
+            final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
             // The DOS file names and the sub-folder keep the full name; only the 24 character
             // name which the device displays can optionally be shortened
             final String sourceName = multisampleSource.getName ();

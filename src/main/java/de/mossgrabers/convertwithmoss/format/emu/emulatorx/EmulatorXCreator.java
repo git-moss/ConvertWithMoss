@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -133,7 +134,7 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
     {
         // The name of the bank is part of the name of every one of its sample files, therefore the
         // final name must be known before the samples are written
-        final File bankFile = this.createUniqueFilename (destinationFolder, createSafeFilename (name), "exb");
+        final File bankFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (name), "exb");
         final String bankName = bankFile.getName ().substring (0, bankFile.getName ().length () - EmulatorXConstants.BANK_ENDING.length ());
         this.notifier.log ("IDS_NOTIFY_STORING", bankFile.getAbsolutePath ());
 

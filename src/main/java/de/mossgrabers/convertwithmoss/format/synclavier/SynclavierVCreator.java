@@ -31,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -106,7 +107,7 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
      */
     private void storeSynxFile (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
-        final String safeLibraryName = createSafeFilename (libraryName);
+        final String safeLibraryName = FileUtils.createSafeFilename (libraryName);
         final File synxFile = this.createUniqueFilename (destinationFolder, safeLibraryName, SYNX_ENDING);
         this.notifier.log ("IDS_NOTIFY_STORING", synxFile.getAbsolutePath ());
 
@@ -115,10 +116,10 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
         final MinimalZipWriter zipWriter = new MinimalZipWriter ();
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            String presetName = createSafeFilename (multisampleSource.getName ());
+            String presetName = FileUtils.createSafeFilename (multisampleSource.getName ());
             int counter = 2;
             while (!usedPresetNames.add (presetName))
-                presetName = createSafeFilename (multisampleSource.getName ()) + " " + counter++;
+                presetName = FileUtils.createSafeFilename (multisampleSource.getName ()) + " " + counter++;
 
             this.storePreset (destinationFolder, zipWriter, libraryFolder, safeLibraryName, presetName, multisampleSource);
         }
@@ -190,10 +191,10 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
             final ISampleZone zone = zones.get (index);
 
             // Ensure a unique sample file name
-            String sampleName = createSafeFilename (zone.getName ());
+            String sampleName = FileUtils.createSafeFilename (zone.getName ());
             int counter = 2;
             while (!usedSampleNames.add (sampleName.toLowerCase ()))
-                sampleName = createSafeFilename (zone.getName ()) + " " + counter++;
+                sampleName = FileUtils.createSafeFilename (zone.getName ()) + " " + counter++;
             zone.setName (sampleName);
 
             final String samplePath = sampleFolder + "/" + sampleName + ".wav";
@@ -209,11 +210,11 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
 
 
     /**
-     * Writes the embedded samples of a preset additionally as plain WAV files, in the folder
-     * layout of the Arturia sample pool (<i>User/&lt;preset&gt;/&lt;sample&gt;.wav</i>). The
-     * import of Synclavier V does not copy the embedded samples into its sample pool, so a preset
-     * loaded from the browser database after the import session cannot resolve them; merging the
-     * written 'User' folder into the sample pool makes the imported presets permanent.
+     * Writes the embedded samples of a preset additionally as plain WAV files, in the folder layout
+     * of the Arturia sample pool (<i>User/&lt;preset&gt;/&lt;sample&gt;.wav</i>). The import of
+     * Synclavier V does not copy the embedded samples into its sample pool, so a preset loaded from
+     * the browser database after the import session cannot resolve them; merging the written 'User'
+     * folder into the sample pool makes the imported presets permanent.
      *
      * @param destinationFolder The output folder
      * @param preset The stored preset

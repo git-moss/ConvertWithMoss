@@ -35,6 +35,7 @@ import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 
@@ -98,7 +99,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         if (xml.isEmpty ())
             return;
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "zbp");
+        final File multiFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "zbp");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
@@ -133,7 +134,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         document.appendChild (bankElement);
         final Element programsElement = XMLUtils.addElement (document, bankElement, BlissTag.PROGRAMS);
 
-        final File bankFile = this.createUniqueFilename (destinationFolder, createSafeFilename (libraryName), "zbb");
+        final File bankFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (libraryName), "zbb");
         this.notifier.log ("IDS_NOTIFY_STORING", bankFile.getAbsolutePath ());
 
         List<IMultisampleSource> sources = multisampleSources;

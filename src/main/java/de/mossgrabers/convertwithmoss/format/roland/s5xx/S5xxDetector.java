@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -99,13 +100,31 @@ public class S5xxDetector extends AbstractDetector<MetadataSettingsUI>
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         final String metadataDescription = image.getDiskLabelDescription ('\n');
 
+        String fileName = FileUtils.getNameWithoutType (sourceFile.getName ());
+        String cdName = null;
+        final Optional<S5xxDiskLabel> diskLabel = image.getDiskLabel ();
+        if (diskLabel.isPresent ())
+        {
+            final String nameRow = diskLabel.get ().getRow (0);
+            if (nameRow != null && !nameRow.isBlank ())
+            {
+                if (image.isLandType ())
+                    cdName = fileName;
+                fileName = nameRow.trim ();
+            }
+        }
+
         for (final S5xxPatch patch: image.getPatches ())
         {
             final String patchName = patch.getName ();
             if (patchName.isBlank ())
                 continue;
             this.notifier.log ("IDS_S5XX_CONVERTING_PATCH", String.format ("%-3s %s", patch.getPatchId (), patchName));
-            multisampleSources.add (this.readPatch (sourceFile, patch, patchName, metadataDescription, image));
+            final IMultisampleSource multisampleSource = this.readPatch (sourceFile, patch, patchName, metadataDescription, image);
+            if (cdName != null)
+                multisampleSource.extendSubPath (cdName);
+            multisampleSource.extendSubPath (fileName);
+            multisampleSources.add (multisampleSource);
         }
 
         return multisampleSources;

@@ -176,7 +176,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         // A kit name can optionally be shortened to "NNN <last name segment>" so it does not
         // scroll as much on the device display
         final String outputName = createKit && this.settingsConfiguration.isShortenKitName () ? shortenKitName (multisampleSource.getName ()) : multisampleSource.getName ();
-        final File presetFile = this.createUniqueFilename (presetFolder, createSafeFilename (outputName), "xml");
+        final File presetFile = this.createUniqueFilename (presetFolder, FileUtils.createSafeFilename (outputName), "xml");
         final String baseName = FileUtils.getNameWithoutType (presetFile);
         this.notifier.log ("IDS_NOTIFY_STORING", presetFile.getAbsolutePath ());
 
@@ -523,7 +523,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         final Set<String> usedNames = new HashSet<> ();
         for (final ISampleZone zone: zones)
         {
-            final String base = createSafeFilename (zone.getName ());
+            final String base = FileUtils.createSafeFilename (zone.getName ());
             String name = base;
             int counter = 2;
             while (!usedNames.add (name.toLowerCase (Locale.ENGLISH)))
@@ -622,7 +622,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             // read-out on the device; the sample file keeps its original name. Unrecognized
             // drums and non-consolidated kits keep their sample-derived name.
             final DrumRole role = useRoleLabels ? classifyDrum (zone.getName ()) : null;
-            final String drumName = role == null ? createSafeFilename (zone.getName ()) : roleLabel (role);
+            final String drumName = role == null ? FileUtils.createSafeFilename (zone.getName ()) : roleLabel (role);
             XMLUtils.addTextElement (document, drumSound, DelugeTag.NAME, drumName);
             // A drum is one pad of the kit. The polyphony of the source instrument describes the
             // whole instrument and not a single pad, therefore the drums stay polyphonic.
@@ -745,7 +745,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         if (topNote >= 0)
             XMLUtils.addTextElement (document, parent, DelugeTag.RANGE_TOP_NOTE, Integer.toString (topNote));
 
-        XMLUtils.addTextElement (document, parent, DelugeTag.FILE_NAME, relativeSampleFolder + "/" + createSafeFilename (zone.getName ()) + ".wav");
+        XMLUtils.addTextElement (document, parent, DelugeTag.FILE_NAME, relativeSampleFolder + "/" + FileUtils.createSafeFilename (zone.getName ()) + ".wav");
 
         // A synth maps the sample across the keyboard, so its transpose follows the root note. A
         // kit drum is triggered by its own pad and must play at its natural pitch (like the

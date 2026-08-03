@@ -32,6 +32,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.format.music1010.AbstractMusic1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -117,7 +118,7 @@ public class BentoCreator extends AbstractMusic1010Creator
     @Override
     public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
     {
-        final String performanceFolderName = createSafeFilename (performanceSource.getName ());
+        final String performanceFolderName = FileUtils.createSafeFilename (performanceSource.getName ());
         final File performanceFolder = this.createUniqueFilename (new File (destinationFolder, "Projects"), performanceFolderName, "");
         if (!performanceFolder.exists () && !performanceFolder.mkdirs ())
         {
@@ -168,7 +169,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         {
             final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
 
-            final String multisampleName = createSafeFilename (multisampleSource.getName ());
+            final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
             final File fullPresetFolder = this.createUniqueFilename (presetFolder, multisampleName, "");
             if (!fullPresetFolder.mkdirs ())
             {
@@ -193,7 +194,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         final boolean resample = this.settingsConfiguration.resampleTo2448 ();
         final boolean trim = this.settingsConfiguration.trimStartToEnd ();
 
-        final String multisampleName = createSafeFilename (multisampleSource.getName ());
+        final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         final File presetFolder = this.createUniqueFilename (destinationFolder, multisampleName, "");
         if (!presetFolder.mkdir ())
         {
@@ -286,7 +287,7 @@ public class BentoCreator extends AbstractMusic1010Creator
             }
             for (final IGroup group: groups)
                 for (final ISampleZone zone: group.getSampleZones ())
-                    this.createSample (document, isPerformance ? subFolder + createSafeFilename (multisampleSource.getName ()) + "\\" : "", trackElement, zone, trim);
+                    this.createSample (document, isPerformance ? subFolder + FileUtils.createSafeFilename (multisampleSource.getName ()) + "\\" : "", trackElement, zone, trim);
             if (isPerformance)
             {
                 final int highestKey = multisampleSource.getHighestKey ();

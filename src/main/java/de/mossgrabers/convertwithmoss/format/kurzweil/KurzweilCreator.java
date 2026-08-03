@@ -30,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -135,7 +136,7 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
         if (kurzweilFile.getPrograms ().isEmpty ())
             return;
 
-        final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (name), this.settingsConfiguration.getTargetDevice ().getExtension ());
+        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (name), this.settingsConfiguration.getTargetDevice ().getExtension ());
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
         try (final OutputStream out = new BufferedOutputStream (new FileOutputStream (outputFile)))
         {
