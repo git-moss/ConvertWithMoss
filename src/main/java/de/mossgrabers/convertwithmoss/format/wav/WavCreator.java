@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.aac.AacEncoder;
 import de.mossgrabers.convertwithmoss.file.alac.AlacEncoder;
 import de.mossgrabers.convertwithmoss.file.caf.CafAudioDescriptionChunk;
 import de.mossgrabers.convertwithmoss.file.caf.CafFile;
@@ -54,6 +55,12 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
         16,
         24,
         32
+    }, -1, false);
+
+    /** The AAC encoder works on 16-bit samples. */
+    private static final DestinationAudioFormat AAC_COMPATIBLE_FORMAT  = new DestinationAudioFormat (new int []
+    {
+        16
     }, -1, false);
 
 
@@ -115,8 +122,10 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
             return;
         }
 
-        // Convert resolution - Apple Lossless does not support 8-bit samples
-        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), outputFormat == SampleFileFormat.CAF_ALAC ? ALAC_COMPATIBLE_FORMAT : destinationFormat);
+        // Convert resolution - Apple Lossless does not support 8-bit samples, AAC works on
+        // 16-bit samples
+        final DestinationAudioFormat cafFormat = outputFormat == SampleFileFormat.CAF_ALAC ? ALAC_COMPATIBLE_FORMAT : outputFormat == SampleFileFormat.CAF_AAC ? AAC_COMPATIBLE_FORMAT : destinationFormat;
+        final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), cafFormat);
         if (wavFile.getDataChunk () == null)
             throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));
 
@@ -127,7 +136,7 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
         if (outputFormat == SampleFileFormat.AIFF)
             this.writeAiffFile (multisampleSource, zone, wavFile, outputStream);
         else
-            this.writeCafFile (multisampleSource, zone, wavFile, outputFormat == SampleFileFormat.CAF_ALAC, outputStream);
+            this.writeCafFile (multisampleSource, zone, wavFile, outputFormat, outputStream);
     }
 
 
@@ -240,11 +249,11 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
      * @param multisampleSource The multi-sample source
      * @param zone The zone which contains the sample
      * @param wavFile The already converted WAV file with the sample data
-     * @param compress True to compress the audio data with Apple Lossless
+     * @param outputFormat The format which decides the audio data compression
      * @param outputStream Where to write the CAF file
      * @throws IOException Could not write the file
      */
-    private void writeCafFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final WaveFile wavFile, final boolean compress, final OutputStream outputStream) throws IOException
+    private void writeCafFile (final IMultisampleSource multisampleSource, final ISampleZone zone, final WaveFile wavFile, final SampleFileFormat outputFormat, final OutputStream outputStream) throws IOException
     {
         final FormatChunk formatChunk = wavFile.getFormatChunk ();
         final int numberOfChannels = formatChunk.getNumberOfChannels ();
@@ -265,7 +274,33 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
         descriptionChunk.setChannelsPerFrame (numberOfChannels);
         cafFile.setAudioDescriptionChunk (descriptionChunk);
 
-        if (compress)
+        if (outputFormat == SampleFileFormat.CAF_AAC)
+        {
+            // Compress the audio data with MPEG-4 AAC
+            final AacEncoder encoder = new AacEncoder (formatChunk.getSampleRate (), numberOfChannels);
+            final int bytesPerFrame = numberOfChannels * bytesPerSample;
+            final int totalFrames = data.length / bytesPerFrame;
+
+            final ByteArrayOutputStream packetsOut = new ByteArrayOutputStream ();
+            final java.util.List<byte []> packets = encoder.encode (data, 0, totalFrames);
+            final int [] packetSizes = new int [packets.size ()];
+            for (int packet = 0; packet < packets.size (); packet++)
+            {
+                packetsOut.write (packets.get (packet));
+                packetSizes[packet] = packets.get (packet).length;
+            }
+
+            descriptionChunk.setFormatID (CafAudioDescriptionChunk.FORMAT_MPEG4_AAC);
+            // The format flags of AAC contain the MPEG-4 audio object type (2 = low complexity)
+            descriptionChunk.setFormatFlags (2);
+            descriptionChunk.setBytesPerPacket (0);
+            descriptionChunk.setFramesPerPacket (AacEncoder.FRAME_LENGTH);
+            descriptionChunk.setBitsPerChannel (0);
+            cafFile.setMagicCookie (encoder.getMagicCookie ());
+            cafFile.setPacketTable (packetSizes, totalFrames, AacEncoder.PRIMING_FRAMES);
+            cafFile.setAudioData (packetsOut.toByteArray ());
+        }
+        else if (outputFormat == SampleFileFormat.CAF_ALAC)
         {
             // Compress the audio data with Apple Lossless
             final AlacEncoder encoder = new AlacEncoder (bitsPerSample, numberOfChannels, formatChunk.getSampleRate (), ALAC_FRAME_LENGTH);
@@ -290,7 +325,7 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
             descriptionChunk.setFramesPerPacket (ALAC_FRAME_LENGTH);
             descriptionChunk.setBitsPerChannel (0);
             cafFile.setMagicCookie (encoder.getMagicCookie ());
-            cafFile.setPacketTable (packetSizes, totalFrames);
+            cafFile.setPacketTable (packetSizes, totalFrames, 0);
             cafFile.setAudioData (packetsOut.toByteArray ());
         }
         else

@@ -19,6 +19,8 @@ public enum SampleFileFormat
     CAF ("CAF", ".caf"),
     /** Write CAF files with Apple Lossless compressed audio data. */
     CAF_ALAC ("CAF-ALAC", ".caf"),
+    /** Write CAF files with MPEG-4 AAC compressed audio data. */
+    CAF_AAC ("CAF-AAC", ".caf"),
     /** Write FLAC files. */
     FLAC ("FLAC", ".flac");
 
