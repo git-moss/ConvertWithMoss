@@ -161,7 +161,7 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
             final IGroup group = new DefaultGroup ("Group 1");
             for (final CasioFZVoice voice: voices)
             {
-                final ISampleZone zone = this.createZone (voice, wavePool, waveBase, bendRangeCents);
+                final ISampleZone zone = createZone (voice, wavePool, waveBase, bendRangeCents);
                 if (zone != null)
                 {
                     zone.setKeyLow (Math.clamp (voice.lowKey, 0, 127));
@@ -193,7 +193,7 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
                     this.notifier.logError ("IDS_FZ_VOICE_OUT_OF_BOUNDS", Integer.toString (voiceIndex), bank.name);
                     continue;
                 }
-                final ISampleZone zone = this.createZone (voices.get (voiceIndex), wavePool, waveBase, bendRangeCents);
+                final ISampleZone zone = createZone (voices.get (voiceIndex), wavePool, waveBase, bendRangeCents);
                 if (zone == null)
                     continue;
 
@@ -230,14 +230,14 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
      * @param bendRangeCents The pitch bend range in cents, -1 if not present
      * @return The zone or null if the voice has no sound
      */
-    private ISampleZone createZone (final CasioFZVoice voice, final byte [] wavePool, final long waveBase, final int bendRangeCents)
+    private static ISampleZone createZone (final CasioFZVoice voice, final byte [] wavePool, final long waveBase, final int bendRangeCents)
     {
         if (voice.mode == CasioFZVoice.MODE_NO_SOUND)
             return null;
 
         final int poolWords = wavePool.length / 2;
-        final int waveStart = (int) Math.clamp (voice.waveStart - waveBase, 0, poolWords);
-        final int waveEnd = (int) Math.clamp (voice.waveEnd - waveBase, waveStart, poolWords);
+        final int waveStart = Math.clamp (voice.waveStart - waveBase, 0, poolWords);
+        final int waveEnd = Math.clamp (voice.waveEnd - waveBase, waveStart, poolWords);
         final int numFrames = waveEnd - waveStart;
         if (numFrames <= 0)
             return null;
@@ -248,8 +248,8 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
         final InMemorySampleData sampleData = new InMemorySampleData (new DefaultAudioMetadata (1, voice.getSampleRate (), 16, numFrames), pcm);
 
         final ISampleZone zone = new DefaultSampleZone (voice.name.isBlank () ? "Voice" : voice.name, sampleData);
-        zone.setStart ((int) Math.clamp (voice.generatorStart - waveBase - waveStart, 0, numFrames));
-        zone.setStop ((int) Math.clamp (voice.generatorEnd - waveBase - waveStart, 0, numFrames));
+        zone.setStart (Math.clamp (voice.generatorStart - waveBase - waveStart, 0, numFrames));
+        zone.setStop (Math.clamp (voice.generatorEnd - waveBase - waveStart, 0, numFrames));
         zone.setReversed (voice.mode == CasioFZVoice.MODE_REVERSED);
         // The pitch can be corrected in 1/256 semitone steps
         zone.setTuning (voice.pitch / 256.0);
@@ -346,8 +346,8 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Map a FZ cutoff value (0-126) to a frequency with an exponential law from ~20 Hz to ~18
-     * kHz. The law is an approximation, it is not documented in the FZ specification.
+     * Map a FZ cutoff value (0-126) to a frequency with an exponential law from ~20 Hz to ~18 kHz.
+     * The law is an approximation, it is not documented in the FZ specification.
      *
      * @param cutoff The cutoff value
      * @return The frequency in Hertz

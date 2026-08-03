@@ -23,38 +23,38 @@ import de.mossgrabers.convertwithmoss.file.alac.AlacDecoder;
 
 
 /**
- * Apple Core Audio Format (CAF) - a container for storing audio data. A CAF file consists of a
- * file header followed by chunks. Each chunk consists of a four character code, a signed 64-bit
- * length and the chunk data. All fields are stored in big-endian byte order.
+ * Apple Core Audio Format (CAF) - a container for storing audio data. A CAF file consists of a file
+ * header followed by chunks. Each chunk consists of a four character code, a signed 64-bit length
+ * and the chunk data. All fields are stored in big-endian byte order.
  *
  * @author Jürgen Moßgraber
  */
 public class CafFile
 {
-    private static final String FILE_HEADER_ID          = "caff";
+    private static final String       FILE_HEADER_ID          = "caff";
 
-    private static final String CHUNK_AUDIO_DESCRIPTION = "desc";
-    private static final String CHUNK_AUDIO_DATA        = "data";
-    private static final String CHUNK_INSTRUMENT        = "inst";
-    private static final String CHUNK_MARKER            = "mark";
-    private static final String CHUNK_REGION            = "regn";
-    private static final String CHUNK_INFORMATION       = "info";
-    private static final String CHUNK_PACKET_TABLE      = "pakt";
-    private static final String CHUNK_MAGIC_COOKIE      = "kuki";
+    private static final String       CHUNK_AUDIO_DESCRIPTION = "desc";
+    private static final String       CHUNK_AUDIO_DATA        = "data";
+    private static final String       CHUNK_INSTRUMENT        = "inst";
+    private static final String       CHUNK_MARKER            = "mark";
+    private static final String       CHUNK_REGION            = "regn";
+    private static final String       CHUNK_INFORMATION       = "info";
+    private static final String       CHUNK_PACKET_TABLE      = "pakt";
+    private static final String       CHUNK_MAGIC_COOKIE      = "kuki";
 
     /** The 'artist' key of the Information chunk. */
-    public static final String  INFORMATION_ARTIST      = "artist";
+    public static final String        INFORMATION_ARTIST      = "artist";
     /** The 'comments' key of the Information chunk. */
-    public static final String  INFORMATION_COMMENTS    = "comments";
+    public static final String        INFORMATION_COMMENTS    = "comments";
     /** The 'copyright' key of the Information chunk. */
-    public static final String  INFORMATION_COPYRIGHT   = "copyright";
+    public static final String        INFORMATION_COPYRIGHT   = "copyright";
 
     /** The size of an IMA4 packet per channel in bytes. */
-    private static final int    IMA4_BYTES_PER_PACKET   = 34;
+    private static final int          IMA4_BYTES_PER_PACKET   = 34;
     /** The number of sample frames encoded in an IMA4 packet. */
-    private static final int    IMA4_FRAMES_PER_PACKET  = 64;
+    private static final int          IMA4_FRAMES_PER_PACKET  = 64;
 
-    private static final int [] IMA_INDEX_TABLE         =
+    private static final int []       IMA_INDEX_TABLE         =
     {
         -1,
         -1,
@@ -74,7 +74,7 @@ public class CafFile
         8
     };
 
-    private static final int [] IMA_STEP_TABLE          =
+    private static final int []       IMA_STEP_TABLE          =
     {
         7,
         8,
@@ -167,20 +167,20 @@ public class CafFile
         32767
     };
 
-    private CafAudioDescriptionChunk  audioDescriptionChunk = null;
-    private CafInstrumentChunk        instrumentChunk       = null;
-    private byte []                   audioData             = null;
-    private byte []                   magicCookie           = null;
-    private int []                    packetSizes           = null;
-    private final List<CafMarker>     markers               = new ArrayList<> ();
-    private final List<CafRegion>     regions               = new ArrayList<> ();
-    private final Map<String, String> information           = new TreeMap<> ();
-    private long                      numberOfValidFrames   = -1;
-    private int                       primingFrames         = 0;
-    private AlacDecoder               alacDecoder           = null;
-    private boolean                   alacDecoderFailed     = false;
-    private AacDecoder                aacDecoder            = null;
-    private boolean                   aacDecoderFailed      = false;
+    private CafAudioDescriptionChunk  audioDescriptionChunk   = null;
+    private CafInstrumentChunk        instrumentChunk         = null;
+    private byte []                   audioData               = null;
+    private byte []                   magicCookie             = null;
+    private int []                    packetSizes             = null;
+    private final List<CafMarker>     markers                 = new ArrayList<> ();
+    private final List<CafRegion>     regions                 = new ArrayList<> ();
+    private final Map<String, String> information             = new TreeMap<> ();
+    private long                      numberOfValidFrames     = -1;
+    private int                       primingFrames           = 0;
+    private AlacDecoder               alacDecoder             = null;
+    private boolean                   alacDecoderFailed       = false;
+    private AacDecoder                aacDecoder              = null;
+    private boolean                   aacDecoderFailed        = false;
 
 
     /**
@@ -199,8 +199,8 @@ public class CafFile
 
 
     /**
-     * Constructor. Use in combination with the read-method to read a CAF file from a stream or
-     * with the setters and the write-method to create a CAF file.
+     * Constructor. Use in combination with the read-method to read a CAF file from a stream or with
+     * the setters and the write-method to create a CAF file.
      */
     public CafFile ()
     {
@@ -542,8 +542,8 @@ public class CafFile
 
 
     /**
-     * Set the magic cookie which contains supplementary data required by certain audio data
-     * formats (e.g. the configuration of Apple Lossless).
+     * Set the magic cookie which contains supplementary data required by certain audio data formats
+     * (e.g. the configuration of Apple Lossless).
      *
      * @param magicCookie The data of the magic cookie chunk
      */
@@ -631,8 +631,8 @@ public class CafFile
     /**
      * Decode the audio data to interleaved little-endian PCM data. Integer samples keep their
      * resolution and are signed (including 8-bit ones), 64-bit float samples are converted to
-     * 32-bit float ones and the compressed IMA4, µLaw and aLaw formats are decoded to 16-bit.
-     * Apple Lossless is decoded to its original resolution.
+     * 32-bit float ones and the compressed IMA4, µLaw and aLaw formats are decoded to 16-bit. Apple
+     * Lossless is decoded to its original resolution.
      *
      * @return The decoded data
      * @throws IOException The format of the audio data is not supported
@@ -752,8 +752,8 @@ public class CafFile
 
 
     /**
-     * Decode Apple IMA 4:1 ADPCM data to 16-bit PCM. Each packet consists of one 34 byte block
-     * per channel: a 2 byte big-endian preamble which contains the predictor and step table index
+     * Decode Apple IMA 4:1 ADPCM data to 16-bit PCM. Each packet consists of one 34 byte block per
+     * channel: a 2 byte big-endian preamble which contains the predictor and step table index
      * followed by 32 bytes with two 4-bit codes each (the low nibble is the earlier sample). Each
      * block decodes to 64 sample frames. The decoder state carries over from block to block; the
      * preamble is only a checkpoint in which the lowest 7 predictor bits are lost. Therefore, the
@@ -806,7 +806,7 @@ public class CafFile
                         if ((nibble & 4) != 0)
                             difference += step;
                         predictor = Math.clamp ((nibble & 8) != 0 ? predictor - difference : predictor + difference, Short.MIN_VALUE, Short.MAX_VALUE);
-                        stepIndex = Math.clamp (stepIndex + IMA_INDEX_TABLE[nibble], 0, 88);
+                        stepIndex = Math.clamp (stepIndex + (long) IMA_INDEX_TABLE[nibble], 0, 88);
 
                         final int offset = ((packet * IMA4_FRAMES_PER_PACKET + i * 2 + nibbleIndex) * numberOfChannels + channel) * 2;
                         result[offset] = (byte) predictor;
@@ -871,8 +871,8 @@ public class CafFile
 
 
     /**
-     * Decode MPEG-4 AAC data to 16-bit PCM. The priming frames of the encoder delay are skipped
-     * per the packet table.
+     * Decode MPEG-4 AAC data to 16-bit PCM. The priming frames of the encoder delay are skipped per
+     * the packet table.
      *
      * @return The decoded data
      * @throws IOException The data is malformed
@@ -899,7 +899,7 @@ public class CafFile
         }
 
         // Drop the priming frames and the padding of the last packet
-        final int copyFrames = (int) Math.min (totalFrames, frameOffset - this.primingFrames);
+        final int copyFrames = (int) Math.min (totalFrames, frameOffset - (long) this.primingFrames);
         final byte [] result = new byte [Math.max (0, copyFrames) * bytesPerFrame];
         System.arraycopy (decoded, this.primingFrames * bytesPerFrame, result, 0, result.length);
         return result;
@@ -909,8 +909,8 @@ public class CafFile
     /**
      * Get the decoder for MPEG-4 AAC audio data, created from the magic cookie.
      *
-     * @return The decoder or null if the magic cookie is missing or malformed or the profile is
-     *         not supported
+     * @return The decoder or null if the magic cookie is missing or malformed or the profile is not
+     *         supported
      */
     private AacDecoder getAacDecoder ()
     {
@@ -1074,7 +1074,7 @@ public class CafFile
      * @return The stream with the chunk data
      * @throws IOException Could not read the data
      */
-    private static InputStream createChunkStream (final InputStream inputStream, final long chunkSize) throws IOException
+    private static ByteArrayInputStream createChunkStream (final InputStream inputStream, final long chunkSize) throws IOException
     {
         return new ByteArrayInputStream (inputStream.readNBytes (checkChunkSize (chunkSize)));
     }

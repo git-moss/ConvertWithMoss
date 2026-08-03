@@ -10,64 +10,63 @@ import java.util.Arrays;
 
 /**
  * Encoder for the Apple Lossless Audio Codec (ALAC). This is a port of the encoder part of the
- * reference implementation published by Apple at https://github.com/macosforge/alac (Apache
- * License 2.0, (c) 2011 Apple Inc.). Only mono and stereo data with 16, 24 or 32 bits is
- * supported.
+ * reference implementation published by Apple at https://github.com/macosforge/alac (Apache License
+ * 2.0, (c) 2011 Apple Inc.). Only mono and stereo data with 16, 24 or 32 bits is supported.
  *
  * @author Jürgen Moßgraber
  */
 public class AlacEncoder
 {
     /** Single Channel Element. */
-    private static final int ID_SCE               = 0;
+    private static final int  ID_SCE               = 0;
     /** Channel Pair Element. */
-    private static final int ID_CPE               = 1;
+    private static final int  ID_CPE               = 1;
     /** Frame End Element. */
-    private static final int ID_END               = 7;
+    private static final int  ID_END               = 7;
 
     // Constants of the adaptive Golomb coder
-    private static final int QBSHIFT              = 9;
-    private static final int QB                   = 1 << QBSHIFT;
-    private static final int MMULSHIFT            = 2;
-    private static final int MDENSHIFT            = QBSHIFT - MMULSHIFT - 1;
-    private static final int MOFF                 = 1 << MDENSHIFT - 2;
-    private static final int BITOFF               = 24;
-    private static final int MAX_PREFIX_16        = 9;
-    private static final int MAX_PREFIX_32        = 9;
-    private static final int MAX_DATATYPE_BITS_16 = 16;
-    private static final int N_MAX_MEAN_CLAMP     = 0xFFFF;
-    private static final int N_MEAN_CLAMP_VAL     = 0xFFFF;
-    private static final int PB0                  = 40;
-    private static final int MB0                  = 10;
-    private static final int KB0                  = 14;
+    private static final int  QBSHIFT              = 9;
+    private static final int  QB                   = 1 << QBSHIFT;
+    private static final int  MMULSHIFT            = 2;
+    private static final int  MDENSHIFT            = QBSHIFT - MMULSHIFT - 1;
+    private static final int  MOFF                 = 1 << MDENSHIFT - 2;
+    private static final int  BITOFF               = 24;
+    private static final int  MAX_PREFIX_16        = 9;
+    private static final int  MAX_PREFIX_32        = 9;
+    private static final int  MAX_DATATYPE_BITS_16 = 16;
+    private static final int  N_MAX_MEAN_CLAMP     = 0xFFFF;
+    private static final int  N_MEAN_CLAMP_VAL     = 0xFFFF;
+    private static final int  PB0                  = 40;
+    private static final int  MB0                  = 10;
+    private static final int  KB0                  = 14;
 
     // Constants of the dynamic predictor
-    private static final int DENSHIFT_DEFAULT     = 9;
-    private static final int AINIT                = 38;
-    private static final int BINIT                = -29;
-    private static final int CINIT                = -2;
+    private static final int  DENSHIFT_DEFAULT     = 9;
+    private static final int  AINIT                = 38;
+    private static final int  BINIT                = -29;
+    private static final int  CINIT                = -2;
 
     // Constants of the parameter search
-    private static final int DEFAULT_MIX_BITS     = 2;
-    private static final int MAX_RES              = 4;
-    private static final int DEFAULT_NUM_UV       = 8;
-    private static final int MIN_UV               = 4;
-    private static final int MAX_UV               = 8;
+    private static final int  DEFAULT_MIX_BITS     = 2;
+    private static final int  MAX_RES              = 4;
+    private static final int  DEFAULT_NUM_UV       = 8;
+    private static final int  MIN_UV               = 4;
+    private static final int  MAX_UV               = 8;
 
-    private final int        bitDepth;
-    private final int        numChannels;
-    private final int        sampleRate;
-    private final int        frameLength;
+    private final int         bitDepth;
+    private final int         numChannels;
+    private final int         sampleRate;
+    private final int         frameLength;
 
-    private final int []     mixBufferU;
-    private final int []     mixBufferV;
-    private final int []     predictorU;
-    private final int []     predictorV;
-    private final int []     shiftBufferUV;
-    private final short [][] coefsU;
-    private final short [][] coefsV;
-    private final byte []    workBuffer;
-    private int              lastMixRes            = 0;
+    private final int []      mixBufferU;
+    private final int []      mixBufferV;
+    private final int []      predictorU;
+    private final int []      predictorV;
+    private final int []      shiftBufferUV;
+    private final short [] [] coefsU;
+    private final short [] [] coefsV;
+    private final byte []     workBuffer;
+    private int               lastMixRes           = 0;
 
 
     /**
@@ -122,8 +121,8 @@ public class AlacEncoder
 
 
     /**
-     * Get the magic cookie (ALACSpecificConfig) which the decoder needs, e.g. for the 'kuki'
-     * chunk of a CAF file.
+     * Get the magic cookie (ALACSpecificConfig) which the decoder needs, e.g. for the 'kuki' chunk
+     * of a CAF file.
      *
      * @return The 24 bytes of the configuration
      */
@@ -152,8 +151,8 @@ public class AlacEncoder
     /**
      * Encode one packet.
      *
-     * @param input The interleaved audio data in little-endian byte order (2 bytes per sample
-     *            for 16-bit, 3 for 24-bit, 4 for 32-bit)
+     * @param input The interleaved audio data in little-endian byte order (2 bytes per sample for
+     *            16-bit, 3 for 24-bit, 4 for 32-bit)
      * @param inputOffset The offset in bytes of the first sample frame to encode
      * @param numFrames The number of sample frames to encode, at maximum the frame length
      * @return The encoded packet
@@ -224,8 +223,8 @@ public class AlacEncoder
         {
             this.mixStereo (input, inputOffset, numSamples / dilate, mixBits, mixRes, bytesShifted);
 
-            this.pcBlock (this.mixBufferU, this.predictorU, numSamples / dilate, this.coefsU[DEFAULT_NUM_UV - 1], DEFAULT_NUM_UV, chanBits, DENSHIFT_DEFAULT);
-            this.pcBlock (this.mixBufferV, this.predictorV, numSamples / dilate, this.coefsV[DEFAULT_NUM_UV - 1], DEFAULT_NUM_UV, chanBits, DENSHIFT_DEFAULT);
+            pcBlock (this.mixBufferU, this.predictorU, numSamples / dilate, this.coefsU[DEFAULT_NUM_UV - 1], DEFAULT_NUM_UV, chanBits, DENSHIFT_DEFAULT);
+            pcBlock (this.mixBufferV, this.predictorV, numSamples / dilate, this.coefsV[DEFAULT_NUM_UV - 1], DEFAULT_NUM_UV, chanBits, DENSHIFT_DEFAULT);
 
             final BitWriter workBits = new BitWriter (this.workBuffer);
             final long bits1 = dynComp (pbFactor * PB0 / 4, this.predictorU, workBits, numSamples / dilate, chanBits);
@@ -253,8 +252,8 @@ public class AlacEncoder
             dilate = 32;
             for (int converge = 0; converge < 8; converge++)
             {
-                this.pcBlock (this.mixBufferU, this.predictorU, numSamples / dilate, this.coefsU[numUV - 1], numUV, chanBits, DENSHIFT_DEFAULT);
-                this.pcBlock (this.mixBufferV, this.predictorV, numSamples / dilate, this.coefsV[numUV - 1], numUV, chanBits, DENSHIFT_DEFAULT);
+                pcBlock (this.mixBufferU, this.predictorU, numSamples / dilate, this.coefsU[numUV - 1], numUV, chanBits, DENSHIFT_DEFAULT);
+                pcBlock (this.mixBufferV, this.predictorV, numSamples / dilate, this.coefsV[numUV - 1], numUV, chanBits, DENSHIFT_DEFAULT);
             }
 
             dilate = 8;
@@ -311,10 +310,10 @@ public class AlacEncoder
             }
 
             // Run the dynamic predictor and the lossless compression for both channels
-            this.pcBlock (this.mixBufferU, this.predictorU, numSamples, this.coefsU[numU - 1], numU, chanBits, DENSHIFT_DEFAULT);
+            pcBlock (this.mixBufferU, this.predictorU, numSamples, this.coefsU[numU - 1], numU, chanBits, DENSHIFT_DEFAULT);
             dynComp (pbFactor * PB0 / 4, this.predictorU, bitstream, numSamples, chanBits);
 
-            this.pcBlock (this.mixBufferV, this.predictorV, numSamples, this.coefsV[numV - 1], numV, chanBits, DENSHIFT_DEFAULT);
+            pcBlock (this.mixBufferV, this.predictorV, numSamples, this.coefsV[numV - 1], numV, chanBits, DENSHIFT_DEFAULT);
             dynComp (pbFactor * PB0 / 4, this.predictorV, bitstream, numSamples, chanBits);
 
             // If the compressed packet turned out to be bigger than an escape packet, chuck it
@@ -392,10 +391,10 @@ public class AlacEncoder
         {
             int dilate = 32;
             for (int converge = 0; converge < 7; converge++)
-                this.pcBlock (this.mixBufferU, this.predictorU, numSamples / dilate, this.coefsU[numU - 1], numU, chanBits, DENSHIFT_DEFAULT);
+                pcBlock (this.mixBufferU, this.predictorU, numSamples / dilate, this.coefsU[numU - 1], numU, chanBits, DENSHIFT_DEFAULT);
 
             dilate = 8;
-            this.pcBlock (this.mixBufferU, this.predictorU, numSamples / dilate, this.coefsU[numU - 1], numU, chanBits, DENSHIFT_DEFAULT);
+            pcBlock (this.mixBufferU, this.predictorU, numSamples / dilate, this.coefsU[numU - 1], numU, chanBits, DENSHIFT_DEFAULT);
 
             final BitWriter workBits = new BitWriter (this.workBuffer);
             final long bits1 = dynComp (pbFactor * PB0 / 4, this.predictorU, workBits, numSamples / dilate, chanBits);
@@ -439,7 +438,7 @@ public class AlacEncoder
                     bitstream.write (this.shiftBufferUV[index], shift);
 
             // Run the dynamic predictor with the best result
-            this.pcBlock (this.mixBufferU, this.predictorU, numSamples, this.coefsU[numU - 1], numU, chanBits, DENSHIFT_DEFAULT);
+            pcBlock (this.mixBufferU, this.predictorU, numSamples, this.coefsU[numU - 1], numU, chanBits, DENSHIFT_DEFAULT);
             dynComp (PB0, this.predictorU, bitstream, numSamples, chanBits);
 
             // If the compressed packet turned out to be bigger than an escape packet, chuck it
@@ -467,8 +466,8 @@ public class AlacEncoder
 
 
     /**
-     * Mix the interleaved stereo input into the U/V buffers and extract the shifted off bytes.
-     * This is a port of mix16(), mix24() and mix32() of matrix_enc.c.
+     * Mix the interleaved stereo input into the U/V buffers and extract the shifted off bytes. This
+     * is a port of mix16(), mix24() and mix32() of matrix_enc.c.
      *
      * @param input The interleaved input data
      * @param inputOffset The offset in bytes of the first sample frame
@@ -545,8 +544,8 @@ public class AlacEncoder
 
 
     /**
-     * Run the prediction of one block. This is a port of pc_block() of dp_enc.c (the special
-     * cases for 4 and 8 active coefficients are covered by the general case).
+     * Run the prediction of one block. This is a port of pc_block() of dp_enc.c (the special cases
+     * for 4 and 8 active coefficients are covered by the general case).
      *
      * @param in The input buffer with the samples
      * @param pc1 The output buffer for the prediction errors
@@ -556,7 +555,7 @@ public class AlacEncoder
      * @param chanbits The number of bits of one sample
      * @param denshift The rounding shift
      */
-    private void pcBlock (final int [] in, final int [] pc1, final int num, final short [] coefs, final int numactive, final int chanbits, final int denshift)
+    private static void pcBlock (final int [] in, final int [] pc1, final int num, final short [] coefs, final int numactive, final int chanbits, final int denshift)
     {
         final int chanshift = 32 - chanbits;
 
