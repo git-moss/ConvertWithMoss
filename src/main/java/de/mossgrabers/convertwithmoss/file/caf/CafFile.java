@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.aac.AacDecoder;
 import de.mossgrabers.convertwithmoss.file.alac.AlacDecoder;
 
 
@@ -175,8 +176,11 @@ public class CafFile
     private final List<CafRegion>     regions               = new ArrayList<> ();
     private final Map<String, String> information           = new TreeMap<> ();
     private long                      numberOfValidFrames   = -1;
+    private int                       primingFrames         = 0;
     private AlacDecoder               alacDecoder           = null;
     private boolean                   alacDecoderFailed     = false;
+    private AacDecoder                aacDecoder            = null;
+    private boolean                   aacDecoderFailed      = false;
 
 
     /**
@@ -290,8 +294,8 @@ public class CafFile
                     final InputStream packetTableStream = createChunkStream (inputStream, chunkSize);
                     final long numberOfPackets = StreamUtils.readUnsigned64 (packetTableStream, true);
                     this.numberOfValidFrames = StreamUtils.readUnsigned64 (packetTableStream, true);
-                    // The priming and remainder frames are not used
-                    StreamUtils.readSigned32 (packetTableStream, true);
+                    this.primingFrames = StreamUtils.readSigned32 (packetTableStream, true);
+                    // The remainder frames are not used
                     StreamUtils.readSigned32 (packetTableStream, true);
                     // The packet sizes for formats with a variable packet size, encoded as
                     // big-endian variable-length numbers with 7 bits per byte
@@ -353,10 +357,9 @@ public class CafFile
             chunkOut.reset ();
             StreamUtils.writeUnsigned64 (chunkOut, this.packetSizes.length, true);
             StreamUtils.writeUnsigned64 (chunkOut, this.numberOfValidFrames, true);
-            // No priming frames
-            StreamUtils.writeSigned32 (chunkOut, 0, true);
+            StreamUtils.writeSigned32 (chunkOut, this.primingFrames, true);
             // The number of unused frames in the last packet
-            StreamUtils.writeSigned32 (chunkOut, (int) ((long) this.packetSizes.length * this.audioDescriptionChunk.getFramesPerPacket () - this.numberOfValidFrames), true);
+            StreamUtils.writeSigned32 (chunkOut, (int) ((long) this.packetSizes.length * this.audioDescriptionChunk.getFramesPerPacket () - this.primingFrames - this.numberOfValidFrames), true);
             for (final int packetSize: this.packetSizes)
             {
                 // Encode as a big-endian variable-length number with 7 bits per byte
@@ -555,11 +558,13 @@ public class CafFile
      *
      * @param packetSizes The size in bytes of each packet in the audio data
      * @param numberOfValidFrames The number of valid sample frames of the audio data
+     * @param primingFrames The number of priming frames (the encoder delay)
      */
-    public void setPacketTable (final int [] packetSizes, final long numberOfValidFrames)
+    public void setPacketTable (final int [] packetSizes, final long numberOfValidFrames, final int primingFrames)
     {
         this.packetSizes = packetSizes;
         this.numberOfValidFrames = numberOfValidFrames;
+        this.primingFrames = primingFrames;
     }
 
 
@@ -614,6 +619,9 @@ public class CafFile
                 final int bitDepth = decoder.getBitDepth ();
                 return bitDepth == 16 || bitDepth == 24 || bitDepth == 32;
 
+            case CafAudioDescriptionChunk.FORMAT_MPEG4_AAC:
+                return this.getAacDecoder () != null && this.packetSizes != null;
+
             default:
                 return false;
         }
@@ -643,6 +651,8 @@ public class CafFile
                 return this.decodeLaw (true);
             case CafAudioDescriptionChunk.FORMAT_APPLE_LOSSLESS:
                 return this.decodeAlac ();
+            case CafAudioDescriptionChunk.FORMAT_MPEG4_AAC:
+                return this.decodeAac ();
             default:
                 throw new IOException ("Unsupported CAF audio data format: " + this.audioDescriptionChunk.getFormatName ());
         }
@@ -857,6 +867,70 @@ public class CafFile
         }
 
         return result;
+    }
+
+
+    /**
+     * Decode MPEG-4 AAC data to 16-bit PCM. The priming frames of the encoder delay are skipped
+     * per the packet table.
+     *
+     * @return The decoded data
+     * @throws IOException The data is malformed
+     */
+    private byte [] decodeAac () throws IOException
+    {
+        final AacDecoder decoder = this.getAacDecoder ();
+        if (decoder == null || this.packetSizes == null)
+            throw new IOException ("Malformed AAC data in CAF file.");
+
+        final int numberOfChannels = decoder.getNumberOfChannels ();
+        final int bytesPerFrame = numberOfChannels * 2;
+        final long totalFrames = this.getNumberOfFrames ();
+
+        final byte [] decoded = new byte [(this.packetSizes.length * AacDecoder.FRAME_LENGTH + this.primingFrames) * bytesPerFrame];
+        int dataOffset = 0;
+        int frameOffset = 0;
+        for (final int packetSize: this.packetSizes)
+        {
+            if (dataOffset + packetSize > this.audioData.length || (frameOffset + AacDecoder.FRAME_LENGTH) * bytesPerFrame > decoded.length)
+                throw new IOException ("Malformed AAC data in CAF file.");
+            frameOffset += decoder.decodePacket (this.audioData, dataOffset, packetSize, decoded, frameOffset * bytesPerFrame);
+            dataOffset += packetSize;
+        }
+
+        // Drop the priming frames and the padding of the last packet
+        final int copyFrames = (int) Math.min (totalFrames, frameOffset - this.primingFrames);
+        final byte [] result = new byte [Math.max (0, copyFrames) * bytesPerFrame];
+        System.arraycopy (decoded, this.primingFrames * bytesPerFrame, result, 0, result.length);
+        return result;
+    }
+
+
+    /**
+     * Get the decoder for MPEG-4 AAC audio data, created from the magic cookie.
+     *
+     * @return The decoder or null if the magic cookie is missing or malformed or the profile is
+     *         not supported
+     */
+    private AacDecoder getAacDecoder ()
+    {
+        if (this.aacDecoder == null && !this.aacDecoderFailed)
+        {
+            if (this.magicCookie == null)
+            {
+                this.aacDecoderFailed = true;
+                return null;
+            }
+            try
+            {
+                this.aacDecoder = new AacDecoder (this.magicCookie);
+            }
+            catch (final IOException _)
+            {
+                this.aacDecoderFailed = true;
+            }
+        }
+        return this.aacDecoder;
     }
 
 
