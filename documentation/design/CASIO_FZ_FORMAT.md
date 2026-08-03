@@ -22,6 +22,23 @@ the conversion. All multi-byte values are little-endian; in the C listings of th
   block, 24 bytes), voice blocks (4 voices of 192 bytes per block, 256 bytes stride), wave
   blocks (512 16-bit samples per block, little-endian).
 
+## Bare dump files
+
+* A bare dump per the document is the file head followed by the content blocks.
+* The `fzf` files written by the `fzdump` MIDI utility - the format in which the factory,
+  Soundwaves, Shareware and Livewire libraries circulate - have **no** file head: the content
+  starts directly with the first bank block. The layout is recovered from three u16 counters
+  in the system parameter area at the end of that block: number of voices at offset 1008,
+  content length in sectors at 1010 and wave blocks at 1012; bank blocks = content sectors -
+  wave blocks - voice blocks. Verified against all 36 files of the factory library, where the
+  largest wave end address of the voices matches the wave block counter exactly.
+* The two layouts are distinguished by the first block pointer pair: a file head holds a
+  valid sector range (2 <= start <= end < 1280) or zeroed pointers with plausible counters,
+  a bank block starts with the area count followed by the ascending high keys, which cannot
+  form such a range.
+* Some circulating files are truncated (shorter than the counters claim, e.g. `Tenor-Alto
+  Sax.fzf` of disk FL-6); the missing wave data is read as silence.
+
 ## Decisions and approximations
 
 * **Wave addresses**: `wavst`/`waved`/`genst`/`gened` and the loop addresses are word
@@ -43,5 +60,8 @@ the conversion. All multi-byte values are little-endian; in the C listings of th
 * **Multi-loops**: only the sustain loop (`loop_sus` 0-7) is converted; the timed transition
   loops before it have no model equivalent. Reversed mode (`0x101D`) maps to a reversed zone,
   cue mode (`0x2014`) plays as normal.
+* **Sounding mode is a bit field**: factory voices also contain undocumented values (e.g.
+  `0x0157` = normal without bit 7). Only `0x0000` is treated as silent and only `0x101D` as
+  reversed, everything else plays normal.
 * Writing has not been verified on real hardware yet; the reader and an independent
   re-implementation of the layout agree on every field of written images.

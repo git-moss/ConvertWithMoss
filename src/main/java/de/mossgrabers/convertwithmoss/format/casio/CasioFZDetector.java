@@ -106,9 +106,13 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
 
         final byte [] content = file.content ();
         final int voiceBlocks = (numberOfVoices + 3) / 4;
-        final int expectedLength = (numberOfBanks + voiceBlocks + numberOfWaveBlocks) * CasioFZDisk.SECTOR_SIZE;
-        if (numberOfVoices <= 0 || numberOfVoices > 64 || numberOfBanks > 8 || content.length < expectedLength)
+        final int parameterLength = (numberOfBanks + voiceBlocks) * CasioFZDisk.SECTOR_SIZE;
+        if (numberOfVoices <= 0 || numberOfVoices > 64 || numberOfBanks > 8 || content.length < parameterLength)
             throw new IOException ("Malformed FZ file: " + file.name ());
+        // Some circulating dump files are truncated; the missing wave data plays as silence
+        final int expectedLength = parameterLength + numberOfWaveBlocks * CasioFZDisk.SECTOR_SIZE;
+        if (content.length < expectedLength)
+            this.notifier.logError ("IDS_FZ_WAVE_TRUNCATED", file.name (), Integer.toString (expectedLength - content.length));
 
         // Read the banks
         final List<CasioFZBank> banks = new ArrayList<> ();
