@@ -61,7 +61,7 @@ public interface IMultisampleSource extends ISource
     /**
      * Inserts the given folder before the last part of the current sub-path. Ensures that the given
      * name works on all OSs.
-     * 
+     *
      * @param additionalFolder The name of the folder to insert
      */
     void extendSubPath (final String additionalFolder);

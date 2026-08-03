@@ -12,35 +12,35 @@ import java.util.List;
 
 
 /**
- * Encoder for MPEG-4 AAC Low Complexity (AAC-LC) audio data. The structure follows the AAC
- * encoder of the FFmpeg project (libavcodec/aacenc, LGPL 2.1 or later): window switching with
- * one frame of look-ahead, forward MDCT, per band scalefactor selection, codebook selection and
- * bitstream assembly. Instead of the 3GPP psychoacoustic model, the scalefactors are chosen for
- * a fixed quantization precision per band, which trades bit rate for simplicity. Mono and stereo
- * with 16-bit input are supported; stereo is coded as a channel pair without mid/side coding.
+ * Encoder for MPEG-4 AAC Low Complexity (AAC-LC) audio data. The structure follows the AAC encoder
+ * of the FFmpeg project (libavcodec/aacenc, LGPL 2.1 or later): window switching with one frame of
+ * look-ahead, forward MDCT, per band scalefactor selection, codebook selection and bitstream
+ * assembly. Instead of the 3GPP psychoacoustic model, the scalefactors are chosen for a fixed
+ * quantization precision per band, which trades bit rate for simplicity. Mono and stereo with
+ * 16-bit input are supported; stereo is coded as a channel pair without mid/side coding.
  *
  * @author Jürgen Moßgraber
  */
 public class AacEncoder
 {
     /** The number of samples of a full frame. */
-    public static final int     FRAME_LENGTH        = 1024;
+    public static final int     FRAME_LENGTH         = 1024;
 
     /** The number of priming samples (the delay of the MDCT framing). */
-    public static final int     PRIMING_FRAMES      = FRAME_LENGTH;
+    public static final int     PRIMING_FRAMES       = FRAME_LENGTH;
 
-    private static final int    ONLY_LONG_SEQUENCE  = 0;
-    private static final int    LONG_START_SEQUENCE = 1;
+    private static final int    ONLY_LONG_SEQUENCE   = 0;
+    private static final int    LONG_START_SEQUENCE  = 1;
     private static final int    EIGHT_SHORT_SEQUENCE = 2;
-    private static final int    LONG_STOP_SEQUENCE  = 3;
+    private static final int    LONG_STOP_SEQUENCE   = 3;
 
     /** The upper bound for the quantized value of the loudest coefficient of a band. */
-    private static final double QUANT_TARGET        = 40;
+    private static final double QUANT_TARGET         = 40;
 
     /** The maximum number of bits of one frame per channel (the AAC buffer limit). */
-    private static final int    MAX_FRAME_BITS      = 6144;
+    private static final int    MAX_FRAME_BITS       = 6144;
 
-    private static final int [] SAMPLE_RATES        =
+    private static final int [] SAMPLE_RATES         =
     {
         96000,
         88200,
@@ -61,11 +61,11 @@ public class AacEncoder
     private final int           sampleRateIndex;
     private final int           numChannels;
 
-    private static float [][]   mdctLong            = null;
-    private static float [][]   mdctShort           = null;
+    private static float [] []  mdctLong             = null;
+    private static float [] []  mdctShort            = null;
 
-    private final float []      sineLong            = new float [1024];
-    private final float []      sineShort           = new float [128];
+    private final float []      sineLong             = new float [1024];
+    private final float []      sineShort            = new float [128];
 
 
     /**
@@ -176,8 +176,8 @@ public class AacEncoder
 
 
     /**
-     * Encode interleaved 16-bit little-endian samples into AAC packets. The first packet
-     * contains {@link #PRIMING_FRAMES} priming samples.
+     * Encode interleaved 16-bit little-endian samples into AAC packets. The first packet contains
+     * {@link #PRIMING_FRAMES} priming samples.
      *
      * @param input The samples
      * @param inputOffset The offset in bytes of the first sample frame
@@ -190,7 +190,7 @@ public class AacEncoder
         final int numPackets = (PRIMING_FRAMES + totalFrames + FRAME_LENGTH - 1) / FRAME_LENGTH;
 
         // Extract the channels with the priming padding in front
-        final float [][] samples = new float [this.numChannels] [numPackets * FRAME_LENGTH + FRAME_LENGTH];
+        final float [] [] samples = new float [this.numChannels] [numPackets * FRAME_LENGTH + FRAME_LENGTH];
         for (int frame = 0; frame < totalFrames; frame++)
             for (int channel = 0; channel < this.numChannels; channel++)
             {
@@ -242,7 +242,7 @@ public class AacEncoder
      * @param packet The packet index
      * @return True if the frame should use eight short windows
      */
-    private boolean detectAttack (final float [][] samples, final int packet)
+    private boolean detectAttack (final float [] [] samples, final int packet)
     {
         final int start = packet * FRAME_LENGTH;
         double previousEnergy = 0;
@@ -273,10 +273,11 @@ public class AacEncoder
      * @param samples The channel samples
      * @param packet The packet index
      * @param windowSequence The window sequence of the frame
+     * @param scalefactorBoost The boost factor
      * @return The encoded packet
      * @throws IOException Could not encode the frame
      */
-    private byte [] encodeFrame (final float [][] samples, final int packet, final int windowSequence, final int scalefactorBoost) throws IOException
+    private byte [] encodeFrame (final float [] [] samples, final int packet, final int windowSequence, final int scalefactorBoost) throws IOException
     {
         final BitWriter bits = new BitWriter (new byte [16384]);
 
@@ -341,10 +342,9 @@ public class AacEncoder
      * @param packet The packet index
      * @param windowSequence The window sequence
      * @param writeIcsInfo True to write the ICS info (mono element)
-     * @param scalefactorBoost Added to all scalefactors to reduce the frame size
-     * @throws IOException Could not encode the channel
+     * @param scalefactorBoost Added to all scale factors to reduce the frame size
      */
-    private void encodeChannel (final BitWriter bits, final float [] samples, final int packet, final int windowSequence, final boolean writeIcsInfo, final int scalefactorBoost) throws IOException
+    private void encodeChannel (final BitWriter bits, final float [] samples, final int packet, final int windowSequence, final boolean writeIcsInfo, final int scalefactorBoost)
     {
         final boolean isShort = windowSequence == EIGHT_SHORT_SEQUENCE;
         final int numWindows = isShort ? 8 : 1;
@@ -358,7 +358,7 @@ public class AacEncoder
         // coefficient, then enforce the maximum scalefactor distance of 60 between coded bands
         final int numBands = numWindows * maxSfb;
         final int [] scalefactors = new int [numBands];
-        final int [][] quantized = new int [numBands] [];
+        final int [] [] quantized = new int [numBands] [];
         final int [] bandType = new int [numBands];
         final boolean [] active = new boolean [numBands];
         for (int window = 0; window < numWindows; window++)
@@ -373,7 +373,7 @@ public class AacEncoder
                 if (maxValue < 0.01f)
                     continue;
                 active[index] = true;
-                scalefactors[index] = Math.clamp ((int) Math.ceil (100 + 4 * Math.log (maxValue / Math.pow (QUANT_TARGET, 4.0 / 3.0)) / Math.log (2)) + scalefactorBoost, 0, 255);
+                scalefactors[index] = Math.clamp ((int) Math.ceil (100 + 4 * Math.log (maxValue / Math.pow (QUANT_TARGET, 4.0 / 3.0)) / Math.log (2)) + (long) scalefactorBoost, 0, 255);
             }
 
         int previous = -1;
@@ -635,7 +635,7 @@ public class AacEncoder
 
     private static void mdctForward (final float [] input, final float [] output, final int outputOffset, final int n2)
     {
-        final float [][] matrix = getMdctMatrix (n2);
+        final float [] [] matrix = getMdctMatrix (n2);
         final int n = n2 * 2;
         for (int k = 0; k < n2; k++)
         {
@@ -648,7 +648,7 @@ public class AacEncoder
     }
 
 
-    private static synchronized float [][] getMdctMatrix (final int n2)
+    private static synchronized float [] [] getMdctMatrix (final int n2)
     {
         if (n2 == 1024)
         {
@@ -662,10 +662,10 @@ public class AacEncoder
     }
 
 
-    private static float [][] createMdctMatrix (final int n2)
+    private static float [] [] createMdctMatrix (final int n2)
     {
         final int n = n2 * 2;
-        final float [][] matrix = new float [n2] [n];
+        final float [] [] matrix = new float [n2] [n];
         final double n0 = (n2 + 1.0) / 2.0;
         for (int k = 0; k < n2; k++)
             for (int sample = 0; sample < n; sample++)

@@ -9,61 +9,64 @@ import java.io.IOException;
 
 /**
  * Decoder for the Apple Lossless Audio Codec (ALAC). This is a port of the decoder part of the
- * reference implementation published by Apple at https://github.com/macosforge/alac (Apache
- * License 2.0, (c) 2011 Apple Inc.).
+ * reference implementation published by Apple at https://github.com/macosforge/alac (Apache License
+ * 2.0, (c) 2011 Apple Inc.).
  *
  * @author Jürgen Moßgraber
  */
 public class AlacDecoder
 {
     /** Single Channel Element. */
-    private static final int  ID_SCE                 = 0;
+    private static final int ID_SCE                = 0;
     /** Channel Pair Element. */
-    private static final int  ID_CPE                 = 1;
+    private static final int ID_CPE                = 1;
     /** Coupling Channel Element. */
-    private static final int  ID_CCE                 = 2;
+    @SuppressWarnings("unused")
+    private static final int ID_CCE                = 2;
     /** LFE Channel Element. */
-    private static final int  ID_LFE                 = 3;
+    private static final int ID_LFE                = 3;
     /** Data Stream Element. */
-    private static final int  ID_DSE                 = 4;
+    private static final int ID_DSE                = 4;
     /** Program Config Element. */
-    private static final int  ID_PCE                 = 5;
+    @SuppressWarnings("unused")
+    private static final int ID_PCE                = 5;
     /** Fill Element. */
-    private static final int  ID_FIL                 = 6;
+    private static final int ID_FIL                = 6;
     /** Frame End Element. */
-    private static final int  ID_END                 = 7;
+    private static final int ID_END                = 7;
 
     // Constants of the adaptive Golomb decoder
-    private static final int  QBSHIFT                = 9;
-    private static final int  QB                     = 1 << QBSHIFT;
-    private static final int  MMULSHIFT              = 2;
-    private static final int  MDENSHIFT              = QBSHIFT - MMULSHIFT - 1;
-    private static final int  MOFF                   = 1 << MDENSHIFT - 2;
-    private static final int  BITOFF                 = 24;
-    private static final int  MAX_PREFIX_16          = 9;
-    private static final int  MAX_PREFIX_32          = 9;
-    private static final int  MAX_DATATYPE_BITS_16   = 16;
-    private static final int  N_MAX_MEAN_CLAMP       = 0xFFFF;
-    private static final int  N_MEAN_CLAMP_VAL       = 0xFFFF;
+    private static final int QBSHIFT               = 9;
+    private static final int QB                    = 1 << QBSHIFT;
+    private static final int MMULSHIFT             = 2;
+    private static final int MDENSHIFT             = QBSHIFT - MMULSHIFT - 1;
+    private static final int MOFF                  = 1 << MDENSHIFT - 2;
+    private static final int BITOFF                = 24;
+    private static final int MAX_PREFIX_16         = 9;
+    private static final int MAX_PREFIX_32         = 9;
+    private static final int MAX_DATATYPE_BITS_16  = 16;
+    private static final int N_MAX_MEAN_CLAMP      = 0xFFFF;
+    private static final int N_MEAN_CLAMP_VAL      = 0xFFFF;
 
-    private static final int  MAX_SUPPORTED_VERSION  = 0;
+    private static final int MAX_SUPPORTED_VERSION = 0;
 
     // The ALAC specific configuration from the magic cookie
-    private final int         frameLength;
-    private final int         bitDepth;
-    private final int         pb;
-    private final int         mb;
-    private final int         kb;
-    private final int         numChannels;
-    private final int         maxRun;
+    private final int        frameLength;
+    private final int        bitDepth;
+    private final int        pb;
+    private final int        mb;
+    private final int        kb;
+    private final int        numChannels;
+    @SuppressWarnings("unused")
+    private final int        maxRun;
 
     // The working buffers
-    private final int []      mixBufferU;
-    private final int []      mixBufferV;
-    private final int []      predictor;
-    private final int []      shiftBuffer;
-    private final short []    coefsU                 = new short [32];
-    private final short []    coefsV                 = new short [32];
+    private final int []     mixBufferU;
+    private final int []     mixBufferV;
+    private final int []     predictor;
+    private final int []     shiftBuffer;
+    private final short []   coefsU                = new short [32];
+    private final short []   coefsV                = new short [32];
 
 
     /**
@@ -574,8 +577,8 @@ public class AlacDecoder
 
 
     /**
-     * Decompress one channel with the adaptive Golomb decoder into the predictor buffer. This is
-     * a port of dyn_decomp() of ag_dec.c.
+     * Decompress one channel with the adaptive Golomb decoder into the predictor buffer. This is a
+     * port of dyn_decomp() of ag_dec.c.
      *
      * @param bits The bit reader
      * @param pbFactor The already scaled 'pb' parameter
@@ -702,8 +705,8 @@ public class AlacDecoder
 
 
     /**
-     * Reverse the prediction of one block. This is a port of unpc_block() of dp_dec.c (the
-     * special cases for 4 and 8 active coefficients are covered by the general case).
+     * Reverse the prediction of one block. This is a port of unpc_block() of dp_dec.c (the special
+     * cases for 4 and 8 active coefficients are covered by the general case).
      *
      * @param pc1 The input buffer with the prediction errors
      * @param out The output buffer, may be the same as the input buffer

@@ -274,68 +274,74 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
         descriptionChunk.setChannelsPerFrame (numberOfChannels);
         cafFile.setAudioDescriptionChunk (descriptionChunk);
 
-        if (outputFormat == SampleFileFormat.CAF_AAC)
+        switch (outputFormat)
         {
-            // Compress the audio data with MPEG-4 AAC
-            final AacEncoder encoder = new AacEncoder (formatChunk.getSampleRate (), numberOfChannels);
-            final int bytesPerFrame = numberOfChannels * bytesPerSample;
-            final int totalFrames = data.length / bytesPerFrame;
-
-            final ByteArrayOutputStream packetsOut = new ByteArrayOutputStream ();
-            final java.util.List<byte []> packets = encoder.encode (data, 0, totalFrames);
-            final int [] packetSizes = new int [packets.size ()];
-            for (int packet = 0; packet < packets.size (); packet++)
+            case SampleFileFormat.CAF_AAC:
             {
-                packetsOut.write (packets.get (packet));
-                packetSizes[packet] = packets.get (packet).length;
+                // Compress the audio data with MPEG-4 AAC
+                final AacEncoder aacEncoder = new AacEncoder (formatChunk.getSampleRate (), numberOfChannels);
+                final int bytesPerFrame = numberOfChannels * bytesPerSample;
+                final int totalFrames = data.length / bytesPerFrame;
+
+                final ByteArrayOutputStream packetsOut = new ByteArrayOutputStream ();
+                final java.util.List<byte []> packets = aacEncoder.encode (data, 0, totalFrames);
+                final int [] packetSizes = new int [packets.size ()];
+                for (int packet = 0; packet < packets.size (); packet++)
+                {
+                    packetsOut.write (packets.get (packet));
+                    packetSizes[packet] = packets.get (packet).length;
+                }
+
+                descriptionChunk.setFormatID (CafAudioDescriptionChunk.FORMAT_MPEG4_AAC);
+                // The format flags of AAC contain the MPEG-4 audio object type (2 = low complexity)
+                descriptionChunk.setFormatFlags (2);
+                descriptionChunk.setBytesPerPacket (0);
+                descriptionChunk.setFramesPerPacket (AacEncoder.FRAME_LENGTH);
+                descriptionChunk.setBitsPerChannel (0);
+                cafFile.setMagicCookie (aacEncoder.getMagicCookie ());
+                cafFile.setPacketTable (packetSizes, totalFrames, AacEncoder.PRIMING_FRAMES);
+                cafFile.setAudioData (packetsOut.toByteArray ());
+                break;
             }
 
-            descriptionChunk.setFormatID (CafAudioDescriptionChunk.FORMAT_MPEG4_AAC);
-            // The format flags of AAC contain the MPEG-4 audio object type (2 = low complexity)
-            descriptionChunk.setFormatFlags (2);
-            descriptionChunk.setBytesPerPacket (0);
-            descriptionChunk.setFramesPerPacket (AacEncoder.FRAME_LENGTH);
-            descriptionChunk.setBitsPerChannel (0);
-            cafFile.setMagicCookie (encoder.getMagicCookie ());
-            cafFile.setPacketTable (packetSizes, totalFrames, AacEncoder.PRIMING_FRAMES);
-            cafFile.setAudioData (packetsOut.toByteArray ());
-        }
-        else if (outputFormat == SampleFileFormat.CAF_ALAC)
-        {
-            // Compress the audio data with Apple Lossless
-            final AlacEncoder encoder = new AlacEncoder (bitsPerSample, numberOfChannels, formatChunk.getSampleRate (), ALAC_FRAME_LENGTH);
-            final int bytesPerFrame = numberOfChannels * bytesPerSample;
-            final int totalFrames = data.length / bytesPerFrame;
-
-            final ByteArrayOutputStream packetsOut = new ByteArrayOutputStream ();
-            final int numberOfPackets = Math.max (1, Math.ceilDiv (totalFrames, ALAC_FRAME_LENGTH));
-            final int [] packetSizes = new int [numberOfPackets];
-            for (int packet = 0; packet < numberOfPackets; packet++)
+            case SampleFileFormat.CAF_ALAC:
             {
-                final int frameOffset = packet * ALAC_FRAME_LENGTH;
-                final byte [] packetData = encoder.encodePacket (data, frameOffset * bytesPerFrame, Math.min (ALAC_FRAME_LENGTH, totalFrames - frameOffset));
-                packetsOut.write (packetData);
-                packetSizes[packet] = packetData.length;
+                // Compress the audio data with Apple Lossless
+                final AlacEncoder alacEncoder = new AlacEncoder (bitsPerSample, numberOfChannels, formatChunk.getSampleRate (), ALAC_FRAME_LENGTH);
+                final int bytesPerFrame = numberOfChannels * bytesPerSample;
+                final int totalFrames = data.length / bytesPerFrame;
+
+                final ByteArrayOutputStream packetsOut = new ByteArrayOutputStream ();
+                final int numberOfPackets = Math.max (1, Math.ceilDiv (totalFrames, ALAC_FRAME_LENGTH));
+                final int [] packetSizes = new int [numberOfPackets];
+                for (int packet = 0; packet < numberOfPackets; packet++)
+                {
+                    final int frameOffset = packet * ALAC_FRAME_LENGTH;
+                    final byte [] packetData = alacEncoder.encodePacket (data, frameOffset * bytesPerFrame, Math.min (ALAC_FRAME_LENGTH, totalFrames - frameOffset));
+                    packetsOut.write (packetData);
+                    packetSizes[packet] = packetData.length;
+                }
+
+                descriptionChunk.setFormatID (CafAudioDescriptionChunk.FORMAT_APPLE_LOSSLESS);
+                // The format flags of Apple Lossless encode the resolution of the source data
+                descriptionChunk.setFormatFlags (bitsPerSample == 16 ? 1 : bitsPerSample == 24 ? 3 : 4);
+                descriptionChunk.setBytesPerPacket (0);
+                descriptionChunk.setFramesPerPacket (ALAC_FRAME_LENGTH);
+                descriptionChunk.setBitsPerChannel (0);
+                cafFile.setMagicCookie (alacEncoder.getMagicCookie ());
+                cafFile.setPacketTable (packetSizes, totalFrames, 0);
+                cafFile.setAudioData (packetsOut.toByteArray ());
+                break;
             }
 
-            descriptionChunk.setFormatID (CafAudioDescriptionChunk.FORMAT_APPLE_LOSSLESS);
-            // The format flags of Apple Lossless encode the resolution of the source data
-            descriptionChunk.setFormatFlags (bitsPerSample == 16 ? 1 : bitsPerSample == 24 ? 3 : 4);
-            descriptionChunk.setBytesPerPacket (0);
-            descriptionChunk.setFramesPerPacket (ALAC_FRAME_LENGTH);
-            descriptionChunk.setBitsPerChannel (0);
-            cafFile.setMagicCookie (encoder.getMagicCookie ());
-            cafFile.setPacketTable (packetSizes, totalFrames, 0);
-            cafFile.setAudioData (packetsOut.toByteArray ());
-        }
-        else
-        {
-            descriptionChunk.setFormatID (CafAudioDescriptionChunk.FORMAT_LINEAR_PCM);
-            descriptionChunk.setFormatFlags (CafAudioDescriptionChunk.FLAG_IS_LITTLE_ENDIAN | (isFloat ? CafAudioDescriptionChunk.FLAG_IS_FLOAT : 0));
-            descriptionChunk.setBytesPerPacket (numberOfChannels * bytesPerSample);
-            descriptionChunk.setFramesPerPacket (1);
-            descriptionChunk.setBitsPerChannel (bitsPerSample);
-            cafFile.setAudioData (data);
+            default:
+                descriptionChunk.setFormatID (CafAudioDescriptionChunk.FORMAT_LINEAR_PCM);
+                descriptionChunk.setFormatFlags (CafAudioDescriptionChunk.FLAG_IS_LITTLE_ENDIAN | (isFloat ? CafAudioDescriptionChunk.FLAG_IS_FLOAT : 0));
+                descriptionChunk.setBytesPerPacket (numberOfChannels * bytesPerSample);
+                descriptionChunk.setFramesPerPacket (1);
+                descriptionChunk.setBitsPerChannel (bitsPerSample);
+                cafFile.setAudioData (data);
+                break;
         }
 
         // The instrument chunk with a region for the loop

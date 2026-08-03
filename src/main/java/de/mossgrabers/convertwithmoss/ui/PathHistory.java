@@ -28,7 +28,7 @@ public class PathHistory
 
     /**
      * Constructor.
-     * 
+     *
      * @param propertyPrefix The prefix to use for reading/writing the history
      */
     public PathHistory (final String propertyPrefix)
@@ -39,7 +39,7 @@ public class PathHistory
 
     /**
      * Get all paths.
-     * 
+     *
      * @return The paths
      */
     public List<String> getPaths ()
@@ -50,7 +50,7 @@ public class PathHistory
 
     /**
      * Loads the history from the given configuration.
-     * 
+     *
      * @param config The configuration from which to load the history
      */
     public void load (final BasicConfig config)
@@ -70,7 +70,7 @@ public class PathHistory
 
     /**
      * Saves the history to the given configuration.
-     * 
+     *
      * @param config The configuration to which to save the history
      */
     public void save (final BasicConfig config)
@@ -87,7 +87,7 @@ public class PathHistory
     /**
      * Updates (or adds if not present) the given path with the given type. The path is moved
      * to/inserted at the first position.
-     * 
+     *
      * @param path The path to add/update
      * @param type The conversion type (full description label)
      */
@@ -107,7 +107,7 @@ public class PathHistory
 
     /**
      * Get the type for the given path.
-     * 
+     *
      * @param path The path for which to get the type
      * @return The type if one is stored
      */

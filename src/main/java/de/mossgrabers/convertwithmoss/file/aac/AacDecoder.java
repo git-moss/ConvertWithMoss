@@ -9,41 +9,43 @@ import java.util.Arrays;
 
 
 /**
- * Decoder for MPEG-4 AAC Low Complexity (AAC-LC) audio data. This is a port of the AAC decoder
- * of the FFmpeg project (libavcodec/aac, LGPL 2.1 or later) reduced to the low complexity
- * profile with 1024 samples per frame and up to two channels. High efficiency extensions (SBR,
- * PS) and the other audio object types are not supported.
+ * Decoder for MPEG-4 AAC Low Complexity (AAC-LC) audio data. This is a port of the AAC decoder of
+ * the FFmpeg project (libavcodec/aac, LGPL 2.1 or later) reduced to the low complexity profile with
+ * 1024 samples per frame and up to two channels. High efficiency extensions (SBR, PS) and the other
+ * audio object types are not supported.
  *
  * @author Jürgen Moßgraber
  */
 public class AacDecoder
 {
     /** The number of samples of a full frame. */
-    public static final int       FRAME_LENGTH        = 1024;
+    public static final int       FRAME_LENGTH         = 1024;
 
-    private static final int      ID_SCE              = 0;
-    private static final int      ID_CPE              = 1;
-    private static final int      ID_CCE              = 2;
-    private static final int      ID_LFE              = 3;
-    private static final int      ID_DSE              = 4;
-    private static final int      ID_PCE              = 5;
-    private static final int      ID_FIL              = 6;
-    private static final int      ID_END              = 7;
+    private static final int      ID_SCE               = 0;
+    private static final int      ID_CPE               = 1;
+    @SuppressWarnings("unused")
+    private static final int      ID_CCE               = 2;
+    private static final int      ID_LFE               = 3;
+    private static final int      ID_DSE               = 4;
+    private static final int      ID_PCE               = 5;
+    private static final int      ID_FIL               = 6;
+    private static final int      ID_END               = 7;
 
-    private static final int      ONLY_LONG_SEQUENCE  = 0;
-    private static final int      LONG_START_SEQUENCE = 1;
+    @SuppressWarnings("unused")
+    private static final int      ONLY_LONG_SEQUENCE   = 0;
+    private static final int      LONG_START_SEQUENCE  = 1;
     private static final int      EIGHT_SHORT_SEQUENCE = 2;
-    private static final int      LONG_STOP_SEQUENCE  = 3;
+    private static final int      LONG_STOP_SEQUENCE   = 3;
 
-    private static final int      BAND_TYPE_ZERO      = 0;
+    private static final int      BAND_TYPE_ZERO       = 0;
     private static final int      BAND_TYPE_FIRST_PAIR = 5;
-    private static final int      BAND_TYPE_ESC       = 11;
-    private static final int      BAND_TYPE_NOISE     = 13;
+    private static final int      BAND_TYPE_ESC        = 11;
+    private static final int      BAND_TYPE_NOISE      = 13;
     private static final int      BAND_TYPE_INTENSITY2 = 14;
-    private static final int      BAND_TYPE_INTENSITY = 15;
+    private static final int      BAND_TYPE_INTENSITY  = 15;
 
     /** The sample rates of the sampling frequency index. */
-    private static final int []   SAMPLE_RATES        =
+    private static final int []   SAMPLE_RATES         =
     {
         96000,
         88200,
@@ -67,50 +69,50 @@ public class AacDecoder
     private final HuffmanTable    scalefactorTable;
     private final HuffmanTable [] spectralTables;
 
-    private final float []        kbdLong             = new float [1024];
-    private final float []        kbdShort            = new float [128];
-    private final float []        sineLong            = new float [1024];
-    private final float []        sineShort           = new float [128];
+    private final float []        kbdLong              = new float [1024];
+    private final float []        kbdShort             = new float [128];
+    private final float []        sineLong             = new float [1024];
+    private final float []        sineShort            = new float [128];
 
     // The decoding state of up to two channels
     private final Channel []      channels;
-    private int                   randomState         = 0x1F2E3D4C;
+    private int                   randomState          = 0x1F2E3D4C;
 
     // The inverse MDCT as precomputed cosine matrices: exact, and fast enough for material of
     // sample length
-    private static float [][]     imdctLong           = null;
-    private static float [][]     imdctShort          = null;
+    private static float [] []    imdctLong            = null;
+    private static float [] []    imdctShort           = null;
 
 
     /** The per channel decoding state. */
     private static final class Channel
     {
-        final float [] coefficients = new float [FRAME_LENGTH];
-        final float [] output       = new float [FRAME_LENGTH];
-        final float [] overlap      = new float [FRAME_LENGTH];
-        final int []   bandType     = new int [120];
-        final int []   scalefactors = new int [120];
+        final float []       coefficients    = new float [FRAME_LENGTH];
+        final float []       output          = new float [FRAME_LENGTH];
+        final float []       overlap         = new float [FRAME_LENGTH];
+        final int []         bandType        = new int [120];
+        final int []         scalefactors    = new int [120];
         // The ICS info
-        int            windowSequence;
-        int            windowShape;
-        int            previousWindowShape;
-        int            maxSfb;
-        int            numWindows;
-        int            numWindowGroups;
-        final int []   groupLen     = new int [8];
+        int                  windowSequence;
+        int                  windowShape;
+        int                  previousWindowShape;
+        int                  maxSfb;
+        int                  numWindows;
+        int                  numWindowGroups;
+        final int []         groupLen        = new int [8];
         // TNS
-        boolean        tnsPresent;
-        final int []   tnsNFilt     = new int [8];
-        final int [][] tnsLength    = new int [8] [4];
-        final int [][] tnsOrder     = new int [8] [4];
-        final int [][] tnsDirection = new int [8] [4];
-        final float [][][] tnsCoefficients = new float [8] [4] [20];
+        boolean              tnsPresent;
+        final int []         tnsNFilt        = new int [8];
+        final int [] []      tnsLength       = new int [8] [4];
+        final int [] []      tnsOrder        = new int [8] [4];
+        final int [] []      tnsDirection    = new int [8] [4];
+        final float [] [] [] tnsCoefficients = new float [8] [4] [20];
     }
 
 
     /**
-     * Constructor. Parses the AudioSpecificConfig, optionally wrapped in an MPEG-4 esds
-     * descriptor (the magic cookie of CAF files).
+     * Constructor. Parses the AudioSpecificConfig, optionally wrapped in an MPEG-4 esds descriptor
+     * (the magic cookie of CAF files).
      *
      * @param magicCookie The AudioSpecificConfig or esds descriptor
      * @throws IOException The configuration is not supported
@@ -353,7 +355,7 @@ public class AacDecoder
 
         final int [] swbOffset = this.getSwbOffsets (channel);
 
-        this.decodeSectionData (bits, channel);
+        decodeSectionData (bits, channel);
         this.decodeScalefactors (bits, channel, globalGain);
 
         // Pulse data is only allowed with long windows
@@ -377,7 +379,7 @@ public class AacDecoder
 
         channel.tnsPresent = bits.read (1) != 0;
         if (channel.tnsPresent)
-            this.decodeTns (bits, channel);
+            decodeTns (bits, channel);
 
         if (bits.read (1) != 0)
             throw new IOException ("Unsupported AAC gain control data (SSR).");
@@ -451,7 +453,7 @@ public class AacDecoder
     }
 
 
-    private void decodeSectionData (final BitReader bits, final Channel channel) throws IOException
+    private static void decodeSectionData (final BitReader bits, final Channel channel) throws IOException
     {
         final int bitsPerLength = channel.windowSequence == EIGHT_SHORT_SEQUENCE ? 3 : 5;
         final int escape = (1 << bitsPerLength) - 1;
@@ -525,7 +527,7 @@ public class AacDecoder
     }
 
 
-    private void decodeTns (final BitReader bits, final Channel channel) throws IOException
+    private static void decodeTns (final BitReader bits, final Channel channel) throws IOException
     {
         final boolean isShort = channel.windowSequence == EIGHT_SHORT_SEQUENCE;
         for (int window = 0; window < channel.numWindows; window++)
@@ -653,8 +655,8 @@ public class AacDecoder
      *
      * @param channel The channel
      * @param swbOffset The scalefactor band offsets
-     * @param isSecondChannel True if this is the second channel of a pair whose intensity bands
-     *            are filled later
+     * @param isSecondChannel True if this is the second channel of a pair whose intensity bands are
+     *            filled later
      */
     private void dequantize (final Channel channel, final int [] swbOffset, final boolean isSecondChannel)
     {
@@ -794,8 +796,8 @@ public class AacDecoder
 
 
     /**
-     * Apply the temporal noise shaping filters on the spectrum. This is a port of the TNS filter
-     * of the FFmpeg AAC decoder.
+     * Apply the temporal noise shaping filters on the spectrum. This is a port of the TNS filter of
+     * the FFmpeg AAC decoder.
      *
      * @param channel The channel
      */
@@ -935,7 +937,7 @@ public class AacDecoder
      */
     private static float [] imdct (final float [] input, final int inputOffset, final int n2)
     {
-        final float [][] matrix = getImdctMatrix (n2);
+        final float [] [] matrix = getImdctMatrix (n2);
         final int n = n2 * 2;
         final float [] output = new float [n];
         for (int sample = 0; sample < n; sample++)
@@ -950,7 +952,7 @@ public class AacDecoder
     }
 
 
-    private static synchronized float [][] getImdctMatrix (final int n2)
+    private static synchronized float [] [] getImdctMatrix (final int n2)
     {
         if (n2 == 1024)
         {
@@ -964,10 +966,10 @@ public class AacDecoder
     }
 
 
-    private static float [][] createImdctMatrix (final int n2)
+    private static float [] [] createImdctMatrix (final int n2)
     {
         final int n = n2 * 2;
-        final float [][] matrix = new float [n] [n2];
+        final float [] [] matrix = new float [n] [n2];
         final double n0 = (n2 + 1.0) / 2.0;
         for (int sample = 0; sample < n; sample++)
             for (int k = 0; k < n2; k++)
@@ -1152,7 +1154,7 @@ public class AacDecoder
         for (int i = 0; i <= n / 2; i++)
         {
             temp[i] = bessel (Math.sqrt (i * (double) (n - i) * alpha2));
-            scale += temp[i] * (i > 0 && i < n / 2 ? 2 : 1);
+            scale += temp[i] * (i > 0 && i < n / 2.0 ? 2 : 1);
         }
         scale = 1.0 / (scale + 1);
 
@@ -1191,8 +1193,8 @@ public class AacDecoder
     static final class HuffmanTable
     {
         // Symbol lookup by (length, code)
-        private final int [][] symbols;
-        private final int      maxLength;
+        private final int [] [] symbols;
+        private final int       maxLength;
 
 
         HuffmanTable (final int [] codes, final int [] bits)

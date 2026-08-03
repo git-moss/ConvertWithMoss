@@ -903,13 +903,6 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
 
 
     /**
-     * Get the attribute value for the given key. The value is searched starting from the region
-     * upwards to group, master and finally global.
-     *
-     * @param key The key of the value to lookup
-     * @return The optional value or empty if not found
-     */
-    /**
      * Read all amplifier velocity curve opcodes (amp_velcurve_N) and calculate the power p of the
      * closest matching power law x^p on the normalized velocity with a least squares fit in the
      * logarithmic domain.
@@ -962,6 +955,13 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
     }
 
 
+    /**
+     * Get the attribute value for the given key. The value is searched starting from the region
+     * upwards to group, master and finally global.
+     *
+     * @param key The key of the value to lookup
+     * @return The optional value or empty if not found
+     */
     private Optional<String> getAttribute (final String key)
     {
         String value = this.regionAttributes.get (key);

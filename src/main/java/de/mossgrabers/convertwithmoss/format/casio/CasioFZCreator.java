@@ -19,6 +19,7 @@ import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -27,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -63,7 +65,7 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String name = createSafeFilename (multisampleSource.getName ());
+        final String name = FileUtils.createSafeFilename (multisampleSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, name, "img");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
@@ -86,7 +88,10 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
         for (int i = 0; i < zones.size (); i++)
         {
             final ISampleZone zone = zones.get (i);
-            final WaveFile waveFile = AudioFileUtils.convertToWav (zone.getSampleData ().get (), DESTINATION_FORMAT);
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (sampleData.isEmpty ())
+                continue;
+            final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
             final FormatChunk formatChunk = waveFile.getFormatChunk ();
             final byte [] mono = convertToMono (waveFile.getDataChunk ().getData (), formatChunk.getNumberOfChannels ());
             samples.add (mono);
@@ -131,7 +136,7 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
             bank.midiChannel[i] = 0;
             // Enable all 8 sound generators for the area
             bank.generators[i] = 0xFF;
-            bank.volume[i] = (int) Math.clamp (Math.round (127.0 * Math.pow (10, Math.min (0, zone.getGain ()) / 20.0)), 1, 127);
+            bank.volume[i] = Math.clamp (Math.round (127.0 * Math.pow (10, Math.min (0, zone.getGain ()) / 20.0)), 1, 127);
             bank.voicePointer[i] = i;
 
             waveAddress += numFrames;
@@ -195,7 +200,7 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
         // (1/256 semitone steps)
         voice.sampleRateIndex = sampleRate >= 27000 ? 0 : sampleRate >= 13500 ? 1 : 2;
         final double rateCompensation = 12.0 * Math.log (sampleRate / (double) voice.getSampleRate ()) / Math.log (2);
-        voice.pitch = (int) Math.clamp (Math.round ((zone.getTuning () + rateCompensation) * 256.0), Short.MIN_VALUE, Short.MAX_VALUE);
+        voice.pitch = Math.clamp (Math.round ((zone.getTuning () + rateCompensation) * 256.0), Short.MIN_VALUE, Short.MAX_VALUE);
 
         voice.lowKey = Math.clamp (zone.getKeyLow (), 0, 127);
         voice.highKey = Math.clamp (limitToDefault (zone.getKeyHigh (), 127), 0, 127);
@@ -218,12 +223,12 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
             voice.loopEnd = 0;
             voice.loopStart[0] = waveAddress + Math.clamp (loop.getStart (), 0, numFrames);
             voice.loopEndAddress[0] = waveAddress + Math.clamp (loop.getEnd (), 0, numFrames);
-            voice.loopCrossfade[0] = (int) Math.clamp (Math.round (loop.getCrossfade () * 1023.0), 0, 1023);
+            voice.loopCrossfade[0] = Math.clamp (Math.round (loop.getCrossfade () * 1023.0), 0, 1023);
         }
 
         // The velocity to amplitude modulation and the key follow
-        voice.velocityAmpDepth = (int) Math.clamp (Math.round (zone.getAmplitudeVelocityModulator ().getDepth () * 127.0), -127, 127);
-        voice.ampKeyFollow = (int) Math.clamp (Math.round (zone.getAmplitudeKeyTracking () * 127.0), -127, 127);
+        voice.velocityAmpDepth = Math.clamp (Math.round (zone.getAmplitudeVelocityModulator ().getDepth () * 127.0), -127, 127);
+        voice.ampKeyFollow = Math.clamp (Math.round (zone.getAmplitudeKeyTracking () * 127.0), -127, 127);
 
         // The amplitude envelope
         final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
@@ -237,14 +242,14 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
         {
             final IFilter filter = filterOpt.get ();
             voice.cutoff = frequencyToCutoff (filter.getCutoff ());
-            voice.resonance = (int) Math.clamp (Math.round (filter.getResonance () * 15.0), 0, 15) << 3;
+            voice.resonance = Math.clamp (Math.round (filter.getResonance () * 15.0), 0, 15) << 3;
 
             final double filterDepth = filter.getCutoffEnvelopeModulator ().getDepth ();
             if (filterDepth > 0)
             {
                 final IEnvelope filterEnvelope = filter.getCutoffEnvelopeModulator ().getSource ();
                 convertEnvelope (voice.filterRate, voice.filterStop, filterEnvelope);
-                final int maxLevel = (int) Math.clamp (Math.round (filterDepth * 255.0), 0, 255);
+                final int maxLevel = Math.clamp (Math.round (filterDepth * 255.0), 0, 255);
                 for (int i = 0; i < CasioFZVoice.NUM_ENVELOPE_STAGES; i++)
                     voice.filterStop[i] = Math.min (voice.filterStop[i], maxLevel);
                 voice.filterSustainPoint = 1;
