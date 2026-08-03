@@ -67,6 +67,7 @@ The following multi-sample formats are supported:
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [Fairlight CMI 3](#fairlight-cmi-3)
+* [FL Studio DirectWave](#fl-studio-directwave)
 * [ISO/IMG Files](#isoimg-files)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
@@ -83,13 +84,14 @@ The following multi-sample formats are supported:
 * [Roland S-770 Series](#roland-s-770-series) - read only
 * [Roland SP-404MK2](#roland-sp-404mk2)
 * [Roland ZEN-Core](#roland-zen-core)
-* [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
+* [Sample files (AIFF, CAF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-caf-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
 * [Spectrasonics Omnisphere 3](#spectrasonics-omnisphere-3)
 * [Synclavier Regen](#synclavier-regen)
 * [Synthstrom Deluge](#synthstrom-deluge)
 * [TAL Sampler](#tal-sampler)
+* [Teenage Engineering OP-XY](#teenage-engineering-op-xy)
 * [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
 * [Yamaha YSFC](#yamaha-ysfc)
 
@@ -470,13 +472,16 @@ As a source, DWP programs are read from their binary structure (see DIRECTWAVE_D
 
 As a destination, one monolithic DWP file is written per instrument, i.e. a single self-contained file which carries all its samples as FLAC compressed audio. FL Studio Desktop loads it directly and for FL Studio Mobile it only needs to be copied into its user files. The DWP structure carries name, key/velocity ranges, root, gain, panning, loop, amplitude envelope, a low-pass/high-pass/band-pass/notch filter and the two zone LFOs (LFO 1 modulates the pitch, LFO 2 the volume) per zone. Only the first round-robin cycle is kept since trigger groups cannot be written.
 
+To import a DWP file into FL Studio Mobile, copy it to the iOS device and open it with FL Studio Mobile. This will copy the file to the user instrument folder.
+
 ## ISO/IMG Files
 
 Searches for files ending with *.ISO, *.IMG or *.HDA. Currently, the following formats can be handled:
 
-* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
-* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
+* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [E-mu Emulator III](#e-mu-emulator-iiiiiixesi)
+* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
 * [Roland S-50 series](#roland-s-50-series)
 * [Roland S-770 series](#roland-s-770-series)
@@ -559,6 +564,8 @@ However, the format changed many times across the different Kontakt versions. So
 A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the usual multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude, pitch and filter cutoff envelope, filter parameters as well as pitchbend.
 (Most) NCW encoded sample files can be read as well.
 A NKM file contains up to 64 instruments and is supported as well as a source.
+
+The velocity to volume modulator is read with its intensity and its response curve: Kontakt maps its normalized volume value to decibels with *60 · log10(x)*, so the amplitude follows the cube of the velocity. Destination formats which can express the curve reproduce this response, e.g. SFZ writes *amp_velcurve_N* points (see the SFZ section).
 
 Encrypted files are not supported.
 
@@ -699,19 +706,21 @@ User samples are written at the device-native 48 kHz / 16-bit. As the ZEN-Core v
 
 * Shorten the name for the device display: Keeps only the last separated part of the name (after " - ", " / ", " : " or " | "), e.g. *Greek Bazouki - Dark Tremolo* becomes *Dark Tremolo*. The name field of this format holds only 16 characters, so a source whose name is qualified with the bank it comes from otherwise loses exactly the part which tells its presets apart. The dropped part is not written anywhere else, therefore this is disabled by default. CLI: `ZenCoreShortenName=1`.
 
-## Sample files (AIFF, FLAC, NCW, OGG, WAV)
+## Sample files (AIFF, CAF, FLAC, NCW, OGG, WAV)
 
 This powerful algorithm allows to create multi-samples from single sample files incl. detection of metadata.
 
 All files of the same type located in the same folder are considered as a part of one multi-sample. You can also select a top folder. If you do so, all sub-folders are checked for potential multi-sample folders.
 
-WAV files can already contain metadata to configure a complete multi-sample (but sadly rarely used). Therefore, all WAV files of a folder are checked if they contain instrument chunks. If this is the case they are used to create the layout of the multi-sample (range and velocity splits as well as gain and pitch settings). If no such information is available the same algorithm is applied as for the other supported formats: it tries to detect the necessary key range and velocity information from the names of the WAV files as well as metadata:
+WAV files can already contain metadata to configure a complete multi-sample (but sadly rarely used). Therefore, all WAV files of a folder are checked if they contain instrument chunks. If this is the case they are used to create the layout of the multi-sample (range and velocity splits as well as gain and pitch settings). The Instrument chunks of AIFF and CAF files are used in the same way. If no such information is available the same algorithm is applied as for the other supported formats: it tries to detect the necessary key range and velocity information from the names of the WAV files as well as metadata:
 
 * Notes are first detected from the files metadata (if supported by the format). If none is present, different parser settings are applied on the file name to detect a note name (or MIDI note value).
 * A category is extracted from the file name as well based on a list of several synonyms and abbreviations (e.g. Solo as a synonym for Lead). If this fails the same logic is applied to the folder names (e.g. you might have sorted your lead sounds in a folder called *Lead*).
 * Characterizations like *hard* are extracted as well with a similar algorithm as for the category.
 
-As a destination only WAV files are supported.
+CAF (Apple Core Audio Format) files are read when they contain linear PCM (integer or float in either byte order), IMA4 (Apple's IMA 4:1 ADPCM), µLaw, aLaw, Apple Lossless (ALAC) or MPEG-4 AAC (the low complexity profile, i.e. plain AAC without the high efficiency extensions) audio data. This includes the sample files which the instruments of Logic Pro reference. Files with other codecs are reported with the name of their codec. Root note, key/velocity ranges, gain and tuning are read from the Instrument chunk, loops from the referenced regions or the sustain loop markers and metadata texts from the Information chunk. The ALAC and AAC codecs are ports of their reference implementations (Apple and FFmpeg) and work on all platforms.
+
+As the destination, the audio file format of the written sample files can be selected: WAV, AIFF, CAF (with linear PCM), CAF-ALAC (CAF compressed with Apple Lossless), CAF-AAC (CAF compressed with MPEG-4 AAC, which is lossy - prefer CAF or CAF-ALAC when fidelity matters) or FLAC. This turns the format into a general audio file converter, e.g. from WAV to AIFF or from AIFF to FLAC. All conversions except CAF-AAC are lossless with one exception: FLAC supports at maximum 24-bit, therefore 32-bit samples are reduced. The AAC encoder chooses its scalefactors for a fixed quantization precision instead of using a psychoacoustic model, which results in a simple, high bit rate encoding. Float samples are converted to 16-bit integer for AIFF, CAF-ALAC and FLAC (WAV and CAF keep them as float). The WAV chunk options are applied to the other formats accordingly: the instrument and sample (loop) information is written to the Instrument and Marker chunks of AIFF files and to the Instrument and Region chunks of CAF files, the metadata texts to the Author/Annotation chunks of AIFF files and to the Information chunk of CAF files. FLAC files carry no instrument information.
 
 ### Source Options - Groups
 
@@ -733,6 +742,10 @@ WAV file can contain different sample formats. This converter supports (split) s
 * Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multi-sample but there might be further text at the end of the name, which you might want to remove. For example the multi-samples I created with SampleRobot have a group information like "_ms0_0". You can set a comma separated list of such post-fix texts in that field.
 * Ignore loops: Sometimes the source files contain wrong loops. Especially helpful for one-shot samples.
 
+### Destination Options
+
+* Audio file format: The format of the written sample files: WAV, AIFF, CAF, CAF-ALAC (CAF compressed with Apple Lossless), CAF-AAC (lossy) or FLAC.
+
 ## SFZ
 
 "The SFZ format is a file format to define how a collection of samples are arranged for performance. The goal behind the SFZ format is to provide a free, simple, minimalistic and expandable format to arrange, distribute and use audio samples with the highest possible quality and the highest possible performance flexibility" (cited from https://sfzformat.com/).
@@ -742,6 +755,8 @@ The SFZ file contains only the description of the multi-sample. The related samp
 SFZ can only mark a sample as a one-shot (`loop_mode=one_shot`) if it has no loop. A looped zone therefore keeps its loop and is not written as a one-shot.
 
 A pitch LFO (vibrato) is read and written via the `pitchlfo_freq` (Hertz), `pitchlfo_depth` (cent), `pitchlfo_delay` and `pitchlfo_fade` (seconds) opcodes. A volume LFO (tremolo) is read and written via the `amplfo_freq` (Hertz), `amplfo_depth` (decibels), `amplfo_delay` and `amplfo_fade` (seconds) opcodes.
+
+The intensity of the velocity to volume modulation is read and written via the `amp_veltrack` opcode. If the source also describes the response curve of the modulation (e.g. the velocity modulation of Kontakt scales the amplitude with the cube of the velocity), the curve is written as `amp_velcurve_N` points between which the players interpolate linearly. When reading, `amp_velcurve_N` points are fitted to the closest power law and stored as the curve of the modulation, so the response survives a round trip.
 
 ### Source Options
 

@@ -13,6 +13,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.maschine1.Maschine1Format;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.maschine2.Maschine2Format;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -45,7 +46,7 @@ public class MaschineCreator extends AbstractWavCreator<MaschineCreatorUI>
 
         final int maschineVersion = this.settingsConfiguration.getDestinationVersion ();
         final IMaschineFormat maschineType = maschineVersion == 1 ? new Maschine1Format (this.notifier) : new Maschine2Format (this.notifier);
-        final String multisampleName = createSafeFilename (multisampleSource.getName ());
+        final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, multisampleName, maschineType.getFileEnding ());
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 

@@ -43,6 +43,7 @@ import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -56,14 +57,14 @@ import de.mossgrabers.tools.FileUtils;
 public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 {
     /** FLAC supports at maximum a resolution of 24 bit. */
-    private static final DestinationAudioFormat   EMBEDDED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat    EMBEDDED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         8,
         16,
         24
     }, -1, false);
 
-    private static final Map<LfoWaveform, Integer> LFO_WAVEFORMS        = new EnumMap<> (LfoWaveform.class);
+    private static final Map<LfoWaveform, Integer> LFO_WAVEFORMS         = new EnumMap<> (LfoWaveform.class);
     static
     {
         LFO_WAVEFORMS.put (LfoWaveform.SINE, Integer.valueOf (DirectWaveTag.LFO_WAVEFORM_SINE));
@@ -74,7 +75,7 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         LFO_WAVEFORMS.put (LfoWaveform.RANDOM, Integer.valueOf (DirectWaveTag.LFO_WAVEFORM_RANDOM));
     }
 
-    private static final Map<FilterType, Integer> FILTER_TYPES          = new EnumMap<> (FilterType.class);
+    private static final Map<FilterType, Integer> FILTER_TYPES = new EnumMap<> (FilterType.class);
     static
     {
         FILTER_TYPES.put (FilterType.LOW_PASS, Integer.valueOf (DirectWaveTag.FILTER_TYPE_LOW_PASS));
@@ -99,7 +100,7 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final File multiFile = this.createUniqueFilename (destinationFolder, createSafeFilename (multisampleSource.getName ()), "dwp");
+        final File multiFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "dwp");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         this.filterRoundRobinZones (multisampleSource);
@@ -166,8 +167,8 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Create the content of one sample container block. All blocks are copied from the container
-     * template of a factory program; only the zone mapping, the name, the path and the audio
-     * format (frame count, channels, sample rate and loop) are filled from the zone.
+     * template of a factory program; only the zone mapping, the name, the path and the audio format
+     * (frame count, channels, sample rate and loop) are filled from the zone.
      *
      * @param instrumentName The name of the instrument
      * @param zone The sample zone
@@ -180,7 +181,7 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         if (sampleData.isEmpty ())
             throw new IOException ("Empty sample data in zone: " + zone.getName ());
         final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
-        final String sampleName = createSafeFilename (zone.getName ());
+        final String sampleName = FileUtils.createSafeFilename (zone.getName ());
         // Round the length up to a full audio block, see EMBEDDED_AUDIO_BLOCK
         final int blockSize = DirectWaveTag.EMBEDDED_AUDIO_BLOCK;
         final int frames = (audioMetadata.getNumberOfSamples () + blockSize - 1) / blockSize * blockSize;
@@ -207,7 +208,10 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         final AtomicBoolean isFirstFilter = new AtomicBoolean (true);
         final int [] lfoIndex = new int [1];
-        for (final DirectWaveChunk chunk: DirectWaveChunk.parseAll (DirectWaveTag.TEMPLATE_CONTAINER, 0))
+        final Optional<List<DirectWaveChunk>> chunksOpt = DirectWaveChunk.parseAll (DirectWaveTag.TEMPLATE_CONTAINER, 0);
+        if (chunksOpt.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", "DirectWaveTag.TEMPLATE_CONTAINER"));
+        for (final DirectWaveChunk chunk: chunksOpt.get ())
             switch (chunk.getTag ())
             {
                 case DirectWaveTag.TAG_ZONE_MAPPING:
@@ -504,9 +508,9 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Rename all zones to the naming convention which DirectWave uses itself when saving a
-     * program: <i>InstrumentName_Note_Velocity</i>. This makes sure that the file names, the names
-     * in the DWP file and the names which DirectWave expects are identical.
+     * Rename all zones to the naming convention which DirectWave uses itself when saving a program:
+     * <i>InstrumentName_Note_Velocity</i>. This makes sure that the file names, the names in the
+     * DWP file and the names which DirectWave expects are identical.
      *
      * @param name The name of the instrument
      * @param multisampleSource The multi-sample source

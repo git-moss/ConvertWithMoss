@@ -19,7 +19,6 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
 import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.algorithm.MultiSampleReducer;
-import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -122,6 +121,7 @@ import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcDetector;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -194,6 +194,7 @@ public class ConverterBackend
         this.detectors.add (new MPCModernDetector (notifier));
         this.detectors.add (new AkaiS900Detector (notifier));
         this.detectors.add (new AkaiS1000Detector (notifier));
+        this.detectors.add (new SynclavierVDetector (notifier));
         this.detectors.add (new BitwigMultisampleDetector (notifier));
         this.detectors.add (new BlissDetector (notifier));
         this.detectors.add (new CasioFZDetector (notifier));
@@ -203,11 +204,11 @@ public class ConverterBackend
         this.detectors.add (new Emulator3Detector (notifier));
         this.detectors.add (new Emulator4Detector (notifier));
         this.detectors.add (new EmulatorXDetector (notifier));
-        this.detectors.add (new DistingExDetector (notifier));
         this.detectors.add (new TonverkMultiDetector (notifier));
         this.detectors.add (new TonverkPresetDetector (notifier));
         this.detectors.add (new EnsoniqEpsAsrDetector (notifier));
         this.detectors.add (new MirageDetector (notifier));
+        this.detectors.add (new DistingExDetector (notifier));
         this.detectors.add (new FairlightCmi3Detector (notifier));
         this.detectors.add (new DirectWaveDetector (notifier));
         this.detectors.add (new IsoDetector (notifier));
@@ -231,7 +232,6 @@ public class ConverterBackend
         this.detectors.add (new Sf2Detector (notifier));
         this.detectors.add (new OmnisphereDetector (notifier));
         this.detectors.add (new SynclavierRegenDetector (notifier));
-        this.detectors.add (new SynclavierVDetector (notifier));
         this.detectors.add (new DelugeDetector (notifier));
         this.detectors.add (new OpXyDetector (notifier));
         this.detectors.add (new TALSamplerDetector (notifier));
@@ -243,17 +243,18 @@ public class ConverterBackend
         this.creators.add (new Music1010Creator (notifier));
         this.creators.add (new AbletonCreator (notifier));
         this.creators.add (new MPCKeygroupCreator (notifier));
+        this.creators.add (new SynclavierVCreator (notifier));
         this.creators.add (new BitwigMultisampleCreator (notifier));
         this.creators.add (new BlissCreator (notifier));
         this.creators.add (new CasioFZCreator (notifier));
         this.creators.add (new TX16WxCreator (notifier));
         this.creators.add (new DecentSamplerCreator (notifier));
-        this.creators.add (new DistingExCreator (notifier));
         this.creators.add (new Emulator3Creator (notifier));
         this.creators.add (new Emulator4Creator (notifier));
         this.creators.add (new EmulatorXCreator (notifier));
         this.creators.add (new TonverkMultiCreator (notifier));
         this.creators.add (new TonverkPresetCreator (notifier));
+        this.creators.add (new DistingExCreator (notifier));
         this.creators.add (new DirectWaveCreator (notifier));
         this.creators.add (new KMPCreator (notifier));
         this.creators.add (new KorgmultisampleCreator (notifier));
@@ -273,7 +274,6 @@ public class ConverterBackend
         this.creators.add (new Sf2Creator (notifier));
         this.creators.add (new OmnisphereCreator (notifier));
         this.creators.add (new SynclavierRegenCreator (notifier));
-        this.creators.add (new SynclavierVCreator (notifier));
         this.creators.add (new DelugeCreator (notifier));
         this.creators.add (new OpXyCreator (notifier));
         this.creators.add (new TALSamplerCreator (notifier));
@@ -768,7 +768,7 @@ public class ConverterBackend
     {
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
-                zone.setName (AbstractCreator.createSafeFilename (zone.getName ()));
+                zone.setName (FileUtils.createSafeFilename (zone.getName ()));
     }
 
 
@@ -825,13 +825,13 @@ public class ConverterBackend
     private String getPresetLibraryName (final List<IMultisampleSource> multisampleSources, final String libraryName)
     {
         final String name = this.detectionSettings.wantsMultipleFiles && !libraryName.isEmpty () ? libraryName : multisampleSources.get (0).getName ();
-        return AbstractCreator.createSafeFilename (name);
+        return FileUtils.createSafeFilename (name);
     }
 
 
     private String getPerformanceLibraryName (final List<IPerformanceSource> performanceSources, final String libraryName)
     {
         final String name = this.detectionSettings.wantsMultipleFiles && !libraryName.isEmpty () ? libraryName : performanceSources.get (0).getName ();
-        return AbstractCreator.createSafeFilename (name);
+        return FileUtils.createSafeFilename (name);
     }
 }

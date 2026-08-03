@@ -69,7 +69,8 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
         {
             final int partitionCount = disk.getPartitionCount ();
 
-            final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, sourceFile.getName ());
+            final String fileName = sourceFile.getName ();
+            final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, fileName);
             for (int partitionIndex = 0; partitionIndex < partitionCount; partitionIndex++)
             {
                 final AkaiPartition partition = disk.getPartition (partitionIndex);
@@ -88,6 +89,8 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
                             final IGroup group = converter.createGroup (program, samples);
                             final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, parts, programName, Collections.singletonList (group));
                             AkaiS1000ProgramConverter.applyVoiceSettings (multisampleSource, program);
+                            multisampleSource.extendSubPath (fileName);
+                            multisampleSource.extendSubPath (volumeName);
                             multiSampleSources.add (multisampleSource);
                         }
                     }

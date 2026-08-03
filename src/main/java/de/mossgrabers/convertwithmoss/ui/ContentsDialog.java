@@ -16,6 +16,7 @@ import java.util.Set;
 import de.mossgrabers.convertwithmoss.core.ContentsEntry;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.ui.ControlFunctions;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.PseudoModalDialog;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -34,6 +35,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
@@ -80,7 +82,6 @@ public class ContentsDialog extends PseudoModalDialog
         final BorderPane pane = new BorderPane ();
 
         this.searchField = new TextField ();
-        this.searchField.setPromptText (Functions.getMessage ("IDS_CONTENTS_SEARCH"));
         this.searchField.textProperty ().addListener ((_, _, _) -> this.fillTree ());
 
         final Button selectAllButton = new Button (Functions.getText ("@IDS_CONTENTS_SELECT_ALL"));
@@ -88,10 +89,11 @@ public class ContentsDialog extends PseudoModalDialog
         final Button selectNoneButton = new Button (Functions.getText ("@IDS_CONTENTS_SELECT_NONE"));
         selectNoneButton.setOnAction (_ -> this.setAllSelected (false));
 
-        final HBox topRow = new HBox (this.searchField, selectAllButton, selectNoneButton);
+        final StackPane searchBox = ControlFunctions.addClearButton (this.searchField, "IDS_CONTENTS_SEARCH", "text-field-with-clear", "text-field-clear-button");
+        final HBox topRow = new HBox (searchBox, selectAllButton, selectNoneButton);
         topRow.getStyleClass ().addAll ("contentsToolbar", "contentsDialogRow");
         topRow.setAlignment (Pos.CENTER_LEFT);
-        HBox.setHgrow (this.searchField, Priority.ALWAYS);
+        HBox.setHgrow (searchBox, Priority.ALWAYS);
 
         this.treeView = new TreeView<> ();
         this.treeView.setShowRoot (false);
@@ -304,8 +306,18 @@ public class ContentsDialog extends PseudoModalDialog
     private void setAllSelected (final boolean isSelected)
     {
         this.selectedEntries.clear ();
+
         if (isSelected)
-            this.selectedEntries.addAll (this.entries);
+        {
+            final String filterText = this.searchField.getText ().toLowerCase ();
+            if (filterText.isBlank ())
+                this.selectedEntries.addAll (this.entries);
+            else
+                for (final ContentsEntry entry: this.entries)
+                    if (entry.getName ().toLowerCase ().contains (filterText))
+                        this.selectedEntries.add (entry);
+        }
+
         this.fillTree ();
     }
 

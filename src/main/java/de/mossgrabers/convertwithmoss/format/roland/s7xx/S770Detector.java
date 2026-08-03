@@ -41,6 +41,7 @@ import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.SampleSecti
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvaSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvfSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Patch.BenderSection;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -161,6 +162,11 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         final String metadataDescription = createMetadataDescription (image.getHeader ());
 
+        String fileName = FileUtils.getNameWithoutType (sourceFile.getName ());
+        final String diskName = image.getHeader ().getDiskName ();
+        if (diskName != null && !diskName.isBlank ())
+            fileName += " " + diskName;
+
         final List<S770Patch> patches = image.getPatches ();
         for (int i = 0; i < patches.size (); i++)
         {
@@ -171,6 +177,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
             this.notifier.log ("IDS_S7XX_CONVERTING_PATCH", String.format ("%02d %s", Integer.valueOf (i + 1), patchName));
 
             final IMultisampleSource multisampleSource = this.readPatch (sourceFile, patch, patchName, metadataDescription, image);
+            multisampleSource.extendSubPath (fileName);
             multisampleSources.add (multisampleSource);
         }
 

@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -67,7 +68,7 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String safeName = createSafeFilename (multisampleSource.getName ());
+        final String safeName = FileUtils.createSafeFilename (multisampleSource.getName ());
 
         final File presetFolder = this.createUniqueFilename (destinationFolder, safeName, "preset");
         if (!presetFolder.mkdirs ())
@@ -95,9 +96,9 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Collect the zones to write. The device maps a preset only across the keyboard, therefore
-     * only the zones of the first velocity layer are written; it also plays at most
-     * {@link #MAX_REGIONS} regions.
+     * Collect the zones to write. The device maps a preset only across the keyboard, therefore only
+     * the zones of the first velocity layer are written; it also plays at most {@link #MAX_REGIONS}
+     * regions.
      *
      * @param multisampleSource The multi-sample source
      * @return The zones sorted by their key range
@@ -226,7 +227,7 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final int frames = audioMetadata.getNumberOfSamples ();
 
         final ObjectNode region = this.mapper.createObjectNode ();
-        region.put (OpXyTag.TAG_SAMPLE, createSafeFilename (zone.getName ()) + ".wav");
+        region.put (OpXyTag.TAG_SAMPLE, FileUtils.createSafeFilename (zone.getName ()) + ".wav");
         region.put (OpXyTag.TAG_FRAME_COUNT, frames);
         region.put (OpXyTag.TAG_LOW_KEY, lowKey);
         region.put (OpXyTag.TAG_HIGH_KEY, highKey);

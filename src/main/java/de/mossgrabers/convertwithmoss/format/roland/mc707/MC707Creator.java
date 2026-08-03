@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreUtil;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -173,7 +174,7 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
      */
     private void writeProject (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name) throws IOException
     {
-        final File outputFile = this.createUniqueFilename (destinationFolder, createSafeFilename (name), "mpj");
+        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (name), "mpj");
         this.notifier.log ("IDS_MC707_WRITING_PROJECT", outputFile.getAbsolutePath (), Integer.toString (multisampleSources.size ()));
 
         final MC707Project project = MC707Project.createFromTemplate ();

@@ -36,6 +36,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -170,7 +171,7 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
      */
     private void writeLibrary (final File destinationFolder, final String libraryName, final List<IMultisampleSource> multisampleSources) throws IOException
     {
-        final String safeLibraryName = createSafeFilename (libraryName);
+        final String safeLibraryName = FileUtils.createSafeFilename (libraryName);
         final File libraryFolder = createUniqueFolder (destinationFolder, safeLibraryName);
         this.notifier.log ("IDS_NOTIFY_STORING", libraryFolder.getAbsolutePath ());
 
@@ -747,7 +748,7 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
     private static String uniqueSampleName (final Set<String> usedNames, final String name)
     {
-        final String base = createSafeFilename (name);
+        final String base = FileUtils.createSafeFilename (name);
         String candidate = base;
         int counter = 2;
         while (!usedNames.add (candidate.toLowerCase (Locale.US)))
