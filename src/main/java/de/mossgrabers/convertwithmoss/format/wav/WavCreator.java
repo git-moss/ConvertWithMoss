@@ -34,13 +34,13 @@ import de.mossgrabers.convertwithmoss.file.caf.CafRegion;
 import de.mossgrabers.convertwithmoss.file.iff.IffFile;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * Only stores the sample files of the multi-sample in one of several audio file formats (WAV,
- * AIFF, CAF or FLAC). There is no preset file and all related samples are stored in a separate
- * folder.
+ * Only stores the sample files of the multi-sample in one of several audio file formats (WAV, AIFF,
+ * CAF or FLAC). There is no preset file and all related samples are stored in a separate folder.
  *
  * @author Jürgen Moßgraber
  */
@@ -79,7 +79,7 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
 
         this.notifier.log ("IDS_NOTIFY_STORING", safeSampleFolderName);
@@ -141,8 +141,8 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
 
 
     /**
-     * Write the sample of the given zone as an AIFF file. The instrument info and loops of the
-     * zone are stored in Instrument and Marker chunks.
+     * Write the sample of the given zone as an AIFF file. The instrument info and loops of the zone
+     * are stored in Instrument and Marker chunks.
      *
      * @param multisampleSource The multi-sample source
      * @param zone The zone which contains the sample

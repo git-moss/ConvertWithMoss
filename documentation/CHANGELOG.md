@@ -11,6 +11,8 @@
   * Fixed: Contents dialog: Using 'Select All' on filtered content did still select all presets not only the filtered ones.
   * Fixed: Tabbing in dialogs did not work.
   * Fixed: Processing dialog: the Enable option could not be reached with tab.
+* Akai MPC60, MPC2000/3000, S-9x0, S-1000, Ensoniq ASR/EPS, Roland S-5xx, S-7xx
+  * New: Patches are now put in sub-folders with their image name. On the S-5xx, if it is a CD-ROM, the CD-ROM name is another sub-folder. S-1000 adds Volume names.
 * Ableton
   * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
 * NI Kontakt

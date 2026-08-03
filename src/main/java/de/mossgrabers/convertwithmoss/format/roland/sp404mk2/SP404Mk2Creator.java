@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -102,7 +103,7 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
      */
     private void writeProject (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name) throws IOException
     {
-        final File projectFolder = new File (destinationFolder, createSafeFilename (name));
+        final File projectFolder = new File (destinationFolder, FileUtils.createSafeFilename (name));
         safeCreateDirectory (projectFolder);
         final File smplFolder = new File (projectFolder, "SMPL");
         safeCreateDirectory (smplFolder);
