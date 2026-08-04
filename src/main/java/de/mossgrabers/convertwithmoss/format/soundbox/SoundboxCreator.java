@@ -32,6 +32,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -259,6 +260,13 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             if (envelope.getReleaseTime () >= 0)
                 layerPlan.settings.release = Math.clamp (envelope.getReleaseTime () / SoundboxEngineSettings.MAX_RELEASE_SECONDS, 0, 1);
 
+            layerPlan.filter = calculateCommonFilter (zones);
+
+            // The voice mode and glide are per instrument in the model and per layer here
+            if (multisampleSource.getPolyphony () == 1)
+                layerPlan.settings.voiceMode = multisampleSource.isMonophonicLegato () ? SoundboxEngineSettings.VOICE_MODE_LEGATO : SoundboxEngineSettings.VOICE_MODE_MONO;
+            layerPlan.settings.glide = Math.clamp (multisampleSource.getPortamentoTime (), 0, 1);
+
             layerPlans.add (layerPlan);
         }
         return layerPlans;
@@ -324,6 +332,32 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param zones The zones of the layer
      * @return The common gain ratio or 1 if the zones have different values
      */
+    /**
+     * Returns the filter if all zones have one with identical settings. A common filter is
+     * stored as a filter effect in the FX slots of the layer.
+     *
+     * @param zones The zones of the layer
+     * @return The common filter or null
+     */
+    private static IFilter calculateCommonFilter (final List<ISampleZone> zones)
+    {
+        final Optional<IFilter> optFilter = zones.get (0).getFilter ();
+        if (optFilter.isEmpty ())
+            return null;
+        final IFilter filter = optFilter.get ();
+        for (final ISampleZone zone: zones)
+        {
+            final Optional<IFilter> other = zone.getFilter ();
+            if (other.isEmpty ())
+                return null;
+            final IFilter otherFilter = other.get ();
+            if (otherFilter.getType () != filter.getType () || Math.abs (otherFilter.getCutoff () - filter.getCutoff ()) > 1 || Math.abs (otherFilter.getResonance () - filter.getResonance ()) > 0.001)
+                return null;
+        }
+        return filter;
+    }
+
+
     private static double calculateCommonGainRatio (final List<ISampleZone> zones)
     {
         final double commonGain = zones.get (0).getGain ();
@@ -587,7 +621,9 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 stepElement.setAttribute ("density", "0");
             }
 
-            addEffectsElement (document, layerElement);
+            final Element effectsElement = addEffectsElement (document, layerElement);
+            if (layerPlan.filter != null)
+                SoundboxFilterEffect.writeFilterEffect (effectsElement, layerPlan.filter);
         }
 
         final Element enginesElement = XMLUtils.addElement (document, presetElement, "Engines");
@@ -625,7 +661,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     }
 
 
-    private static void addEffectsElement (final Document document, final Element parentElement)
+    private static Element addEffectsElement (final Document document, final Element parentElement)
     {
         final Element effectsElement = XMLUtils.addElement (document, parentElement, "Effects");
         effectsElement.setAttribute ("active", "1");
@@ -635,6 +671,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             effectsElement.setAttribute ("s" + slot, "0");
             effectsElement.setAttribute ("s" + slot + "fx", "0");
         }
+        return effectsElement;
     }
 
 
@@ -659,6 +696,8 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         List<List<ISampleZone>>       robins    = Collections.emptyList ();
         final SoundboxLayerState      state     = new SoundboxLayerState ();
         final SoundboxEngineSettings  settings  = new SoundboxEngineSettings ();
+        /** The filter which is common to all zones of the layer, if any. */
+        IFilter                       filter    = null;
     }
 
 

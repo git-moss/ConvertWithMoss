@@ -25,6 +25,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -32,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -199,6 +201,7 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
         final List<Element> layerElements = XMLUtils.getChildElementsByName (layersElement, SoundboxTag.LAYER, false);
 
         final List<IGroup> groups = new ArrayList<> ();
+        SoundboxEngineSettings firstEngineSettings = null;
         for (int layerIndex = 0; layerIndex < layerElements.size (); layerIndex++)
         {
             final String groupName = presetElement.getAttribute ("g" + layerIndex);
@@ -216,8 +219,20 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
             if (!layerState.active)
                 continue;
             final SoundboxEngineSettings engineSettings = SoundboxEngineSettings.parse (SoundboxJuceBase64.decode (layerElement.getAttribute (SoundboxTag.ATTR_SETTINGS)));
+            if (firstEngineSettings == null)
+                firstEngineSettings = engineSettings;
 
-            for (final IGroup group: this.parseGroup (zipFile, groupElement, groupName, layerState, engineSettings, soundNames, sampleDataCache))
+            // A filter effect of the layer (or of the master effects) becomes the filter of its
+            // zones
+            IFilter filter = SoundboxFilterEffect.readFilterEffect (XMLUtils.getChildElementByName (layerElement, SoundboxTag.EFFECTS));
+            if (filter == null)
+            {
+                final Element masterElement = XMLUtils.getChildElementByName (presetElement, SoundboxTag.MASTER);
+                if (masterElement != null)
+                    filter = SoundboxFilterEffect.readFilterEffect (XMLUtils.getChildElementByName (masterElement, SoundboxTag.EFFECTS));
+            }
+
+            for (final IGroup group: this.parseGroup (zipFile, groupElement, groupName, layerState, engineSettings, filter, soundNames, sampleDataCache))
                 if (!group.getSampleZones ().isEmpty ())
                     groups.add (group);
         }
@@ -232,6 +247,20 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
         final IMetadata metadata = multisampleSource.getMetadata ();
         if (!author.isBlank ())
             metadata.setCreator (author);
+
+        // The voice mode and glide are per layer in Soundbox but per instrument in the model,
+        // therefore the values of the first active layer are applied
+        if (firstEngineSettings != null)
+        {
+            if (firstEngineSettings.voiceMode != SoundboxEngineSettings.VOICE_MODE_POLY)
+            {
+                multisampleSource.setPolyphony (1);
+                multisampleSource.setMonophonicLegato (firstEngineSettings.voiceMode == SoundboxEngineSettings.VOICE_MODE_LEGATO);
+            }
+            // The time law of the glide knob is not calibrated, pass the fraction through
+            multisampleSource.setPortamentoTime (firstEngineSettings.glide);
+        }
+
         return multisampleSource;
     }
 
@@ -246,12 +275,13 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
      * @param groupName The name of the group
      * @param layerState The state of the layer which plays the group
      * @param engineSettings The engine settings of the layer which plays the group
+     * @param filter The filter of the layer or null if there is none
      * @param soundNames The original sample file names
      * @param sampleDataCache Caches the already created sample data objects
      * @return The groups, one for each round robin layer
      * @throws IOException Error reading the sample data
      */
-    private List<IGroup> parseGroup (final ZipFile zipFile, final Element groupElement, final String groupName, final SoundboxLayerState layerState, final SoundboxEngineSettings engineSettings, final List<String> soundNames, final Map<Integer, ISampleData> sampleDataCache) throws IOException
+    private List<IGroup> parseGroup (final ZipFile zipFile, final Element groupElement, final String groupName, final SoundboxLayerState layerState, final SoundboxEngineSettings engineSettings, final IFilter filter, final List<String> soundNames, final Map<Integer, ISampleData> sampleDataCache) throws IOException
     {
         // The 'G' prefix marks a group name, remove it for display
         final String displayName = groupName.startsWith ("G") ? groupName.substring (1) : groupName;
@@ -317,6 +347,9 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
 
             zone.setPanning (Math.clamp (sound.panning + layerState.panning, -1, 1));
             zone.setTuning (sound.tuneSemitones + engineSettings.transposeSemitones + (engineSettings.octaveIndex - SoundboxEngineSettings.OCTAVE_CENTER) * 12.0 + engineSettings.fineTuneCents / 100.0);
+
+            if (filter != null)
+                zone.setFilter (new DefaultFilter (filter.getType (), filter.getPoles (), filter.getCutoff (), filter.getResonance ()));
 
             final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
             envelope.setAttackTime (engineSettings.attack * SoundboxEngineSettings.MAX_ATTACK_SECONDS);

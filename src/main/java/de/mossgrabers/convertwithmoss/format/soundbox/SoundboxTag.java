@@ -39,6 +39,10 @@ public class SoundboxTag
     public static final String LAYERS           = "Layers";
     /** The tag of one layer. */
     public static final String LAYER            = "L";
+    /** The tag of the effects section of a layer or the master. */
+    public static final String EFFECTS          = "Effects";
+    /** The tag of the master section of a preset. */
+    public static final String MASTER           = "Master";
 
     /** The name attribute. */
     public static final String ATTR_NAME        = "name";

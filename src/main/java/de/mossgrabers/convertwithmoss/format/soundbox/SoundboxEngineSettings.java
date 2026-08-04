@@ -19,6 +19,10 @@ public class SoundboxEngineSettings
 {
     private static final int SIZE          = 33;
 
+    /** The voice mode value for monophonic play-back. */
+    public static final int    VOICE_MODE_MONO     = 0;
+    /** The voice mode value for monophonic play-back with legato. */
+    public static final int    VOICE_MODE_LEGATO   = 1;
     /** The voice mode value for polyphonic play-back. */
     public static final int    VOICE_MODE_POLY     = 2;
     /** The octave index which means no octave offset. */
@@ -38,7 +42,7 @@ public class SoundboxEngineSettings
 
     /** The voice mode (2 = polyphonic). */
     public int    voiceMode         = VOICE_MODE_POLY;
-    /** The glide amount (0..1). */
+    /** The glide amount as the normalized knob position (0..1 = 0-100%). */
     public double glide             = 0;
     /** The transpose in semi-tones. */
     public double transposeSemitones = 0;

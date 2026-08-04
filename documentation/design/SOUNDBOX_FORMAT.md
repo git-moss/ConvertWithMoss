@@ -149,8 +149,8 @@ read (all Cosmo groups imported by plug-in 1.2.x keep their 75 byte blobs).
 
 | Offset | Type | Field      | Notes                                              |
 |--------|------|------------|----------------------------------------------------|
-| 0x00   | u8   | voice mode | 2 = poly (default); 0/1 mono/legato variants       |
-| 0x01   | f32  | glide      | 0..1                                               |
+| 0x00   | u8   | voice mode | 0 = mono, 1 = legato, 2 = poly (default)           |
+| 0x01   | f32  | glide      | knob 0..1; time law not calibrated                 |
 | 0x05   | f32  | transpose  | semi-tones, always 0 in corpus                     |
 | 0x09   | f32  | fine tune  | cents (corpus: ±5, ±10)                            |
 | 0x0D   | u32  | octave     | index with center 2 = ±0 octaves (assumed)         |
@@ -169,6 +169,23 @@ the time with 100% = 4.0 seconds and the ramp itself is linear (25% = 1.0 s, 50%
 by the sample length confirm the slightly convex ramp shape). The decay knob is assumed to
 follow the release law - it could not be measured directly since a decay is inaudible at the
 100% sustain which all factory presets use.
+
+### Effects
+
+Each layer and the master carry an `<Effects>` element. Its `active` attribute switches the whole
+section, `s0fx`..`s3fx` hold the effect type loaded into each of the 4 slots (0 = empty) and
+`s0`..`s3` mark a bypassed slot with 1. One `<S SlotNum="n" type="t" .../>` child per slot holds
+the parameters which differ from the defaults. The types follow the order of the plug-in's effect
+menu: 1 = Reverb, 2 = Delay, 3 = EQ, 4 = Filter, 5 = Distortion, 6 = Chorus, 7 = Phaser,
+8 = Lofi, 10 = Compressor/Limiter, 11 = Noise.
+
+Only the **filter** (type 4) maps to the multi-sample model: `FREQUENCY` is the cutoff in Hertz
+(15001 = fully open, the default), `RESONANCE` is the quality factor (default 0.707, up to about
+3.145) and `TYPE` is the filter type (0 = low-pass; only 0 has been observed, the other indices
+are assumed to follow the usual high-pass/band-pass/band-rejection order). ConvertWithMoss reads
+the first active filter slot of a layer - or of the master, if the layer has none - as the filter
+of the layer's zones and writes a common zone filter back into the first slot. All other effects
+are not converted.
 
 The engine `state` (13 bytes) and `sequence` (128 bytes) blobs belong to the 4 LFO engines of
 the Modulation tab (the 128 byte sequence holds the 32 steps of the LFO sequencer shape); they
