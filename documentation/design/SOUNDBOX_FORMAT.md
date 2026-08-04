@@ -155,17 +155,20 @@ read (all Cosmo groups imported by plug-in 1.2.x keep their 75 byte blobs).
 | 0x09   | f32  | fine tune  | cents (corpus: ±5, ±10)                            |
 | 0x0D   | u32  | octave     | index with center 2 = ±0 octaves (assumed)         |
 | 0x11   | f32  | attack     | knob 0..1; time = knob x 4.0 s (measured, linear)  |
-| 0x15   | f32  | decay      | knob position 0..1; default 0.2 = the UI's 20%     |
+| 0x15   | f32  | decay      | knob 0..1; assumed 20 s law like release           |
 | 0x19   | f32  | sustain    | 0..1 (UI shows 0-100%)                             |
-| 0x1D   | f32  | release    | knob position 0..1 (UI shows 0-100%)               |
+| 0x1D   | f32  | release    | knob 0..1; time = knob x 20 s (measured)           |
 
 The ADSR values are the normalized knob positions of the plug-in (the UI displays them as
 0-100%, e.g. the defaults decay 0.2/sustain 1.0 show as 20%/100%). Neither the UI nor the user
-manual documents the mapping of the percentage to a time. The attack was measured with plug-in
-1.2.1 (recordings of a constant tone at known knob positions): the knob maps linearly to the
-time with 100% = 4.0 seconds and the ramp itself is linear (25% = 1.0 s, 50% = 2.0 s,
-100% = 4.0 s). The decay and release laws are not calibrated yet; their knob fractions are
-passed through unchanged.
+manual documents the mapping of the percentage to a time; both laws were measured with plug-in
+1.2.1 by recording a constant tone at known knob positions. Attack: the knob maps linearly to
+the time with 100% = 4.0 seconds and the ramp itself is linear (25% = 1.0 s, 50% = 2.0 s,
+100% = 4.0 s). Release: the knob maps linearly to the time until silence with 100% = 20 seconds
+(10% = 2.0 s, 25% = 5.0 s, both complete tails within 1.5%; the two longer settings truncated
+by the sample length confirm the slightly convex ramp shape). The decay knob is assumed to
+follow the release law - it could not be measured directly since a decay is inaudible at the
+100% sustain which all factory presets use.
 
 The engine `state` (13 bytes) and `sequence` (128 bytes) blobs belong to the 4 LFO engines of
 the Modulation tab (the 128 byte sequence holds the 32 steps of the LFO sequencer shape); they

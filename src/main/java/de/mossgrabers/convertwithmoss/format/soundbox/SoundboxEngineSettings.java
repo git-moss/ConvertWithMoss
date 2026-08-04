@@ -29,6 +29,12 @@ public class SoundboxEngineSettings
      * itself is linear as well.
      */
     public static final double MAX_ATTACK_SECONDS  = 4.0;
+    /**
+     * The release time in seconds when the release knob is at 100%. Measured with plug-in
+     * 1.2.1: the knob maps linearly to the time until silence (10% = 2s, 25% = 5s), the ramp is
+     * slightly convex. The decay knob is assumed to follow the same law.
+     */
+    public static final double MAX_RELEASE_SECONDS = 20.0;
 
     /** The voice mode (2 = polyphonic). */
     public int    voiceMode         = VOICE_MODE_POLY;

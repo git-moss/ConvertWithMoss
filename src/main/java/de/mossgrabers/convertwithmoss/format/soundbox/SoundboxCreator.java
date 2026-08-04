@@ -252,14 +252,12 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             final IEnvelope envelope = zones.get (0).getAmplitudeEnvelopeModulator ().getSource ();
             if (envelope.getAttackTime () >= 0)
                 layerPlan.settings.attack = Math.clamp (envelope.getAttackTime () / SoundboxEngineSettings.MAX_ATTACK_SECONDS, 0, 1);
-            // The time laws of the decay and release knobs are not calibrated yet, store the
-            // seconds as the knob fraction unchanged
             if (envelope.getDecayTime () >= 0)
-                layerPlan.settings.decay = Math.clamp (envelope.getDecayTime (), 0, 1);
+                layerPlan.settings.decay = Math.clamp (envelope.getDecayTime () / SoundboxEngineSettings.MAX_RELEASE_SECONDS, 0, 1);
             if (envelope.getSustainLevel () >= 0)
                 layerPlan.settings.sustain = envelope.getSustainLevel ();
             if (envelope.getReleaseTime () >= 0)
-                layerPlan.settings.release = Math.clamp (envelope.getReleaseTime (), 0, 1);
+                layerPlan.settings.release = Math.clamp (envelope.getReleaseTime () / SoundboxEngineSettings.MAX_RELEASE_SECONDS, 0, 1);
 
             layerPlans.add (layerPlan);
         }

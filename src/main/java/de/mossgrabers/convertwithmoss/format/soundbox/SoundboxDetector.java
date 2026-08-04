@@ -320,11 +320,9 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
 
             final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
             envelope.setAttackTime (engineSettings.attack * SoundboxEngineSettings.MAX_ATTACK_SECONDS);
-            // The time laws of the decay and release knobs are not calibrated yet, pass the
-            // knob fraction through unchanged
-            envelope.setDecayTime (engineSettings.decay);
+            envelope.setDecayTime (engineSettings.decay * SoundboxEngineSettings.MAX_RELEASE_SECONDS);
             envelope.setSustainLevel (engineSettings.sustain);
-            envelope.setReleaseTime (engineSettings.release);
+            envelope.setReleaseTime (engineSettings.release * SoundboxEngineSettings.MAX_RELEASE_SECONDS);
 
             group.addSampleZone (zone);
         }
