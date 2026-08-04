@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -30,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -215,9 +217,9 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
                 continue;
             final SoundboxEngineSettings engineSettings = SoundboxEngineSettings.parse (SoundboxJuceBase64.decode (layerElement.getAttribute (SoundboxTag.ATTR_SETTINGS)));
 
-            final IGroup group = this.parseGroup (zipFile, groupElement, groupName, layerState, engineSettings, soundNames, sampleDataCache);
-            if (!group.getSampleZones ().isEmpty ())
-                groups.add (group);
+            for (final IGroup group: this.parseGroup (zipFile, groupElement, groupName, layerState, engineSettings, soundNames, sampleDataCache))
+                if (!group.getSampleZones ().isEmpty ())
+                    groups.add (group);
         }
 
         if (groups.isEmpty ())
@@ -235,7 +237,9 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
 
 
     /**
-     * Parses all sounds of a group into sample zones.
+     * Parses all sounds of a group into sample zones. Newer plug-in versions support round
+     * robins: the 'rrLayer' attribute of a sound assigns it to one of the round robin layers of
+     * the group, which are returned as separate groups with round robin play logic.
      *
      * @param zipFile The opened ZIP file
      * @param groupElement The XML element of the group
@@ -244,13 +248,14 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
      * @param engineSettings The engine settings of the layer which plays the group
      * @param soundNames The original sample file names
      * @param sampleDataCache Caches the already created sample data objects
-     * @return The group
+     * @return The groups, one for each round robin layer
      * @throws IOException Error reading the sample data
      */
-    private IGroup parseGroup (final ZipFile zipFile, final Element groupElement, final String groupName, final SoundboxLayerState layerState, final SoundboxEngineSettings engineSettings, final List<String> soundNames, final Map<Integer, ISampleData> sampleDataCache) throws IOException
+    private List<IGroup> parseGroup (final ZipFile zipFile, final Element groupElement, final String groupName, final SoundboxLayerState layerState, final SoundboxEngineSettings engineSettings, final List<String> soundNames, final Map<Integer, ISampleData> sampleDataCache) throws IOException
     {
         // The 'G' prefix marks a group name, remove it for display
-        final DefaultGroup group = new DefaultGroup (groupName.startsWith ("G") ? groupName.substring (1) : groupName);
+        final String displayName = groupName.startsWith ("G") ? groupName.substring (1) : groupName;
+        final Map<Integer, DefaultGroup> roundRobinGroups = new TreeMap<> ();
 
         for (final Element soundElement: XMLUtils.getChildElementsByName (groupElement, SoundboxTag.SOUND, false))
         {
@@ -274,6 +279,9 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
             final ISampleData sampleData = this.getSampleData (zipFile, fileIndex, sampleDataCache);
             if (sampleData == null)
                 continue;
+
+            final int roundRobinLayer = XMLUtils.getIntegerAttribute (soundElement, "rrLayer", 0);
+            final DefaultGroup group = roundRobinGroups.computeIfAbsent (Integer.valueOf (roundRobinLayer), layer -> new DefaultGroup (layer.intValue () == 0 ? displayName : displayName + " RR" + (layer.intValue () + 1)));
             final String soundName = fileIndex < soundNames.size () ? removeFileEnding (soundNames.get (fileIndex)) : "s" + fileIndex;
             final ISampleZone zone = new DefaultSampleZone (soundName, sampleData);
 
@@ -319,7 +327,24 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
             group.addSampleZone (zone);
         }
 
-        return group;
+        final List<IGroup> groups = new ArrayList<> (roundRobinGroups.values ());
+
+        // Only zones of an actual round robin cycle get the round robin play logic
+        if (groups.size () > 1)
+        {
+            int sequencePosition = 1;
+            for (final IGroup group: groups)
+            {
+                for (final ISampleZone zone: group.getSampleZones ())
+                {
+                    zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                    zone.setSequencePosition (sequencePosition);
+                }
+                sequencePosition++;
+            }
+        }
+
+        return groups;
     }
 
 
