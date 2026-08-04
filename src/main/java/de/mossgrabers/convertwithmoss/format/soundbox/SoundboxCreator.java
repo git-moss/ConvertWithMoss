@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
@@ -201,34 +202,56 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
      */
     private static List<LayerPlan> createLayerPlans (final IMultisampleSource multisampleSource, final String presetName, final Set<String> usedGroupNames)
     {
-        final List<List<ISampleZone>> zoneLists = new ArrayList<> ();
+        final List<List<ISampleZone>> roundRobinLists = new ArrayList<> ();
+        final List<List<ISampleZone>> normalLists = new ArrayList<> ();
         for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
         {
             final List<ISampleZone> zones = new ArrayList<> ();
             for (final ISampleZone zone: group.getSampleZones ())
                 if (zone.getTrigger () != TriggerType.RELEASE)
                     zones.add (zone);
-            if (!zones.isEmpty ())
-                zoneLists.add (zones);
+            if (zones.isEmpty ())
+                continue;
+            if (zones.get (0).getPlayLogic () == PlayLogic.ROUND_ROBIN)
+                roundRobinLists.add (zones);
+            else
+                normalLists.add (zones);
         }
 
-        // Merge all zones into one layer if there are more groups than layers
-        if (zoneLists.size () > MAX_LAYERS)
+        // All round robin groups form the alternating layers of one Soundbox group
+        final List<List<List<ISampleZone>>> layerRobins = new ArrayList<> ();
+        if (roundRobinLists.size () == 1)
+            normalLists.add (0, roundRobinLists.get (0));
+        else if (!roundRobinLists.isEmpty ())
+        {
+            roundRobinLists.sort ((zones1, zones2) -> Integer.compare (getMinimumSequencePosition (zones1), getMinimumSequencePosition (zones2)));
+            layerRobins.add (roundRobinLists);
+        }
+
+        // Merge all remaining zones into one layer if there are more groups than layers
+        final int layersLeft = MAX_LAYERS - layerRobins.size ();
+        if (normalLists.size () > layersLeft)
         {
             final List<ISampleZone> allZones = new ArrayList<> ();
-            for (final List<ISampleZone> zones: zoneLists)
+            for (final List<ISampleZone> zones: normalLists)
                 allZones.addAll (zones);
-            zoneLists.clear ();
-            zoneLists.add (allZones);
+            normalLists.clear ();
+            normalLists.add (allZones);
         }
+        for (final List<ISampleZone> zones: normalLists)
+            layerRobins.add (Collections.singletonList (zones));
 
         final List<LayerPlan> layerPlans = new ArrayList<> ();
-        for (int layerIndex = 0; layerIndex < zoneLists.size (); layerIndex++)
+        for (int layerIndex = 0; layerIndex < layerRobins.size (); layerIndex++)
         {
-            final List<ISampleZone> zones = zoneLists.get (layerIndex);
+            final List<List<ISampleZone>> robins = layerRobins.get (layerIndex);
             final LayerPlan layerPlan = new LayerPlan ();
             layerPlan.groupName = createUniqueName ("G" + presetName + (layerIndex == 0 ? "" : " L" + (layerIndex + 1)), usedGroupNames);
-            layerPlan.zones = zones;
+            layerPlan.robins = robins;
+
+            final List<ISampleZone> zones = new ArrayList<> ();
+            for (final List<ISampleZone> robinZones: robins)
+                zones.addAll (robinZones);
 
             layerPlan.state.active = true;
             layerPlan.state.panning = calculateCommonPanning (zones);
@@ -248,6 +271,16 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             layerPlans.add (layerPlan);
         }
         return layerPlans;
+    }
+
+
+    private static int getMinimumSequencePosition (final List<ISampleZone> zones)
+    {
+        int minimum = Integer.MAX_VALUE;
+        for (final ISampleZone zone: zones)
+            if (zone.getSequencePosition () >= 0)
+                minimum = Math.min (minimum, zone.getSequencePosition ());
+        return minimum;
     }
 
 
@@ -332,26 +365,36 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         groupElement.setAttribute ("pv", PLUGIN_VERSION);
         groupElement.setAttribute (SoundboxTag.ATTR_NAME, layerPlan.groupName);
 
-        for (final ISampleZone zone: layerPlan.zones)
+        final int numberOfRobins = layerPlan.robins.size ();
+        if (numberOfRobins > 1)
         {
-            // Write the data of samples which are shared between zones only once
-            final ISampleData sampleData = zone.getSampleData ().orElse (null);
-            Integer sampleIndex = sampleData == null ? null : sampleIndices.get (sampleData);
-            if (sampleIndex == null)
-            {
-                sampleIndex = Integer.valueOf (zoneSamples.size ());
-                zoneSamples.add (new ZoneSample (multisampleSource, zone));
-                if (sampleData != null)
-                    sampleIndices.put (sampleData, sampleIndex);
-
-                final String sampleName = createUniqueName (FileUtils.createSafeFilename (zone.getName ()), usedSampleNames);
-                XMLUtils.addTextElement (packDocument, soundsElement, SoundboxTag.SOUND, sampleName + ".wav");
-            }
-
-            final Element soundElement = XMLUtils.addElement (packDocument, groupElement, SoundboxTag.SOUND);
-            soundElement.setAttribute ("f", sampleIndex.toString ());
-            soundElement.setTextContent (SoundboxJuceBase64.encode (createSound (zone, layerPlan).write ()));
+            groupElement.setAttribute ("rrLayers", Integer.toString (numberOfRobins));
+            groupElement.setAttribute ("rrMode", "0");
         }
+
+        for (int robinIndex = 0; robinIndex < numberOfRobins; robinIndex++)
+            for (final ISampleZone zone: layerPlan.robins.get (robinIndex))
+            {
+                // Write the data of samples which are shared between zones only once
+                final ISampleData sampleData = zone.getSampleData ().orElse (null);
+                Integer sampleIndex = sampleData == null ? null : sampleIndices.get (sampleData);
+                if (sampleIndex == null)
+                {
+                    sampleIndex = Integer.valueOf (zoneSamples.size ());
+                    zoneSamples.add (new ZoneSample (multisampleSource, zone));
+                    if (sampleData != null)
+                        sampleIndices.put (sampleData, sampleIndex);
+
+                    final String sampleName = createUniqueName (FileUtils.createSafeFilename (zone.getName ()), usedSampleNames);
+                    XMLUtils.addTextElement (packDocument, soundsElement, SoundboxTag.SOUND, sampleName + ".wav");
+                }
+
+                final Element soundElement = XMLUtils.addElement (packDocument, groupElement, SoundboxTag.SOUND);
+                soundElement.setAttribute ("f", sampleIndex.toString ());
+                if (numberOfRobins > 1)
+                    soundElement.setAttribute ("rrLayer", Integer.toString (robinIndex));
+                soundElement.setTextContent (SoundboxJuceBase64.encode (createSound (zone, layerPlan).write ()));
+            }
     }
 
 
@@ -566,7 +609,8 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     private static class LayerPlan
     {
         String                        groupName = "";
-        List<ISampleZone>             zones     = Collections.emptyList ();
+        /** The zones of the layer, one list per round robin (one list = no round robin). */
+        List<List<ISampleZone>>       robins    = Collections.emptyList ();
         final SoundboxLayerState      state     = new SoundboxLayerState ();
         final SoundboxEngineSettings  settings  = new SoundboxEngineSettings ();
     }

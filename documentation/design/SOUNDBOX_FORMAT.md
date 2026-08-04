@@ -55,12 +55,14 @@ the self-contained `.sbpack`.
 
 `pv` is the plug-in version that wrote the group and determines the sound blob size (see below).
 Newer groups (pv ≥ 1.0.8) support round robins: the group gets `rrLayers="<count>" rrMode="0"`
-and the `S` elements use `f0` (and presumably `f1`, …) instead of `f`, plus `bpm0="<int>"`,
-`rrMode="0"`, `rrLayer="<int>"` attributes. `rrLayer` assigns the sound to one of the round
-robin layers of the group; ConvertWithMoss reads each layer as one group with round robin play
-logic. No pack or group with more than one round robin layer has been observed yet, so the
-multi-layer encoding (and whether one `S` can reference several files `f0`, `f1`, …) is partially
-an assumption - to be confirmed against a group saved by the plug-in with 2+ round robin layers.
+and the `S` elements use `f0` instead of `f`, plus `bpm0="<int>"`, `rrMode="0"`,
+`rrLayer="<int>"` attributes. `rrLayer` assigns the sound to one of the round robin layers of
+the group; ConvertWithMoss reads each layer as one group with round robin play logic and writes
+the attributes for its round robin groups. Verified with plug-in 1.2.1 (import test with two
+alternating layers): the `rrLayers`/`rrLayer` attributes are honored both in old-style groups
+(`f`, 75 byte blobs, pv 1.0.0b19) and new-style groups (`f0`/`bpm0`, 87 byte blobs, pv 1.2.0);
+ConvertWithMoss writes the old-style variant. The factory packs contain no group with more than
+one round robin layer.
 
 ## Binary blobs — JUCE MemoryBlock Base64
 
