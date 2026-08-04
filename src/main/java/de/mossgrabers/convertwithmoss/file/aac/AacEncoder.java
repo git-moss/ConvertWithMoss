@@ -275,9 +275,8 @@ public class AacEncoder
      * @param windowSequence The window sequence of the frame
      * @param scalefactorBoost The boost factor
      * @return The encoded packet
-     * @throws IOException Could not encode the frame
      */
-    private byte [] encodeFrame (final float [] [] samples, final int packet, final int windowSequence, final int scalefactorBoost) throws IOException
+    private byte [] encodeFrame (final float [] [] samples, final int packet, final int windowSequence, final int scalefactorBoost)
     {
         final BitWriter bits = new BitWriter (new byte [16384]);
 

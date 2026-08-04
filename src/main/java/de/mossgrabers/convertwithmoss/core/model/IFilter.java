@@ -70,6 +70,15 @@ public interface IFilter
 
 
     /**
+     * Get the low frequency oscillator modulator for the cutoff. A depth of zero means that there
+     * is no modulation.
+     *
+     * @return The modulator, never null
+     */
+    ILfoModulator getCutoffLfoModulator ();
+
+
+    /**
      * Get the keyboard tracking amount applied to the filter cutoff. A value of 0 means no
      * tracking, 1 means the cutoff follows the played note one-to-one (one semi-tone per semi-tone,
      * +100%) and -1 means inverse tracking (-100%).
