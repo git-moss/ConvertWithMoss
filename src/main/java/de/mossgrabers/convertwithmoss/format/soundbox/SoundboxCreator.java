@@ -36,9 +36,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
-import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
-import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 
@@ -458,27 +455,12 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     private static double getNumberOfFrames (final ISampleZone zone)
     {
         final Optional<ISampleData> sampleData = zone.getSampleData ();
-        if (sampleData.isEmpty ())
-            return 0;
-
-        try
-        {
-            return sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
-        }
-        catch (final IOException ex)
-        {
-            // Fall through and try the RIFF parser
-        }
-
-        // javax.sound cannot handle WAV files which start with unknown chunks (e.g. JUNK), use
-        // the RIFF parser instead
-        if (sampleData.get () instanceof final WavFileSampleData wavSampleData)
+        if (sampleData.isPresent ())
             try
             {
-                final WaveFile waveFile = wavSampleData.getWaveFile ();
-                return waveFile.getDataChunk ().calculateLength (waveFile.getFormatChunk ());
+                return sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
             }
-            catch (final IOException | CompressionNotSupportedException ex)
+            catch (final IOException ex)
             {
                 // Fall through to the last resort
             }

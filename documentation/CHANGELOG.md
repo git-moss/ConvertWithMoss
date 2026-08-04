@@ -36,6 +36,7 @@
   * Fixed: Changing the sample rate of the samples used a linear interpolation, which is not band-limited: reducing the rate folded all frequencies above the new Nyquist frequency back into the audible range (measured on a sweep which lies entirely above it: -9 dB instead of silence) and raising it left images of the source spectrum above the original Nyquist frequency. Both are now converted with a windowed sinc interpolation, which lowers the aliasing of that sweep by 92 dB and the images of a 32 kHz sample raised to 48 kHz from -41 dB to -84 dB.
 * WAV
   * New: WAV files which contain a complete Ogg stream instead of PCM data (marked with one of the Ogg Vorbis WAVE format codes, e.g. the samples of the legacy DirectWave packs of FL Studio) are read by de-compressing the embedded stream. They were rejected as an unsupported source format before.
+  * Fixed: The audio metadata of a WAV file inside of a ZIP file could not be read when the file contains a large padding chunk in front of the data chunk (e.g. the PAD chunks in Audiomodern Soundbox packs). Destinations which need the metadata quietly dropped such a preset with only 'Resetting to invalid mark' in the log, e.g. converting such sources to Waldorf Quantum/Iridium. The metadata is now read with the RIFF parser instead of javax.sound.
 
 ## 20.0.0
 
