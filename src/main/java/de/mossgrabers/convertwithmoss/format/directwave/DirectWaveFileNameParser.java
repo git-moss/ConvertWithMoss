@@ -28,8 +28,8 @@ import java.util.regex.Pattern;
  * velocity range and 'T' trigger group settings, e.g.
  * <i>samplename_C4+KA3-F#4+V64-95+TG1+TY3+TF100+TO15.wav</i>.
  * </ul>
- * Note names use the Image-Line octave convention: MIDI note = 12 * octave + semitone, therefore
- * C5 is the middle C (60) and there are no negative octaves.
+ * Note names use the Image-Line octave convention: MIDI note = 12 * octave + semitone, therefore C5
+ * is the middle C (60) and there are no negative octaves.
  *
  * @author Jürgen Moßgraber
  */
@@ -39,35 +39,35 @@ public class DirectWaveFileNameParser
     public static class ParsedZone
     {
         /** The sample file. */
-        public File file;
+        public File   file;
         /** The name of the zone. */
         public String name;
         /** The root key. */
-        public int    rootKey        = -1;
+        public int    rootKey         = -1;
         /** The low key of the key range or -1 if it needs to be calculated. */
-        public int    keyLow         = -1;
+        public int    keyLow          = -1;
         /** The high key of the key range or -1 if it needs to be calculated. */
-        public int    keyHigh        = -1;
+        public int    keyHigh         = -1;
         /** The low velocity or -1 if it needs to be calculated. */
-        public int    velocityLow    = -1;
+        public int    velocityLow     = -1;
         /** The high velocity or -1 if it needs to be calculated. */
-        public int    velocityHigh   = -1;
+        public int    velocityHigh    = -1;
         /** The velocity at which the sample was recorded or -1 if not present. */
         public int    sampledVelocity = -1;
         /** The 1-based round-robin cycle or -1 if not present. */
-        public int    cycle          = -1;
+        public int    cycle           = -1;
         /** The trigger group (0-99) or -1 if not present. */
-        public int    triggerGroup   = -1;
+        public int    triggerGroup    = -1;
         /** The trigger type (0: normal, 1: cycle, 2: random, 3: avoid previous) or -1. */
-        public int    triggerType    = -1;
+        public int    triggerType     = -1;
     }
 
 
-    private static final Pattern  NOTE_PATTERN     = Pattern.compile ("([A-Ga-g])([#b]?)(10|[0-9])");
-    private static final Pattern  VELOCITY_PATTERN = Pattern.compile ("V(\\d+)-(\\d+)");
-    private static final Pattern  KEY_PATTERN      = Pattern.compile ("K(.+)-(.+)");
-    private static final Pattern  TRIGGER_PATTERN  = Pattern.compile ("T([GYFO])(\\d+)");
-    private static final int []   SEMITONES        =
+    private static final Pattern   NOTE_PATTERN     = Pattern.compile ("([A-Ga-g])([#b]?)(10|\\d)");
+    private static final Pattern   VELOCITY_PATTERN = Pattern.compile ("V(\\d+)-(\\d+)");
+    private static final Pattern   KEY_PATTERN      = Pattern.compile ("K(.+)-(.+)");
+    private static final Pattern   TRIGGER_PATTERN  = Pattern.compile ("T([GYFO])(\\d+)");
+    private static final int []    SEMITONES        =
     {
         9,
         11,
@@ -77,7 +77,7 @@ public class DirectWaveFileNameParser
         5,
         7
     };
-    private static final String [] NOTE_NAMES      =
+    private static final String [] NOTE_NAMES       =
     {
         "C",
         "C#",

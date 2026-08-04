@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.core.model.implementation;
 
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IModulator;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 
@@ -24,6 +25,7 @@ public class DefaultFilter implements IFilter
     protected int                envelopeDepth;
     protected double             cutoffKeyTracking       = 0;
     protected IEnvelopeModulator cutoffEnvelopeModulator = new DefaultEnvelopeModulator (0);
+    protected ILfoModulator      cutoffLfoModulator      = new DefaultLfoModulator (0);
     protected IModulator         cutoffVelocityModulator = new DefaultModulator (0);
 
 
@@ -89,6 +91,14 @@ public class DefaultFilter implements IFilter
     public IEnvelopeModulator getCutoffEnvelopeModulator ()
     {
         return this.cutoffEnvelopeModulator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public ILfoModulator getCutoffLfoModulator ()
+    {
+        return this.cutoffLfoModulator;
     }
 
 

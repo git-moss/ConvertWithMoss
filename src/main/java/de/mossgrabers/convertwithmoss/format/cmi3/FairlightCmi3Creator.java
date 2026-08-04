@@ -32,62 +32,64 @@ import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Creator for Fairlight CMI Voice (VC) files. Three targets can be written. The default is a
- * Series III voice: each sample zone becomes a sub-voice with its key range taken from the 128-key
- * mapping table, with 16-bit mono or stereo audio, loop points, tuning and the amplitude envelope.
+ * Creator for Fairlight CMI Voice (VC) files. Three targets can be written. The default is a Series
+ * III voice: each sample zone becomes a sub-voice with its key range taken from the 128-key mapping
+ * table, with 16-bit mono or stereo audio, loop points, tuning and the amplitude envelope.
  * Alternatively the 8-bit voice format of the CMI I/II/IIx is written (one fixed-size file per
- * sample zone with the control (CO) file it references), which is the format read by the
- * QasarBeach recreation, or the native 16-bit format of QasarBeach itself, which carries the loop,
- * release and level in the file.
+ * sample zone with the control (CO) file it references), which is the format read by the QasarBeach
+ * recreation, or the native 16-bit format of QasarBeach itself, which carries the loop, release and
+ * level in the file.
  *
  * @author Jürgen Moßgraber
  */
 public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI>
 {
-    private static final int                    VC_VERSION            = 768;
-    private static final int                    VC_NAME_SIZE          = 16;
-    private static final int                    ZONE_TABLE_OFFSET     = 256;
-    private static final int                    FUNC_BLOCK_BASE       = 768;
-    private static final int                    SAMPLE_DATA_OFFSET    = 2304;
-    private static final int                    PAGE_SIZE             = 256;
-    private static final int                    FIRST_SUB_VOICE_PAGE  = 1024;
+    private static final String                 IDS_NOTIFY_STORING         = "IDS_NOTIFY_STORING";
+
+    private static final int                    VC_VERSION                 = 768;
+    private static final int                    VC_NAME_SIZE               = 16;
+    private static final int                    ZONE_TABLE_OFFSET          = 256;
+    private static final int                    FUNC_BLOCK_BASE            = 768;
+    private static final int                    SAMPLE_DATA_OFFSET         = 2304;
+    private static final int                    PAGE_SIZE                  = 256;
+    private static final int                    FIRST_SUB_VOICE_PAGE       = 1024;
     /** The sub-voice IDs are stored in signed bytes, therefore only 1-127 are available. */
-    private static final int                    MAX_SUB_VOICES        = 127;
+    private static final int                    MAX_SUB_VOICES             = 127;
 
     /** The reference sample rate of the Series III pitch law. */
-    private static final double                 PITCH_REFERENCE_RATE  = 44701.0;
+    private static final double                 PITCH_REFERENCE_RATE       = 44701.0;
 
-    private static final int                    IIX_FILE_SIZE         = 21888;
-    private static final int                    IIX_AUDIO_OFFSET      = 0x1500;
-    private static final int                    IIX_NUM_SAMPLES       = 16384;
-    private static final int                    IIX_SEGMENT_SIZE      = 128;
-    private static final int                    IIX_CO_NAME_OFFSET    = 0x00A0;
-    private static final int                    IIX_LOOP_START_OFFSET = 0x1332;
-    private static final int                    IIX_LOOP_END_OFFSET   = 0x1333;
-    private static final int                    IIX_LOOP_MODE_OFFSET  = 0x133B;
+    private static final int                    IIX_FILE_SIZE              = 21888;
+    private static final int                    IIX_AUDIO_OFFSET           = 0x1500;
+    private static final int                    IIX_NUM_SAMPLES            = 16384;
+    private static final int                    IIX_SEGMENT_SIZE           = 128;
+    private static final int                    IIX_CO_NAME_OFFSET         = 0x00A0;
+    private static final int                    IIX_LOOP_START_OFFSET      = 0x1332;
+    private static final int                    IIX_LOOP_END_OFFSET        = 0x1333;
+    private static final int                    IIX_LOOP_MODE_OFFSET       = 0x133B;
 
     /** The control (CO) file: 26 parameters of 8 bytes each starting at 0x80. */
-    private static final int                    CO_FILE_SIZE          = 384;
-    private static final int                    CO_PARAM_OFFSET       = 0x80;
+    private static final int                    CO_FILE_SIZE               = 384;
+    private static final int                    CO_PARAM_OFFSET            = 0x80;
     /** Patch type: a static value. */
-    private static final int                    CO_PATCH_VALUE        = 0xB1;
+    private static final int                    CO_PATCH_VALUE             = 0xB1;
     /** Patch type: a boolean which is on. */
-    private static final int                    CO_PATCH_ON           = 0xC0;
+    private static final int                    CO_PATCH_ON                = 0xC0;
     /** Patch type: a boolean which is off. */
-    private static final int                    CO_PATCH_OFF          = 0xC1;
+    private static final int                    CO_PATCH_OFF               = 0xC1;
 
     /** The native format of the QasarBeach recreation: 'QBV2', name, 16-bit audio, 'QBC9' chunk. */
-    private static final int                    QBV2_NAME_OFFSET      = 0x04;
-    private static final int                    QBV2_AUDIO_OFFSET     = 0x11;
-    private static final int                    QBV2_CONTROL_OFFSET   = QBV2_AUDIO_OFFSET + IIX_NUM_SAMPLES * 2;
+    private static final int                    QBV2_NAME_OFFSET           = 0x04;
+    private static final int                    QBV2_AUDIO_OFFSET          = 0x11;
+    private static final int                    QBV2_CONTROL_OFFSET        = QBV2_AUDIO_OFFSET + IIX_NUM_SAMPLES * 2;
     /** Page 7 parameter block: the damping (release) and volume, stored 0-based. */
-    private static final int                    QBV2_DAMPING_OFFSET   = 0xD3DD;
-    private static final int                    QBV2_VOLUME_OFFSET    = 0xD3CB;
+    private static final int                    QBV2_DAMPING_OFFSET        = 0xD3DD;
+    private static final int                    QBV2_VOLUME_OFFSET         = 0xD3CB;
     /** The measured fade-out time of the damping: 0.0255 * dial value^0.741 seconds. */
     private static final double                 QBV2_DAMPING_TIME_SCALE    = 0.0255;
     private static final double                 QBV2_DAMPING_TIME_EXPONENT = 0.741;
 
-    private static final DestinationAudioFormat DESTINATION_FORMAT    = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat DESTINATION_FORMAT         = new DestinationAudioFormat (new int []
     {
         16
     }, -1, false);
@@ -142,9 +144,13 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
     }
 
 
-    ////////////////////////////////////////////////////////////
-    // Series III
-
+    /**
+     * Write series 3 format.
+     *
+     * @param destinationFolder Where to store the files
+     * @param multisampleSource The multi-sample source
+     * @throws IOException Could not store the files
+     */
     private void createSeries3File (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final List<IGroup> groups = this.combineSplitStereo (multisampleSource);
@@ -165,7 +171,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
         // The voice has no velocity dimension. Fill the 128-key mapping table with the loudest
         // velocity layer first, so that it wins where zones overlap
-        preparedZones.sort ( (z1, z2) -> {
+        preparedZones.sort ((z1, z2) -> {
             final int velocityHigh1 = limitToDefault (z1.zone.getVelocityHigh (), 127);
             final int velocityHigh2 = limitToDefault (z2.zone.getVelocityHigh (), 127);
             if (velocityHigh1 != velocityHigh2)
@@ -220,10 +226,10 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
         for (final PreparedZone preparedZone: subVoices)
             isStereo |= preparedZone.channelData.length == 2;
 
-        final byte [] fileData = this.assembleSeries3File (subVoices, mapping, isStereo);
+        final byte [] fileData = assembleSeries3File (subVoices, mapping, isStereo);
 
         final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "vc");
-        this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, outputFile.getAbsolutePath ());
         try (final OutputStream out = new FileOutputStream (outputFile))
         {
             out.write (fileData);
@@ -303,7 +309,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
      * @param isStereo True if the file is written as a stereo voice
      * @return The file data
      */
-    private byte [] assembleSeries3File (final List<PreparedZone> subVoices, final byte [] mapping, final boolean isStereo)
+    private static byte [] assembleSeries3File (final List<PreparedZone> subVoices, final byte [] mapping, final boolean isStereo)
     {
         // Calculate the page aligned offset of each sub-voice
         final int [] subVoiceOffsets = new int [subVoices.size ()];
@@ -490,7 +496,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
      */
     private static int encodeTime (final double seconds, final int divisor)
     {
-        return (int) Math.clamp (Math.round (limitToDefault (seconds, 0) * divisor), 0, 32767);
+        return Math.clamp (Math.round (limitToDefault (seconds, 0) * divisor), 0, 32767);
     }
 
 
@@ -507,7 +513,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             return 0;
         if (sustainLevel <= 0)
             return 520;
-        return (int) Math.clamp (Math.round (256.0 * Math.log10 ((1.01 - sustainLevel) * 100.0)), 0, 32767);
+        return Math.clamp (Math.round (256.0 * Math.log10 ((1.01 - sustainLevel) * 100.0)), 0, 32767);
     }
 
 
@@ -525,9 +531,8 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
 
     /**
-     * Encode the root key and fine tuning of a zone into the tune parameter of the Series III
-     * pitch law, which combines the pitch with the deviation of the sample rate from its reference
-     * rate.
+     * Encode the root key and fine tuning of a zone into the tune parameter of the Series III pitch
+     * law, which combines the pitch with the deviation of the sample rate from its reference rate.
      *
      * @param zone The zone
      * @param sampleRate The sample rate of the written audio data
@@ -550,8 +555,8 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
     /**
      * Convert the audio of a zone to 16-bit PCM. An 8-bit source is unsigned (the WAV convention)
-     * and stays unsigned when the audio system widens it to 16-bit - the sign bit is corrected
-     * here so that the returned data is always signed PCM.
+     * and stays unsigned when the audio system widens it to 16-bit - the sign bit is corrected here
+     * so that the returned data is always signed PCM.
      *
      * @param sampleData The sample data of the zone
      * @param format The destination format
@@ -594,9 +599,6 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
         return channelData;
     }
 
-
-    ////////////////////////////////////////////////////////////
-    // Series IIx
 
     /**
      * Write each sample zone as a voice file of the 8-bit CMI I/II/IIx dialect or of the native
@@ -650,14 +652,14 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
                 // The control parameters (loop, envelope, level) are read from a control (CO)
                 // file which the voice references by an 8 character name
-                controlName = createUniqueDOSFileName (destinationFolder, FileUtils.createSafeFilename (name).replaceAll ("[^A-Za-z0-9_]", "_"), ".CO", controlFileNames, false);
+                controlName = createUniqueDOSFileName (destinationFolder, FileUtils.createSafeFilename (name).replaceAll ("\\W", "_"), ".CO", controlFileNames, false);
                 for (int c = 0; c < 8; c++)
                     fileData[IIX_CO_NAME_OFFSET + c] = (byte) (c < controlName.length () ? controlName.charAt (c) : ' ');
                 controlFileData = createIIxControlFileData (zone, fileData);
             }
 
             final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (name), "vc");
-            this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
+            this.notifier.log (IDS_NOTIFY_STORING, outputFile.getAbsolutePath ());
             try (final OutputStream out = new FileOutputStream (outputFile))
             {
                 out.write (fileData);
@@ -666,7 +668,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             if (controlFileData != null)
             {
                 final File controlFile = new File (destinationFolder, controlName + ".CO");
-                this.notifier.log ("IDS_NOTIFY_STORING", controlFile.getAbsolutePath ());
+                this.notifier.log (IDS_NOTIFY_STORING, controlFile.getAbsolutePath ());
                 try (final OutputStream out = new FileOutputStream (controlFile))
                 {
                     out.write (controlFileData);
@@ -794,8 +796,8 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
     /**
      * Create the data of one voice file in the native format of the QasarBeach recreation. The
-     * unknown parts are taken from a template captured from a QasarBeach save; the name, the
-     * 16-bit audio, the loop, the damping (release) and the volume are patched in.
+     * unknown parts are taken from a template captured from a QasarBeach save; the name, the 16-bit
+     * audio, the loop, the damping (release) and the volume are patched in.
      *
      * @param zone The zone
      * @param renderedVoice The rendered voice
@@ -876,10 +878,10 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
         final IEnvelopeModulator modulator = zone.getAmplitudeEnvelopeModulator ();
         final IEnvelope envelope = modulator.getDepth () > 0 ? modulator.getSource () : null;
-        final int attack = (int) Math.clamp (Math.round (limitToDefault (envelope == null ? 0 : envelope.getAttackTime (), 0) * 1000.0), 0, 16383);
+        final int attack = Math.clamp (Math.round (limitToDefault (envelope == null ? 0 : envelope.getAttackTime (), 0) * 1000.0), 0, 16383);
         // A minimum release prevents a click when the key is released
-        final int damping = (int) Math.clamp (Math.round (limitToDefault (envelope == null ? 0 : envelope.getReleaseTime (), 0) * 1000.0), 15, 16383);
-        final int level = (int) Math.clamp (Math.round (128.0 * Math.pow (10, zone.getGain () / 20.0)), 1, 255);
+        final int damping = Math.clamp (Math.round (limitToDefault (envelope == null ? 0 : envelope.getReleaseTime (), 0) * 1000.0), 15, 16383);
+        final int level = Math.clamp (Math.round (128.0 * Math.pow (10, zone.getGain () / 20.0)), 1, 255);
 
         final byte [] out = new byte [CO_FILE_SIZE];
         int index = 0;
@@ -940,9 +942,6 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
         return index + 1;
     }
 
-
-    ////////////////////////////////////////////////////////////
-    // Helpers
 
     /**
      * Write a big-endian unsigned 16-bit integer.
