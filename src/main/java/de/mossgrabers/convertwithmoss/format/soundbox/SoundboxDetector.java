@@ -319,7 +319,9 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
             zone.setTuning (sound.tuneSemitones + engineSettings.transposeSemitones + (engineSettings.octaveIndex - SoundboxEngineSettings.OCTAVE_CENTER) * 12.0 + engineSettings.fineTuneCents / 100.0);
 
             final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
-            envelope.setAttackTime (engineSettings.attack);
+            envelope.setAttackTime (engineSettings.attack * SoundboxEngineSettings.MAX_ATTACK_SECONDS);
+            // The time laws of the decay and release knobs are not calibrated yet, pass the
+            // knob fraction through unchanged
             envelope.setDecayTime (engineSettings.decay);
             envelope.setSustainLevel (engineSettings.sustain);
             envelope.setReleaseTime (engineSettings.release);

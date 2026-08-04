@@ -20,9 +20,15 @@ public class SoundboxEngineSettings
     private static final int SIZE          = 33;
 
     /** The voice mode value for polyphonic play-back. */
-    public static final int  VOICE_MODE_POLY = 2;
+    public static final int    VOICE_MODE_POLY     = 2;
     /** The octave index which means no octave offset. */
-    public static final int  OCTAVE_CENTER   = 2;
+    public static final int    OCTAVE_CENTER       = 2;
+    /**
+     * The attack time in seconds when the attack knob is at 100%. Measured with plug-in 1.2.1:
+     * the knob maps linearly to the time (25% = 1.0s, 50% = 2.0s, 100% = 4.0s) and the ramp
+     * itself is linear as well.
+     */
+    public static final double MAX_ATTACK_SECONDS  = 4.0;
 
     /** The voice mode (2 = polyphonic). */
     public int    voiceMode         = VOICE_MODE_POLY;
@@ -34,13 +40,13 @@ public class SoundboxEngineSettings
     public double fineTuneCents     = 0;
     /** The octave offset as an index with center 2 (= no offset). */
     public int    octaveIndex       = OCTAVE_CENTER;
-    /** The amplitude envelope attack time in seconds. */
+    /** The amplitude envelope attack as the normalized knob position (0..1 = 0-100%). */
     public double attack            = 0;
-    /** The amplitude envelope decay time in seconds. */
+    /** The amplitude envelope decay as the normalized knob position (0..1, default 20%). */
     public double decay             = 0.2;
     /** The amplitude envelope sustain level (0..1). */
     public double sustain           = 1;
-    /** The amplitude envelope release time in seconds. */
+    /** The amplitude envelope release as the normalized knob position (0..1). */
     public double release           = 0;
 
 

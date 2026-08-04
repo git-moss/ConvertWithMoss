@@ -154,15 +154,18 @@ read (all Cosmo groups imported by plug-in 1.2.x keep their 75 byte blobs).
 | 0x05   | f32  | transpose  | semi-tones, always 0 in corpus                     |
 | 0x09   | f32  | fine tune  | cents (corpus: ±5, ±10)                            |
 | 0x0D   | u32  | octave     | index with center 2 = ±0 octaves (assumed)         |
-| 0x11   | f32  | attack     | knob position 0..1 (UI shows 0-100%)               |
+| 0x11   | f32  | attack     | knob 0..1; time = knob x 4.0 s (measured, linear)  |
 | 0x15   | f32  | decay      | knob position 0..1; default 0.2 = the UI's 20%     |
 | 0x19   | f32  | sustain    | 0..1 (UI shows 0-100%)                             |
 | 0x1D   | f32  | release    | knob position 0..1 (UI shows 0-100%)               |
 
 The ADSR values are the normalized knob positions of the plug-in (the UI displays them as
 0-100%, e.g. the defaults decay 0.2/sustain 1.0 show as 20%/100%). Neither the UI nor the user
-manual documents the mapping of the percentage to a time, so ConvertWithMoss passes the fraction
-through unchanged (a knob fraction is treated as that many seconds) until the law is calibrated.
+manual documents the mapping of the percentage to a time. The attack was measured with plug-in
+1.2.1 (recordings of a constant tone at known knob positions): the knob maps linearly to the
+time with 100% = 4.0 seconds and the ramp itself is linear (25% = 1.0 s, 50% = 2.0 s,
+100% = 4.0 s). The decay and release laws are not calibrated yet; their knob fractions are
+passed through unchanged.
 
 The engine `state` (13 bytes) and `sequence` (128 bytes) blobs belong to the 4 LFO engines of
 the Modulation tab (the 128 byte sequence holds the 32 steps of the LFO sequencer shape); they
