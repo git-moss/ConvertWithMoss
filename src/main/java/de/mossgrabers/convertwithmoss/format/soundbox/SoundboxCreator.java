@@ -8,10 +8,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,58 +133,47 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final Element soundsElement = XMLUtils.addElement (packDocument, packElement, SoundboxTag.SOUNDS);
 
         final List<String> presetContents = new ArrayList<> ();
-        final List<ZoneSample> zoneSamples = new ArrayList<> ();
-        final Map<ISampleData, Integer> sampleIndices = new IdentityHashMap<> ();
         final Set<String> usedGroupNames = new HashSet<> ();
-        final Set<String> usedSampleNames = new HashSet<> ();
 
-        for (final IMultisampleSource multisampleSource: multisampleSources)
-        {
-            final String presetName = multisampleSource.getName ();
-            final Element presetNameElement = XMLUtils.addElement (packDocument, presetsElement, SoundboxTag.PRESET_NAME);
-            presetNameElement.setAttribute (SoundboxTag.ATTR_NAME, presetName);
-
-            final List<LayerPlan> layerPlans = createLayerPlans (multisampleSource, presetName, usedGroupNames);
-            for (final LayerPlan layerPlan: layerPlans)
-                this.createGroup (packDocument, groupsElement, soundsElement, layerPlan, multisampleSource, zoneSamples, sampleIndices, usedSampleNames);
-
-            final Optional<String> presetContent = this.createPresetDocument (layerPlans);
-            if (presetContent.isEmpty ())
-                return;
-            presetContents.add (presetContent.get ());
-        }
-
-        final Optional<String> packContent = this.createXMLString (packDocument);
-        if (packContent.isEmpty ())
-            return;
-
+        // The samples are written to the ZIP while the sound entries are created, so that
+        // duplicated sample data can be detected by its content and stored only once. The
+        // original packs store the pack description behind the samples as well.
         final Date dateTime = firstMetadata.getCreationDateTime ();
+        boolean success = false;
         try (final ZipOutputStream zipOutputStream = new ZipOutputStream (new FileOutputStream (packFile)))
         {
             zipOutputStream.setMethod (ZipOutputStream.STORED);
-            AbstractCreator.storeTextFile (zipOutputStream, SoundboxTag.PACK_FILE, packContent.get (), dateTime);
+            final SamplePool samplePool = new SamplePool (zipOutputStream, dateTime);
+
+            for (final IMultisampleSource multisampleSource: multisampleSources)
+            {
+                final String presetName = multisampleSource.getName ();
+                final Element presetNameElement = XMLUtils.addElement (packDocument, presetsElement, SoundboxTag.PRESET_NAME);
+                presetNameElement.setAttribute (SoundboxTag.ATTR_NAME, presetName);
+
+                final List<LayerPlan> layerPlans = createLayerPlans (multisampleSource, presetName, usedGroupNames);
+                for (final LayerPlan layerPlan: layerPlans)
+                    this.createGroup (packDocument, groupsElement, soundsElement, layerPlan, multisampleSource, samplePool);
+
+                final Optional<String> presetContent = this.createPresetDocument (layerPlans);
+                if (presetContent.isEmpty ())
+                    return;
+                presetContents.add (presetContent.get ());
+            }
+
+            final Optional<String> packContent = this.createXMLString (packDocument);
+            if (packContent.isEmpty ())
+                return;
+
             for (int i = 0; i < presetContents.size (); i++)
                 AbstractCreator.storeTextFile (zipOutputStream, SoundboxTag.PRESETS_FOLDER + "p" + i + ".sbset", presetContents.get (i), dateTime);
-
-            for (int i = 0; i < zoneSamples.size (); i++)
-            {
-                this.progress.notifyProgress ();
-                final ZoneSample zoneSample = zoneSamples.get (i);
-                final Optional<ISampleData> sampleData = zoneSample.zone.getSampleData ();
-                if (sampleData.isEmpty ())
-                {
-                    this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zoneSample.multisampleSource.getName (), zoneSample.zone.getName ());
-                    continue;
-                }
-                try (final ByteArrayOutputStream sampleOutput = new ByteArrayOutputStream ())
-                {
-                    if (this.requiresRewrite (DESTINATION_FORMAT))
-                        this.rewriteFile (zoneSample.multisampleSource, zoneSample.zone, sampleOutput, DESTINATION_FORMAT, false);
-                    else
-                        sampleData.get ().writeSample (sampleOutput);
-                    AbstractCreator.storeDataFile (zipOutputStream, SoundboxTag.SAMPLES_FOLDER + "s" + i, sampleOutput.toByteArray (), dateTime);
-                }
-            }
+            AbstractCreator.storeTextFile (zipOutputStream, SoundboxTag.PACK_FILE, packContent.get (), dateTime);
+            success = true;
+        }
+        finally
+        {
+            if (!success)
+                Files.deleteIfExists (packFile.toPath ());
         }
 
         this.progress.notifyDone ();
@@ -349,13 +343,10 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param soundsElement The element to which to add the sample file names
      * @param layerPlan The layer to create the group for
      * @param multisampleSource The multi-sample source
-     * @param zoneSamples The list of all sample files of the pack, the zones of the layer are
-     *            appended to it
-     * @param sampleIndices The already stored sample data with their index to write the data of
-     *            shared samples only once
-     * @param usedSampleNames All already used sample file names to prevent duplicates
+     * @param samplePool The pool which stores the sample files in the ZIP
+     * @throws IOException Could not store a sample
      */
-    private void createGroup (final Document packDocument, final Element groupsElement, final Element soundsElement, final LayerPlan layerPlan, final IMultisampleSource multisampleSource, final List<ZoneSample> zoneSamples, final Map<ISampleData, Integer> sampleIndices, final Set<String> usedSampleNames)
+    private void createGroup (final Document packDocument, final Element groupsElement, final Element soundsElement, final LayerPlan layerPlan, final IMultisampleSource multisampleSource, final SamplePool samplePool) throws IOException
     {
         final Element groupElement = XMLUtils.addElement (packDocument, groupsElement, SoundboxTag.GROUP);
         groupElement.setAttribute ("gv", "1");
@@ -372,26 +363,99 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         for (int robinIndex = 0; robinIndex < numberOfRobins; robinIndex++)
             for (final ISampleZone zone: layerPlan.robins.get (robinIndex))
             {
-                // Write the data of samples which are shared between zones only once
-                final ISampleData sampleData = zone.getSampleData ().orElse (null);
-                Integer sampleIndex = sampleData == null ? null : sampleIndices.get (sampleData);
-                if (sampleIndex == null)
-                {
-                    sampleIndex = Integer.valueOf (zoneSamples.size ());
-                    zoneSamples.add (new ZoneSample (multisampleSource, zone));
-                    if (sampleData != null)
-                        sampleIndices.put (sampleData, sampleIndex);
-
-                    final String sampleName = createUniqueName (FileUtils.createSafeFilename (zone.getName ()), usedSampleNames);
-                    XMLUtils.addTextElement (packDocument, soundsElement, SoundboxTag.SOUND, sampleName + ".wav");
-                }
+                final int sampleIndex = this.storeZoneSample (packDocument, soundsElement, multisampleSource, zone, samplePool);
+                if (sampleIndex < 0)
+                    continue;
 
                 final Element soundElement = XMLUtils.addElement (packDocument, groupElement, SoundboxTag.SOUND);
-                soundElement.setAttribute ("f", sampleIndex.toString ());
+                soundElement.setAttribute ("f", Integer.toString (sampleIndex));
                 if (numberOfRobins > 1)
                     soundElement.setAttribute ("rrLayer", Integer.toString (robinIndex));
                 soundElement.setTextContent (SoundboxJuceBase64.encode (createSound (zone, layerPlan).write ()));
             }
+    }
+
+
+    /**
+     * Stores the sample data of a zone in the ZIP and adds its file name to the sounds list.
+     * Sample data which is shared between zones or is identical to already stored data is stored
+     * only once (unless the WAV chunk options require zone specific chunks).
+     *
+     * @param packDocument The pack XML document
+     * @param soundsElement The element to which to add the sample file names
+     * @param multisampleSource The multi-sample source
+     * @param zone The zone
+     * @param samplePool The pool which stores the sample files in the ZIP
+     * @return The index of the sample file in the pool or -1 if the zone has no sample data
+     * @throws IOException Could not store the sample
+     */
+    private int storeZoneSample (final Document packDocument, final Element soundsElement, final IMultisampleSource multisampleSource, final ISampleZone zone, final SamplePool samplePool) throws IOException
+    {
+        final Optional<ISampleData> optSampleData = zone.getSampleData ();
+        if (optSampleData.isEmpty ())
+        {
+            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, multisampleSource.getName (), zone.getName ());
+            return -1;
+        }
+        final ISampleData sampleData = optSampleData.get ();
+
+        // With chunk updates enabled the written file depends on the zone, do not de-duplicate
+        final boolean requiresRewrite = this.requiresRewrite (DESTINATION_FORMAT);
+        if (!requiresRewrite)
+        {
+            final Integer knownIndex = samplePool.identityIndices.get (sampleData);
+            if (knownIndex != null)
+                return knownIndex.intValue ();
+        }
+
+        this.progress.notifyProgress ();
+        final byte [] content;
+        try (final ByteArrayOutputStream sampleOutput = new ByteArrayOutputStream ())
+        {
+            if (requiresRewrite)
+                this.rewriteFile (multisampleSource, zone, sampleOutput, DESTINATION_FORMAT, false);
+            else
+                sampleData.writeSample (sampleOutput);
+            content = sampleOutput.toByteArray ();
+        }
+
+        Integer sampleIndex = null;
+        String contentHash = null;
+        if (!requiresRewrite)
+        {
+            contentHash = hash (content);
+            sampleIndex = samplePool.contentIndices.get (contentHash);
+        }
+
+        if (sampleIndex == null)
+        {
+            sampleIndex = Integer.valueOf (samplePool.numberOfSamples);
+            samplePool.numberOfSamples++;
+            AbstractCreator.storeDataFile (samplePool.zipOutputStream, SoundboxTag.SAMPLES_FOLDER + "s" + sampleIndex, content, samplePool.dateTime);
+
+            final String sampleName = createUniqueName (FileUtils.createSafeFilename (zone.getName ()), samplePool.usedSampleNames);
+            XMLUtils.addTextElement (packDocument, soundsElement, SoundboxTag.SOUND, sampleName + ".wav");
+
+            if (contentHash != null)
+                samplePool.contentIndices.put (contentHash, sampleIndex);
+        }
+
+        if (!requiresRewrite)
+            samplePool.identityIndices.put (sampleData, sampleIndex);
+        return sampleIndex.intValue ();
+    }
+
+
+    private static String hash (final byte [] content)
+    {
+        try
+        {
+            return HexFormat.of ().formatHex (MessageDigest.getInstance ("SHA-256").digest (content));
+        }
+        catch (final NoSuchAlgorithmException ex)
+        {
+            throw new IllegalStateException (ex);
+        }
     }
 
 
@@ -598,9 +662,21 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     }
 
 
-    /** Helper record to keep the zone together with its source for writing the sample data. */
-    private record ZoneSample (IMultisampleSource multisampleSource, ISampleZone zone)
+    /** The state for storing the sample files of a pack with de-duplication. */
+    private static class SamplePool
     {
-        // Intentionally empty
+        final ZipOutputStream           zipOutputStream;
+        final Date                      dateTime;
+        final Map<ISampleData, Integer> identityIndices = new IdentityHashMap<> ();
+        final Map<String, Integer>      contentIndices  = new HashMap<> ();
+        final Set<String>               usedSampleNames = new HashSet<> ();
+        int                             numberOfSamples = 0;
+
+
+        SamplePool (final ZipOutputStream zipOutputStream, final Date dateTime)
+        {
+            this.zipOutputStream = zipOutputStream;
+            this.dateTime = dateTime;
+        }
     }
 }
