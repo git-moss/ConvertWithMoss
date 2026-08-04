@@ -26,6 +26,8 @@ import de.mossgrabers.tools.ui.Functions;
  * file head sector, which contains up to 64 start/end sector ranges and the object counts, and
  * the content sectors. Additionally, bare dump files (fzf = full dump, fzv = voice, fzb = bank)
  * are supported, which contain the file head followed by the content blocks in sequential order.
+ * Full dumps without a file head, as written by the 'fzdump' MIDI utility (e.g. the factory
+ * library), are recognized and read as well.
  *
  * @author Jürgen Moßgraber
  */
@@ -109,7 +111,7 @@ public class CasioFZDisk
         {
             // A bare dump file: the file head followed by the content blocks
             final byte [] dump = Files.readAllBytes (sourceFile.toPath ());
-            if (dump.length < 2 * SECTOR_SIZE || dump.length % SECTOR_SIZE != 0)
+            if (dump.length < SECTOR_SIZE)
                 throw new IOException (Functions.getMessage ("IDS_FZ_MALFORMED_DUMP_FILE", sourceFile.getName ()));
             final int type;
             if (fileName.endsWith (".fzv"))
@@ -118,13 +120,94 @@ public class CasioFZDisk
                 type = TYPE_BANK;
             else
                 type = TYPE_FULL_DUMP;
-            final byte [] head = new byte [SECTOR_SIZE];
-            System.arraycopy (dump, 0, head, 0, SECTOR_SIZE);
-            final byte [] fileContent = new byte [dump.length - SECTOR_SIZE];
-            System.arraycopy (dump, SECTOR_SIZE, fileContent, 0, fileContent.length);
             this.diskName = FileUtils.getNameWithoutType (sourceFile);
+
+            final byte [] head;
+            final byte [] fileContent;
+            if (isHeadlessDump (dump, type))
+            {
+                // Dumps written by the 'fzdump' MIDI utility (e.g. the factory, Soundwaves,
+                // Shareware, Livewire and Swedish Users Club libraries) have no file head,
+                // they start directly with the first content block. The layout is calculated
+                // from the counters in the system area at the end of the first block and a
+                // file head is synthesized from them.
+                final int numberOfVoices = CasioFZVoice.readUnsigned16 (dump, 1008);
+                final int contentSectors = CasioFZVoice.readUnsigned16 (dump, 1010);
+                final int numberOfWaveBlocks = CasioFZVoice.readUnsigned16 (dump, 1012);
+                head = new byte [SECTOR_SIZE];
+                CasioFZVoice.writeUnsigned16 (head, 1018, numberOfVoices);
+                CasioFZVoice.writeUnsigned16 (head, 1020, contentSectors - numberOfWaveBlocks - (numberOfVoices + 3) / 4);
+                CasioFZVoice.writeUnsigned16 (head, 1022, numberOfWaveBlocks);
+                fileContent = dump;
+            }
+            else
+            {
+                if (dump.length < 2 * SECTOR_SIZE)
+                    throw new IOException (Functions.getMessage ("IDS_FZ_MALFORMED_DUMP_FILE", sourceFile.getName ()));
+                head = new byte [SECTOR_SIZE];
+                System.arraycopy (dump, 0, head, 0, SECTOR_SIZE);
+                fileContent = new byte [dump.length - SECTOR_SIZE];
+                System.arraycopy (dump, SECTOR_SIZE, fileContent, 0, fileContent.length);
+            }
             this.files.add (new CasioFZFile (this.diskName, type, head, fileContent));
         }
+    }
+
+
+    /**
+     * Test if a bare dump file is stored without a file head. The counters in the system area at
+     * the end of the first content block must be consistent with the file type: a voice dump
+     * contains exactly 1 voice and no banks, a bank dump 1 bank and a full dump 0-8 banks. For
+     * full dumps additionally the block pointer table decides: a file head holds sector ranges,
+     * while a head-less dump starts with the area count and the ascending high keys of the first
+     * bank block (or with the wave addresses of a voice block), which can never form a valid
+     * range.
+     *
+     * @param dump The bare dump file
+     * @param type The type of the file, one of the TYPE_* constants
+     * @return True if the dump has no file head
+     */
+    private static boolean isHeadlessDump (final byte [] dump, final int type)
+    {
+        final int numberOfVoices = CasioFZVoice.readUnsigned16 (dump, 1008);
+        final int contentSectors = CasioFZVoice.readUnsigned16 (dump, 1010);
+        final int numberOfWaveBlocks = CasioFZVoice.readUnsigned16 (dump, 1012);
+        final int numberOfBanks = contentSectors - numberOfWaveBlocks - (numberOfVoices + 3) / 4;
+        switch (type)
+        {
+            case TYPE_VOICE:
+                return numberOfVoices == 1 && numberOfBanks == 0;
+            case TYPE_BANK:
+                return numberOfVoices >= 1 && numberOfVoices <= 64 && numberOfBanks == 1;
+            case TYPE_FULL_DUMP:
+                return numberOfVoices >= 1 && numberOfVoices <= 64 && numberOfBanks >= 0 && numberOfBanks <= 8 && !startsWithFileHead (dump);
+            default:
+                return false;
+        }
+    }
+
+
+    /**
+     * Test if a bare full dump file starts with a file head sector. The block pointer table of a
+     * file head holds sector ranges, while a head-less dump starts with the area count and the
+     * ascending high keys of the first bank block, which can never form a valid range.
+     *
+     * @param dump The bare dump file
+     * @return True if the first sector is a file head
+     */
+    private static boolean startsWithFileHead (final byte [] dump)
+    {
+        final int rangeStart = CasioFZVoice.readUnsigned16 (dump, 0);
+        final int rangeEnd = CasioFZVoice.readUnsigned16 (dump, 2);
+        if (rangeStart >= 2 && rangeStart <= rangeEnd && rangeEnd < NUM_SECTORS)
+            return true;
+        // Tools might zero the pointers of a bare dump; accept the head if its counters are
+        // plausible
+        if (rangeStart != 0 || rangeEnd != 0)
+            return false;
+        final int voices = CasioFZVoice.readUnsigned16 (dump, 1018);
+        final int banks = CasioFZVoice.readUnsigned16 (dump, 1020);
+        return voices >= 1 && voices <= 64 && banks <= 8;
     }
 
 
