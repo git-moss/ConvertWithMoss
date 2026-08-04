@@ -56,13 +56,17 @@ the self-contained `.sbpack`.
 `pv` is the plug-in version that wrote the group and determines the sound blob size (see below).
 Newer groups (pv ≥ 1.0.8) support round robins: the group gets `rrLayers="<count>" rrMode="0"`
 and the `S` elements use `f0` instead of `f`, plus `bpm0="<int>"`, `rrMode="0"`,
-`rrLayer="<int>"` attributes. `rrLayer` assigns the sound to one of the round robin layers of
-the group; ConvertWithMoss reads each layer as one group with round robin play logic and writes
-the attributes for its round robin groups. Verified with plug-in 1.2.1 (import test with two
-alternating layers): the `rrLayers`/`rrLayer` attributes are honored both in old-style groups
-(`f`, 75 byte blobs, pv 1.0.0b19) and new-style groups (`f0`/`bpm0`, 87 byte blobs, pv 1.2.0);
-ConvertWithMoss writes the old-style variant. The factory packs contain no group with more than
-one round robin layer.
+`rrLayer="<int>"` attributes. `rrLayer` assigns the sound to one of the up to 8 round robin
+layers of the group (the manual's *RR Layers*); `rrMode` selects the cycling: 0 = Sequential,
+1 = Random non-rep, 2 = Random (the order of the plug-in's drop-down). ConvertWithMoss reads
+each layer as one group with round robin play logic and writes the attributes for its round
+robin groups. Verified with plug-in 1.2.1 (import test with two alternating layers): the
+`rrLayers`/`rrLayer` attributes are honored both in old-style groups (`f`, 75 byte blobs,
+pv 1.0.0b19) and new-style groups (`f0`/`bpm0`, 87 byte blobs, pv 1.2.0); ConvertWithMoss
+writes the old-style variant. The factory packs contain no group with more than one round robin
+layer. Independently of the RR layers, a single sound can carry *RR Sample Layers*: additional
+sample files `f1`, `f2`, … on the same `S` element which alternate on that mapping only - not
+read yet, no real-world example has been observed.
 
 ## Binary blobs — JUCE MemoryBlock Base64
 
@@ -150,18 +154,20 @@ read (all Cosmo groups imported by plug-in 1.2.x keep their 75 byte blobs).
 | 0x05   | f32  | transpose  | semi-tones, always 0 in corpus                     |
 | 0x09   | f32  | fine tune  | cents (corpus: ±5, ±10)                            |
 | 0x0D   | u32  | octave     | index with center 2 = ±0 octaves (assumed)         |
-| 0x11   | f32  | attack     | assumed seconds (corpus 0..0.4)                    |
-| 0x15   | f32  | decay      | assumed seconds; always 0.2 in corpus              |
-| 0x19   | f32  | sustain    | 0..1; always 1.0 in corpus                         |
-| 0x1D   | f32  | release    | assumed seconds (corpus 0..0.16)                   |
+| 0x11   | f32  | attack     | knob position 0..1 (UI shows 0-100%)               |
+| 0x15   | f32  | decay      | knob position 0..1; default 0.2 = the UI's 20%     |
+| 0x19   | f32  | sustain    | 0..1 (UI shows 0-100%)                             |
+| 0x1D   | f32  | release    | knob position 0..1 (UI shows 0-100%)               |
 
-The envelope time unit could not be verified (all corpus values are also plausible as normalized
-0..1 knob positions); values are treated as seconds.
+The ADSR values are the normalized knob positions of the plug-in (the UI displays them as
+0-100%, e.g. the defaults decay 0.2/sustain 1.0 show as 20%/100%). Neither the UI nor the user
+manual documents the mapping of the percentage to a time, so ConvertWithMoss passes the fraction
+through unchanged (a knob fraction is treated as that many seconds) until the law is calibrated.
 
-The engine `state` (13 bytes) and `sequence` (128 bytes) blobs hold the sequencer/arp engine
-configuration and are identical for all four engines in every corpus preset; ConvertWithMoss
-writes the constant default (`state` hex `000000cdcccc3d0600000001` + 2 flag bytes as found in
-Cosmo, see `SoundboxCreator`).
+The engine `state` (13 bytes) and `sequence` (128 bytes) blobs belong to the 4 LFO engines of
+the Modulation tab (the 128 byte sequence holds the 32 steps of the LFO sequencer shape); they
+are identical for all four engines in every corpus preset and ConvertWithMoss writes the
+constant default as found in Cosmo (see `SoundboxCreator`).
 
 ## Mapping notes (ConvertWithMoss)
 
