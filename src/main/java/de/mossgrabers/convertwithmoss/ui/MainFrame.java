@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.tools.OperatingSystem;
 import de.mossgrabers.tools.ui.AbstractFrame;
+import de.mossgrabers.tools.ui.ControlFunctions;
 import de.mossgrabers.tools.ui.EndApplicationException;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.TraversalManager;
@@ -50,7 +51,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
-import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -89,19 +89,14 @@ import javafx.util.Duration;
  */
 public class MainFrame extends AbstractFrame implements INotifier
 {
-    private static final int       NUMBER_OF_DIRECTORIES               = 20;
     private static final int       MAXIMUM_NUMBER_OF_LOG_ENTRIES       = 100000;
 
     private static final String    ENABLE_DARK_MODE                    = "EnableDarkMode";
     private static final String    DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
     private static final String    DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
-    private static final String    DESTINATION_PATH                    = "DestinationPath";
     private static final String    DESTINATION_FORMAT                  = "DestinationFormat";
     private static final String    DESTINATION_TYPE                    = "DestinationType";
-    private static final String    SOURCE_PATH                         = "SourcePath";
-    private static final String    SOURCE_FILE                         = "SourceFile";
     private static final String    SOURCE_BATCH_MODE                   = "SourceBatchMode";
-    private static final String    SOURCE_TYPE                         = "SourceType";
     /** The prefix of the format which reads all disk images, whatever sampler wrote them. */
     private static final String    GENERIC_IMAGE_FORMAT                = "ISO";
     private static final String    PRESET_LIBRARY_FILENAME             = "PresetLibraryFilename";
@@ -144,9 +139,9 @@ public class MainFrame extends AbstractFrame implements INotifier
 
     private final TabPane          destinationTypeTabPane              = new TabPane ();
 
-    private final List<String>     sourcePathHistory                   = new ArrayList<> ();
-    private final List<String>     sourceFileHistory                   = new ArrayList<> ();
-    private final List<String>     destinationPathHistory              = new ArrayList<> ();
+    private final PathHistory      sourcePathHistory                   = new PathHistory ("SourcePath");
+    private final PathHistory      sourceFileHistory                   = new PathHistory ("SourceFile");
+    private final PathHistory      destinationPathHistory              = new PathHistory ("DestinationPath");
 
     private final LoggerBoxLogger  logger                              = new LoggerBoxLogger (MAXIMUM_NUMBER_OF_LOG_ENTRIES);
     private final LoggerBox        loggingArea                         = new LoggerBox (this.logger);
@@ -263,6 +258,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         // position in the detection run of exactly that source
         this.sourcePathField.getEditor ().textProperty ().addListener ((_, _, _) -> this.clearSelection ());
 
+        this.sourcePathField.getSelectionModel ().selectedItemProperty ().addListener ((_, _, newVal) -> this.selectTypeFor (newVal));
+
         final BoxPanel sourceUpperPane = new BoxPanel (Orientation.VERTICAL);
         final TitledSeparator sourceTitle = new TitledSeparator (Functions.getText ("@IDS_MAIN_SOURCE_HEADER"));
         sourceTitle.setLabelFor (this.sourcePathField);
@@ -357,6 +354,19 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.configureTraversalManager ();
 
         this.show ();
+    }
+
+
+    private void selectTypeFor (final String newSelectedPath)
+    {
+        final PathHistory activeSourceHistory = this.getActiveSourceHistory ();
+        final Optional<String> type = activeSourceHistory.getType (newSelectedPath);
+        if (type.isPresent ())
+        {
+            final MultipleSelectionModel<String> selectionModel = this.sourceTaskPane.formatList.getSelectionModel ();
+            selectionModel.select (type.get ());
+            Platform.runLater (() -> this.sourceTaskPane.formatList.scrollTo (selectionModel.getSelectedIndex ()));
+        }
     }
 
 
@@ -456,6 +466,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.traversalManager.add (this.loggingArea);
 
         this.traversalManager.register (this.getStage ());
+        TraversalManager.enable (this.traversalManager);
     }
 
 
@@ -510,51 +521,36 @@ public class MainFrame extends AbstractFrame implements INotifier
         // -----------------------------------------------------------
         // Source configuration
 
-        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
-        {
-            final String sourcePath = this.config.getProperty (SOURCE_PATH + i);
-            if (sourcePath == null || sourcePath.isBlank ())
-                break;
-            if (!this.sourcePathHistory.contains (sourcePath))
-                this.sourcePathHistory.add (sourcePath);
-        }
-        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
-        {
-            final String sourceFile = this.config.getProperty (SOURCE_FILE + i);
-            if (sourceFile == null || sourceFile.isBlank ())
-                break;
-            if (!this.sourceFileHistory.contains (sourceFile))
-                this.sourceFileHistory.add (sourceFile);
-        }
+        this.sourcePathHistory.load (this.config);
+        this.sourceFileHistory.load (this.config);
+
         this.sourceModeChoiceBox.getSelectionModel ().select (this.config.getBoolean (SOURCE_BATCH_MODE, true) ? 0 : 1);
-        final List<String> activeHistory = this.activeSourceHistory ();
-        this.sourcePathField.getItems ().setAll (activeHistory);
+        final PathHistory activeSourceHistory = this.getActiveSourceHistory ();
+        final List<String> sourcePaths = activeSourceHistory.getPaths ();
+        this.sourcePathField.getItems ().setAll (sourcePaths);
         this.sourcePathField.setEditable (true);
         SystemShortcuts.keepWorkingIn (this.sourcePathField);
-        if (!activeHistory.isEmpty ())
-            this.sourcePathField.getEditor ().setText (activeHistory.get (0));
+        if (!sourcePaths.isEmpty ())
+        {
+            final String selectedPath = sourcePaths.get (0);
+            this.sourcePathField.getEditor ().setText (selectedPath);
+            this.selectTypeFor (selectedPath);
+        }
 
         for (final IDetector<?> detector: this.backend.getDetectors ())
             detector.getSettings ().loadSettings (this.config);
-        final int sourceFormat = this.config.getInteger (SOURCE_TYPE, 0);
-        this.sourceTaskPane.setSelectedFormat (sourceFormat);
 
         // -----------------------------------------------------------
         // Destination Configuration
 
-        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
-        {
-            final String destinationPath = this.config.getProperty (DESTINATION_PATH + i);
-            if (destinationPath == null || destinationPath.isBlank ())
-                break;
-            if (!this.destinationPathHistory.contains (destinationPath))
-                this.destinationPathHistory.add (destinationPath);
-        }
-        this.destinationPathField.getItems ().addAll (this.destinationPathHistory);
+        this.destinationPathHistory.load (this.config);
+
+        final List<String> destinationPaths = this.destinationPathHistory.getPaths ();
+        this.destinationPathField.getItems ().addAll (destinationPaths);
         this.destinationPathField.setEditable (true);
         SystemShortcuts.keepWorkingIn (this.destinationPathField);
-        if (!this.destinationPathHistory.isEmpty ())
-            this.destinationPathField.getEditor ().setText (this.destinationPathHistory.get (0));
+        if (!destinationPaths.isEmpty ())
+            this.destinationPathField.getEditor ().setText (destinationPaths.get (0));
 
         for (final ICreator<?> creator: this.backend.getCreators ())
             creator.getSettings ().loadSettings (this.config);
@@ -598,25 +594,20 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void saveConfiguration ()
     {
-        updateHistory (this.sourcePathField.getEditor ().getText (), this.activeSourceHistory ());
-        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
-            this.config.setProperty (SOURCE_PATH + i, this.sourcePathHistory.size () > i ? this.sourcePathHistory.get (i) : "");
-        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
-            this.config.setProperty (SOURCE_FILE + i, this.sourceFileHistory.size () > i ? this.sourceFileHistory.get (i) : "");
+        updateHistory (this.getActiveSourceHistory (), this.getSourcePath (), this.sourceTaskPane.getSelectedFormatName ());
+        this.sourcePathHistory.save (this.config);
+        this.sourceFileHistory.save (this.config);
         this.config.setBoolean (SOURCE_BATCH_MODE, this.isBatchMode ());
 
-        updateHistory (this.destinationPathField.getEditor ().getText (), this.destinationPathHistory);
-        for (int i = 0; i < NUMBER_OF_DIRECTORIES; i++)
-            this.config.setProperty (DESTINATION_PATH + i, this.destinationPathHistory.size () > i ? this.destinationPathHistory.get (i) : "");
+        updateHistory (this.destinationPathHistory, this.destinationPathField.getEditor ().getText (), "");
+        this.destinationPathHistory.save (this.config);
 
         for (final IDetector<?> detector: this.backend.getDetectors ())
             detector.getSettings ().saveSettings (this.config);
         for (final ICreator<?> creator: this.backend.getCreators ())
             creator.getSettings ().saveSettings (this.config);
 
-        final int sourceSelectedIndex = this.sourceTaskPane.getSelectedFormat ();
-        this.config.setInteger (SOURCE_TYPE, sourceSelectedIndex);
-        final int destinationSelectedIndex = this.destinationTaskPane.getSelectedFormat ();
+        final int destinationSelectedIndex = this.destinationTaskPane.getSelectedFormatIndex ();
         this.config.setInteger (DESTINATION_FORMAT, destinationSelectedIndex);
 
         final int destinationTypeSelectedIndex = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
@@ -625,7 +616,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setProperty (PRESET_LIBRARY_FILENAME, this.presetLibraryFilename.getText ());
         this.config.setProperty (PERFORMANCE_LIBRARY_FILENAME, this.performanceLibraryFilename.getText ());
 
-        //
+        // -----------------------------------------------------------
         // Processing
 
         this.config.setBoolean (PROCESSING_ENABLE, this.detectSettings.enableProcessing);
@@ -640,7 +631,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setBoolean (PROCESSING_SNAP_LOOPS, this.detectSettings.snapLoopsToZero);
         this.config.setInteger (PROCESSING_TRANSPOSE, this.detectSettings.transposeSemitones);
 
-        //
+        // -----------------------------------------------------------
         // Options
 
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.detectSettings.createFolderStructure);
@@ -739,8 +730,8 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.verifyFolders ())
             return;
 
-        final int selectedDetector = this.sourceTaskPane.getSelectedFormat ();
-        final int selectedCreator = this.destinationTaskPane.getSelectedFormat ();
+        final int selectedDetector = this.sourceTaskPane.getSelectedFormatIndex ();
+        final int selectedCreator = this.destinationTaskPane.getSelectedFormatIndex ();
         if (selectedDetector < 0)
         {
             Functions.message ("@IDS_NOTIFY_SELECT_SOURCE_FORMAT");
@@ -782,7 +773,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         if (!this.applySourcePath ())
             return;
 
-        final int selectedDetector = this.sourceTaskPane.getSelectedFormat ();
+        final int selectedDetector = this.sourceTaskPane.getSelectedFormatIndex ();
         if (selectedDetector < 0)
         {
             Functions.message ("@IDS_NOTIFY_SELECT_SOURCE_FORMAT");
@@ -894,7 +885,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void updateContentsButton ()
     {
-        this.contentsButton.setVisible (this.sourceTaskPane.getSelectedFormat () >= 0);
+        this.contentsButton.setVisible (this.sourceTaskPane.getSelectedFormatIndex () >= 0);
     }
 
 
@@ -953,7 +944,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     {
         if (!this.applySourcePath ())
             return false;
-        updateHistory (this.sourcePathField.getEditor ().getText (), this.activeSourceHistory ());
+        updateHistory (this.getActiveSourceHistory (), this.getSourcePath (), this.sourceTaskPane.getSelectedFormatName ());
 
         // Check output folder
         this.detectSettings.outputFolder = new File (this.destinationPathField.getEditor ().getText ());
@@ -969,7 +960,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.destinationPathField.requestFocus ();
             return false;
         }
-        updateHistory (this.detectSettings.outputFolder.getAbsolutePath (), this.destinationPathHistory);
+        updateHistory (this.destinationPathHistory, this.detectSettings.outputFolder.getAbsolutePath (), "");
 
         // Output folder must be empty or add new must be active
         return this.addNewFiles || this.isEmptyFolder (this.detectSettings.outputFolder.getPath ());
@@ -984,7 +975,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private boolean applySourcePath ()
     {
-        final File sourcePath = new File (this.sourcePathField.getEditor ().getText ());
+        final File sourcePath = new File (this.getSourcePath ());
         this.detectSettings.sourceFiles.clear ();
         if (sourcePath.isFile ())
         {
@@ -1003,12 +994,18 @@ public class MainFrame extends AbstractFrame implements INotifier
     }
 
 
+    private String getSourcePath ()
+    {
+        return this.sourcePathField.getEditor ().getText ();
+    }
+
+
     /**
      * Get the path history of the mode which is currently active.
      *
      * @return The folder history in batch mode and the single file history otherwise
      */
-    private List<String> activeSourceHistory ()
+    private PathHistory getActiveSourceHistory ()
     {
         return this.isBatchMode () ? this.sourcePathHistory : this.sourceFileHistory;
     }
@@ -1261,7 +1258,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private ExtensionFilter fillSourceFileFilters (final FileChooser chooser, final Map<ExtensionFilter, Integer> formatOfFilter)
     {
         final List<IDetector<?>> detectors = this.backend.getDetectors ();
-        final int selectedFormat = this.sourceTaskPane.getSelectedFormat ();
+        final int selectedFormat = this.sourceTaskPane.getSelectedFormatIndex ();
         ExtensionFilter preSelected = null;
         for (int index = 0; index < detectors.size (); index++)
         {
@@ -1340,11 +1337,12 @@ public class MainFrame extends AbstractFrame implements INotifier
     {
         final boolean isBatchMode = this.isBatchMode ();
         // The entered path belongs to the mode which is being left
-        updateHistory (this.sourcePathField.getEditor ().getText (), isBatchMode ? this.sourceFileHistory : this.sourcePathHistory);
+        updateHistory (isBatchMode ? this.sourceFileHistory : this.sourcePathHistory, this.getSourcePath (), this.sourceTaskPane.getSelectedFormatName ());
 
-        final List<String> history = isBatchMode ? this.sourcePathHistory : this.sourceFileHistory;
-        this.sourcePathField.getItems ().setAll (history);
-        this.sourcePathField.getEditor ().setText (history.isEmpty () ? "" : history.get (0));
+        final PathHistory history = isBatchMode ? this.sourcePathHistory : this.sourceFileHistory;
+        final List<String> paths = history.getPaths ();
+        this.sourcePathField.getItems ().setAll (paths);
+        this.sourcePathField.getEditor ().setText (paths.isEmpty () ? "" : paths.get (0));
         this.clearSelection ();
     }
 
@@ -1355,7 +1353,7 @@ public class MainFrame extends AbstractFrame implements INotifier
      */
     private void setActiveSourcePath ()
     {
-        File currentSourcePath = new File (this.sourcePathField.getEditor ().getText ());
+        File currentSourcePath = new File (this.getSourcePath ());
         if (currentSourcePath.isFile ())
             currentSourcePath = currentSourcePath.getAbsoluteFile ().getParentFile ();
         if (currentSourcePath != null && currentSourcePath.isDirectory ())
@@ -1422,12 +1420,10 @@ public class MainFrame extends AbstractFrame implements INotifier
     }
 
 
-    private static void updateHistory (final String newItem, final List<String> history)
+    private static void updateHistory (final PathHistory history, final String item, final String type)
     {
-        if (newItem.isBlank ())
-            return;
-        history.remove (newItem);
-        history.add (0, newItem);
+        if (!item.isBlank ())
+            history.update (item, type);
     }
 
 
@@ -1537,7 +1533,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             });
 
             final BorderPane sidebar = new BorderPane ();
-            sidebar.setTop (addClearButton (this.search));
+            sidebar.setTop (ControlFunctions.addClearButton (this.search, "IDS_MAIN_SEARCH_FORMAT", "text-field-with-clear", "text-field-clear-button"));
             sidebar.setCenter (this.formatList);
             this.formatPane.setLeft (sidebar);
             this.formatPane.setCenter (this.contentArea);
@@ -1587,9 +1583,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             if (selectionModel.getSelectedItem () == null)
                 selectionModel.select (0);
 
-            final PauseTransition delay = new PauseTransition (Duration.seconds (1));
-            delay.setOnFinished (_ -> this.formatList.scrollTo (selectionModel.getSelectedIndex ()));
-            delay.play ();
+            Platform.runLater (() -> this.formatList.scrollTo (selectionModel.getSelectedIndex ()));
         }
 
 
@@ -1599,13 +1593,25 @@ public class MainFrame extends AbstractFrame implements INotifier
          *
          * @return The index if one is selected
          */
-        public int getSelectedFormat ()
+        public int getSelectedFormatIndex ()
         {
             final String selectedItem = this.formatList.getSelectionModel ().getSelectedItem ();
             if (selectedItem == null)
                 return -1;
             final Integer key = this.mappedIndices.get (selectedItem);
             return key == null ? -1 : key.intValue ();
+        }
+
+
+        /**
+         * Get the name of the selected detector/creator.
+         *
+         * @return The index if one is selected
+         */
+        public String getSelectedFormatName ()
+        {
+            final String selectedItem = this.formatList.getSelectionModel ().getSelectedItem ();
+            return selectedItem == null ? "" : selectedItem;
         }
 
 
@@ -1627,23 +1633,6 @@ public class MainFrame extends AbstractFrame implements INotifier
                 return selectedType == DEST_TYPE_PRESET || selectedType == DEST_TYPE_PRESET_LIBRARY && creator.supportsPresetLibraries () || selectedType == DEST_TYPE_PERFORMANCE && creator.supportsPerformances () || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY && creator.supportsPerformanceLibraries ();
             }
             return false;
-        }
-
-
-        private static StackPane addClearButton (final TextField textField)
-        {
-            final Button clearButton = new Button ("✕");
-            clearButton.getStyleClass ().add ("text-field-clear-button");
-            clearButton.visibleProperty ().bind (textField.textProperty ().isNotEmpty ());
-            clearButton.setOnAction (_ -> textField.clear ());
-
-            StackPane.setAlignment (clearButton, Pos.CENTER_RIGHT);
-            StackPane.setMargin (clearButton, new Insets (0, 5, 0, 0));
-
-            // Prevent the button from stealing focus from the text field
-            clearButton.setFocusTraversable (false);
-
-            return new StackPane (textField, clearButton);
         }
     }
 }

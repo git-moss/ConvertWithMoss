@@ -179,7 +179,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
             // Make sure the file name is unique among either the files in the destination folder or
             // inside of the library
-            String sampleName = createSafeFilename (multisampleSource.getName ());
+            String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
             presetResult.dsPresetFile = isLibrary ? this.createUniqueFilename (destinationFolder, sampleName, ".dspreset", otherOutputFiles) : this.createUniqueFilename (destinationFolder, sampleName, "dspreset");
             sampleName = FileUtils.getNameWithoutType (presetResult.dsPresetFile);
             presetResult.sampleFolder = sampleName + FOLDER_POSTFIX;

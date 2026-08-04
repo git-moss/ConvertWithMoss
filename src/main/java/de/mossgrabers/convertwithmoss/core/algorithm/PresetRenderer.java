@@ -285,10 +285,8 @@ public class PresetRenderer
      */
     private static double advance (final double position, final Loop loop, final boolean isReleased)
     {
-        if (loop == null || position < loop.end)
-            return position;
         // A loop which only sustains the note stops looping as soon as the key is released
-        if (isReleased && loop.untilRelease)
+        if (loop == null || position < loop.end || (isReleased && loop.untilRelease))
             return position;
         final double length = loop.end - (double) loop.start;
         return length <= 0 ? position : loop.start + (position - loop.start) % length;
@@ -443,7 +441,7 @@ public class PresetRenderer
 
     /**
      * The forward loop of a zone.
-     * 
+     *
      * @param start The start of the loop
      * @param end The end of the loop
      * @param untilRelease True if it is played until release

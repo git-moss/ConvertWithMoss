@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 
 
@@ -72,7 +73,7 @@ public class DistingExCreator extends AbstractWavCreator<DistingExCreatorUI>
 
         this.prepareKeyAndVelocityRanges (multisampleSource);
 
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         this.filenamePrefix = StringUtils.fixASCII (sampleName);
         final String safeSampleFolderName = sampleName.length () > 20 ? sampleName.substring (0, 20).trim () : sampleName;
 

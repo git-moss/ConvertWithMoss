@@ -22,9 +22,9 @@ import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -46,6 +46,7 @@ import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.InfoChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -100,7 +101,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = createSafeFilename (multisampleSource.getName ());
+        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         this.storeMultisample (Collections.singletonList (multisampleSource), destinationFolder, sampleName);
     }
 

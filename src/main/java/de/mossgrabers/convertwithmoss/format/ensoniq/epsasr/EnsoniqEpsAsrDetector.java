@@ -37,6 +37,7 @@ import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.core.utils.NoteParser;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -230,6 +231,8 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         final File sourceFile = ensoniqDisk.getSourceFile ();
+        final String folderName = diskLabel != null && !diskLabel.isBlank () ? diskLabel : FileUtils.getNameWithoutType (sourceFile.getName ());
+
         final File parentFolder = sourceFile.getParentFile ();
         final List<IMultisampleSource> multiSampleSources = new ArrayList<> ();
         for (final EnsoniqFile instrumentFile: instrumentFiles)
@@ -240,7 +243,11 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 this.notifier.log ("IDS_EPS_FOUND_VERSION", HARDWARE_IDS.getOrDefault (Integer.valueOf (instrument.getInstrumentID ()), "EPS"), instrumentName);
 
                 final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, instrumentName);
-                multiSampleSources.addAll (this.createMultiSample (sourceFile, parts, instrumentName, instrument));
+                for (final IMultisampleSource multisampleSource: this.createMultiSample (sourceFile, parts, instrumentName, instrument))
+                {
+                    multisampleSource.extendSubPath (folderName);
+                    multiSampleSources.add (multisampleSource);
+                }
             }
             catch (final IOException ex)
             {

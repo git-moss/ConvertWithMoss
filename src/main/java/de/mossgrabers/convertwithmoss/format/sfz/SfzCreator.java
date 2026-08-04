@@ -38,6 +38,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -48,21 +49,43 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
  */
 public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 {
-    private static final char                      LINE_FEED       = '\n';
-    private static final String                    SFZ_HEADER      = """
+    private static final char                      LINE_FEED             = '\n';
+    private static final String                    SFZ_HEADER            = """
             /////////////////////////////////////////////////////////////////////////////
             ////
             """;
-    private static final String                    SFZ_FOOTER      = """
+    private static final String                    SFZ_FOOTER            = """
             ////
             /////////////////////////////////////////////////////////////////////////////
 
             """;
-    private static final String                    COMMENT_PREFIX  = "//// ";
+    private static final String                    COMMENT_PREFIX        = "//// ";
 
-    private static final Map<FilterType, String>   FILTER_TYPE_MAP = new EnumMap<> (FilterType.class);
-    private static final Map<String, Set<Integer>> FILTER_POLES    = new HashMap<> ();
-    private static final Map<LoopType, String>     LOOP_TYPE_MAP   = new EnumMap<> (LoopType.class);
+    private static final Map<FilterType, String>   FILTER_TYPE_MAP       = new EnumMap<> (FilterType.class);
+    private static final Map<String, Set<Integer>> FILTER_POLES          = new HashMap<> ();
+    private static final Map<LoopType, String>     LOOP_TYPE_MAP         = new EnumMap<> (LoopType.class);
+
+    /** The velocities at which a point of the velocity curve is written. */
+    private static final int []                    VELOCITY_CURVE_POINTS =
+    {
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        9,
+        12,
+        16,
+        21,
+        28,
+        37,
+        49,
+        64,
+        84,
+        110,
+        127
+    };
 
     static
     {
@@ -105,7 +128,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String multiSampleName = createSafeFilename (multisampleSource.getName ());
+        final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
         final String safeSampleFolderName = multiSampleName + FOLDER_POSTFIX;
         final Optional<String> metadata = this.createPresetDocument (safeSampleFolderName, multisampleSource);
         if (metadata.isEmpty ())
@@ -480,6 +503,21 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addAttribute (buffer, SfzOpcode.VOLUME, formatDouble (volume, 2), velAmpDepth == 1);
         if (velAmpDepth < 1)
             addAttribute (buffer, SfzOpcode.AMP_VELOCITY_TRACK, formatDouble (velAmpDepth * 100.0, 2), true);
+
+        // The curve of the velocity modulation describes the response of the amplitude to the
+        // velocity as the power law x^(3^curve) on the normalized velocity: +1 is x^3 (the law of
+        // the velocity to volume modulation of Kontakt), 0 is linear and -1 is x^(1/3). SFZ has
+        // no curve parameter but the players interpolate linearly between the given points
+        final double velAmpCurve = zone.getAmplitudeVelocityModulator ().getCurve ();
+        if (velAmpDepth != 0 && velAmpCurve != 0)
+        {
+            final double power = Math.pow (3, velAmpCurve);
+            for (int i = 0; i < VELOCITY_CURVE_POINTS.length; i++)
+            {
+                final int velocity = VELOCITY_CURVE_POINTS[i];
+                addAttribute (buffer, SfzOpcode.AMP_VELOCITY_CURVE + velocity, formatDouble (Math.pow (velocity / 127.0, power), 4), i % 6 == 5 || i == VELOCITY_CURVE_POINTS.length - 1);
+            }
+        }
 
         // The opcode is given in decibels per key, 100% key tracking is defined as 1 dB per key.
         // The center key is the root key of the zone and defaults to 60 in SFZ

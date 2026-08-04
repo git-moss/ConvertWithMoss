@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
@@ -117,7 +118,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
     private void writeBank (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name) throws IOException
     {
         final boolean writeCdImage = this.settingsConfiguration.writeCdImage ();
-        final String safeName = createSafeFilename (name);
+        final String safeName = FileUtils.createSafeFilename (name);
         final File outputFile = this.createUniqueFilename (destinationFolder, safeName, writeCdImage ? "iso" : "e4b");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 
@@ -175,7 +176,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         {
             final ByteArrayOutputStream bankData = new ByteArrayOutputStream ();
             writeFile (bankData, presetBodies, presetNames, samples);
-            Emu3DiskImage.writeImage (outputFile, List.of (new Emu3DiskImage.ImageFile (safeName, bankData.toByteArray ())));
+            Emu3DiskImage.writeImage (outputFile, List.of (new Emu3DiskImage.ImageFile (safeName, bankData.toByteArray ())), Emu3DiskImage.ImageLayout.EOS, Emu3DiskImage.DEFAULT_FOLDER_NAME);
         }
         else
             try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))

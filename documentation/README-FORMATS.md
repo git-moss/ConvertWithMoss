@@ -54,6 +54,7 @@ The following multi-sample formats are supported:
 * [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
 * [Arturia Synclavier V](#arturia-synclavier-v)
 * [Bitwig Multisample](#bitwig-multisample)
+* [Casio FZ-1/FZ-10M/FZ-20M](#casio-fz-1fz-10mfz-20m)
 * [CWITEC TX16Wx](#cwitec-tx16wx)
 * [DecentSampler](#decentsampler)
 * [discoDSP Bliss](#discodsp-bliss)
@@ -66,6 +67,7 @@ The following multi-sample formats are supported:
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [Fairlight CMI 3](#fairlight-cmi-3)
+* [FL Studio DirectWave](#fl-studio-directwave)
 * [ISO/IMG Files](#isoimg-files)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
@@ -82,13 +84,14 @@ The following multi-sample formats are supported:
 * [Roland S-770 Series](#roland-s-770-series) - read only
 * [Roland SP-404MK2](#roland-sp-404mk2)
 * [Roland ZEN-Core](#roland-zen-core)
-* [Sample files (AIFF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-flac-ncw-ogg-wav)
+* [Sample files (AIFF, CAF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-caf-flac-ncw-ogg-wav)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
 * [Spectrasonics Omnisphere 3](#spectrasonics-omnisphere-3)
 * [Synclavier Regen](#synclavier-regen)
 * [Synthstrom Deluge](#synthstrom-deluge)
 * [TAL Sampler](#tal-sampler)
+* [Teenage Engineering OP-XY](#teenage-engineering-op-xy)
 * [Waldorf Quantum MkI, MkII / Iridium / Iridium Core](#waldorf-quantum-mki-mkii--iridium--iridium-core)
 * [Yamaha YSFC](#yamaha-ysfc)
 
@@ -239,6 +242,14 @@ The parser supports all information from the format except the group color and s
 
 This converter supports (split) stereo uncompressed and IEEE float 32 bit formats for the WAV files.
 
+## Casio FZ-1/FZ-10M/FZ-20M
+
+The Casio FZ series are 16-bit samplers from 1987 with a built-in 3.5" floppy drive. The implementation follows the official 'FZ-1 Data Structures' documentation from Casio.
+
+As a source, floppy disk images (*.img*, raw 1,310,720 bytes, or *.hfe* for HxC/Gotek floppy emulators) as well as bare dump files (*.fzf* full dump, *.fzv* voice, *.fzb* bank) are read. Each bank of a dump becomes one multi-sample: its areas define the key splits, velocity splits, area volumes and the root keys; the voices provide the 16-bit samples (36, 18 or 9 kHz) with their sustain loop, loop cross-fade, pitch correction, play mode (normal or reversed), the velocity to amplitude depth, the amplitude and filter envelopes and the filter with its resonance. Dumps without a bank become one multi-sample from the key ranges of the voices. The pitch bend range is read from the effect parameters. The envelope rates and the filter cutoff of the FZ have no documented unit, they are converted with an approximated law.
+
+As the destination, a ready-to-use floppy disk image (*.img*) with one full dump file is written, which can be written to a disk or copied to a floppy emulator. The zones become the areas of a bank with one voice each (up to 64). Samples are converted to 16-bit mono; their sample rate is kept and the difference to the closest FZ hardware rate is compensated with the pitch parameter of the voice, so the samples are stored without any loss. If the samples do not fit onto the 1.25 MB of a floppy disk, zones are dropped from the end with an error message. Writing has not been verified on real hardware yet.
+
 ## CWITEC TX16Wx
 
 TX16Wx is a free sampler plug-in available for Windows and MacOS. TX16Wx Professional is the commercial expansion of TX16Wx. It adds some advanced features like effects, signal routing or trigger switching. But the free version is already very powerful and covers all of the features that ConvertWithMoss supports.
@@ -350,6 +361,8 @@ When reading, each preset becomes one multi-sample. A preset maps each of the 88
 
 When writing, all groups of a source become presets which are chained with the preset link, one preset per group, and several sources can be collected into one bank as a library. The samples are stored in the bank as 16-bit mono or stereo and are de-duplicated by their content, so a sample which several zones share is only written once. The first and last two frames of every sample are silenced and loop positions are moved away from the sample ends, both of which the samplers require. Note that the key range of the devices is limited to MIDI notes 21-108 and that a bank cannot exceed the 128 MB sample memory of the samplers.
 
+Banks can also be written as a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem, which is how a converted library reaches a sampler of this generation: these units read neither FAT hard disks nor any other file system of a computer, so their own filesystem is the only way in. The image holds one bank per source instead of merging all of them into one bank - a bank is loaded into the memory of the sampler as a whole, which even fully expanded is a fraction of a converted library. Its geometry, its file entries and its directory copy the Emulator IIIX library CD-ROMs, up to the number of banks a folder holds (112).
+
 Note: written banks have not been verified on hardware yet. They round-trip through the reader and match the structure of the E-mu library CD-ROMs.
 
 #### Source Options
@@ -359,6 +372,7 @@ Note: written banks have not been verified on hardware yet. They round-trip thro
 #### Destination Options
 
 * Target Device: Selects the bank format to write: *Emulator IIIX (e3x)* or *ESI-32/2000/4000 (esi)*. The Emulator IIIX format is the more compatible one since the ESI samplers read it as well; the ESI format additionally enables the real-time control of the filter Q, which is what the ESI factory banks do.
+* Create CD-ROM image (.iso) for SCSI CD-ROM emulators: The banks are written into a CD-ROM image (*.iso*) with the proprietary E-mu disk filesystem instead of into plain bank files. Copy the image to the SD card of a SCSI emulator (e.g. rename it to *CD1.iso* for a ZuluSCSI in CD-ROM mode) and load the banks on the sampler from the emulated CD-ROM drive, exactly like from a library CD-ROM. Each converted source becomes one bank of the image (at most 112) and the library name becomes the name of its folder; without a library name every source becomes an image of its own.
 
 ## E-mu Emulator IV
 
@@ -451,7 +465,17 @@ The Fairlight CMI (**C**omputer **M**usical **I**nstrument) Series III, introduc
 
 Voice Files (*.VC) store individual instrument subvoices (samples) and synthesis data. The file is split into headers/control parameters followed by raw linear 8-bit audio samples (or 16-bit for Series III). Fairlight CMI IIx used variable rates from 2.1 kHz to 32 kHz (default 14.08 kHz). Series III expanded up to 100 kHz at 16 bits. Early CMI memory was limited (e.g., 16KB per channel).
 
-Note that this will not work with IIx or earlier versions despite the same VC file extension was used. Only reading is supported.
+As a source, both dialects of the voice files are read: the 16-bit Series III files with all of their sub-voices (key ranges, loops, tuning, gain and the amplitude envelope) and the fixed-size 8-bit files of the CMI I/II/IIx (16384 samples with their loop segments), which are e.g. written by the QasarBeach recreation of the IIx - both with the full header as well as bare 16 KB audio-only files. When the control (CO) file referenced by an 8-bit voice is present next to it, its parameters win (as on the CMI itself): the loop, the attack and the damping, which becomes the release of the amplitude envelope. Voices saved by QasarBeach itself (its own 16-bit format marked with a 'QBV2' tag) are read as well, with their name and loop. The 8-bit dialect stores no sample rate: the CMI II reads one 128-sample segment per waveform period, so a voice plays at its original pitch on the key with the frequency of its sampling rate divided by 128. Such a voice is therefore read with the documented default rate of the IIx (14080 Hz) and its root on the matching 110 Hz A below the middle C.
+
+### Destination Options
+
+* Target Format:
+  * Series III: One voice file per multi-sample. Each sample zone becomes a sub-voice with its key range in the 128-key mapping table, with 16-bit mono or stereo audio, loop, tuning, gain and amplitude envelope. Since the format has no velocity dimension, the loudest velocity layer wins where zones overlap. Up to 127 sub-voices fit into a file.
+  * IIx with CO control file: One fixed-size 8-bit voice file per sample zone, as read by the CMI itself and by the QasarBeach recreation. Note that the Arturia CMI V cannot load these files: it imports presets and banks only in its own *.cmix* format and its sample slots only take ordinary audio files. The audio is mixed to mono, re-sampled to the root frequency of the zone times 128 - which makes the voice play at its original pitch on its root key (verified against QasarBeach) - and cut to the 16384 samples of a voice. The loop is stored in segments of 128 samples. Each voice comes with the control (CO) file it references, which carries the loop, the attack and damping (release) of the amplitude envelope and the level - the CMI takes the control parameters from this file, therefore both files have to stay together. QasarBeach does not: two voices which differ only in the attack, damping and level of their control file play identically there, so for QasarBeach the native format below is the better target. Note that the fixed voice length limits a voice to 16384 samples, e.g. half a second at the rate of a middle C root.
+
+  * QasarBeach (QBV2): One voice file per sample zone in the native 16-bit format of the QasarBeach recreation, which carries the loop, the release (damping) and the level inside the file - a voice loads into QasarBeach ready to play. The unknown parts of the format are filled from a template captured from a QasarBeach save; the time law of the damping is measured only roughly yet.
+
+Written files have not been tested on real Fairlight hardware yet.
 
 ## FL Studio DirectWave
 
@@ -461,13 +485,16 @@ As a source, DWP programs are read from their binary structure (see DIRECTWAVE_D
 
 As a destination, one monolithic DWP file is written per instrument, i.e. a single self-contained file which carries all its samples as FLAC compressed audio. FL Studio Desktop loads it directly and for FL Studio Mobile it only needs to be copied into its user files. The DWP structure carries name, key/velocity ranges, root, gain, panning, loop, amplitude envelope, a low-pass/high-pass/band-pass/notch filter and the two zone LFOs (LFO 1 modulates the pitch, LFO 2 the volume) per zone. Only the first round-robin cycle is kept since trigger groups cannot be written.
 
+To import a DWP file into FL Studio Mobile, copy it to the iOS device and open it with FL Studio Mobile. This will copy the file to the user instrument folder.
+
 ## ISO/IMG Files
 
 Searches for files ending with *.ISO, *.IMG or *.HDA. Currently, the following formats can be handled:
 
-* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
-* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
+* [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [E-mu Emulator III](#e-mu-emulator-iiiiiixesi)
+* [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
 * [Roland S-50 series](#roland-s-50-series)
 * [Roland S-770 series](#roland-s-770-series)
@@ -550,6 +577,8 @@ However, the format changed many times across the different Kontakt versions. So
 A NKI file contains one instrument which is a multi-sample with many parameters. Currently, the usual multi-sample parameters are supported incl. loops. Furthermore, metadata information, the amplitude, pitch and filter cutoff envelope, filter parameters as well as pitchbend.
 (Most) NCW encoded sample files can be read as well.
 A NKM file contains up to 64 instruments and is supported as well as a source.
+
+The velocity to volume modulator is read with its intensity and its response curve: Kontakt maps its normalized volume value to decibels with *60 · log10(x)*, so the amplitude follows the cube of the velocity. Destination formats which can express the curve reproduce this response, e.g. SFZ writes *amp_velcurve_N* points (see the SFZ section).
 
 Encrypted files are not supported.
 
@@ -690,19 +719,21 @@ User samples are written at the device-native 48 kHz / 16-bit. As the ZEN-Core v
 
 * Shorten the name for the device display: Keeps only the last separated part of the name (after " - ", " / ", " : " or " | "), e.g. *Greek Bazouki - Dark Tremolo* becomes *Dark Tremolo*. The name field of this format holds only 16 characters, so a source whose name is qualified with the bank it comes from otherwise loses exactly the part which tells its presets apart. The dropped part is not written anywhere else, therefore this is disabled by default. CLI: `ZenCoreShortenName=1`.
 
-## Sample files (AIFF, FLAC, NCW, OGG, WAV)
+## Sample files (AIFF, CAF, FLAC, NCW, OGG, WAV)
 
 This powerful algorithm allows to create multi-samples from single sample files incl. detection of metadata.
 
 All files of the same type located in the same folder are considered as a part of one multi-sample. You can also select a top folder. If you do so, all sub-folders are checked for potential multi-sample folders.
 
-WAV files can already contain metadata to configure a complete multi-sample (but sadly rarely used). Therefore, all WAV files of a folder are checked if they contain instrument chunks. If this is the case they are used to create the layout of the multi-sample (range and velocity splits as well as gain and pitch settings). If no such information is available the same algorithm is applied as for the other supported formats: it tries to detect the necessary key range and velocity information from the names of the WAV files as well as metadata:
+WAV files can already contain metadata to configure a complete multi-sample (but sadly rarely used). Therefore, all WAV files of a folder are checked if they contain instrument chunks. If this is the case they are used to create the layout of the multi-sample (range and velocity splits as well as gain and pitch settings). The Instrument chunks of AIFF and CAF files are used in the same way. If no such information is available the same algorithm is applied as for the other supported formats: it tries to detect the necessary key range and velocity information from the names of the WAV files as well as metadata:
 
 * Notes are first detected from the files metadata (if supported by the format). If none is present, different parser settings are applied on the file name to detect a note name (or MIDI note value).
 * A category is extracted from the file name as well based on a list of several synonyms and abbreviations (e.g. Solo as a synonym for Lead). If this fails the same logic is applied to the folder names (e.g. you might have sorted your lead sounds in a folder called *Lead*).
 * Characterizations like *hard* are extracted as well with a similar algorithm as for the category.
 
-As a destination only WAV files are supported.
+CAF (Apple Core Audio Format) files are read when they contain linear PCM (integer or float in either byte order), IMA4 (Apple's IMA 4:1 ADPCM), µLaw, aLaw, Apple Lossless (ALAC) or MPEG-4 AAC (the low complexity profile, i.e. plain AAC without the high efficiency extensions) audio data. This includes the sample files which the instruments of Logic Pro reference. Files with other codecs are reported with the name of their codec. Root note, key/velocity ranges, gain and tuning are read from the Instrument chunk, loops from the referenced regions or the sustain loop markers and metadata texts from the Information chunk. The ALAC and AAC codecs are ports of their reference implementations (Apple and FFmpeg) and work on all platforms.
+
+As the destination, the audio file format of the written sample files can be selected: WAV, AIFF, CAF (with linear PCM), CAF-ALAC (CAF compressed with Apple Lossless), CAF-AAC (CAF compressed with MPEG-4 AAC, which is lossy - prefer CAF or CAF-ALAC when fidelity matters) or FLAC. This turns the format into a general audio file converter, e.g. from WAV to AIFF or from AIFF to FLAC. All conversions except CAF-AAC are lossless with one exception: FLAC supports at maximum 24-bit, therefore 32-bit samples are reduced. The AAC encoder chooses its scalefactors for a fixed quantization precision instead of using a psychoacoustic model, which results in a simple, high bit rate encoding. Float samples are converted to 16-bit integer for AIFF, CAF-ALAC and FLAC (WAV and CAF keep them as float). The WAV chunk options are applied to the other formats accordingly: the instrument and sample (loop) information is written to the Instrument and Marker chunks of AIFF files and to the Instrument and Region chunks of CAF files, the metadata texts to the Author/Annotation chunks of AIFF files and to the Information chunk of CAF files. FLAC files carry no instrument information.
 
 ### Source Options - Groups
 
@@ -724,6 +755,10 @@ WAV file can contain different sample formats. This converter supports (split) s
 * Post-fix text to remove: The algorithm automatically removes the note information to extract the name of the multi-sample but there might be further text at the end of the name, which you might want to remove. For example the multi-samples I created with SampleRobot have a group information like "_ms0_0". You can set a comma separated list of such post-fix texts in that field.
 * Ignore loops: Sometimes the source files contain wrong loops. Especially helpful for one-shot samples.
 
+### Destination Options
+
+* Audio file format: The format of the written sample files: WAV, AIFF, CAF, CAF-ALAC (CAF compressed with Apple Lossless), CAF-AAC (lossy) or FLAC.
+
 ## SFZ
 
 "The SFZ format is a file format to define how a collection of samples are arranged for performance. The goal behind the SFZ format is to provide a free, simple, minimalistic and expandable format to arrange, distribute and use audio samples with the highest possible quality and the highest possible performance flexibility" (cited from https://sfzformat.com/).
@@ -733,6 +768,8 @@ The SFZ file contains only the description of the multi-sample. The related samp
 SFZ can only mark a sample as a one-shot (`loop_mode=one_shot`) if it has no loop. A looped zone therefore keeps its loop and is not written as a one-shot.
 
 A pitch LFO (vibrato) is read and written via the `pitchlfo_freq` (Hertz), `pitchlfo_depth` (cent), `pitchlfo_delay` and `pitchlfo_fade` (seconds) opcodes. A volume LFO (tremolo) is read and written via the `amplfo_freq` (Hertz), `amplfo_depth` (decibels), `amplfo_delay` and `amplfo_fade` (seconds) opcodes.
+
+The intensity of the velocity to volume modulation is read and written via the `amp_veltrack` opcode. If the source also describes the response curve of the modulation (e.g. the velocity modulation of Kontakt scales the amplitude with the cube of the velocity), the curve is written as `amp_velcurve_N` points between which the players interpolate linearly. When reading, `amp_velcurve_N` points are fitted to the closest power law and stored as the curve of the modulation, so the response survives a round trip.
 
 ### Source Options
 

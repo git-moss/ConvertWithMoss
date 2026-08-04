@@ -33,16 +33,20 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emu3DiskImage;
+import de.mossgrabers.tools.FileUtils;
 
 
 /**
  * Creator for E-mu EIII bank files (*.e3x, *.esi). Every group of a multi-sample source becomes one
  * preset which uses the primary layer of its note zones; the presets of a source are chained with
  * the preset link, which is how the samplers stack more than one velocity layer. A library collects
- * all sources into a single bank. Samples are stored as 16-bit mono or stereo PCM and are
- * de-duplicated by their content. The format was reverse-engineered by the emu3bm project, see
- * documentation/design/EIII_FORMAT.md. Written banks have not been verified on hardware yet but
- * round-trip through {@link Emulator3Detector} and match the structure of the E-mu library CD-ROMs.
+ * all sources into a single bank, or - when a CD-ROM image is written - one bank per source into a
+ * single image, which is how a converted library reaches these samplers. Samples are stored as
+ * 16-bit mono or stereo PCM and are de-duplicated by their content. The format was
+ * reverse-engineered by the emu3bm project, see documentation/design/EIII_FORMAT.md. Written banks
+ * have not been verified on hardware yet but round-trip through {@link Emulator3Detector} and match
+ * the structure of the E-mu library CD-ROMs.
  *
  * @author Jürgen Moßgraber
  */
@@ -146,20 +150,89 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
 
 
     /**
-     * Write one bank file for the given sources.
+     * Write the given sources, either as one bank file or as a CD-ROM image which holds one bank
+     * per source.
      *
-     * @param destinationFolder Where to create the bank file
+     * @param destinationFolder Where to create the file
      * @param multisampleSources The sources to convert
-     * @param name The name of the bank
-     * @throws IOException Could not write the bank
+     * @param name The name of the bank or of the image
+     * @throws IOException Could not write the bank or the image
      */
     private void writeBank (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name) throws IOException
     {
         final Emulator3BankFormat bankFormat = this.settingsConfiguration.getTargetFormat ();
-        final String safeName = createSafeFilename (name);
-        final File outputFile = this.createUniqueFilename (destinationFolder, safeName, bankFormat.getFileEnding ().substring (1));
+        final boolean writeCdImage = this.settingsConfiguration.writeCdImage ();
+        final String safeName = FileUtils.createSafeFilename (name);
+        final File outputFile = this.createUniqueFilename (destinationFolder, safeName, writeCdImage ? "iso" : bankFormat.getFileEnding ().substring (1));
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 
+        if (writeCdImage)
+        {
+            this.writeImage (outputFile, multisampleSources, bankFormat, safeName);
+            return;
+        }
+
+        final Optional<byte []> bank = this.createBankData (multisampleSources, bankFormat, safeName);
+        if (bank.isEmpty ())
+            return;
+        try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))
+        {
+            out.write (bank.get ());
+        }
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
+    /**
+     * Write a CD-ROM image which holds one bank for each of the given sources. The sources are not
+     * merged into one bank: a bank is what the sampler loads into its memory, which is far smaller
+     * than a converted library - the image is the library and each of its banks is loaded on its
+     * own, exactly like on the library CD-ROMs of the samplers.
+     *
+     * @param outputFile The image file to write
+     * @param multisampleSources The sources to convert
+     * @param bankFormat The format of the banks
+     * @param imageName The name of the image, which also names its folder
+     * @throws IOException Could not write the image
+     */
+    private void writeImage (final File outputFile, final List<IMultisampleSource> multisampleSources, final Emulator3BankFormat bankFormat, final String imageName) throws IOException
+    {
+        final int maximumBanks = Emu3DiskImage.ImageLayout.EMULATOR_3.getMaximumFiles ();
+        final List<Emu3DiskImage.ImageFile> imageFiles = new ArrayList<> ();
+        final Set<String> usedBankNames = new HashSet<> ();
+
+        for (final IMultisampleSource multisampleSource: multisampleSources)
+        {
+            if (imageFiles.size () >= maximumBanks)
+            {
+                this.notifier.logError ("IDS_EIII_TOO_MANY_BANKS", Integer.toString (maximumBanks), multisampleSource.getName ());
+                break;
+            }
+
+            final String bankName = createUniqueName (multisampleSource.getName (), usedBankNames);
+            final Optional<byte []> bank = this.createBankData (List.of (multisampleSource), bankFormat, bankName);
+            if (bank.isPresent ())
+                imageFiles.add (new Emu3DiskImage.ImageFile (bankName, bank.get ()));
+        }
+
+        if (imageFiles.isEmpty ())
+            return;
+        Emu3DiskImage.writeImage (outputFile, imageFiles, Emu3DiskImage.ImageLayout.EMULATOR_3, imageName);
+        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
+    /**
+     * Create one bank which contains all presets and samples of the given sources.
+     *
+     * @param multisampleSources The sources to convert
+     * @param bankFormat The format of the bank
+     * @param name The name of the bank
+     * @return The bank or empty if it has no presets or got too large
+     * @throws IOException Could not convert the sample data
+     */
+    private Optional<byte []> createBankData (final List<IMultisampleSource> multisampleSources, final Emulator3BankFormat bankFormat, final String name) throws IOException
+    {
         final List<Sample> samples = new ArrayList<> ();
         final Map<Object, Integer> sampleIndicesByContent = new HashMap<> ();
         final Set<String> usedSampleNames = new HashSet<> ();
@@ -193,16 +266,8 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         }
 
         if (presets.isEmpty ())
-            return;
-
-        final Optional<byte []> bank = this.createBank (bankFormat, safeName, presets, samples);
-        if (bank.isEmpty ())
-            return;
-        try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))
-        {
-            out.write (bank.get ());
-        }
-        this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+            return Optional.empty ();
+        return this.createBank (bankFormat, name, presets, samples);
     }
 
 
@@ -562,7 +627,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
             return 0;
         }
 
-        sample.name = createUniqueSampleName (zone.getName (), usedSampleNames);
+        sample.name = createUniqueName (zone.getName (), usedSampleNames);
         samples.add (sample);
         final int index = samples.size ();
         sampleIndicesByContent.put (contentKey, Integer.valueOf (index));
@@ -709,20 +774,20 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
 
 
     /**
-     * Create a unique name for a sample within the 16 characters of the format.
+     * Create a unique name for a bank or a sample within the 16 characters of the format.
      *
-     * @param zoneName The name of the zone of the sample
-     * @param usedSampleNames All names used so far
+     * @param sourceName The name to shorten
+     * @param usedNames All names used so far
      * @return The name
      */
-    private static String createUniqueSampleName (final String zoneName, final Set<String> usedSampleNames)
+    private static String createUniqueName (final String sourceName, final Set<String> usedNames)
     {
         final int maxLength = Emulator3Constants.NAME_LENGTH;
-        String name = zoneName.trim ();
+        String name = sourceName.trim ();
         if (name.length () > maxLength)
             name = name.substring (0, maxLength);
         int counter = 1;
-        while (!usedSampleNames.add (name))
+        while (!usedNames.add (name))
         {
             counter++;
             final String suffix = Integer.toString (counter);
