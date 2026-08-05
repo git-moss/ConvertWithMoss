@@ -266,9 +266,9 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
 
 
     /**
-     * Parses all sounds of a group into sample zones. Newer plug-in versions support round
-     * robins: the 'rrLayer' attribute of a sound assigns it to one of the round robin layers of
-     * the group, which are returned as separate groups with round robin play logic.
+     * Parses all sounds of a group into sample zones. Newer plug-in versions support round robins:
+     * the 'rrLayer' attribute of a sound assigns it to one of the round robin layers of the group,
+     * which are returned as separate groups with round robin play logic.
      *
      * @param zipFile The opened ZIP file
      * @param groupElement The XML element of the group
@@ -298,7 +298,7 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
             {
                 fileIndex = Integer.parseInt (fileIndexText);
             }
-            catch (final NumberFormatException ex)
+            catch (final NumberFormatException _)
             {
                 this.notifier.logError (ERR_BAD_METADATA_FILE, "Malformed sample reference: " + fileIndexText);
                 continue;

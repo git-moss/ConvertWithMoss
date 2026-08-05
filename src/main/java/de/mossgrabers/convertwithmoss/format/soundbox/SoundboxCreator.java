@@ -43,15 +43,16 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.XMLUtils;
 
 
 /**
  * Creator for Audiomodern Soundbox packs. A pack is a ZIP file (entries are stored uncompressed)
- * which contains a description file (pack.amx), one .sbset file per preset and all samples as
- * WAV files without a file ending. Each multi-sample source becomes one preset; up to 4 groups
- * of the source are mapped to the 4 layers of the preset (which play simultaneously - the zones
- * keep their velocity ranges), more groups are merged into the first layer.
+ * which contains a description file (pack.amx), one .sbset file per preset and all samples as WAV
+ * files without a file ending. Each multi-sample source becomes one preset; up to 4 groups of the
+ * source are mapped to the 4 layers of the preset (which play simultaneously - the zones keep their
+ * velocity ranges), more groups are merged into the first layer.
  *
  * @author Jürgen Moßgraber
  */
@@ -99,7 +100,9 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (multisampleSources.isEmpty ())
             return;
 
-        final File packFile = this.createUniqueFilename (destinationFolder, libraryName, "sbpack");
+        final String fileName = StringUtils.consolidateWhitespace (FileUtils.createSafeFilename (libraryName).replace ('_', ' '), "");
+
+        final File packFile = this.createUniqueFilename (destinationFolder, fileName, "sbpack");
         this.notifier.log ("IDS_NOTIFY_STORING", packFile.getAbsolutePath ());
 
         final Optional<Document> optionalPackDocument = this.createXMLDocument ();
@@ -111,7 +114,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final IMetadata firstMetadata = multisampleSources.get (0).getMetadata ();
         final Element packElement = packDocument.createElement (SoundboxTag.PACK);
         packDocument.appendChild (packElement);
-        packElement.setAttribute (SoundboxTag.ATTR_NAME, libraryName);
+        packElement.setAttribute (SoundboxTag.ATTR_NAME, fileName);
         final String creator = firstMetadata.getCreator ();
         packElement.setAttribute (SoundboxTag.ATTR_AUTHOR, creator == null ? "" : creator);
         final String description = firstMetadata.getDescription ();
@@ -182,10 +185,10 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Distributes the groups of the multi-sample source to the up to 4 layers of a Soundbox
-     * preset. If there are more than 4 groups all zones are merged into one layer. Since all
-     * active layers play simultaneously and the zones keep their velocity ranges this only makes
-     * a difference for round robin groups which are not supported by the format.
+     * Distributes the groups of the multi-sample source to the up to 4 layers of a Soundbox preset.
+     * If there are more than 4 groups all zones are merged into one layer. Since all active layers
+     * play simultaneously and the zones keep their velocity ranges this only makes a difference for
+     * round robin groups which are not supported by the format.
      *
      * @param multisampleSource The multi-sample source
      * @param presetName The name of the preset
@@ -284,9 +287,9 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Calculates the fractional part of the zone tuning in cents if it is identical for all
-     * zones. The sound structures only store full semi-tones, the fraction is stored in the fine
-     * tune parameter of the layer engine instead.
+     * Calculates the fractional part of the zone tuning in cents if it is identical for all zones.
+     * The sound structures only store full semi-tones, the fraction is stored in the fine tune
+     * parameter of the layer engine instead.
      *
      * @param zones The zones of the layer
      * @return The common fine tune in cents or 0 if the zones have different fractions
@@ -325,16 +328,8 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Calculates the gain as a ratio if it is identical for all zones. A common gain is stored
-     * lossless in the layer volume, different values are quantized to the volume percent of the
-     * sounds.
-     *
-     * @param zones The zones of the layer
-     * @return The common gain ratio or 1 if the zones have different values
-     */
-    /**
-     * Returns the filter if all zones have one with identical settings. A common filter is
-     * stored as a filter effect in the FX slots of the layer.
+     * Returns the filter if all zones have one with identical settings. A common filter is stored
+     * as a filter effect in the FX slots of the layer.
      *
      * @param zones The zones of the layer
      * @return The common filter or null
@@ -358,6 +353,14 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     }
 
 
+    /**
+     * Calculates the gain as a ratio if it is identical for all zones. A common gain is stored
+     * loss-less in the layer volume, different values are quantized to the volume percent of the
+     * sounds.
+     *
+     * @param zones The zones of the layer
+     * @return The common gain ratio or 1 if the zones have different values
+     */
     private static double calculateCommonGainRatio (final List<ISampleZone> zones)
     {
         final double commonGain = zones.get (0).getGain ();
@@ -369,8 +372,8 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Creates the group element with one sound entry for each zone of the layer and adds the
-     * sample file names to the sounds list.
+     * Creates the group element with one sound entry for each zone of the layer and adds the sample
+     * file names to the sounds list.
      *
      * @param packDocument The pack XML document
      * @param groupsElement The element to which to add the group
@@ -411,9 +414,9 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Stores the sample data of a zone in the ZIP and adds its file name to the sounds list.
-     * Sample data which is shared between zones or is identical to already stored data is stored
-     * only once (unless the WAV chunk options require zone specific chunks).
+     * Stores the sample data of a zone in the ZIP and adds its file name to the sounds list. Sample
+     * data which is shared between zones or is identical to already stored data is stored only once
+     * (unless the WAV chunk options require zone specific chunks).
      *
      * @param packDocument The pack XML document
      * @param soundsElement The element to which to add the sample file names
@@ -558,7 +561,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             {
                 return sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 // Fall through to the last resort
             }
@@ -691,13 +694,13 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     /** The mapping of one layer of a preset to its group, state and engine settings. */
     private static class LayerPlan
     {
-        String                        groupName = "";
+        String                       groupName = "";
         /** The zones of the layer, one list per round robin (one list = no round robin). */
-        List<List<ISampleZone>>       robins    = Collections.emptyList ();
-        final SoundboxLayerState      state     = new SoundboxLayerState ();
-        final SoundboxEngineSettings  settings  = new SoundboxEngineSettings ();
+        List<List<ISampleZone>>      robins    = Collections.emptyList ();
+        final SoundboxLayerState     state     = new SoundboxLayerState ();
+        final SoundboxEngineSettings settings  = new SoundboxEngineSettings ();
         /** The filter which is common to all zones of the layer, if any. */
-        IFilter                       filter    = null;
+        IFilter                      filter    = null;
     }
 
 
