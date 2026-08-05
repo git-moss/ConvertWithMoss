@@ -103,6 +103,8 @@ import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzDetector;
+import de.mossgrabers.convertwithmoss.format.soundbox.SoundboxCreator;
+import de.mossgrabers.convertwithmoss.format.soundbox.SoundboxDetector;
 import de.mossgrabers.convertwithmoss.format.sxt.SxtCreator;
 import de.mossgrabers.convertwithmoss.format.sxt.SxtDetector;
 import de.mossgrabers.convertwithmoss.format.synclavier.SynclavierRegenCreator;
@@ -196,6 +198,7 @@ public class ConverterBackend
         this.detectors.add (new AkaiS900Detector (notifier));
         this.detectors.add (new AkaiS1000Detector (notifier));
         this.detectors.add (new SynclavierVDetector (notifier));
+        this.detectors.add (new SoundboxDetector (notifier));
         this.detectors.add (new BitwigMultisampleDetector (notifier));
         this.detectors.add (new BlissDetector (notifier));
         this.detectors.add (new CasioFZDetector (notifier));
@@ -245,6 +248,7 @@ public class ConverterBackend
         this.creators.add (new AbletonCreator (notifier));
         this.creators.add (new MPCKeygroupCreator (notifier));
         this.creators.add (new SynclavierVCreator (notifier));
+        this.creators.add (new SoundboxCreator (notifier));
         this.creators.add (new BitwigMultisampleCreator (notifier));
         this.creators.add (new BlissCreator (notifier));
         this.creators.add (new CasioFZCreator (notifier));

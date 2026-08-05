@@ -258,6 +258,26 @@ public class WavFileSampleData extends AbstractFileSampleData
     }
 
 
+    /** {@inheritDoc} */
+    @Override
+    protected void createAudioMetadata () throws IOException
+    {
+        // Prefer the RIFF parser over javax.sound, which cannot handle WAV files that contain
+        // large unknown chunks (e.g. PAD) when they are read from a stream inside of a ZIP file
+        try
+        {
+            final WaveFile wavFile = this.getWaveFile ();
+            final FormatChunk formatChunk = wavFile.getFormatChunk ();
+            this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels (), formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), wavFile.getDataChunk ().calculateLength (formatChunk));
+        }
+        catch (final IOException | CompressionNotSupportedException ex)
+        {
+            // Fall back to javax.sound for compressed WAV files
+            super.createAudioMetadata ();
+        }
+    }
+
+
     /**
      * Get the underlying WAV file.
      *
