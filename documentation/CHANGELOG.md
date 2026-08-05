@@ -33,6 +33,8 @@
 * NI Kontakt
   * New: The velocity to volume modulator is now converted with its response curve: Kontakt maps its normalized volume to decibels with 60*log10(x), so the amplitude follows the cube of the velocity. Destinations which can express the curve reproduce this response, e.g. SFZ receives matching amp_velcurve_N points.
   * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
+* Roland MC-707/MC-101
+  * Fixed: The project name stored inside of a written MPJ file was the multi-sample name as-is; it is now the name of the written file, i.e. with illegal file name characters removed and including the number which is appended when the file already exists.
 * Roland S-7xx
   * New: The 3 character prefixes are now interpreted as a category. If no category could be matched they are added to the full name (without the ':').
   * Fixed: CD-ROM/hard-disk images: the audio data of the samples is now located through the file allocation table and the directory entries instead of assuming one contiguous block at the fixed start offset of S-760 formatted disks. Images formatted by an S-750/S-770 system (whose audio area starts 1 MB earlier) and disks which contain deleted or fragmented entries either failed with 'Referenced sample data is larger than the available data' (e.g. the SV-SP70-01 Library Preview Disc) or could silently assign wrong audio to the samples. Deleted entries between the entries in use are now skipped as well instead of shifting all following patch, partial and sample references.
