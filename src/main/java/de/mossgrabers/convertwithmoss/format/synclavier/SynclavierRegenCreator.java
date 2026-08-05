@@ -793,16 +793,6 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Builds the timbre comment from the meta data. The Regen stores the tags as #hash-tags inside
-     * the comment (see the Regen manual, section 3.2): the category becomes the primary category
-     * tag, the keywords become the property tags. On reading, the first tag is taken as the
-     * category again, so the category is written first. Tags are lower-cased and reduced to a
-     * single token; duplicates are removed.
-     *
-     * @param metadata The meta data
-     * @return The comment line (description followed by the #hash-tags)
-     */
-    /**
      * Replaces tabs and line breaks in a name with spaces so that it stays one line and one column
      * in the text files of the library (the timbre files and the tab separated index files).
      *
@@ -815,6 +805,16 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
+    /**
+     * Builds the timbre comment from the meta data. The Regen stores the tags as #hash-tags inside
+     * the comment (see the Regen manual, section 3.2): the category becomes the primary category
+     * tag, the keywords become the property tags. On reading, the first tag is taken as the
+     * category again, so the category is written first. Tags are lower-cased and reduced to a
+     * single token; duplicates are removed.
+     *
+     * @param metadata The meta data
+     * @return The comment line (description followed by the #hash-tags)
+     */
     private static String flattenComment (final IMetadata metadata)
     {
         final StringBuilder sb = new StringBuilder ();

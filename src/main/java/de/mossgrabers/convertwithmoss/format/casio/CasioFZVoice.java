@@ -9,88 +9,87 @@ import java.nio.charset.StandardCharsets;
 
 
 /**
- * A voice of a Casio FZ-1/FZ-10M/FZ-20M: 192 bytes of parameters which describe one sample with
- * its addresses in the wave memory, loops, envelopes, filter and key/velocity ranges. All
- * multi-byte values are stored little-endian, addresses are 16-bit word addresses into the wave
- * memory.
+ * A voice of a Casio FZ-1/FZ-10M/FZ-20M: 192 bytes of parameters which describe one sample with its
+ * addresses in the wave memory, loops, envelopes, filter and key/velocity ranges. All multi-byte
+ * values are stored little-endian, addresses are 16-bit word addresses into the wave memory.
  *
  * @author Jürgen Moßgraber
  */
 public class CasioFZVoice
 {
     /** The size of the voice parameters in bytes. */
-    public static final int    SIZE                 = 192;
+    public static final int       SIZE                = 192;
 
     /** Sounding style: the waveform is not yet defined. */
-    public static final int    MODE_NO_SOUND        = 0x0000;
+    public static final int       MODE_NO_SOUND       = 0x0000;
     /** Sounding style: normal sound. */
-    public static final int    MODE_NORMAL          = 0x01D7;
+    public static final int       MODE_NORMAL         = 0x01D7;
     /** Sounding style: reversed sound. */
-    public static final int    MODE_REVERSED        = 0x101D;
+    public static final int       MODE_REVERSED       = 0x101D;
     /** Sounding style: cuing sound. */
-    public static final int    MODE_CUE             = 0x2014;
+    public static final int       MODE_CUE            = 0x2014;
     /** Sounding style: synthesized waveform. */
-    public static final int    MODE_SYNTHESIZED     = 0x0013;
+    public static final int       MODE_SYNTHESIZED    = 0x0013;
 
     /** The number of multi-loops. */
-    public static final int    NUM_LOOPS            = 8;
+    public static final int       NUM_LOOPS           = 8;
     /** The number of envelope stages. */
-    public static final int    NUM_ENVELOPE_STAGES  = 8;
+    public static final int       NUM_ENVELOPE_STAGES = 8;
 
     /** The sample rates addressed by the samp field. */
-    public static final int [] SAMPLE_RATES         =
+    protected static final int [] SAMPLE_RATES        =
     {
         36000,
         18000,
         9000
     };
 
-    long                       waveStart;
-    long                       waveEnd;
-    long                       generatorStart;
-    long                       generatorEnd;
-    int                        mode                 = MODE_NORMAL;
-    int                        loopSustain          = 8;
-    int                        loopEnd              = 0;
-    final long []              loopStart            = new long [NUM_LOOPS];
-    final int []               loopFine             = new int [NUM_LOOPS];
-    final long []              loopEndAddress       = new long [NUM_LOOPS];
-    final boolean []           loopSkip             = new boolean [NUM_LOOPS];
-    final int []               loopCrossfade        = new int [NUM_LOOPS];
-    final int []               loopTime             = new int [NUM_LOOPS];
-    int                        pitch;
-    int                        cutoff               = 127;
-    int                        resonance;
-    int                        ampSustainPoint;
-    int                        ampEndPoint;
-    final int []               ampRate              = new int [NUM_ENVELOPE_STAGES];
-    final int []               ampStop              = new int [NUM_ENVELOPE_STAGES];
-    int                        filterSustainPoint;
-    int                        filterEndPoint;
-    final int []               filterRate           = new int [NUM_ENVELOPE_STAGES];
-    final int []               filterStop           = new int [NUM_ENVELOPE_STAGES];
-    int                        lfoDelay;
-    int                        lfoWaveform;
-    int                        lfoAttack            = 1;
-    int                        lfoRate;
-    int                        lfoPitchDepth;
-    int                        lfoAmpDepth;
-    int                        lfoFilterDepth;
-    int                        lfoResonanceDepth;
-    int                        velocityResonance;
-    int                        ampKeyFollow;
-    int                        ampRateScaling;
-    int                        filterKeyFollow;
-    int                        filterRateScaling;
-    int                        velocityAmpDepth;
-    int                        velocityAmpRate;
-    int                        velocityFilterDepth;
-    int                        velocityFilterRate;
-    int                        highKey              = 127;
-    int                        lowKey               = 0;
-    int                        centerKey            = 60;
-    int                        sampleRateIndex      = 0;
-    String                     name                 = "";
+    long                          waveStart;
+    long                          waveEnd;
+    long                          generatorStart;
+    long                          generatorEnd;
+    int                           mode                = MODE_NORMAL;
+    int                           loopSustain         = 8;
+    int                           loopEnd             = 0;
+    final long []                 loopStart           = new long [NUM_LOOPS];
+    final int []                  loopFine            = new int [NUM_LOOPS];
+    final long []                 loopEndAddress      = new long [NUM_LOOPS];
+    final boolean []              loopSkip            = new boolean [NUM_LOOPS];
+    final int []                  loopCrossfade       = new int [NUM_LOOPS];
+    final int []                  loopTime            = new int [NUM_LOOPS];
+    int                           pitch;
+    int                           cutoff              = 127;
+    int                           resonance;
+    int                           ampSustainPoint;
+    int                           ampEndPoint;
+    final int []                  ampRate             = new int [NUM_ENVELOPE_STAGES];
+    final int []                  ampStop             = new int [NUM_ENVELOPE_STAGES];
+    int                           filterSustainPoint;
+    int                           filterEndPoint;
+    final int []                  filterRate          = new int [NUM_ENVELOPE_STAGES];
+    final int []                  filterStop          = new int [NUM_ENVELOPE_STAGES];
+    int                           lfoDelay;
+    int                           lfoWaveform;
+    int                           lfoAttack           = 1;
+    int                           lfoRate;
+    int                           lfoPitchDepth;
+    int                           lfoAmpDepth;
+    int                           lfoFilterDepth;
+    int                           lfoResonanceDepth;
+    int                           velocityResonance;
+    int                           ampKeyFollow;
+    int                           ampRateScaling;
+    int                           filterKeyFollow;
+    int                           filterRateScaling;
+    int                           velocityAmpDepth;
+    int                           velocityAmpRate;
+    int                           velocityFilterDepth;
+    int                           velocityFilterRate;
+    int                           highKey             = 127;
+    int                           lowKey              = 0;
+    int                           centerKey           = 60;
+    int                           sampleRateIndex     = 0;
+    String                        name                = "";
 
 
     /**
@@ -238,10 +237,9 @@ public class CasioFZVoice
 
     /**
      * Calculate the duration of one envelope stage. The rate value describes a slope. The
-     * documentation does not specify its law, therefore it is approximated: a full swing across
-     * the whole level range takes 60 seconds at rate 0 and the time halves with every 8 rate
-     * steps (~1 millisecond at rate 127). The stage duration scales with the level distance to
-     * travel.
+     * documentation does not specify its law, therefore it is approximated: a full swing across the
+     * whole level range takes 60 seconds at rate 0 and the time halves with every 8 rate steps (~1
+     * millisecond at rate 127). The stage duration scales with the level distance to travel.
      *
      * @param rate The rate of the stage, only the lower 7 bits are used
      * @param levelDelta The level distance of the stage (0-255)
