@@ -49,6 +49,7 @@ public class S770Patch
     private final AfterTouchSection    afterTouch;
     private final LfoModulationSection modulation;
     private final ControllerSection    controller;
+    private boolean                    active           = true;
 
 
     /**
@@ -113,6 +114,29 @@ public class S770Patch
     public String getName ()
     {
         return this.patchName;
+    }
+
+
+    /**
+     * Check if the patch slot is in use. On HD/CD-ROM images the parameter entries of deleted
+     * patches stay on the disk, the matching directory entry marks them as free.
+     *
+     * @return False if the slot is free or deleted
+     */
+    public boolean isActive ()
+    {
+        return this.active;
+    }
+
+
+    /**
+     * Set if the patch slot is in use.
+     *
+     * @param active False if the slot is free or deleted
+     */
+    public void setActive (final boolean active)
+    {
+        this.active = active;
     }
 
 

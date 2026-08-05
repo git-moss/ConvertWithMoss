@@ -116,7 +116,13 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                     image = diskette.get ();
                 }
                 else
-                    image = new S770Hd (input, header);
+                {
+                    final S770Hd hdImage = new S770Hd (input, header);
+                    final int numIncompleteSampleChains = hdImage.getNumIncompleteSampleChains ();
+                    if (numIncompleteSampleChains > 0)
+                        this.notifier.logError ("IDS_S7XX_INCOMPLETE_SAMPLE_CHAINS", Integer.toString (numIncompleteSampleChains));
+                    image = hdImage;
+                }
 
                 return this.readPatches (sourceFile, image);
             }
@@ -172,7 +178,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         {
             final S770Patch patch = patches.get (i);
             final String patchName = patch.getName ().trim ();
-            if (patchName.isBlank ())
+            if (!patch.isActive () || patchName.isBlank ())
                 continue;
             this.notifier.log ("IDS_S7XX_CONVERTING_PATCH", String.format ("%02d %s", Integer.valueOf (i + 1), patchName));
 
@@ -214,7 +220,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                 highKey = key == TOP_KEY ? TOP_KEY : key - 1;
 
                 // Only create zone if tone is enabled
-                if (partialId >= 0)
+                if (partialId >= 0 && partialId < partials.size ())
                 {
                     final S770Partial partial = partials.get (partialId);
                     final SampleSection [] sampleSections = partial.getSamples ();
@@ -227,6 +233,11 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                             continue;
 
                         final S770Sample sample = samples.get (sampleIndex);
+                        // The referenced sample might be deleted or its data could not be read
+                        final byte [] waveData = sample.getWaveData ();
+                        if (waveData == null || waveData.length == 0)
+                            continue;
+
                         final String sampleName = sample.getSampleName ().trim ();
                         final ISampleZone sampleZone = new DefaultSampleZone (sampleName, lowKey, highKey);
                         applyParameters (sampleZone, patch, partial, sampleSection, sample);

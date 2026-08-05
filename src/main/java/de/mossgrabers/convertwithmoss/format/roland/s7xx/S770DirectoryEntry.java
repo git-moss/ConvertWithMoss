@@ -6,8 +6,10 @@ package de.mossgrabers.convertwithmoss.format.roland.s7xx;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -18,6 +20,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 public class S770DirectoryEntry
 {
     private final String       name;
+    private final int          firstNameByte;
     private final S770FileType fileType;
     private final int          fileAttributes;
     private final int          forwardLinkPtr;
@@ -35,7 +38,13 @@ public class S770DirectoryEntry
      */
     public S770DirectoryEntry (final InputStream input) throws IOException
     {
-        this.name = StreamUtils.readAscii (input, 16);
+        // The name needs to be read as raw bytes since the un-mappable free/deleted marker 0xFE
+        // must be preserved
+        final byte [] nameBytes = input.readNBytes (16);
+        if (nameBytes.length != 16)
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ASCII_LENGTH_TOO_SHORT", "16", Integer.toString (nameBytes.length)));
+        this.firstNameByte = nameBytes[0] & 0xFF;
+        this.name = new String (nameBytes, StandardCharsets.US_ASCII);
         this.fileType = S770FileType.fromValue (StreamUtils.readUnsigned8 (input) & 0xFF);
         this.fileAttributes = StreamUtils.readUnsigned8 (input) & 0xFF;
         this.forwardLinkPtr = StreamUtils.readUnsigned16 (input, false);
@@ -59,6 +68,7 @@ public class S770DirectoryEntry
     public S770DirectoryEntry (final InputStream input, final S770FileType fileType, final int numClusters) throws IOException
     {
         this.name = StreamUtils.readAscii (input, 16);
+        this.firstNameByte = this.name.isEmpty () ? 0 : this.name.charAt (0);
         this.fileType = fileType;
         this.fileAttributes = 0;
         this.forwardLinkPtr = 0;
@@ -143,6 +153,29 @@ public class S770DirectoryEntry
     public int getNumClusters ()
     {
         return this.numClusters;
+    }
+
+
+    /**
+     * Get the FAT index of the first data segment of the referenced file.
+     *
+     * @return The FAT index
+     */
+    public int getFatEntry ()
+    {
+        return this.fatEntry;
+    }
+
+
+    /**
+     * Check if this entry references a file. A first name character of 0 marks this and all
+     * following entries as unused, 0xFE marks a deleted entry.
+     *
+     * @return True if the entry is free or deleted
+     */
+    public boolean isFree ()
+    {
+        return this.firstNameByte == 0x00 || this.firstNameByte == 0xFE;
     }
 
 
