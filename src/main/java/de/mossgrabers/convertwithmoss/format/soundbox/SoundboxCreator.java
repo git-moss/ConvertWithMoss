@@ -138,6 +138,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final List<String> presetContents = new ArrayList<> ();
         final Set<String> usedGroupNames = new HashSet<> ();
+        final Set<String> usedPresetNames = new HashSet<> ();
 
         // The samples are written to the ZIP while the sound entries are created, so that
         // duplicated sample data can be detected by its content and stored only once. The
@@ -151,7 +152,9 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
             for (final IMultisampleSource multisampleSource: multisampleSources)
             {
-                final String presetName = multisampleSource.getName ();
+                // The import in Soundbox creates files named after the preset and its groups,
+                // therefore the names must not contain characters which are illegal in file names
+                final String presetName = createUniqueName (StringUtils.consolidateWhitespace (FileUtils.createSafeFilename (multisampleSource.getName ()).replace ('_', ' '), "Preset"), usedPresetNames);
                 final Element presetNameElement = XMLUtils.addElement (packDocument, presetsElement, SoundboxTag.PRESET_NAME);
                 presetNameElement.setAttribute (SoundboxTag.ATTR_NAME, presetName);
 
