@@ -58,6 +58,7 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
+    private static final String TAG_ACTIVE      = "active";
     private static final String PLUGIN_VERSION  = "1.0.0b19";
     private static final int    MAX_LAYERS      = 4;
 
@@ -611,7 +612,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             layerElement.setAttribute (SoundboxTag.ATTR_SETTINGS, SoundboxJuceBase64.encode (layerPlan.settings.write ()));
 
             final Element arpElement = XMLUtils.addElement (document, layerElement, "Arp");
-            arpElement.setAttribute ("active", "0");
+            arpElement.setAttribute (TAG_ACTIVE, "0");
             arpElement.setAttribute ("sequencerActive", "0");
             arpElement.setAttribute ("sequencerLength", "16");
             arpElement.setAttribute ("swing", "0");
@@ -653,7 +654,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         XMLUtils.addElement (document, midiElement, "Timbre");
 
         final Element xyPadElement = XMLUtils.addElement (document, presetElement, "XYPAD");
-        xyPadElement.setAttribute ("active", "0");
+        xyPadElement.setAttribute (TAG_ACTIVE, "0");
         xyPadElement.setAttribute ("movementActive", "0");
         xyPadElement.setAttribute ("movementSyncActive", "0");
         xyPadElement.setAttribute ("movementShape", "0");
@@ -670,7 +671,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     private static Element addEffectsElement (final Document document, final Element parentElement)
     {
         final Element effectsElement = XMLUtils.addElement (document, parentElement, "Effects");
-        effectsElement.setAttribute ("active", "1");
+        effectsElement.setAttribute (TAG_ACTIVE, "1");
         effectsElement.setAttribute ("slotSelected", "0");
         for (int slot = 0; slot < 4; slot++)
         {

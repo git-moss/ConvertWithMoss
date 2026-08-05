@@ -7,8 +7,8 @@ package de.mossgrabers.convertwithmoss.format.roland.sp404mk2;
 /**
  * Constants and low-level byte helpers for the Roland SP-404MK2 project format. The pad
  * configuration (<i>PADCONF.BIN</i>, magic <code>RFPD</code>) and the sample files
- * (<i>SMPL/BANK&lt;bank&gt;-&lt;pad&gt;.SMP</i>, magic <code>RFWV</code>) were reverse-engineered and
- * validated against real exported projects and the SP-404MK2 v5.52 firmware (see
+ * (<i>SMPL/BANK&lt;bank&gt;-&lt;pad&gt;.SMP</i>, magic <code>RFWV</code>) were reverse-engineered
+ * and validated against real exported projects and the SP-404MK2 v5.52 firmware (see
  * <i>documentation/design/SP404MK2_FORMAT.md</i>). All multi-byte integers - and the audio PCM
  * itself - are stored big-endian.
  *
@@ -17,89 +17,104 @@ package de.mossgrabers.convertwithmoss.format.roland.sp404mk2;
 public final class SP404Mk2Constants
 {
     /** The device native sample rate. */
-    public static final int    SAMPLE_RATE       = 48000;
+    public static final int        SAMPLE_RATE           = 48000;
     /** Number of banks (A-J) in a project. */
-    public static final int    BANK_COUNT        = 10;
+    public static final int        BANK_COUNT            = 10;
     /** Number of pads per bank. */
-    public static final int    PADS_PER_BANK     = 16;
+    public static final int        PADS_PER_BANK         = 16;
     /** Total number of pads in a project. */
-    public static final int    PAD_COUNT         = BANK_COUNT * PADS_PER_BANK;
+    public static final int        PAD_COUNT             = BANK_COUNT * PADS_PER_BANK;
 
     // PADCONF.BIN layout
     /** The fixed file name of the pad configuration of a project. */
-    public static final String PADCONF_FILE_NAME = "PADCONF.BIN";
+    public static final String     PADCONF_FILE_NAME     = "PADCONF.BIN";
     /** The lower-case file name the detector scans for (see {@link #PADCONF_FILE_NAME}). */
-    public static final String PADCONF_ENDING    = "padconf.bin";
+    public static final String     PADCONF_ENDING        = "padconf.bin";
     /** The ending of the sample files, e.g. <i>SMPL/BANK1-01.SMP</i>. */
-    public static final String SAMPLE_ENDING     = ".smp";
+    public static final String     SAMPLE_ENDING         = ".smp";
     /** The magic bytes of a pad configuration file. */
-    public static final byte [] RFPD_MAGIC       = { 'R', 'F', 'P', 'D' };
+    protected static final byte [] RFPD_MAGIC            =
+    {
+        'R',
+        'F',
+        'P',
+        'D'
+    };
     /** The size of an exported PADCONF.BIN (EXPORT/IMPORT PROJECT form). */
-    public static final int    PADCONF_SIZE_EXPORT   = 31488;
-    /** The size of an internal-storage PADCONF.BIN (has a larger header and a trailing marks section). */
-    public static final int    PADCONF_SIZE_INTERNAL = 52000;
+    public static final int        PADCONF_SIZE_EXPORT   = 31488;
+    /**
+     * The size of an internal-storage PADCONF.BIN (has a larger header and a trailing marks
+     * section).
+     */
+    public static final int        PADCONF_SIZE_INTERNAL = 52000;
     /** Header size of the export form; the pad-metadata block starts right after the header. */
-    public static final int    HEADER_SIZE_EXPORT    = 0x80;
+    public static final int        HEADER_SIZE_EXPORT    = 0x80;
     /** Header size of the internal form. */
-    public static final int    HEADER_SIZE_INTERNAL  = 0xA0;
+    public static final int        HEADER_SIZE_INTERNAL  = 0xA0;
     /** Size of one pad-metadata record. */
-    public static final int    PAD_RECORD_SIZE   = 172;
+    public static final int        PAD_RECORD_SIZE       = 172;
     /** Size of one pad-name record. */
-    public static final int    NAME_SIZE         = 24;
+    public static final int        NAME_SIZE             = 24;
     /** Maximum number of characters in a pad name (the 24th byte is the terminator). */
-    public static final int    NAME_MAX_CHARS    = 23;
+    public static final int        NAME_MAX_CHARS        = 23;
 
     // PADCONF.BIN header fields
     /** Header: number of pads (always 160). */
-    public static final int    HDR_PAD_COUNT     = 0x04;
+    public static final int        HDR_PAD_COUNT         = 0x04;
     /** Header: format version. */
-    public static final int    HDR_VERSION       = 0x08;
+    public static final int        HDR_VERSION           = 0x08;
     /** Header: size of the pad-data region (metadata + names). */
-    public static final int    HDR_DATA_SIZE     = 0x0C;
+    public static final int        HDR_DATA_SIZE         = 0x0C;
     /** Header: first of the 10 per-bank tempo values (BPM * 200). */
-    public static final int    HDR_BANK_BPM      = 0x40;
+    public static final int        HDR_BANK_BPM          = 0x40;
 
     // Pad-metadata record fields (relative to the record start)
     /** Sample end as a byte offset into the .SMP file (equals the file size for a full pad). */
-    public static final int    PAD_END           = 0x00;
+    public static final int        PAD_END               = 0x00;
     /** Sample start as a byte offset; {@link #START_SENTINEL} means "from the beginning". */
-    public static final int    PAD_START         = 0x04;
+    public static final int        PAD_START             = 0x04;
     /** Duplicate of the sample end (original / user end pair). */
-    public static final int    PAD_END2          = 0x08;
+    public static final int        PAD_END2              = 0x08;
     /** Playback level, 0-127. */
-    public static final int    PAD_VOLUME        = 0x0C;
+    public static final int        PAD_VOLUME            = 0x0C;
     /** Loop enable, 0 or 1. */
-    public static final int    PAD_LOOP          = 0x10;
+    public static final int        PAD_LOOP              = 0x10;
     /** Constant 1 for every pad record. */
-    public static final int    PAD_USED          = 0x18;
+    public static final int        PAD_USED              = 0x18;
     /** Pad tempo, BPM * 100. */
-    public static final int    PAD_BPM           = 0x24;
+    public static final int        PAD_BPM               = 0x24;
     /** Loop start as a byte offset. */
-    public static final int    PAD_LOOP_START    = 0x2C;
+    public static final int        PAD_LOOP_START        = 0x2C;
     /** Coarse pitch in semitones (signed). */
-    public static final int    PAD_PITCH         = 0x30;
+    public static final int        PAD_PITCH             = 0x30;
     /** Fine pitch in cents (signed). */
-    public static final int    PAD_FINE          = 0x34;
+    public static final int        PAD_FINE              = 0x34;
     /** Playback speed, 10000 = 100%. */
-    public static final int    PAD_SPEED         = 0x40;
+    public static final int        PAD_SPEED             = 0x40;
     /** Panning, 0x40 = center. */
-    public static final int    PAD_PAN           = 0x48;
+    public static final int        PAD_PAN               = 0x48;
     /** The byte-offset value used to mean "start at the very beginning". */
-    public static final int    START_SENTINEL    = 512;
+    public static final int        START_SENTINEL        = 512;
     /** Center value of the panning field. */
-    public static final int    PAN_CENTER        = 0x40;
+    public static final int        PAN_CENTER            = 0x40;
 
     // RFWV sample file layout
     /** The magic bytes of a sample file. */
-    public static final byte [] RFWV_MAGIC       = { 'R', 'F', 'W', 'V' };
+    protected static final byte [] RFWV_MAGIC            =
+    {
+        'R',
+        'F',
+        'W',
+        'V'
+    };
     /** Size of the RFWV header; PCM data follows. */
-    public static final int    RFWV_HEADER_SIZE  = 32;
+    public static final int        RFWV_HEADER_SIZE      = 32;
     /** RFWV header: sample rate. */
-    public static final int    RFWV_RATE         = 0x08;
+    public static final int        RFWV_RATE             = 0x08;
     /** RFWV header: number of channels. */
-    public static final int    RFWV_CHANNELS     = 0x0C;
+    public static final int        RFWV_CHANNELS         = 0x0C;
     /** RFWV header: bit resolution. */
-    public static final int    RFWV_BITS         = 0x10;
+    public static final int        RFWV_BITS             = 0x10;
 
 
     /**

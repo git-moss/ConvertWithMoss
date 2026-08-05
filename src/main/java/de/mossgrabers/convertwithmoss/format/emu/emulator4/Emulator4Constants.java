@@ -147,7 +147,7 @@ public class Emulator4Constants
      * envelope at [0..11], the default filter envelope at [14..25] and the default LFO settings,
      * taken from a hardware saved reference voice.
      */
-    public static final byte []    PRIMARY_ZONE_TEMPLATE      =
+    protected static final byte [] PRIMARY_ZONE_TEMPLATE      =
     {
         0x00,
         0x00,
@@ -222,7 +222,7 @@ public class Emulator4Constants
      * cutoff (amount 0 = no key tracking). A voice with an all zero table is valid but does not
      * respond to velocity and must not use the non-transpose mode.
      */
-    public static final byte []    MOD_CORD_TEMPLATE          =
+    protected static final byte [] MOD_CORD_TEMPLATE          =
     {
         0x0C,
         0x40,
@@ -314,7 +314,7 @@ public class Emulator4Constants
     public static final int        MOD_KEY_TRACKING_AMOUNT    = 26;
 
     /** The repeating 12 byte entry of the default E4Ma multimap (all presets on all channels). */
-    public static final byte []    E4MA_ENTRY                 =
+    protected static final byte [] E4MA_ENTRY                 =
     {
         0x00,
         0x00,
