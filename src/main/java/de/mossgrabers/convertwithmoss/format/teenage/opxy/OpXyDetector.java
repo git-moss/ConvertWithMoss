@@ -154,8 +154,15 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
             loop.setType (LoopType.FORWARDS);
             loop.setStart (getInt (regionNode, OpXyTag.TAG_LOOP_START, 0));
             loop.setEnd (getInt (regionNode, OpXyTag.TAG_LOOP_END, zone.getStop ()));
-            loop.setCrossfadeInSamples (getInt (regionNode, OpXyTag.TAG_LOOP_CROSSFADE, 0));
-            loop.setLoopUntilRelease (getBoolean (regionNode, OpXyTag.TAG_LOOP_ON_RELEASE));
+            // The device relates its cross-fade percentage to the whole sample, not to the loop
+            final int crossfade = getInt (regionNode, OpXyTag.TAG_LOOP_CROSSFADE, 0);
+            final int frameCount = getInt (regionNode, OpXyTag.TAG_FRAME_COUNT, 0);
+            if (frameCount > 0)
+                loop.setCrossfade (crossfade / (double) frameCount);
+            else
+                loop.setCrossfadeInSamples (crossfade);
+            // True keeps the loop running after note-off, false plays the part behind the loop
+            loop.setLoopUntilRelease (!getBoolean (regionNode, OpXyTag.TAG_LOOP_ON_RELEASE));
             zone.getLoops ().add (loop);
         }
 
@@ -173,6 +180,7 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
     {
         final JsonNode engineNode = root.get (OpXyTag.TAG_ENGINE);
         final int bendRange = engineNode == null ? -1 : (int) Math.round (OpXyTag.toFactor (getInt (engineNode, OpXyTag.TAG_BEND_RANGE, -1)) * OpXyTag.MAX_BEND_RANGE);
+        final int velocitySensitivity = engineNode == null ? -1 : getInt (engineNode, OpXyTag.TAG_VELOCITY_SENSITIVITY, -1);
 
         final JsonNode envelopeNode = root.get (OpXyTag.TAG_ENVELOPE);
         final JsonNode ampNode = envelopeNode == null ? null : envelopeNode.get (OpXyTag.TAG_AMP);
@@ -184,6 +192,9 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
                 zone.setBendUp (bendRange * 100);
                 zone.setBendDown (-bendRange * 100);
             }
+
+            if (velocitySensitivity >= 0)
+                zone.getAmplitudeVelocityModulator ().setDepth (OpXyTag.toFactor (velocitySensitivity));
 
             if (ampNode != null)
             {

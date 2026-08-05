@@ -44,6 +44,8 @@ public class OpXyTag
     public static final String TAG_TRANSPOSE         = "transpose";
     /** The volume of the engine. */
     public static final String TAG_VOLUME            = "volume";
+    /** The velocity sensitivity of the engine. */
+    public static final String TAG_VELOCITY_SENSITIVITY = "velocity.sensitivity";
 
     /** The envelope section. */
     public static final String TAG_ENVELOPE          = "envelope";
@@ -76,13 +78,21 @@ public class OpXyTag
     public static final String TAG_SAMPLE_END        = "sample.end";
     /** Is the loop enabled? */
     public static final String TAG_LOOP_ENABLED      = "loop.enabled";
-    /** Does the loop run until the key is released? */
+    /**
+     * Does the loop keep running after the key is released (the '&infin;' mode of the device)? If
+     * false, the part of the sample behind the loop is played on release.
+     */
     public static final String TAG_LOOP_ON_RELEASE   = "loop.onrelease";
     /** The start of the loop. */
     public static final String TAG_LOOP_START        = "loop.start";
     /** The end of the loop. */
     public static final String TAG_LOOP_END          = "loop.end";
-    /** The cross-fade of the loop. */
+    /**
+     * The cross-fade of the loop. The device relates its cross-fade percentage to the whole
+     * sample, not to the loop: the stored value is 'percent * framecount' (the device displays a
+     * stored 29368 of 166606 frames as 17%; existing presets hold exact integer percentages of
+     * their frame count, up to the manual limit of 75%).
+     */
     public static final String TAG_LOOP_CROSSFADE    = "loop.crossfade";
     /** The gain of a region. */
     public static final String TAG_GAIN              = "gain";
@@ -102,6 +112,8 @@ public class OpXyTag
     public static final int    MAX_VALUE             = 32767;
     /** The value of a bipolar parameter at its center. */
     public static final int    CENTER_VALUE          = 16384;
+    /** The velocity sensitivity to use when the source states nothing. The device shows 64. */
+    public static final int    DEFAULT_VELOCITY_SENSITIVITY = 21299;
 
     /**
      * The longest time of an envelope in seconds. The envelope parameters are stored normalized to

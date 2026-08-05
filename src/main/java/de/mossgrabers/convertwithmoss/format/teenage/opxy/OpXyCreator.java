@@ -183,6 +183,11 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
         engine.put (OpXyTag.TAG_PLAYMODE, OpXyTag.PLAYMODE_POLY);
         engine.put (OpXyTag.TAG_TRANSPOSE, 0);
         engine.put (OpXyTag.TAG_VOLUME, OpXyTag.CENTER_VALUE);
+        // Full depth is the neutral state of the model; the velocity response of the device is
+        // much steeper than e.g. amp_veltrack=100% of SFZ, therefore that case gets the default
+        // of the device instead of the maximum
+        final double velocityDepth = firstZone.getAmplitudeVelocityModulator ().getDepth ();
+        engine.put (OpXyTag.TAG_VELOCITY_SENSITIVITY, velocityDepth >= 1 ? OpXyTag.DEFAULT_VELOCITY_SENSITIVITY : OpXyTag.fromFactor (velocityDepth));
         final int bendUp = firstZone.getBendUp ();
         if (bendUp > 0)
             engine.put (OpXyTag.TAG_BEND_RANGE, OpXyTag.fromFactor (bendUp / 100.0 / OpXyTag.MAX_BEND_RANGE));
@@ -249,8 +254,10 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
             final ISampleLoop loop = loops.get (0);
             region.put (OpXyTag.TAG_LOOP_START, Math.clamp (loop.getStart (), 0, frames));
             region.put (OpXyTag.TAG_LOOP_END, Math.clamp (loop.getEnd (), 0, frames));
-            region.put (OpXyTag.TAG_LOOP_CROSSFADE, Math.max (0, loop.getCrossfadeInSamples ()));
-            region.put (OpXyTag.TAG_LOOP_ON_RELEASE, loop.isLoopUntilRelease ());
+            // The device relates its cross-fade percentage to the whole sample, not to the loop
+            region.put (OpXyTag.TAG_LOOP_CROSSFADE, (int) Math.round (loop.getCrossfade () * frames));
+            // True keeps the loop running after note-off, false plays the part behind the loop
+            region.put (OpXyTag.TAG_LOOP_ON_RELEASE, !loop.isLoopUntilRelease ());
         }
         else
         {
