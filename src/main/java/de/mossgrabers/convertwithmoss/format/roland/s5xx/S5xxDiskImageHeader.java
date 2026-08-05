@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -44,7 +45,7 @@ public class S5xxDiskImageHeader
 
         input.skipNBytes (24);
 
-        this.osVersionString = cleanText (StreamUtils.readAscii (input, 30));
+        this.osVersionString = StringUtils.consolidateWhitespace (StreamUtils.readAscii (input, 30), "none");
 
         input.skipNBytes (194);
 
@@ -90,13 +91,5 @@ public class S5xxDiskImageHeader
     public String getOsVersionString ()
     {
         return this.osVersionString;
-    }
-
-
-    private static String cleanText (final String s)
-    {
-        if (s != null && !s.trim ().isBlank ())
-            return s.trim ().replaceAll ("\\s+", " ");
-        return "none";
     }
 }

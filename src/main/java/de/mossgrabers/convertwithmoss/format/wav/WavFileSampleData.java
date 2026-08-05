@@ -103,7 +103,6 @@ public class WavFileSampleData extends AbstractFileSampleData
     }
 
 
-
     /**
      * Constructor for a sample whose file does not contain the PCM data itself, e.g. a WAV file
      * which wraps an Ogg stream. The name of the file is kept but the audio is taken from the
@@ -132,6 +131,7 @@ public class WavFileSampleData extends AbstractFileSampleData
         // The file on disk is not plain PCM, therefore it must never be copied as-is
         this.hasWavSourceFile = false;
     }
+
 
     /**
      * Constructor for a sample stored in a ZIP file.
@@ -270,7 +270,7 @@ public class WavFileSampleData extends AbstractFileSampleData
             final FormatChunk formatChunk = wavFile.getFormatChunk ();
             this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels (), formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), wavFile.getDataChunk ().calculateLength (formatChunk));
         }
-        catch (final IOException | CompressionNotSupportedException ex)
+        catch (final IOException | CompressionNotSupportedException _)
         {
             // Fall back to javax.sound for compressed WAV files
             super.createAudioMetadata ();

@@ -141,7 +141,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         final int numDiskettes = header.getNumDiskettes ();
         if (indexDiskette != 0)
         {
-            this.notifier.logError ("IDS_S7XX_CONTINUATION_DISK_IGNORED", Integer.toString (indexDiskette + 1), Integer.toString (numDiskettes + 1));
+            this.notifier.log ("IDS_S7XX_CONTINUATION_DISK_IGNORED", Integer.toString (indexDiskette + 1), Integer.toString (numDiskettes + 1));
             return Optional.empty ();
         }
 

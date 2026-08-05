@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -294,6 +295,6 @@ public class S770Header
 
     private static String cleanText (final String s)
     {
-        return s == null ? "(none)" : s.trim ().replaceAll ("\\s+", " ");
+        return StringUtils.consolidateWhitespace (s, "(none)");
     }
 }
