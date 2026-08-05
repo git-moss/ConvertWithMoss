@@ -770,7 +770,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
                 for (final ISampleZone zone: group.getSampleZones ())
                     this.createWaveData (format, counters, keybankList, waveDataList, zone);
 
-            final String multisampleName = multisampleSource.getName ();
+            final String multisampleName = StringUtils.optimizeName (StringUtils.fixASCII (multisampleSource.getName ()), 20);
             final int keyBankIndex = 0x10001 + i;
             final String waveformName = createCategoryNameText (getCategoryIndex (multisampleSource.getMetadata ()), multisampleName);
             final YamahaYsfcEntry keyBankEntry = createKeyBankEntry (waveformName, keyBankIndex);

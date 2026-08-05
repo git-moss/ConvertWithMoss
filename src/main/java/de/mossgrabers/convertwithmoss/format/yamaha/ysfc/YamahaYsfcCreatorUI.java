@@ -116,6 +116,8 @@ public class YamahaYsfcCreatorUI implements ICoreTaskSettings
             }
             this.outputFormat = formatIndex.intValue ();
         }
+
+        this.createOnlyWaveforms = "1".equals (parameters.remove (YSFC_CREATE_ONLY_WAVEFORMS));
         return true;
     }
 
