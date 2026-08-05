@@ -142,7 +142,10 @@ public class BentoCreator extends AbstractMusic1010Creator
         for (final IInstrumentSource instrumentSource: instrumentSources)
             instrumentSource.clipKeyRange ();
 
-        final File patchesFolder = new File (destinationFolder, PATCHES_FOLDER);
+        // The constant uses the backslash form of the device paths - the folder on the host file
+        // system needs forward slashes, otherwise macOS/Linux create one folder which literally
+        // contains the backslashes in its name
+        final File patchesFolder = new File (destinationFolder, PATCHES_FOLDER.replace ('\\', '/'));
         if (!patchesFolder.exists () && !patchesFolder.mkdirs ())
         {
             this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, patchesFolder.getAbsolutePath ());

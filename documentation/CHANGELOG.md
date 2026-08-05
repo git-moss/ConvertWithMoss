@@ -13,6 +13,8 @@
   * Fixed: Contents dialog: Using 'Select All' on filtered content did still select all presets not only the filtered ones.
   * Fixed: Tabbing in dialogs did not work.
   * Fixed: Processing dialog: the Enable option could not be reached with tab.
+* 1010music bento
+  * Fixed: On macOS and Linux the patches of a performance were written into a single folder whose name literally contains the backslashes of the device path ('UserPatches\SampInst\') instead of the nested UserPatches/SampInst folders; such a folder cannot even be copied onto the FAT32/exFAT card of the device. The paths inside of the project file were and are correct.
 * Akai MPC60, MPC2000/3000, S-9x0, S-1000, Ensoniq ASR/EPS, Roland S-5xx, S-7xx
   * New: Patches are now put in sub-folders with their image name. On the S-5xx, if it is a CD-ROM, the CD-ROM name is another sub-folder. S-1000 adds Volume names.
 * Ableton
