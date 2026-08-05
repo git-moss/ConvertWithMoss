@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -37,11 +38,13 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.SampleSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvaSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvfSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Patch.BenderSection;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.Pair;
 
 
 /**
@@ -58,6 +61,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     private static final int []                   SAMPLING_FREQUENCIES = new int [6];
     private static final LoopType []              LOOP_MODES           = new LoopType [7];
     private static final Map<Integer, FilterType> FILTER_TYPES         = new HashMap<> ();
+    private static final Map<String, String>      CATEGORIES           = new HashMap<> ();
     static
     {
         SAMPLING_FREQUENCIES[0] = 48000;
@@ -78,6 +82,17 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         FILTER_TYPES.put (Integer.valueOf (0), FilterType.LOW_PASS);
         FILTER_TYPES.put (Integer.valueOf (1), FilterType.BAND_PASS);
         FILTER_TYPES.put (Integer.valueOf (2), FilterType.HIGH_PASS);
+
+        CATEGORIES.put ("BRS", TagDetector.CATEGORY_BRASS);
+        CATEGORIES.put ("BS", TagDetector.CATEGORY_BASS);
+        CATEGORIES.put ("DRM", TagDetector.CATEGORY_DRUM);
+        CATEGORIES.put ("FX", TagDetector.CATEGORY_FX);
+        CATEGORIES.put ("GTR", TagDetector.CATEGORY_GUITAR);
+        CATEGORIES.put ("PNO", TagDetector.CATEGORY_PIANO);
+        CATEGORIES.put ("PRC", TagDetector.CATEGORY_PERCUSSION);
+        CATEGORIES.put ("STR", TagDetector.CATEGORY_STRINGS);
+        CATEGORIES.put ("SYN", TagDetector.CATEGORY_SYNTH);
+        CATEGORIES.put ("VOX", TagDetector.CATEGORY_VOCAL);
     }
 
 
@@ -110,7 +125,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                 final IS770Image image;
                 if (isDiskette)
                 {
-                    final Optional<S770Diskette> diskette = this.loadDiskette (input, header, sourceFile.getParentFile ());
+                    final Optional<S770Diskette> diskette = this.loadDiskette (sourceFile, input, header);
                     if (diskette.isEmpty ())
                         return Collections.emptyList ();
                     image = diskette.get ();
@@ -135,7 +150,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private Optional<S770Diskette> loadDiskette (final InputStream input, final S770Header header, final File parentPath) throws IOException
+    private Optional<S770Diskette> loadDiskette (final File sourceFile, final InputStream input, final S770Header header) throws IOException
     {
         final int indexDiskette = header.getIndexDiskette ();
         final int numDiskettes = header.getNumDiskettes ();
@@ -149,7 +164,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         final List<byte []> continuationData = new ArrayList<> ();
         for (int i = 1; i <= numDiskettes; i++)
         {
-            final Optional<byte []> continuationDisk = S770Diskette.findContinuationDisk (diskName, i, numDiskettes, parentPath);
+            final Optional<byte []> continuationDisk = S770Diskette.findContinuationDisk (sourceFile, diskName, i, numDiskettes);
             if (continuationDisk.isEmpty ())
             {
                 this.notifier.logError ("IDS_S7XX_CONTINUATION_DISK_NOT_FOUND", Integer.toString (i + 1), Integer.toString (numDiskettes + 1));
@@ -182,9 +197,21 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                 continue;
             this.notifier.log ("IDS_S7XX_CONVERTING_PATCH", String.format ("%02d %s", Integer.valueOf (i + 1), patchName));
 
-            final IMultisampleSource multisampleSource = this.readPatch (sourceFile, patch, patchName, metadataDescription, image);
+            final Pair<String, String> itemCategoryAndName = getItemCategoryAndName (patchName);
+            final IMultisampleSource multisampleSource = this.readPatch (sourceFile, patch, itemCategoryAndName.getValue (), metadataDescription, image);
             multisampleSource.extendSubPath (fileName);
             multisampleSources.add (multisampleSource);
+
+            final String category = itemCategoryAndName.getKey ();
+            if (!category.isBlank ())
+            {
+                final String cat = CATEGORIES.get (category);
+                final IMetadata metadata = multisampleSource.getMetadata ();
+                if (cat != null)
+                    metadata.setCategory (cat);
+                else // Some presets use the category part as additional characters for the name
+                    multisampleSource.setName (patchName.replace (":", " "));
+            }
         }
 
         return multisampleSources;
@@ -424,5 +451,20 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     {
         // 0 is instant - without this case every envelope stage would take at least 302 ms
         return value == 0 ? 0 : 20.0 * Math.pow (2.0, (value - 127.0) / 21.0);
+    }
+
+
+    /**
+     * Splits the item name into the category value and the actual name part.
+     * 
+     * @param name The name to split
+     * @return The category value (empty string if not present) and the actual name part
+     */
+    private static Pair<String, String> getItemCategoryAndName (final String name)
+    {
+        final String [] split = name.split (":");
+        if (split.length >= 2 && !split[0].isBlank ())
+            return new Pair<> (split[0].trim (), split[1].trim ());
+        return new Pair<> ("", name);
     }
 }
