@@ -190,7 +190,7 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
 
             final IMetadata metadata = source.getMetadata ();
             final String comment = flattenComment (metadata);
-            timbre.append (source.getName ()).append (LINE_FEED);
+            timbre.append (flattenName (source.getName ())).append (LINE_FEED);
             timbre.append (comment).append (LINE_FEED);
             timbre.append (TIMBRE_VERSION).append (LINE_FEED);
 
@@ -262,7 +262,7 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
                 writer.write (timbre.toString ());
             }
 
-            timbreIndex.append (bankEntry).append ('\t').append (source.getName ()).append ('\t').append (comment).append ('\t').append (partialMask).append ("\t0").append (LINE_FEED);
+            timbreIndex.append (bankEntry).append ('\t').append (flattenName (source.getName ())).append ('\t').append (comment).append ('\t').append (partialMask).append ("\t0").append (LINE_FEED);
         }
 
         writeTextFile (new File (libraryFolder, "_" + safeLibraryName + ".tsv"), sampleIndex.toString ());
@@ -802,12 +802,25 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
      * @param metadata The meta data
      * @return The comment line (description followed by the #hash-tags)
      */
+    /**
+     * Replaces tabs and line breaks in a name with spaces so that it stays one line and one column
+     * in the text files of the library (the timbre files and the tab separated index files).
+     *
+     * @param name The name
+     * @return The flattened name
+     */
+    private static String flattenName (final String name)
+    {
+        return name.replace ('\t', ' ').replace ('\r', ' ').replace ('\n', ' ');
+    }
+
+
     private static String flattenComment (final IMetadata metadata)
     {
         final StringBuilder sb = new StringBuilder ();
         final String description = metadata.getDescription ();
         if (description != null && !description.isBlank ())
-            sb.append (description.replace ("\r", "").replace ("\n", "¶"));
+            sb.append (description.replace ("\r", "").replace ("\t", " ").replace ("\n", "¶"));
 
         final Set<String> tags = new LinkedHashSet<> ();
         final Optional<String> categoryTag = regenCategoryTag (metadata.getCategory ());
