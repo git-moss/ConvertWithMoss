@@ -122,7 +122,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         if (this.settingsConfiguration.createBundle ())
         {
             // Note: method is called for each multi-source individually!
-            final File multiFile = this.createUniqueFilename (destinationFolder, multisampleSource.getName (), "dsbundle");
+            final File multiFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "dsbundle");
             this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
             this.storeBundle (multiFile, Collections.singletonList (results.get (0)));
