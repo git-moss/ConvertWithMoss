@@ -186,8 +186,23 @@ public class Music1010Creator extends AbstractMusic1010Creator
         for (final IInstrumentSource instrumentSource: instrumentSources)
             instrumentSource.clipKeyRange ();
 
+        // Create the folders of the individual presets upfront, so that the performance preset
+        // references their actual names, which may differ from the multi-sample names due to
+        // removed illegal file name characters and unique-name numbering
+        final List<File> presetFolders = new ArrayList<> ();
+        final List<String> presetFolderNames = new ArrayList<> ();
+        for (final IInstrumentSource instrumentSource: instrumentSources)
+        {
+            final String multisampleName = FileUtils.createSafeFilename (instrumentSource.getMultisampleSource ().getName ());
+            final File presetFolder = this.createUniqueFilename (folder, multisampleName, "");
+            if (!presetFolder.mkdir ())
+                this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, presetFolder.getAbsolutePath ());
+            presetFolders.add (presetFolder);
+            presetFolderNames.add (presetFolder.getName ());
+        }
+
         // Create the overall performance preset
-        final Optional<String> xmlCode = this.createPreset (instrumentSources, trim, performanceFolder + "\\", true);
+        final Optional<String> xmlCode = this.createPreset (instrumentSources, presetFolderNames, trim, folder.getName () + "\\", true);
         if (xmlCode.isPresent ())
         {
             final File performanceFile = new File (folder, "preset.xml");
@@ -201,17 +216,13 @@ public class Music1010Creator extends AbstractMusic1010Creator
         }
 
         // Create all samples in their sub-folders
-        for (final IInstrumentSource instrumentSource: instrumentSources)
+        for (int i = 0; i < instrumentSources.size (); i++)
         {
-            final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
-
-            final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
-            final File presetFolder = this.createUniqueFilename (folder, multisampleName, "");
-            if (!presetFolder.mkdir ())
-            {
-                this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, presetFolder.getAbsolutePath ());
+            final File presetFolder = presetFolders.get (i);
+            if (!presetFolder.exists ())
                 continue;
-            }
+
+            final IMultisampleSource multisampleSource = instrumentSources.get (i).getMultisampleSource ();
 
             // Store all samples
             if (resample)
@@ -239,7 +250,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
         }
 
         final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
-        final Optional<String> metadata = this.createPreset (Collections.singletonList (instrumentSource), trim, "", false);
+        final Optional<String> metadata = this.createPreset (Collections.singletonList (instrumentSource), Collections.singletonList (presetFolder.getName ()), trim, "", false);
         if (metadata.isEmpty ())
             return;
 
@@ -260,13 +271,15 @@ public class Music1010Creator extends AbstractMusic1010Creator
      * Create the text of the description file with 1 preset.
      *
      * @param instrumentSources The up to 16 instrument sources to add to the preset
+     * @param presetFolderNames The actual folder names of the individual presets, one for each
+     *            instrument source
      * @param trim Trim to start/end if true
      * @param subFolder The sub-folder inside of the Presets folder to write to
      * @param isPerformance True if the preset is part of a performance
      * @return The XML structure
      * @throws IOException Could not combine split-stereo files
      */
-    private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final boolean trim, final String subFolder, final boolean isPerformance) throws IOException
+    private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final List<String> presetFolderNames, final boolean trim, final String subFolder, final boolean isPerformance) throws IOException
     {
         final Optional<Pair<Document, Element>> sessionDocumentOpt = this.createSessionDocument ();
         if (sessionDocumentOpt.isEmpty ())
@@ -276,6 +289,9 @@ public class Music1010Creator extends AbstractMusic1010Creator
         final Element sessionElement = sessionDocument.getValue ();
 
         // No metadata at all -> can optionally be written to BEXT chunk
+
+        // The silence workaround sample is written to the top of the performance folder
+        final String silencePath = subFolder.isEmpty () ? "" : "\\Presets\\" + subFolder.substring (0, subFolder.length () - 1);
 
         final int numInstruments = instrumentSources.size ();
         final List<Element> activeSlots = this.createSlots (document, sessionElement, numInstruments);
@@ -291,7 +307,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
                 continue;
 
             final Element slotElement = activeSlots.get (i);
-            final String presetPath = "\\Presets\\" + subFolder + multisampleSource.getName ();
+            final String presetPath = "\\Presets\\" + subFolder + presetFolderNames.get (i);
             slotElement.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath);
             // 0 = Off, 1..16 are the MIDI channels 1..16 whereby MIDI-channel 1 acts as the OMNI
             // mode. Therefore, OMNI (-1) is written as MIDI-channel 1 as well - writing 'Off'
@@ -309,7 +325,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
                 if (lowestKey > 0)
                 {
                     final ISampleZone silentZone = new DefaultSampleZone ("Silence24bit48kHz", 0, lowestKey - 1);
-                    createSample (document, presetPath, sessionElement, silentZone, sampleIndex, i, false);
+                    createSample (document, silencePath, sessionElement, silentZone, sampleIndex, i, false);
                     sampleIndex++;
                 }
             }
@@ -325,7 +341,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
                 if (highestKey < 127)
                 {
                     final ISampleZone silentZone = new DefaultSampleZone ("Silence24bit48kHz", highestKey + 1, 127);
-                    createSample (document, presetPath, sessionElement, silentZone, sampleIndex, i, false);
+                    createSample (document, silencePath, sessionElement, silentZone, sampleIndex, i, false);
                     sampleIndex++;
                 }
             }

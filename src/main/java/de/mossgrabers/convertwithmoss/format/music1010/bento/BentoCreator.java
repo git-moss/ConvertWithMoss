@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.music1010.bento;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -149,8 +150,25 @@ public class BentoCreator extends AbstractMusic1010Creator
             return;
         }
 
+        // Create the folders of the individual presets upfront, so that the project references
+        // their actual names, which may differ from the multi-sample names due to removed illegal
+        // file name characters and unique-name numbering. The patches folder uses the same
+        // (unique) name as the project folder.
+        final File presetFolder = new File (patchesFolder, performanceFolder.getName ());
+        final List<File> fullPresetFolders = new ArrayList<> ();
+        final List<String> presetFolderNames = new ArrayList<> ();
+        for (final IInstrumentSource instrumentSource: instrumentSources)
+        {
+            final String multisampleName = FileUtils.createSafeFilename (instrumentSource.getMultisampleSource ().getName ());
+            final File fullPresetFolder = this.createUniqueFilename (presetFolder, multisampleName, "");
+            if (!fullPresetFolder.mkdirs ())
+                this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, fullPresetFolder.getAbsolutePath ());
+            fullPresetFolders.add (fullPresetFolder);
+            presetFolderNames.add (fullPresetFolder.getName ());
+        }
+
         // Create the overall performance preset
-        final Optional<String> xmlCode = this.createPreset (instrumentSources, trim, PATCHES_FOLDER + performanceFolderName + "\\", true);
+        final Optional<String> xmlCode = this.createPreset (instrumentSources, presetFolderNames, trim, PATCHES_FOLDER + performanceFolder.getName () + "\\", true);
         if (xmlCode.isPresent ())
         {
             final File performanceFile = new File (performanceFolder, "project.xml");
@@ -164,18 +182,13 @@ public class BentoCreator extends AbstractMusic1010Creator
         }
 
         // Create all samples in their sub-folders
-        final File presetFolder = new File (patchesFolder, performanceFolderName);
-        for (final IInstrumentSource instrumentSource: instrumentSources)
+        for (int i = 0; i < instrumentSources.size (); i++)
         {
-            final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
-
-            final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
-            final File fullPresetFolder = this.createUniqueFilename (presetFolder, multisampleName, "");
-            if (!fullPresetFolder.mkdirs ())
-            {
-                this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, fullPresetFolder.getAbsolutePath ());
+            final File fullPresetFolder = fullPresetFolders.get (i);
+            if (!fullPresetFolder.exists ())
                 continue;
-            }
+
+            final IMultisampleSource multisampleSource = instrumentSources.get (i).getMultisampleSource ();
 
             // Store all samples
             if (resample)
@@ -203,7 +216,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         }
 
         final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
-        final Optional<String> metadata = this.createPreset (Collections.singletonList (instrumentSource), trim, "", false);
+        final Optional<String> metadata = this.createPreset (Collections.singletonList (instrumentSource), Collections.singletonList (presetFolder.getName ()), trim, "", false);
         if (metadata.isEmpty ())
             return;
 
@@ -230,13 +243,15 @@ public class BentoCreator extends AbstractMusic1010Creator
      * Create the text of the description file with 1 preset.
      *
      * @param instrumentSources The up to 16 instrument sources to add to the preset
+     * @param presetFolderNames The actual folder names of the individual presets, one for each
+     *            instrument source
      * @param trim Trim to start/end if true
      * @param subFolder The sub-folder inside of the Presets folder to write to
      * @param isPerformance True if the preset is part of a performance
      * @return The XML structure
      * @throws IOException Could not combine split-stereo files
      */
-    private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final boolean trim, final String subFolder, final boolean isPerformance) throws IOException
+    private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final List<String> presetFolderNames, final boolean trim, final String subFolder, final boolean isPerformance) throws IOException
     {
         final Optional<Pair<Document, Element>> sessionDocumentOpt = this.createSessionDocument ();
         if (sessionDocumentOpt.isEmpty ())
@@ -287,7 +302,7 @@ public class BentoCreator extends AbstractMusic1010Creator
             }
             for (final IGroup group: groups)
                 for (final ISampleZone zone: group.getSampleZones ())
-                    this.createSample (document, isPerformance ? subFolder + FileUtils.createSafeFilename (multisampleSource.getName ()) + "\\" : "", trackElement, zone, trim);
+                    this.createSample (document, isPerformance ? subFolder + presetFolderNames.get (i) + "\\" : "", trackElement, zone, trim);
             if (isPerformance)
             {
                 final int highestKey = multisampleSource.getHighestKey ();
