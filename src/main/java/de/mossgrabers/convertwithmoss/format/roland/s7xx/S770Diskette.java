@@ -68,18 +68,20 @@ public class S770Diskette implements IS770Image
      * Looks for continuation disks. A continuation disk must match the given name, the expected
      * index and the number of overall continuation disks.
      *
+     * @param sourceFile The first source file
      * @param diskName The name of the disk
      * @param index The index of the continuation disk
      * @param numContinuationDiskettes The overall number of continuation disks
-     * @param parentPath The path in which to look for the disk file
      * @return The data of the file if found otherwise null
      */
-    public static Optional<byte []> findContinuationDisk (final String diskName, final int index, final int numContinuationDiskettes, final File parentPath)
+    public static Optional<byte []> findContinuationDisk (final File sourceFile, final String diskName, final int index, final int numContinuationDiskettes)
     {
+        final File parentPath = sourceFile.getParentFile ();
+
         // Search the continuation file in the same folder as the 1st file
         for (final File childFile: parentPath.listFiles ())
         {
-            if (!childFile.isFile ())
+            if (!childFile.isFile () || childFile.equals (sourceFile))
                 continue;
 
             try (final RandomAccessFile raf = new RandomAccessFile (childFile, "r"))
@@ -94,11 +96,13 @@ public class S770Diskette implements IS770Image
 
                 // Check if the file matches the continuation index and number of expected diskettes
                 raf.seek (0x100);
-                if (raf.readUnsignedByte () == index && raf.readUnsignedByte () == numContinuationDiskettes)
+                final int diskIndex = raf.readUnsignedByte ();
+                final int diskNumContinuationDiskettes = raf.readUnsignedByte ();
+                if (diskIndex == index && diskNumContinuationDiskettes == numContinuationDiskettes)
                 {
                     // Disk names must match as well
                     raf.seek (0x180);
-                    final String name = StreamUtils.readAscii (raf, 16);
+                    final String name = StreamUtils.readAscii (raf, 16).trim ();
                     if (diskName.equals (name))
                     {
                         raf.seek (0x1F800);

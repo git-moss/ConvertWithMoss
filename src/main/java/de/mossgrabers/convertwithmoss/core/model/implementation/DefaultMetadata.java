@@ -4,7 +4,10 @@
 
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
@@ -18,11 +21,11 @@ import de.mossgrabers.convertwithmoss.format.TagDetector;
  */
 public class DefaultMetadata implements IMetadata
 {
-    private String    description  = "";
-    private String    creator      = "";
-    private Date      creationTime = null;
-    private String    category     = "";
-    private String [] keywords     = new String [0];
+    private String       description  = "";
+    private String       creator      = "";
+    private Date         creationTime = null;
+    private String       category     = "";
+    private List<String> keywords     = new ArrayList<> ();
 
 
     /** {@inheritDoc} */
@@ -61,7 +64,7 @@ public class DefaultMetadata implements IMetadata
     @Override
     public String [] getKeywords ()
     {
-        return this.keywords;
+        return this.keywords.toArray (new String [this.keywords.size ()]);
     }
 
 
@@ -103,7 +106,16 @@ public class DefaultMetadata implements IMetadata
     @Override
     public void setKeywords (final String... keywords)
     {
-        this.keywords = keywords;
+        this.keywords.clear ();
+        Collections.addAll (this.keywords, keywords);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void addKeyword (final String keyword)
+    {
+        this.keywords.add (keyword);
     }
 
 
@@ -123,7 +135,7 @@ public class DefaultMetadata implements IMetadata
             this.setCreator (TagDetector.detect (parts, config.getCreatorTags (), config.getCreatorName ()));
         if (this.category.isBlank () || TagDetector.CATEGORY_UNKNOWN.equals (this.category))
             this.setCategory (category == null || category.isBlank () ? TagDetector.detectCategory (parts, config.isCategoryFromNamePrefix ()) : category);
-        if (this.keywords.length == 0)
+        if (this.keywords.isEmpty ())
             this.setKeywords (TagDetector.detectKeywords (parts));
     }
 }

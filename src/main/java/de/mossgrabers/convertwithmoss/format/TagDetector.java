@@ -157,11 +157,12 @@ public class TagDetector
             "Acoustic Bs",
             "Bass Guitar",
             "Picked Bs",
-            CATEGORY_BASS,
+            "Fingered",
             "Fretless",
             "Reese",
             "Slap",
-            "Fingered"
+            CATEGORY_BASS,
+            "303"
         });
         CATEGORIES.put (CATEGORY_BELL, new String []
         {
@@ -170,7 +171,8 @@ public class TagDetector
             "Music Box",
             "Fantasia",
             "Tubular",
-            "Carillon"
+            "Carillon",
+            "Glocke"
         });
         CATEGORIES.put (CATEGORY_BRASS, new String []
         {
@@ -212,6 +214,8 @@ public class TagDetector
             "Glockenspiel",
             "Vibraphone",
             "Xylophone",
+            "SteelDrum",
+            "SteelDrm",
             "Marimba",
             "Celesta",
             "Kalimba",
@@ -238,6 +242,7 @@ public class TagDetector
             "Drum Kit",
             "Drum-Set",
             "Drumset",
+            "Rhythm",
             "Cymbal",
             "Crash",
             "CR78",
@@ -298,22 +303,25 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_GUITAR, new String []
         {
             "Electric Guitar",
-            "Mandolin",
-            CATEGORY_GUITAR,
-            "Ukulele",
+            "Distortion",
+            "Chorus Gt",
+            "Overdrive",
             "Hawaiian",
+            "Feedback",
+            "Charango",
+            "Clean Gt",
+            "Muted Gt",
+            "Mandolin",
+            "Ukulele",
+            "Jazz Gt",
+            "Mute GT",
+            "Funk Gt",
+            CATEGORY_GUITAR,
+            "RockGit",
             "Nylon",
             "Rajao",
             "Banjo",
-            "Chorus Gt",
-            "Clean Gt",
-            "Jazz Gt",
-            "Muted Gt",
-            "Funk Gt",
-            "Overdrive",
-            "Distortion",
-            "Feedback",
-            "Charango",
+            "RockGt",
             "GTR"
         });
         CATEGORIES.put (CATEGORY_HI_HAT, new String []
@@ -388,6 +396,7 @@ public class TagDetector
             "Castanets",
             "Angklung",
             "Cowbell",
+            "Gamelan",
             "Timbale",
             "Timpani",
             "Maracas",

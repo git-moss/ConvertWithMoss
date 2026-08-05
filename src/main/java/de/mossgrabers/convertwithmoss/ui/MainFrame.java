@@ -1514,9 +1514,12 @@ public class MainFrame extends AbstractFrame implements INotifier
             filtered.predicateProperty ().bind (Bindings.createObjectBinding (() -> f -> this.isVisibleInFilter (this.search.getText (), f, isSource), this.search.textProperty (), MainFrame.this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ()));
 
             // Ensure that there is always a selected element (select by value)
-            selectionModel.selectedItemProperty ().addListener ((_, _, newVal) -> {
-                if (newVal != null)
-                    this.lastSelected = newVal;
+            selectionModel.selectedItemProperty ().addListener ((_, _, selected) -> {
+                if (selected != null)
+                {
+                    this.lastSelected = selected;
+                    this.showPane (selected);
+                }
             });
             filtered.addListener ((ListChangeListener<String>) _ -> {
                 if (filtered.isEmpty ())
@@ -1525,11 +1528,6 @@ public class MainFrame extends AbstractFrame implements INotifier
                     selectionModel.select (this.lastSelected);
                 else
                     selectionModel.selectFirst ();
-            });
-
-            selectionModel.selectedItemProperty ().addListener ((_, _, selected) -> {
-                if (selected != null)
-                    this.showPane (selected);
             });
 
             final BorderPane sidebar = new BorderPane ();
