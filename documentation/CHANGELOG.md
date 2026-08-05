@@ -44,6 +44,8 @@
   * New: The destination 'Sample Files (WAV)' is now called 'Sample Files' and got an option for the audio file format of the written samples: WAV, AIFF, CAF, CAF-ALAC (compressed with Apple Lossless), CAF-AAC (compressed with MPEG-4 AAC, lossy) or FLAC. This allows audio file conversions (e.g. WAV to AIFF or AIFF to FLAC); all paths except CAF-AAC are lossless. The instrument, loop and metadata information is written to the matching chunks of AIFF and CAF files. The Apple Lossless decoder and encoder are ports of the reference implementation published by Apple, the AAC decoder is a port of the FFmpeg AAC decoder and the AAC encoder follows the structure of the FFmpeg encoder with a fixed precision target instead of its psychoacoustic model. All of them work on all platforms.
 * SFZ
   * New: The response curve of the velocity to volume modulation is now written as amp_velcurve_N points when the source describes one (e.g. Kontakt, whose velocity modulation scales the amplitude with the cube of the velocity). When reading, amp_velcurve_N points are fitted to the closest power law, so the response survives a round trip.
+* Synclavier Regen
+  * Fixed: A tab or line break in a preset name or description corrupted the line/column structure of the written timbre and index text files; such characters are now replaced.
 * Yamaha YSFC
   * Fixed: The waveform entry names written with the 'Create only waveforms' option kept the multi-sample name as-is; it is now folded to ASCII and limited to 20 characters like the names written with performances.
   * Fixed: The 'Create only waveforms' option could not be enabled from the command line interface - passing YsfcCreateOnlyWaveforms failed with 'Unknown parameter'.
