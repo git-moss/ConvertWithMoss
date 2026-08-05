@@ -13,6 +13,8 @@
   * Fixed: Contents dialog: Using 'Select All' on filtered content did still select all presets not only the filtered ones.
   * Fixed: Tabbing in dialogs did not work.
   * Fixed: Processing dialog: the Enable option could not be reached with tab.
+* 1010music bento
+  * Fixed: On macOS and Linux the patches of a performance were written into a single folder whose name literally contains the backslashes of the device path ('UserPatches\SampInst\') instead of the nested UserPatches/SampInst folders; such a folder cannot even be copied onto the FAT32/exFAT card of the device. The paths inside of the project file were and are correct.
 * 1010music blackbox, bento
   * Fixed: The preset paths written into presets and performances used the multi-sample name as-is, but the actually created folders have illegal file name characters removed and a number appended when the name already exists. Such presets referenced non-existing folders (e.g. for sources with a ':' in their name, like Roland S-7xx patches). The written paths now always match the created folders.
   * Fixed: blackbox: The silence workaround samples of a performance were referenced in the folder of the instrument but the sample is stored in the performance folder.
