@@ -21,6 +21,7 @@
 * Ableton
   * New: Round-robin cycles which are stored as sample-select (selector) ranges - the only round-robin representation the Sampler of Live 10/11 has - are now read as round-robin groups instead of zones which all play at once. When writing, round-robin groups are stored as selector ranges whenever the native round-robin flag of Live 12 is not available (Ableton 11) or does not apply because only some of the groups alternate.
   * Fixed: A preset whose samples were not found at the calculated root path failed with 'No presets were found in the source' although the samples were present. This happened e.g. for a preset saved inside of or next to a Live project folder which keeps its samples in a nested folder (the root path search only recognized a folder with a direct 'Samples' child). The root folder of a Live project (marked by its 'Ableton Project Info' folder) is now recognized as well, the absolute sample path stored in the preset is tried as a fall-back and finally the sample file is searched by its name starting from the folder of the preset. A sample which is still not found only logs an error and drops its zone instead of the whole preset.
+  * Fixed: A written preset was malformed XML when the preset name contains one of the characters '&', '<', '>' or a quote (the name is now escaped).
 * DecentSampler
   * Fixed: The folder name of a created DSBUNDLE kept characters which are illegal in file names (e.g. the ':' of Roland S-7xx patch names).
 * E-mu Emulator III/IIIX/ESI
