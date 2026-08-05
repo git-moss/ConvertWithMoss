@@ -35,6 +35,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -192,7 +193,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
                 }
             }
 
-            text = text.replace ("%PRESET_NAME%", multisampleSource.getName ().replace ('.', '_'));
+            text = text.replace ("%PRESET_NAME%", XMLUtils.escapeAttribute (multisampleSource.getName ().replace ('.', '_')));
             text = text.replace ("%FILE_NAME%", filename);
             text = text.replace ("%MULTI_SAMPLE_PARTS%", multisampleParts);
             if (isVersion12)
