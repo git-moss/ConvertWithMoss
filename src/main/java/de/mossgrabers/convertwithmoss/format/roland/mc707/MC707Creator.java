@@ -178,7 +178,9 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         this.notifier.log ("IDS_MC707_WRITING_PROJECT", outputFile.getAbsolutePath (), Integer.toString (multisampleSources.size ()));
 
         final MC707Project project = MC707Project.createFromTemplate ();
-        project.setProjectName (name);
+        // Use the name of the written file, which may differ from the given name due to removed
+        // illegal file name characters and unique-name numbering
+        project.setProjectName (FileUtils.getNameWithoutType (outputFile));
 
         final List<MC707Sample> pool = new ArrayList<> ();
         final Map<Object, Integer> byContent = new HashMap<> ();
