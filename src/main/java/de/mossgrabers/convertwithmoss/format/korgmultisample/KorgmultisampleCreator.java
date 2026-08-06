@@ -204,7 +204,17 @@ public class KorgmultisampleCreator extends AbstractWavCreator<WavChunkSettingsU
             }
         }
 
-        final int end = zone.getStop ();
+        // The format has no separate loop end field, the end value is the loop end as well.
+        // Audio behind an active loop can never be heard, therefore move the end to the loop end,
+        // e.g. to not cycle across a faded-out tail
+        int end = zone.getStop ();
+        if (!zone.isOneShot () && !loops.isEmpty ())
+        {
+            final ISampleLoop sampleLoop = loops.get (0);
+            final int loopEnd = sampleLoop.getEnd ();
+            if (loopEnd > sampleLoop.getStart () && loopEnd < end)
+                end = loopEnd;
+        }
         if (end > 0)
         {
             sampleOutput.write (KorgmultisampleConstants.ID_END);
