@@ -100,6 +100,7 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-f", "--flat").paramLabel ("FLAT").description ("If present, the folder structure is not recreated in the output folder.").build ());
             spec.addOption (OptionSpec.builder ("-l", "--library").paramLabel ("LIBRARY").type (String.class).description ("Name for the library. Set to create a library.").build ());
             spec.addOption (OptionSpec.builder ("-p").paramLabel ("KEY=VALUE").description ("Key-value pairs in the form -pkey1=value1,key2=value2,...").required (false).arity ("0..*").type (Map.class).auxiliaryTypes (String.class, String.class).defaultValue (null).build ());
+            spec.addOption (OptionSpec.builder ("-P", "--machine-progress").paramLabel ("MACHINE_PROGRESS").description ("If present, the progress of the conversion is additionally written to the error output in a machine-readable form ('CWM_PROGRESS pct=<0..100> phase=<token> detail=<text>'), which allows a hosting application to display it. Can also be requested by setting the environment variable CWM_MACHINE_PROGRESS to 1.").build ());
 
             // Processing parameters
             spec.addOption (OptionSpec.builder ("-Ze", "--ProcessEnable").paramLabel ("PROCESS_ENABLE").type (Boolean.class).description ("Enables processing if set to true.").build ());
@@ -135,6 +136,9 @@ public class CLIBackend implements INotifier
         final Integer helpExitCode = CommandLine.executeHelpRequest (parseResult);
         if (helpExitCode != null)
             return helpExitCode.intValue ();
+
+        if (parseResult.matchedOptionValue ('P', null) != null)
+            MachineProgressReporter.activate ();
 
         // Basic setup
         final String sourceFormat = parseResult.matchedOptionValue ('s', "");
