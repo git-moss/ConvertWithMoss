@@ -39,6 +39,7 @@
   * Fixed: The loop end was ignored when writing: the single end field of the format (which is the sample end and the loop end at once) was always set to the sample end. A loop which ends earlier now moves the end to the loop end - audio behind an active loop can never be heard anyway - so held notes no longer cycle across e.g. the faded-out tail of a pad sample.
 * NI Kontakt
   * New: The velocity to volume modulator is now converted with its response curve: Kontakt maps its normalized volume to decibels with 60*log10(x), so the amplitude follows the cube of the velocity. Destinations which can express the curve reproduce this response, e.g. SFZ receives matching amp_velcurve_N points.
+  * Fixed: Added a workaround for missing samples with Kontakt 2/3 Monolithic NKM files created with AWave Studio which falsely classify samples as NKI files.
   * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
 * Roland MC-707/MC-101
   * Fixed: The project name stored inside of a written MPJ file was the multi-sample name as-is; it is now the name of the written file, i.e. with illegal file name characters removed and including the number which is appended when the file already exists.
