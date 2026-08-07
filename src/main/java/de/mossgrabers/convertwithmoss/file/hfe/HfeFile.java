@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -106,7 +107,6 @@ public class HfeFile
     private int             singleStep;
     @SuppressWarnings("unused")
     private int             track0s0Altencoding;
-    @SuppressWarnings("unused")
     private int             track0s0Encoding;
     @SuppressWarnings("unused")
     private int             track0s1Altencoding;
@@ -134,13 +134,21 @@ public class HfeFile
 
 
     /**
-     * Decodes all sectors from all tracks which are MFM encoded.
+     * Decodes all sectors from all tracks.
      *
      * @return The decoded sectors
+     * @throws IOException Could not decode the sectors
      */
-    public List<Sector> decodeMfmSectors ()
+    public List<Sector> decodeSectors () throws IOException
     {
-        final MfmDecoder decoder = new MfmDecoder ();
+        final IDecoder decoder;
+        if (this.trackEncoding == ENCODING_ISOIBM_FM || this.trackEncoding == ENCODING_EMU_FM)
+            decoder = new FmDecoder ();
+        else if (this.trackEncoding == ENCODING_ISOIBM_MFM || this.trackEncoding == ENCODING_AMIGA_MFM)
+            decoder = new MfmDecoder ();
+        else
+            throw new IOException (Functions.getMessage ("IDS_HFE_UNSUPPORTED_TRACK_ENCODING", Integer.toString (this.track0s0Encoding)));
+
         final List<Sector> allSectors = new ArrayList<> ();
         for (int track = 0; track < this.getNumTracks (); track++)
             for (int side = 0; side < this.getNumSides (); side++)

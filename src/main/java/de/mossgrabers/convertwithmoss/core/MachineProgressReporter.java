@@ -211,7 +211,7 @@ public final class MachineProgressReporter
     private static void report (final int percent, final String phase, final String detail)
     {
         final StringBuilder sb = new StringBuilder (PREFIX);
-        sb.append (" pct=").append (Math.max (0, Math.min (100, percent)));
+        sb.append (" pct=").append (Math.clamp (percent, 0, 100));
         sb.append (" phase=").append (phase);
         sb.append (" detail=").append (sanitize (detail));
         System.err.println (sb.toString ());

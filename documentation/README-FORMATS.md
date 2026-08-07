@@ -66,7 +66,7 @@ The following multi-sample formats are supported:
 * [Ensoniq EPS/EPS16+/ASR-10](#ensoniq-epseps16asr-10) - read only
 * [Ensoniq Mirage](#ensoniq-mirage) - read only
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
-* [Fairlight CMI 3](#fairlight-cmi-3)
+* [Fairlight CMI Voice](#fairlight-cmi-voice)
 * [FL Studio DirectWave](#fl-studio-directwave)
 * [ISO/IMG Files](#isoimg-files)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
@@ -467,13 +467,21 @@ The basic multi-sample setup is encoded in the file-names of the samples. Furthe
 * Re-sample to 16bit/44.1kHz: If enabled, samples will be resampled to 16bit and 44.1kHz. While the device can play higher resolutions as well it decrease the number of voices it can play.
 * Trim sample to range of zone start to end: Since the format does not support a sample start attribute, this fixes the issue.
 
-## Fairlight CMI 3
+## Fairlight CMI Voice
 
-The Fairlight CMI (**C**omputer **M**usical **I**nstrument) Series III, introduced in 1985, was an advanced digital synthesizer, sampler, and music workstation, often described as an "orchestra in a box." It featured 16-bit sampling with rates up to 100 kHz (mono) / 50 kHz (stereo), for the time extensive memory (14-64MB), and sophisticated sequencing systems like CAPS (**C**omposer, **A**rranger, **P**erformer **S**equencer). This model improved upon its predecessors with better sound quality, MIDI compatibility, and user-friendly editing tools.
+The Fairlight CMI (**C**omputer **M**usical **I**nstrument) was an advanced digital synthesizer, sampler, and music workstation, often described as an "orchestra in a box." Series III, introduced in 1985, featured 16-bit sampling with rates up to 100 kHz (mono) / 50 kHz (stereo), for the time extensive memory (14-64MB), and sophisticated sequencing systems like CAPS (**C**omposer, **A**rranger, **P**erformer **S**equencer). This model improved upon its predecessors with better sound quality, MIDI compatibility, and user-friendly editing tools.
 
 Voice Files (*.VC) store individual instrument subvoices (samples) and synthesis data. The file is split into headers/control parameters followed by raw linear 8-bit audio samples (or 16-bit for Series III). Fairlight CMI IIx used variable rates from 2.1 kHz to 32 kHz (default 14.08 kHz). Series III expanded up to 100 kHz at 16 bits. Early CMI memory was limited (e.g., 16KB per channel).
 
-As a source, both dialects of the voice files are read: the 16-bit Series III files with all of their sub-voices (key ranges, loops, tuning, gain and the amplitude envelope) and the fixed-size 8-bit files of the CMI I/II/IIx (16384 samples with their loop segments), which are e.g. written by the QasarBeach recreation of the IIx - both with the full header as well as bare 16 KB audio-only files. When the control (CO) file referenced by an 8-bit voice is present next to it, its parameters win (as on the CMI itself): the loop, the attack and the damping, which becomes the release of the amplitude envelope. Voices saved by QasarBeach itself (its own 16-bit format marked with a 'QBV2' tag) are read as well, with their name and loop. The 8-bit dialect stores no sample rate: the CMI II reads one 128-sample segment per waveform period, so a voice plays at its original pitch on the key with the frequency of its sampling rate divided by 128. Such a voice is therefore read with the documented default rate of the IIx (14080 Hz) and its root on the matching 110 Hz A below the middle C.
+ConvertWithMoss can read/write 3 versions of the format: 
+
+* the 16-bit Series III files with all of their sub-voices (key ranges, loops, tuning, gain and the amplitude envelope) and 
+* the fixed-size 8-bit files of the CMI I/II/IIx (16384 samples with their loop segments), as well as 
+* the QasarBeach recreation of the IIx.
+ 
+When the control (CO) file referenced by an 8-bit voice is present next to it, its parameters win (as on the CMI itself): the loop, the attack and the damping, which becomes the release of the amplitude envelope. Voices saved by QasarBeach itself (its own 16-bit format marked with a 'QBV2' tag) are read as well, with their name and loop. The 8-bit dialect stores no sample rate: the CMI II reads one 128-sample segment per waveform period, so a voice plays at its original pitch on the key with the frequency of its sampling rate divided by 128. Such a voice is therefore read with the documented default rate of the IIx (14080 Hz) and its root on the matching 110 Hz A below the middle C.
+
+Additionally, IMD, IMG and HFE files which contain several VC files can be read.
 
 ### Destination Options
 

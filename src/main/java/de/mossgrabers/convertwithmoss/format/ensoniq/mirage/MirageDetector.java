@@ -336,9 +336,9 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static byte [] buildImage (final HfeFile hfeFile)
+    private static byte [] buildImage (final HfeFile hfeFile) throws IOException
     {
-        final List<Sector> sectors = hfeFile.decodeMfmSectors ();
+        final List<Sector> sectors = hfeFile.decodeSectors ();
         // Sort sectors by cylinder, head, sector number
         Collections.sort (sectors);
 

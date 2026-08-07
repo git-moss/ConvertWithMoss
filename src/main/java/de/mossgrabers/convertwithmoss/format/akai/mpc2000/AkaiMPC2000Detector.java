@@ -118,7 +118,7 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
                 return Collections.emptyList ();
             }
 
-            final List<Sector> allSectors = hfeFile.decodeMfmSectors ();
+            final List<Sector> allSectors = hfeFile.decodeSectors ();
             final byte [] imgData = DiskImageBuilder.buildImage (allSectors, 80, 2, 18, 512);
 
             final IsoFormat isoFormat = IsoFormatIdentifier.identifyIso (imgData);

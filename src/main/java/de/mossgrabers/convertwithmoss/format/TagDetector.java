@@ -182,7 +182,8 @@ public class TagDetector
             "Cornet",
             "Bugle",
             "Horn",
-            "Tuba"
+            "Tuba",
+            "Brs"
         });
         CATEGORIES.put (CATEGORY_CHIP, new String []
         {
@@ -221,7 +222,8 @@ public class TagDetector
             "Kalimba",
             "Balafon",
             "Barafon",
-            "Mallet"
+            "Mallet",
+            "Xylo"
         });
         CATEGORIES.put (CATEGORY_CLAP, new String []
         {
@@ -284,11 +286,13 @@ public class TagDetector
             "Punch",
             "Heart",
             "Alarm",
+            "Alien",
             "Metal",
             "Noise",
             "Horse",
             "Siren",
             "Glass",
+            "Chirp",
             "Wind",
             "Rain",
             "Bird",
@@ -298,6 +302,7 @@ public class TagDetector
             "Gun",
             "Car",
             "Dog",
+            "UFO",
             "Jet"
         });
         CATEGORIES.put (CATEGORY_GUITAR, new String []
@@ -375,8 +380,11 @@ public class TagDetector
             "Bandoneon",
             "Hammond",
             "Farfisa",
+            "Leslie",
             "Gospel",
             "Church",
+            "Churh",
+            "Org",
             "B3",
             "C3"
         });
@@ -393,16 +401,16 @@ public class TagDetector
             "Tambourine",
             "Woodblock",
             "Triangle",
-            "Castanets",
+            "Castanet",
             "Angklung",
             "Cowbell",
             "Gamelan",
             "Timbale",
             "Timpani",
             "Maracas",
+            "Cabasa",
             "Djembe",
             "Shaker",
-            "Chimes",
             "Tombak",
             "Tonbak",
             "Goblet",
@@ -410,6 +418,7 @@ public class TagDetector
             "Dombak",
             "Donbak",
             "Dumbek",
+            "Chime",
             "Agogo",
             "Bongo",
             "Conga",
@@ -437,6 +446,7 @@ public class TagDetector
             "Upright",
             "Klavier",
             "Spinet",
+            "Celest",
             "Whirly",
             "Mark I",
             "Rhodes",
@@ -474,6 +484,7 @@ public class TagDetector
             "Birimbau",
             "Yangchin",
             "Yangqin",
+            "Bazouki",
             "Zither",
             "Santur",
             "Sitar",
@@ -490,19 +501,20 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_STRINGS, new String []
         {
+            "Double Bass",
+            "Pizzicato",
+            "Tremolo",
+            "Solina",
+            "Violin",
+            "Fiddle",
             "String",
             "Viola",
-            "Violin",
             "Cello",
-            "Double Bass",
-            "Tremolo St",
-            "Pizzicato",
-            "Arco",
-            "Str.",
-            "Fiddle",
             "Bowed",
             "Score",
-            "Solina"
+            "Arco",
+            "Strn",
+            "Str."
         });
         CATEGORIES.put (CATEGORY_SYNTH, new String []
         {
@@ -535,7 +547,9 @@ public class TagDetector
             "Musette",
             "Ocarina",
             "Bottle",
+            "BasClar",
             "Oboe",
+            "Alto",
             "Sax"
         });
         CATEGORIES.put (CATEGORY_LOOPS, new String []
