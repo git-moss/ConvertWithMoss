@@ -18,11 +18,11 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class DirectoryEntry
 {
-    private final boolean            isBigEndian;
-    private final int                length;
-    private final long               pointer;
-    private final DirectoryEntryType referenceType;
-    private final byte []            content;
+    private final boolean      isBigEndian;
+    private final int          length;
+    private final long         pointer;
+    private DirectoryEntryType referenceType;
+    private final byte []      content;
 
 
     /**
@@ -45,17 +45,14 @@ public class DirectoryEntry
         this.referenceType = DirectoryEntryType.values ()[type];
 
         this.content = StreamUtils.readNBytes (fileAccess, this.length - 8);
-    }
 
-
-    /**
-     * Interpret the content of the item as a UTF-16 string.
-     *
-     * @return The text
-     */
-    public String asWideString ()
-    {
-        return StreamUtils.readUtf16 (this.content, this.isBigEndian);
+        // Workaround for AWave Studio which falsely classifies samples as NKI
+        if (this.referenceType == DirectoryEntryType.NKI)
+        {
+            final String filename = this.asWideString ();
+            if (filename.endsWith (".wav") || filename.endsWith (".ncw") || filename.endsWith (".aif"))
+                this.referenceType = DirectoryEntryType.SAMPLE;
+        }
     }
 
 
@@ -78,5 +75,27 @@ public class DirectoryEntry
     public DirectoryEntryType getReferenceType ()
     {
         return this.referenceType;
+    }
+
+
+    /**
+     * Get the raw content.
+     * 
+     * @return The content
+     */
+    public byte [] getContent ()
+    {
+        return this.content;
+    }
+
+
+    /**
+     * Interpret the content of the item as a UTF-16 string.
+     *
+     * @return The text
+     */
+    public String asWideString ()
+    {
+        return StreamUtils.readUtf16 (this.content, this.isBigEndian);
     }
 }

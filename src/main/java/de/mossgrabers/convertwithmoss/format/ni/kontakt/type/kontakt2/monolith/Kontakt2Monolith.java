@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -53,12 +54,9 @@ public class Kontakt2Monolith
      */
     public Map<String, ISampleData> mapSamples () throws IOException
     {
-        final List<DirectoryEntry> sampleItems = new ArrayList<> ();
-        final Directory topDirectory = this.directories.entrySet ().iterator ().next ().getValue ();
-        this.findItems (topDirectory, DirectoryEntryType.SAMPLE, sampleItems);
-
         final Map<String, ISampleData> multiSamples = new HashMap<> ();
 
+        final List<DirectoryEntry> sampleItems = this.findItems (DirectoryEntryType.SAMPLE);
         for (int i = 0; i < sampleItems.size (); i++)
         {
             final byte [] data = this.sampleData.get (i);
@@ -126,9 +124,9 @@ public class Kontakt2Monolith
                     long nextSamplePos = findNextSampleBlock (fileAccess, isBigEndian);
                     if (nextSamplePos < 0)
                     {
-                        final Directory topDirectory = this.directories.entrySet ().iterator ().next ().getValue ();
-                        final List<DirectoryEntry> nkiItems = new ArrayList<> ();
-                        this.findItems (topDirectory, DirectoryEntryType.NKI, nkiItems);
+                        final List<DirectoryEntry> nkiItems = this.findItems (DirectoryEntryType.NKI);
+                        if (nkiItems.isEmpty ())
+                            throw new IOException (Functions.getMessage ("IDS_NKI_NO_NKI_FILES"));
                         final DirectoryEntry directoryEntry = nkiItems.get (0);
                         nextSamplePos = directoryEntry.getPointer ();
                     }
@@ -142,17 +140,19 @@ public class Kontakt2Monolith
     }
 
 
-    private final void findItems (final Directory dictionary, final DirectoryEntryType type, final List<DirectoryEntry> results)
+    private final List<DirectoryEntry> findItems (final DirectoryEntryType type)
     {
-        for (final DirectoryEntry item: dictionary.getEntries ())
-            if (item.getReferenceType () == DirectoryEntryType.DIRECTORY)
+        final List<DirectoryEntry> results = new ArrayList<> ();
+        for (final Entry<Long, Directory> e: this.directories.entrySet ())
+        {
+            final Directory directory = e.getValue ();
+            for (final DirectoryEntry item: directory.getEntries ())
             {
-                final long pointer = item.getPointer ();
-                final Directory directory = this.directories.get (Long.valueOf (pointer));
-                this.findItems (directory, type, results);
+                if (item.getReferenceType () == type)
+                    results.add (item);
             }
-            else if (item.getReferenceType () == type)
-                results.add (item);
+        }
+        return results;
     }
 
 

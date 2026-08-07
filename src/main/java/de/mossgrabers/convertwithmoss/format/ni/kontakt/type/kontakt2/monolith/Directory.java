@@ -40,7 +40,7 @@ public class Directory
         // Skip header version and 8 more unknown bytes
         StreamUtils.skipNBytes (fileAccess, 10);
 
-        // Read the number if the items in the dictionary
+        // Read the number of the items in the dictionary
         final int numItems = (int) StreamUtils.readUnsigned32 (fileAccess, isBigEndian);
 
         // Skip padding

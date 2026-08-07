@@ -17,7 +17,7 @@ public enum DirectoryEntryType
     DIRECTORY,
     /** References a sample. */
     SAMPLE,
-    /** References the NKI section. */
+    /** References the NKI or NKM section. */
     NKI,
     /** References a wallpaper. */
     WALLPAPER
