@@ -41,6 +41,7 @@ import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.MachineProgressReporter;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -362,6 +363,8 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     private void handlePresetFile (final File file)
     {
+        MachineProgressReporter.startFile (file);
+
         try
         {
             for (final IMultisampleSource multisample: this.readPresetFile (file))
@@ -377,11 +380,17 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         {
             this.notifier.logError (ex);
         }
+        finally
+        {
+            MachineProgressReporter.finishFile (file);
+        }
     }
 
 
     private void handlePerformanceFile (final File file)
     {
+        MachineProgressReporter.startFile (file);
+
         try
         {
             final List<IPerformanceSource> performances = this.readPerformanceFile (file);
@@ -400,6 +409,10 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         catch (final RuntimeException ex)
         {
             this.notifier.logError (ex);
+        }
+        finally
+        {
+            MachineProgressReporter.finishFile (file);
         }
     }
 
@@ -430,6 +443,8 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     @Override
     public void run ()
     {
+        MachineProgressReporter.start (this.sourceFolder, this.countSourceFiles ());
+
         try
         {
             if (this.sourceFiles.isEmpty ())
@@ -441,7 +456,66 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         {
             this.notifier.logError (err);
         }
+
+        MachineProgressReporter.finish (this.isCancelled ());
         this.notifier.finished (this.isCancelled ());
+    }
+
+
+    /**
+     * Count the source files which this detection run will read. This is only needed to calculate
+     * the percentage of the machine-readable progress protocol and is therefore only counted if
+     * that protocol is active, since it walks the whole source folder a second time.
+     *
+     * @return The number of source files, 0 if that number cannot be told in advance
+     */
+    private int countSourceFiles ()
+    {
+        if (!MachineProgressReporter.isActive ())
+            return 0;
+        if (!this.sourceFiles.isEmpty ())
+            return this.sourceFiles.size ();
+        // A detector without file endings does not read files but folders
+        return this.fileEndings.length == 0 ? 0 : countFiles (this.sourceFolder, this.fileEndings);
+    }
+
+
+    /**
+     * Count all files in the given folder and its sub-folders which match one of the given file
+     * endings. This applies exactly the same criteria as the detection run itself.
+     *
+     * @param folder The folder to start counting
+     * @param endings The file endings to match, including the dot, e.g. '.wav'
+     * @return The number of matching files
+     */
+    private static int countFiles (final File folder, final String... endings)
+    {
+        final File [] children = folder.listFiles ();
+        if (children == null)
+            return 0;
+
+        int count = 0;
+        for (final File child: children)
+        {
+            if (child.isDirectory ())
+            {
+                count += countFiles (child, endings);
+                continue;
+            }
+
+            // Ignore MacOS crap
+            if (child.getName ().startsWith ("._"))
+                continue;
+
+            final String lower = child.getName ().toLowerCase (Locale.US);
+            for (final String ending: endings)
+                if (lower.endsWith (ending))
+                {
+                    count++;
+                    break;
+                }
+        }
+        return count;
     }
 
 
@@ -730,6 +804,23 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     protected ISampleData createSampleData (final File zipFile, final File sampleFile) throws IOException
     {
+        final ISampleData sampleData = loadSampleData (zipFile, sampleFile);
+        MachineProgressReporter.reportSample (sampleFile);
+        return sampleData;
+    }
+
+
+    /**
+     * Check the type of the source sample for compatibility and handle them accordingly. This
+     * method supports WAV, AIF, AIFF, OGG and FLAC files. The file is compressed in a ZIP file.
+     *
+     * @param zipFile The ZIP file which contains the sample file
+     * @param sampleFile The sample file for which to create sample metadata
+     * @return The matching sample metadata, support is WAV and AIFF
+     * @throws IOException Unsupported sample file type
+     */
+    private static ISampleData loadSampleData (final File zipFile, final File sampleFile) throws IOException
+    {
         final String fileEnding = sampleFile.getName ().toLowerCase ();
 
         if (fileEnding.endsWith (".wav"))
@@ -756,6 +847,23 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @throws IOException Unsupported sample file type
      */
     public static IFileBasedSampleData createSampleData (final File sampleFile, final INotifier notifier) throws IOException
+    {
+        final IFileBasedSampleData sampleData = loadSampleData (sampleFile, notifier);
+        MachineProgressReporter.reportSample (sampleFile);
+        return sampleData;
+    }
+
+
+    /**
+     * Check the type of the source sample for compatibility and handle them accordingly. This
+     * method supports WAV, AIF, AIFF, OGG and FLAC files.
+     *
+     * @param sampleFile The sample file for which to create sample metadata
+     * @param notifier Where to report errors
+     * @return The matching sample metadata, support is WAV and AIFF
+     * @throws IOException Unsupported sample file type
+     */
+    private static IFileBasedSampleData loadSampleData (final File sampleFile, final INotifier notifier) throws IOException
     {
         if (!sampleFile.exists ())
             throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
