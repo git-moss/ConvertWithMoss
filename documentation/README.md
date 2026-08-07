@@ -149,7 +149,7 @@ First display all of the available attributes by typing:
 The following output is displayed (the processing parameters are omitted):
 
 ```
-Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY]
+Usage: ConvertWithMoss [-afhPV] -d=DESTINATION [-l=LIBRARY]
                        -s=SOURCE [-t=TYPE] [-p[=KEY=VALUE...]]...
                        SOURCE... DESTINATION_FOLDER
       SOURCE... DESTINATION_FOLDER
@@ -166,6 +166,13 @@ Usage: ConvertWithMoss [-afhV] -d=DESTINATION [-l=LIBRARY]
   -l, --library=LIBRARY    Name for the library. Set to create a library.
   -p=[KEY=VALUE...]        Key-value pairs in the form -pkey1=value1,
                              key2=value2,...
+  -P, --machine-progress   If present, the progress of the conversion is
+                             additionally written to the error output in a
+                             machine-readable form ('CWM_PROGRESS pct=<0..100>
+                             phase=<token> detail=<text>'), which allows a
+                             hosting application to display it. Can also be
+                             requested by setting the environment variable
+                             CWM_MACHINE_PROGRESS to 1.
   -s, --source=SOURCE      The source format.
   -t, --type=TYPE          Set to either 'preset' (the default if absent) or
                              'performance' (without the quotes).
@@ -216,3 +223,33 @@ Finally, an example for creating a library of performances:
 A destination format which cannot hold what was asked for - a library of several presets, or performances at all - is reported as an error and nothing is converted. The user interface only offers the output types which the chosen destination supports; the command line accepts '-l' and '-t performance' for every destination, so they are checked before the detection starts.
 
 Additionally, there are several parameters for processing the samples as well. They use 2 letters and always start with a 'Z'. Note that processing needs to be enabled by adding '-Ze'.
+
+## Machine-readable progress
+
+The output of a conversion is written for a human: the progress of a file is a row of dots. An application which runs ConvertWithMoss as a child process - e.g. to offer the conversion from inside of its own user interface - cannot derive a percentage from those dots. Adding '-P' therefore additionally writes the progress to the **error output** in a form which is easy to parse. The normal output is not changed by this, so both can be used at the same time. If the hosting application cannot add options to the command line, the environment variable `CWM_MACHINE_PROGRESS` can be set to '1' or 'true' instead, which has the same effect.
+
+Each event is one line which is terminated with a line separator and flushed immediately:
+
+```
+CWM_PROGRESS pct=<0..100> phase=<token> detail=<text>
+```
+
+* **pct**: the percentage which is reached, 0 to 100.
+* **phase**: one of `start` (the run begins), `convert` (a source file was started or finished), `sample` (a sample file of the current source file was loaded) and `done` (the run ended - if it was cancelled the percentage is the one which was reached and not 100).
+* **detail**: the rest of the line, which may contain spaces since it is a file name or a path. It is reduced to printable ASCII characters, so that both processes do not need to agree on a character encoding; all other characters are replaced by a question mark.
+
+Any line which is not understood should be ignored, which keeps the protocol open for further phases. Here is a shortened example of a conversion of two Kontakt instruments:
+
+```
+CWM_PROGRESS pct=0 phase=start detail=D:\MySampler\Kontakt
+CWM_PROGRESS pct=0 phase=convert detail=Enigma.nki
+CWM_PROGRESS pct=2 phase=sample detail=Kick_01.wav
+CWM_PROGRESS pct=4 phase=sample detail=Snare_02.wav
+CWM_PROGRESS pct=50 phase=convert detail=Enigma.nki
+CWM_PROGRESS pct=50 phase=convert detail=Prophecy.nki
+CWM_PROGRESS pct=52 phase=sample detail=Pad_C2.wav
+CWM_PROGRESS pct=100 phase=convert detail=Prophecy.nki
+CWM_PROGRESS pct=100 phase=done detail=
+```
+
+The percentage range is split into one slice per source file, which is why a finished file reports the start of the next one. How many samples a source file contains is only known once it was read, therefore the progress inside of a slice approaches the end of the slice with every loaded sample but only reaches it when the file is finished. This keeps a single large instrument - a Kontakt library often is one file with several hundred samples - moving instead of standing at the same percentage for minutes. Formats which do not read their samples from separate files, e.g. the disk images of the hardware samplers, only report the `convert` events.
