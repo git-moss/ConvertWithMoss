@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.file.hfe;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,68 +22,32 @@ import java.util.Optional;
  *
  * @author Jürgen Moßgraber
  */
-public class MfmDecoder
+public class MfmDecoder extends AbstractDecoder
 {
     private static final int SYNC_WORD = 0x4489; // A1 with missing clock bit
     private static final int SYNC_BYTE = 0xA1;   // The actual sync byte value
-    private static final int IDAM      = 0xFE;
-    private static final int DAM       = 0xFB;
-    private static final int DDAM      = 0xF8;
-
-    private boolean          debug     = false;
 
 
-    /**
-     * Enable debug output to console.
-     *
-     * @param debug True to enable
-     */
-    public void setDebug (final boolean debug)
-    {
-        this.debug = debug;
-    }
-
-
-    /**
-     * Decodes MFM (Modified Frequency Modulation) encoded data.
-     *
-     * @param trackData The tracks to decode
-     * @param cylinder The number of cylinders of the disk
-     * @param head The side
-     * @return The decoded sectors
-     */
+    /** {@inheritDoc} */
+    @Override
     public List<Sector> decodeSectors (final TrackData trackData, final int cylinder, final int head)
     {
         final byte [] mfmData = trackData.getData ();
-
         if (mfmData == null || mfmData.length == 0)
-            return new ArrayList<> ();
+            return Collections.emptyList ();
 
-        // Try different bit reading modes
-        final BitReadMode [] modes =
+        for (final BitReadMode mode: BIT_READ_MODES)
         {
-            BitReadMode.LSB_FIRST, // Start with the one that worked
-            BitReadMode.MSB_FIRST,
-            BitReadMode.BYTE_SWAPPED_MSB,
-            BitReadMode.BYTE_SWAPPED_LSB
-        };
-
-        for (final BitReadMode mode: modes)
-        {
-            final List<Sector> sectors = this.tryDecode (mfmData, mode);
+            final List<Sector> sectors = tryDecode (mfmData, mode);
             if (!sectors.isEmpty ())
-            {
-                if (this.debug)
-                    System.out.println ("Success with mode: " + mode);
                 return sectors;
-            }
         }
 
-        return new ArrayList<> ();
+        return Collections.emptyList ();
     }
 
 
-    private List<Sector> tryDecode (final byte [] mfmData, final BitReadMode mode)
+    private static List<Sector> tryDecode (final byte [] mfmData, final BitReadMode mode)
     {
         final List<Sector> sectors = new ArrayList<> ();
         final BitStream bitStream = new BitStream (mfmData, mode);
@@ -96,14 +61,14 @@ public class MfmDecoder
                 if (markByte != IDAM)
                     continue;
 
-                final Optional<Sector> sectorOpt = this.readSectorHeader (bitStream);
+                final Optional<Sector> sectorOpt = readSectorHeader (bitStream);
                 if (sectorOpt.isEmpty ())
                     continue;
 
                 final Sector sector = sectorOpt.get ();
                 if (sector.isCrcValid () && findNextDataMark (bitStream))
                 {
-                    this.readSectorData (bitStream, sector);
+                    readSectorData (bitStream, sector);
                     sectors.add (sector);
                 }
             }
@@ -142,7 +107,7 @@ public class MfmDecoder
     }
 
 
-    private Optional<Sector> readSectorHeader (final BitStream bitStream)
+    private static Optional<Sector> readSectorHeader (final BitStream bitStream)
     {
         if (!bitStream.hasRemaining ())
             return Optional.empty ();
@@ -171,9 +136,6 @@ public class MfmDecoder
         final int readCrc = crc1 << 8 | crc2;
         final boolean crcValid = calculatedCrc == readCrc;
 
-        if (this.debug && !crcValid)
-            System.out.printf ("Header CRC: calc=0x%04X read=0x%04X C:%d H:%d S:%d%n", Integer.valueOf (calculatedCrc), Integer.valueOf (readCrc), Integer.valueOf (cyl), Integer.valueOf (head), Integer.valueOf (sectorNum));
-
         final int sectorSize = 128 << sizeCode;
         return Optional.of (new Sector (cyl, head, sectorNum, sizeCode, new byte [sectorSize], crcValid));
     }
@@ -198,7 +160,7 @@ public class MfmDecoder
     }
 
 
-    private void readSectorData (final BitStream bitStream, final Sector sector)
+    private static void readSectorData (final BitStream bitStream, final Sector sector)
     {
         final int dataSize = sector.getSizeBytes ();
         final byte [] data = sector.getData ();
@@ -223,37 +185,9 @@ public class MfmDecoder
             final int readCrc = crc1 << 8 | crc2;
             final boolean dataCrcValid = calculatedCrc == readCrc;
 
-            if (this.debug && !dataCrcValid)
-                System.out.printf ("Data CRC: calc=0x%04X read=0x%04X%n", Integer.valueOf (calculatedCrc), Integer.valueOf (readCrc));
-
             // Update sector CRC status (both header and data must be valid)
             if (!dataCrcValid)
                 sector.setCrcValid (false);
         }
-    }
-
-
-    /**
-     * Calculate CRC-CCITT (IBM format). Polynomial: 0x1021, Init: 0xFFFF.
-     *
-     * @param data The data over which to calculate the CRC
-     * @return The CRC
-     */
-    private static int calculateCrc (final byte [] data)
-    {
-        int crc = 0xFFFF;
-
-        for (final byte b: data)
-        {
-            crc ^= (b & 0xFF) << 8;
-
-            for (int i = 0; i < 8; i++)
-                if ((crc & 0x8000) != 0)
-                    crc = crc << 1 ^ 0x1021;
-                else
-                    crc = crc << 1;
-        }
-
-        return crc & 0xFFFF;
     }
 }

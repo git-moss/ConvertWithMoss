@@ -332,7 +332,7 @@ public class EnsoniqDisk
         if (floppyInterfaceMode != HfeFile.FLOPPYMODE_GENERIC_SHUGGART_DD && floppyInterfaceMode != HfeFile.FLOPPYMODE_IBM_PC_HD)
             throw new IOException (Functions.getMessage ("IDS_HFE_CAN_ONLY_DECODE_FLOPPY_MODE", "Generic Shuggart"));
 
-        final List<Sector> allSectors = hfeFile.decodeMfmSectors ();
+        final List<Sector> allSectors = hfeFile.decodeSectors ();
         this.fileContent = DiskImageBuilder.buildImage (allSectors, hfeFile.getNumTracks (), hfeFile.getNumSides (), 10, BLOCK_SIZE, true);
 
         this.parseEnsoniqImage ();

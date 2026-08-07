@@ -4,15 +4,19 @@
 
 package de.mossgrabers.convertwithmoss.format.cmi3;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -21,6 +25,7 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -28,48 +33,61 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
-import de.mossgrabers.convertwithmoss.exception.ParseException;
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.file.hfe.DiskImageBuilder;
+import de.mossgrabers.convertwithmoss.file.hfe.HfeFile;
+import de.mossgrabers.convertwithmoss.file.hfe.HfeFile.HfeVersion;
+import de.mossgrabers.convertwithmoss.file.hfe.Sector;
+import de.mossgrabers.convertwithmoss.file.imd.ImdFile;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * Detector for Fairlight CMI Voice (VC) files. Two dialects are supported: the Series III voice
- * files with their sub-voices and the fixed-size 8-bit voice files of the CMI I/II/IIx, which are
- * also read and written by the QasarBeach recreation.
+ * Detector for Fairlight CMI Voice (VC) files. Detects single files and VC files stored in IMG and
+ * HFE files. Two dialects are supported: the Series III voice files with their sub-voices and the
+ * fixed-size 8-bit voice files of the CMI I/II/IIx, which are also read and written by the
+ * QasarBeach recreation.
  *
  * @author Jürgen Moßgraber
  */
 public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final int VC_VERSION_A          = 768;
-    private static final int VC_VERSION_B          = 769;
-    private static final int VC_NAME_SIZE          = 16;
-    private static final int FUNC_BLOCK_BASE       = 768;
-    private static final int SAMPLE_DATA_OFFSET    = 2304;
+    private static final String IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED = "IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED";
+    private static final String TAG_DELETED                         = "DELETED - ";
 
-    private static final int IIX_FILE_SIZE         = 21888;
-    private static final int IIX_HEADER_SIZE       = 0x1500;
-    private static final int IIX_NUM_SAMPLES       = 16384;
-    private static final int IIX_SEGMENT_SIZE      = 128;
-    private static final int IIX_LOOP_START_OFFSET = 0x1332;
-    private static final int IIX_LOOP_END_OFFSET   = 0x1333;
-    private static final int IIX_LOOP_MODE_OFFSET  = 0x133B;
+    private static final int    VC_VERSION_A                        = 768;
+    private static final int    VC_VERSION_B                        = 769;
+    private static final int    VC_NAME_SIZE                        = 16;
+    private static final int    FUNC_BLOCK_BASE                     = 768;
+    private static final int    SAMPLE_DATA_OFFSET                  = 2304;
+
+    private static final int    IIX_DISKETTE_BLOCK_SIZE             = 0x80;
+    private static final int    IIX_FILE_SIZE                       = 21888;
+    private static final int    IIX_HEADER_SIZE                     = 0x1500;
+    private static final int    IIX_NUM_SAMPLES                     = 16384;
+    private static final int    IIX_SEGMENT_SIZE                    = 128;
+    private static final int    IIX_LOOP_START_OFFSET               = 0x1332;
+    private static final int    IIX_LOOP_END_OFFSET                 = 0x1333;
+    private static final int    IIX_LOOP_MODE_OFFSET                = 0x133B;
     /** The IIx dialect stores no sample rate - the documented default sampling rate of the IIx. */
-    private static final int IIX_SAMPLE_RATE       = 14080;
+    private static final int    IIX_SAMPLE_RATE                     = 14080;
+
     /** The native voice format of the QasarBeach recreation: 16-bit audio at offset 0x11. */
-    private static final int QBV2_AUDIO_OFFSET     = 0x11;
+    private static final int    QBV2_AUDIO_OFFSET                   = 0x11;
     /** The control chunk of a QasarBeach voice follows directly after the audio data. */
-    private static final int QBV2_CONTROL_OFFSET   = QBV2_AUDIO_OFFSET + IIX_NUM_SAMPLES * 2;
+    private static final int    QBV2_CONTROL_OFFSET                 = QBV2_AUDIO_OFFSET + IIX_NUM_SAMPLES * 2;
     /** The damping (release) and volume in the parameter block of a QasarBeach voice. */
-    private static final int QBV2_DAMPING_OFFSET   = 0xD3DD;
-    private static final int QBV2_VOLUME_OFFSET    = 0xD3CB;
+    private static final int    QBV2_DAMPING_OFFSET                 = 0xD3DD;
+    private static final int    QBV2_VOLUME_OFFSET                  = 0xD3CB;
     /**
      * The CMI II reads one 128 sample segment per waveform period, therefore a voice plays at its
-     * original pitch on the key with the frequency of the sample rate divided by 128. For the
-     * 14080 Hz default rate this is the 110 Hz A below the middle C.
+     * original pitch on the key with the frequency of the sample rate divided by 128. For the 14080
+     * Hz default rate this is the 110 Hz A below the middle C.
      */
-    private static final int IIX_ROOT_KEY          = 45;
+    private static final int    IIX_ROOT_KEY                        = 45;
 
 
     /** All parsed properties of a single CMI3 sub-voice. */
@@ -121,7 +139,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public FairlightCmi3Detector (final INotifier notifier)
     {
-        super ("Fairlight CMI3 Voice", "CMI3", notifier, new MetadataSettingsUI ("CMI3"), ".vc");
+        super ("Fairlight CMI Voice", "CMI3", notifier, new MetadataSettingsUI ("CMI3"), ".vc", ".hfe", ".img", ".imd");
     }
 
 
@@ -129,19 +147,194 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     @Override
     protected List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
-        try (final InputStream stream = new FileInputStream (sourceFile))
+        final String name = sourceFile.getName ().toLowerCase ();
+        if (name.endsWith (".hfe"))
+            return this.readHfeFile (sourceFile);
+
+        if (name.endsWith (".imd"))
+            return this.readImdFile (sourceFile);
+
+        try (final InputStream inputStream = new FileInputStream (sourceFile))
         {
-            return Collections.singletonList (this.read (stream, sourceFile));
+            if (name.endsWith (".img"))
+                return this.readDiskImage (inputStream, sourceFile);
+
+            return Collections.singletonList (this.readVoice (inputStream, FileUtils.getNameWithoutType (sourceFile), sourceFile));
         }
-        catch (final IOException | ParseException ex)
+        catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", ex);
+            this.notifier.logError (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, ex);
             return Collections.emptyList ();
         }
     }
 
 
-    private IMultisampleSource read (final InputStream inputStream, final File sourceFile) throws IOException, ParseException
+    private List<IMultisampleSource> readImdFile (final File sourceFile)
+    {
+        try
+        {
+            final ImdFile imdFile = new ImdFile (sourceFile);
+            String description = imdFile.metadata.description.trim ();
+            final int pos = description.indexOf ('\n');
+            if (pos >= 0)
+                description = description.substring (pos).trim ();
+
+            final List<IMultisampleSource> multisampleSources = this.readDiskImage (new ByteArrayInputStream (imdFile.rawImageData), sourceFile);
+            for (final IMultisampleSource multisampleSource: multisampleSources)
+            {
+                final IMetadata metadata = multisampleSource.getMetadata ();
+                metadata.setDescription (description);
+                if (TagDetector.CATEGORY_UNKNOWN.equals (metadata.getCategory ()))
+                    metadata.setCategory (TagDetector.detectCategory (new String []
+                    {
+                        description
+                    }));
+            }
+            return multisampleSources;
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, ex);
+            return Collections.emptyList ();
+        }
+    }
+
+
+    /**
+     * Reads an HFE file which contains an IMG file. Only tested with IIx files.
+     *
+     * @param sourceFile The source file
+     * @return The converted multi-sample sources
+     */
+    private List<IMultisampleSource> readHfeFile (final File sourceFile)
+    {
+        try
+        {
+            final HfeFile hfeFile = new HfeFile (sourceFile);
+            final HfeVersion hfeVersion = hfeFile.getHfeVersion ();
+            if (hfeVersion != HfeVersion.VERSION_1)
+            {
+                this.notifier.logError ("IDS_HFE_VERSION_NOT_SUPPORTED", hfeVersion == HfeVersion.VERSION_2 ? "v2" : "v3");
+                return Collections.emptyList ();
+            }
+            if (hfeFile.getFloppyInterfaceMode () != HfeFile.FLOPPYMODE_GENERIC_SHUGGART_DD)
+            {
+                this.notifier.logError ("IDS_HFE_CAN_ONLY_DECODE_FLOPPY_MODE", "Generic Shuggart");
+                return Collections.emptyList ();
+            }
+
+            final List<Sector> sectors = hfeFile.decodeSectors ();
+            final byte [] imgData = DiskImageBuilder.buildImage (sectors, 77, 2, 26, 128);
+            return this.readDiskImage (new ByteArrayInputStream (imgData), sourceFile);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            return Collections.emptyList ();
+        }
+    }
+
+
+    /**
+     * Reads an IMG file which contains several VC files. Only tested with IIx files.
+     *
+     * @param inputStream The input stream to read from
+     * @param sourceFile The source file
+     * @return The converted multi-sample sources
+     * @throws IOException Could not read the VCs
+     */
+    private List<IMultisampleSource> readDiskImage (final InputStream inputStream, final File sourceFile) throws IOException
+    {
+        final byte [] content = inputStream.readAllBytes ();
+        final ByteArrayInputStream byteInput = new ByteArrayInputStream (content);
+        final String diskName = StreamUtils.readAscii (byteInput, 8).trim ();
+
+        // Unknown
+        byteInput.skipNBytes (4);
+
+        // Use the metadata date or if not present the creation date of the disk (which is more
+        // recent)
+        final Date timestamp = StreamUtils.readTimestamp (byteInput, true);
+        final Pair<Date, String> creationPair = parseCustomDate (StreamUtils.readAscii (byteInput, 6), timestamp);
+        final Date creationDate = creationPair.getKey ();
+
+        final String description = diskName + " - " + creationPair.getValue () + StreamUtils.readAscii (byteInput, 16).trim ();
+
+        final List<DiskEntry> diskEntries = readImgDirectory (content);
+        if (diskEntries.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_CMI3_NO_VC_FILES"));
+
+        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+        for (final DiskEntry diskEntry: diskEntries)
+        {
+            try
+            {
+                this.notifier.log ("IDS_CMI3_READING_VOICE", diskEntry.filename + ".VC");
+                final IMultisampleSource multisampleSource = this.readVoice (new ByteArrayInputStream (diskEntry.data), diskEntry.filename, sourceFile);
+                final IMetadata metadata = multisampleSource.getMetadata ();
+                metadata.setDescription (description);
+                metadata.setCreationDateTime (creationDate);
+                multisampleSources.add (multisampleSource);
+            }
+            catch (final IOException | RuntimeException ex)
+            {
+                // Deleted voice files may not contain proper data
+                if (diskEntry.filename.startsWith (TAG_DELETED))
+                    this.notifier.logError ("IDS_CMI3_DELETED_FILE_BROKEN");
+                else
+                    this.notifier.logError (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, ex);
+            }
+        }
+        return multisampleSources;
+    }
+
+
+    /**
+     * Read the directory of an IMG disk.
+     *
+     * @param content The full content of the disk
+     * @return The read directory entries which reference VC files
+     * @throws IOException Could not read the directory
+     */
+    private static List<DiskEntry> readImgDirectory (final byte [] content) throws IOException
+    {
+        final List<DiskEntry> diskEntries = new ArrayList<> ();
+        final ByteArrayInputStream byteInput = new ByteArrayInputStream (content);
+        byteInput.skipNBytes (0x180);
+
+        // Directory starts at 0x180, each entry is 16 bytes
+        for (int i = 0; i < 0x90; i++)
+        {
+            // 8 bytes name, 2 bytes extension type
+            String name = StreamUtils.readAscii (byteInput, 8).trim ();
+            final String type = StreamUtils.readAscii (byteInput, 2).trim ();
+            // The offset is stored as the number of blocks
+            final int offset = StreamUtils.readUnsigned16 (byteInput, true) * IIX_DISKETTE_BLOCK_SIZE;
+
+            // Next byte might be file attributes, 3 more are reserved
+            byteInput.skipNBytes (4);
+
+            if (name.isEmpty () || !"VC".equals (type))
+                continue;
+
+            // There are files marked as deleted but nevertheless contain usable files
+            if (name.charAt (0) == '\ufffd' && name.charAt (1) == '\ufffd')
+                name = TAG_DELETED + name.substring (2);
+
+            final byte [] fileHeader = Arrays.copyOfRange (content, offset, offset + 6);
+
+            // Might be wrong but works for VCs and that's all we need...
+            final int fileSize = Byte.toUnsignedInt (fileHeader[5]) * IIX_DISKETTE_BLOCK_SIZE + Byte.toUnsignedInt (fileHeader[4]);
+
+            // Removes the file header of length 0x80
+            final int fileStart = offset + IIX_DISKETTE_BLOCK_SIZE;
+            diskEntries.add (new DiskEntry (name, Arrays.copyOfRange (content, fileStart, fileStart + fileSize)));
+        }
+        return diskEntries;
+    }
+
+
+    private IMultisampleSource readVoice (final InputStream inputStream, final String fileName, final File sourceFile) throws IOException
     {
         final byte [] inBytes = inputStream.readAllBytes ();
 
@@ -152,10 +345,14 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         if (version != VC_VERSION_A && version != VC_VERSION_B)
         {
             if (isQasarBeachFile (inBytes))
-                return this.readQasarBeach (inBytes, sourceFile);
+                return this.readQasarBeach (inBytes, fileName, sourceFile);
             if (isIIxFile (inBytes.length))
-                return this.readIIx (inBytes, sourceFile);
-            throw new ParseException (Functions.getMessage ("IDS_CMI3_UNKNOWN_VERSION", Integer.toString (version)));
+                return this.readIIx (inBytes, fileName, sourceFile);
+
+            Files.write (new File ("C:\\Users\\mos\\Desktop\\Output\\" + fileName + ".VC").toPath (), inBytes);
+
+            throw new IOException (Functions.getMessage ("IDS_CMI3_UNKNOWN_VERSION", Integer.toString (version)));
+
         }
 
         final int channels = Byte.toUnsignedInt (inBytes[16]) >= 127 ? 2 : 1;
@@ -182,7 +379,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         final SubVoice [] subVoices = new SubVoice [numSubVoices];
         for (int i = 0; i < numSubVoices; i++)
         {
-            subVoices[i] = parseSubVoice (inBytes, i, zoneOffsets.get (i).intValue (), channels, FileUtils.getNameWithoutType (sourceFile));
+            subVoices[i] = parseSubVoice (inBytes, i, zoneOffsets.get (i).intValue (), channels, fileName);
             buildSubVoiceSampleData (inBytes, subVoices, i, channels, zoneOffsets);
         }
 
@@ -190,16 +387,16 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         final IGroup group = new DefaultGroup ("CMI3");
         buildSampleZones (inBytes, mappingOffset, numSubVoices, subvoiceIDs, subVoices, channels, voiceTune, group);
 
-        return this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile), Collections.singletonList (group));
+        return this.createMultisampleSource (sourceFile, fileName, Collections.singletonList (group));
     }
 
 
     /**
-     * Read the control (CO) file referenced by a IIx voice file and apply its parameters: the
-     * loop switch with its 1-based start segment and length, the attack and the damping (release)
-     * times in milliseconds. The parameters are stored in 8 byte entries at fixed addresses with
-     * the patch type in the third byte (0xB1 = a value, 0xC0/0xC1 = a boolean which is on/off) and
-     * a big-endian value in the fourth and fifth byte.
+     * Read the control (CO) file referenced by a IIx voice file and apply its parameters: the loop
+     * switch with its 1-based start segment and length, the attack and the damping (release) times
+     * in milliseconds. The parameters are stored in 8 byte entries at fixed addresses with the
+     * patch type in the third byte (0xB1 = a value, 0xC0/0xC1 = a boolean which is on/off) and a
+     * big-endian value in the fourth and fifth byte.
      *
      * @param vcData The content of the voice file
      * @param sourceFile The voice file, the control file is searched next to it
@@ -276,14 +473,15 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
      * applies, therefore the voice gets the same default rate and root.
      *
      * @param inBytes The content of the file
+     * @param fileName The name of the source file
      * @param sourceFile The source file
      * @return The multi-sample source
      */
-    private IMultisampleSource readQasarBeach (final byte [] inBytes, final File sourceFile)
+    private IMultisampleSource readQasarBeach (final byte [] inBytes, final String fileName, final File sourceFile)
     {
         String name = new String (inBytes, 4, 8, StandardCharsets.US_ASCII).trim ();
         if (name.isEmpty ())
-            name = FileUtils.getNameWithoutType (sourceFile);
+            name = fileName;
 
         final ISampleZone zone = new DefaultSampleZone (name, 0, 127);
         zone.setKeyRoot (IIX_ROOT_KEY);
@@ -344,16 +542,16 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
      * default rate of the IIx is used with the root at middle C.
      *
      * @param inBytes The content of the file
+     * @param fileName The name of the source file
      * @param sourceFile The source file
      * @return The multi-sample source
      */
-    private IMultisampleSource readIIx (final byte [] inBytes, final File sourceFile)
+    private IMultisampleSource readIIx (final byte [] inBytes, final String fileName, final File sourceFile)
     {
         final int audioOffset = inBytes.length == IIX_NUM_SAMPLES ? 0 : IIX_HEADER_SIZE;
         final byte [] audio = Arrays.copyOfRange (inBytes, audioOffset, audioOffset + IIX_NUM_SAMPLES);
 
-        final String name = FileUtils.getNameWithoutType (sourceFile);
-        final ISampleZone zone = new DefaultSampleZone (name, 0, 127);
+        final ISampleZone zone = new DefaultSampleZone (fileName, 0, 127);
         zone.setKeyRoot (IIX_ROOT_KEY);
         zone.setKeyTracking (1);
         zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (1, IIX_SAMPLE_RATE, 8, IIX_NUM_SAMPLES), audio));
@@ -376,7 +574,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
         final IGroup group = new DefaultGroup ("IIx");
         group.addSampleZone (zone);
-        return this.createMultisampleSource (sourceFile, name, Collections.singletonList (group));
+        return this.createMultisampleSource (sourceFile, fileName, Collections.singletonList (group));
     }
 
 
@@ -962,5 +1160,57 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
     {
         for (int i = 0; i < data.length; i += 2)
             data[i] = (byte) (data[i] ^ 128);
+    }
+
+
+    private static Pair<Date, String> parseCustomDate (final String input, final Date defaultDate)
+    {
+        try
+        {
+            int day = 1;
+            int month = 1;
+            int year;
+            String rest = "";
+
+            if (Character.isDigit (input.charAt (2)))
+            {
+                // Format: 00YYYY
+                if (input.startsWith ("00"))
+                    year = Integer.parseInt (input.substring (2));
+                else
+                {
+                    // Format: DDMMYY
+                    day = Integer.parseInt (input.substring (0, 2));
+                    month = Integer.parseInt (input.substring (2, 4));
+                    final int yy = Integer.parseInt (input.substring (4, 6));
+                    year = yy > 50 ? 1900 + yy : 2000 + yy;
+                }
+            }
+            else
+            {
+                // Only a 2 character year
+                final int yy = Integer.parseInt (input.substring (0, 2));
+                year = yy > 50 ? 1900 + yy : 2000 + yy;
+                rest = input.substring (2, 6);
+            }
+
+            return new Pair<> (Date.from (LocalDate.of (year, month, day).atStartOfDay (ZoneId.systemDefault ()).toInstant ()), rest);
+        }
+        catch (final NumberFormatException _)
+        {
+            return new Pair<> (defaultDate, "");
+        }
+    }
+
+
+    /**
+     * An file entry in the directory of an IMG file.
+     *
+     * @param filename The name of the file
+     * @param data The content of the file
+     */
+    private static record DiskEntry (String filename, byte [] data)
+    {
+        // Intentionally empty
     }
 }

@@ -30,7 +30,8 @@
   * Fixed: The folder name of a created DSBUNDLE kept characters which are illegal in file names (e.g. the ':' of Roland S-7xx patch names).
 * E-mu Emulator III/IIIX/ESI
   * New: Banks can now be written as a ready-to-use CD-ROM image (ISO) for SCSI CD-ROM emulators (e.g. ZuluSCSI), which is the only way to get a converted library onto these samplers since they read no file system of a computer. Each converted source becomes one bank of the image (at most 112), whose geometry, file entries and directory copy the Emulator IIIX library CD-ROMs. Written images have not been tested on real hardware yet.
-* Fairlight CMI 3
+* Fairlight CMI
+  * New: IMG, IMD and HFE files which contain several Voice files can be read.
   * New: Voice files can now be written: either as a Series III voice (16-bit mono or stereo, up to 127 sub-voices with their key ranges, loops, tuning, gain and amplitude envelope) or as the fixed-size 8-bit voice files of the CMI I/II/IIx with their loop segments (one file per sample zone, e.g. for the QasarBeach recreation - the Arturia CMI V does not read voice files; the audio is re-sampled to the root frequency times 128, which is the pitch law of the CMI II - verified against QasarBeach; each voice comes with the control (CO) file it references, which carries the loop, attack, damping and level). Written files have not been tested on real hardware yet.
   * New: Voices can also be written in the native 16-bit format of the QasarBeach recreation (QBV2), which carries the loop, release and level inside the file and therefore loads ready to play; such files are read as well.
   * New: Voice files of the 8-bit CMI I/II/IIx dialect are now read as well, both with their full header and as bare 16 KB audio-only files. A control (CO) file present next to a voice wins over the voice header (as on the CMI itself) and also provides the attack and release of the amplitude envelope.

@@ -121,7 +121,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
      */
     public FairlightCmi3Creator (final INotifier notifier)
     {
-        super ("Fairlight CMI3 Voice", "CMI3", notifier, new FairlightCmi3CreatorUI ());
+        super ("Fairlight CMI Voice", "CMI3", notifier, new FairlightCmi3CreatorUI ());
     }
 
 

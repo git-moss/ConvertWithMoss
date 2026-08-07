@@ -67,6 +67,30 @@ public class BitStream
 
 
     /**
+     * Set the absolute bit position. Exposed for encodings that need to save/restore position for
+     * non-destructive lookahead beyond a single 16-bit word.
+     *
+     * @param position The bit position to set
+     */
+    public void setBitPosition (final int position)
+    {
+        this.bitPosition = position;
+    }
+
+
+    /**
+     * Read a single raw bit and advance the position. Exposed for encodings that need custom
+     * bit-level processing (e.g. FM double-bit-rate decimation).
+     *
+     * @return The bit 0/1
+     */
+    public int readSingleBit ()
+    {
+        return this.readBit ();
+    }
+
+
+    /**
      * Read a single bit according to the current mode.
      *
      * @return The bit 0/1

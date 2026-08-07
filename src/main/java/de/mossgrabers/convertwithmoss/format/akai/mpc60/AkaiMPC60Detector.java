@@ -104,7 +104,7 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
                 return Collections.emptyList ();
             }
 
-            final List<Sector> allSectors = hfeFile.decodeMfmSectors ();
+            final List<Sector> allSectors = hfeFile.decodeSectors ();
             return this.readImgFile (sourceFile, DiskImageBuilder.buildImage (allSectors, 80, 2, 10, 512));
         }
         catch (final IOException ex)

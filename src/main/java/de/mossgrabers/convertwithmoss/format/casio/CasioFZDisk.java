@@ -311,7 +311,7 @@ public class CasioFZDisk
         if (hfeVersion != HfeVersion.VERSION_1)
             throw new IOException (Functions.getMessage ("IDS_HFE_VERSION_NOT_SUPPORTED", hfeVersion == HfeVersion.VERSION_2 ? "v2" : "v3"));
 
-        final List<Sector> allSectors = hfeFile.decodeMfmSectors ();
+        final List<Sector> allSectors = hfeFile.decodeSectors ();
         final byte [] image = DiskImageBuilder.buildImage (allSectors, hfeFile.getNumTracks (), hfeFile.getNumSides (), 8, SECTOR_SIZE, false);
         if (image.length != DISK_SIZE)
             throw new IOException (Functions.getMessage ("IDS_FZ_UNEXPECTED_IMAGE_SIZE", Integer.toString (image.length), Integer.toString (DISK_SIZE)));
