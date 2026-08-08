@@ -198,7 +198,11 @@ TVA-envelope table (stride 0x10):
   `switch[p] = 127 if p==3 else (1 if p+1<count else (0 if p<count else 127))` — e.g. one active
   partial → `[0,127,127,127]`, two → `[1,0,127,127]`, three → `[1,1,0,127]`, four → `[1,1,1,127]`.
   Hardware-verified against device exports at one, two and four active partials (the writer's
-  two-active output is byte-identical to a device tone with Partial 3 switched off). This is why the
+  two-active output is byte-identical to a device tone with Partial 3 switched off). The `p==3`
+  entry is not a switch at all: `0x0A4 + 3·0x0C` = **0x0C8** is already Partial 1's *level*
+  (`MC707_FORMAT.md` §5 pins the partial block at 0x0C8), so device exports read 127 there because
+  their first partial plays at the maximum level — which is also what the writer wants, so its
+  output stays correct. This is why the
   mono template (its Partial 1 byte is 0) shows its unused partials OFF while the stereo template
   needs the byte corrected. The writer sets Wave 0 and this gate for every unused partial.
 - **Velocity layers.** The flat `MSPa` map has no velocity axis, so velocity layering uses the
