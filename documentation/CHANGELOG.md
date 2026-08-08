@@ -1,6 +1,6 @@
 # Changes
 
-## 20.1.0 (work-in-progress)
+## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * New: Added support for the FL Studio DirectWave format (reading of DWP programs with their key/velocity ranges, gain, panning, loops, amplitude envelope, filter and the pitch and volume LFOs, including monolithic programs which carry all their samples inside of the file; the mapping of DWB banks and of sampled plug-ins is reconstructed from the names of their sample files; written programs are always monolithic, i.e. one self-contained file per instrument which stores all of its samples as FLAC compressed audio).
