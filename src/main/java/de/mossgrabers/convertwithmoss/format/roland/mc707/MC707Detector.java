@@ -52,12 +52,18 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
     /** The audio of a SMPd chunk starts after a zero pre-pad which follows the chunk header. */
     private static final int PCM_PREPAD      = 64;
 
-    // Partial oscillator fields, see MC707Creator.
-    private static final int PARTIAL_OSC     = 0xDF;
+    // Partial oscillator block, see MC707Creator.
+    private static final int PARTIAL_BLOCK   = 0xC8;
     private static final int PARTIAL_STRIDE  = 0x7C;
-    private static final int OSC_FILTER_TYPE = 0x0D;
-    private static final int OSC_CUTOFF      = 0x11;
-    private static final int OSC_RESONANCE   = 0x17;
+    private static final int OSC_LEVEL       = 0x00;
+    private static final int OSC_COARSE_TUNE = 0x02;
+    private static final int OSC_FINE_TUNE   = 0x03;
+    private static final int OSC_PAN         = 0x06;
+    private static final int OSC_WAVE_GROUP  = 0x17;
+    private static final int OSC_WAVE_NUMBER = 0x1A;
+    private static final int OSC_FILTER_TYPE = 0x24;
+    private static final int OSC_CUTOFF      = 0x28;
+    private static final int OSC_RESONANCE   = 0x2E;
 
     // Per-partial TVA envelope: 4 u16 times + 4 u16 levels (0-1023), see MC707Creator.
     private static final int TONE_TVA        = 0x37A;
@@ -229,44 +235,57 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
         final StringBuilder signature = new StringBuilder ("Tone:").append (name);
         for (int partial = 0; partial < 4; partial++)
         {
-            final int oscOffset = offset + PARTIAL_OSC + partial * PARTIAL_STRIDE;
-            final int waveGroup = data[oscOffset];
-            final int waveNumber = ZenCoreUtil.readUnsigned16 (data, oscOffset + 3, false);
+            final int partialOffset = offset + PARTIAL_BLOCK + partial * PARTIAL_STRIDE;
+            final int waveGroup = data[partialOffset + OSC_WAVE_GROUP];
+            final int waveNumber = ZenCoreUtil.readUnsigned16 (data, partialOffset + OSC_WAVE_NUMBER, false);
+            final List<ISampleZone> zones = new ArrayList<> ();
             if (waveGroup == 2)
             {
                 // The partial plays a user sample, addressed by its 1-based table slot.
                 final MC707Sample sample = samples.get (Integer.valueOf (waveNumber - 1));
                 if (sample == null)
                     continue;
-                group.addSampleZone (createZone (sample, 0, 127, sample.rootKey, sample.level));
+                zones.add (createZone (sample, 0, 127, sample.rootKey, sample.level));
                 signature.append ('/').append (waveNumber);
-                continue;
             }
-
             // The partial plays a multi-sample: expand the key-map record into zones.
-            if (waveGroup == 3 && waveNumber >= 1 && waveNumber <= MC707Project.NUM_MULTISAMPLE_MAPS)
-                readMultisampleMap (project, waveNumber - 1, samples, group, signature);
+            else if (waveGroup == 3 && waveNumber >= 1 && waveNumber <= MC707Project.NUM_MULTISAMPLE_MAPS)
+                readMultisampleMap (project, waveNumber - 1, samples, zones, signature);
+
+            if (zones.isEmpty ())
+                continue;
+            applyPartialShaping (data, offset, partial, zones, signature);
+            for (final ISampleZone zone: zones)
+                group.addSampleZone (zone);
         }
-        applyToneShaping (data, offset, group, signature);
         this.addSource (file, name, group, signature.toString (), signatures, results);
     }
 
 
     /**
-     * Apply the tone's TVF filter and TVA amplitude envelope to all of its zones - the inverse of
-     * the mapping in {@link MC707Creator} (partial 1 carries the values the device displays).
+     * Apply the parameters of one partial to the zones it plays - the inverse of the mapping in
+     * {@link MC707Creator}. A tone layers up to four partials which each play their own wave with
+     * their own level, tuning, panning, TVF filter and TVA amplitude envelope; several partials
+     * playing the same sample transposed and panned apart is a common MC-707 patch.
      *
      * @param data The project data
      * @param offset The file offset of the tone record
-     * @param group The group whose zones to shape
+     * @param partial The index of the partial (0-3)
+     * @param zones The zones which the partial plays
      * @param signature The content signature to extend
      */
-    private static void applyToneShaping (final byte [] data, final int offset, final IGroup group, final StringBuilder signature)
+    private static void applyPartialShaping (final byte [] data, final int offset, final int partial, final List<ISampleZone> zones, final StringBuilder signature)
     {
-        if (group.getSampleZones ().isEmpty ())
-            return;
+        final int partialOffset = offset + PARTIAL_BLOCK + partial * PARTIAL_STRIDE;
+        final int level = ZenCoreUtil.readUnsigned16 (data, partialOffset + OSC_LEVEL, false);
+        final int coarseTune = data[partialOffset + OSC_COARSE_TUNE];
+        final int fineTune = data[partialOffset + OSC_FINE_TUNE];
+        final int panning = data[partialOffset + OSC_PAN];
+        // The partial level scales the level of the sample slot, both are linear 0-127 volumes.
+        final double gain = MathUtils.valueToDb (Math.max (level, 1) / 127.0);
+        signature.append ("/P").append (level).append (':').append (coarseTune).append (':').append (fineTune).append (':').append (panning);
 
-        final int tvaOffset = offset + TONE_TVA;
+        final int tvaOffset = offset + TONE_TVA + partial * TONE_TVA_STRIDE;
         final IEnvelope amplitudeEnvelope = new DefaultEnvelope ();
         amplitudeEnvelope.setAttackTime (ZenCoreUtil.valueToTime (ZenCoreUtil.readUnsigned16 (data, tvaOffset, false)));
         final int hold = ZenCoreUtil.readUnsigned16 (data, tvaOffset + 2, false);
@@ -277,26 +296,28 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
         amplitudeEnvelope.setSustainLevel (ZenCoreUtil.readUnsigned16 (data, tvaOffset + 12, false) / 1023.0);
         signature.append ("/E").append (ZenCoreUtil.readUnsigned16 (data, tvaOffset, false)).append (':').append (ZenCoreUtil.readUnsigned16 (data, tvaOffset + 12, false));
 
-        final int oscOffset = offset + PARTIAL_OSC;
-        final int filterType = ZenCoreUtil.readUnsigned16 (data, oscOffset + OSC_FILTER_TYPE, false) / 0x100;
-        final int cutoff = ZenCoreUtil.readUnsigned16 (data, oscOffset + OSC_CUTOFF, false);
-        final int resonance = ZenCoreUtil.readUnsigned16 (data, oscOffset + OSC_RESONANCE, false);
-        if (filterType >= 1 && filterType <= 3)
+        final int filterType = ZenCoreUtil.readUnsigned16 (data, partialOffset + OSC_FILTER_TYPE, false) / 0x100;
+        final int cutoff = ZenCoreUtil.readUnsigned16 (data, partialOffset + OSC_CUTOFF, false);
+        final int resonance = ZenCoreUtil.readUnsigned16 (data, partialOffset + OSC_RESONANCE, false);
+        // 0 = off, 1 = LPF, 2 = BPF, 3 = HPF, 4 = PKG (no model equivalent), 5/6 = LPF2/LPF3.
+        final FilterType type = switch (filterType)
+        {
+            case 1, 5, 6 -> FilterType.LOW_PASS;
+            case 2 -> FilterType.BAND_PASS;
+            case 3 -> FilterType.HIGH_PASS;
+            default -> null;
+        };
+        if (type != null)
             signature.append ("/F").append (filterType).append (':').append (cutoff).append (':').append (resonance);
 
-        for (final ISampleZone zone: group.getSampleZones ())
+        for (final ISampleZone zone: zones)
         {
+            zone.setGain (zone.getGain () + gain);
+            zone.setTuning (coarseTune + fineTune / 100.0);
+            zone.setPanning (Math.clamp (panning / 64.0, -1, 1));
             zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
-            if (filterType >= 1 && filterType <= 3)
-            {
-                final FilterType type = switch (filterType)
-                {
-                    case 2 -> FilterType.BAND_PASS;
-                    case 3 -> FilterType.HIGH_PASS;
-                    default -> FilterType.LOW_PASS;
-                };
+            if (type != null)
                 zone.setFilter (new DefaultFilter (type, 4, MathUtils.denormalizeCutoff (cutoff / 1023.0), resonance / 1023.0));
-            }
         }
     }
 
@@ -307,10 +328,10 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
      * @param project The project
      * @param mapSlot The 0-based map slot
      * @param samples The sample pool by slot
-     * @param group Where to add the zones
+     * @param zones Where to add the zones
      * @param signature The content signature to extend
      */
-    private static void readMultisampleMap (final MC707Project project, final int mapSlot, final Map<Integer, MC707Sample> samples, final IGroup group, final StringBuilder signature)
+    private static void readMultisampleMap (final MC707Project project, final int mapSlot, final Map<Integer, MC707Sample> samples, final List<ISampleZone> zones, final StringBuilder signature)
     {
         final byte [] data = project.getData ();
         final int mapOffset = project.getMultisampleMapOffset (mapSlot);
@@ -337,7 +358,7 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
                 if (runSample >= 0)
                 {
                     final MC707Sample sample = samples.get (Integer.valueOf (runSample));
-                    group.addSampleZone (createZone (sample, runStart, key - 1, sample.rootKey, runLevel));
+                    zones.add (createZone (sample, runStart, key - 1, sample.rootKey, runLevel));
                     signature.append ('/').append (runStart).append (':').append (runSample);
                 }
                 runStart = key;
