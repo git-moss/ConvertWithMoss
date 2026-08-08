@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,11 +20,15 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -44,10 +49,19 @@ import de.mossgrabers.tools.FileUtils;
 public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final int SAMPLE_RATE     = 44100;
+    /** The audio of a SMPd chunk starts after a zero pre-pad which follows the chunk header. */
+    private static final int PCM_PREPAD      = 64;
 
     // Partial oscillator fields, see MC707Creator.
     private static final int PARTIAL_OSC     = 0xDF;
     private static final int PARTIAL_STRIDE  = 0x7C;
+    private static final int OSC_FILTER_TYPE = 0x0D;
+    private static final int OSC_CUTOFF      = 0x11;
+    private static final int OSC_RESONANCE   = 0x17;
+
+    // Per-partial TVA envelope: 4 u16 times + 4 u16 levels (0-1023), see MC707Creator.
+    private static final int TONE_TVA        = 0x37A;
+    private static final int TONE_TVA_STRIDE = 0x10;
 
     // Drum-kit key record fields, see MC707Creator.
     private static final int KEY_LEVEL       = 0x11;
@@ -55,9 +69,12 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
     private static final int KEY_SWITCH      = 0x1C;
     private static final int KEY_WAVE_GROUP  = 0x1D;
     private static final int KEY_WAVE_NUMBER = 0x20;
+    /** Per-key TVA envelope: 3 u16 times followed by 3 u16 levels (0-1023). */
+    private static final int KEY_ENVELOPE    = 0xCC;
 
-    // Sample-parameter record fields, see MC707Creator.
-    private static final int SP_USED         = 0x10;
+    // Sample-parameter record fields, see MC707Creator. A slot is in use when it has a name:
+    // Roland's own projects additionally set a flag at 0x10 but device imports leave it at zero,
+    // and 0x40 only tells whether the sample is untrimmed.
     private static final int SP_LEVEL        = 0x41;
     private static final int SP_LOOP_SWITCH  = 0x44;
     private static final int SP_ORIGINAL_KEY = 0x45;
@@ -145,10 +162,11 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
         for (int slot = 0; slot < MC707Project.NUM_SAMPLE_SLOTS; slot++)
         {
             final int offset = project.getSampleParamOffset (slot);
-            if (ZenCoreUtil.readUnsigned32 (data, offset + SP_USED, false) != 1)
+            final String name = ZenCoreUtil.readName (data, offset, MC707Project.NAME_LENGTH);
+            if (name.isEmpty ())
                 continue;
             final MC707Sample sample = new MC707Sample ();
-            sample.name = ZenCoreUtil.readName (data, offset, MC707Project.NAME_LENGTH);
+            sample.name = name;
             sample.level = data[offset + SP_LEVEL] & 0x7F;
             sample.hasLoop = data[offset + SP_LOOP_SWITCH] != 0;
             sample.rootKey = data[offset + SP_ORIGINAL_KEY] & 0x7F;
@@ -169,13 +187,20 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
                 break;
             final int headerSize = ZenCoreUtil.readUnsigned16 (data, chunk + 4, false);
             final int dataSize = (int) ZenCoreUtil.readUnsigned32 (data, chunk + 8, false);
-            final int words = (int) ZenCoreUtil.readUnsigned32 (data, chunk + 0x0C, false);
-            final int pcmLength = Math.min (words * 2, usdaEnd - chunk - headerSize);
+            // The size field counts the bytes of ONE channel, not 16 bit words, and the audio
+            // starts after the chunk header's zero pre-pad. Bit 15 of the sample tag marks a
+            // stereo sample, whose two channels are stored interleaved behind each other.
+            final int channelBytes = (int) ZenCoreUtil.readUnsigned32 (data, chunk + 0x0C, false);
+            final int channels = (ZenCoreUtil.readUnsigned32 (data, chunk + 0x20, false) & 0x8000) == 0 ? 1 : 2;
+            final int pcmOffset = chunk + headerSize + PCM_PREPAD;
+            final int pcmLength = Math.min (channelBytes * channels, usdaEnd - pcmOffset);
             if (pcmLength > 0)
             {
                 final byte [] pcm = new byte [pcmLength];
-                System.arraycopy (data, chunk + headerSize, pcm, 0, pcmLength);
-                samples.get (usedSlots.get (i)).pcm = pcm;
+                System.arraycopy (data, pcmOffset, pcm, 0, pcmLength);
+                final MC707Sample sample = samples.get (usedSlots.get (i));
+                sample.pcm = pcm;
+                sample.channels = channels;
             }
             chunk += headerSize + dataSize;
         }
@@ -222,7 +247,57 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
             if (waveGroup == 3 && waveNumber >= 1 && waveNumber <= MC707Project.NUM_MULTISAMPLE_MAPS)
                 readMultisampleMap (project, waveNumber - 1, samples, group, signature);
         }
+        applyToneShaping (data, offset, group, signature);
         this.addSource (file, name, group, signature.toString (), signatures, results);
+    }
+
+
+    /**
+     * Apply the tone's TVF filter and TVA amplitude envelope to all of its zones - the inverse of
+     * the mapping in {@link MC707Creator} (partial 1 carries the values the device displays).
+     *
+     * @param data The project data
+     * @param offset The file offset of the tone record
+     * @param group The group whose zones to shape
+     * @param signature The content signature to extend
+     */
+    private static void applyToneShaping (final byte [] data, final int offset, final IGroup group, final StringBuilder signature)
+    {
+        if (group.getSampleZones ().isEmpty ())
+            return;
+
+        final int tvaOffset = offset + TONE_TVA;
+        final IEnvelope amplitudeEnvelope = new DefaultEnvelope ();
+        amplitudeEnvelope.setAttackTime (ZenCoreUtil.valueToTime (ZenCoreUtil.readUnsigned16 (data, tvaOffset, false)));
+        final int hold = ZenCoreUtil.readUnsigned16 (data, tvaOffset + 2, false);
+        amplitudeEnvelope.setHoldTime (hold > 0 ? ZenCoreUtil.valueToTime (hold) : 0);
+        amplitudeEnvelope.setDecayTime (ZenCoreUtil.valueToTime (ZenCoreUtil.readUnsigned16 (data, tvaOffset + 4, false)));
+        amplitudeEnvelope.setReleaseTime (ZenCoreUtil.valueToTime (ZenCoreUtil.readUnsigned16 (data, tvaOffset + 6, false)));
+        amplitudeEnvelope.setHoldLevel (ZenCoreUtil.readUnsigned16 (data, tvaOffset + 10, false) / 1023.0);
+        amplitudeEnvelope.setSustainLevel (ZenCoreUtil.readUnsigned16 (data, tvaOffset + 12, false) / 1023.0);
+        signature.append ("/E").append (ZenCoreUtil.readUnsigned16 (data, tvaOffset, false)).append (':').append (ZenCoreUtil.readUnsigned16 (data, tvaOffset + 12, false));
+
+        final int oscOffset = offset + PARTIAL_OSC;
+        final int filterType = ZenCoreUtil.readUnsigned16 (data, oscOffset + OSC_FILTER_TYPE, false) / 0x100;
+        final int cutoff = ZenCoreUtil.readUnsigned16 (data, oscOffset + OSC_CUTOFF, false);
+        final int resonance = ZenCoreUtil.readUnsigned16 (data, oscOffset + OSC_RESONANCE, false);
+        if (filterType >= 1 && filterType <= 3)
+            signature.append ("/F").append (filterType).append (':').append (cutoff).append (':').append (resonance);
+
+        for (final ISampleZone zone: group.getSampleZones ())
+        {
+            zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
+            if (filterType >= 1 && filterType <= 3)
+            {
+                final FilterType type = switch (filterType)
+                {
+                    case 2 -> FilterType.BAND_PASS;
+                    case 3 -> FilterType.HIGH_PASS;
+                    default -> FilterType.LOW_PASS;
+                };
+                zone.setFilter (new DefaultFilter (type, 4, MathUtils.denormalizeCutoff (cutoff / 1023.0), resonance / 1023.0));
+            }
+        }
     }
 
 
@@ -306,12 +381,14 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
         int runSample = -1;
         int runPitch = 0;
         int runLevel = 0;
+        int [] runEnvelope = null;
         for (int keyIndex = 0; keyIndex <= MC707Project.KIT_NUM_KEYS; keyIndex++)
         {
             final int key = MC707Project.KIT_BASE_KEY + keyIndex;
             int sampleSlot = -1;
             int pitch = 0;
             int level = 0;
+            int [] envelope = null;
             if (keyIndex < MC707Project.KIT_NUM_KEYS)
             {
                 final int keyOffset = userBank ? project.getUserKitKeyOffset (slot, keyIndex) : project.getClipKitKeyOffset (slot, keyIndex);
@@ -323,11 +400,12 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
                         sampleSlot = waveNumber - 1;
                         pitch = data[keyOffset + KEY_PITCH] & 0x7F;
                         level = data[keyOffset + KEY_LEVEL] & 0x7F;
+                        envelope = readKeyEnvelope (data, keyOffset);
                     }
                 }
             }
 
-            final boolean continuesRun = sampleSlot >= 0 && sampleSlot == runSample && pitch == runPitch + key - runStartKey && level == runLevel;
+            final boolean continuesRun = sampleSlot >= 0 && sampleSlot == runSample && pitch == runPitch + key - runStartKey && level == runLevel && Arrays.equals (envelope, runEnvelope);
             if (!continuesRun)
             {
                 if (runSample >= 0)
@@ -335,16 +413,55 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
                     // The written pitch is 0x3C + (key - root), so the root of the merged zone is
                     // the key at which the pitch field crosses its center.
                     final int rootKey = Math.clamp (runStartKey - (runPitch - 0x3CL), 0, 127);
-                    group.addSampleZone (createZone (samples.get (Integer.valueOf (runSample)), runStartKey, key - 1, rootKey, runLevel));
-                    signature.append ('/').append (runStartKey).append (':').append (runSample).append (':').append (runPitch).append (':').append (runLevel);
+                    final ISampleZone zone = createZone (samples.get (Integer.valueOf (runSample)), runStartKey, key - 1, rootKey, runLevel);
+                    applyKeyEnvelope (zone, runEnvelope);
+                    group.addSampleZone (zone);
+                    signature.append ('/').append (runStartKey).append (':').append (runSample).append (':').append (runPitch).append (':').append (runLevel).append (':').append (Arrays.toString (runEnvelope));
                 }
                 runStartKey = key;
                 runSample = sampleSlot;
                 runPitch = pitch;
                 runLevel = level;
+                runEnvelope = envelope;
             }
         }
         this.addSource (file, name, group, signature.toString (), signatures, results);
+    }
+
+
+    /**
+     * Read a drum-kit key's TVA envelope: 3 times followed by 3 levels.
+     *
+     * @param data The project data
+     * @param keyOffset The file offset of the key record
+     * @return The 6 raw values
+     */
+    private static int [] readKeyEnvelope (final byte [] data, final int keyOffset)
+    {
+        final int [] values = new int [6];
+        for (int i = 0; i < values.length; i++)
+            values[i] = ZenCoreUtil.readUnsigned16 (data, keyOffset + KEY_ENVELOPE + i * 2, false);
+        return values;
+    }
+
+
+    /**
+     * Apply a drum-kit key's TVA envelope to a zone. The 3 stages are attack, decay and release;
+     * the level reached after the decay stage is the sustain level.
+     *
+     * @param zone The zone to shape
+     * @param values The 6 raw values or null if the key had none
+     */
+    private static void applyKeyEnvelope (final ISampleZone zone, final int [] values)
+    {
+        if (values == null)
+            return;
+        final IEnvelope envelope = new DefaultEnvelope ();
+        envelope.setAttackTime (ZenCoreUtil.valueToTime (values[0]));
+        envelope.setDecayTime (ZenCoreUtil.valueToTime (values[1]));
+        envelope.setReleaseTime (ZenCoreUtil.valueToTime (values[2]));
+        envelope.setSustainLevel (values[4] / 1023.0);
+        zone.getAmplitudeEnvelopeModulator ().setSource (envelope);
     }
 
 
@@ -359,8 +476,9 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
     private static ISampleZone createZone (final MC707Sample sample, final int keyLow, final int keyHigh, final int rootKey, final int level)
     {
         final ISampleZone zone = new DefaultSampleZone (sample.name, keyLow, keyHigh);
-        final int frames = sample.pcm.length / 4;
-        zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (2, SAMPLE_RATE, 16, frames), sample.pcm));
+        // All positions are frame indices regardless of the channel count.
+        final int frames = sample.pcm.length / (2 * sample.channels);
+        zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (sample.channels, SAMPLE_RATE, 16, frames), sample.pcm));
         zone.setKeyRoot (rootKey);
         zone.setStart (sample.start);
         zone.setStop (Math.min (sample.end + 1, frames));

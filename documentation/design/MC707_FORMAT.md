@@ -86,21 +86,32 @@ SMPh (0x20): "SMPh" + u32 headerSize 0x20 + u32 version 2 + u32 sampleCount + 16
 SMPd (0x30 header + data):
   0x00  4  "SMPd"
   0x04  2  u16 header size 0x30
-  0x06  2  u16 ceil(sampleWords / 32768)
-  0x08  4  u32 dataSize = roundUp1024(2*sampleWords + 256)
-  0x0C  4  u32 sampleWords — total 16-bit samples across BOTH channels (frames = words/2)
+  0x06  2  u16 ceil(channelBytes / 32768)
+  0x08  4  u32 dataSize = roundUp1024(channels*channelBytes + 256)
+  0x0C  4  u32 channelBytes — the PCM bytes of ONE channel (frames = channelBytes / 2)
   0x10 16  name, original file name incl. ".wav" (space padded)
-  0x20  4  u32 0x8000 + chunkIndex
+  0x20  4  u32 chunkIndex, with bit 15 (0x8000) set for a STEREO sample
   0x24  4  u32 sample rate (44100 — the MC's native rate)
   0x28  4  garbage in Roland files (uninitialized pointer; two byte-identical duplicate
            imports carry different values here) — written as 0, evidently not validated
   0x2C  4  0
-  0x30 ..  PCM, 16-bit LE interleaved stereo, zero-padded to dataSize
+  0x30 64  zero pre-pad
+  0x70 ..  PCM, 16-bit LE (interleaved when stereo), zero-padded to dataSize
 ```
 
-Samples are **always stored interleaved stereo at 44100 Hz** (mono material is imported by the
-device as stereo; every duration in the preset projects only makes sense at 44100 stereo — e.g.
-`pb_resoLoop2` = exactly 4.000 s, `Daedelus_Chord_2` = exactly 3.000 s).
+The frame count is `channelBytes / 2` for mono and stereo alike, which is what makes the preset
+durations come out round (`pb_resoLoop2` = exactly 4.000 s, `Daedelus_Chord_2` = exactly 3.000 s).
+
+**Channel count.** Bit 15 of the tag at `0x20` selects mono or stereo; the total audio is
+`channels * channelBytes`. Roland's factory projects store stereo throughout, while the device's
+own sample import writes **mono** — it downmixes stereo source material, so a project made on the
+machine has the bit clear on every chunk. Verified over 396 chunks across 13 projects (7 factory
+presets, 5 third-party, 1 device-authored) with no disagreement between the bit and the extent of
+the audio actually present.
+
+**Pre-pad.** The audio does not begin at the end of the header but 64 zero bytes later, in
+device-written and Roland-authored chunks alike. The `+256` margin in `dataSize` covers it.
+Reading from `0x30` loses the first 32 frames and shifts everything after them.
 
 ## 4. `PRJa` — clip sound banks (read-side only)
 
@@ -181,20 +192,28 @@ one sample per key with per-key pitch, the same approach as the MV-8000 converte
 ## 7. Sample parameter table (84 bytes per slot, 500 slots)
 
 ```
-0x00 16  name without extension (space padded)
-0x10  4  u32 1 = slot in use
-0x40  1  1 when untrimmed & unlooped (device default), else 0
+0x00 16  name without extension (space padded) — non-blank exactly when the slot is in use
+0x10  4  u32 1 = slot in use, but ONLY in Roland-authored projects (see below)
+0x40  1  1 when the sample plays its full length (untrimmed), else 0
 0x41  1  level (0x7F)
 0x42  1  fine tune? (unclear; one preset sample has 0x7C here — written 0)
 0x43  1  coarse tune, signed (one preset sample: 0xFE = −2 — written 0)
 0x44  1  loop switch
 0x45  1  original key (device import default 0x3C)
-0x48  4  u32 start point   (stereo frames)
-0x4C  4  u32 loop start    (stereo frames)
-0x50  4  u32 end point     (stereo frame index; untrimmed = frameCount − 1)
+0x48  4  u32 start point   (frames)
+0x4C  4  u32 loop start    (frames)
+0x50  4  u32 end point     (frame index; untrimmed = frameCount − 1)
 ```
 
-All positions are in **stereo frames** (= `SMPd sampleWords / 2`).
+All positions are in **frames** (= `SMPd channelBytes / 2`), independent of the channel count.
+
+**Detecting a used slot.** Neither flag works on its own. Roland's factory projects set the u32 at
+`0x10`, but a project authored on the device leaves it zero across all 500 records while holding
+hundreds of samples. `0x40` is not a substitute: it means *untrimmed*, so a trimmed sample clears
+it while still being in use (`UK Nights` has 5 samples, only 2 with the bit set). A loop does not
+clear it. The one rule that holds everywhere is the **name field**: non-blank exactly when the slot
+is in use, and the count of named slots equals the number of `SMPd` chunks in all 13 projects
+examined.
 
 ## 8. The init-project template (from firmware)
 
@@ -234,8 +253,11 @@ Classes in `format/roland/mc707`; read + write `.mpj`.
   so each path copies its best evidence). Off by default: no Roland-authored MC
   project uses the map table, so the path cannot be validated against real files.
 - **Detector** (`MC707Detector`): reads both the `USRa` user banks and the `PRJa` clip banks;
-  extracts every tone/kit that references user samples, with filter/envelope (tones), per-key
-  zones merged from kit keys, loop/root/level from the sample table, PCM from `USDa`.
+  extracts every tone/kit that references user samples, with the TVF filter and TVA envelope of a
+  tone (partial 1) and the TVA envelope of each drum-kit key (`0xCC`: 3 times then 3 levels, the
+  level after the decay stage being the sustain), per-key zones merged from kit keys, loop/root/
+  level from the sample table, PCM from `USDa`. Zones only merge into one key range when their
+  envelopes agree as well.
 
 ## 10. Not decoded / open
 
