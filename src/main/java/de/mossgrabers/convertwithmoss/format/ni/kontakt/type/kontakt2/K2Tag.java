@@ -164,9 +164,11 @@ public class K2Tag extends AbstractTagsAndAttributes
     @Override
     public double calculateTune (final double zoneTune, final double groupTune, final double progTune)
     {
-        // Only the zone tune is stored logarithmically. Group and program tune are simply in the
-        // range of [-3..3], 1 equals a full octave.
-        final double value = 12.0 * (Math.log (zoneTune) / Math.log (2) + groupTune + progTune);
+        // All three tune values are stored logarithmically as a frequency ratio, 1 is neutral
+        final double tuneFactor = zoneTune * groupTune * progTune;
+        if (tuneFactor <= 0)
+            return 0;
+        final double value = 12.0 * Math.log (tuneFactor) / Math.log (2);
         return Math.round (value * 100000) / 100000.0;
     }
 
@@ -175,8 +177,9 @@ public class K2Tag extends AbstractTagsAndAttributes
     @Override
     public double calculateGroupTune (final double groupTune)
     {
-        // The group tune is simply in the range of [-3..3] where 1 equals a full octave, 0 is
-        // neutral
-        return Math.round (12.0 * groupTune * 100000) / 100000.0;
+        // The group tune is stored logarithmically as a frequency ratio, 1 is neutral
+        if (groupTune <= 0)
+            return 0;
+        return Math.round (12.0 * Math.log (groupTune) / Math.log (2) * 100000) / 100000.0;
     }
 }
