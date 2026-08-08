@@ -13,6 +13,12 @@
   * Fixed: Contents dialog: Using 'Select All' on filtered content did still select all presets not only the filtered ones.
   * Fixed: Tabbing in dialogs did not work.
   * Fixed: Processing dialog: the Enable option could not be reached with tab.
+* Processing
+  * New: Added support to handle 32-bit float samples as input.
+  * Fixed: Upsampling the bit resolution from 8 bit resulted in silent samples.
+  * Fixed: Upsampling from 8 to 24 bit set the result to PCM_UNSIGNED instead of PCM_SIGNED.
+  * Fixed: Handling of 12‑ and 20‑bit samples was not correct when converting to mono.
+  * Fixed: Truncating the end did only check the 1st loop.
 * Command Line Interface
   * New: The new option '-P' additionally writes the progress of a conversion to the error output in a machine-readable form ('CWM_PROGRESS pct=<0..100> phase=<token> detail=<text>'), so that an application which runs ConvertWithMoss as a child process can display it - the progress dots of the normal output cannot be turned into a percentage. The percentage moves with the finished source files and, inside of a source file, with its loaded samples, which keeps a single large instrument moving as well. Setting the environment variable CWM_MACHINE_PROGRESS to 1 has the same effect, for hosts which cannot add options to the command line. Without the option nothing is written and nothing is changed.
 * 1010music bento
