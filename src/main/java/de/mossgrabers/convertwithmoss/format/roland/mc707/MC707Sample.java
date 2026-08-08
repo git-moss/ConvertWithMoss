@@ -29,4 +29,6 @@ public class MC707Sample
     public int     end       = 0;
     /** The interleaved stereo 16-bit little-endian PCM at 44.1 kHz. */
     public byte [] pcm;
+    /** The number of channels of the PCM data. */
+    public int     channels  = 2;
 }

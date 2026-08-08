@@ -67,6 +67,8 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         16
     }, 44100, true);
     private static final int                    SAMPLE_RATE          = 44100;
+    /** The audio of a SMPd chunk starts after a zero pre-pad which follows the chunk header. */
+    private static final int                    PCM_PREPAD           = 64;
 
     // Partial oscillator fields, relative to the partial base 0xDF + partial * 0x7C.
     private static final int                    PARTIAL_OSC          = 0xDF;
@@ -531,7 +533,8 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
             final MC707Sample sample = pool.get (i);
             final int words = sample.pcm.length / 2;
             // The stored size is the PCM rounded up to the device's 1 KB allocation blocks with a
-            // 128-frame margin (matches every Roland-authored chunk).
+            // 128-frame margin (matches every Roland-authored chunk); the margin also covers the
+            // zero pre-pad which precedes the audio.
             final int dataSize = (2 * words + 256 + 1023) / 1024 * 1024;
 
             final byte [] chunk = new byte [0x30 + dataSize];
@@ -542,12 +545,14 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
             chunk[4] = 0x30; // header size
             putU16 (chunk, 6, (words + 32767) / 32768);
             ZenCoreUtil.writeUnsigned32 (chunk, 8, dataSize, false);
+            // The size counts the bytes of ONE channel; bit 15 of the tag marks a stereo sample.
             ZenCoreUtil.writeUnsigned32 (chunk, 0x0C, words, false);
             System.arraycopy (ZenCoreUtil.padNameZero (sample.name + ".wav", MC707Project.NAME_LENGTH), 0, chunk, 0x10, MC707Project.NAME_LENGTH);
             ZenCoreUtil.writeUnsigned32 (chunk, 0x20, 0x8000L + i, false);
             ZenCoreUtil.writeUnsigned32 (chunk, 0x24, SAMPLE_RATE, false);
             // 0x28: uninitialized memory in Roland-written files, left at 0 here
-            System.arraycopy (sample.pcm, 0, chunk, 0x30, sample.pcm.length);
+            // The audio starts after a zero pre-pad, exactly as in device-written chunks.
+            System.arraycopy (sample.pcm, 0, chunk, 0x30 + PCM_PREPAD, sample.pcm.length);
             out.writeBytes (chunk);
         }
         return out.toByteArray ();
@@ -569,7 +574,9 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
             final int offset = project.getSampleParamOffset (i);
             System.arraycopy (ZenCoreUtil.padName (sample.name, MC707Project.NAME_LENGTH), 0, data, offset, MC707Project.NAME_LENGTH);
             ZenCoreUtil.writeUnsigned32 (data, offset + SP_USED, 1, false);
-            final boolean whole = !sample.hasLoop && sample.start == 0 && sample.end == sample.pcm.length / 4 - 1;
+            // 0x40 only tells whether the sample plays its full length - a loop does not clear it
+            // (Roland's own projects keep it set on looped samples).
+            final boolean whole = sample.start == 0 && sample.end == sample.pcm.length / 4 - 1;
             data[offset + SP_WHOLE] = (byte) (whole ? 1 : 0);
             data[offset + SP_LEVEL] = (byte) sample.level;
             data[offset + SP_LOOP_SWITCH] = (byte) (sample.hasLoop ? 1 : 0);
