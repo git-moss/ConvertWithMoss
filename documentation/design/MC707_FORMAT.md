@@ -140,21 +140,47 @@ the partial strides:
 ```
 0x000 16  name
 0x098  1  1 in every Roland-authored (non-init) tone, 0 in InitTone — purpose unknown, write 1
-Partial OSC block p = 0..3 at 0x0DF + p*0x7C:
-  +0x00  1  wave group: 0 = ROM/preset wave, 2 = user sample, (3 = multisample — FANTOM;
+Partial block p = 0..3 at 0x0C8 + p*0x7C (P1 0x0C8, P2 0x144, P3 0x1C0, P4 0x23C):
+  +0x00  2  u16 partial level 0-127 (InitTone: 127; Roland's own tones mostly 100)
+  +0x02  1  coarse tune, signed semi-tones −48..+48
+  +0x03  1  fine tune, signed cents −50..+50
+  +0x04  2  u16 random pitch depth in cents (0 in every examined tone)
+  +0x06  1  pan, signed: −64 = hard left, 0 = centre, +63 = hard right
+  +0x07  1  pan keyfollow, signed −100..+100
+  +0x17  1  wave group: 0 = ROM/preset wave, 2 = user sample, (3 = multisample — FANTOM;
             no MC project uses it, untested on MC)
-  +0x01  1  0x08 for ROM waves, 0x00 for user samples
-  +0x03  2  u16 wave number L — for group 2: 1-based sample-table slot
-  +0x05  2  u16 wave number R (0; stereo lives inside the one sample slot on MC)
-  +0x0D  2  u16 TVF filter type × 0x100 (P1: file offset 0x0EC)  0=OFF,1=LPF,2=BPF,3=HPF…
-  +0x11  2  u16 TVF cutoff 0-1023   (P1: 0x0F0)
-  +0x17  2  u16 TVF resonance 0-1023 (P1: 0x0F6)
+  +0x18  1  0x08 for ROM waves, 0x00 for user samples
+  +0x1A  2  u16 wave number L — for group 2: 1-based sample-table slot
+  +0x1C  2  u16 wave number R (0; stereo lives inside the one sample slot on MC)
+  +0x1E  1  wave gain 0-5 = −18/−12/−6/0/+6/+12 dB (3 = 0 dB)
+  +0x22  2  s16 pitch keyfollow −200..+200 (100 = chromatic)
+  +0x24  2  u16 TVF filter type × 0x100 (P1: file offset 0x0EC)
+            0=OFF, 1=LPF, 2=BPF, 3=HPF, 4=PKG, 5=LPF2, 6=LPF3
+  +0x28  2  u16 TVF cutoff 0-1023   (P1: 0x0F0)
+  +0x2E  2  u16 TVF resonance 0-1023 (P1: 0x0F6)
 TVA envelope p = 0..3 at 0x37A + p*0x10: 4 × u16 times + 4 × u16 levels, 0-1023
   (P1 = the documented FANTOM offsets 0x37A..0x388; defaults T=0/400/400/400·rel 150, L=1023)
 Partial control blocks (36 bytes) at 0x5D0 + p*0x24: partial switch, key/velocity ranges —
   exact field semantics unresolved; ConvertWithMoss copies the complete block pattern of a
   Roland-authored single-partial user-sample tone verbatim (partial 1 active, 2-4 off).
 ```
+
+The field order of the partial block is that of Roland's ZEN-Core *Tone Partial* parameter map
+(FANTOM MIDI implementation): level, coarse tune, fine tune, random pitch, pan, pan keyfollow …
+wave group, wave IDs, gain, FXM, pitch keyfollow, filter — every parameter which the map writes as
+several nibbles is one little-endian u16 in the file. This pins the block base at **0x0C8**, six
+bytes ahead of the hardware-verified pan at 0x0CE, and it also explains the keyboard/range table
+(0x0A0 + p*0x0C, `ZENCORE_FORMAT.md` §3.1): its fourth entry runs into the partial block, so only
+the velocity range of Partial 4 (0x0C4/0x0C5) is stored there. The byte at 0x0C8 which that table
+would use for a "partial switch of the next partial" is in fact Partial 1's level, which is why
+device exports read 127 there.
+
+**Layered partials, corpus-verified:** tones which play the *same* sample on two partials with a
+different coarse tune and pan are common — `BORN SLIPPY` of an examined project plays sample 196 at
+−12 semi-tones/pan −10 and at −2 semi-tones/pan +13, `QS WarmString C3` doubles one sample at −24
+and −12, `HELLUS` detunes its second layer by +5 cents. The values seen across 13 projects are
+levels 0-127, coarse tunes clustering on ±12/±24 (octaves) and ±7 (fifths), fine tunes within
+±50 cents and pans within −64..+63 — all inside the documented parameter ranges.
 
 **User-sample reference, device-verified:** Soaring's `Stack Chord 2D` plays sample slot 1
 (`Daedelus_Chord_2`) with `group=2, waveL=1, waveR=0`; UK Nights has three more such tones.
