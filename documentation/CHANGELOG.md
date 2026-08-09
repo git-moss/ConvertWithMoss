@@ -1,5 +1,10 @@
 # Changes
 
+## 20.2.0 (work-in-progress)
+
+* User Interface
+  * New: Contents dialog: The new 'Export List...' button writes the listed presets - not the presets themselves - as a CSV or JSON file with the name, category, number of zones, key range (as note names and MIDI note numbers), folder, file, containers, index inside of the file and the ticked state of each of them. This gives an inventory of a disk image, a bank or a preset folder which can be used in a spreadsheet or a script. A search filter applies to the written list as well.
+
 ## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
@@ -9,7 +14,6 @@
 * New: Added support for the Audiomodern Soundbox format (reading and writing of sound packs (SBPACK): every preset of a pack becomes one multi-sample with the key/velocity ranges, root notes, sample start/end, loops with cross-fade (also ping-pong), reverse flag, volume, panning and tuning of its sounds and the volume, panning, tuning and amplitude envelope of the layers folded in; round robin layers are read as round robin groups and round robin groups are written as round robin layers; a filter in one of the effect slots becomes the filter of the zones and the voice mode and glide become the polyphony and portamento; writing creates one pack with one preset per source and stores identical samples only once - import the written pack into the plug-in, verified with Soundbox 1.2.1).
 * User Interface
   * New: The folder/file history does now remember the selected source format for the folder/file and restores it on selection.
-  * New: Contents dialog: The new 'Export List...' button writes the listed presets - not the presets themselves - as a CSV or JSON file with the name, category, number of zones, key range (as note names and MIDI note numbers), folder, file, containers, index inside of the file and the ticked state of each of them. This gives an inventory of a disk image, a bank or a preset folder which can be used in a spreadsheet or a script. A search filter applies to the written list as well.
   * New: Contents dialog: The filter field can now be cleared with 'X' and has the focus when the dialog is opened.
   * Fixed: Contents dialog: Using 'Select All' on filtered content did still select all presets not only the filtered ones.
   * Fixed: Tabbing in dialogs did not work.
