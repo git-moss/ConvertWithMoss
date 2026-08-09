@@ -10,12 +10,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.ContentsEntry;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.ui.ContentsExporter.Format;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.ControlFunctions;
 import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.PseudoModalDialog;
@@ -36,6 +39,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
@@ -52,8 +57,9 @@ public class ContentsDialog extends PseudoModalDialog
     private TreeView<Object>         treeView;
     private TextField                searchField;
     private Label                    selectionLabel;
-    private Label                    auditionLabel;
+    private Label                    statusLabel;
     private Button                   auditionButton;
+    private Button                   exportButton;
     private List<ContentsEntry>      entries         = new ArrayList<> ();
     private final Set<ContentsEntry> selectedEntries = new HashSet<> ();
     private final Map<File, Integer> entriesPerFile  = new HashMap<> ();
@@ -63,15 +69,20 @@ public class ContentsDialog extends PseudoModalDialog
     private ISourceReader            sourceReader;
     private boolean                  isReading       = false;
 
+    private final BasicConfig        config;
+
 
     /**
      * Constructor.
      *
      * @param owner The owner of the dialog
+     * @param config The configuration, which stores the folder of the last export
      */
-    protected ContentsDialog (final Stage owner)
+    protected ContentsDialog (final Stage owner, final BasicConfig config)
     {
         super (owner, "@IDS_CONTENTS_DIALOG");
+
+        this.config = config;
     }
 
 
@@ -109,19 +120,24 @@ public class ContentsDialog extends PseudoModalDialog
         });
 
         this.selectionLabel = new Label ();
-        this.auditionLabel = new Label ();
-        this.auditionLabel.setMaxWidth (Double.MAX_VALUE);
-        this.auditionLabel.setAlignment (Pos.CENTER_RIGHT);
+        this.statusLabel = new Label ();
+        this.statusLabel.setMaxWidth (Double.MAX_VALUE);
+        this.statusLabel.setAlignment (Pos.CENTER_RIGHT);
+
+        this.exportButton = new Button (Functions.getText ("@IDS_CONTENTS_EXPORT"));
+        this.exportButton.setTooltip (new Tooltip (Functions.getText ("@IDS_CONTENTS_EXPORT_TOOLTIP")));
+        this.exportButton.setOnAction (_ -> this.exportContents ());
+        this.exportButton.setDisable (true);
 
         this.auditionButton = new Button (Functions.getText ("@IDS_CONTENTS_AUDITION"));
         this.auditionButton.setTooltip (new Tooltip (Functions.getText ("@IDS_CONTENTS_AUDITION_TOOLTIP")));
         this.auditionButton.setOnAction (_ -> this.toggleAudition ());
         this.auditionButton.setDisable (true);
 
-        final HBox bottomRow = new HBox (this.selectionLabel, this.auditionLabel, this.auditionButton);
+        final HBox bottomRow = new HBox (this.selectionLabel, this.statusLabel, this.exportButton, this.auditionButton);
         bottomRow.getStyleClass ().addAll ("contentsToolbar", "contentsDialogRow");
         bottomRow.setAlignment (Pos.CENTER_LEFT);
-        HBox.setHgrow (this.auditionLabel, Priority.ALWAYS);
+        HBox.setHgrow (this.statusLabel, Priority.ALWAYS);
 
         pane.setTop (topRow);
         pane.setCenter (this.treeView);
@@ -136,6 +152,7 @@ public class ContentsDialog extends PseudoModalDialog
         this.traversalManager.add (selectAllButton);
         this.traversalManager.add (selectNoneButton);
         this.traversalManager.add (this.treeView);
+        this.traversalManager.add (this.exportButton);
         this.traversalManager.add (this.auditionButton);
         this.traversalManager.add (this.getOkButton ());
         this.traversalManager.add (this.getCancelButton ());
@@ -165,7 +182,7 @@ public class ContentsDialog extends PseudoModalDialog
             this.entriesPerFile.merge (entry.getSourceFile (), Integer.valueOf (1), Integer::sum);
 
         this.searchField.setText ("");
-        this.auditionLabel.setText ("");
+        this.statusLabel.setText ("");
         this.fillTree ();
         this.updateAuditionButton ();
     }
@@ -189,7 +206,7 @@ public class ContentsDialog extends PseudoModalDialog
         if (this.auditionPlayer.isPlaying ())
         {
             this.auditionPlayer.stop ();
-            this.auditionLabel.setText ("");
+            this.statusLabel.setText ("");
             this.updateAuditionButton ();
             return;
         }
@@ -209,7 +226,7 @@ public class ContentsDialog extends PseudoModalDialog
 
         this.auditionPlayer.stop ();
         this.isReading = true;
-        this.auditionLabel.setText (Functions.getMessage ("IDS_CONTENTS_AUDITION_READING", entry.getName ()));
+        this.statusLabel.setText (Functions.getMessage ("IDS_CONTENTS_AUDITION_READING", entry.getName ()));
         this.updateAuditionButton ();
 
         final Thread readThread = new Thread (() -> {
@@ -232,7 +249,7 @@ public class ContentsDialog extends PseudoModalDialog
             Platform.runLater (() -> {
 
                 this.isReading = false;
-                this.auditionLabel.setText (labelText);
+                this.statusLabel.setText (labelText);
                 this.updateAuditionButton ();
 
             });
@@ -251,7 +268,7 @@ public class ContentsDialog extends PseudoModalDialog
     {
         if (this.isReading)
             return;
-        this.auditionLabel.setText ("");
+        this.statusLabel.setText ("");
         this.updateAuditionButton ();
     }
 
@@ -323,6 +340,86 @@ public class ContentsDialog extends PseudoModalDialog
 
 
     /**
+     * Write the list of the sources which are currently displayed - therefore the search filter
+     * applies - to a CSV or JSON file, which is useful to keep an inventory of a bank, a disk image
+     * or a preset folder or to process it with another application. Only the list is written, the
+     * presets themselves are not converted. Whether a source is ticked is one of the written
+     * fields, so that a selection is not lost by the export.
+     */
+    private void exportContents ()
+    {
+        final List<ContentsEntry> displayedEntries = new ArrayList<> ();
+        collectEntries (this.treeView.getRoot (), displayedEntries);
+        if (displayedEntries.isEmpty ())
+            return;
+
+        final FileChooser chooser = new FileChooser ();
+        chooser.setTitle (Functions.getText ("@IDS_CONTENTS_EXPORT_HEADER"));
+        final ExtensionFilter csvFilter = new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_CSV"), "*.csv");
+        final ExtensionFilter jsonFilter = new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_JSON"), "*.json");
+        chooser.getExtensionFilters ().addAll (csvFilter, jsonFilter);
+        final String activePath = this.config.getActivePath ();
+        if (activePath != null)
+        {
+            final File activeFolder = new File (activePath);
+            if (activeFolder.isDirectory ())
+                chooser.setInitialDirectory (activeFolder);
+        }
+        chooser.setInitialFileName (Functions.getText ("@IDS_CONTENTS_EXPORT_FILE_NAME") + ".csv");
+
+        final File selectedFile = chooser.showSaveDialog (this.owner);
+        if (selectedFile == null)
+            return;
+        final File parentFolder = selectedFile.getParentFile ();
+        if (parentFolder != null)
+            this.config.setActivePath (parentFolder);
+
+        // The file ending decides the format; a file which was given none gets the ending of the
+        // format which is picked in the dialog, since not every platform appends it
+        final String fileName = selectedFile.getName ().toLowerCase (Locale.US);
+        File file = selectedFile;
+        final Format format;
+        if (fileName.endsWith (".json"))
+            format = Format.JSON;
+        else if (fileName.endsWith (".csv"))
+            format = Format.CSV;
+        else
+        {
+            format = chooser.getSelectedExtensionFilter () == jsonFilter ? Format.JSON : Format.CSV;
+            file = new File (parentFolder, selectedFile.getName () + (format == Format.JSON ? ".json" : ".csv"));
+        }
+
+        try
+        {
+            ContentsExporter.export (file, format, displayedEntries, this.selectedEntries);
+            this.statusLabel.setText (Functions.getMessage ("IDS_CONTENTS_EXPORT_DONE", Integer.toString (displayedEntries.size ()), file.getName ()));
+        }
+        catch (final IOException ex)
+        {
+            this.statusLabel.setText ("");
+            Functions.error ("@IDS_CONTENTS_EXPORT_FAILED", ex);
+        }
+    }
+
+
+    /**
+     * Collect all sources of a branch of the tree, in the order in which they are displayed.
+     *
+     * @param item The item to start at, its own source is collected as well
+     * @param entries Where to collect the sources
+     */
+    private static void collectEntries (final TreeItem<Object> item, final List<ContentsEntry> entries)
+    {
+        if (item == null)
+            return;
+        if (item.getValue () instanceof final ContentsEntry entry)
+            entries.add (entry);
+        for (final TreeItem<Object> child: item.getChildren ())
+            collectEntries (child, entries);
+    }
+
+
+    /**
      * Create the tree from the found sources. The folders of the source folder, each source file
      * which holds more than the source itself and each of its containers become a folder, the
      * sources themselves are the leaves.
@@ -378,6 +475,9 @@ public class ContentsDialog extends PseudoModalDialog
         }
 
         this.treeView.setRoot (root);
+        // A folder is only created for a source which is displayed, therefore an empty root means
+        // that there is nothing to export
+        this.exportButton.setDisable (root.getChildren ().isEmpty ());
         this.updateSelectionLabel ();
     }
 

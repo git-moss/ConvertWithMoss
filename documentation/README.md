@@ -110,6 +110,8 @@ Every source format has a *Contents...* button. It reads the source without writ
 
 This works for a format where one file simply is one preset as well, e.g. a folder of Elektron Tonverk or Synthstrom Deluge presets. The tree then lists the presets themselves - under the folder they are in and with the name which is stored inside of the file, which is not necessarily the name of that file. The name of the file is added to a preset which is named differently. Only the files of the ticked presets are read again by the conversion, so narrowing a large folder down also makes the conversion much quicker.
 
+*Export List...* writes the list itself - not the presets - to a CSV or JSON file, which is handy to keep an inventory of a disk image, a bank or a preset folder or to work with it in a spreadsheet or a script. Every listed preset becomes one line (CSV) or one object (JSON) with its name, category, number of zones, key range as note names and as MIDI note numbers, its folder, file and containers, its index inside of the file and whether it is ticked. The file format follows the ending you pick in the file dialog and a search filter applies to the export as well, so a filtered list writes only the presets which are shown.
+
 Highlighting a preset and pressing *Play* - or double-clicking it - plays one note of it. The note is rendered from the preset as it was read, with its amplitude and filter envelopes, its filter and its LFOs applied, so you hear what the conversion produces and can pick the presets by ear instead of by name. The preset is read from its file again for this, which takes about a tenth of a second even inside a large disk image. Pressing *Play* again stops the note, as does closing the dialog.
 
 ## Processing
