@@ -4,6 +4,7 @@
 
 * User Interface
   * New: Contents dialog: The new 'Export List...' button writes the listed presets - not the presets themselves - as a CSV or JSON file with the name, category, number of zones, key range (as note names and MIDI note numbers), folder, file, containers, index inside of the file and the ticked state of each of them. This gives an inventory of a disk image, a bank or a preset folder which can be used in a spreadsheet or a script. A search filter applies to the written list as well.
+  * New: Contents dialog: The new 'Import List...' button reads such a list back in and ticks exactly the presets which it selects, so the presets to convert can be picked in another application: export the list, tick the presets in e.g. a spreadsheet, save it as CSV again and import it. A row selects its preset when its 'Selected' field says so ('true', 'x', '1' or 'yes'); a list without that field selects every preset it contains, so deleting rows works as well. Presets are matched by their file and their index inside of it, which tells presets of the same name in different banks apart and still finds a library which was moved to another folder.
 
 ## 20.1.0
 

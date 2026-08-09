@@ -17,6 +17,7 @@ import java.util.Set;
 import de.mossgrabers.convertwithmoss.core.ContentsEntry;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.ui.ContentsExporter.Format;
+import de.mossgrabers.convertwithmoss.ui.ContentsImporter.ImportResult;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.ControlFunctions;
@@ -60,6 +61,7 @@ public class ContentsDialog extends PseudoModalDialog
     private Label                    statusLabel;
     private Button                   auditionButton;
     private Button                   exportButton;
+    private Button                   importButton;
     private List<ContentsEntry>      entries         = new ArrayList<> ();
     private final Set<ContentsEntry> selectedEntries = new HashSet<> ();
     private final Map<File, Integer> entriesPerFile  = new HashMap<> ();
@@ -129,12 +131,17 @@ public class ContentsDialog extends PseudoModalDialog
         this.exportButton.setOnAction (_ -> this.exportContents ());
         this.exportButton.setDisable (true);
 
+        this.importButton = new Button (Functions.getText ("@IDS_CONTENTS_IMPORT"));
+        this.importButton.setTooltip (new Tooltip (Functions.getText ("@IDS_CONTENTS_IMPORT_TOOLTIP")));
+        this.importButton.setOnAction (_ -> this.importContents ());
+        this.importButton.setDisable (true);
+
         this.auditionButton = new Button (Functions.getText ("@IDS_CONTENTS_AUDITION"));
         this.auditionButton.setTooltip (new Tooltip (Functions.getText ("@IDS_CONTENTS_AUDITION_TOOLTIP")));
         this.auditionButton.setOnAction (_ -> this.toggleAudition ());
         this.auditionButton.setDisable (true);
 
-        final HBox bottomRow = new HBox (this.selectionLabel, this.statusLabel, this.exportButton, this.auditionButton);
+        final HBox bottomRow = new HBox (this.selectionLabel, this.statusLabel, this.exportButton, this.importButton, this.auditionButton);
         bottomRow.getStyleClass ().addAll ("contentsToolbar", "contentsDialogRow");
         bottomRow.setAlignment (Pos.CENTER_LEFT);
         HBox.setHgrow (this.statusLabel, Priority.ALWAYS);
@@ -153,6 +160,7 @@ public class ContentsDialog extends PseudoModalDialog
         this.traversalManager.add (selectNoneButton);
         this.traversalManager.add (this.treeView);
         this.traversalManager.add (this.exportButton);
+        this.traversalManager.add (this.importButton);
         this.traversalManager.add (this.auditionButton);
         this.traversalManager.add (this.getOkButton ());
         this.traversalManager.add (this.getCancelButton ());
@@ -403,6 +411,53 @@ public class ContentsDialog extends PseudoModalDialog
 
 
     /**
+     * Read a list which was written before - and possibly edited in another application, e.g. a
+     * spreadsheet - and tick exactly the presets which it selects. This is the other half of
+     * building a conversion list outside of ConvertWithMoss: export the contents, pick the presets
+     * there and import the result. Presets which the list does not mention are not ticked, so
+     * deleting the rows which should not be converted narrows the selection down as well.
+     */
+    private void importContents ()
+    {
+        if (this.entries.isEmpty ())
+            return;
+
+        final FileChooser chooser = new FileChooser ();
+        chooser.setTitle (Functions.getText ("@IDS_CONTENTS_IMPORT_HEADER"));
+        chooser.getExtensionFilters ().addAll (new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_IMPORT_LISTS"), "*.csv", "*.json"), new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_CSV"), "*.csv"), new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_JSON"), "*.json"));
+        final String activePath = this.config.getActivePath ();
+        if (activePath != null)
+        {
+            final File activeFolder = new File (activePath);
+            if (activeFolder.isDirectory ())
+                chooser.setInitialDirectory (activeFolder);
+        }
+
+        final File file = chooser.showOpenDialog (this.owner);
+        if (file == null)
+            return;
+        final File parentFolder = file.getParentFile ();
+        if (parentFolder != null)
+            this.config.setActivePath (parentFolder);
+
+        final Format format = file.getName ().toLowerCase (Locale.US).endsWith (".json") ? Format.JSON : Format.CSV;
+        try
+        {
+            final ImportResult result = ContentsImporter.importList (file, format, this.entries);
+            this.selectedEntries.clear ();
+            this.selectedEntries.addAll (result.selectedEntries ());
+            this.fillTree ();
+            this.statusLabel.setText (result.numberOfUnmatchedRows () == 0 ? Functions.getMessage ("IDS_CONTENTS_IMPORT_DONE", Integer.toString (this.selectedEntries.size ()), file.getName ()) : Functions.getMessage ("IDS_CONTENTS_IMPORT_DONE_UNMATCHED", Integer.toString (this.selectedEntries.size ()), file.getName (), Integer.toString (result.numberOfUnmatchedRows ())));
+        }
+        catch (final IOException | RuntimeException ex)
+        {
+            this.statusLabel.setText ("");
+            Functions.error ("@IDS_CONTENTS_IMPORT_FAILED", ex);
+        }
+    }
+
+
+    /**
      * Collect all sources of a branch of the tree, in the order in which they are displayed.
      *
      * @param item The item to start at, its own source is collected as well
@@ -477,7 +532,9 @@ public class ContentsDialog extends PseudoModalDialog
         this.treeView.setRoot (root);
         // A folder is only created for a source which is displayed, therefore an empty root means
         // that there is nothing to export
-        this.exportButton.setDisable (root.getChildren ().isEmpty ());
+        final boolean isEmpty = root.getChildren ().isEmpty ();
+        this.exportButton.setDisable (isEmpty);
+        this.importButton.setDisable (this.entries.isEmpty ());
         this.updateSelectionLabel ();
     }
 
