@@ -1,6 +1,6 @@
 # Changes
 
-## 20.1.0 (work-in-progress)
+## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * New: Added support for the FL Studio DirectWave format (reading of DWP programs with their key/velocity ranges, gain, panning, loops, amplitude envelope, filter and the pitch and volume LFOs, including monolithic programs which carry all their samples inside of the file; the mapping of DWB banks and of sampled plug-ins is reconstructed from the names of their sample files; written programs are always monolithic, i.e. one self-contained file per instrument which stores all of its samples as FLAC compressed audio).
@@ -14,10 +14,16 @@
   * Fixed: Contents dialog: Using 'Select All' on filtered content did still select all presets not only the filtered ones.
   * Fixed: Tabbing in dialogs did not work.
   * Fixed: Processing dialog: the Enable option could not be reached with tab.
+* Processing
+  * New: Added support to handle 32-bit float samples as input.
+  * Fixed: Upsampling the bit resolution from 8 bit resulted in silent samples.
+  * Fixed: Upsampling from 8 to 24 bit set the result to PCM_UNSIGNED instead of PCM_SIGNED.
+  * Fixed: Handling of 12‑ and 20‑bit samples was not correct when converting to mono.
+  * Fixed: Truncating the end did only check the 1st loop.
 * Command Line Interface
-  * New: The new option '-P' additionally writes the progress of a conversion to the error output in a machine-readable form ('CWM_PROGRESS pct=<0..100> phase=<token> detail=<text>'), so that an application which runs ConvertWithMoss as a child process can display it - the progress dots of the normal output cannot be turned into a percentage. The percentage moves with the finished source files and, inside of a source file, with its loaded samples, which keeps a single large instrument moving as well. Setting the environment variable CWM_MACHINE_PROGRESS to 1 has the same effect, for hosts which cannot add options to the command line. Without the option nothing is written and nothing is changed.
+  * New: The new option '-P' additionally writes the progress of a conversion to the error output in a machine-readable form, so that an application which runs ConvertWithMoss as a child process can display it - the progress dots of the normal output cannot be turned into a percentage. The percentage moves with the finished source files and, inside of a source file, with its loaded samples, which keeps a single large instrument moving as well. Setting the environment variable CWM_MACHINE_PROGRESS to 1 has the same effect, for hosts which cannot add options to the command line. Without the option nothing is written and nothing is changed.
 * 1010music bento
-  * Fixed: On macOS and Linux the patches of a performance were written into a single folder whose name literally contains the backslashes of the device path ('UserPatches\SampInst\') instead of the nested UserPatches/SampInst folders; such a folder cannot even be copied onto the FAT32/exFAT card of the device. The paths inside of the project file were and are correct.
+  * Fixed: On macOS and Linux the patches of a performance were written into a single folder whose name literally contains the backslashes of the device path (`UserPatches\SampInst\`) instead of the nested UserPatches/SampInst folders; such a folder cannot even be copied onto the FAT32/exFAT card of the device. The paths inside of the project file were and are correct.
 * 1010music blackbox, bento
   * Fixed: The preset paths written into presets and performances used the multi-sample name as-is, but the actually created folders have illegal file name characters removed and a number appended when the name already exists. Such presets referenced non-existing folders (e.g. for sources with a ':' in their name, like Roland S-7xx patches). The written paths now always match the created folders.
   * Fixed: blackbox: The silence workaround samples of a performance were referenced in the folder of the instrument but the sample is stored in the performance folder.
@@ -41,11 +47,14 @@
 * NI Kontakt
   * New: The velocity to volume modulator is now converted with its response curve: Kontakt maps its normalized volume to decibels with 60*log10(x), so the amplitude follows the cube of the velocity. Destinations which can express the curve reproduce this response, e.g. SFZ receives matching amp_velcurve_N points.
   * Fixed: Added a workaround for missing samples with Kontakt 2/3 Monolithic NKM files created with AWave Studio which falsely classify samples as NKI files.
+  * Fixed: The group and the instrument tune of a Kontakt 2 file were read as a linear offset in octaves although they are frequency ratios, like the already correctly read zone tune (and like all tune values of Kontakt 1 and 4.2/5+). Both are 1 - the neutral ratio - in a program whose tuning was never touched, and each contributed a full octave, so every converted program played 24 semitones too high. A tune of 0, which cannot be a ratio, is now taken as neutral instead of producing an infinite value.
   * Fixed: The soloed groups of a Kontakt 4.2/5+ program were honored even when the program has group solo switched off. Kontakt keeps the solo flags of the groups when solo mode is left, so a program with such left-overs converted to those groups only and dropped every other group.
 * Roland MC-707/MC-101
   * Fixed: Projects which were created on the device (rather than by Roland) reported 'No tones or drum kits using user samples found' although they contain user samples, e.g. a project with 386 samples in 90 sounds. A slot of the sample parameter table was only taken as being in use when the flag at offset 0x10 is set, which Roland's own projects do set but the sample import of the device does not; a slot is now recognized by its name, which matches the number of stored samples in every project examined.
   * Fixed: The audio of the read samples was taken from the wrong offset and with twice the length: the size field of a sample chunk counts the bytes of one channel (not 16 bit words) and the audio starts 64 zero bytes behind the chunk header. The samples are now also read with their real channel count, which bit 15 of the chunk tag selects - the sample import of the device writes mono, while Roland's projects are stereo throughout.
   * Fixed: The TVF filter and the TVA amplitude envelope of a tone and the TVA envelope of a drum kit key were not read at all, so every converted sound fell back to a default envelope and lost its filter (e.g. a low-pass at a seventh of its range with resonance).
+  * Fixed: The level, coarse/fine tuning and panning of a tone partial were not read. A tone which layers the same sample on several partials - the usual way to build an octave, a chord or a wide detuned sound on the device - therefore converted into several identical zones which only doubled the volume (e.g. 33 of the 90 sounds of one project were affected). The tuning is now read as the tuning of the zone and the panning as its panning, and the partial level scales the level of the sample slot. Writing stores the tuning and panning of a source in its tone.
+  * Fixed: The filter and the amplitude envelope of every zone were taken from the tone's first partial, although each partial has its own. A layer with a slow attack or a different filter played with the settings of the first layer. The filter types LPF2 and LPF3 are now read as a low-pass as well, instead of being dropped.
   * Fixed: Written sample chunks lacked the 64 zero bytes which precede the audio in device-written and Roland-written chunks alike, so the device would play them from 32 frames too early. The 'untrimmed' flag of a written sample is no longer cleared by a loop, which had made a looped sample read back as an unused slot.
 * Roland S-7xx
   * New: The 3 character prefixes are now interpreted as a category. If no category could be matched they are added to the full name (without the ':').

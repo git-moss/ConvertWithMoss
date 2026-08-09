@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.core.algorithm;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +33,11 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
  */
 public class AudioSampleReducer
 {
+    // Full scale used to map 32-bit float samples (-1.0..1.0) onto the 32-bit signed integer
+    // domain used internally by readSample/writeSample for all other bit depths.
+    private static final double FLOAT_SCALE = 2147483648.0; // 2^31
+
+
     /**
      * Constructor. Private due to helper class.
      */
@@ -173,12 +180,17 @@ public class AudioSampleReducer
         final List<ISampleLoop> loops = sampleZone.getLoops ();
         if (!loops.isEmpty ())
         {
-            final int loopEnd = loops.get (0).getEnd ();
-            if (loopEnd > 0 && loopEnd < end)
-                end = loopEnd;
+            int maxLoopEnd = -1;
+            for (final ISampleLoop loop: loops)
+            {
+                final int loopEnd = loop.getEnd ();
+                if (loopEnd > 0 && loopEnd < end && loopEnd > maxLoopEnd)
+                    maxLoopEnd = loopEnd;
+            }
+            if (maxLoopEnd > 0)
+                end = maxLoopEnd;
         }
         sampleZone.setStart (0);
-        sampleZone.setStop (end - start);
 
         // The audio was cut at the zone start - move the loop points with it
         if (start > 0)
@@ -189,7 +201,7 @@ public class AudioSampleReducer
                     loop.setEnd (Math.max (0, loop.getEnd () - start));
             }
 
-        return trimSampleData (data, start, end);
+        return trimSampleData (data, start, end, sampleZone);
     }
 
 
@@ -199,11 +211,12 @@ public class AudioSampleReducer
      * @param wavData The WAV data structure
      * @param startFrame The start frame from which to trim to the beginning of the sample
      * @param stopFrame All frames after this will be trimmed from the end
+     * @param sampleZone The sample zone
      * @return The updated sample as a WAV audio structure
      * @throws IOException Could not read the sample
      * @throws UnsupportedAudioFileException Could not parse the WAV file
      */
-    private static byte [] trimSampleData (final byte [] wavData, final int startFrame, final int stopFrame) throws IOException, UnsupportedAudioFileException
+    private static byte [] trimSampleData (final byte [] wavData, final int startFrame, final int stopFrame, final ISampleZone sampleZone) throws IOException, UnsupportedAudioFileException
     {
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {
@@ -219,6 +232,7 @@ public class AudioSampleReducer
             // Calculate the trimmed region
             final int actualStart = Math.max (0, startFrame);
             final int actualStop = stopFrame > 0 && stopFrame < totalFrames ? stopFrame : (int) totalFrames;
+            sampleZone.setStop (actualStop - startFrame);
             if (actualStart >= actualStop)
                 return audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (new byte [0]), format, 0));
             final int startByte = actualStart * frameSize;
@@ -248,9 +262,10 @@ public class AudioSampleReducer
         {
             final byte [] sourceData = ais.readAllBytes ();
             final AudioFormat sourceFormat = ais.getFormat ();
+            final AudioFormat.Encoding encoding = sourceFormat.getEncoding ();
             final int channels = sourceFormat.getChannels ();
             final int sampleSizeInBits = sourceFormat.getSampleSizeInBits ();
-            final int bytesPerSample = sampleSizeInBits / 8;
+            final int bytesPerSample = toFullBytes (sampleSizeInBits);
             final int frameSize = channels * bytesPerSample;
             final int numFrames = sourceData.length / frameSize;
             final byte [] monoData = new byte [numFrames * bytesPerSample];
@@ -262,14 +277,14 @@ public class AudioSampleReducer
                 for (int ch = 0; ch < channels; ch++)
                 {
                     final int offset = frame * frameSize + ch * bytesPerSample;
-                    final int sample = readSample (sourceData, offset, sampleSizeInBits, bigEndian);
+                    final int sample = readSample (sourceData, offset, sampleSizeInBits, bigEndian, encoding);
                     sum += sample;
                 }
                 final int average = (int) (sum / channels);
-                writeSample (monoData, frame * bytesPerSample, average, sampleSizeInBits, bigEndian);
+                writeSample (monoData, frame * bytesPerSample, average, sampleSizeInBits, bigEndian, encoding);
             }
 
-            final AudioFormat monoFormat = new AudioFormat (sourceFormat.getEncoding (), sourceFormat.getSampleRate (), sampleSizeInBits, 1, bytesPerSample, sourceFormat.getFrameRate (), bigEndian);
+            final AudioFormat monoFormat = new AudioFormat (encoding, sourceFormat.getSampleRate (), sampleSizeInBits, 1, bytesPerSample, sourceFormat.getFrameRate (), bigEndian);
             return audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (monoData), monoFormat, numFrames));
         }
     }
@@ -290,14 +305,23 @@ public class AudioSampleReducer
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {
             final AudioFormat sourceFormat = ais.getFormat ();
+            final AudioFormat.Encoding sourceEncoding = sourceFormat.getEncoding ();
             final int sourceBits = sourceFormat.getSampleSizeInBits ();
-            if (sourceBits == targetBits || sourceBits < targetBits && !alwaysResample)
+
+            // WAV stores 8 bit samples as unsigned, which writeSample already applied. The format
+            // must say so as well, otherwise the WAV writer adds the bias a second time.
+            // Note: reduceBitDepth always converts towards fixed-point PCM, never float, so a
+            // float source is never "already" at the target encoding, even if the bit counts
+            // happen to match numerically (e.g. 32-bit float -> 32-bit signed integer).
+            final AudioFormat.Encoding targetEncoding = targetBits == 8 ? AudioFormat.Encoding.PCM_UNSIGNED : AudioFormat.Encoding.PCM_SIGNED;
+
+            if (sourceEncoding == targetEncoding && (sourceBits == targetBits || sourceBits < targetBits && !alwaysResample))
                 return wavData;
 
             final byte [] sourceData = ais.readAllBytes ();
 
             final int channels = sourceFormat.getChannels ();
-            final int sourceBytesPerSample = (sourceBits + 7) / 8; // Support e.g. 12-bit
+            final int sourceBytesPerSample = toFullBytes (sourceBits); // Support e.g. 12-bit
             // Note: this works only for bit-depths which are aligned to 8! But other sizes don't
             // safe any space since they need to be aligned to 8 as well!
             final int targetBytesPerSample = targetBits / 8;
@@ -315,14 +339,19 @@ public class AudioSampleReducer
                     final int sourceOffset = frame * sourceFrameSize + ch * sourceBytesPerSample;
                     final int targetOffset = frame * targetFrameSize + ch * targetBytesPerSample;
 
-                    final int sample = readSample (sourceData, sourceOffset, sourceBits, bigEndian);
-                    final int reduced = shiftBits <= 0 ? sample : sample >> shiftBits;
-                    writeSample (targetData, targetOffset, reduced, targetBits, bigEndian);
+                    final int sample = readSample (sourceData, sourceOffset, sourceBits, bigEndian, sourceEncoding);
+
+                    final int reduced;
+                    if (shiftBits > 0)
+                        reduced = sample >> shiftBits; // down-sampling
+                    else if (shiftBits < 0)
+                        reduced = sample << -shiftBits; // up-sampling
+                    else
+                        reduced = sample;
+
+                    writeSample (targetData, targetOffset, reduced, targetBits, bigEndian, targetEncoding);
                 }
 
-            // WAV stores 8 bit samples as unsigned, which writeSample already applied. The format
-            // must say so as well, otherwise the WAV writer adds the bias a second time.
-            final AudioFormat.Encoding targetEncoding = targetBits == 8 ? AudioFormat.Encoding.PCM_UNSIGNED : sourceFormat.getEncoding ();
             final AudioFormat targetFormat = new AudioFormat (targetEncoding, sourceFormat.getSampleRate (), targetBits, channels, targetFrameSize, sourceFormat.getFrameRate (), bigEndian);
             return audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (targetData), targetFormat, numFrames));
         }
@@ -352,9 +381,10 @@ public class AudioSampleReducer
                 return wavData;
 
             final byte [] sourceData = ais.readAllBytes ();
+            final AudioFormat.Encoding encoding = sourceFormat.getEncoding ();
             final int channels = sourceFormat.getChannels ();
             final int sampleSizeInBits = sourceFormat.getSampleSizeInBits ();
-            final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
+            final int bytesPerSample = toFullBytes (sampleSizeInBits);
             final int frameSize = channels * bytesPerSample;
             final int sourceFrames = sourceData.length / frameSize;
 
@@ -366,7 +396,7 @@ public class AudioSampleReducer
             {
                 final double [] channelData = new double [sourceFrames];
                 for (int frame = 0; frame < sourceFrames; frame++)
-                    channelData[frame] = readSample (sourceData, frame * frameSize + channel * bytesPerSample, sampleSizeInBits, bigEndian);
+                    channelData[frame] = readSample (sourceData, frame * frameSize + channel * bytesPerSample, sampleSizeInBits, bigEndian, encoding);
                 converted[channel] = SincResampler.resample (channelData, (int) sourceRate, targetRate);
             }
 
@@ -379,10 +409,10 @@ public class AudioSampleReducer
                 for (int channel = 0; channel < channels; channel++)
                 {
                     final int sample = Math.clamp (Math.round (converted[channel][frame]), minimum, maximum);
-                    writeSample (targetData, frame * frameSize + channel * bytesPerSample, sample, sampleSizeInBits, bigEndian);
+                    writeSample (targetData, frame * frameSize + channel * bytesPerSample, sample, sampleSizeInBits, bigEndian, encoding);
                 }
 
-            final AudioFormat targetFormat = new AudioFormat (sourceFormat.getEncoding (), targetRate, sampleSizeInBits, channels, frameSize, targetRate, bigEndian);
+            final AudioFormat targetFormat = new AudioFormat (encoding, targetRate, sampleSizeInBits, channels, frameSize, targetRate, bigEndian);
             return audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (targetData), targetFormat, convertedFrames));
         }
     }
@@ -404,8 +434,9 @@ public class AudioSampleReducer
             final AudioFormat format = ais.getFormat ();
             final byte [] data = ais.readAllBytes ();
 
+            final AudioFormat.Encoding encoding = format.getEncoding ();
             final int sampleSizeInBits = format.getSampleSizeInBits ();
-            final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
+            final int bytesPerSample = toFullBytes (sampleSizeInBits);
             final int numSamples = data.length / bytesPerSample;
             final boolean bigEndian = format.isBigEndian ();
 
@@ -413,7 +444,7 @@ public class AudioSampleReducer
             for (int i = 0; i < numSamples; i++)
             {
                 final int offset = i * bytesPerSample;
-                final int sample = readSample (data, offset, sampleSizeInBits, bigEndian);
+                final int sample = readSample (data, offset, sampleSizeInBits, bigEndian, encoding);
                 max = Math.max (max, Math.abs (sample));
             }
             return max / maximumPositiveValue (sampleSizeInBits);
@@ -452,8 +483,9 @@ public class AudioSampleReducer
 
             final AudioFormat format = ais.getFormat ();
             final byte [] data = ais.readAllBytes ();
+            final AudioFormat.Encoding encoding = format.getEncoding ();
             final int sampleSizeInBits = format.getSampleSizeInBits ();
-            final int bytesPerSample = (sampleSizeInBits + 7) / 8; // Support e.g. 12-bit
+            final int bytesPerSample = toFullBytes (sampleSizeInBits);
             final int numSamples = data.length / bytesPerSample;
             final boolean bigEndian = format.isBigEndian ();
 
@@ -470,10 +502,10 @@ public class AudioSampleReducer
             for (int i = 0; i < numSamples; i++)
             {
                 final int offset = i * bytesPerSample;
-                final int sample = readSample (data, offset, sampleSizeInBits, bigEndian);
+                final int sample = readSample (data, offset, sampleSizeInBits, bigEndian, encoding);
                 int scaled = (int) Math.round (sample * scale);
                 scaled = Math.clamp (scaled, negativeLimit, positiveLimit);
-                writeSample (normalized, offset, scaled, sampleSizeInBits, bigEndian);
+                writeSample (normalized, offset, scaled, sampleSizeInBits, bigEndian, encoding);
             }
 
             return audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (normalized), format, ais.getFrameLength ()));
@@ -481,16 +513,19 @@ public class AudioSampleReducer
     }
 
 
-    private static int readSample (final byte [] data, final int offset, final int sampleSizeInBits, final boolean bigEndian)
+    private static int readSample (final byte [] data, final int offset, final int sampleSizeInBits, final boolean bigEndian, final AudioFormat.Encoding encoding)
     {
-        // Missing handling of 32 bit float values
+        // 32-bit IEEE float samples, normalized (-1.0..1.0) -> mapped onto the same 32-bit signed
+        // integer domain used for all other bit depths
+        if (encoding == AudioFormat.Encoding.PCM_FLOAT && sampleSizeInBits == 32)
+            return readFloatSample (data, offset, bigEndian);
 
         // 8-bit WAV samples are unsigned with a bias of 128
         if (sampleSizeInBits == 8)
             return (data[offset] & 0xFF) - 128;
 
         int sample = 0;
-        final int bytesPerSample = (sampleSizeInBits + 7) / 8;
+        final int bytesPerSample = toFullBytes (sampleSizeInBits);
         final int containerBits = bytesPerSample * 8;
 
         // Read full container
@@ -527,8 +562,15 @@ public class AudioSampleReducer
     }
 
 
-    private static void writeSample (final byte [] data, final int offset, final int sample, final int sampleSizeInBits, final boolean bigEndian)
+    private static void writeSample (final byte [] data, final int offset, final int sample, final int sampleSizeInBits, final boolean bigEndian, final AudioFormat.Encoding encoding)
     {
+        // 32-bit IEEE float samples, mapped back from the normalized 32-bit signed integer domain
+        if (encoding == AudioFormat.Encoding.PCM_FLOAT && sampleSizeInBits == 32)
+        {
+            writeFloatSample (data, offset, sample, bigEndian);
+            return;
+        }
+
         // 8-bit WAV samples are unsigned with a bias of 128
         if (sampleSizeInBits == 8)
         {
@@ -536,7 +578,7 @@ public class AudioSampleReducer
             return;
         }
 
-        final int bytesPerSample = (sampleSizeInBits + 7) / 8;
+        final int bytesPerSample = toFullBytes (sampleSizeInBits);
         final int containerBits = bytesPerSample * 8;
 
         // Keep only valid sample bits
@@ -570,6 +612,43 @@ public class AudioSampleReducer
     }
 
 
+    /**
+     * Read a 32-bit IEEE float sample and map it onto the 32-bit signed integer domain used
+     * throughout the rest of this class (nominal float range -1.0..1.0).
+     *
+     * @param data The byte buffer
+     * @param offset The offset of the sample in the buffer
+     * @param bigEndian True if the sample is stored big endian
+     * @return The scaled integer value
+     */
+    private static int readFloatSample (final byte [] data, final int offset, final boolean bigEndian)
+    {
+        final ByteOrder order = bigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
+        final float value = ByteBuffer.wrap (data, offset, 4).order (order).getFloat ();
+        final long scaled = Math.round (value * FLOAT_SCALE);
+        return Math.clamp (scaled, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    }
+
+
+    /**
+     * Write an integer sample (from the 32-bit signed integer domain) back as a 32-bit IEEE float
+     * sample (nominal range -1.0..1.0).
+     *
+     * @param data The byte buffer
+     * @param offset The offset of the sample in the buffer
+     * @param sample The scaled integer value
+     * @param bigEndian True if the sample should be stored big endian
+     */
+    private static void writeFloatSample (final byte [] data, final int offset, final int sample, final boolean bigEndian)
+    {
+        final ByteOrder order = bigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
+        final float value = (float) (sample / FLOAT_SCALE);
+        final ByteBuffer buffer = ByteBuffer.allocate (4).order (order);
+        buffer.putFloat (value);
+        System.arraycopy (buffer.array (), 0, data, offset, 4);
+    }
+
+
     private static List<byte []> loadSampleData (final List<ISampleZone> sampleZones) throws IOException
     {
         final List<byte []> sampleCache = new ArrayList<> ();
@@ -598,5 +677,17 @@ public class AudioSampleReducer
         final ByteArrayOutputStream baos = new ByteArrayOutputStream ();
         AudioSystem.write (ais, AudioFileFormat.Type.WAVE, baos);
         return baos.toByteArray ();
+    }
+
+
+    /**
+     * Correctly handle non-byte-aligned depths (e.g. 12-, 20-bit).
+     *
+     * @param sampleSizeInBits The sample size, e.g. 12
+     * @return The number of necessary bytes to store the sample size, e.g. 2 for 12-bit
+     */
+    private static int toFullBytes (final int sampleSizeInBits)
+    {
+        return (sampleSizeInBits + 7) / 8;
     }
 }

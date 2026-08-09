@@ -70,20 +70,29 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
     /** The audio of a SMPd chunk starts after a zero pre-pad which follows the chunk header. */
     private static final int                    PCM_PREPAD           = 64;
 
-    // Partial oscillator fields, relative to the partial base 0xDF + partial * 0x7C.
-    private static final int                    PARTIAL_OSC          = 0xDF;
+    // Partial oscillator block, relative to the partial base 0xC8 + partial * 0x7C. The fields
+    // follow the order of Roland's ZEN-Core tone-partial parameter map.
+    private static final int                    PARTIAL_BLOCK        = 0xC8;
     @SuppressWarnings("unused")
     private static final int                    PARTIAL_STRIDE       = 0x7C;
+    // u16, 0-127 - the template plays all partials at the maximum
+    private static final int                    OSC_LEVEL            = 0x00;
+    // signed semi-tones, -48 to +48
+    private static final int                    OSC_COARSE_TUNE      = 0x02;
+    // signed cents, -50 to +50
+    private static final int                    OSC_FINE_TUNE        = 0x03;
+    // signed, -64 = hard left, 0 = centre, +63 = hard right
+    private static final int                    OSC_PAN              = 0x06;
     // 0 = ROM, 2 = user sample
-    private static final int                    OSC_WAVE_GROUP       = 0;
+    private static final int                    OSC_WAVE_GROUP       = 0x17;
     // 0x08 for ROM waves, 0 for user samples
-    private static final int                    OSC_WAVE_BANK        = 1;
-    private static final int                    OSC_WAVE_L           = 3;
-    private static final int                    OSC_WAVE_R           = 5;
+    private static final int                    OSC_WAVE_BANK        = 0x18;
+    private static final int                    OSC_WAVE_L           = 0x1A;
+    private static final int                    OSC_WAVE_R           = 0x1C;
     // type * 0x100: 1=LPF, 2=BPF, 3=HPF
-    private static final int                    OSC_FILTER_TYPE      = 0x0D;
-    private static final int                    OSC_CUTOFF           = 0x11;
-    private static final int                    OSC_RESONANCE        = 0x17;
+    private static final int                    OSC_FILTER_TYPE      = 0x24;
+    private static final int                    OSC_CUTOFF           = 0x28;
+    private static final int                    OSC_RESONANCE        = 0x2E;
     // Per-partial TVA envelope: 4 u16 times + 4 u16 levels (0-1023).
     private static final int                    TONE_TVA             = 0x37A;
     private static final int                    TONE_TVA_STRIDE      = 0x10;
@@ -259,13 +268,14 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         System.arraycopy (ZenCoreUtil.padName (multisampleSource.getName (), MC707Project.NAME_LENGTH), 0, toneRecord, 0, MC707Project.NAME_LENGTH);
 
         // Partial 1 plays the user sample (wave group 2); partials 2-4 stay off as in the template.
-        toneRecord[PARTIAL_OSC + OSC_WAVE_GROUP] = 2;
-        toneRecord[PARTIAL_OSC + OSC_WAVE_BANK] = 0;
-        putU16 (toneRecord, PARTIAL_OSC + OSC_WAVE_L, sampleSlot + 1);
-        putU16 (toneRecord, PARTIAL_OSC + OSC_WAVE_R, 0);
+        toneRecord[PARTIAL_BLOCK + OSC_WAVE_GROUP] = 2;
+        toneRecord[PARTIAL_BLOCK + OSC_WAVE_BANK] = 0;
+        putU16 (toneRecord, PARTIAL_BLOCK + OSC_WAVE_L, sampleSlot + 1);
+        putU16 (toneRecord, PARTIAL_BLOCK + OSC_WAVE_R, 0);
 
         writeToneFilter (toneRecord, zone);
         writeToneEnvelope (toneRecord, zone);
+        writeToneLevelPitchAndPan (toneRecord, zone.getTuning (), zone.getPanning ());
 
         System.arraycopy (toneRecord, 0, project.getData (), project.getUserToneOffset (slot), MC707Project.TONE_SIZE);
         return true;
@@ -339,14 +349,17 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
 
         // Partial 1 plays the multisample map (wave group 3); the wave-bank byte stays 0x08 and
         // Wave R = Wave L as in the FANTOM's multisample tones (on the FANTOM R = 0 plays mono).
-        toneRecord[PARTIAL_OSC + OSC_WAVE_GROUP] = 3;
-        toneRecord[PARTIAL_OSC + OSC_WAVE_BANK] = 0x08;
-        putU16 (toneRecord, PARTIAL_OSC + OSC_WAVE_L, slot + 1);
-        putU16 (toneRecord, PARTIAL_OSC + OSC_WAVE_R, slot + 1);
+        toneRecord[PARTIAL_BLOCK + OSC_WAVE_GROUP] = 3;
+        toneRecord[PARTIAL_BLOCK + OSC_WAVE_BANK] = 0x08;
+        putU16 (toneRecord, PARTIAL_BLOCK + OSC_WAVE_L, slot + 1);
+        putU16 (toneRecord, PARTIAL_BLOCK + OSC_WAVE_R, slot + 1);
 
         final ISampleZone representative = zones.get (0);
         writeToneFilter (toneRecord, representative);
         writeToneEnvelope (toneRecord, representative);
+        // The partial plays the whole map, so only tuning and panning shared by all zones can be
+        // applied to it.
+        writeToneLevelPitchAndPan (toneRecord, multisampleSource.getGlobalTuning ().orElse (Double.valueOf (0)).doubleValue (), multisampleSource.getGlobalPanning ().orElse (Double.valueOf (0)).doubleValue ());
 
         System.arraycopy (toneRecord, 0, project.getData (), project.getUserToneOffset (slot), MC707Project.TONE_SIZE);
         return true;
@@ -609,9 +622,29 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         };
         if (filterType == 0)
             return;
-        putU16 (toneRecord, PARTIAL_OSC + OSC_FILTER_TYPE, filterType * 0x100);
-        putU16 (toneRecord, PARTIAL_OSC + OSC_CUTOFF, Math.clamp ((int) Math.round (MathUtils.normalizeCutoff (filter.getCutoff ()) * 1023.0), 0, 1023));
-        putU16 (toneRecord, PARTIAL_OSC + OSC_RESONANCE, Math.clamp ((int) Math.round (filter.getResonance () * 1023.0), 0, 1023));
+        putU16 (toneRecord, PARTIAL_BLOCK + OSC_FILTER_TYPE, filterType * 0x100);
+        putU16 (toneRecord, PARTIAL_BLOCK + OSC_CUTOFF, Math.clamp ((int) Math.round (MathUtils.normalizeCutoff (filter.getCutoff ()) * 1023.0), 0, 1023));
+        putU16 (toneRecord, PARTIAL_BLOCK + OSC_RESONANCE, Math.clamp ((int) Math.round (filter.getResonance () * 1023.0), 0, 1023));
+    }
+
+
+    /**
+     * Write the level, tuning and panning of the source into partial 1 of the tone record. The
+     * device splits the tuning into a coarse tune in semi-tones and a fine tune in cents. The gain
+     * of the source is fully stored in the level of its sample slot, so the partial keeps the
+     * maximum level of the template - written explicitly, so that a read-back adds nothing.
+     *
+     * @param toneRecord The tone record
+     * @param tuning The tuning in semi-tones
+     * @param panning The panning in the range of [-1..1]
+     */
+    private static void writeToneLevelPitchAndPan (final byte [] toneRecord, final double tuning, final double panning)
+    {
+        putU16 (toneRecord, PARTIAL_BLOCK + OSC_LEVEL, 127);
+        final int coarseTune = Math.clamp ((long) tuning, -48, 48);
+        toneRecord[PARTIAL_BLOCK + OSC_COARSE_TUNE] = (byte) coarseTune;
+        toneRecord[PARTIAL_BLOCK + OSC_FINE_TUNE] = (byte) Math.clamp (Math.round ((tuning - coarseTune) * 100.0), -50, 50);
+        toneRecord[PARTIAL_BLOCK + OSC_PAN] = (byte) Math.clamp (Math.round (panning * 64.0), -64, 63);
     }
 
 
