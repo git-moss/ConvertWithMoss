@@ -1,5 +1,10 @@
 # Changes
 
+## 20.2.0
+
+* Fairlight CMI
+  * Fixed: Reading a Voice file whose version is not recognized wrote a copy of that file into a hard-coded folder of the developer's machine ('C:\Users\mos\Desktop\Output'). On Windows this silently filled that folder or, if it does not exist, replaced the 'unsupported version' message with a file-not-found error; on macOS and Linux it created files in the current working directory whose name literally contains that path - reading the CMI IIx library images leaves 76 of them behind. Analysing a source now writes nothing at all, and the unsupported version is reported as before.
+
 ## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
