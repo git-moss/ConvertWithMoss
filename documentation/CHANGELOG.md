@@ -1,5 +1,10 @@
 # Changes
 
+## 20.2.0
+
+* E-mu Emulator II
+  * New: Added support for the E-mu Emulator II (reading of its floppy disk images - raw sector images (IMG, EMUIIFD) as well as HxC floppy emulator images (HFE), which is the only way to get such a disk onto a computer since the sampler writes a FM track format that no PC floppy controller can read). One disk becomes one multi-sample: the key map of the bank gives the zones with their key ranges and root keys and each voice its name, its loop and its audio, which is expanded from the companded bytes the sampler feeds to its AM6072 DAC. A bank which is larger than one floppy is reported as continuing on another disk. Read only.
+
 ## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
