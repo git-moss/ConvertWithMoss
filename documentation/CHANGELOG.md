@@ -1,5 +1,9 @@
 # Changes
 
+## 20.2.0 (work-in-progress)
+
+* Fixed: When a sample was not found next to its preset, the search jumped the configured number of folder levels up in one go and took whatever the recursive search found first. Two libraries below the same folder which name their samples alike - the normal case for the variants of a library - then fed a preset the sample of the other library, which sounds wrong and, since the preset keeps its own loop points, clicks at the loop. The search now goes up one level at a time and stops at the first level which contains the file, so a sample close to the preset always wins over one of the same name further away.
+
 ## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
