@@ -26,6 +26,8 @@
 * 1010music blackbox, bento
   * Fixed: The preset paths written into presets and performances used the multi-sample name as-is, but the actually created folders have illegal file name characters removed and a number appended when the name already exists. Such presets referenced non-existing folders (e.g. for sources with a ':' in their name, like Roland S-7xx patches). The written paths now always match the created folders.
   * Fixed: blackbox: The silence workaround samples of a performance were referenced in the folder of the instrument but the sample is stored in the performance folder.
+* Akai MPC
+  * Fixed: The Version element was created but never added to a written XPM file. Since it is the element by which the format is recognized, such a file was rejected when it was read back ("Could not read metadata: Unknown Root"). The platform is now written as well, so that the version log line is complete.
 * Akai MPC60, MPC2000/3000, S-9x0, S-1000, Ensoniq ASR/EPS, Roland S-5xx, S-7xx
   * New: Patches are now put in sub-folders with their image name. On the S-5xx, if it is a CD-ROM, the CD-ROM name is another sub-folder. S-1000 adds Volume names.
 * Ableton
