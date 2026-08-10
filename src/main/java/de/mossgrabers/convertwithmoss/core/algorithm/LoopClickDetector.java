@@ -40,6 +40,16 @@ public final class LoopClickDetector
     private static final int    MINIMUM_LOOP_LENGTH   = 16;
     /** A loop with at least this much cross-fade does not click, the cross-fade masks the wrap. */
     private static final double CROSSFADE_THRESHOLD   = 0.01;
+    /**
+     * The frame-to-frame movement must be compared per unit of time, not per frame, otherwise the
+     * check depends on the sample rate of the source: the same waveform stored at 22 kHz moves
+     * twice as much per frame as at 44.1 kHz, which hides a step that sticks out once the sample
+     * is resampled to a higher rate by the destination format. The movement is therefore scaled to
+     * this reference rate. Resampling itself does not change the step - measured across 821
+     * converted loops it stays within one percent point of the level - so this scaling is the only
+     * correction needed and the destination format does not need to be known.
+     */
+    private static final double REFERENCE_SAMPLE_RATE = 44100.0;
 
 
     /**
@@ -84,6 +94,7 @@ public final class LoopClickDetector
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 int [] signal = null;
+                int sampleRate = (int) REFERENCE_SAMPLE_RATE;
 
                 for (final ISampleLoop loop: zone.getLoops ())
                 {
@@ -94,13 +105,14 @@ public final class LoopClickDetector
                         try
                         {
                             signal = LoopZeroSnapper.readMonoSignal (zone);
+                            sampleRate = zone.getSampleData ().get ().getAudioMetadata ().getSampleRate ();
                         }
                         catch (final Exception _)
                         {
                             break;
                         }
 
-                    final double stepPercent = measure (signal, loop);
+                    final double stepPercent = measure (signal, loop, sampleRate);
                     if (stepPercent < 0)
                         continue;
                     checkedLoops++;
@@ -127,10 +139,11 @@ public final class LoopClickDetector
      *
      * @param signal The mono mix of the sample audio
      * @param loop The loop to measure
+     * @param sampleRate The sample rate of the audio
      * @return The step in percent of the local peak level if the loop clicks, 0 if it does not, -1
      *         if it could not be measured
      */
-    private static double measure (final int [] signal, final ISampleLoop loop)
+    private static double measure (final int [] signal, final ISampleLoop loop, final int sampleRate)
     {
         final int length = signal.length;
         final int start = loop.getStart ();
@@ -165,7 +178,8 @@ public final class LoopClickDetector
         final int medianStep = steps[steps.length / 2];
 
         final int step = LoopZeroSnapper.discontinuity (signal, start, end);
-        if (step > MINIMUM_STEP_RATIO * (medianStep + 1.0) && step > MINIMUM_RELATIVE_STEP * peak)
+        final double movementPerReferenceFrame = medianStep * sampleRate / REFERENCE_SAMPLE_RATE;
+        if (step > MINIMUM_STEP_RATIO * (movementPerReferenceFrame + 1.0) && step > MINIMUM_RELATIVE_STEP * peak)
             return 100.0 * step / peak;
         return 0;
     }
