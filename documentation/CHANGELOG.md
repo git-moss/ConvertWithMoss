@@ -1,5 +1,10 @@
 # Changes
 
+## 20.2.0 (work-in-progress)
+
+* Waldorf Quantum/Iridium
+  * Fixed: Reading a preset shifted the sample start/end and loop points of many zones one frame down. The positions are stored as a fraction of the sample length with 8 decimal places, which can land marginally below the exact frame boundary (frame 3977 of 5469 is written as 0.72718961, and 0.72718961 * 5469 = 3976.9999787); the fraction was truncated instead of rounded, which loses one frame for every such position - on a converted card of 165 presets, 759 of 2270 loop positions were affected. The device's own exported presets write fractions which land marginally below the frame the same way, so rounding to the nearest frame is also what the device does when it reads them.
+
 ## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
