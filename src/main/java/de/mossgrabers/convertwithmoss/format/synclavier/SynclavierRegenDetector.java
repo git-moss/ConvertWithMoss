@@ -398,7 +398,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             name = name.substring (slash + 1);
 
         // The exact referenced file (a plain WAV/FLAC in a user library)
-        final File exact = new File (folder, name);
+        final File exact = findFileIgnoreCase (folder, name);
         if (exact.exists ())
             return Optional.of (exact);
 
@@ -413,7 +413,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         // Try the known audio extensions, the obfuscated SFLC first
         for (final String ending: SAMPLE_ENDINGS)
         {
-            final File candidate = new File (folder, base + ending);
+            final File candidate = findFileIgnoreCase (folder, base + ending);
             if (candidate.exists ())
                 return Optional.of (candidate);
         }
@@ -422,7 +422,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         final String indexed = sampleIndex.get (base.toLowerCase (Locale.US));
         if (indexed != null)
         {
-            final File indexedFile = new File (folder, indexed);
+            final File indexedFile = findFileIgnoreCase (folder, indexed);
             if (indexedFile.exists ())
                 return Optional.of (indexedFile);
         }
@@ -430,7 +430,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             for (final Map.Entry<String, String> e: sampleIndex.entrySet ())
                 if (e.getKey ().startsWith (base.toLowerCase (Locale.US)))
                 {
-                    final File candidate = new File (folder, e.getValue ());
+                    final File candidate = findFileIgnoreCase (folder, e.getValue ());
                     if (candidate.exists ())
                         return Optional.of (candidate);
                 }
