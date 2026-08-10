@@ -1,5 +1,9 @@
 # Changes
 
+## 20.2.0 (work-in-progress)
+
+* New: A note is logged when a loop of a converted preset audibly clicks at its wrap-around point (the step back to the loop start is many times the normal movement of the waveform and a substantial part of the level). Sample libraries ship such loops surprisingly often - 17 of 152 presets across three commercial Ensoniq libraries - and without the note the first hint is the converted preset ticking on the destination device. Nothing is changed: the loop is written as the source authored it, and the note points to the snap-to-zero-crossing and loop cross-fade processing options which remove such clicks. A loop which already has a cross-fade is not reported.
+
 ## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!

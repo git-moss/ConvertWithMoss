@@ -134,7 +134,7 @@ public final class LoopZeroSnapper
      * @param end The loop end frame (inclusive)
      * @return The absolute sample-value difference at the wrap
      */
-    private static int discontinuity (final int [] signal, final int start, final int end)
+    static int discontinuity (final int [] signal, final int start, final int end)
     {
         final int last = Math.clamp (end, 0, signal.length - 1);
         final int first = Math.clamp (start, 0, signal.length - 1);
@@ -174,7 +174,7 @@ public final class LoopZeroSnapper
      * @throws IOException Could not read the audio
      * @throws UnsupportedAudioFileException The audio format is not supported
      */
-    private static int [] readMonoSignal (final ISampleZone zone) throws IOException, UnsupportedAudioFileException
+    static int [] readMonoSignal (final ISampleZone zone) throws IOException, UnsupportedAudioFileException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         final Optional<ISampleData> sampleData = zone.getSampleData ();
