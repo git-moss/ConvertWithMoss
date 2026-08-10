@@ -1,5 +1,12 @@
 # Changes
 
+## 20.2.0 (work-in-progress)
+
+* Fixed: The category names 'Winds' and 'World' were not detected when they were read back from a preset which stores the category as text: 'Winds' was detected as FX - from the 'Wind' sound effect - and 'World' was not detected at all. The name of a category is now a keyword of its own, which is checked for all of them.
+* Waldorf Quantum/Iridium
+  * Fixed: The attributes of a written preset - the device lists them next to the preset name and filters the patches by them - now use the wording of the factory sound sets: 'Keys' instead of 'Keyboard', 'Bells' instead of 'Bell', 'Percussive' instead of 'Percussion', 'Loop' instead of 'Loops' and so on. Both words ended up in the filter list of the device otherwise, each of them finding only a part of the sounds.
+  * Fixed: A preset whose category could not be detected wrote the word 'Unknown' into the first attribute, which fills the filter list of the device with an entry that says nothing. The attribute is left empty now, like the factory sound sets do. A keyword which repeats the category is no longer written a second time.
+
 ## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
