@@ -8,6 +8,8 @@
   * Fixed: The Version element was created but never added to a written XPM file. Since it is the element by which the format is recognized, such a file was rejected when it was read back ("Could not read metadata: Unknown Root"). The platform is now written as well, so that the version log line is complete.
 * Fairlight CMI
   * Fixed: Reading a Voice file whose version is not recognized wrote a copy of that file into a hard-coded folder of the developer's machine which did crash the conversion.
+* Waldorf Quantum/Iridium
+  * Fixed: Reading a preset shifted the sample start/end and loop points of many zones one frame down. The positions are stored as a fraction of the sample length with 8 decimal places, which can land marginally below the exact frame boundary (frame 3977 of 5469 is written as 0.72718961, and 0.72718961 * 5469 = 3976.9999787); the fraction was truncated instead of rounded, which loses one frame for every such position - on a converted card of 165 presets, 759 of 2270 loop positions were affected. The device's own exported presets write fractions which land marginally below the frame the same way, so rounding to the nearest frame is also what the device does when it reads them.
 
 ## 20.1.0
 
