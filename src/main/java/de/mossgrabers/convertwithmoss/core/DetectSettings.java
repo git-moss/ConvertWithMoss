@@ -41,6 +41,8 @@ public class DetectSettings
     public boolean                       wantsMultipleFiles;
     /** True, if the source folder structure should be replicated in the output folder. */
     public boolean                       createFolderStructure;
+    /** True, if an analysis run should log the details of every found source. */
+    public boolean                       logAnalysisDetails;
 
     // Parameters for Processing
 
