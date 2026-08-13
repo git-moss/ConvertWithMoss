@@ -349,10 +349,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
             if (isIIxFile (inBytes.length))
                 return this.readIIx (inBytes, fileName, sourceFile);
 
-            Files.write (new File ("C:\\Users\\mos\\Desktop\\Output\\" + fileName + ".VC").toPath (), inBytes);
-
             throw new IOException (Functions.getMessage ("IDS_CMI3_UNKNOWN_VERSION", Integer.toString (version)));
-
         }
 
         final int channels = Byte.toUnsignedInt (inBytes[16]) >= 127 ? 2 : 1;
