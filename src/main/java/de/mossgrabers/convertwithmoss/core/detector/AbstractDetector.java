@@ -1204,30 +1204,35 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         if (sampleFile.exists ())
             return sampleFile;
 
-        // Now brute force: go n-levels up and start searching for the file
+        // Now brute force: go up one level at a time and search that folder recursively, so that a
+        // file which lies close to the preset wins over one of the same name further away. Jumping
+        // all levels up at once and taking whatever the search finds first picks a wrong sample as
+        // soon as two libraries below the same folder name their samples alike - which is the norm
+        // for the variants of a library (e.g. 'RHODES C3 FF.wav' exists in several of them with
+        // different content), and the wrong one then carries the loop points of the right one.
         File startDirectory = folder;
         for (int i = 0; i < levels; i++)
         {
             final File dir = startDirectory.getParentFile ();
-            if (dir.exists () && dir.isDirectory ())
-                startDirectory = dir;
-        }
+            if (dir == null || !dir.exists () || !dir.isDirectory ())
+                break;
+            startDirectory = dir;
 
-        // ... and search recursively...
-        if (notifier != null)
-            notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN", fileType, startDirectory.getAbsolutePath ());
-        final Optional<File> found = findFileRecursively (startDirectory, sampleFile.getName ());
-        // Returning the original non-existing file triggers the missing file error...
-        if (found.isEmpty ())
-        {
             if (notifier != null)
-                notifier.logText ("\n");
-            return sampleFile;
+                notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN", fileType, startDirectory.getAbsolutePath ());
+            final Optional<File> found = findFileRecursively (startDirectory, sampleFile.getName ());
+            if (found.isPresent ())
+            {
+                if (notifier != null)
+                    notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN_FOUND");
+                return found.get ();
+            }
         }
 
+        // Returning the original non-existing file triggers the missing file error...
         if (notifier != null)
-            notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN_FOUND");
-        return found.get ();
+            notifier.logText ("\n");
+        return sampleFile;
     }
 
 
