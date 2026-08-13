@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 
@@ -73,6 +74,31 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         TYPE_LOOKUP.put (Integer.valueOf (0), WaldorfQpatResourceType.USER_SAMPLE_MAP1);
         TYPE_LOOKUP.put (Integer.valueOf (1), WaldorfQpatResourceType.USER_SAMPLE_MAP2);
         TYPE_LOOKUP.put (Integer.valueOf (2), WaldorfQpatResourceType.USER_SAMPLE_MAP3);
+    }
+
+    /**
+     * The categories for which the device uses a different word than this application. Everything
+     * else - Bass, Pad, Organ, Piano, Strings, Synth, Vocal, Lead, Drum, FX, Pipe, Winds, Pluck,
+     * Brass, Drone, World, Chromatic Percussion - is spelled identically in the factory sound sets
+     * and is written unchanged.
+     */
+    private static final Map<String, String>                   ATTRIBUTE_NAMES        = HashMap.newHashMap (14);
+    static
+    {
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_KEYBOARD, "Keys");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_BELL, "Bells");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_PERCUSSION, "Percussive");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_LOOPS, "Loop");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_ACOUSTIC_DRUM, "Drum");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_MONOSYNTH, "Monophon");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_ORCHESTRAL, "Cinematic");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_ENSEMBLE, "Strings");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_DESTRUCTION, "Experimental");
+        // The device has one attribute for all drum sounds which are not a full kit
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_HI_HAT, "Percussive");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_KICK, "Percussive");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_SNARE, "Percussive");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_CLAP, "Percussive");
     }
 
     private int nextImportNumber = 0;
@@ -856,13 +882,50 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         StreamUtils.writeAscii (out, StringUtils.fixASCII (metadata.getCreator ()), WaldorfQpatConstants.MAX_STRING_LENGTH);
         StreamUtils.writeAscii (out, StringUtils.fixASCII (metadata.getDescription ()).replace ('\r', ' ').replace ('\n', ' '), WaldorfQpatConstants.MAX_STRING_LENGTH);
 
-        final List<String> categories = new ArrayList<> ();
-        categories.add (metadata.getCategory ());
-        Collections.addAll (categories, metadata.getKeywords ());
-        while (categories.size () < 4)
-            categories.add ("");
+        writeAttributes (out, metadata);
+    }
+
+
+    /**
+     * Write the four attributes of a patch. The device lists them next to the name and filters the
+     * patches by them, therefore the category is translated into the wording which the factory
+     * sound sets use - otherwise e.g. 'Keyboard' ends up in the filter list next to the 'Keys' of
+     * every other patch and both only find half of the sounds. A category which was not detected is
+     * left out instead of filling the filter list with the word 'Unknown'.
+     *
+     * @param out The output stream to write to
+     * @param metadata The metadata
+     * @throws IOException Could not write
+     */
+    private static void writeAttributes (final OutputStream out, final IMetadata metadata) throws IOException
+    {
+        final List<String> attributes = new ArrayList<> ();
+        final String category = metadata.getCategory ();
+        addAttribute (attributes, ATTRIBUTE_NAMES.getOrDefault (category, category));
+        for (final String keyword: metadata.getKeywords ())
+            addAttribute (attributes, keyword);
+
         for (int i = 0; i < 4; i++)
-            StreamUtils.writeAscii (out, StringUtils.fixASCII (categories.get (i)), WaldorfQpatConstants.MAX_STRING_LENGTH);
+            StreamUtils.writeAscii (out, i < attributes.size () ? StringUtils.fixASCII (attributes.get (i)) : "", WaldorfQpatConstants.MAX_STRING_LENGTH);
+    }
+
+
+    /**
+     * Add one attribute if there is room left for it, it says something and it is not already
+     * present. The device shows the same attribute twice otherwise, since a keyword often repeats
+     * the category.
+     *
+     * @param attributes The attributes collected so far
+     * @param attribute The attribute to add
+     */
+    private static void addAttribute (final List<String> attributes, final String attribute)
+    {
+        if (attribute == null || attribute.isBlank () || attributes.size () >= 4 || TagDetector.CATEGORY_UNKNOWN.equals (attribute))
+            return;
+        for (final String present: attributes)
+            if (present.equalsIgnoreCase (attribute))
+                return;
+        attributes.add (attribute);
     }
 
 

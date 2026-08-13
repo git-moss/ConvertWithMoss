@@ -361,7 +361,10 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_MONOSYNTH, new String []
         {
-            CATEGORY_MONOSYNTH
+            CATEGORY_MONOSYNTH,
+            // The wording of the Waldorf Quantum/Iridium sound sets
+            "Monophon",
+            "Mono Synth"
         });
         CATEGORIES.put (CATEGORY_ORCHESTRAL, new String []
         {
@@ -572,6 +575,13 @@ public class TagDetector
             for (final String v: e.getValue ())
                 CATEGORY_LOOKUP.put (v.toUpperCase (Locale.US), category);
         }
+
+        // The name of a category is a keyword of its own. Not every keyword list repeats it, and a
+        // shorter keyword of another category wins the contains-matching in that case: 'Winds' was
+        // detected as FX (from the 'Wind' sound effect) and 'World' was not detected at all. This
+        // matters because a category is written as text into many formats and read back from there.
+        for (final String category: CATEGORIES.keySet ())
+            CATEGORY_LOOKUP.putIfAbsent (category.toUpperCase (Locale.US), category);
 
         // A category tag at the very start of a name declares the intended category explicitly
         // (a wide-spread naming convention in commercial libraries, e.g. 'PAD Solina' or
