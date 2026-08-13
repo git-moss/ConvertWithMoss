@@ -1,5 +1,10 @@
 # Changes
 
+## 20.2.0 (work-in-progress)
+
+* Akai MPC
+  * Fixed: The Version element was created but never added to a written XPM file. Since it is the element by which the format is recognized, such a file was rejected when it was read back ("Could not read metadata: Unknown Root"). The platform is now written as well, so that the version log line is complete.
+
 ## 20.1.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
