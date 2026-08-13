@@ -161,7 +161,9 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         final Element multisampleElement = document.createElement (MPCKeygroupTag.ROOT);
         document.appendChild (multisampleElement);
         final Element versionElement = document.createElement (MPCKeygroupTag.ROOT_VERSION);
+        multisampleElement.appendChild (versionElement);
         XMLUtils.addTextElement (document, versionElement, MPCKeygroupTag.VERSION_FILE_VERSION, MPCKeygroupConstants.FILE_VERSION);
+        XMLUtils.addTextElement (document, versionElement, MPCKeygroupTag.VERSION_PLATFORM, MPCKeygroupConstants.PLATFORM);
 
         final Element programElement = createProgramElement (document, multisampleSource);
         multisampleElement.appendChild (programElement);
