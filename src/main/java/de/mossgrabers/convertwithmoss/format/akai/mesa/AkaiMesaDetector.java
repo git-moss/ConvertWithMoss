@@ -81,7 +81,7 @@ public class AkaiMesaDetector extends AbstractDetector<MetadataSettingsUI>
                 final String sampleName = keygroupSample.getName ();
                 if (sampleName == null || sampleName.isBlank ())
                     continue;
-                final File sampleFile = new File (parentFolder, sampleName + ".wav");
+                final File sampleFile = findFileIgnoreCase (parentFolder, sampleName + ".wav");
                 if (!sampleFile.exists ())
                 {
                     this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleFile.getName ());
