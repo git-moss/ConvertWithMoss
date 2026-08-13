@@ -581,15 +581,20 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             return;
         zone.setPanning (Math.clamp (Double.parseDouble (params[7]) * 2.0 - 1.0, -1.0, 1.0));
 
-        // Start
+        // Start. The positions are stored as a fraction of the sample length with 8 decimal
+        // places, which can land just below the exact frame boundary (e.g. frame 3977 of 5469 is
+        // written as 0.72718961 and 0.72718961 * 5469 = 3976.9999787). The fraction must therefore
+        // be rounded to the nearest frame - truncating loses one frame for such positions. The
+        // device itself writes fractions which land marginally below the frame the same way, so
+        // rounding is also what the device does when it reads them back.
         if (params.length <= 8)
             return;
-        zone.setStart ((int) (Double.parseDouble (params[8]) * numSampleFrames));
+        zone.setStart ((int) Math.round (Double.parseDouble (params[8]) * numSampleFrames));
 
         // End
         if (params.length <= 9)
             return;
-        zone.setStop ((int) (Double.parseDouble (params[9]) * numSampleFrames));
+        zone.setStop ((int) Math.round (Double.parseDouble (params[9]) * numSampleFrames));
 
         // LoopMode
         if (params.length <= 10)
@@ -603,11 +608,11 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
             // LoopStart
             if (params.length > 11)
-                loop.setStart ((int) (Double.parseDouble (params[11]) * numSampleFrames));
+                loop.setStart ((int) Math.round (Double.parseDouble (params[11]) * numSampleFrames));
 
             // LoopEnd
             if (params.length > 12)
-                loop.setEnd ((int) (Double.parseDouble (params[12]) * numSampleFrames));
+                loop.setEnd ((int) Math.round (Double.parseDouble (params[12]) * numSampleFrames));
 
             // CrossFade
             if (params.length > 14)
