@@ -53,6 +53,7 @@ The following multi-sample formats are supported:
 * [Akai S900/S950 image](#akai-s900s950-series-disk-image) - read only
 * [Akai S1000/S3000 image](#akai-s1000s3000-series-disk-image) - read only
 * [Arturia Synclavier V](#arturia-synclavier-v)
+* [Audiomodern Soundbox format](#audiomodern-soundbox)
 * [Bitwig Multisample](#bitwig-multisample)
 * [Casio FZ-1/FZ-10M/FZ-20M](#casio-fz-1fz-10mfz-20m)
 * [CWITEC TX16Wx](#cwitec-tx16wx)

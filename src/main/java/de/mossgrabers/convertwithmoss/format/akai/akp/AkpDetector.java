@@ -101,13 +101,13 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
             for (final ISampleZone sampleZone: group.getSampleZones ())
             {
                 final String n = sampleZone.getName ();
-                File sampleFile = new File (file.getParentFile (), n + ".wav");
+                File sampleFile = findFileIgnoreCase (file.getParentFile (), n + ".wav");
                 if (!sampleFile.exists ())
                 {
                     // Workaround for several samples seem to have 1 space before the note name
                     // but are stored with 2 or more spaces
                     final String n2 = n.replaceFirst ("\\s{2,}(?=\\S*$)", " ");
-                    final File sampleFile2 = new File (file.getParentFile (), n2 + ".wav");
+                    final File sampleFile2 = findFileIgnoreCase (file.getParentFile (), n2 + ".wav");
                     if (sampleFile2.exists ())
                         sampleFile = sampleFile2;
                 }
@@ -164,7 +164,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
                 final String presetName = part.getPresetName ().trim ();
                 if (presetName.isBlank ())
                     continue;
-                final File presetFile = new File (file.getParentFile (), presetName + ".AKP");
+                final File presetFile = findFileIgnoreCase (file.getParentFile (), presetName + ".AKP");
                 if (!presetFile.exists ())
                 {
                     this.notifier.logError ("IDS_NOTIFY_ERR_PROGRAM_DOES_NOT_EXIST", presetFile.getAbsolutePath ());
