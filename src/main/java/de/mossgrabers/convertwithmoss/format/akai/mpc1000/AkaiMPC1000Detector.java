@@ -113,9 +113,7 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         if (sampleName == null || sampleName.isBlank ())
             return Optional.empty ();
 
-        File sampleFile = new File (sourceFileParent, sampleName + ".wav");
-        if (!sampleFile.exists ())
-            sampleFile = new File (sourceFileParent, sampleName + ".WAV");
+        final File sampleFile = findFileIgnoreCase (sourceFileParent, sampleName + ".wav");
         if (!sampleFile.exists ())
         {
             this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
