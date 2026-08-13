@@ -5,6 +5,8 @@
 * Fixed: The sample and program files which a preset references are now looked up ignoring the upper/lower case of their name. Sampler file systems are case-insensitive and their CD-ROMs store all names in upper case, but a preset might well reference them in lower case. On a case-sensitive file system, which is the normal case on Linux, none of those samples could be found (e.g. 'STR SEC.6 -L.WAV' referenced as 'STR SEC.6 -L.wav'). This affects the Akai S5000/S6000 (AKP/AKM), Akai MESA, Akai MPC and MPC1000, FL Studio DirectWave, Teenage Engineering OP-XY and Synclavier Regen formats as well as all formats which use the common sample search (Ableton, Deluge, EXS24, NI Kontakt, NI Maschine, 1010music, SXT and TX16Wx) - the latter did only try the file ending in all upper and all lower case, so a name which differs in its case anywhere else was still not found.
 * Akai MPC
   * Fixed: The Version element was created but never added to a written XPM file. Since it is the element by which the format is recognized, such a file was rejected when it was read back ("Could not read metadata: Unknown Root"). The platform is now written as well, so that the version log line is complete.
+* Fairlight CMI
+  * Fixed: Reading a Voice file whose version is not recognized wrote a copy of that file into a hard-coded folder of the developer's machine which did crash the conversion.
 
 ## 20.1.0
 
