@@ -17,7 +17,7 @@ public class Sector implements Comparable<Sector>
     private final int     cylinder;
     private final int     head;
     private final int     sectorNumber;
-    private final int     sizeCode;
+    private final int     sizeBytes;
     private final byte [] data;
     private boolean       crcValid;
 
@@ -34,10 +34,35 @@ public class Sector implements Comparable<Sector>
      */
     public Sector (final int cylinder, final int head, final int sectorNumber, final int sizeCode, final byte [] data, final boolean crcValid)
     {
+        this (data, cylinder, head, sectorNumber, 128 << sizeCode, crcValid);
+    }
+
+
+    /**
+     * Create a sector for a format which does not use the IBM size code, e.g. the E-mu Emulator II
+     * which stores a single sector of 3584 bytes per track - a size which cannot be expressed as
+     * 128 shifted left by a size code.
+     *
+     * @param cylinder The cylinder/track number
+     * @param head The head/side number
+     * @param sectorNumber The sector number
+     * @param sizeBytes The size of the sector in bytes
+     * @param data The sector data
+     * @param crcValid Whether the CRC check passed
+     * @return The created sector
+     */
+    public static Sector createWithSize (final int cylinder, final int head, final int sectorNumber, final int sizeBytes, final byte [] data, final boolean crcValid)
+    {
+        return new Sector (data, cylinder, head, sectorNumber, sizeBytes, crcValid);
+    }
+
+
+    private Sector (final byte [] data, final int cylinder, final int head, final int sectorNumber, final int sizeBytes, final boolean crcValid)
+    {
         this.cylinder = cylinder;
         this.head = head;
         this.sectorNumber = sectorNumber;
-        this.sizeCode = sizeCode;
+        this.sizeBytes = sizeBytes;
         this.data = data;
         this.crcValid = crcValid;
     }
@@ -90,11 +115,12 @@ public class Sector implements Comparable<Sector>
     /**
      * Get the size bytes.
      *
-     * @return 128, 256, 512, 1024 bytes
+     * @return 128, 256, 512, 1024 bytes for IBM formatted sectors, otherwise the explicitly given
+     *         sector size
      */
     public int getSizeBytes ()
     {
-        return 128 << this.sizeCode;
+        return this.sizeBytes;
     }
 
 
