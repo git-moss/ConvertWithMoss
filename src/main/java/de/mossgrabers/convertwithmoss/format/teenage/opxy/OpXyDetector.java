@@ -129,7 +129,7 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
         final String sampleName = getText (regionNode, OpXyTag.TAG_SAMPLE, null);
         if (sampleName == null || sampleName.isBlank ())
             return null;
-        final File sampleFile = new File (presetFolder, sampleName);
+        final File sampleFile = findFileIgnoreCase (presetFolder, sampleName);
         if (!sampleFile.exists ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());

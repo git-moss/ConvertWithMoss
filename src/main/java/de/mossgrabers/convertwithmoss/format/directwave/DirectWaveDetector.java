@@ -643,8 +643,11 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             candidates.add (new File (new File (parent, folderName), fileName));
 
         for (final File candidate: candidates)
-            if (candidate.exists ())
-                return candidate;
+        {
+            final File found = findFileIgnoreCase (candidate);
+            if (found.exists ())
+                return found;
+        }
         return null;
     }
 
