@@ -142,7 +142,9 @@ public class HfeFile
     public List<Sector> decodeSectors () throws IOException
     {
         final IDecoder decoder;
-        if (this.trackEncoding == ENCODING_ISOIBM_FM || this.trackEncoding == ENCODING_EMU_FM)
+        if (this.trackEncoding == ENCODING_EMU_FM)
+            decoder = new EmuFmDecoder ();
+        else if (this.trackEncoding == ENCODING_ISOIBM_FM)
             decoder = new FmDecoder ();
         else if (this.trackEncoding == ENCODING_ISOIBM_MFM || this.trackEncoding == ENCODING_AMIGA_MFM)
             decoder = new MfmDecoder ();

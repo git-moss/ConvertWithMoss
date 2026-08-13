@@ -58,4 +58,32 @@ public abstract class AbstractDecoder implements IDecoder
 
         return crc & 0xFFFF;
     }
+
+
+    /**
+     * Calculate the CRC-16 used by the E-mu Emulator II track format. Polynomial: 0x8005, Init:
+     * 0x0000, final XOR: 0x0000. The Emulator II transmits all bytes least significant bit first,
+     * therefore the CRC is fed with the bits in that order as well, which is implemented here with
+     * the reflected form 0xA001 of the polynomial.
+     *
+     * @param data The data over which to calculate the CRC
+     * @return The CRC
+     */
+    protected static int calculateCrcLsbFirst (final byte [] data)
+    {
+        int crc = 0x0000;
+
+        for (final byte b: data)
+        {
+            crc ^= b & 0xFF;
+
+            for (int i = 0; i < 8; i++)
+                if ((crc & 0x0001) != 0)
+                    crc = crc >>> 1 ^ 0xA001;
+                else
+                    crc = crc >>> 1;
+        }
+
+        return crc & 0xFFFF;
+    }
 }
