@@ -102,7 +102,7 @@ For Linux (BSD not tested) there is also a `Makefile` for build and install with
 6. Choose the type of the created output format: either single presets, a preset library which contains all found source files, a performance which contains several presets with settings or finally a library of performances. Only some destination formats support libraries and performances, all others are greyed out.
 7. Press the *Convert* button to start the conversion. The progress is shown with notification messages in the log area, which you should check for potential errors like defect source files, skipped folder, etc. This log is also written to a file in the output folder.
 
-Alternatively, press *Analyse* to analyse all potential source files but do not to write any file(s). Use this to quickly check for errors before finally running the slower conversion process.
+Alternatively, press *Analyse* to analyse all potential source files but do not to write any file(s). Use this to quickly check for errors before finally running the slower conversion process. If the option *Log analysis details* is enabled, the run additionally logs for every found multi-sample what it contains (see the Options section below).
 
 ## Picking specific source presets (Contents...)
 
@@ -132,6 +132,7 @@ Clicking the *Process* button open a dialog to configure processing options whic
 
 * **Create folder structure**: If enabled, sub-folders from the source folder are created as well in the output folder. For example, if I select my whole "Sounds" folder, there are sub-folders like `Sounds/07 Synth/Lead/01W Emerson'70 Samples`. In that case the output folder would contain e.g. `07 Synth/Lead/01W Emerson'70.multisample` if Bitwig multisample is selected as the destination format.
 * **Add new files**: Starts the conversion even if the output folder is not empty. Duplicates will get unique names by adding numbers.
+* **Log analysis details**: If enabled, the *Analyse* run logs for every found multi-sample what it contains: the mapping of its zones (key/velocity ranges, root note, sample rate, bit resolution, channels, length), loops with their cross-fades, envelopes, LFOs and the filter with its modulators. Only attributes which a source actually uses are logged, so searching the log finds the sources which use a specific feature - e.g. all presets of a library with a filter envelope or a loop cross-fade. The details describe the source as it was read, before any processing is applied. On the command line use `-ad` instead of `-a`. The attribute names are deliberately not translated, so search patterns do not depend on the language of the user interface.
 * **Dark Mode**: Toggles the user interface between a light and dark layout.
 
 [1]: https://github.com/git-moss/ConvertWithMoss/blob/main/documentation/SupportedFeaturesSampleFormats.ods
@@ -149,7 +150,7 @@ First display all of the available attributes by typing:
 The following output is displayed (the processing parameters are omitted):
 
 ```
-Usage: ConvertWithMoss [-afhPV] -d=DESTINATION [-l=LIBRARY]
+Usage: ConvertWithMoss [-afhPV] [-ad] -d=DESTINATION [-l=LIBRARY]
                        -s=SOURCE [-t=TYPE] [-p[=KEY=VALUE...]]...
                        SOURCE... DESTINATION_FOLDER
       SOURCE... DESTINATION_FOLDER
@@ -158,6 +159,14 @@ Usage: ConvertWithMoss [-afhPV] -d=DESTINATION [-l=LIBRARY]
                              using a wildcard), followed by the destination
                              folder to write to.
   -a, --analyze            If present, only analyzes the potential source files.
+      -ad, --analyze-details
+                           Like --analyze, but additionally logs for every found
+                             multi-sample what it contains: the mapping of its
+                             zones, the sample format, loops, envelopes, LFOs
+                             and the filter. Only attributes which a source
+                             actually uses are logged, so searching the output
+                             finds the source files which use a specific
+                             feature.
   -d, --destination=DESTINATION
                            The destination format.
   -f, --flat               If present, the folder structure is not recreated in
