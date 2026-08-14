@@ -460,6 +460,11 @@ public class ConverterBackend
         if (!this.isSelected (multisampleSource.getSourceFile (), index))
             return;
 
+        // Log before the source is processed, so the log describes what the source contains and
+        // not what the processing added (e.g. the category based default envelope)
+        if (this.onlyAnalyse && this.detectionSettings.logAnalysisDetails)
+            AnalysisLogger.log (this.notifier, multisampleSource);
+
         this.processSource (multisampleSource);
 
         if (this.detectionSettings.wantsMultipleFiles)
@@ -513,6 +518,11 @@ public class ConverterBackend
 
         if (!this.isSelected (sourceFile, index))
             return;
+
+        // Log before the sources are processed, so the log describes what the source contains
+        // and not what the processing added (e.g. the category based default envelope)
+        if (this.onlyAnalyse && this.detectionSettings.logAnalysisDetails)
+            AnalysisLogger.log (this.notifier, performanceSource);
 
         for (final IInstrumentSource instrumentSource: instrumentSources)
             this.processSource (instrumentSource.getMultisampleSource ());

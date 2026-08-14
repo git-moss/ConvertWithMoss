@@ -92,6 +92,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private static final int       MAXIMUM_NUMBER_OF_LOG_ENTRIES       = 100000;
 
     private static final String    ENABLE_DARK_MODE                    = "EnableDarkMode";
+    private static final String    ANALYSIS_DETAILS                    = "AnalysisDetails";
     private static final String    DESTINATION_CREATE_FOLDER_STRUCTURE = "DestinationCreateFolderStructure";
     private static final String    DESTINATION_ADD_NEW_FILES           = "DestinationAddNewFiles";
     private static final String    DESTINATION_FORMAT                  = "DestinationFormat";
@@ -583,6 +584,7 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         this.detectSettings.createFolderStructure = this.config.getBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, true);
         this.addNewFiles = this.config.getBoolean (DESTINATION_ADD_NEW_FILES, false);
+        this.detectSettings.logAnalysisDetails = this.config.getBoolean (ANALYSIS_DETAILS, false);
         this.enableDarkMode = this.config.getBoolean (ENABLE_DARK_MODE, false);
 
         this.setDarkMode (this.enableDarkMode);
@@ -636,6 +638,7 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         this.config.setBoolean (DESTINATION_CREATE_FOLDER_STRUCTURE, this.detectSettings.createFolderStructure);
         this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles);
+        this.config.setBoolean (ANALYSIS_DETAILS, this.detectSettings.logAnalysisDetails);
         this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode);
     }
 
@@ -668,6 +671,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     {
         this.settingsDialog.createFolderStructureCheckbox.setSelected (this.detectSettings.createFolderStructure);
         this.settingsDialog.addNewFilesCheckbox.setSelected (this.addNewFiles);
+        this.settingsDialog.analysisDetailsCheckbox.setSelected (this.detectSettings.logAnalysisDetails);
         this.settingsDialog.enableDarkModeCheckbox.setSelected (this.enableDarkMode);
 
         this.settingsDialog.display ().thenAccept (result -> {
@@ -675,6 +679,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             {
                 this.detectSettings.createFolderStructure = this.settingsDialog.createFolderStructureCheckbox.isSelected ();
                 this.addNewFiles = this.settingsDialog.addNewFilesCheckbox.isSelected ();
+                this.detectSettings.logAnalysisDetails = this.settingsDialog.analysisDetailsCheckbox.isSelected ();
                 this.enableDarkMode = this.settingsDialog.enableDarkModeCheckbox.isSelected ();
 
                 this.setDarkMode (this.enableDarkMode);

@@ -24,6 +24,8 @@ public class SettingsDialog extends PseudoModalDialog
     public CheckBox createFolderStructureCheckbox;
     /** Check-box for only adding new files option. */
     public CheckBox addNewFilesCheckbox;
+    /** Check-box for logging the analysis details option. */
+    public CheckBox analysisDetailsCheckbox;
     /** Check-box for enabling the dark mode option. */
     public CheckBox enableDarkModeCheckbox;
 
@@ -49,12 +51,14 @@ public class SettingsDialog extends PseudoModalDialog
 
         this.createFolderStructureCheckbox = panel.createCheckBox ("@IDS_MAIN_CREATE_FOLDERS", "@IDS_MAIN_CREATE_FOLDERS_TOOLTIP");
         this.addNewFilesCheckbox = panel.createCheckBox ("@IDS_MAIN_ADD_NEW", "@IDS_MAIN_ADD_NEW_TOOLTIP");
+        this.analysisDetailsCheckbox = panel.createCheckBox ("@IDS_MAIN_ANALYSIS_DETAILS", "@IDS_MAIN_ANALYSIS_DETAILS_TOOLTIP");
         this.enableDarkModeCheckbox = panel.createCheckBox ("@IDS_MAIN_ENABLE_DARK_MODE", "@IDS_MAIN_ENABLE_DARK_MODE_TOOLTIP");
 
         this.setButtons ("@IDS_SETTINGS_DLG_OK", "@IDS_SETTINGS_DLG_CANCEL");
 
         this.traversalManager.add (this.createFolderStructureCheckbox);
         this.traversalManager.add (this.addNewFilesCheckbox);
+        this.traversalManager.add (this.analysisDetailsCheckbox);
         this.traversalManager.add (this.enableDarkModeCheckbox);
         this.traversalManager.add (this.getOkButton ());
         this.traversalManager.add (this.getCancelButton ());
