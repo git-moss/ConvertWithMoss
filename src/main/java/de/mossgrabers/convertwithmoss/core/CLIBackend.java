@@ -97,6 +97,7 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-d", "--destination").paramLabel ("DESTINATION").type (String.class).description ("The destination format.").required (true).build ());
             spec.addOption (OptionSpec.builder ("-t", "--type").paramLabel ("TYPE").type (String.class).description ("Set to either 'preset' (the default if absent) or 'performance' (without the quotes).").build ());
             spec.addOption (OptionSpec.builder ("-a", "--analyze").paramLabel ("ANALYZE").description ("If present, only analyzes the potential source files.").build ());
+            spec.addOption (OptionSpec.builder ("-ad", "--analyze-details").paramLabel ("ANALYZE_DETAILS").description ("Like --analyze, but additionally logs for every found multi-sample what it contains: the mapping of its zones, the sample format, loops, envelopes, LFOs and the filter. Only attributes which a source actually uses are logged, so searching the output finds the source files which use a specific feature.").build ());
             spec.addOption (OptionSpec.builder ("-f", "--flat").paramLabel ("FLAT").description ("If present, the folder structure is not recreated in the output folder.").build ());
             spec.addOption (OptionSpec.builder ("-l", "--library").paramLabel ("LIBRARY").type (String.class).description ("Name for the library. Set to create a library.").build ());
             spec.addOption (OptionSpec.builder ("-p").paramLabel ("KEY=VALUE").description ("Key-value pairs in the form -pkey1=value1,key2=value2,...").required (false).arity ("0..*").type (Map.class).auxiliaryTypes (String.class, String.class).defaultValue (null).build ());
@@ -226,7 +227,8 @@ public class CLIBackend implements INotifier
         detectSettings.libraryName = parseResult.matchedOptionValue ('l', null);
         detectSettings.wantsMultipleFiles = detectSettings.libraryName != null;
         detectSettings.createFolderStructure = parseResult.matchedOptionValue ('f', null) == null;
-        final boolean onlyAnalyse = parseResult.matchedOptionValue ('a', null) != null;
+        detectSettings.logAnalysisDetails = parseResult.matchedOptionValue ("ad", null) != null;
+        final boolean onlyAnalyse = detectSettings.logAnalysisDetails || parseResult.matchedOptionValue ('a', null) != null;
 
         // Creating a library or a performance is an empty operation for a destination which does
         // not support it - everything detected would be collected and then silently dropped.

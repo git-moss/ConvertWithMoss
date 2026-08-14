@@ -1081,8 +1081,69 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                 return found;
         }
 
+        // The variants above only flip the upper/lower case of the full file ending; fall back to
+        // matching the whole name case-insensitively, which additionally covers a mixed case
+        // ending and a base name that differs in case
+        final File ignoreCaseFile = findFileIgnoreCase (localFile);
+        if (ignoreCaseFile.exists ())
+            return ignoreCaseFile;
+
         // Triggers the missing file error
         return localFile;
+    }
+
+
+    /**
+     * Look up a file by a name which might differ in the upper/lower case from the one on disk.
+     * Sampler file systems are case-insensitive and their CD-ROMs store the names in all upper
+     * case (e.g. 'STR SEC.6 -L.WAV'), while the preset file references them in lower case - or the
+     * other way round. The host file system might well be case-sensitive, therefore look up the
+     * name again ignoring the case if there is no exact match.
+     *
+     * @param folder The folder in which to look for the file
+     * @param fileName The name of the file to look for
+     * @return The exact file if it exists, otherwise a case-insensitively matching file from the
+     *         folder; if there is none as well, the requested - non-existing - file is returned,
+     *         which lets the caller report it as missing
+     */
+    public static File findFileIgnoreCase (final File folder, final String fileName)
+    {
+        return findFileIgnoreCase (new File (folder, fileName));
+    }
+
+
+    /**
+     * Look up a file by a name which might differ in the upper/lower case from the one on disk.
+     * See {@link #findFileIgnoreCase(File, String)} for the details.
+     *
+     * @param file The file to look for
+     * @return The exact file if it exists, otherwise a case-insensitively matching file from the
+     *         same folder; if there is none as well, the given - non-existing - file is returned,
+     *         which lets the caller report it as missing
+     */
+    public static File findFileIgnoreCase (final File file)
+    {
+        // Nothing to do on a case-insensitive file system, which is the normal case on macOS and
+        // Windows - this never even reads the directory there
+        if (file.exists ())
+            return file;
+
+        final File folder = file.getParentFile ();
+        if (folder == null)
+            return file;
+        final File [] entries = folder.listFiles ();
+        if (entries == null)
+            return file;
+
+        // Sort to always return the same file if several ones match, which can only happen on a
+        // case-sensitive file system
+        Arrays.sort (entries, Comparator.comparing (File::getName));
+        final String fileName = file.getName ();
+        for (final File entry: entries)
+            if (entry.getName ().equalsIgnoreCase (fileName))
+                return entry;
+
+        return file;
     }
 
 
@@ -1143,30 +1204,35 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         if (sampleFile.exists ())
             return sampleFile;
 
-        // Now brute force: go n-levels up and start searching for the file
+        // Now brute force: go up one level at a time and search that folder recursively, so that a
+        // file which lies close to the preset wins over one of the same name further away. Jumping
+        // all levels up at once and taking whatever the search finds first picks a wrong sample as
+        // soon as two libraries below the same folder name their samples alike - which is the norm
+        // for the variants of a library (e.g. 'RHODES C3 FF.wav' exists in several of them with
+        // different content), and the wrong one then carries the loop points of the right one.
         File startDirectory = folder;
         for (int i = 0; i < levels; i++)
         {
             final File dir = startDirectory.getParentFile ();
-            if (dir.exists () && dir.isDirectory ())
-                startDirectory = dir;
-        }
+            if (dir == null || !dir.exists () || !dir.isDirectory ())
+                break;
+            startDirectory = dir;
 
-        // ... and search recursively...
-        if (notifier != null)
-            notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN", fileType, startDirectory.getAbsolutePath ());
-        final Optional<File> found = findFileRecursively (startDirectory, sampleFile.getName ());
-        // Returning the original non-existing file triggers the missing file error...
-        if (found.isEmpty ())
-        {
             if (notifier != null)
-                notifier.logText ("\n");
-            return sampleFile;
+                notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN", fileType, startDirectory.getAbsolutePath ());
+            final Optional<File> found = findFileRecursively (startDirectory, sampleFile.getName ());
+            if (found.isPresent ())
+            {
+                if (notifier != null)
+                    notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN_FOUND");
+                return found.get ();
+            }
         }
 
+        // Returning the original non-existing file triggers the missing file error...
         if (notifier != null)
-            notifier.log ("IDS_NOTIFY_SEARCH_FILE_IN_FOUND");
-        return found.get ();
+            notifier.logText ("\n");
+        return sampleFile;
     }
 
 
@@ -1192,7 +1258,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     protected static Optional<File> findFileRecursively (final File folder, final String fileName)
     {
-        final File sampleFile = new File (folder, fileName);
+        final File sampleFile = findFileIgnoreCase (folder, fileName);
         if (sampleFile.exists ())
             return Optional.of (sampleFile);
 

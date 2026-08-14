@@ -424,7 +424,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         final ISampleData sampleData;
         try
         {
-            sampleData = new WavFileSampleData (new File (basePath, sampleName + ".WAV"));
+            sampleData = new WavFileSampleData (findFileIgnoreCase (basePath, sampleName + ".WAV"));
         }
         catch (final IOException _)
         {
@@ -876,7 +876,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
         final String sampleFolderName = FileUtils.getNameWithoutType (multiSampleFile);
         final File path = new File (multiSampleFile.getParentFile (), sampleFolderName + "_[" + jsonFormat.getName () + "Data]");
-        final File file = new File (path, sampleFileName);
+        final File file = findFileIgnoreCase (path, sampleFileName);
         if (!file.exists ())
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", file.getAbsolutePath ());

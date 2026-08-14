@@ -11,12 +11,14 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
+import de.mossgrabers.convertwithmoss.core.algorithm.LoopClickDetector;
 import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.algorithm.MultiSampleReducer;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
@@ -57,6 +59,7 @@ import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiCreator;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiDetector;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetCreator;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetDetector;
+import de.mossgrabers.convertwithmoss.format.emu.emulator2.Emulator2Detector;
 import de.mossgrabers.convertwithmoss.format.emu.emulator3.Emulator3Creator;
 import de.mossgrabers.convertwithmoss.format.emu.emulator3.Emulator3Detector;
 import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emulator4Creator;
@@ -205,6 +208,7 @@ public class ConverterBackend
         this.detectors.add (new TX16WxDetector (notifier));
         this.detectors.add (new DecentSamplerDetector (notifier));
         this.detectors.add (new DlsDetector (notifier));
+        this.detectors.add (new Emulator2Detector (notifier));
         this.detectors.add (new Emulator3Detector (notifier));
         this.detectors.add (new Emulator4Detector (notifier));
         this.detectors.add (new EmulatorXDetector (notifier));
@@ -456,6 +460,11 @@ public class ConverterBackend
         if (!this.isSelected (multisampleSource.getSourceFile (), index))
             return;
 
+        // Log before the source is processed, so the log describes what the source contains and
+        // not what the processing added (e.g. the category based default envelope)
+        if (this.onlyAnalyse && this.detectionSettings.logAnalysisDetails)
+            AnalysisLogger.log (this.notifier, multisampleSource);
+
         this.processSource (multisampleSource);
 
         if (this.detectionSettings.wantsMultipleFiles)
@@ -509,6 +518,11 @@ public class ConverterBackend
 
         if (!this.isSelected (sourceFile, index))
             return;
+
+        // Log before the sources are processed, so the log describes what the source contains
+        // and not what the processing added (e.g. the category based default envelope)
+        if (this.onlyAnalyse && this.detectionSettings.logAnalysisDetails)
+            AnalysisLogger.log (this.notifier, performanceSource);
 
         for (final IInstrumentSource instrumentSource: instrumentSources)
             this.processSource (instrumentSource.getMultisampleSource ());
@@ -584,6 +598,27 @@ public class ConverterBackend
         this.processSamples (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
         this.checkOffCenterMapping (multisampleSource);
+        this.checkLoopClicks (multisampleSource);
+    }
+
+
+    /**
+     * Log a note for loops which audibly click at their wrap-around point, so the presets which
+     * need the snap-to-zero-crossing or loop cross-fade processing can be found without listening
+     * to every converted preset. The step is measured on the source audio as it was read - before
+     * any resampling of the destination format - and reports the loop as it was authored. Nothing
+     * is changed and a sample which cannot be read is simply skipped.
+     *
+     * @param multisampleSource The multi-sample to check
+     */
+    private void checkLoopClicks (final IMultisampleSource multisampleSource)
+    {
+        final Optional<LoopClickDetector.Result> result = LoopClickDetector.detect (multisampleSource.getGroups ());
+        if (result.isPresent ())
+        {
+            final LoopClickDetector.Result loopClicks = result.get ();
+            this.notifier.log ("IDS_NOTIFY_LOOP_CLICKS", multisampleSource.getName (), Integer.toString (loopClicks.clickingLoops ()), Integer.toString (loopClicks.checkedLoops ()), String.format (Locale.US, "%.0f", Double.valueOf (loopClicks.worstStepPercent ())), loopClicks.worstZoneName ());
+        }
     }
 
 
