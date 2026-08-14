@@ -170,6 +170,28 @@ public class ContentsEntry
 
 
     /**
+     * Get the lowest key which is covered by any of the zones of the source.
+     *
+     * @return The MIDI note number, -1 if the source has no zones at all
+     */
+    public int getLowestKey ()
+    {
+        return this.lowestKey;
+    }
+
+
+    /**
+     * Get the highest key which is covered by any of the zones of the source.
+     *
+     * @return The MIDI note number, -1 if the source has no zones at all
+     */
+    public int getHighestKey ()
+    {
+        return this.highestKey;
+    }
+
+
+    /**
      * Get the category of the source.
      *
      * @return The category, might be blank
@@ -203,7 +225,7 @@ public class ContentsEntry
      * @param note The MIDI note number
      * @return The formatted note
      */
-    private static String formatNote (final int note)
+    public static String formatNote (final int note)
     {
         return NOTE_NAMES[note % 12] + (note / 12 - 2);
     }
