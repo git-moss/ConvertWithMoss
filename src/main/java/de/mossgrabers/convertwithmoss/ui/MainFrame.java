@@ -200,7 +200,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         final Stage theStage = this.getStage ();
         this.settingsDialog = new SettingsDialog (theStage);
         this.processingDialog = new ProcessingDialog (theStage);
-        this.contentsDialog = new ContentsDialog (theStage);
+        this.contentsDialog = new ContentsDialog (theStage, this.config);
 
         // -----------------------------------------------------------
         // The main button panel
