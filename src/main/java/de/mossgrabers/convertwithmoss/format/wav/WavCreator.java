@@ -124,7 +124,12 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
 
         // Convert resolution - Apple Lossless does not support 8-bit samples, AAC works on
         // 16-bit samples
-        final DestinationAudioFormat cafFormat = outputFormat == SampleFileFormat.CAF_ALAC ? ALAC_COMPATIBLE_FORMAT : outputFormat == SampleFileFormat.CAF_AAC ? AAC_COMPATIBLE_FORMAT : destinationFormat;
+        final DestinationAudioFormat cafFormat = switch (outputFormat)
+        {
+            case SampleFileFormat.CAF_ALAC -> ALAC_COMPATIBLE_FORMAT;
+            case SampleFileFormat.CAF_AAC -> AAC_COMPATIBLE_FORMAT;
+            default -> destinationFormat;
+        };
         final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), cafFormat);
         if (wavFile.getDataChunk () == null)
             throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));
@@ -323,8 +328,13 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
                 }
 
                 descriptionChunk.setFormatID (CafAudioDescriptionChunk.FORMAT_APPLE_LOSSLESS);
-                // The format flags of Apple Lossless encode the resolution of the source data
-                descriptionChunk.setFormatFlags (bitsPerSample == 16 ? 1 : bitsPerSample == 24 ? 3 : 4);
+                // The format flags of Apple loss-less encode the resolution of the source data
+                descriptionChunk.setFormatFlags (switch (bitsPerSample)
+                {
+                    case 16 -> 1;
+                    case 24 -> 3;
+                    default -> 4;
+                });
                 descriptionChunk.setBytesPerPacket (0);
                 descriptionChunk.setFramesPerPacket (ALAC_FRAME_LENGTH);
                 descriptionChunk.setBitsPerChannel (0);

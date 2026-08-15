@@ -41,6 +41,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
  */
 public class AnalysisLogger
 {
+    private static final String    TAG_TUNING                  = ", tuning ";
     private static final String    IDS_NOTIFY_ANALYSIS_DETAILS = "IDS_NOTIFY_ANALYSIS_DETAILS";
 
     private static final String [] NOTE_NAMES                  =
@@ -190,7 +191,7 @@ public class AnalysisLogger
         if (group.getPanning () != 0)
             sb.append (", panning ").append (formatSignedPercent (group.getPanning ()));
         if (group.getTuning () != 0)
-            sb.append (", tuning ").append (formatSemitones (group.getTuning ()));
+            sb.append (TAG_TUNING).append (formatSemitones (group.getTuning ()));
         sb.append ('\n');
 
         final String zoneIndent = indent + "  ";
@@ -208,7 +209,7 @@ public class AnalysisLogger
         if (zone.getPanning () != 0)
             sb.append (", panning ").append (formatSignedPercent (zone.getPanning ()));
         if (zone.getTuning () != 0)
-            sb.append (", tuning ").append (formatSemitones (zone.getTuning ()));
+            sb.append (TAG_TUNING).append (formatSemitones (zone.getTuning ()));
         sb.append ('\n');
 
         final String featureIndent = indent + "  ";
@@ -237,15 +238,15 @@ public class AnalysisLogger
                 tokens.add (audioMetadata.getSampleRate () + " Hz");
                 tokens.add (audioMetadata.getBitResolution () + " bits");
                 final int channels = audioMetadata.getChannels ();
-                if (channels == 1)
-                    tokens.add ("mono");
-                else if (channels == 2)
-                    tokens.add ("stereo");
-                else
-                    tokens.add (channels + " channels");
+                switch (channels)
+                {
+                    case 1 -> tokens.add ("mono");
+                    case 2 -> tokens.add ("stereo");
+                    default -> tokens.add (channels + " channels");
+                }
                 tokens.add (audioMetadata.getNumberOfSamples () + " frames");
             }
-            catch (final IOException ex)
+            catch (final IOException _)
             {
                 tokens.add ("audio not readable");
             }
@@ -331,7 +332,7 @@ public class AnalysisLogger
         if (crossfadeInSamples > 0)
             sb.append (", cross-fade ").append (crossfadeInSamples).append (" frames");
         if (loop.getTuning () != 0)
-            sb.append (", tuning ").append (formatSemitones (loop.getTuning ()));
+            sb.append (TAG_TUNING).append (formatSemitones (loop.getTuning ()));
         sb.append ('\n');
     }
 

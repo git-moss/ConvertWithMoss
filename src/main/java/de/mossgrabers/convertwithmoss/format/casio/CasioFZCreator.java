@@ -198,7 +198,7 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
         // The FZ plays the sample at one of its fixed sample rates; the difference to the actual
         // rate of the source sample and the fine tuning are corrected with the pitch parameter
         // (1/256 semitone steps)
-        voice.sampleRateIndex = sampleRate >= 27000 ? 0 : sampleRate >= 13500 ? 1 : 2;
+        voice.sampleRateIndex = getSampleRateIndex (sampleRate);
         final double rateCompensation = 12.0 * Math.log (sampleRate / (double) voice.getSampleRate ()) / Math.log (2);
         voice.pitch = Math.clamp (Math.round ((zone.getTuning () + rateCompensation) * 256.0), Short.MIN_VALUE, Short.MAX_VALUE);
 
@@ -258,6 +258,14 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
         }
 
         return voice;
+    }
+
+
+    private static int getSampleRateIndex (final int sampleRate)
+    {
+        if (sampleRate >= 27000)
+            return 0;
+        return sampleRate >= 13500 ? 1 : 2;
     }
 
 

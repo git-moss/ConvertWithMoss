@@ -1136,11 +1136,19 @@ public class Emulator3Constants
             return 0;
         return switch (filterType)
         {
-            case LOW_PASS -> poles <= 2 ? 0 : poles >= 6 ? 2 : 1;
+            case LOW_PASS -> getLowPassPoleID (poles);
             case HIGH_PASS -> poles >= 4 ? 4 : 3;
             case BAND_PASS -> poles >= 4 ? 6 : 5;
             case BAND_REJECTION -> 7;
         };
+    }
+
+
+    private static int getLowPassPoleID (final int poles)
+    {
+        if (poles <= 2)
+            return 0;
+        return poles >= 6 ? 2 : 1;
     }
 
 

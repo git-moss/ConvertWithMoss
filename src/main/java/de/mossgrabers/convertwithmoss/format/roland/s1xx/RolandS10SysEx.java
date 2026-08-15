@@ -29,43 +29,45 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public final class RolandS10SysEx
 {
+    private static final String    IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS = "IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS";
+
     /** The length of the full transport array performance parameter block. */
-    public static final int        PERFORMANCE_PARAMETER_BYTES  = 40;
+    public static final int        PERFORMANCE_PARAMETER_BYTES                       = 40;
 
     /** Model ID for S-10, MKS 100, S-220 */
-    private static final int       MODEL_S10_ID                 = 0x10;
+    private static final int       MODEL_S10_ID                                      = 0x10;
 
-    private static final int       SAMPLE_PACKET_BYTES          = 128;
+    private static final int       SAMPLE_PACKET_BYTES                               = 128;
 
-    private static final int       ADDRESS_SAMPLE_DUMP_MODE     = SysExMessage.address (0x00, 0x10, 0x02);
+    private static final int       ADDRESS_SAMPLE_DUMP_MODE                          = SysExMessage.address (0x00, 0x10, 0x02);
 
-    private static final int       ADDRESS_WAVE_TRANSFER_1      = SysExMessage.address (0x01, 0x00, 0x00);
-    private static final int       ADDRESS_WAVE_TRANSFER_2      = SysExMessage.address (0x01, 0x00, 0x52);
-    private static final int       ADDRESS_PERFORMANCE_TRANSFER = SysExMessage.address (0x01, 0x08, 0x00);
+    private static final int       ADDRESS_WAVE_TRANSFER_1                           = SysExMessage.address (0x01, 0x00, 0x00);
+    private static final int       ADDRESS_WAVE_TRANSFER_2                           = SysExMessage.address (0x01, 0x00, 0x52);
+    private static final int       ADDRESS_PERFORMANCE_TRANSFER                      = SysExMessage.address (0x01, 0x08, 0x00);
 
-    private static final int       ADDRESS_FIRST_SAMPLE         = SysExMessage.address (0x02, 0x00, 0x00);
-    private static final int       ADDRESS_LAST_SAMPLE_PACKET   = SysExMessage.address (0x11, 0x7F, 0x00);
+    private static final int       ADDRESS_FIRST_SAMPLE                              = SysExMessage.address (0x02, 0x00, 0x00);
+    private static final int       ADDRESS_LAST_SAMPLE_PACKET                        = SysExMessage.address (0x11, 0x7F, 0x00);
 
-    private static final int       RQ1                          = 0x11;
-    private static final int       DT1                          = 0x12;
-    private static final int       WSD                          = 0x40;
-    private static final int       RQD                          = 0x41;
-    private static final int       DAT                          = 0x42;
+    private static final int       RQ1                                               = 0x11;
+    private static final int       DT1                                               = 0x12;
+    private static final int       WSD                                               = 0x40;
+    private static final int       RQD                                               = 0x41;
+    private static final int       DAT                                               = 0x42;
 
     /** Roland device ID byte found in the SysEx header. */
-    public int                     deviceId                     = 0x00;
+    public int                     deviceId                                          = 0x00;
 
     /**
      * One entry per S-10 edit buffer: 0=A, 1=B, 2=C, 3=D. Entries are null if the corresponding
      * wave was not supplied.
      */
-    public final WaveParameters [] waveParameters               = new WaveParameters [4];
+    public final WaveParameters [] waveParameters                                    = new WaveParameters [4];
 
     /** Performance parameters, or null if not supplied. */
     public PerformanceParameters   performanceParameters;
 
     /** Decoded sample-data regions. */
-    public SampleBlock             sampleBlock                  = null;
+    public SampleBlock             sampleBlock                                       = null;
 
 
     /**
@@ -143,10 +145,7 @@ public final class RolandS10SysEx
             }
 
             if (message.address == ADDRESS_PERFORMANCE_TRANSFER)
-            {
                 performanceTransfer = message.data;
-                continue;
-            }
         }
 
         result.decodeSamplePackets (samplePackets);
@@ -166,7 +165,7 @@ public final class RolandS10SysEx
 
         // First wave parameter block must always be present
         if (this.waveParameters[0] == null)
-            throw new IOException (Functions.getMessage ("IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS"));
+            throw new IOException (Functions.getMessage (IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS));
 
         WaveParameters wave = this.waveParameters[0];
 
@@ -174,15 +173,15 @@ public final class RolandS10SysEx
         if (wave.samplingStructure <= 6)
         {
             if (this.waveParameters[1] != null)
-                throw new IOException (Functions.getMessage ("IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS"));
+                throw new IOException (Functions.getMessage (IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS));
         }
         else if (wave.samplingStructure <= 9)
         {
             if (this.waveParameters[2] != null)
-                throw new IOException (Functions.getMessage ("IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS"));
+                throw new IOException (Functions.getMessage (IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS));
         }
         else if (this.waveParameters[1] == null || this.waveParameters[2] == null || this.waveParameters[3] == null)
-            throw new IOException (Functions.getMessage ("IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS"));
+            throw new IOException (Functions.getMessage (IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS));
 
         for (int i = 0; i < this.waveParameters.length; i++)
         {
@@ -299,9 +298,8 @@ public final class RolandS10SysEx
                 return 146;
         }
 
-        if (address == ADDRESS_WAVE_TRANSFER_2)
-            if (tailLength == 146 || tailLength == 147)
-                return 146;
+        if (address == ADDRESS_WAVE_TRANSFER_2 && (tailLength == 146 || tailLength == 147))
+            return 146;
 
         return -1;
     }
@@ -425,7 +423,7 @@ public final class RolandS10SysEx
         if (part1 != null)
             editBuffer = WaveParameters.decodeWaveTransferPart (this.waveParameters, part1, editBuffer);
         if (part2 != null)
-            editBuffer = WaveParameters.decodeWaveTransferPart (this.waveParameters, part2, editBuffer);
+            WaveParameters.decodeWaveTransferPart (this.waveParameters, part2, editBuffer);
     }
 
 

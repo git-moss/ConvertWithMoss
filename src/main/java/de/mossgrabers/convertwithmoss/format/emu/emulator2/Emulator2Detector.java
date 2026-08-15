@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -50,8 +51,8 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final int    CYLINDERS = 80;
-    private static final int    HEADS     = 2;
+    private static final int    CYLINDERS  = 80;
+    private static final int    HEADS      = 2;
     private static final String ENDING_HFE = ".hfe";
 
 
@@ -75,11 +76,11 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
 
         try
         {
-            final byte [] image = this.readImage (sourceFile);
+            final Optional<byte []> image = readImage (sourceFile);
             // Images of other formats are silently ignored, they belong to other detectors
-            if (image == null)
+            if (image.isEmpty ())
                 return Collections.emptyList ();
-            return this.parseBank (sourceFile, image);
+            return this.parseBank (sourceFile, image.get ());
         }
         catch (final IOException ex)
         {
@@ -96,22 +97,22 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
      * @return The image or null if the file is not an Emulator II disk
      * @throws IOException Could not read the file
      */
-    private byte [] readImage (final File sourceFile) throws IOException
+    private static Optional<byte []> readImage (final File sourceFile) throws IOException
     {
         if (sourceFile.getName ().toLowerCase (Locale.US).endsWith (ENDING_HFE))
         {
             final HfeFile hfeFile = new HfeFile (sourceFile);
             if (hfeFile.getTrackEncoding () != HfeFile.ENCODING_EMU_FM)
-                return null;
+                return Optional.empty ();
             final List<Sector> sectors = hfeFile.decodeSectors ();
             if (sectors.isEmpty ())
-                return null;
-            return DiskImageBuilder.buildImage (sectors, CYLINDERS, HEADS, 1, EmuFmDecoder.SECTOR_SIZE, true);
+                return Optional.empty ();
+            return Optional.of (DiskImageBuilder.buildImage (sectors, CYLINDERS, HEADS, 1, EmuFmDecoder.SECTOR_SIZE, true));
         }
 
         if (sourceFile.length () != Emulator2Constants.IMAGE_SIZE)
-            return null;
-        return Files.readAllBytes (sourceFile.toPath ());
+            return Optional.empty ();
+        return Optional.of (Files.readAllBytes (sourceFile.toPath ()));
     }
 
 
@@ -147,7 +148,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                 last++;
 
             final int voiceIndex = voiceID - Emulator2Constants.VOICE_ID_BASE;
-            final ISampleZone zone = this.createZone (image, voiceIndex, key, last);
+            final ISampleZone zone = createZone (image, voiceIndex, key, last);
             if (zone == null)
                 incomplete.add (Integer.valueOf (voiceIndex));
             else
@@ -178,20 +179,20 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
      * @param highKey The last key of the run
      * @return The zone or null if the voice points at no usable audio
      */
-    private ISampleZone createZone (final byte [] image, final int voiceIndex, final int lowKey, final int highKey)
+    private static ISampleZone createZone (final byte [] image, final int voiceIndex, final int lowKey, final int highKey)
     {
         final int bank = Emulator2Constants.BANK_OFFSET;
-        final int record = bank + Emulator2Constants.VOICE_TABLE + voiceIndex * Emulator2Constants.VOICE_SIZE;
-        if (record + Emulator2Constants.VOICE_SIZE > image.length)
+        final int recordOffset = bank + Emulator2Constants.VOICE_TABLE + voiceIndex * Emulator2Constants.VOICE_SIZE;
+        if (recordOffset + Emulator2Constants.VOICE_SIZE > image.length)
             return null;
 
-        final int start = readAddress (image, record + Emulator2Constants.VOICE_SAMPLE_START);
-        final int end = readAddress (image, record + Emulator2Constants.VOICE_SAMPLE_END);
+        final int start = readAddress (image, recordOffset + Emulator2Constants.VOICE_SAMPLE_START);
+        final int end = readAddress (image, recordOffset + Emulator2Constants.VOICE_SAMPLE_END);
         final int numFrames = end - start;
         if (start <= 0 || numFrames <= 0 || bank + end > image.length)
             return null;
 
-        final String name = readName (image, record, "Voice " + (voiceIndex + 1));
+        final String name = readName (image, recordOffset, "Voice " + (voiceIndex + 1));
         // The transposition tells how far the key is from the pitch the voice was recorded at
         final int root = lowKey - (transpose (image, lowKey) - Emulator2Constants.TRANSPOSE_UNITY);
 
@@ -199,8 +200,8 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         zone.setKeyRoot (root + Emulator2Constants.LOWEST_KEY);
         zone.setSampleData (createSampleData (image, bank + start, numFrames));
 
-        final int loopStart = readAddress (image, record + Emulator2Constants.VOICE_LOOP_START);
-        final int loopLength = readAddress (image, record + Emulator2Constants.VOICE_LOOP_LENGTH);
+        final int loopStart = readAddress (image, recordOffset + Emulator2Constants.VOICE_LOOP_START);
+        final int loopLength = readAddress (image, recordOffset + Emulator2Constants.VOICE_LOOP_LENGTH);
         if (loopLength > 0 && loopStart >= start && loopStart + loopLength <= end)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();

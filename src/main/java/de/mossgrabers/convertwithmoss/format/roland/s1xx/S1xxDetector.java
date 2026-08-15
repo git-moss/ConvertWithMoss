@@ -17,12 +17,16 @@ import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
@@ -40,13 +44,21 @@ import de.mossgrabers.tools.FileUtils;
 public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
 {
     /** Empirical scaling constant. Increase for globally slower envelopes. */
-    private static final double K           = 0.2;
-
+    private static final double K                     = 0.2;
     /** Controls curve steepness. Smaller = more dramatic exponential behavior. */
-    private static final double CURVE       = 18.0;
-
+    private static final double CURVE                 = 18.0;
     /** Minimum possible time in milliseconds. */
-    private static final double MIN_TIME_MS = 1.0;
+    private static final double MIN_TIME_MS           = 1.0;
+
+    // Guessed LFO mappings until there is a device available for measuring the values.
+    // Hertz = min + 20 * (100 ^ value - 1) / 99 with a constant zero-point of about 2 mHz; the
+    // onset (delay) time uses the same cubic curve family as the envelope times with a maximum of 8
+    // seconds.
+    private static final double LFO_MIN_HERTZ         = 0.001953125;
+    private static final double LFO_MAX_HERTZ         = 20.0;
+    private static final double LFO_FREQUENCY_BASE    = 4.0;
+    private static final double LFO_MAX_DELAY_SECONDS = 8.0;
+    private static final double LFO_DELAY_EXPONENT    = 0.5;
 
 
     /**
@@ -169,9 +181,9 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
             final ISampleLoop loop = new DefaultSampleLoop ();
             switch (wave.scanMode)
             {
-                default -> loop.setType (LoopType.FORWARDS);
                 case 1 -> loop.setType (LoopType.BACKWARDS);
                 case 2 -> loop.setType (LoopType.ALTERNATING);
+                default -> loop.setType (LoopType.FORWARDS);
             }
             loop.setStart (end - wave.manualLoopLength);
             loop.setEnd (end);
@@ -193,7 +205,10 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
             pitchEnvelope.setSustainLevel (0);
         }
 
-        // LFO: enableVibrato + performance parameters
+        // Signal to use an LFO for vibrato on this layer which will be set in the performance
+        // parameters
+        if (wave.enableVibrato)
+            zone.getPitchLfoModulator ().setDepth (1.0);
 
         return zone;
     }
@@ -246,12 +261,30 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
         if (performance == null)
             return;
 
-        // LFO: vibratoRate, manualVibratoDepth, delayVibratoDepth, delayTimeVibratoDelay
+        // Set the LFO for pitch
+
+        final ILfo lfoSource = new DefaultLfo ();
+        lfoSource.setWaveform (LfoWaveform.SINE);
+        lfoSource.setDelay (lfoDelayToSeconds (performance.delayTimeVibratoDelay / 255.0));
+        lfoSource.setRate (lfoRateToHertz (performance.vibratoRate / 255.0));
+        // Depth of 1.0 is 2 octaves, reduce it to 1 semi-tones
+        final double depth = performance.delayVibratoDepth / 255.0 / 24.0;
+
+        for (final ISampleZone zone: multisampleSource.getAllSampleZones (false))
+        {
+            final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+            // Depth of 1.0 means that this layer is enable for vibrato!
+            if (pitchLfoModulator.getDepth () < 1.0)
+                continue;
+            pitchLfoModulator.setSource (lfoSource);
+            pitchLfoModulator.setDepth (depth);
+        }
     }
 
 
     /**
-     * Approximates the envelope segment times.
+     * Approximates the envelope segment times. If a test device would be available the values could
+     * be measured exactly.
      *
      * Formula: <pre>time ~= K * deltaLevel * 2^((255 - rate) / CURVE)</pre><br>
      * The constants are empirical and can be tuned to taste.
@@ -274,5 +307,32 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
         final double rateFactor = Math.pow (2.0, (255.0 - rate) / CURVE);
         final double timeMs = K * deltaLevel * rateFactor;
         return (timeMs < MIN_TIME_MS ? 0 : timeMs) / 1000.0;
+    }
+
+
+    /**
+     * Convert a normalized LFO frequency value to a rate in Hertz.
+     *
+     * @param value The normalized value [0..1]
+     * @return The rate in Hertz
+     */
+    public static double lfoRateToHertz (final double value)
+    {
+        final double normalized = Math.clamp (value, 0, 1);
+        return LFO_MIN_HERTZ + LFO_MAX_HERTZ * (Math.pow (LFO_FREQUENCY_BASE, normalized) - 1.0) / (LFO_FREQUENCY_BASE - 1.0);
+    }
+
+
+    /**
+     * Convert a normalized LFO delay value to an onset time in seconds.
+     *
+     * @param value The normalized value [0..1]
+     * @return The onset time in seconds
+     */
+    public static double lfoDelayToSeconds (final double value)
+    {
+        if (value <= 0)
+            return 0;
+        return Math.pow (Math.clamp (value, 0, 1), LFO_DELAY_EXPONENT) * LFO_MAX_DELAY_SECONDS;
     }
 }

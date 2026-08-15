@@ -55,6 +55,9 @@ import javafx.util.StringConverter;
  */
 public class ContentsDialog extends PseudoModalDialog
 {
+    private static final String      EXTENSION_CSV   = "*.csv";
+    private static final String      EXTENSION_JSON  = ".json";
+
     private TreeView<Object>         treeView;
     private TextField                searchField;
     private Label                    selectionLabel;
@@ -363,8 +366,8 @@ public class ContentsDialog extends PseudoModalDialog
 
         final FileChooser chooser = new FileChooser ();
         chooser.setTitle (Functions.getText ("@IDS_CONTENTS_EXPORT_HEADER"));
-        final ExtensionFilter csvFilter = new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_CSV"), "*.csv");
-        final ExtensionFilter jsonFilter = new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_JSON"), "*.json");
+        final ExtensionFilter csvFilter = new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_CSV"), EXTENSION_CSV);
+        final ExtensionFilter jsonFilter = new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_JSON"), EXTENSION_JSON);
         chooser.getExtensionFilters ().addAll (csvFilter, jsonFilter);
         final String activePath = this.config.getActivePath ();
         if (activePath != null)
@@ -387,14 +390,14 @@ public class ContentsDialog extends PseudoModalDialog
         final String fileName = selectedFile.getName ().toLowerCase (Locale.US);
         File file = selectedFile;
         final Format format;
-        if (fileName.endsWith (".json"))
+        if (fileName.endsWith (EXTENSION_JSON))
             format = Format.JSON;
         else if (fileName.endsWith (".csv"))
             format = Format.CSV;
         else
         {
             format = chooser.getSelectedExtensionFilter () == jsonFilter ? Format.JSON : Format.CSV;
-            file = new File (parentFolder, selectedFile.getName () + (format == Format.JSON ? ".json" : ".csv"));
+            file = new File (parentFolder, selectedFile.getName () + (format == Format.JSON ? EXTENSION_JSON : ".csv"));
         }
 
         try
@@ -424,7 +427,7 @@ public class ContentsDialog extends PseudoModalDialog
 
         final FileChooser chooser = new FileChooser ();
         chooser.setTitle (Functions.getText ("@IDS_CONTENTS_IMPORT_HEADER"));
-        chooser.getExtensionFilters ().addAll (new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_IMPORT_LISTS"), "*.csv", "*.json"), new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_CSV"), "*.csv"), new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_JSON"), "*.json"));
+        chooser.getExtensionFilters ().addAll (new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_IMPORT_LISTS"), EXTENSION_CSV, EXTENSION_JSON), new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_CSV"), EXTENSION_CSV), new ExtensionFilter (Functions.getText ("@IDS_CONTENTS_EXPORT_JSON"), EXTENSION_JSON));
         final String activePath = this.config.getActivePath ();
         if (activePath != null)
         {
@@ -440,7 +443,7 @@ public class ContentsDialog extends PseudoModalDialog
         if (parentFolder != null)
             this.config.setActivePath (parentFolder);
 
-        final Format format = file.getName ().toLowerCase (Locale.US).endsWith (".json") ? Format.JSON : Format.CSV;
+        final Format format = file.getName ().toLowerCase (Locale.US).endsWith (EXTENSION_JSON) ? Format.JSON : Format.CSV;
         try
         {
             final ImportResult result = ContentsImporter.importList (file, format, this.entries);
