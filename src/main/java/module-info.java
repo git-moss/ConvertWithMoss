@@ -16,6 +16,7 @@ module de.mossgrabers.convertwithmoss
     requires info.picocli;
     requires com.fasterxml.jackson.databind;
     requires javafx.base;
+    requires jdk.compiler;
 
 
     exports de.mossgrabers.convertwithmoss.ui;
