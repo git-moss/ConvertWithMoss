@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
@@ -43,8 +44,8 @@ public final class LoopClickDetector
     /**
      * The frame-to-frame movement must be compared per unit of time, not per frame, otherwise the
      * check depends on the sample rate of the source: the same waveform stored at 22 kHz moves
-     * twice as much per frame as at 44.1 kHz, which hides a step that sticks out once the sample
-     * is resampled to a higher rate by the destination format. The movement is therefore scaled to
+     * twice as much per frame as at 44.1 kHz, which hides a step that sticks out once the sample is
+     * resampled to a higher rate by the destination format. The movement is therefore scaled to
      * this reference rate. Resampling itself does not change the step - measured across 821
      * converted loops it stays within one percent point of the level - so this scaling is the only
      * correction needed and the destination format does not need to be known.
@@ -105,7 +106,10 @@ public final class LoopClickDetector
                         try
                         {
                             signal = LoopZeroSnapper.readMonoSignal (zone);
-                            sampleRate = zone.getSampleData ().get ().getAudioMetadata ().getSampleRate ();
+                            final Optional<ISampleData> sampleData = zone.getSampleData ();
+                            if (sampleData.isEmpty ())
+                                continue;
+                            sampleRate = sampleData.get ().getAudioMetadata ().getSampleRate ();
                         }
                         catch (final Exception _)
                         {

@@ -409,9 +409,9 @@ public class Emulator3FloppySet
             final boolean writeLeft = this.hasLeft || this.isStereo;
             final boolean writeRight = !this.hasLeft || this.isStereo;
             Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_START_LEFT, writeLeft ? headerSize : 0);
-            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_START_RIGHT, this.isStereo ? (long) headerSize + this.channelSize : writeRight ? headerSize : 0);
+            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_START_RIGHT, getRightDataOffset (headerSize, writeRight));
             Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_END_LEFT, writeLeft ? (long) headerSize + this.channelSize - 2 : 0);
-            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_END_RIGHT, this.isStereo ? headerSize + 2L * this.channelSize - 2 : writeRight ? (long) headerSize + this.channelSize - 2 : 0);
+            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_END_RIGHT, getRightSampleEnd (headerSize, writeRight));
             if (this.hasLoop)
             {
                 // The loop end of a floppy already points behind the last frame of the loop while
@@ -435,13 +435,37 @@ public class Emulator3FloppySet
                 options |= Emulator3Constants.OPTION_LOOP_IN_RELEASE;
             Emulator3Constants.putU16 (bank, offset + Emulator3Constants.SAMPLE_OPTIONS, options);
             Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_DATA_OFFSET_LEFT, writeLeft ? headerSize : 0);
-            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_DATA_OFFSET_RIGHT, this.isStereo ? (long) headerSize + this.channelSize : writeRight ? headerSize : 0);
+            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_DATA_OFFSET_RIGHT, getRightDataOffset (headerSize, writeRight));
 
             // The 16 bit sample values of a floppy are big-endian
             int writeOffset = offset + headerSize;
             writeOffset = copySwapped (stream, (int) this.leftOffset, bank, writeOffset, this.hasLeft || this.isStereo ? this.channelSize : 0);
-            writeOffset = copySwapped (stream, (int) this.rightOffset, bank, writeOffset, this.hasLeft ? this.isStereo ? this.channelSize : 0 : this.channelSize);
+            writeOffset = copySwapped (stream, (int) this.rightOffset, bank, writeOffset, this.getRightLength ());
             return writeOffset;
+        }
+
+
+        private long getRightSampleEnd (final int headerSize, final boolean writeRight)
+        {
+            if (this.isStereo)
+                return headerSize + 2L * this.channelSize - 2;
+            return writeRight ? (long) headerSize + this.channelSize - 2 : 0;
+        }
+
+
+        private long getRightDataOffset (final int headerSize, final boolean writeRight)
+        {
+            if (this.isStereo)
+                return (long) headerSize + this.channelSize;
+            return writeRight ? headerSize : 0;
+        }
+
+
+        private int getRightLength ()
+        {
+            if (this.hasLeft)
+                return this.isStereo ? this.channelSize : 0;
+            return this.channelSize;
         }
 
 

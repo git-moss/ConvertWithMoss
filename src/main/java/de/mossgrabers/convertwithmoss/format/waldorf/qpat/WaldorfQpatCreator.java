@@ -9,7 +9,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +44,8 @@ import de.mossgrabers.tools.StringUtils;
  */
 public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 {
+    private static final String                                TAG_PERCUSSIVE         = "Percussive";
+
     private static final String                                AMP_ENV                = "AmpEnv";
 
     private static final String                                SLOPE_RC               = "RC";
@@ -82,12 +83,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * Brass, Drone, World, Chromatic Percussion - is spelled identically in the factory sound sets
      * and is written unchanged.
      */
-    private static final Map<String, String>                   ATTRIBUTE_NAMES        = HashMap.newHashMap (14);
+    private static final Map<String, String> ATTRIBUTE_NAMES = HashMap.newHashMap (14);
     static
     {
         ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_KEYBOARD, "Keys");
         ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_BELL, "Bells");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_PERCUSSION, "Percussive");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_PERCUSSION, TAG_PERCUSSIVE);
         ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_LOOPS, "Loop");
         ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_ACOUSTIC_DRUM, "Drum");
         ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_MONOSYNTH, "Monophon");
@@ -95,10 +96,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_ENSEMBLE, "Strings");
         ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_DESTRUCTION, "Experimental");
         // The device has one attribute for all drum sounds which are not a full kit
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_HI_HAT, "Percussive");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_KICK, "Percussive");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_SNARE, "Percussive");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_CLAP, "Percussive");
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_HI_HAT, TAG_PERCUSSIVE);
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_KICK, TAG_PERCUSSIVE);
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_SNARE, TAG_PERCUSSIVE);
+        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_CLAP, TAG_PERCUSSIVE);
     }
 
     private int nextImportNumber = 0;

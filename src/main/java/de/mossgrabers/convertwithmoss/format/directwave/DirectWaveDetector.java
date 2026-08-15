@@ -361,7 +361,12 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
             final int source = DirectWaveChunk.readShortLE (modulation, DirectWaveTag.MODULATION_SOURCE);
             final int target = DirectWaveChunk.readShortLE (modulation, DirectWaveTag.MODULATION_TARGET);
-            final int lfoIndex = source == DirectWaveTag.MODULATION_SOURCE_LFO1 ? 0 : source == DirectWaveTag.MODULATION_SOURCE_LFO2 ? 1 : -1;
+            final int lfoIndex = switch (source)
+            {
+                case DirectWaveTag.MODULATION_SOURCE_LFO1 -> 0;
+                case DirectWaveTag.MODULATION_SOURCE_LFO2 -> 1;
+                default -> -1;
+            };
             if (lfoIndex < 0 || lfoIndex >= lfoBlocks.size ())
                 continue;
 

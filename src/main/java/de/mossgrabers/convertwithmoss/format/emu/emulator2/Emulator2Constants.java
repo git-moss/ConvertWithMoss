@@ -13,14 +13,14 @@ package de.mossgrabers.convertwithmoss.format.emu.emulator2;
 public class Emulator2Constants
 {
     /** The size of a raw disk image: 2 sides of 80 tracks with one 3584 byte sector each. */
-    public static final int   IMAGE_SIZE          = 573440;
+    public static final int        IMAGE_SIZE         = 573440;
     /** The bank starts behind the operating system, at track 22. */
-    public static final int   BANK_OFFSET         = 0x13400;
+    public static final int        BANK_OFFSET        = 0x13400;
 
     /** The keyboard of the Emulator II has 61 keys. */
-    public static final int   NUM_KEYS            = 61;
+    public static final int        NUM_KEYS           = 61;
     /** The MIDI note of the lowest key. */
-    public static final int   LOWEST_KEY          = 26;
+    public static final int        LOWEST_KEY         = 26;
 
     /**
      * The identifier of the voice which is assigned to a key; zero means that the key is silent.
@@ -28,33 +28,33 @@ public class Emulator2Constants
      * is a second table of voice numbers at 0x00C, but that one is a display numbering whose base
      * differs from bank to bank, so it cannot be used to find the record.
      */
-    public static final int   KEY_MAP_VOICE_ID    = 0x049;
+    public static final int        KEY_MAP_VOICE_ID   = 0x049;
     /** The identifier of the first voice record. */
-    public static final int   VOICE_ID_BASE       = 0x9B;
+    public static final int        VOICE_ID_BASE      = 0x9B;
     /** The transposition of a key, one step per semitone. */
-    public static final int   KEY_MAP_TRANSPOSE   = 0x086;
+    public static final int        KEY_MAP_TRANSPOSE  = 0x086;
     /** The transposition value at which a voice plays at its recorded pitch. */
-    public static final int   TRANSPOSE_UNITY     = 0x0E;
+    public static final int        TRANSPOSE_UNITY    = 0x0E;
 
     /** The array of voice records. */
-    public static final int   VOICE_TABLE         = 0x5BA;
+    public static final int        VOICE_TABLE        = 0x5BA;
     /** The size of one voice record. */
-    public static final int   VOICE_SIZE          = 0x100;
+    public static final int        VOICE_SIZE         = 0x100;
     /** The length of the name of a voice. */
-    public static final int   VOICE_NAME_LENGTH   = 12;
+    public static final int        VOICE_NAME_LENGTH  = 12;
     /** The start of the audio of a voice, relative to the bank, 24 bit little-endian. */
-    public static final int   VOICE_SAMPLE_START  = 0x0D;
+    public static final int        VOICE_SAMPLE_START = 0x0D;
     /** The end of the audio of a voice. */
-    public static final int   VOICE_SAMPLE_END    = 0x13;
+    public static final int        VOICE_SAMPLE_END   = 0x13;
     /** The length of the loop of a voice in frames. */
-    public static final int   VOICE_LOOP_LENGTH   = 0x16;
+    public static final int        VOICE_LOOP_LENGTH  = 0x16;
     /** The start of the loop of a voice, relative to the bank. */
-    public static final int   VOICE_LOOP_START    = 0x19;
+    public static final int        VOICE_LOOP_START   = 0x19;
 
     /** The signature which starts a preset record. */
-    public static final int   PRESET_NAME_OFFSET  = 9;
+    public static final int        PRESET_NAME_OFFSET = 9;
     /** The signature which starts a preset record. */
-    public static final byte  PRESET_SIGNATURE [] =
+    protected static final byte [] PRESET_SIGNATURE   =
     {
         0x01,
         0x04,
@@ -68,10 +68,10 @@ public class Emulator2Constants
     };
 
     /** The Emulator II plays back at this fixed rate and cannot vary it. */
-    public static final int   SAMPLE_RATE         = 27777;
+    public static final int        SAMPLE_RATE        = 27777;
 
     /** Expansion of the 256 possible sample bytes into signed 16 bit audio. */
-    private static final short EXPANSION []       = createExpansionTable ();
+    private static final short []  EXPANSION          = createExpansionTable ();
 
 
     /**

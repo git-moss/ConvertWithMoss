@@ -125,8 +125,14 @@ public class AacDecoder
         int audioObjectType = bits.read (5);
         if (audioObjectType == 31)
             audioObjectType = 32 + bits.read (6);
+
         int frequencyIndex = bits.read (4);
-        int rate = frequencyIndex == 15 ? bits.read (24) : frequencyIndex < SAMPLE_RATES.length ? SAMPLE_RATES[frequencyIndex] : 0;
+        int rate = 0;
+        if (frequencyIndex == 15)
+            rate = bits.read (24);
+        else if (frequencyIndex < SAMPLE_RATES.length)
+            rate = SAMPLE_RATES[frequencyIndex];
+
         final int channelConfiguration = bits.read (4);
 
         // Only the low complexity profile is supported (no SBR/PS which are the object types 5
@@ -332,8 +338,6 @@ public class AacDecoder
 
         if (commonWindow)
             this.applyMidSideAndIntensity (left, right, msUsed);
-        else
-            this.applyIntensity (left, right, msUsed);
     }
 
 
@@ -765,19 +769,6 @@ public class AacDecoder
             }
             windowStart += groupLength;
         }
-    }
-
-
-    /**
-     * Apply intensity stereo to a channel pair without a common window.
-     *
-     * @param left The left channel
-     * @param right The right channel
-     * @param msUsed All false
-     */
-    private void applyIntensity (final Channel left, final Channel right, final boolean [] msUsed)
-    {
-        // Intensity stereo requires a common window, nothing to do
     }
 
 

@@ -492,11 +492,19 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         final int poles = filter.getPoles ();
         return switch (filter.getType ())
         {
-            case LOW_PASS -> poles <= 2 ? 0x01 : poles >= 6 ? 0x02 : 0x00;
+            case LOW_PASS -> getLowPassPolesID (poles);
             case HIGH_PASS -> poles >= 4 ? 0x09 : 0x08;
             case BAND_PASS -> poles >= 4 ? 0x11 : 0x10;
             case BAND_REJECTION -> 0x12;
         };
+    }
+
+
+    private static int getLowPassPolesID (final int poles)
+    {
+        if (poles <= 2)
+            return 0x01;
+        return poles >= 6 ? 0x02 : 0x00;
     }
 
 
