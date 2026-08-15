@@ -81,6 +81,7 @@ The following multi-sample formats are supported:
 * [Renoise](#renoise)
 * [Roland MC-707/MC-101](#roland-mc-707mc-101)
 * [Roland MV-8000/MV-8800](#roland-mv-8000mv-8800)
+* [Roland S-10 Series](#roland-s-10-series) - read only
 * [Roland S-50 Series](#roland-s-50-series) - read only
 * [Roland S-770 Series](#roland-s-770-series) - read only
 * [Roland SP-404MK2](#roland-sp-404mk2)
@@ -697,6 +698,18 @@ When writing patches, samples are converted to 16-bit/44.1kHz. Since the note ra
 ### Destination Options
 
 * Shorten the name for the device display: Keeps only the last separated part of the name (after " - ", " / ", " : " or " | "), e.g. *Greek Bazouki - Dark Tremolo* becomes *Dark Tremolo*. The name field of this format holds only 12 characters, so a source whose name is qualified with the bank it comes from otherwise loses exactly the part which tells its presets apart. The dropped part is not written anywhere else, therefore this is disabled by default. CLI: `MV8000ShortenName=1`.
+
+## Roland S-10 Series
+
+### Roland S-10 family
+
+The Roland S-10 family comprises the S-10 digital sampling keyboard and its rack-mounted derivatives, notably the MKS-100 and the subsequently enhanced S-220, which represent Roland’s early implementation of relatively compact, low-cost digital sampling technology. The S-10, introduced in the mid-1980s, employed linear 12-bit A/D conversion at selectable sampling rates of 30 or 15 kHz, with approximately 4.4 seconds of total memory at 30 kHz distributed across four sample banks; its architecture provided eight-voice polyphony. The S-220 added four-part multitimbrality.
+
+Sample storage was based on Roland's 2.8-inch Quick Disk format, and the instruments supported MIDI-based sample transfer despite predating the later MIDI Sample Dump Standard.
+
+* Currently, only the system exclusive format is supported. **If you can provide QD examples, please get in touch.**
+* Only reading is supported.
+* Files from the S-220 are not tested and might not work **If you can provide examples, please get in touch.**
 
 ## Roland S-50 Series
 

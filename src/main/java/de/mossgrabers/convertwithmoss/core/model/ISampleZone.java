@@ -91,7 +91,7 @@ public interface ISampleZone
 
 
     /**
-     * Get the start of the play-back.
+     * Set the start of the play-back.
      *
      * @param start The start of the play-back
      */
@@ -107,7 +107,7 @@ public interface ISampleZone
 
 
     /**
-     * Get the stop of the play-back.
+     * Set the stop of the play-back.
      *
      * @param stop The stop of the play-back, inclusive
      */

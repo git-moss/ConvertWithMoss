@@ -95,6 +95,7 @@ import de.mossgrabers.convertwithmoss.format.roland.mc707.MC707Creator;
 import de.mossgrabers.convertwithmoss.format.roland.mc707.MC707Detector;
 import de.mossgrabers.convertwithmoss.format.roland.mv8000.MV8000Creator;
 import de.mossgrabers.convertwithmoss.format.roland.mv8000.MV8000Detector;
+import de.mossgrabers.convertwithmoss.format.roland.s1xx.S1xxDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
 import de.mossgrabers.convertwithmoss.format.roland.sp404mk2.SP404Mk2Creator;
@@ -230,6 +231,7 @@ public class ConverterBackend
         this.detectors.add (new RenoiseDetector (notifier));
         this.detectors.add (new MC707Detector (notifier));
         this.detectors.add (new MV8000Detector (notifier));
+        this.detectors.add (new S1xxDetector (notifier));
         this.detectors.add (new S5xxDetector (notifier));
         this.detectors.add (new S770Detector (notifier));
         this.detectors.add (new SP404Mk2Detector (notifier));
