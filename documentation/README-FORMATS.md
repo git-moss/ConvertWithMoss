@@ -264,7 +264,11 @@ As the destination, a ready-to-use floppy disk image (*.img*) with one full dump
 
 TX16Wx is a free sampler plug-in available for Windows and MacOS. TX16Wx Professional is the commercial expansion of TX16Wx. It adds some advanced features like effects, signal routing or trigger switching. But the free version is already very powerful and covers all of the features that ConvertWithMoss supports.
 
-The format uses a XML format and keeps the samples separate.
+The output formats use a XML format and keep the samples separate. There following file formats are supported:
+
+* txprog: Single program files.
+* txbank: A bank of program files, the program files are only referenced and individual txprog files are created as well.
+* txperf: A performance which contains performance settings for several program files, the program files are only referenced and individual txprog files are created as well.
 
 ## DecentSampler
 

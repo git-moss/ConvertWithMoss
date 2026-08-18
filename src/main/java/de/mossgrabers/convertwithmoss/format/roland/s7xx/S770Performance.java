@@ -53,9 +53,14 @@ public class S770Performance
         for (int i = 0; i < 32; i++)
             this.partsPatchSelection[i] = StreamUtils.readSigned8 (input);
 
-        this.midiChannel = new int [16];
+        this.midiChannel = new int [32];
         for (int i = 0; i < 16; i++)
-            this.midiChannel[i] = StreamUtils.readUnsigned8 (input);
+        {
+            final int value = StreamUtils.readUnsigned8 (input);
+            final int pos = i * 2;
+            this.midiChannel[pos] = value & 0xF;
+            this.midiChannel[pos + 1] = (value >> 4) & 0xF;
+        }
 
         this.midiEnabled = new boolean [32];
         this.partsLevel = new int [32];

@@ -42,13 +42,14 @@ import de.mossgrabers.tools.XMLUtils;
 
 
 /**
- * Creator for TX16Wx multi-sample files. A txprog file has a description file encoded in XML. The
- * related samples are in a separate folder.
+ * Creator for TX16Wx multi-sample files. The txprog, .txbank and txperf files have description
+ * files encoded in XML. The related samples are in a separate folder.
  *
  * @author Jürgen Moßgraber
  */
 public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
+    private static final String                  CREATED_BY_VERSION    = "30601";
     private static final String                  FILTER_1_FREQ         = "Filter 1 Freq";
     private static final String                  IDS_NOTIFY_STORING    = "IDS_NOTIFY_STORING";
 
@@ -249,6 +250,14 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     /** {@inheritDoc} */
     @Override
+    public boolean supportsPresetLibraries ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public boolean supportsPerformances ()
     {
         return true;
@@ -260,6 +269,42 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         this.createPreset (destinationFolder, new DefaultInstrumentSource (multisampleSource, -1));
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void createPresetLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    {
+        if (multisampleSources.isEmpty ())
+            return;
+
+        final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "txbank");
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
+
+        final List<File> programFiles = new ArrayList<> ();
+        final List<IMultisampleSource> acceptedMultisampleSources = new ArrayList<> ();
+        for (final IMultisampleSource multisampleSource: multisampleSources)
+        {
+            final Optional<File> preset = this.createPreset (destinationFolder, new DefaultInstrumentSource (multisampleSource, -1));
+            if (preset.isPresent ())
+            {
+                programFiles.add (preset.get ());
+                acceptedMultisampleSources.add (multisampleSource);
+            }
+        }
+
+        final Optional<String> xmlCode = this.createBankDocument (acceptedMultisampleSources, programFiles);
+        if (xmlCode.isEmpty ())
+            return;
+
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
+        try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
+        {
+            writer.write (xmlCode.get ());
+        }
+
+        this.progress.notifyDone ();
     }
 
 
@@ -304,14 +349,14 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     private Optional<File> createPreset (final File destinationFolder, final IInstrumentSource instrumentSource) throws IOException
     {
         final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
-        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
-        final String relativeFolderName = sampleName + FOLDER_POSTFIX;
+        final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String relativeFolderName = multisampleName + FOLDER_POSTFIX;
 
         final Optional<String> metadata = this.createPresetDocument (relativeFolderName, instrumentSource);
         if (metadata.isEmpty ())
             return Optional.empty ();
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, sampleName, "txprog");
+        final File multiFile = this.createUniqueFilename (destinationFolder, multisampleName, "txprog");
         this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
         this.storePreset (relativeFolderName, destinationFolder, multisampleSource, multiFile, metadata.get ());
@@ -347,6 +392,53 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
+     * Create the text of the TX bank description file.
+     * 
+     * @param multisampleSources The multi-samples to add to the bank
+     * @param programFiles The already created TX16w program files
+     * @return The XML structure
+     */
+    private Optional<String> createBankDocument (final List<IMultisampleSource> multisampleSources, final List<File> programFiles)
+    {
+        final Optional<Document> optionalDocument = this.createXMLDocument ();
+        if (optionalDocument.isEmpty ())
+            return Optional.empty ();
+        final Document document = optionalDocument.get ();
+        document.setXmlStandalone (true);
+
+        final Element bankElement = document.createElement (TX16WxTag.BANK);
+        document.appendChild (bankElement);
+        bankElement.setAttribute (TX16WxTag.PROGRAM_CREATED_BY, CREATED_BY_VERSION);
+        bankElement.setAttribute (TX16WxTag.PROGRAM_QUALITY, "Default");
+        bankElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/bank");
+        bankElement.setAttribute ("xmlns:tx", "http://www.tx16wx.com/3.0/bank");
+        bankElement.setAttribute ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+
+        for (int i = 0; i < multisampleSources.size (); i++)
+        {
+            final IMultisampleSource multisampleSource = multisampleSources.get (i);
+            final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+            final String relativeFolderName = multisampleName + FOLDER_POSTFIX;
+            final File programFile = programFiles.get (i);
+
+            for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
+            {
+                for (final ISampleZone zone: group.getSampleZones ())
+                {
+                    final Element waveElement = XMLUtils.addElement (document, bankElement, TX16WxTag.SAMPLE);
+                    waveElement.setAttribute (TX16WxTag.PATH, AbstractCreator.formatFileName (relativeFolderName, zone.getName () + ".wav"));
+                }
+            }
+
+            final Element programElement = XMLUtils.addElement (document, bankElement, TX16WxTag.PROGRAM);
+            programElement.setAttribute (TX16WxTag.PATH, programFile.getName ());
+        }
+
+        return this.createXMLString (document);
+    }
+
+
+    /**
      * Create the text of the TX program description file.
      *
      * @param folderName The name to use for the sample folder
@@ -365,7 +457,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final Element programElement = document.createElement (TX16WxTag.PROGRAM);
         document.appendChild (programElement);
-        programElement.setAttribute (TX16WxTag.PROGRAM_CREATED_BY, "30601");
+        programElement.setAttribute (TX16WxTag.PROGRAM_CREATED_BY, CREATED_BY_VERSION);
         programElement.setAttribute (TX16WxTag.PROGRAM_QUALITY, "Default");
 
         // No metadata at all, except program name and icon
@@ -378,7 +470,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 programElement.setAttribute (TX16WxTag.PROGRAM_ICON, "#" + icon);
         }
 
-        programElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/ program");
+        programElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/program");
         programElement.setAttribute ("xmlns:tx", "http://www.tx16wx.com/3.0/program");
         programElement.setAttribute ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
@@ -456,7 +548,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final Element performanceElement = document.createElement (TX16WxTag.PERFORMANCE);
         document.appendChild (performanceElement);
-        performanceElement.setAttribute (TX16WxTag.PROGRAM_CREATED_BY, "30601");
+        performanceElement.setAttribute (TX16WxTag.PROGRAM_CREATED_BY, CREATED_BY_VERSION);
         performanceElement.setAttribute (TX16WxTag.NAME, performanceSource.getName ());
         performanceElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/ performance");
         performanceElement.setAttribute ("xmlns:tx", "http://www.tx16wx.com/3.0/performance");

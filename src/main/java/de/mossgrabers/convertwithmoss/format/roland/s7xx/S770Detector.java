@@ -15,16 +15,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -45,6 +49,7 @@ import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvfSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Patch.BenderSection;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -83,6 +88,10 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         FILTER_TYPES.put (Integer.valueOf (1), FilterType.BAND_PASS);
         FILTER_TYPES.put (Integer.valueOf (2), FilterType.HIGH_PASS);
 
+        CATEGORIES.put ("PFM", TagDetector.CATEGORY_UNKNOWN);
+        CATEGORIES.put ("PRC", TagDetector.CATEGORY_UNKNOWN);
+        CATEGORIES.put ("MLT", TagDetector.CATEGORY_UNKNOWN);
+
         CATEGORIES.put ("BRS", TagDetector.CATEGORY_BRASS);
         CATEGORIES.put ("BS", TagDetector.CATEGORY_BASS);
         CATEGORIES.put ("DRM", TagDetector.CATEGORY_DRUM);
@@ -104,6 +113,57 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     public S770Detector (final INotifier notifier)
     {
         super ("Roland S-7xx", "S7xx", notifier, new MetadataSettingsUI ("S7xx"), ".out", ".img", ".iso");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
+    {
+        if (this.waitForDelivery ())
+            return Collections.emptyList ();
+
+        try
+        {
+            try (final InputStream input = new BufferedInputStream (new FileInputStream (sourceFile)))
+            {
+                final S770Header header = new S770Header (input);
+                final boolean isDiskette = header.getDiskFormat () == S770DiskFormat.DISKETTE;
+                this.notifier.log ("IDS_S7XX_VERSION", header.getS70Str (), header.getVersionStr (), header.getDiskName (), isDiskette ? "diskette" : "CD-ROM/HD");
+
+                final IS770Image image;
+                if (isDiskette)
+                {
+                    final Optional<S770Diskette> diskette = this.loadDiskette (sourceFile, input, header);
+                    if (diskette.isEmpty ())
+                        return Collections.emptyList ();
+                    image = diskette.get ();
+                }
+                else
+                {
+                    final S770Hd hdImage = new S770Hd (input, header);
+                    final int numIncompleteSampleChains = hdImage.getNumIncompleteSampleChains ();
+                    if (numIncompleteSampleChains > 0)
+                        this.notifier.logError ("IDS_S7XX_INCOMPLETE_SAMPLE_CHAINS", Integer.toString (numIncompleteSampleChains));
+                    image = hdImage;
+                }
+
+                return this.readPerformances (sourceFile, image);
+            }
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+        }
+        return Collections.emptyList ();
     }
 
 
@@ -139,7 +199,10 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                     image = hdImage;
                 }
 
-                return this.readPatches (sourceFile, image);
+                final Map<Integer, IMultisampleSource> patches = this.readPatches (sourceFile, image);
+                for (final Map.Entry<Integer, IMultisampleSource> patch: patches.entrySet ())
+                    this.notifier.log ("IDS_S7XX_CONVERTING_PATCH", String.format ("%02d %s", Integer.valueOf (patch.getKey ().intValue () + 1), patch.getValue ().getName ()));
+                return new ArrayList<> (patches.values ());
             }
         }
         catch (final IOException ex)
@@ -178,9 +241,62 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private List<IMultisampleSource> readPatches (final File sourceFile, final IS770Image image)
+    private List<IPerformanceSource> readPerformances (final File sourceFile, final IS770Image image)
     {
-        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+        final Map<Integer, IMultisampleSource> patches = readPatches (sourceFile, image);
+
+        final List<IPerformanceSource> performanceSources = new ArrayList<> ();
+
+        final List<S770Performance> performances = image.getPerformances ();
+        for (int i = 0; i < performances.size (); i++)
+        {
+            final S770Performance performance = performances.get (i);
+            final String performanceName = StringUtils.fixASCII (performance.getPerformanceName ()).replace ('?', ' ').trim ();
+            if (performanceName.isBlank ())
+                continue;
+            this.notifier.log ("IDS_S7XX_CONVERTING_PERFORMANCE", String.format ("%02d %s", Integer.valueOf (i + 1), performanceName));
+
+            final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
+            performanceSource.setName (performanceName);
+            performanceSources.add (performanceSource);
+
+            final int [] partsPatchSelections = performance.getPartsPatchSelection ();
+            final int [] midiChannels = performance.getMidiChannel ();
+            final boolean [] isMidiEnabled = performance.isMidiEnabled ();
+            final int [] partsLevels = performance.getPartsLevel ();
+            final int [] partsZoneLower = performance.getPartsZoneLower ();
+            final int [] partsZoneUpper = performance.getPartsZoneUpper ();
+
+            for (int p = 0; p < 32; p++)
+            {
+                if (partsPatchSelections[p] < 0)
+                    continue;
+
+                final Integer patchIndex = Integer.valueOf (partsPatchSelections[p]);
+                final IMultisampleSource multisampleSource = patches.get (patchIndex);
+                if (multisampleSource == null)
+                {
+                    this.notifier.logError ("IDS_S7XX_MISSING_PATCH", patchIndex.toString ());
+                    continue;
+                }
+                final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, isMidiEnabled[p] ? midiChannels[p] : IInstrumentSource.MIDI_CHANNEL_OFF);
+                performanceSource.addInstrument (instrumentSource);
+
+                // TODO set level
+                // TODO where is panning?
+                instrumentSource.setClipKeyLow (partsZoneLower[p]);
+                instrumentSource.setClipKeyHigh (partsZoneUpper[p]);
+            }
+        }
+
+        return performanceSources;
+    }
+
+
+    private Map<Integer, IMultisampleSource> readPatches (final File sourceFile, final IS770Image image)
+    {
+        final Map<Integer, IMultisampleSource> multisampleSources = new TreeMap<> ();
+
         final String metadataDescription = createMetadataDescription (image.getHeader ());
 
         String fileName = FileUtils.getNameWithoutType (sourceFile.getName ());
@@ -195,26 +311,29 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
             final String patchName = patch.getName ().trim ();
             if (!patch.isActive () || patchName.isBlank ())
                 continue;
-            this.notifier.log ("IDS_S7XX_CONVERTING_PATCH", String.format ("%02d %s", Integer.valueOf (i + 1), patchName));
 
             final Pair<String, String> itemCategoryAndName = getItemCategoryAndName (patchName);
             final IMultisampleSource multisampleSource = this.readPatch (sourceFile, patch, itemCategoryAndName.getValue (), metadataDescription, image);
             multisampleSource.extendSubPath (fileName);
-            multisampleSources.add (multisampleSource);
+            multisampleSources.put (Integer.valueOf (i), multisampleSource);
 
-            final String category = itemCategoryAndName.getKey ();
-            if (!category.isBlank ())
-            {
-                final String cat = CATEGORIES.get (category);
-                final IMetadata metadata = multisampleSource.getMetadata ();
-                if (cat != null)
-                    metadata.setCategory (cat);
-                else // Some presets use the category part as additional characters for the name
-                    multisampleSource.setName (patchName.replace (":", " "));
-            }
+            extractCategory (patchName, multisampleSource, itemCategoryAndName.getKey ());
         }
 
         return multisampleSources;
+    }
+
+
+    private static void extractCategory (final String patchName, final IMultisampleSource multisampleSource, final String category)
+    {
+        if (category.isBlank ())
+            return;
+
+        final String cat = CATEGORIES.get (category);
+        if (cat != null && !TagDetector.CATEGORY_UNKNOWN.equalsIgnoreCase (cat))
+            multisampleSource.getMetadata ().setCategory (cat);
+        else // Some presets use the category part as additional characters for the name
+            multisampleSource.setName (patchName.replace (":", " "));
     }
 
 
@@ -456,7 +575,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Splits the item name into the category value and the actual name part.
-     * 
+     *
      * @param name The name to split
      * @return The category value (empty string if not present) and the actual name part
      */

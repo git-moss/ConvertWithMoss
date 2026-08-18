@@ -345,6 +345,11 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             final YamahaYsfcPerformancePart part = parts.get (i);
             part.setNoteLimitLow (instrumentSource.getClipKeyLow ());
             part.setNoteLimitHigh (instrumentSource.getClipKeyHigh ());
+            part.setPan (MathUtils.denormalizeIntegerRange (instrumentSource.getPanning (), -63, 63, 64));
+            final double gain = instrumentSource.getGain ();
+            part.setVolume (gain == Double.NEGATIVE_INFINITY ? 0 : (int) Math.round ((gain + 95.25) / (2 * 0.375)));
+            part.setNoteShift (instrumentSource.getTranspose () + 64);
+            part.setDetuneAsCents (instrumentSource.getTuning ());
 
             final int partCategory = getCategoryIndex (multisampleSource.getMetadata ());
 

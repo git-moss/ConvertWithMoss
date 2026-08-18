@@ -6,12 +6,18 @@ package de.mossgrabers.convertwithmoss.core;
 
 /**
  * A detected source for an instrument. An instrument contains one multi-sample source and its
- * configuration like the MIDI channel.
+ * performance configurations like the MIDI channel.
  *
  * @author Jürgen Moßgraber
  */
 public interface IInstrumentSource extends ISource
 {
+    /** Constant for a disabled MIDI channel. */
+    static final int MIDI_CHANNEL_OFF  = -1;
+    /** Constant for an OMNI MIDI channel (reacts on all channels). */
+    static final int MIDI_CHANNEL_OMNI = 64;
+
+
     /**
      * Get the multi-sample source of the instrument.
      *
@@ -36,6 +42,70 @@ public interface IInstrumentSource extends ISource
      *            considered OMNI/all
      */
     void setMidiChannel (int midiChannel);
+
+
+    /**
+     * Get the transposition of the instrument.
+     *
+     * @return The transposition in semi-tones
+     */
+    int getTranspose ();
+
+
+    /**
+     * Set the transposition of the instrument.
+     *
+     * @param transpose The transposition in semi-tones
+     */
+    void setTranspose (int transpose);
+
+
+    /**
+     * Get the tuning of the instrument.
+     *
+     * @return The tuning in cents in the range of [-50..50]
+     */
+    int getTuning ();
+
+
+    /**
+     * Set the tuning of the instrument.
+     *
+     * @param tuning The tuning in cents in the range of [-50..50]
+     */
+    void setTuning (int tuning);
+
+
+    /**
+     * Get the gain of the sample.
+     *
+     * @return The gain in dB, assume the range to be -Inf to 24dB
+     */
+    double getGain ();
+
+
+    /**
+     * Set the gain of the sample.
+     *
+     * @param gain The gain in dB, assume the range to be -Inf to 24dB
+     */
+    void setGain (double gain);
+
+
+    /**
+     * Get the panning.
+     *
+     * @return The panning in the range of [-1..1], -1 is full left, 0 centered and 1 full right
+     */
+    double getPanning ();
+
+
+    /**
+     * Set the panning in the range of [-1..1], -1 is full left, 0 centered and 1 full right.
+     *
+     * @param panning The panning
+     */
+    void setPanning (double panning);
 
 
     /**

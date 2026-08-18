@@ -72,7 +72,7 @@ import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * Base class for parsing the NKI XML structure.
+ * Base class for parsing the NKI XML structure (Kontakt 1 + 2).
  *
  * @author Jürgen Moßgraber
  * @author Philip Stolz

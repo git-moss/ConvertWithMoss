@@ -25,6 +25,9 @@ public class TX16WxTag
     /** A program slot in a performance. */
     public static final String SLOT                   = "tx:slot";
 
+    /** A bank which references several programs. */
+    public static final String BANK                   = "tx:bank";
+
     /** The program root tag. */
     public static final String PROGRAM                = "tx:program";
     /** The quality attribute. */
