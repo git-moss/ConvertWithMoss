@@ -130,6 +130,7 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
             case SampleFileFormat.CAF_AAC -> AAC_COMPATIBLE_FORMAT;
             default -> destinationFormat;
         };
+        this.logResampling (zone, cafFormat);
         final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), cafFormat);
         if (wavFile.getDataChunk () == null)
             throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));

@@ -42,6 +42,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.ParameterLevel;
 import de.mossgrabers.convertwithmoss.core.ZoneChannels;
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -80,6 +81,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected final ProgressLogger                progress;
     private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
     private final boolean [] []                   layerCheckMatrix                   = new boolean [128] [128];
+    private final Set<String>                     loggedResamplings                  = new HashSet<> ();
 
 
     /**
@@ -167,6 +169,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     public void clearCancelled ()
     {
         this.isCancelled.set (false);
+        this.loggedResamplings.clear ();
     }
 
 
@@ -974,6 +977,40 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
+     * Log a note when the audio of the given zone needs to be re-sampled to fulfill the
+     * restrictions of the given destination format. Each distinct conversion is only logged once
+     * per run to keep the log readable.
+     *
+     * @param zone The zone whose sample is about to be converted
+     * @param destinationFormat The destination audio format
+     */
+    protected void logResampling (final ISampleZone zone, final DestinationAudioFormat destinationFormat)
+    {
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            return;
+
+        try
+        {
+            final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+            final int [] resampling = AudioFileUtils.getRequiredResampling (audioMetadata, destinationFormat);
+            if (resampling == null)
+                return;
+            final String bitResolution = Integer.toString (audioMetadata.getBitResolution ());
+            final String sampleRate = Integer.toString (audioMetadata.getSampleRate ());
+            final String destinationBitResolution = Integer.toString (resampling[0]);
+            final String destinationSampleRate = Integer.toString (resampling[1]);
+            if (this.loggedResamplings.add (bitResolution + "/" + sampleRate + ">" + destinationBitResolution + "/" + destinationSampleRate))
+                this.notifier.log ("IDS_NOTIFY_RESAMPLE", bitResolution, sampleRate, destinationBitResolution, destinationSampleRate);
+        }
+        catch (final IOException _)
+        {
+            // Reading the metadata failed - the conversion itself will report the problem
+        }
+    }
+
+
+    /**
      * Writes the sample of the given zone and updates/adds their instrument and sample chunks.
      * Overwrite to implement other output formats than WAV.
      *
@@ -989,6 +1026,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
             return;
+
+        this.logResampling (zone, destinationFormat);
 
         // Convert resolution
         final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), destinationFormat);

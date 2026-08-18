@@ -420,6 +420,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         if (sampleData.isEmpty ())
             return;
 
+        this.logResampling (zone, destinationFormat);
         final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), destinationFormat);
         if (wavFile.getDataChunk () == null)
             throw new IOException (Functions.getMessage ("IDS_WAV_CONVERSION_FAILED", zone.getName ()));

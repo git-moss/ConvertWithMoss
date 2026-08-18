@@ -36,7 +36,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class KSFFile
 {
-    private static final DestinationAudioFormat DESTINATION_FORMAT          = new DestinationAudioFormat (new int []
+    static final DestinationAudioFormat         DESTINATION_FORMAT          = new DestinationAudioFormat (new int []
     {
         8,
         16

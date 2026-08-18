@@ -186,6 +186,7 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
         if (sampleData.isEmpty ())
             return false;
 
+        this.logResampling (zone, DESTINATION_FORMAT);
         final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
         final int channels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (channels < 1 || channels > 2)

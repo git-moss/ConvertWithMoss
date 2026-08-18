@@ -176,6 +176,9 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
 
     private void storeKMPChannel (final File subFolder, final String filename, final String sampleWithGroupName, final int kmpIndex, final KMPChannel kmpChannel, final List<ISampleZone> sampleZones, final boolean gain12dB, final boolean maxVolume, final Collection<String> createdKMPNames) throws IOException
     {
+        for (final ISampleZone zone: sampleZones)
+            this.logResampling (zone, KSFFile.DESTINATION_FORMAT);
+
         final String kmpFileName = createUniqueFilename (subFolder, filename, kmpIndex, createdKMPNames);
         final File kmpFilePath = this.createFile (subFolder, kmpFileName);
         final KMPFile kmpFile = new KMPFile (this.notifier, kmpFileName, sampleWithGroupName, sampleZones, gain12dB, maxVolume);

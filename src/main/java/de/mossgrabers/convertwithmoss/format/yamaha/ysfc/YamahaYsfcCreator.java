@@ -792,6 +792,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         if (sampleData.isEmpty ())
             throw new IOException ("Empty sample data in zone: " + zone.getName ());
 
+        this.logResampling (zone, DESTINATION_AUDIO_FORMAT);
         final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_AUDIO_FORMAT);
         final FormatChunk formatChunk = waveFile.getFormatChunk ();
         final int numberOfChannels = formatChunk.getNumberOfChannels ();
