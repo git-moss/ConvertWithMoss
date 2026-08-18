@@ -19,8 +19,8 @@ import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
  */
 public class AkmPart extends AbstractSpecificRIFFChunk
 {
-    /** The length of the Part structure. */
-    private static final int LENGTH_OUT = 0x30;
+    /** The length of the Part structure. There are 2 versions found: 0x28 and 0x30! */
+    private static final int LENGTH_OUT = 0x28;
 
     private String           presetName;
     private int              midiChannel;
@@ -86,7 +86,7 @@ public class AkmPart extends AbstractSpecificRIFFChunk
     /**
      * Get the volume of the part.
      *
-     * @return The volume in the range of [0..100]
+     * @return The volume in the range of [0..100] (–60.0 to +6.0dB)
      */
     public int getVolume ()
     {
@@ -97,7 +97,7 @@ public class AkmPart extends AbstractSpecificRIFFChunk
     /**
      * Get the panning of the part.
      *
-     * @return The panning in the range of [-50..50]
+     * @return The panning in the range of [-50..50] (L50–MID–R50)
      */
     public int getPanning ()
     {
@@ -125,17 +125,21 @@ public class AkmPart extends AbstractSpecificRIFFChunk
         this.highKey = chunk.getByteAsUnsignedInt (0x25);
         this.volume = chunk.getByteAsUnsignedInt (0x26);
 
-        // -30, -25, -20, -15, -10, 0, 10, 20, 25 - Fine tune?
+        // TODO identify values
+
+        // -30, -25, -20, -15, -10, 0, 10, 20, 25, 30 - Fine tune?
         chunk.getByteAsSignedInt (0x27);
 
-        // 0, 1, 2, 3, 4 - Output?
+        // 0, 1, 2, 3, 4 - Output? - 0 = L/R; 14 = op1/2op7/8; 514 = L, R, op1-op8
         chunk.getByteAsSignedInt (0x2A);
-        // 0 .. 60 ?
+
+        // 0 .. 60 ? PartLevel in 10×dB
         chunk.getByteAsSignedInt (0x2B);
 
-        // 0 - Semi-tones (Transpose) or Mute?
+        // 0 - Semi-tones (Transpose) or Mute/Solo?
         chunk.getByteAsSignedInt (0x28);
-        // 0 - Semi-tones (Transpose) or Mute?
+
+        // 0 - Semi-tones (Transpose) or Mute/Solo?
         chunk.getByteAsSignedInt (0x29);
     }
 

@@ -20,7 +20,7 @@ import de.mossgrabers.tools.XMLUtils;
 
 
 /**
- * Parses a NKI XML file in NiSS format.
+ * Parses a NKI XML file in NiSS format (Kontakt 1).
  *
  * @author Jürgen Moßgraber
  * @author Philip Stolz

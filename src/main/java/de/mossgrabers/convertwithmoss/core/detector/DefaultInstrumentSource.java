@@ -25,6 +25,10 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     private int                midiChannel;
     private int                clipKeyLow  = 0;
     private int                clipKeyHigh = 127;
+    private int                transpose   = 0;
+    private int                tuning      = 0;
+    private double             gain        = 0;
+    private double             panning     = 0;
 
 
     /**
@@ -81,6 +85,70 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     public void setMidiChannel (final int midiChannel)
     {
         this.midiChannel = midiChannel;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getTranspose ()
+    {
+        return this.transpose;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setTranspose (final int transpose)
+    {
+        this.transpose = transpose;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public int getTuning ()
+    {
+        return this.tuning;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setTuning (final int tuning)
+    {
+        this.tuning = tuning;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getGain ()
+    {
+        return this.gain;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setGain (final double gain)
+    {
+        this.gain = gain;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public double getPanning ()
+    {
+        return this.panning;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setPanning (final double panning)
+    {
+        this.panning = panning;
     }
 
 
