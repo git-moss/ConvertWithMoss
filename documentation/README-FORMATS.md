@@ -69,6 +69,7 @@ The following multi-sample formats are supported:
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [Fairlight CMI Voice](#fairlight-cmi-voice)
 * [FL Studio DirectWave](#fl-studio-directwave)
+* [ISLA S2400](#isla-s2400)
 * [ISO/IMG Files](#isoimg-files)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
 * [Korg wavestate/modwave](#korg-wavestatemodwave)
@@ -508,6 +509,16 @@ As a source, DWP programs are read from their binary structure (see DIRECTWAVE_D
 As a destination, one monolithic DWP file is written per instrument, i.e. a single self-contained file which carries all its samples as FLAC compressed audio. FL Studio Desktop loads it directly and for FL Studio Mobile it only needs to be copied into its user files. The DWP structure carries name, key/velocity ranges, root, gain, panning, loop, amplitude envelope, a low-pass/high-pass/band-pass/notch filter and the two zone LFOs (LFO 1 modulates the pitch, LFO 2 the volume) per zone. Only the first round-robin cycle is kept since trigger groups cannot be written.
 
 To import a DWP file into FL Studio Mobile, copy it to the iOS device and open it with FL Studio Mobile. This will copy the file to the user instrument folder.
+
+## ISLA S2400
+
+The ISLA Instruments S2400 is a sampling drum machine. It stores a set of pads as a *kit*: a folder which contains a kit file (ending *.kit*) named after the folder plus one WAV file per pad. A project (an *.S24 file with its kit) uses the same kit file for its sounds. This converter handles the kit, which is where the samples and their settings live; the sequencer data of a project is not read or written.
+
+As a source, each pad (track) of the kit becomes one zone. The pads are mapped to consecutive MIDI notes starting at note 36 for pad A1, which matches the default sample track MIDI map of the device. Each zone carries the name of its WAV file, the base gain in dB, the fine tuning in cents, the choke group, the filter (low-pass, band-pass or high-pass with its cutoff in Hertz and its resonance) and the volume envelope. A HiFi envelope stores its attack, hold, decay, sustain and release; since the device expresses the envelope times as a percentage of the sample length they are converted back to seconds using the length of the sample. A classic envelope is approximated by its release stage. The loop points are read from the *smpl* chunk of the WAV file, which is where the device stores them.
+
+As a destination, one kit folder is written per multi-sample: the kit file named after the folder and one WAV file per zone (up to the 32 pads of the device, additional zones are ignored). The samples are written in the device native 48 kHz / 16-bit format - a sample above 48 kHz is down-sampled, a sample at 44.1 kHz is kept since the device supports it - and their loop is stored in the *smpl* chunk so that the device picks it up.
+
+The kit file format was reverse-engineered from the official S2400 Kit Builder web application, since the device firmware is encrypted. The read and written kits have not yet been verified on real hardware.
 
 ## ISO/IMG Files
 
