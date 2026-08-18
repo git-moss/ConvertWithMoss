@@ -28,17 +28,26 @@ public class YamahaYsfcPerformancePart
     private int                               subCategory;
     private int                               partSwitch;
     private int                               keyboardSwitch;
-    private int                               velocityLimitLow;
-    private int                               velocityLimitHigh;
-    private int                               noteLimitLow;
-    private int                               noteLimitHigh;
+    private int                               velocityLimitLow    = 1;
+    private int                               velocityLimitHigh   = 127;
+    private int                               noteLimitLow        = 0;
+    private int                               noteLimitHigh       = 127;
     private int                               pitchBendRangeUpper;
     private int                               pitchBendRangeLower;
+    private int                               velocitySenseDepth  = 64;
+    private int                               velocitySenseOffset = 64;
+    private int                               volume              = 100;
+    private int                               pan                 = 64;
+    private int                               detune              = 128;
+    private int                               reverbSend          = 0;
+    private int                               variationSend       = 0;
+    private int                               dryLevel            = 127;
+    private int                               noteShift;
 
-    private final List<YamahaYsfcPartElement> elements        = new ArrayList<> ();
+    private final List<YamahaYsfcPartElement> elements            = new ArrayList<> ();
     private byte []                           manyParameters;
     private byte []                           scenes;
-    private final String []                   assignableKnobs = new String [8];
+    private final String []                   assignableKnobs     = new String [8];
     private byte []                           controlBoxes;
 
 
@@ -227,6 +236,118 @@ public class YamahaYsfcPerformancePart
 
 
     /**
+     * Get the volume of the part.
+     *
+     * @return The volume in the range of 0-127 (Default = 100)
+     */
+    public int getVolume ()
+    {
+        return this.volume;
+    }
+
+
+    /**
+     * Set the volume of the part.
+     *
+     * @param volume The volume in the range of 0-127 (Default = 100)
+     */
+    public void setVolume (final int volume)
+    {
+        this.volume = volume;
+    }
+
+
+    /**
+     * Get the panning of the part.
+     *
+     * @return The panning in the range of 1-127, 64 = Center (L63 – C – R63)
+     */
+    public int getPan ()
+    {
+        return this.pan;
+    }
+
+
+    /**
+     * Set the panning of the part.
+     *
+     * @param pan The panning in the range of 64 = Center, 1-127
+     */
+    public void setPan (final int pan)
+    {
+        this.pan = pan;
+    }
+
+
+    /**
+     * Get the de-tuning of the part in 0.1 Hz increments.
+     *
+     * @return Get the de-tuning in the range of 0-255 (Default 128 = 0 (no de-tuning), -12.8Hz –
+     *         +0.0Hz – +12.7Hz)
+     */
+    public int getDetune ()
+    {
+        return this.detune;
+    }
+
+
+    /**
+     * Get the de-tune value as cents.
+     *
+     * @return De-tune as cents
+     */
+    public int getDetuneAsCents ()
+    {
+        return (int) Math.round (convertToCents (this.detune, 440));
+    }
+
+
+    /**
+     * Set the de-tuning of the part in 0.1 Hz increments.
+     *
+     * @param detune Get the de-tuning in the range of 0-255 (Default 128 = 0 (no de-tuning))
+     */
+    public void setDetune (final int detune)
+    {
+        this.detune = detune;
+    }
+
+
+    /**
+     * Set the de-tune value as cents.
+     *
+     * @param cents De-tune as cents
+     */
+    public void setDetuneAsCents (final int cents)
+    {
+        this.detune = convertToInputValue (cents, 440);
+    }
+
+
+    /**
+     * Get the note shift.
+     *
+     * @return The note shift in the range of 40-88, 64 = no shift (-24 – 0 – +24 semi-tones)
+     */
+    public int getNoteShift ()
+    {
+        return this.noteShift;
+    }
+
+
+    /**
+     * Set the note shift.
+     *
+     * @param noteShift The note shift in the range of 40-88, 64 = no shift (-24 – 0 – +24
+     *            semi-tones)
+     */
+    public void setNoteShift (final int noteShift)
+    {
+        this.noteShift = Math.clamp (noteShift, 40, 88);
+    }
+
+
+    /**
      * Read a performance from the input stream.
      *
      * @param in The input stream
@@ -252,17 +373,20 @@ public class YamahaYsfcPerformancePart
         this.noteLimitHigh = in.read ();
         this.pitchBendRangeUpper = in.read ();
         this.pitchBendRangeLower = in.read ();
+        this.velocitySenseDepth = in.read ();
+        this.velocitySenseOffset = in.read ();
+        this.volume = in.read ();
+        this.pan = in.read ();
+        this.detune = in.read ();
+        this.reverbSend = in.read ();
+        this.variationSend = in.read ();
+        this.dryLevel = in.read ();
+        this.noteShift = in.read ();
 
-        // Currently not used...
-        if (format == YamahaYsfcFileFormat.MONTAGE)
-            this.manyParameters = in.readNBytes (274);
-        else // MODX has 1 Byte more than Montage!
-            this.manyParameters = in.readNBytes (275);
+        // Currently not used... MODX has 1 Byte more than Montage!
+        this.manyParameters = in.readNBytes (format == YamahaYsfcFileFormat.MONTAGE ? 265 : 266);
 
-        if (version < 405)
-            this.scenes = in.readNBytes (8 * 21);
-        else
-            this.scenes = in.readNBytes (8 * 22);
+        this.scenes = in.readNBytes (8 * (version < 405 ? 21 : 22));
 
         // Assignable Knob 1-8
         for (int i = 0; i < 8; i++)
@@ -313,6 +437,15 @@ public class YamahaYsfcPerformancePart
         arrayOut.write (this.noteLimitHigh);
         arrayOut.write (this.pitchBendRangeUpper);
         arrayOut.write (this.pitchBendRangeLower);
+        arrayOut.write (this.velocitySenseDepth);
+        arrayOut.write (this.velocitySenseOffset);
+        arrayOut.write (this.volume);
+        arrayOut.write (this.pan);
+        arrayOut.write (this.detune);
+        arrayOut.write (this.reverbSend);
+        arrayOut.write (this.variationSend);
+        arrayOut.write (this.dryLevel);
+        arrayOut.write (this.noteShift);
 
         // Currently not used...
         arrayOut.write (this.manyParameters);
@@ -359,5 +492,44 @@ public class YamahaYsfcPerformancePart
     public int getType ()
     {
         return this.type;
+    }
+
+
+    /**
+     * Converts an input value (0-255) representing a frequency deviation to cents.
+     *
+     * @param inputVal The input value (0-255), where 128 is 0.0 Hz deviation.
+     * @param baseFreqHz The base/reference frequency in Hz (e.g., 440.0).
+     * @return The frequency deviation in cents.
+     */
+    private static double convertToCents (final int inputVal, final double baseFreqHz)
+    {
+        if (inputVal < 0 || inputVal > 255)
+            throw new IllegalArgumentException ("Input value must be between 0 and 255.");
+        if (baseFreqHz <= 0)
+            throw new IllegalArgumentException ("Base frequency must be greater than 0.");
+
+        // Calculate frequency deviation in Hz (128 is the 0-point, each step is 0.1 Hz)
+        final double deviationHz = (inputVal - 128) * 0.1;
+
+        // Calculate absolute frequency
+        final double absoluteFreq = baseFreqHz + deviationHz;
+
+        // Calculate cents relative to base frequency
+        return 1200 * (Math.log (absoluteFreq / baseFreqHz) / Math.log (2));
+    }
+
+
+    /**
+     * Inverts the conversion: converts cents back to an integer input value (0-255).
+     *
+     * @param cents The frequency deviation in cents.
+     * @param baseFreqHz The base/reference frequency in Hz (e.g., 440.0).
+     * @return The corresponding integer input value (0-255).
+     */
+    private static int convertToInputValue (final double cents, final double baseFreqHz)
+    {
+        final double rawInput = 128 + 10 * baseFreqHz * (Math.pow (2, cents / 1200.0) - 1);
+        return Math.clamp ((int) Math.round (rawInput), 0, 255);
     }
 }
