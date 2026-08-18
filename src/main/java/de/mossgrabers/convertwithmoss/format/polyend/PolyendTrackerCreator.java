@@ -84,6 +84,7 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
             return;
         }
 
+        this.logResampling (zone, DESTINATION_AUDIO_FORMAT);
         final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_AUDIO_FORMAT);
         final FormatChunk formatChunk = waveFile.getFormatChunk ();
         final int channels = formatChunk.getNumberOfChannels ();

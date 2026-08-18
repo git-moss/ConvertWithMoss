@@ -255,6 +255,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             return null;
         }
 
+        this.logResampling (zone, DESTINATION_FORMAT);
         final WaveFile waveFile = convertZoneAudio (sampleData.get (), DESTINATION_FORMAT);
         final int numChannels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (numChannels > 2)

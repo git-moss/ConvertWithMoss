@@ -671,6 +671,7 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
             throw new IOException ("Empty sample data in zone: " + zone.getName ());
+        this.logResampling (zone, ZENCORE_FORMAT);
         final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), ZENCORE_FORMAT);
         final int channels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (channels < 1 || channels > 2)

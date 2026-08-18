@@ -462,6 +462,7 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
             return -1;
+        this.logResampling (zone, DESTINATION_FORMAT);
         final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
         final int channels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (channels < 1 || channels > 2)

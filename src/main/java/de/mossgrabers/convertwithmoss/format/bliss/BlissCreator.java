@@ -383,6 +383,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         ISampleData sampleData = sampleDataOpt.get ();
         if (zone.getStart () > 0)
         {
+            this.logResampling (zone, DESTINATION_AUDIO_FORMAT);
             final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
             trimStartToEnd (waveFile, zone);
             sampleData = new WavFileSampleData (waveFile);

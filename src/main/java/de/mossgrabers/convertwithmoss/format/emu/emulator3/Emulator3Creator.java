@@ -559,6 +559,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
             return 0;
         }
 
+        this.logResampling (zone, DESTINATION_FORMAT);
         final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
         final int numChannels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (numChannels > 2)

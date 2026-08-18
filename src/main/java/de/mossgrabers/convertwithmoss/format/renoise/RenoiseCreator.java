@@ -572,6 +572,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         if (loopOpt.isPresent ())
         {
             final ISampleLoop loop = loopOpt.get ();
+            this.logResampling (zone, DESTINATION_AUDIO_FORMAT);
             final WaveFile waveFile = AudioFileUtils.convertToWav (renderSource, DESTINATION_AUDIO_FORMAT);
             applyLoopCrossfade (waveFile, loop.getStart (), loop.getEnd (), loop.getCrossfadeInSamples ());
             renderSource = new WavFileSampleData (waveFile);
@@ -587,6 +588,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         catch (final IOException | RuntimeException _)
         {
             this.notifier.logError ("IDS_RENOISE_FLAC_FALLBACK", zone.getName ());
+            this.logResampling (zone, DESTINATION_AUDIO_FORMAT);
             data = AudioFileUtils.convertToWavData (renderSource, DESTINATION_AUDIO_FORMAT);
             extension = ".wav";
         }
