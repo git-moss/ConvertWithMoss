@@ -57,7 +57,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
     {
         16,
         24
-    }, 96000, true);
+    }, 96000, false);
 
     private static final Map<FilterType, Integer> FILTER_TYPE_MAP          = new EnumMap<> (FilterType.class);
     static
@@ -379,13 +379,16 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         if (sampleDataOpt.isEmpty ())
             return;
 
-        // Trim sample from zone start to end
+        // compressToFLAC only ensures FLAC compatibility - the limits of the format (at most
+        // 96 kHz, no 8 bit) must be applied here, together with the zone start/end trim
         ISampleData sampleData = sampleDataOpt.get ();
-        if (zone.getStart () > 0)
+        final boolean trimStart = zone.getStart () > 0;
+        if (trimStart || AudioFileUtils.getRequiredResampling (sampleData.getAudioMetadata (), DESTINATION_AUDIO_FORMAT) != null)
         {
             this.logResampling (zone, DESTINATION_AUDIO_FORMAT);
             final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);
-            trimStartToEnd (waveFile, zone);
+            if (trimStart)
+                trimStartToEnd (waveFile, zone);
             sampleData = new WavFileSampleData (waveFile);
         }
 
