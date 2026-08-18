@@ -87,9 +87,10 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
         // 'smpl' chunk match the written audio. Samples at 44.1kHz or 48kHz are kept unchanged.
         recalculateAllSamplePositions (multisampleSource, NATIVE_SAMPLE_RATE, true);
 
-        // Write the WAV files. The track names in the kit file are derived the same way, so they
-        // match the file names on disk.
-        this.writeSamples (kitFolder, multisampleSource, DESTINATION_AUDIO_FORMAT, false);
+        // Write only the WAV files of the kit zones - the zones beyond the last pad are not
+        // referenced by the kit file. The track names in the kit file are derived the same way, so
+        // they match the file names on disk.
+        this.writeSamples (kitFolder, multisampleSource, kitZones, DESTINATION_AUDIO_FORMAT);
 
         final byte [] kit = this.createKit (kitZones);
         final File kitFile = new File (kitFolder, kitFolder.getName () + S2400Constants.ENDING_KIT);

@@ -878,63 +878,96 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final String fileEnding, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
+        return this.writeSamples (sampleFolder, multisampleSource, multisampleSource.getAllSampleZones (false), fileEnding, destinationFormat, trim);
+    }
+
+
+    /**
+     * Writes the samples of the given zones in WAV format into the given folder. Use this instead
+     * of the all-groups variants when the written preset references only a subset of the zones -
+     * e.g. because the format limits their number - so that no unreferenced sample files are
+     * created.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multi-sample to which the zones belong
+     * @param zones The zones of which to write the samples
+     * @param destinationFormat The destination audio format
+     * @return The written files
+     * @throws IOException Could not store the samples
+     */
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final List<ISampleZone> zones, final DestinationAudioFormat destinationFormat) throws IOException
+    {
+        return this.writeSamples (sampleFolder, multisampleSource, zones, ".wav", destinationFormat, false);
+    }
+
+
+    /**
+     * Writes the samples of the given zones in WAV format into the given folder.
+     *
+     * @param sampleFolder The destination folder
+     * @param multisampleSource The multi-sample to which the zones belong
+     * @param zones The zones of which to write the samples
+     * @param fileEnding The suffix to use for the file
+     * @param destinationFormat The destination audio format
+     * @param trim Trim the sample from zone start to end if enabled
+     * @return The written files
+     * @throws IOException Could not store the samples
+     */
+    protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final List<ISampleZone> zones, final String fileEnding, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
+    {
         final List<File> writtenFiles = new ArrayList<> ();
         final Set<String> writtenPaths = new HashSet<> ();
 
-        for (final IGroup group: multisampleSource.getGroups ())
+        for (int zoneIndex = 0; zoneIndex < zones.size (); zoneIndex++)
         {
-            final List<ISampleZone> sampleZones = group.getSampleZones ();
-            for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
+            if (this.isCancelled ())
+                return writtenFiles;
+
+            final ISampleZone zone = zones.get (zoneIndex);
+
+            final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, fileEnding));
+            if (writtenFiles.contains (file))
+                continue;
+            // Two zone names which differ only in case address the same file on the
+            // case-insensitive file systems of macOS (APFS/HFS+) and Windows (NTFS) - the
+            // second write would silently overwrite the first one. File.equals cannot detect
+            // this since it compares case-sensitively on all Unix-like systems.
+            final String canonicalPath = canonicalPath (file);
+            if (writtenPaths.contains (canonicalPath))
             {
-                if (this.isCancelled ())
-                    return writtenFiles;
+                this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", file.getAbsolutePath ());
+                continue;
+            }
+            try (final FileOutputStream fos = new FileOutputStream (file))
+            {
+                this.progress.notifyProgress ();
 
-                final ISampleZone zone = sampleZones.get (zoneIndex);
-
-                final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, fileEnding));
-                if (writtenFiles.contains (file))
-                    continue;
-                // Two zone names which differ only in case address the same file on the
-                // case-insensitive file systems of macOS (APFS/HFS+) and Windows (NTFS) - the
-                // second write would silently overwrite the first one. File.equals cannot detect
-                // this since it compares case-sensitively on all Unix-like systems.
-                final String canonicalPath = canonicalPath (file);
-                if (writtenPaths.contains (canonicalPath))
+                if (this.requiresRewrite (destinationFormat) || trim)
+                    this.rewriteFile (multisampleSource, zone, fos, destinationFormat, trim);
+                else
                 {
-                    this.notifier.logError ("IDS_NOTIFY_ALREADY_EXISTS", file.getAbsolutePath ());
-                    continue;
-                }
-                try (final FileOutputStream fos = new FileOutputStream (file))
-                {
-                    this.progress.notifyProgress ();
-
-                    if (this.requiresRewrite (destinationFormat) || trim)
-                        this.rewriteFile (multisampleSource, zone, fos, destinationFormat, trim);
-                    else
+                    final Optional<ISampleData> sampleData = zone.getSampleData ();
+                    if (sampleData.isEmpty ())
                     {
-                        final Optional<ISampleData> sampleData = zone.getSampleData ();
-                        if (sampleData.isEmpty ())
-                        {
-                            this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
-                            this.notifier.logText ("\n");
-                        }
-                        else
-                            sampleData.get ().writeSample (fos);
+                        this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
+                        this.notifier.logText ("\n");
                     }
+                    else
+                        sampleData.get ().writeSample (fos);
+                }
 
-                    writtenFiles.add (file);
-                    writtenPaths.add (canonicalPath);
-                }
-                catch (final NoSuchFileException | FileNotFoundException ex)
-                {
-                    this.progress.notifyFailed ();
-                    this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
-                }
-                catch (final IOException | RuntimeException ex)
-                {
-                    this.progress.notifyFailed ();
-                    this.notifier.logError ("IDS_WAV_WRITE_ERROR", file.getAbsolutePath (), ex.getLocalizedMessage ());
-                }
+                writtenFiles.add (file);
+                writtenPaths.add (canonicalPath);
+            }
+            catch (final NoSuchFileException | FileNotFoundException ex)
+            {
+                this.progress.notifyFailed ();
+                this.notifier.logError ("IDS_NOTIFY_FILE_NOT_FOUND", ex);
+            }
+            catch (final IOException | RuntimeException ex)
+            {
+                this.progress.notifyFailed ();
+                this.notifier.logError ("IDS_WAV_WRITE_ERROR", file.getAbsolutePath (), ex.getLocalizedMessage ());
             }
         }
 
