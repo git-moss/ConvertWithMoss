@@ -190,6 +190,7 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
         if (sampleData.isEmpty ())
             throw new IOException ("Empty sample data in zone: " + zone.getName ());
 
+        this.logResampling (zone, DESTINATION_FORMAT);
         final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
         final int numChannels = waveFile.getFormatChunk ().getNumberOfChannels ();
         if (numChannels > 2)

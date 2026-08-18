@@ -91,6 +91,7 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
             final Optional<ISampleData> sampleData = zone.getSampleData ();
             if (sampleData.isEmpty ())
                 continue;
+            this.logResampling (zone, DESTINATION_FORMAT);
             final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_FORMAT);
             final FormatChunk formatChunk = waveFile.getFormatChunk ();
             final byte [] mono = convertToMono (waveFile.getDataChunk ().getData (), formatChunk.getNumberOfChannels ());

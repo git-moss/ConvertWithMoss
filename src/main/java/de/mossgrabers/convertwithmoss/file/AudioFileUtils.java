@@ -279,10 +279,7 @@ public final class AudioFileUtils
             final AudioFormat audioFormat = audioInputStream.getFormat ();
             final int bitResolution = getMatchingBitResolution (audioFormat.getSampleSizeInBits (), destinationFormat.getBitResolutions ());
 
-            int sampleRate = (int) audioFormat.getSampleRate ();
-            final int maxSampleRate = destinationFormat.getMaxSampleRate ();
-            if (maxSampleRate != -1 && (sampleRate > maxSampleRate || destinationFormat.isUpSample ()))
-                sampleRate = maxSampleRate;
+            final int sampleRate = getMatchingSampleRate ((int) audioFormat.getSampleRate (), destinationFormat);
 
             final Encoding encoding = audioFormat.getEncoding ();
             final boolean is32BitFloat = encoding == Encoding.PCM_FLOAT && audioFormat.getSampleSizeInBits () == 32;
@@ -608,6 +605,49 @@ public final class AudioFileUtils
         }
 
         return analysePath;
+    }
+
+
+    /**
+     * Checks if the audio described by the given metadata needs to be re-sampled to fulfill the
+     * restrictions of the given destination format.
+     *
+     * @param audioMetadata The metadata of the audio to check
+     * @param destinationFormat The destination WAV format configuration
+     * @return The resulting bit resolution and sample rate or null if the audio already fulfills
+     *         the restrictions
+     */
+    public static int [] getRequiredResampling (final IAudioMetadata audioMetadata, final DestinationAudioFormat destinationFormat)
+    {
+        final int bitResolution = audioMetadata.getBitResolution ();
+        final int sampleRate = audioMetadata.getSampleRate ();
+        final int destinationBitResolution = getMatchingBitResolution (bitResolution, destinationFormat.getBitResolutions ());
+        final int destinationSampleRate = getMatchingSampleRate (sampleRate, destinationFormat);
+        if (destinationBitResolution == bitResolution && destinationSampleRate == sampleRate)
+            return null;
+        return new int []
+        {
+            destinationBitResolution,
+            destinationSampleRate
+        };
+    }
+
+
+    /**
+     * Get the sample rate to which the given destination format converts the given sample rate: the
+     * maximum sample rate if the rate lies above it - or below it with up-sampling enabled -
+     * otherwise the rate stays as it is.
+     *
+     * @param sampleRate The sample rate of the source audio
+     * @param destinationFormat The destination WAV format configuration
+     * @return The resulting sample rate
+     */
+    private static int getMatchingSampleRate (final int sampleRate, final DestinationAudioFormat destinationFormat)
+    {
+        final int maxSampleRate = destinationFormat.getMaxSampleRate ();
+        if (maxSampleRate != -1 && (sampleRate > maxSampleRate || destinationFormat.isUpSample ()))
+            return maxSampleRate;
+        return sampleRate;
     }
 
 

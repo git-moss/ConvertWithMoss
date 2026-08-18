@@ -131,6 +131,8 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
         if (sampleData.isEmpty ())
             return;
 
+        this.logResampling (zone, destinationFormat);
+
         // Convert resolution
         final WaveFile wavFile = AudioFileUtils.convertToWav (sampleData.get (), destinationFormat);
         if (wavFile.getDataChunk () == null)

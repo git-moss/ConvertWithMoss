@@ -283,6 +283,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                     continue;
                 }
 
+                this.logResampling (sampleZone, DESTINATION_AUDIO_FORMAT);
                 final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData.get (), DESTINATION_AUDIO_FORMAT);
                 final FormatChunk formatChunk = waveFile.getFormatChunk ();
                 final int numberOfChannels = formatChunk.getNumberOfChannels ();
