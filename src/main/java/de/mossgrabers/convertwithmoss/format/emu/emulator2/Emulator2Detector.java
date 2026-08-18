@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.file.hfe.EmuFmDecoder;
 import de.mossgrabers.convertwithmoss.file.hfe.HfeFile;
 import de.mossgrabers.convertwithmoss.file.hfe.Sector;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -111,7 +112,8 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         if (sourceFile.length () != Emulator2Constants.IMAGE_SIZE)
-            return Optional.empty ();
+            throw new IOException (Functions.getMessage ("IDS_EII_UNEXPECTED_IMAGE_SIZE", Long.toString (sourceFile.length ()), Integer.toString (Emulator2Constants.IMAGE_SIZE)));
+
         return Optional.of (Files.readAllBytes (sourceFile.toPath ()));
     }
 
