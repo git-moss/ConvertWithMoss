@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:ooo="http://openoffice.org/2004/office" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:rpt="http://openoffice.org/2005/report" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:dr3d="urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:chart="urn:oasis:names:tc:opendocument:xmlns:chart:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:number="urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0" xmlns:ooow="http://openoffice.org/2004/writer" xmlns:oooc="http://openoffice.org/2004/calc" xmlns:of="urn:oasis:names:tc:opendocument:xmlns:of:1.2" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:tableooo="http://openoffice.org/2009/table" xmlns:calcext="urn:org:documentfoundation:names:experimental:calc:xmlns:calcext:1.0" xmlns:drawooo="http://openoffice.org/2010/draw" xmlns:loext="urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0" xmlns:field="urn:openoffice:names:experimental:ooo-ms-interop:xmlns:field:1.0" xmlns:math="http://www.w3.org/1998/Math/MathML" xmlns:form="urn:oasis:names:tc:opendocument:xmlns:form:1.0" xmlns:script="urn:oasis:names:tc:opendocument:xmlns:script:1.0" xmlns:formx="urn:openoffice:names:experimental:ooxml-odf-interop:xmlns:form:1.0" xmlns:dom="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:grddl="http://www.w3.org/2003/g/data-view#" xmlns:css3t="http://www.w3.org/TR/css3-text/" xmlns:presentation="urn:oasis:names:tc:opendocument:xmlns:presentation:1.0" office:version="1.4" office:mimetype="application/vnd.oasis.opendocument.spreadsheet">
- <office:meta><meta:creation-date>2021-03-31T19:20:13Z</meta:creation-date><dc:date>2026-08-18T21:19:21.142147600</dc:date><meta:editing-cycles>1065</meta:editing-cycles><meta:editing-duration>P1DT23H59M40S</meta:editing-duration><meta:generator>LibreOffice/26.2.5.2$Windows_X86_64 LibreOffice_project/cd7284b4cbbfeb507e630c1aac019f4157393acb</meta:generator><meta:document-statistic meta:table-count="2" meta:cell-count="2373" meta:object-count="0"/></office:meta>
+ <office:meta><meta:creation-date>2021-03-31T19:20:13Z</meta:creation-date><dc:date>2026-08-18T23:05:07.163295900</dc:date><meta:editing-cycles>1068</meta:editing-cycles><meta:editing-duration>P2DT3M28S</meta:editing-duration><meta:generator>LibreOffice/26.2.5.2$Windows_X86_64 LibreOffice_project/cd7284b4cbbfeb507e630c1aac019f4157393acb</meta:generator><meta:document-statistic meta:table-count="2" meta:cell-count="2400" meta:object-count="0"/></office:meta>
  <office:settings>
   <config:config-item-set config:name="ooo:view-settings">
    <config:config-item config:name="VisibleAreaTop" config:type="int">0</config:config-item>
    <config:config-item config:name="VisibleAreaLeft" config:type="int">0</config:config-item>
-   <config:config-item config:name="VisibleAreaWidth" config:type="int">279677</config:config-item>
-   <config:config-item config:name="VisibleAreaHeight" config:type="int">79578</config:config-item>
+   <config:config-item config:name="VisibleAreaWidth" config:type="int">39783</config:config-item>
+   <config:config-item config:name="VisibleAreaHeight" config:type="int">6264</config:config-item>
    <config:config-item-map-indexed config:name="Views">
     <config:config-item-map-entry>
      <config:config-item config:name="ViewId" config:type="string">view1</config:config-item>
      <config:config-item-map-named config:name="Tables">
       <config:config-item-map-entry config:name="Performance">
-       <config:config-item config:name="CursorPositionX" config:type="int">2</config:config-item>
-       <config:config-item config:name="CursorPositionY" config:type="int">1</config:config-item>
+       <config:config-item config:name="CursorPositionX" config:type="int">3</config:config-item>
+       <config:config-item config:name="CursorPositionY" config:type="int">10</config:config-item>
        <config:config-item config:name="HorizontalSplitMode" config:type="short">2</config:config-item>
        <config:config-item config:name="VerticalSplitMode" config:type="short">2</config:config-item>
        <config:config-item config:name="HorizontalSplitPosition" config:type="int">1</config:config-item>
@@ -57,7 +57,7 @@
        <config:config-item config:name="UseTrailingEmptyLinesInLayout" config:type="boolean">false</config:config-item>
       </config:config-item-map-entry>
      </config:config-item-map-named>
-     <config:config-item config:name="ActiveTable" config:type="string">Preset</config:config-item>
+     <config:config-item config:name="ActiveTable" config:type="string">Performance</config:config-item>
      <config:config-item config:name="HorizontalScrollbarWidth" config:type="int">1895</config:config-item>
      <config:config-item config:name="ZoomType" config:type="short">0</config:config-item>
      <config:config-item config:name="ZoomValue" config:type="int">120</config:config-item>
@@ -170,7 +170,6 @@
   <style:font-face style:name="Liberation Sans" svg:font-family="&apos;Liberation Sans&apos;" style:font-family-generic="swiss" style:font-pitch="variable"/>
   <style:font-face style:name="Liberation Sans1" svg:font-family="&apos;Liberation Sans&apos;"/>
   <style:font-face style:name="Liberation Sans11" svg:font-family="&apos;Liberation Sans1&apos;"/>
-  <style:font-face style:name="Lucida Sans" svg:font-family="&apos;Lucida Sans&apos;" style:font-family-generic="system" style:font-pitch="variable"/>
   <style:font-face style:name="Microsoft YaHei" svg:font-family="&apos;Microsoft YaHei&apos;" style:font-family-generic="system" style:font-pitch="variable"/>
  </office:font-face-decls>
  <office:styles>
@@ -774,7 +773,7 @@
      <text:p><text:sheet-name>???</text:sheet-name><text:s/>(<text:title>???</text:title>)</text:p>
     </style:region-left>
     <style:region-right>
-     <text:p><text:date style:data-style-name="N2" text:date-value="2026-08-18">00.00.0000</text:date>, <text:time style:data-style-name="N2" text:time-value="20:47:12.349422700">00:00:00</text:time></text:p>
+     <text:p><text:date style:data-style-name="N2" text:date-value="2026-08-18">00.00.0000</text:date>, <text:time style:data-style-name="N2" text:time-value="23:01:27.475683800">00:00:00</text:time></text:p>
     </style:region-right>
    </style:header>
    <style:header-left style:display="false"/>
@@ -10766,7 +10765,7 @@
      <table:table-cell table:number-columns-repeated="131"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro11" table:number-rows-repeated="1048481">
+    <table:table-row table:style-name="ro11" table:number-rows-repeated="1048479">
      <table:table-cell table:number-columns-repeated="137"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
@@ -10776,11 +10775,12 @@
     </table:table-row>
    </table:table>
    <table:table table:name="Performance" table:style-name="ta1">
+    <office:forms form:automatic-focus="false" form:apply-design-mode="false"/>
     <table:table-column table:style-name="co50" table:default-cell-style-name="ce3"/>
     <table:table-column table:style-name="co51" table:default-cell-style-name="ce9"/>
     <table:table-column table:style-name="co52" table:default-cell-style-name="ce5"/>
     <table:table-column table:style-name="co5" table:default-cell-style-name="ce19"/>
-    <table:table-column table:style-name="co53" table:default-cell-style-name="ce16"/>
+    <table:table-column table:style-name="co53" table:default-cell-style-name="ce19"/>
     <table:table-column table:style-name="co54" table:default-cell-style-name="ce12"/>
     <table:table-column table:style-name="co55" table:default-cell-style-name="ce12"/>
     <table:table-column table:style-name="co56" table:default-cell-style-name="ce12"/>
@@ -10829,7 +10829,7 @@
      <table:table-cell office:value-type="float" office:value="8" calcext:value-type="float" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>8</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+     <table:table-cell office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Off, 1-16</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -10864,7 +10864,7 @@
      <table:table-cell office:value-type="float" office:value="16" calcext:value-type="float" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>16</text:p>
      </table:table-cell>
-     <table:table-cell office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>Off, Omni, 2-16</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -10884,7 +10884,7 @@
       <text:p>Write</text:p>
      </table:table-cell>
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce3"/>
-     <table:table-cell/>
+     <table:table-cell table:style-name="ce16"/>
      <table:covered-table-cell table:number-columns-repeated="5" table:style-name="ce3"/>
      <table:table-cell/>
     </table:table-row>
@@ -10901,7 +10901,7 @@
      <table:table-cell office:value-type="float" office:value="128" calcext:value-type="float">
       <text:p>128</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string">
+     <table:table-cell office:value-type="string" calcext:value-type="string">
       <text:p>1A-16A, 1B-16B</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string">
@@ -10933,7 +10933,7 @@
      <table:table-cell office:value-type="float" office:value="64" calcext:value-type="float" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>64</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+     <table:table-cell office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Omni, 1-16</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -10973,7 +10973,7 @@
      <table:table-cell office:value-type="float" office:value="32" calcext:value-type="float">
       <text:p>32</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string">
+     <table:table-cell office:value-type="string" calcext:value-type="string">
       <text:p>Off, 1-16</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce11" office:value-type="string" calcext:value-type="string">
@@ -10992,8 +10992,10 @@
      <table:table-cell office:value-type="string" calcext:value-type="string">
       <text:p>txperf</text:p>
      </table:table-cell>
-     <table:table-cell table:number-columns-repeated="2" table:style-name="ce3" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO</text:p>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>No limit</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Omni, 1-16</text:p><text:p>Off is mapped to 16</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce3" office:value-type="string" calcext:value-type="string">
@@ -11017,9 +11019,8 @@
      <table:table-cell office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
      </table:table-cell>
-     <table:table-cell/>
-     <table:table-cell table:style-name="ce3" table:number-columns-repeated="2"/>
-     <table:covered-table-cell table:style-name="ce3"/>
+     <table:table-cell table:number-columns-repeated="2"/>
+     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce3"/>
      <table:table-cell table:style-name="ce3" table:number-columns-repeated="4"/>
      <table:table-cell/>
     </table:table-row>
@@ -11061,7 +11062,7 @@
      </table:table-cell>
      <table:table-cell/>
      <table:covered-table-cell table:style-name="ce3"/>
-     <table:table-cell office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>Mapped to Scene</text:p>
      </table:table-cell>
      <table:covered-table-cell table:number-columns-repeated="5" table:style-name="Default"/>

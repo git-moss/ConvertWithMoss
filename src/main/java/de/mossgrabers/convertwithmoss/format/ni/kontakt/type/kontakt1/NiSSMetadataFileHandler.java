@@ -58,7 +58,7 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     {
         final String midiChannel = programParameters.get ("midiChannel");
         if (midiChannel != null)
-            instrumentSource.setMidiChannel (Integer.parseInt (midiChannel) - 1);
+            instrumentSource.setMidiChannel ((Integer.parseInt (midiChannel) - 1) % 16);
 
         super.readInstrumentParameters (instrumentSource, programParameters);
     }

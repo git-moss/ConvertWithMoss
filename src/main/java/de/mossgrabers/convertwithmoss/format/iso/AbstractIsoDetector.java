@@ -79,6 +79,11 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
                 for (final IAkaiVolume volume: partition.getVolumes ())
                     if (volume instanceof final AkaiS1000Volume s1000Volume)
                     {
+                        final List<String> errors = s1000Volume.getErrors ();
+                        if (!errors.isEmpty ())
+                            for (final String error: errors)
+                                this.notifier.logError ("IDS_S1000_PARTITIONA_ERROR", error);
+
                         final List<AkaiS1000Sample> samples = s1000Volume.getSamples ();
                         for (final AkaiS1000Program program: s1000Volume.getPrograms ())
                         {

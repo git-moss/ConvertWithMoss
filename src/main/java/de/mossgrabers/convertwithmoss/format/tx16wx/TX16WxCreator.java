@@ -559,8 +559,11 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             final Element slotElement = XMLUtils.addElement (document, performanceElement, TX16WxTag.SLOT);
             slotElement.setAttribute (TX16WxTag.NAME, "Ch" + (i + 1));
             slotElement.setAttribute (TX16WxTag.PROGRAM, programFiles.get (i).getName ());
-            final int midiChannel = acceptedInstrumentSources.get (i).getMidiChannel () + 1;
-            slotElement.setAttribute (TX16WxTag.MIDI_CHANNEL, midiChannel == 0 ? "Omni" : Integer.toString (midiChannel));
+            int midiChannel = acceptedInstrumentSources.get (i).getMidiChannel ();
+            // No real meaningful mapping for Off-state, set it to channel 16
+            if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OFF)
+                midiChannel = 15;
+            slotElement.setAttribute (TX16WxTag.MIDI_CHANNEL, midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI ? "Omni" : Integer.toString (midiChannel + 1));
             slotElement.setAttribute (TX16WxTag.OUTPUT, "Out 1");
         }
 

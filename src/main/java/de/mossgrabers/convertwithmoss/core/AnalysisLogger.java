@@ -107,8 +107,10 @@ public class AnalysisLogger
             final int midiChannel = instrumentSource.getMidiChannel ();
             if (midiChannel >= 0 && midiChannel <= 15)
                 sb.append (midiChannel + 1);
-            else
+            else if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI)
                 sb.append ("omni");
+            else
+                sb.append ("off");
             final int clipKeyLow = instrumentSource.getClipKeyLow ();
             final int clipKeyHigh = instrumentSource.getClipKeyHigh ();
             if (clipKeyLow > 0 || clipKeyHigh < 127)

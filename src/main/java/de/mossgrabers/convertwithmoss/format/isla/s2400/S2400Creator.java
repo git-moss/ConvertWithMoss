@@ -91,7 +91,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
         // match the file names on disk.
         this.writeSamples (kitFolder, multisampleSource, DESTINATION_AUDIO_FORMAT, false);
 
-        final byte [] kit = this.createKit (kitZones);
+        final byte [] kit = createKit (kitZones);
         final File kitFile = new File (kitFolder, kitFolder.getName () + S2400Constants.ENDING_KIT);
         this.notifier.log ("IDS_NOTIFY_STORING", kitFile.getAbsolutePath ());
         Files.write (kitFile.toPath (), kit);
@@ -106,8 +106,9 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
     {
         super.additionalProcessing (multisampleSource, zone, wavFile);
 
-        // The S2400 reads loop points from the WAV 'smpl' chunk. Make sure it is always written when
-        // the zone is looped, even if the CLI sample chunk option is off (its default resets it).
+        // The S2400 reads loop points from the WAV 'smpl' chunk. Make sure it is always written
+        // when the zone is looped, even if the CLI sample chunk option is off (its default resets
+        // it).
         if (!this.settingsConfiguration.isUpdateSampleChunk () && !zone.getLoops ().isEmpty ())
             updateSampleChunk (zone, wavFile);
     }
@@ -137,7 +138,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
      * @return The kit file content
      * @throws IOException Could not read the sample metadata
      */
-    private byte [] createKit (final List<ISampleZone> zones) throws IOException
+    private static byte [] createKit (final List<ISampleZone> zones) throws IOException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
@@ -146,7 +147,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
         writeU32Record (out, S2400Constants.FIELD_HEADER_MARKER, 1);
 
         for (int i = 0; i < zones.size (); i++)
-            this.writeTrack (out, i, zones.get (i));
+            writeTrack (out, i, zones.get (i));
 
         return out.toByteArray ();
     }
@@ -160,7 +161,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param zone The sample zone
      * @throws IOException Could not read the sample metadata
      */
-    private void writeTrack (final ByteArrayOutputStream out, final int padIndex, final ISampleZone zone) throws IOException
+    private static void writeTrack (final ByteArrayOutputStream out, final int padIndex, final ISampleZone zone) throws IOException
     {
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
@@ -233,7 +234,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 case BAND_PASS, BAND_REJECTION -> S2400Constants.FILTER_BAND_PASS;
                 default -> S2400Constants.FILTER_LOW_PASS;
             };
-            cutoffHertz = (int) Math.clamp (Math.round (filter.getCutoff ()), S2400Constants.CUTOFF_MIN_HERTZ, S2400Constants.CUTOFF_MAX_HERTZ);
+            cutoffHertz = Math.clamp (Math.round (filter.getCutoff ()), S2400Constants.CUTOFF_MIN_HERTZ, S2400Constants.CUTOFF_MAX_HERTZ);
             resonance = (int) Math.round (Math.clamp (filter.getResonance (), 0.0, 1.0) * S2400Constants.RANGE_8_BIT);
         }
 
