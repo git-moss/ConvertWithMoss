@@ -27,19 +27,16 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
-import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -185,7 +182,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         // Write the samples into <card root>/SAMPLES/<sub-path>/<name>/
         final File sampleFolder = new File (cardRootFolder, relativeSampleFolder);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, createTemporarySource (multisampleSource, zones));
+        this.writeSamples (sampleFolder, multisampleSource, zones, DESTINATION_FORMAT);
 
         // Create and store the XML document referencing the samples by their card-relative path
         final Optional<String> metadata = createKit ? this.createKitDocument (zones, relativeSampleFolder, this.settingsConfiguration.isConsolidateKit ()) : this.createSoundDocument (zones, relativeSampleFolder, getPolyphonyMode (multisampleSource));
@@ -530,33 +527,6 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
                 name = base + "_" + counter++;
             zone.setName (name);
         }
-    }
-
-
-    /**
-     * Create a temporary multi-sample source containing only the given zones in a single group so
-     * that exactly these zones are written by {@link #writeSamples}.
-     *
-     * @param multisampleSource The original multi-sample source (used for the metadata)
-     * @param zones The zones to write
-     * @return The temporary source
-     */
-    private static IMultisampleSource createTemporarySource (final IMultisampleSource multisampleSource, final List<ISampleZone> zones)
-    {
-        final IGroup group = new DefaultGroup ();
-        for (final ISampleZone zone: zones)
-            group.addSampleZone (zone);
-
-        final IMultisampleSource source = new DefaultMultisampleSource ();
-        source.setGroups (Collections.singletonList (group));
-
-        final IMetadata sourceMetadata = multisampleSource.getMetadata ();
-        final IMetadata metadata = source.getMetadata ();
-        metadata.setDescription (sourceMetadata.getDescription ());
-        metadata.setCreator (sourceMetadata.getCreator ());
-        metadata.setCategory (sourceMetadata.getCategory ());
-        metadata.setCreationDateTime (sourceMetadata.getCreationDateTime ());
-        return source;
     }
 
 

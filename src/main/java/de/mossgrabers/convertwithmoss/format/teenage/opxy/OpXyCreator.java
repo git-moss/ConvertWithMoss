@@ -88,7 +88,10 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
         }
 
         this.checkSampleLengths (zones);
-        this.writeSamples (presetFolder, multisampleSource, DESTINATION_FORMAT);
+        // Write only the samples of the collected zones: the dropped velocity layers and the
+        // regions above the maximum are not referenced by the description file and their samples
+        // would only occupy space on the device
+        this.writeSamples (presetFolder, multisampleSource, zones, DESTINATION_FORMAT);
         Files.write (patchFile.toPath (), this.createPatch (zones).getBytes (StandardCharsets.UTF_8));
 
         this.progress.notifyDone ();
