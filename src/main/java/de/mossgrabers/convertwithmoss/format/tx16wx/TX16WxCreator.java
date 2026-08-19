@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -279,29 +281,25 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (multisampleSources.isEmpty ())
             return;
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "txbank");
-        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
-
-        final List<File> programFiles = new ArrayList<> ();
-        final List<IMultisampleSource> acceptedMultisampleSources = new ArrayList<> ();
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        performanceSource.setName (FileUtils.createSafeFilename (libraryName));
         for (final IMultisampleSource multisampleSource: multisampleSources)
+            performanceSource.addInstrument (new DefaultInstrumentSource (multisampleSource, IInstrumentSource.MIDI_CHANNEL_OMNI));
+
+        final PerformanceCreationResults performanceWithResults = this.createPerformanceWithResults (destinationFolder, performanceSource);
+        if (performanceWithResults.performanceFile != null)
         {
-            final Optional<File> preset = this.createPreset (destinationFolder, new DefaultInstrumentSource (multisampleSource, -1));
-            if (preset.isPresent ())
+            final File multiFile = this.createUniqueFilename (destinationFolder, performanceSource.getName (), "txbank");
+            final Optional<String> xmlCode = this.createBankDocument (performanceWithResults.performanceFile.getName (), performanceWithResults.acceptedInstrumentSources, performanceWithResults.programFiles);
+            if (xmlCode.isEmpty ())
+                return;
+
+            this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
+
+            try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
             {
-                programFiles.add (preset.get ());
-                acceptedMultisampleSources.add (multisampleSource);
+                writer.write (xmlCode.get ());
             }
-        }
-
-        final Optional<String> xmlCode = this.createBankDocument (acceptedMultisampleSources, programFiles);
-        if (xmlCode.isEmpty ())
-            return;
-
-        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
-        try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
-        {
-            writer.write (xmlCode.get ());
         }
 
         this.progress.notifyDone ();
@@ -316,6 +314,14 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (instruments.isEmpty ())
             return;
 
+        createPerformanceWithResults (destinationFolder, performanceSource);
+
+        this.progress.notifyDone ();
+    }
+
+
+    private PerformanceCreationResults createPerformanceWithResults (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
+    {
         final String libraryName = FileUtils.createSafeFilename (performanceSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "txperf");
         this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
@@ -334,7 +340,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final Optional<String> xmlCode = this.createPerformanceDocument (performanceSource, acceptedInstrumentSources, programFiles);
         if (xmlCode.isEmpty ())
-            return;
+            return new PerformanceCreationResults (Collections.emptyList (), Collections.emptyList (), null);
 
         this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
@@ -342,7 +348,12 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             writer.write (xmlCode.get ());
         }
 
-        this.progress.notifyDone ();
+        return new PerformanceCreationResults (programFiles, acceptedInstrumentSources, multiFile);
+    }
+
+
+    record PerformanceCreationResults (List<File> programFiles, List<IInstrumentSource> acceptedInstrumentSources, File performanceFile)
+    {
     }
 
 
@@ -394,11 +405,12 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     /**
      * Create the text of the TX bank description file.
      * 
-     * @param multisampleSources The multi-samples to add to the bank
+     * @param performanceFileName The name of the performance file
+     * @param instrumentSources The multi-samples to add to the bank
      * @param programFiles The already created TX16w program files
      * @return The XML structure
      */
-    private Optional<String> createBankDocument (final List<IMultisampleSource> multisampleSources, final List<File> programFiles)
+    private Optional<String> createBankDocument (final String performanceFileName, final List<IInstrumentSource> instrumentSources, final List<File> programFiles)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -410,17 +422,15 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         document.appendChild (bankElement);
         bankElement.setAttribute (TX16WxTag.PROGRAM_CREATED_BY, CREATED_BY_VERSION);
         bankElement.setAttribute (TX16WxTag.PROGRAM_QUALITY, "Default");
-        bankElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/bank");
+        bankElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/ bank");
         bankElement.setAttribute ("xmlns:tx", "http://www.tx16wx.com/3.0/bank");
         bankElement.setAttribute ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
-        for (int i = 0; i < multisampleSources.size (); i++)
+        for (int i = 0; i < instrumentSources.size (); i++)
         {
-            final IMultisampleSource multisampleSource = multisampleSources.get (i);
+            final IMultisampleSource multisampleSource = instrumentSources.get (i).getMultisampleSource ();
             final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
             final String relativeFolderName = multisampleName + FOLDER_POSTFIX;
-            final File programFile = programFiles.get (i);
-
             for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
             {
                 for (final ISampleZone zone: group.getSampleZones ())
@@ -429,10 +439,17 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                     waveElement.setAttribute (TX16WxTag.PATH, AbstractCreator.formatFileName (relativeFolderName, zone.getName () + ".wav"));
                 }
             }
-
+        }
+        for (int i = 0; i < instrumentSources.size (); i++)
+        {
+            final File programFile = programFiles.get (i);
             final Element programElement = XMLUtils.addElement (document, bankElement, TX16WxTag.PROGRAM);
             programElement.setAttribute (TX16WxTag.PATH, programFile.getName ());
         }
+
+        final Element performanceElement = XMLUtils.addElement (document, bankElement, TX16WxTag.PERFORMANCE);
+        performanceElement.setAttribute (TX16WxTag.PATH, performanceFileName);
+        performanceElement.setAttribute ("tx:active", "true");
 
         return this.createXMLString (document);
     }
@@ -470,7 +487,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 programElement.setAttribute (TX16WxTag.PROGRAM_ICON, "#" + icon);
         }
 
-        programElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/program");
+        programElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/ program");
         programElement.setAttribute ("xmlns:tx", "http://www.tx16wx.com/3.0/program");
         programElement.setAttribute ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
@@ -559,12 +576,22 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             final Element slotElement = XMLUtils.addElement (document, performanceElement, TX16WxTag.SLOT);
             slotElement.setAttribute (TX16WxTag.NAME, "Ch" + (i + 1));
             slotElement.setAttribute (TX16WxTag.PROGRAM, programFiles.get (i).getName ());
-            int midiChannel = acceptedInstrumentSources.get (i).getMidiChannel ();
+            final IInstrumentSource instrumentSource = acceptedInstrumentSources.get (i);
+            int midiChannel = instrumentSource.getMidiChannel ();
             // No real meaningful mapping for Off-state, set it to channel 16
             if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OFF)
                 midiChannel = 15;
             slotElement.setAttribute (TX16WxTag.MIDI_CHANNEL, midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI ? "Omni" : Integer.toString (midiChannel + 1));
             slotElement.setAttribute (TX16WxTag.OUTPUT, "Out 1");
+
+            final Element volumeElement = XMLUtils.addElement (document, slotElement, TX16WxTag.SLOT_VOLUME);
+            volumeElement.setAttribute (TX16WxTag.VALUE, String.format (Locale.US, "%.2f dB", Double.valueOf (instrumentSource.getGain ())));
+            final Element panElement = XMLUtils.addElement (document, slotElement, TX16WxTag.SLOT_PANNING);
+            panElement.setAttribute (TX16WxTag.VALUE, Math.round (instrumentSource.getPanning () * 100) + "%");
+            final Element transposeElement = XMLUtils.addElement (document, slotElement, TX16WxTag.SLOT_TRANSPOSE);
+            XMLUtils.setIntegerAttribute (transposeElement, TX16WxTag.VALUE, instrumentSource.getTranspose ());
+            final Element detuneElement = XMLUtils.addElement (document, slotElement, TX16WxTag.SLOT_DETUNE);
+            XMLUtils.setIntegerAttribute (detuneElement, TX16WxTag.VALUE, instrumentSource.getTuning ());
         }
 
         return this.createXMLString (document);

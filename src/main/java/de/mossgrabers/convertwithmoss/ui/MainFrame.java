@@ -1541,6 +1541,7 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.formatPane.setLeft (sidebar);
             this.formatPane.setCenter (this.contentArea);
             this.formatPane.getStyleClass ().add ("paddingLeftBottomRight");
+            this.formatPane.setMinWidth (500);
         }
 
 
