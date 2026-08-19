@@ -79,12 +79,12 @@ public class Kontakt1Format extends AbstractKontaktFormat
 
     /** {@inheritDoc} */
     @Override
-    public void writeNKM (final OutputStream out, final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources, final int sizeOfSamples) throws IOException
+    public void writeNKM (final OutputStream out, final String bankName, final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources, final int sizeOfSamples) throws IOException
     {
         if (instrumentSources.isEmpty ())
             return;
 
-        final String xmlCode = this.handler.createBank (safeSampleFolderNames, instrumentSources);
+        final String xmlCode = this.handler.createBank (bankName, safeSampleFolderNames, instrumentSources);
 
         final Date creationDateTime = instrumentSources.get (0).getMetadata ().getCreationDateTime ();
         final long timestamp = creationDateTime == null ? System.currentTimeMillis () : creationDateTime.getTime ();

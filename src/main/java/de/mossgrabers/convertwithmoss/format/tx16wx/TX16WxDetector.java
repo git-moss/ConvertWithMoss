@@ -220,6 +220,23 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             else
                 midiChannel = XMLUtils.getIntegerAttribute (slotElement, TX16WxTag.MIDI_CHANNEL, 1) - 1;
             instrumentSource.setMidiChannel (midiChannel);
+
+            final Element volumeElement = XMLUtils.getChildElementByName (slotElement, TX16WxTag.SLOT_VOLUME);
+            if (volumeElement != null)
+                instrumentSource.setGain (this.parseVolume (volumeElement, TX16WxTag.VALUE));
+
+            final Element panElement = XMLUtils.getChildElementByName (slotElement, TX16WxTag.SLOT_PANNING);
+            if (panElement != null)
+                instrumentSource.setPanning (parsePercentage (panElement, TX16WxTag.VALUE));
+
+            final Element transposeElement = XMLUtils.getChildElementByName (slotElement, TX16WxTag.SLOT_TRANSPOSE);
+            if (transposeElement != null)
+                instrumentSource.setTranspose (XMLUtils.getIntegerAttribute (transposeElement, TX16WxTag.VALUE, 0));
+
+            final Element detuneElement = XMLUtils.getChildElementByName (slotElement, TX16WxTag.SLOT_DETUNE);
+            if (transposeElement != null)
+                instrumentSource.setTuning (XMLUtils.getIntegerAttribute (detuneElement, TX16WxTag.VALUE, 0));
+
             // Don't use the name from the XML since it might only be something like "CH01"
             instrumentSource.setName (FileUtils.getNameWithoutType (programFile));
             performanceSource.addInstrument (instrumentSource);

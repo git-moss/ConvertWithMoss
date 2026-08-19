@@ -1,4 +1,4 @@
-<NiSS_Bank name="pad_tweek" version="0.50">
+<NiSS_Bank name="%BANK_NAME%" version="0.50">
   <Parameters>
     <V name="numOutStereo" value="4"/>
     <V name="numOutMono" value="4"/>

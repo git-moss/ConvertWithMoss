@@ -30,9 +30,9 @@ import de.mossgrabers.tools.FileUtils;
 
 
 /**
- * Detects recursively ISLA Instruments S2400 kit files in folders. Files must end with
- * <i>.kit</i>. A kit file describes a set of pads (tracks), each referencing a WAV file located in
- * the same folder plus its performance parameters (level, filter, pitch, envelopes, choke group).
+ * Detects recursively ISLA Instruments S2400 kit files in folders. Files must end with <i>.kit</i>.
+ * A kit file describes a set of pads (tracks), each referencing a WAV file located in the same
+ * folder plus its performance parameters (level, filter, pitch, envelopes, choke group).
  *
  * @author Jürgen Moßgraber
  */
@@ -192,9 +192,7 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
         };
 
         // A low-pass parked at the top or a high-pass parked at the bottom is sonically transparent
-        if (filterType == FilterType.LOW_PASS && cutoffHertz >= S2400Constants.CUTOFF_MAX_HERTZ)
-            return;
-        if (filterType == FilterType.HIGH_PASS && cutoffHertz <= S2400Constants.CUTOFF_MIN_HERTZ)
+        if ((filterType == FilterType.LOW_PASS && cutoffHertz >= S2400Constants.CUTOFF_MAX_HERTZ) || (filterType == FilterType.HIGH_PASS && cutoffHertz <= S2400Constants.CUTOFF_MIN_HERTZ))
             return;
 
         final double resonance = Math.clamp (track.filterResonance / (double) S2400Constants.RANGE_8_BIT, 0.0, 1.0);
@@ -218,7 +216,8 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
         if (track.envelopeStyle == S2400Constants.ENVELOPE_CLASSIC)
         {
             // The classic envelope holds at full volume then releases. A maximum decay disables the
-            // envelope, everything below shortens the release proportionally. The absolute times are
+            // envelope, everything below shortens the release proportionally. The absolute times
+            // are
             // defined by an (encrypted) firmware table, therefore this is an approximation.
             if (track.classicDecay >= S2400Constants.CLASSIC_DECAY_MAX)
                 return;
@@ -249,8 +248,8 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Parse the flat record stream. Parsing stops at the end of the data or as soon as an
-     * unknown record type is encountered, which tolerates the trailing padding that the reference
+     * Parse the flat record stream. Parsing stops at the end of the data or as soon as an unknown
+     * record type is encountered, which tolerates the trailing padding that the reference
      * application appends.
      *
      * @param data The file content
@@ -490,23 +489,23 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
      */
     private static final class S2400Track
     {
-        private int    padIndex;
-        private String name;
-        private int    gainDb;
-        private int    pitchFineCents;
-        private int    chokeGroup;
+        private int     padIndex;
+        private String  name;
+        private int     gainDb;
+        private int     pitchFineCents;
+        private int     chokeGroup;
         private boolean gated;
-        private int    envelopeStyle    = S2400Constants.ENVELOPE_HIFI;
-        private int    classicDecay     = S2400Constants.CLASSIC_DECAY_MAX;
+        private int     envelopeStyle     = S2400Constants.ENVELOPE_HIFI;
+        private int     classicDecay      = S2400Constants.CLASSIC_DECAY_MAX;
 
-        private int    filterMode       = S2400Constants.FILTER_LOW_PASS;
-        private int    filterResonance;
-        private int    filterCutoffHertz = S2400Constants.CUTOFF_MAX_HERTZ;
+        private int     filterMode        = S2400Constants.FILTER_LOW_PASS;
+        private int     filterResonance;
+        private int     filterCutoffHertz = S2400Constants.CUTOFF_MAX_HERTZ;
 
-        private int    envAttack;
-        private int    envAttackHold;
-        private int    envDecay;
-        private int    envSustain       = S2400Constants.RANGE_10_BIT;
-        private int    envRelease;
+        private int     envAttack;
+        private int     envAttackHold;
+        private int     envDecay;
+        private int     envSustain        = S2400Constants.RANGE_10_BIT;
+        private int     envRelease;
     }
 }

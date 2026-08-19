@@ -22,6 +22,7 @@ import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.IKontaktFormat;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt1.Kontakt1Format;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Kontakt5Format;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.StringUtils;
 
 
 /**
@@ -167,7 +168,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            kontaktType.writeNKM (out, sampleFilePaths, safeInstrumentSources, calculateSampleSize (sampleFiles));
+            kontaktType.writeNKM (out, StringUtils.fixASCII (libraryName), sampleFilePaths, safeInstrumentSources, calculateSampleSize (sampleFiles));
         }
 
         this.progress.notifyDone ();

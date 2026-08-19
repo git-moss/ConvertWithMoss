@@ -2,14 +2,14 @@
   <Parameters>
     <V name="midiChannel" value="%PROGRAM_MIDI_CHANNEL%"/>
     <V name="output" value="0"/>
-    <V name="transpose" value="0"/>
-    <V name="masterVolume" value="0.5"/>
-    <V name="masterPan" value="0.5"/>
-    <V name="masterTune" value="1"/>
+    <V name="transpose" value="%MASTER_TRANSPOSE%"/>
+    <V name="masterVolume" value="%MASTER_VOLUME%"/>
+    <V name="masterPan" value="%MASTER_PANNING%"/>
+    <V name="masterTune" value="%MASTER_TUNE%"/>
     <V name="lowVelocity" value="1"/>
     <V name="highVelocity" value="127"/>
-    <V name="lowKey" value="0"/>
-    <V name="highKey" value="127"/>
+    <V name="lowKey" value="%MASTER_LOW_KEY%"/>
+    <V name="highKey" value="%MASTER_HIGH_KEY%"/>
     <V name="fingerPrint" value="256"/>
     <V name="activeGroupIdx" value="0"/>
     <V name="inputQuantizeMode" value="off"/>

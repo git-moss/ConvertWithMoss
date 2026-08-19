@@ -66,11 +66,12 @@ public interface IKontaktFormat
      * Write a new NKM file from the given instrument sources (up to 64).
      *
      * @param out Where to write the data
+     * @param bankName The name of the bank
      * @param safeSampleFolderNames The folders where the samples are placed. Must be of the same
      *            size as multisampleSources!
      * @param instrumentSources The instrument sources
      * @param sizeOfSamples The size of all samples
      * @throws IOException Error writing the file
      */
-    void writeNKM (OutputStream out, List<String> safeSampleFolderNames, List<IInstrumentSource> instrumentSources, int sizeOfSamples) throws IOException;
+    void writeNKM (OutputStream out, String bankName, List<String> safeSampleFolderNames, List<IInstrumentSource> instrumentSources, int sizeOfSamples) throws IOException;
 }

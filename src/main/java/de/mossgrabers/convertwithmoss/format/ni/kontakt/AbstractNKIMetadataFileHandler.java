@@ -234,15 +234,16 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Creates a metadata description file for a bank of up to 64 programs.
-     *
+     * Creates a metadata description file for a bank (multi) of up to 64 programs.
+     * 
+     * @param bankName The name of the bank
      * @param safeSampleFolderNames The folders where the samples are placed. Must be of the same
      *            size as multisampleSources!
      * @param instrumentSources The instrument sources
      * @return The XML document as a text
      * @throws IOException Could not create the text due to missing templates
      */
-    public String createBank (final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources) throws IOException
+    public String createBank (final String bankName, final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources) throws IOException
     {
         int numInstruments = instrumentSources.size ();
         if (numInstruments > 64)
@@ -253,7 +254,8 @@ public abstract class AbstractNKIMetadataFileHandler
 
         final String templatePrefix = this.getTemplatePrefix ();
         final StringBuilder sb = new StringBuilder (XML_HEADER);
-        sb.append (Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Bank_Start.xml"));
+        final String header = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Bank_Start.xml");
+        sb.append (header.replace ("%BANK_NAME%", bankName));
         for (int i = 0; i < numInstruments; i++)
             sb.append (this.createRawProgram (safeSampleFolderNames.get (i), instrumentSources.get (i), i));
         sb.append (Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_06_Bank_End.xml"));
@@ -289,6 +291,13 @@ public abstract class AbstractNKIMetadataFileHandler
         if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OFF)
             midiChannel = 16; // B1 since there is no off-state
         text = text.replace ("%PROGRAM_MIDI_CHANNEL%", Integer.toString (midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI ? 0 : midiChannel + 1));
+
+        text = text.replace ("%MASTER_VOLUME%", formatDouble (Math.pow (10, instrumentSource.getGain () / 20.0d)));
+        text = text.replace ("%MASTER_PANNING%", String.format (Locale.US, "%.02f", Double.valueOf ((instrumentSource.getPanning () + 1.0) / 2.0)));
+        text = text.replace ("%MASTER_TRANSPOSE%", Integer.toString (instrumentSource.getTranspose ()));
+        text = text.replace ("%MASTER_TUNE%", formatDouble (Math.pow (2.0, instrumentSource.getTuning () / 12.0)));
+        text = text.replace ("%MASTER_LOW_KEY%", Integer.toString (instrumentSource.getClipKeyLow ()));
+        text = text.replace ("%MASTER_HIGH_KEY%", Integer.toString (instrumentSource.getClipKeyHigh ()));
 
         // Add all groups
         final String result = this.addGroups (templatePrefix, safeSampleFolderName, multisampleSource.getNonEmptyGroups (false));

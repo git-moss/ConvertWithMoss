@@ -36,6 +36,8 @@ public class S770Performance
     private final int        partsAfterTouchSwitch;
     private final int        partsAfterTouchMode;
     private final int []     velocityCurveTypeData;
+    private final int []     outputSelection;
+    private final int []     panning;
 
 
     /**
@@ -49,9 +51,7 @@ public class S770Performance
     {
         this.performanceName = StreamUtils.readAscii (input, 16);
 
-        this.partsPatchSelection = new int [32];
-        for (int i = 0; i < 32; i++)
-            this.partsPatchSelection[i] = StreamUtils.readSigned8 (input);
+        this.partsPatchSelection = readSignedByteArray32 (input);
 
         this.midiChannel = new int [32];
         for (int i = 0; i < 16; i++)
@@ -71,22 +71,12 @@ public class S770Performance
             this.partsLevel[i] = value & 0x7F;
         }
 
-        this.partsZoneLower = new int [32];
-        for (int i = 0; i < 32; i++)
-            this.partsZoneLower[i] = StreamUtils.readUnsigned8 (input);
+        this.partsZoneLower = readUnsignedByteArray32 (input);
+        this.partsZoneUpper = readUnsignedByteArray32 (input);
+        this.partsFadeWidthLower = readUnsignedByteArray32 (input);
+        this.partsFadeWidthUpper = readUnsignedByteArray32 (input);
 
-        this.partsZoneUpper = new int [32];
-        for (int i = 0; i < 32; i++)
-            this.partsZoneUpper[i] = StreamUtils.readUnsigned8 (input);
-
-        this.partsFadeWidthLower = new int [32];
-        for (int i = 0; i < 32; i++)
-            this.partsFadeWidthLower[i] = StreamUtils.readUnsigned8 (input);
-
-        this.partsFadeWidthUpper = new int [32];
-        for (int i = 0; i < 32; i++)
-            this.partsFadeWidthUpper[i] = StreamUtils.readUnsigned8 (input);
-
+        // 16-bit arrays. One bit for each MIDI channel.
         this.partsProgramChange = StreamUtils.readSigned16 (input, false);
         this.partsPitchBend = StreamUtils.readSigned16 (input, false);
         this.partsModulation = StreamUtils.readSigned16 (input, false);
@@ -101,11 +91,27 @@ public class S770Performance
             this.velocityCurveTypeData[i] = StreamUtils.readUnsigned8 (input);
 
         if (isDiskette)
+        {
+            this.outputSelection = new int [32];
+            this.panning = new int [32];
             return;
+        }
 
         for (int i = 0; i < 32; i++)
             this.partsPatchSelection[i] = StreamUtils.readSigned16 (input, false);
-        input.skipNBytes (0xC0);
+
+        @SuppressWarnings("unused")
+        final int [] unknown1 = readSignedByteArray32 (input);
+        @SuppressWarnings("unused")
+        final int [] unknown2 = readSignedByteArray32 (input);
+        @SuppressWarnings("unused")
+        final int [] unknown3 = readSignedByteArray32 (input);
+
+        this.outputSelection = readSignedByteArray32 (input);
+        this.panning = readSignedByteArray32 (input);
+
+        @SuppressWarnings("unused")
+        final int [] unknown6 = readSignedByteArray32 (input);
     }
 
 
@@ -136,7 +142,7 @@ public class S770Performance
      *
      * @return The MIDI channels, Off, 1-16
      */
-    public int [] getMidiChannel ()
+    public int [] getPartsMidiChannel ()
     {
         return this.midiChannel;
     }
@@ -147,7 +153,7 @@ public class S770Performance
      *
      * @return True if enabled
      */
-    public boolean [] isMidiEnabled ()
+    public boolean [] isPartsMidiEnabled ()
     {
         return this.midiEnabled;
     }
@@ -161,6 +167,28 @@ public class S770Performance
     public int [] getPartsLevel ()
     {
         return this.partsLevel;
+    }
+
+
+    /**
+     * Get the panning of the parts.
+     *
+     * @return The panning in the range of -32..32 (L32..R32)
+     */
+    public int [] getPartsPanning ()
+    {
+        return this.panning;
+    }
+
+
+    /**
+     * Get the outputs of the parts.
+     *
+     * @return The outputs
+     */
+    public int [] getPartsOutputs ()
+    {
+        return this.outputSelection;
     }
 
 
@@ -312,5 +340,23 @@ public class S770Performance
     public String toString ()
     {
         return "S770PerformanceParameter [\n  performanceName='" + this.performanceName.trim () + "'\n  partsPatchSelection=" + Arrays.toString (this.partsPatchSelection) + "\n  midiChannel=" + Arrays.toString (this.midiChannel) + "\n  midiEnabled=" + Arrays.toString (this.midiEnabled) + "\n  partsLevel=" + Arrays.toString (this.partsLevel) + "\n  partsZoneLower=" + Arrays.toString (this.partsZoneLower) + "\n  partsZoneUpper=" + Arrays.toString (this.partsZoneUpper) + "\n  partsFadeWidthLower=" + Arrays.toString (this.partsFadeWidthLower) + "\n  partsFadeWidthUpper=" + Arrays.toString (this.partsFadeWidthUpper) + "\n  partsProgramChange=" + this.partsProgramChange + "\n  partsPitchBend=" + this.partsPitchBend + "\n  partsModulation=" + this.partsModulation + "\n  partsHoldPedal=" + this.partsHoldPedal + "\n  partsBendRange=" + this.partsBendRange + "\n  partsMidiVolume=" + this.partsMidiVolume + "\n  partsAfterTouchSwitch=" + this.partsAfterTouchSwitch + "\n  partsAfterTouchMode=" + this.partsAfterTouchMode + "\n  velocityCurveTypeData=" + Arrays.toString (this.velocityCurveTypeData) + "\n]";
+    }
+
+
+    private static int [] readSignedByteArray32 (final InputStream input) throws IOException
+    {
+        final int [] values = new int [32];
+        for (int i = 0; i < 32; i++)
+            values[i] = StreamUtils.readSigned8 (input);
+        return values;
+    }
+
+
+    private static int [] readUnsignedByteArray32 (final InputStream input) throws IOException
+    {
+        final int [] values = new int [32];
+        for (int i = 0; i < 32; i++)
+            values[i] = StreamUtils.readUnsigned8 (input);
+        return values;
     }
 }
