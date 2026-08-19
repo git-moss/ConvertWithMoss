@@ -371,7 +371,7 @@ public class AudioSampleReducer
      * @throws IOException Could not read the sample
      * @throws UnsupportedAudioFileException Could not parse the WAV file
      */
-    private static byte [] resampleFrequency (final byte [] wavData, final int targetRate, final boolean alwaysResample) throws IOException, UnsupportedAudioFileException
+    public static byte [] resampleFrequency (final byte [] wavData, final int targetRate, final boolean alwaysResample) throws IOException, UnsupportedAudioFileException
     {
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {

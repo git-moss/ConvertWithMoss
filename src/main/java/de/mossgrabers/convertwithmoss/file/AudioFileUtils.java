@@ -28,6 +28,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -268,7 +269,27 @@ public final class AudioFileUtils
      */
     private static byte [] convertToWav (final byte [] inputData, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        return convertToWav (new ByteArrayInputStream (inputData), destinationFormat);
+        byte [] data = inputData;
+
+        try
+        {
+            // Convert a different sample rate with the band-limited resampler before the
+            // AudioSystem conversion below. The AudioSystem converter produces a slightly wrong
+            // number of frames and drifts in phase, which shifts the audio against the sample and
+            // loop positions which the creators re-calculate with the exact rate ratio - audible
+            // as a click in the loop.
+            final AudioFormat audioFormat = AudioSystem.getAudioFileFormat (new ByteArrayInputStream (data)).getFormat ();
+            final int sampleRate = (int) audioFormat.getSampleRate ();
+            final int destinationSampleRate = getMatchingSampleRate (sampleRate, destinationFormat);
+            if (destinationSampleRate != sampleRate)
+                data = AudioSampleReducer.resampleFrequency (data, destinationSampleRate, true);
+        }
+        catch (final UnsupportedAudioFileException ex)
+        {
+            throw new IOException (ex);
+        }
+
+        return convertToWav (new ByteArrayInputStream (data), destinationFormat);
     }
 
 
