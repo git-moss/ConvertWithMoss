@@ -7,8 +7,10 @@ package de.mossgrabers.convertwithmoss.format.iso;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -85,15 +87,31 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
                                 this.notifier.logError ("IDS_S1000_PARTITIONA_ERROR", error);
 
                         final List<AkaiS1000Sample> samples = s1000Volume.getSamples ();
-                        for (final AkaiS1000Program program: s1000Volume.getPrograms ())
+                        final String volumeName = s1000Volume.getName ();
+                        for (final List<AkaiS1000Program> layeredPrograms: groupLayeredPrograms (s1000Volume.getPrograms ()))
                         {
-                            String programName = program.getName ();
-                            final String volumeName = s1000Volume.getName ();
+                            String programName = createLayeredName (layeredPrograms);
+                            if (layeredPrograms.size () > 1)
+                            {
+                                final List<String> programNames = new ArrayList<> ();
+                                for (final AkaiS1000Program program: layeredPrograms)
+                                    programNames.add (program.getName ());
+                                this.notifier.log ("IDS_ISO_LAYERED_PROGRAMS", programName, String.join (" + ", programNames));
+                            }
                             if (volumeName != null && !volumeName.isBlank ())
                                 programName = volumeName.trim () + " " + programName;
-                            final IGroup group = converter.createGroup (program, samples);
-                            final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, parts, programName, Collections.singletonList (group));
-                            AkaiS1000ProgramConverter.applyVoiceSettings (multisampleSource, program);
+
+                            final List<IGroup> groups = new ArrayList<> ();
+                            for (final AkaiS1000Program program: layeredPrograms)
+                            {
+                                final IGroup group = converter.createGroup (program, samples);
+                                if (layeredPrograms.size () > 1)
+                                    group.setName (program.getName ());
+                                groups.add (group);
+                            }
+
+                            final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, parts, programName, groups);
+                            AkaiS1000ProgramConverter.applyVoiceSettings (multisampleSource, layeredPrograms);
                             multisampleSource.extendSubPath (fileName);
                             multisampleSource.extendSubPath (volumeName);
                             multiSampleSources.add (multisampleSource);
@@ -109,5 +127,56 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
         }
 
         return multiSampleSources;
+    }
+
+
+    /**
+     * Group the programs of a volume which the hardware plays layered. All programs which share
+     * their MIDI program number (on the same MIDI channel) are selected together by that program
+     * number and always sound at once - this is how the sound designers of many CD-ROMs build
+     * their final patches from 2 or 3 component programs.
+     *
+     * @param programs The programs of a volume
+     * @return The programs grouped into the stacks which play together, in the order of the volume
+     */
+    private static Collection<List<AkaiS1000Program>> groupLayeredPrograms (final List<AkaiS1000Program> programs)
+    {
+        final Map<String, List<AkaiS1000Program>> layeredPrograms = new LinkedHashMap<> ();
+        for (final AkaiS1000Program program: programs)
+        {
+            final String selectionKey = program.getMidiProgramNumber () + ":" + (program.getMidiChannel () & 0xFF);
+            layeredPrograms.computeIfAbsent (selectionKey, key -> new ArrayList<> ()).add (program);
+        }
+        return layeredPrograms.values ();
+    }
+
+
+    /**
+     * Get the name for a multi-sample which combines the given layered programs, which is the
+     * common prefix of their names (e.g. 'DIGIJAZZ' for 'DIGIJAZZ A' + 'DIGIJAZZ B'). If the
+     * names share no reasonable prefix, the name of the first program is used.
+     *
+     * @param layeredPrograms The programs which play layered
+     * @return The name
+     */
+    private static String createLayeredName (final List<AkaiS1000Program> layeredPrograms)
+    {
+        final String firstName = layeredPrograms.get (0).getName ();
+        if (layeredPrograms.size () == 1)
+            return firstName;
+
+        String prefix = firstName;
+        for (final AkaiS1000Program program: layeredPrograms)
+        {
+            final String name = program.getName ();
+            final int length = Math.min (prefix.length (), name.length ());
+            int position = 0;
+            while (position < length && prefix.charAt (position) == name.charAt (position))
+                position++;
+            prefix = prefix.substring (0, position);
+        }
+
+        final String trimmedPrefix = prefix.trim ();
+        return trimmedPrefix.length () < 2 ? firstName : trimmedPrefix;
     }
 }
