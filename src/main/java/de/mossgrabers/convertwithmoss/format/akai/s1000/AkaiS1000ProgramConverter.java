@@ -7,9 +7,9 @@ package de.mossgrabers.convertwithmoss.format.akai.s1000;
 import java.util.List;
 import java.util.Optional;
 
-import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -151,7 +151,10 @@ public class AkaiS1000ProgramConverter
                 final Optional<AkaiS1000Sample> sampleOpt = lookupSample (samples, sampleName);
                 if (sampleOpt.isEmpty ())
                 {
-                    this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
+                    // Some CD-ROM manufacturers misuse key-groups to add their copyright info, can
+                    // be identified by upper velocity of 0
+                    if (keygroupSample.getHighVelocity () != 0)
+                        this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
                     continue;
                 }
 

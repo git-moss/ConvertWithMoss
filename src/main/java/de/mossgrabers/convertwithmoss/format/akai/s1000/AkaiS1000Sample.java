@@ -14,6 +14,7 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiDiskImage;
 import de.mossgrabers.convertwithmoss.format.akai.diskformat.AkaiStreamWhence;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -72,8 +73,9 @@ public class AkaiS1000Sample
     {
         disk.setPosition (dataPosition, AkaiStreamWhence.START);
 
-        if (disk.readInt8 () != AKAI_SAMPLE_ID)
-            throw new IOException ("This is not an Akai Sample.");
+        final int id = disk.readInt8 ();
+        if (id != AKAI_SAMPLE_ID) // && id != AKAI_SAMPLE_ID2)
+            throw new IOException (Functions.getMessage ("IDS_S1000_UNKNOWN_SAMPLE_ID", Integer.toString (id)));
 
         // 0 for 22050Hz, 1 for 44100Hz - skip
         disk.readInt8 ();

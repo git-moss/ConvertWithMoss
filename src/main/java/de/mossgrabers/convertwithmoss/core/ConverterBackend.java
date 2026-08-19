@@ -222,12 +222,12 @@ public class ConverterBackend
         this.detectors.add (new DistingExDetector (notifier));
         this.detectors.add (new FairlightCmi3Detector (notifier));
         this.detectors.add (new DirectWaveDetector (notifier));
+        this.detectors.add (new S2400Detector (notifier));
         this.detectors.add (new IsoDetector (notifier));
         this.detectors.add (new KMPDetector (notifier));
         this.detectors.add (new KorgmultisampleDetector (notifier));
         this.detectors.add (new KurzweilDetector (notifier));
         this.detectors.add (new EXS24Detector (notifier));
-        this.detectors.add (new S2400Detector (notifier));
         this.detectors.add (new KontaktDetector (notifier));
         this.detectors.add (new MaschineDetector (notifier));
         this.detectors.add (new PolyendTrackerDetector (notifier));
@@ -271,11 +271,11 @@ public class ConverterBackend
         this.creators.add (new FairlightCmi3Creator (notifier));
         this.creators.add (new DistingExCreator (notifier));
         this.creators.add (new DirectWaveCreator (notifier));
+        this.creators.add (new S2400Creator (notifier));
         this.creators.add (new KMPCreator (notifier));
         this.creators.add (new KorgmultisampleCreator (notifier));
         this.creators.add (new KurzweilCreator (notifier));
         this.creators.add (new EXS24Creator (notifier));
-        this.creators.add (new S2400Creator (notifier));
         this.creators.add (new KontaktCreator (notifier));
         this.creators.add (new MaschineCreator (notifier));
         this.creators.add (new PolyendTrackerCreator (notifier));

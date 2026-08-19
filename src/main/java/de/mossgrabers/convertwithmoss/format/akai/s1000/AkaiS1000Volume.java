@@ -29,6 +29,7 @@ public class AkaiS1000Volume implements IAkaiVolume
     private final String                 name;
     private final List<AkaiS1000Program> programs                    = new ArrayList<> ();
     private final List<AkaiS1000Sample>  samples                     = new ArrayList<> ();
+    private final List<String>           errors                      = new ArrayList<> ();
 
 
     /**
@@ -55,22 +56,41 @@ public class AkaiS1000Volume implements IAkaiVolume
             int type = entry.getType ();
             if (type >= 128 && isS3000)
                 type -= 128;
-            switch (type)
+            try
             {
-                case 'p':
-                    this.programs.add (new AkaiS1000Program (disk, dataPosition, isS3000));
-                    break;
-                case 's':
-                    this.samples.add (new AkaiS1000Sample (disk, dataPosition));
-                    break;
-                case 0:
-                    // Empty
-                    break;
-                default:
-                    // Unused S3000 content types: q, x, d
-                    break;
+                switch (type)
+                {
+                    case 'p':
+                        this.programs.add (new AkaiS1000Program (disk, dataPosition, isS3000));
+                        break;
+                    case 's':
+                        this.samples.add (new AkaiS1000Sample (disk, dataPosition));
+                        break;
+                    case 0:
+                        // Empty
+                        break;
+                    default:
+                        // Unused S3000 content types: q, x, d
+                        break;
+                }
+            }
+            catch (final IOException ex)
+            {
+                this.errors.add ("Partition " + partition.getName () + ": " + ex.getMessage ());
             }
         }
+    }
+
+
+    /**
+     * Get the errors that might have been detected during reading programs and samples from the
+     * volume.
+     * 
+     * @return The errors
+     */
+    public List<String> getErrors ()
+    {
+        return this.errors;
     }
 
 

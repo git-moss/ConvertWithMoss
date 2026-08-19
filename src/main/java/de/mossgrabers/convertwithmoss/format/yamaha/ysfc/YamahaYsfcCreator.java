@@ -357,9 +357,9 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             filledParts.add (part);
 
             final int midiChannel = instrumentSource.getMidiChannel ();
-            if (midiChannel == -1)
+            if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI)
                 hasOmni = true;
-            else
+            else // This contains 'Off' as well!
                 midiChannelsInUse.add (Integer.valueOf (midiChannel));
             for (int scene = 0; scene < 8; scene++)
                 part.setSceneKeyboardControl (scene, midiChannel == scene || midiChannel == -1);

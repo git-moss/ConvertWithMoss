@@ -13,11 +13,15 @@
 * Fixed: The category names 'Winds' and 'World' were not detected when they were read back from a preset which stores the category as text: 'Winds' was detected as FX - from the 'Wind' sound effect - and 'World' was not detected at all. The name of a category is now a keyword of its own, which is checked for all of them.
 * Backend
   * New: Added transpose, tuning, gain and panning attributes to performances (NI Kontakt, Yamaha Montage/MODX).
+  * New: Improved setting of MIDI channels, with distinct values for OFF and OMNI for all performances.
 * User Interface
   * New: Contents dialog: The new 'Export List...' button writes the listed presets - not the presets themselves - as a CSV or JSON file with the name, category, number of zones, key range (as note names and MIDI note numbers), folder, file, containers, index inside of the file and the ticked state of each of them. This gives an inventory of a disk image, a bank or a preset folder which can be used in a spreadsheet or a script. A search filter applies to the written list as well.
   * New: Contents dialog: The new 'Import List...' button reads such a list back in and ticks exactly the presets which it selects, so the presets to convert can be picked in another application: export the list, tick the presets in e.g. a spreadsheet, save it as CSV again and import it. A row selects its preset when its 'Selected' field says so ('true', 'x', '1' or 'yes'); a list without that field selects every preset it contains, so deleting rows works as well. Presets are matched by their file and their index inside of it, which tells presets of the same name in different banks apart and still finds a library which was moved to another folder.
 * Akai MPC
   * Fixed: The Version element was created but never added to a written XPM file. Since it is the element by which the format is recognized, such a file was rejected when it was read back ("Could not read metadata: Unknown Root"). The platform is now written as well, so that the version log line is complete.
+* Akai S-1000
+  * Fixed: Images with broken sample or program data blocks can now be read. Conversion does not stop but continues with also improved error logging.
+  * Fixed: Do not report samples for key-groups with upper velocity set to zero. These are used creatively by some companies to add their copyright info to each key-group.
 * Bliss
   * Fixed: A zone with a trimmed sample start was re-sampled to exactly 96 kHz (the maximum rate of the format was applied as a fixed rate, up-sampling included). Worse, the trim positions count in frames of the source rate, so after the up-sampling they pointed at the wrong place and cut the later part of the sample audio away. The samples now keep their rate; only the actual limits of the format are enforced - a rate above 96 kHz or a bit resolution which the format does not store (e.g. 8 bit) is converted, and this now also happens for zones which are not trimmed, whose samples went into the file unchanged before.
 * CWITEC TX16Wx

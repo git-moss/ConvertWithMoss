@@ -139,7 +139,7 @@ public abstract class AbstractNKIMetadataFileHandler
             // Only K2
             final String midiChannelStr = topParameters.get (String.format ("midiChannel_slot0%02d", Integer.valueOf (i)));
             if (midiChannelStr != null)
-                instrumentSource.setMidiChannel (Integer.parseInt (midiChannelStr) - 1);
+                instrumentSource.setMidiChannel ((Integer.parseInt (midiChannelStr) - 1) % 16);
 
             instruments.add (instrumentSource);
         }
@@ -285,7 +285,10 @@ public abstract class AbstractNKIMetadataFileHandler
         String text = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Program_Start.xml");
         text = text.replace ("%PROGRAM_INDEX%", Integer.toString (programIndex));
         text = text.replace ("%PROGRAM_NAME%", multisampleSource.getName ());
-        text = text.replace ("%PROGRAM_MIDI_CHANNEL%", Integer.toString (instrumentSource.getMidiChannel () + 1));
+        int midiChannel = instrumentSource.getMidiChannel ();
+        if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OFF)
+            midiChannel = 16; // B1 since there is no off-state
+        text = text.replace ("%PROGRAM_MIDI_CHANNEL%", Integer.toString (midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI ? 0 : midiChannel + 1));
 
         // Add all groups
         final String result = this.addGroups (templatePrefix, safeSampleFolderName, multisampleSource.getNonEmptyGroups (false));

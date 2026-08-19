@@ -310,9 +310,14 @@ public class Music1010Creator extends AbstractMusic1010Creator
             final String presetPath = "\\Presets\\" + subFolder + presetFolderNames.get (i);
             slotElement.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath);
             // 0 = Off, 1..16 are the MIDI channels 1..16 whereby MIDI-channel 1 acts as the OMNI
-            // mode. Therefore, OMNI (-1) is written as MIDI-channel 1 as well - writing 'Off'
-            // instead would make the instrument not respond to MIDI at all.
-            final int midiChannel = Math.max (0, instrumentSource.getMidiChannel ()) % 16 + 1;
+            // mode.
+            int midiChannel = instrumentSource.getMidiChannel ();
+            if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OFF)
+                midiChannel = 0;
+            else if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI)
+                midiChannel = 1;
+            else
+                midiChannel++;
             XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS).setAttribute (Music1010Tag.ATTR_MIDI_MODE, Integer.toString (midiChannel));
 
             createModulators (document, slotElement, multisampleSource);

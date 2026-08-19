@@ -281,8 +281,12 @@ public class BentoCreator extends AbstractMusic1010Creator
             final Element trackParamsElement = XMLUtils.addElement (document, trackElement, Music1010Tag.PARAMS);
             for (final Map.Entry<String, String> entry: TRACK_PARAM_ATTRIBUTES.entrySet ())
                 trackParamsElement.setAttribute (entry.getKey (), entry.getValue ());
-            // MIDI input channel: 0 = Off, 1..16 - OMNI (-1) becomes channel 1
-            final int midiChannel = Math.max (0, instrumentSource.getMidiChannel ()) % 16 + 1;
+            // MIDI input channel: 0 = Off, 1..16 - OMNI becomes channel 1 as well
+            int midiChannel = instrumentSource.getMidiChannel ();
+            if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OFF)
+                midiChannel = 0;
+            else
+                midiChannel++;
             trackParamsElement.setAttribute (Music1010Tag.ATTR_MIDI_INPUT_CHANNEL, Integer.toString (midiChannel));
 
             trackParamsElement.setAttribute (Music1010Tag.ATTR_CELLNAME, multisampleSource.getName ());

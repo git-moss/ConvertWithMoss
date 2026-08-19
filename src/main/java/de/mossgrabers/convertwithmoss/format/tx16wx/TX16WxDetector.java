@@ -216,7 +216,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
             final String midiChannelAttribute = slotElement.getAttribute (TX16WxTag.MIDI_CHANNEL);
             final int midiChannel;
             if (midiChannelAttribute == null || midiChannelAttribute.equals ("Omni"))
-                midiChannel = -1;
+                midiChannel = IInstrumentSource.MIDI_CHANNEL_OMNI;
             else
                 midiChannel = XMLUtils.getIntegerAttribute (slotElement, TX16WxTag.MIDI_CHANNEL, 1) - 1;
             instrumentSource.setMidiChannel (midiChannel);
