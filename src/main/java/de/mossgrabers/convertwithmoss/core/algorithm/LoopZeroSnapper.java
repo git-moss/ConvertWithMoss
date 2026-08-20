@@ -174,7 +174,7 @@ public final class LoopZeroSnapper
      * @throws IOException Could not read the audio
      * @throws UnsupportedAudioFileException The audio format is not supported
      */
-    static int [] readMonoSignal (final ISampleZone zone) throws IOException, UnsupportedAudioFileException
+    public static int [] readMonoSignal (final ISampleZone zone) throws IOException, UnsupportedAudioFileException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         final Optional<ISampleData> sampleData = zone.getSampleData ();
