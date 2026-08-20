@@ -69,6 +69,7 @@ public class ContentsDialog extends PseudoModalDialog
     private final Set<ContentsEntry> selectedEntries = new HashSet<> ();
     private final Map<File, Integer> entriesPerFile  = new HashMap<> ();
     private Set<File>                filesWithOwnFolder;
+    private Set<ContentsEntry>       ambiguousEntries;
 
     private final AuditionPlayer     auditionPlayer  = new AuditionPlayer ();
     private ISourceReader            sourceReader;
@@ -113,9 +114,10 @@ public class ContentsDialog extends PseudoModalDialog
 
         this.treeView = new TreeView<> ();
         this.treeView.setShowRoot (false);
-        // Make sure filesWithOwnFolder already exists
+        // Make sure filesWithOwnFolder and ambiguousEntries already exist
         this.filesWithOwnFolder = new HashSet<> ();
-        this.treeView.setCellFactory (CheckBoxTreeCell.forTreeView (item -> ((CheckBoxTreeItem<Object>) item).selectedProperty (), new ContentsStringConverter (this.filesWithOwnFolder)));
+        this.ambiguousEntries = new HashSet<> ();
+        this.treeView.setCellFactory (CheckBoxTreeCell.forTreeView (item -> ((CheckBoxTreeItem<Object>) item).selectedProperty (), new ContentsStringConverter (this.filesWithOwnFolder, this.ambiguousEntries)));
         this.treeView.setPrefHeight (520);
         this.treeView.setPrefWidth (760);
         this.treeView.getSelectionModel ().selectedItemProperty ().addListener ((_, _, _) -> this.updateAuditionButton ());
@@ -488,6 +490,7 @@ public class ContentsDialog extends PseudoModalDialog
         final CheckBoxTreeItem<Object> root = new CheckBoxTreeItem<> ("");
         final Map<String, CheckBoxTreeItem<Object>> folders = new HashMap<> ();
         this.filesWithOwnFolder.clear ();
+        this.ambiguousEntries.clear ();
 
         for (final ContentsEntry entry: this.entries)
         {
@@ -532,6 +535,8 @@ public class ContentsDialog extends PseudoModalDialog
             parent.getChildren ().add (item);
         }
 
+        markAmbiguousEntries (root, this.ambiguousEntries);
+
         this.treeView.setRoot (root);
         // A folder is only created for a source which is displayed, therefore an empty root means
         // that there is nothing to export
@@ -539,6 +544,30 @@ public class ContentsDialog extends PseudoModalDialog
         this.exportButton.setDisable (isEmpty);
         this.importButton.setDisable (this.entries.isEmpty ());
         this.updateSelectionLabel ();
+    }
+
+
+    /**
+     * Collect the sources whose name is used by another source in the same folder of the tree.
+     * Sample library banks do re-use a name for a variant of a preset - the 'Emulator Standards'
+     * library CD-ROM of the E-mu Emulator III does so in 45 of its banks - and such rows are
+     * indistinguishable from each other, which matters when only one of them should be converted.
+     *
+     * @param parent The folder to collect from, called with the root of the tree
+     * @param ambiguousEntries Where to add the sources which share their name
+     */
+    private static void markAmbiguousEntries (final TreeItem<Object> parent, final Set<ContentsEntry> ambiguousEntries)
+    {
+        final Map<String, List<ContentsEntry>> entriesByName = new HashMap<> ();
+        for (final TreeItem<Object> child: parent.getChildren ())
+            if (child.getValue () instanceof final ContentsEntry entry)
+                entriesByName.computeIfAbsent (entry.getName (), _ -> new ArrayList<> ()).add (entry);
+            else
+                markAmbiguousEntries (child, ambiguousEntries);
+
+        for (final List<ContentsEntry> sourcesWithTheSameName: entriesByName.values ())
+            if (sourcesWithTheSameName.size () > 1)
+                ambiguousEntries.addAll (sourcesWithTheSameName);
     }
 
 
@@ -589,17 +618,21 @@ public class ContentsDialog extends PseudoModalDialog
      */
     private static class ContentsStringConverter extends StringConverter<TreeItem<Object>>
     {
-        private final Set<File> filesWithOwnFolder;
+        private final Set<File>          filesWithOwnFolder;
+        private final Set<ContentsEntry> ambiguousEntries;
 
 
         /**
          * Constructor.
          *
          * @param filesWithOwnFolder The files which are displayed as a folder of their own
+         * @param ambiguousEntries The sources which share their name with another source in the
+         *            same folder of the tree
          */
-        ContentsStringConverter (final Set<File> filesWithOwnFolder)
+        ContentsStringConverter (final Set<File> filesWithOwnFolder, final Set<ContentsEntry> ambiguousEntries)
         {
             this.filesWithOwnFolder = filesWithOwnFolder;
+            this.ambiguousEntries = ambiguousEntries;
         }
 
 
@@ -609,8 +642,22 @@ public class ContentsDialog extends PseudoModalDialog
         {
             final Object value = item == null ? null : item.getValue ();
             if (value instanceof final ContentsEntry entry)
-                return entry.getName () + "   (" + entry.getInfo () + this.formatFileName (entry) + ")";
+                return entry.getName () + "   (" + this.formatIndex (entry) + entry.getInfo () + this.formatFileName (entry) + ")";
             return value == null ? "" : value.toString ();
+        }
+
+
+        /**
+         * Get the index of a source inside of its file, but only for a source which shares its name
+         * with another one in the same folder. It is the index which the exported list writes and
+         * by which the imported list selects a source, so both address the same source.
+         *
+         * @param entry The source
+         * @return The formatted index, empty if the name of the source is unique in its folder
+         */
+        private String formatIndex (final ContentsEntry entry)
+        {
+            return this.ambiguousEntries.contains (entry) ? "#" + entry.getIndexInFile () + ", " : "";
         }
 
 
