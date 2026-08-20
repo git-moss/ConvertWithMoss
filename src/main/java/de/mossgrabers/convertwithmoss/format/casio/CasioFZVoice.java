@@ -33,6 +33,42 @@ public class CasioFZVoice
 
     /** The number of multi-loops. */
     public static final int       NUM_LOOPS           = 8;
+    /**
+     * The amount by which the sampler moves an envelope towards the level of its stage on every
+     * one of its envelope interrupts, one entry per rate. The sampler adds this to a 16 bit level
+     * whose upper byte is the 0-255 level which its amplifier and its filter receive. Its timer
+     * interrupt runs 2000 times a second - it is reloaded with 1000 on a 2 MHz clock - and serves
+     * every voice with one of 8 tasks in turn, two of which advance the amplitude envelope, so an
+     * envelope is advanced 500 times a second. The increments span 3 to 32767, which is why the
+     * times are anything but a straight line over the rates.
+     */
+    private static final int []   ENVELOPE_INCREMENT  =
+    {
+        0, 3, 6, 9, 13, 16, 20, 24,
+        28, 33, 37, 42, 47, 52, 58, 64,
+        70, 77, 84, 91, 99, 107, 115, 124,
+        133, 143, 153, 164, 175, 187, 200, 213,
+        227, 241, 257, 273, 290, 307, 326, 346,
+        366, 388, 411, 435, 460, 487, 515, 544,
+        575, 607, 641, 677, 715, 754, 796, 840,
+        886, 934, 985, 1038, 1094, 1153, 1215, 1281,
+        1349, 1421, 1497, 1577, 1661, 1749, 1841, 1939,
+        2041, 2149, 2262, 2381, 2506, 2637, 2775, 2920,
+        3073, 3234, 3402, 3580, 3766, 3962, 4168, 4385,
+        4613, 4852, 5104, 5368, 5647, 5939, 6247, 6570,
+        6910, 7267, 7642, 8037, 8452, 8888, 9347, 9829,
+        10336, 10869, 11429, 12018, 12637, 13288, 13972, 14692,
+        15448, 16243, 17078, 17957, 18881, 19852, 20872, 21945,
+        23074, 24260, 25506, 26817, 28195, 29643, 31166, 32767
+    };
+
+    /** How often per second the sampler advances an envelope. */
+    private static final double   ENVELOPE_SERVICE_RATE = 500.0;
+    /** One step of the 0-255 envelope level in the units in which the increments are counted. */
+    private static final double   ENVELOPE_LEVEL_STEP   = 256.0;
+    /** The duration reported for a stage which never reaches its level. */
+    private static final double   LONGEST_STAGE_SECONDS = 60.0;
+
     /** The number of envelope stages. */
     public static final int       NUM_ENVELOPE_STAGES = 8;
 
@@ -247,8 +283,11 @@ public class CasioFZVoice
      */
     public static double stageSeconds (final int rate, final int levelDelta)
     {
-        final double fullSwing = 60.0 * Math.pow (2, -(rate & 0x7F) / 8.0);
-        return levelDelta / 255.0 * fullSwing;
+        final int increment = ENVELOPE_INCREMENT[rate & 0x7F];
+        // An increment of zero never reaches the level of the stage, the envelope stops there
+        if (increment == 0)
+            return LONGEST_STAGE_SECONDS;
+        return levelDelta * ENVELOPE_LEVEL_STEP / (increment * ENVELOPE_SERVICE_RATE);
     }
 
 
@@ -264,9 +303,20 @@ public class CasioFZVoice
     {
         if (seconds <= 0 || levelDelta <= 0)
             return 127;
-        final double fullSwing = seconds * 255.0 / levelDelta;
-        final int rate = (int) Math.round (-8.0 * Math.log (fullSwing / 60.0) / Math.log (2));
-        return Math.clamp (rate, 1, 127);
+        // The increments do not follow a formula, therefore the rate whose duration comes closest
+        // is searched in the table
+        int bestRate = 1;
+        double bestDistance = Double.MAX_VALUE;
+        for (int rate = 1; rate < ENVELOPE_INCREMENT.length; rate++)
+        {
+            final double distance = Math.abs (stageSeconds (rate, levelDelta) - seconds);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestRate = rate;
+            }
+        }
+        return bestRate;
     }
 
 
