@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ShortNameSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.roland.RolandTimeTable;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 
@@ -419,17 +420,15 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
 
 
     /**
-     * Convert a time in seconds to an envelope time value. Inverse of the read formula (S-7xx
-     * lineage approximation, up to 20 seconds).
+     * Convert a time in seconds to an envelope time value with the time table of the sound engine
+     * (see {@link RolandTimeTable}).
      *
      * @param seconds The time in seconds
      * @return The time value in the range of 0..127
      */
     private static int calculateTimeValue (final double seconds)
     {
-        if (seconds <= 0)
-            return 0;
-        return Math.clamp ((int) Math.round (127 + 21 * Math.log (seconds / 20.0) / Math.log (2)), 0, 127);
+        return RolandTimeTable.secondsToValue (seconds);
     }
 
 
