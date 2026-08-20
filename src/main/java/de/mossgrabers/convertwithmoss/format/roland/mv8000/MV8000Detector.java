@@ -222,8 +222,15 @@ public class MV8000Detector extends AbstractDetector<MetadataSettingsUI>
         zone.setVelocityHigh (slot.getVelocityHigh ());
         zone.setVelocityCrossfadeHigh (slot.getVelocityFadeHigh ());
 
-        zone.setStart (sample.getStartPoint ());
-        zone.setStop (sample.getEndPoint ());
+        // The hardware plays the points stored in the slot, which the device keeps identical to the
+        // ones of the sample. Files written by ConvertWithMoss before 20.2.0 left the slot points at
+        // zero, for those the points of the sample are used
+        final boolean hasSlotPoints = slot.getEndPoint () > 0;
+        final int startPoint = hasSlotPoints ? slot.getStartPoint () : sample.getStartPoint ();
+        final int loopStart = hasSlotPoints ? slot.getLoopStart () : sample.getLoopStart ();
+        final int endPoint = hasSlotPoints ? slot.getEndPoint () : sample.getEndPoint ();
+        zone.setStart (startPoint);
+        zone.setStop (endPoint);
         zone.setGain (MathUtils.valueToDb (slot.getLevel () / 127.0));
         // The slots of a combined stereo pair are hard-panned (left 32, right 96) to create the
         // stereo image which is already baked into the combined zone
@@ -258,8 +265,8 @@ public class MV8000Detector extends AbstractDetector<MetadataSettingsUI>
                 default -> LoopType.FORWARDS;
             };
             sampleLoop.setType (type);
-            sampleLoop.setStart (sample.getLoopStart ());
-            sampleLoop.setEnd (sample.getEndPoint ());
+            sampleLoop.setStart (loopStart);
+            sampleLoop.setEnd (endPoint);
             if (sampleLoop.getEnd () > sampleLoop.getStart ())
                 zone.getLoops ().add (sampleLoop);
         }

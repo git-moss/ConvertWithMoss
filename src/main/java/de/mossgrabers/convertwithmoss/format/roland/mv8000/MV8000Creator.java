@@ -49,6 +49,12 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
         16
     }, MV8000Sample.SAMPLE_RATE, true);
 
+    /**
+     * The device keeps at least this number of frames of wave data behind the end point of a
+     * sample (no sample of the factory patches ends closer to the end of its data).
+     */
+    private static final int                    GUARD_FRAMES       = 2;
+
     private static final Map<String, Integer>   CATEGORY_MAP       = new HashMap<> ();
     static
     {
@@ -210,20 +216,24 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
         final byte [] pcmData = waveFile.getDataChunk ().getData ();
         final int numFrames = pcmData.length / (2 * numChannels);
 
-        // Loop and playback range
+        // Loop and playback range. The end point is exclusive and is the loop end as well
         final List<ISampleLoop> loops = zone.getLoops ();
         // A one-shot slot ignores a note-off - and the loop - and plays the sample up to its end
         final boolean isOneShot = zone.isOneShot () || loops.isEmpty ();
         final boolean isKeyTracked = zone.getKeyTracking () != 0;
+        final int startPoint = Math.clamp (zone.getStart (), 0, numFrames);
         int loopStart = 0;
         int endPoint = zone.getStop () > 0 ? Math.min (zone.getStop (), numFrames) : numFrames;
         if (!loops.isEmpty ())
         {
             final ISampleLoop loop = loops.get (0);
             loopStart = Math.clamp (loop.getStart (), 0, numFrames);
-            if (loop.getEnd () > loopStart)
+            if (!isOneShot && loop.getEnd () > loopStart)
                 endPoint = Math.min (loop.getEnd (), numFrames);
         }
+        // Pad the wave data with silence to keep the distance behind the end point which the
+        // device keeps for its own samples
+        final int paddedFrames = Math.max (numFrames, endPoint + GUARD_FRAMES);
 
         // Split the tuning into the coarse and fine tune fields
         final double tuning = zone.getTuning ();
@@ -238,8 +248,7 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
         int nextSampleId = sampleId;
         for (int channel = 0; channel < numSlots; channel++)
         {
-            final byte [] waveData = extractChannelBigEndian (pcmData, numChannels, channel);
-            final int startPoint = Math.clamp (zone.getStart (), 0, numFrames);
+            final byte [] waveData = extractChannelBigEndian (pcmData, numChannels, channel, paddedFrames);
 
             // Re-use an already written sample with identical content and parameters, e.g. when
             // the same sample is mapped to several key ranges. The root key does not matter for
@@ -269,6 +278,10 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
 
             final MV8000Smt slot = partial.getSmtSlot (slotCounts[partialIndex]);
             slot.setSampleId (id.intValue ());
+            // The hardware plays the points of the slot, not the ones of the sample
+            slot.setStartPoint (startPoint);
+            slot.setLoopStart (loopStart);
+            slot.setEndPoint (endPoint);
             slot.setLevel (Math.clamp ((int) Math.round (Math.pow (10, zone.getGain () / 20.0) * 127.0), 0, 127));
             // The 2 mono halves of a stereo zone are hard-panned to re-create the stereo image
             if (isStereo)
@@ -437,10 +450,20 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
     }
 
 
-    private static byte [] extractChannelBigEndian (final byte [] pcmData, final int numChannels, final int channel)
+    /**
+     * Extract one channel of interleaved 16-bit little-endian PCM data as big-endian data.
+     *
+     * @param pcmData The interleaved PCM data
+     * @param numChannels The number of channels in the PCM data
+     * @param channel The channel to extract
+     * @param outputFrames The number of frames of the result, padded with silence if it is larger
+     *            than the number of frames of the PCM data
+     * @return The channel data
+     */
+    private static byte [] extractChannelBigEndian (final byte [] pcmData, final int numChannels, final int channel, final int outputFrames)
     {
-        final int numFrames = pcmData.length / (2 * numChannels);
-        final byte [] channelData = new byte [numFrames * 2];
+        final int numFrames = Math.min (pcmData.length / (2 * numChannels), outputFrames);
+        final byte [] channelData = new byte [outputFrames * 2];
         for (int i = 0; i < numFrames; i++)
         {
             final int src = (i * numChannels + channel) * 2;

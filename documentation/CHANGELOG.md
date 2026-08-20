@@ -46,6 +46,9 @@
   * New: Added support for bank output (*.txbank). Select 'Preset Library' as destination output.
 * Fairlight CMI
   * Fixed: Reading a Voice file whose version is not recognized wrote a copy of that file into a hard-coded folder of the developer's machine which did crash the conversion.
+* Roland MV-8000
+  * Fixed: A written patch loaded on the device but was silent, and the device showed a start point, loop start and end point of 0 for every sample. The hardware plays - and displays - the three points which are stored in the SMT slot of a partial, not the ones of the sample parameter block, and only the latter were written. The slot points are written now; the 103 factory patches carry identical values in both places in all of their 1918 slots. Reading prefers the slot points as well, so a patch whose points were edited on the device converts with the points it actually plays.
+  * Fixed: The wave data of a written sample now keeps 2 frames behind its end point, as the device does for every sample it writes itself - none of the 1918 samples of the factory patches ends closer to the end of its data. A sample whose end point sat at the last frame of its data (a one-shot which plays to its very end, e.g. every sample of an Akai S1000 program whose end marker is its last frame) is padded with 2 frames of silence.
 * Teenage Engineering OP-XY
   * Fixed: The samples which do not make it into the written preset - the dropped velocity layers and the regions beyond the maximum of 24 - were still copied into the preset folder, although the description file does not reference them. They only occupied space on the device and could make the preset folder too big to load. Only the samples of the written regions are stored now.
 * Waldorf Quantum/Iridium

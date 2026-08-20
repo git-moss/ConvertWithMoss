@@ -38,7 +38,7 @@ offset  size  content
               end in 0x7F 'L' / 0x7F 'R' (consecutive IDs, L first)
 20      4     u32 start point (frames)
 24      4     u32 loop start (frames)
-28      4     u32 end point (frames; wave data may extend past it)
+28      4     u32 end point (frames, exclusive; it is the loop end as well)
 32      1     0x27 (constant tag, same value appears in partial records)
 33      1     root key (MIDI note; 36 or 60 for unpitched material)
 34      4     u32 BPM × 100 (12000 = 120.00 in all factory samples)
@@ -46,6 +46,21 @@ offset  size  content
 
 `WAVE` payload: headerless 16-bit big-endian signed mono PCM. The device sample rate
 is fixed 44.1 kHz (no rate field exists).
+
+The wave data always extends past the end point: no factory sample ends closer than
+2 frames to the end of its data (1874 of 1918 samples keep more, 44 keep exactly 2),
+so a writer should keep that distance as well. The end point is exclusive: for a
+forward loop the frame *at* the end point continues the waveform at the loop start
+(tested on the 172 factory loops with integer loop points - the frame at `end`
+matches the loop start with a median error of 0.1 % of the level, the frames before
+and after it do not).
+
+**The three playback points are stored a second time in every SMT slot which
+references the sample (see the slot layout below), and the hardware plays and
+displays the slot copy.** In all 1918 slots of the factory patches both copies are
+identical. A slot whose points are left at zero is silent on the device (end point
+0), whatever the sample parameter block says - files written by ConvertWithMoss
+before 20.2.0 did exactly this.
 
 ## Patch PRM chunk (15862 bytes)
 
@@ -109,9 +124,9 @@ factory files).
 | [66..73)  | velocity fade lower (0-125, default 0) | |
 | [73..80)  | velocity range upper (2-127, default 127) | |
 | [80..87)  | velocity fade upper (0-125, default 0) | |
-| [87..119) | 32-bit value + [119..127) 8-bit value, defaults 0 | unknown (sample offsets?) |
-| [127..159)| 32-bit value + [159..167) 8-bit value, defaults 0 | unknown |
-| [167..199)| 32-bit value + [199..207) 8-bit value, defaults 0 | unknown; varies in beat kits |
+| [87..119) | **start point** (u32 frames) + [119..127) 8-bit sub-frame part | identical to the start point of the sample in all factory slots; the hardware plays these slot points |
+| [127..159)| **loop start** (u32 frames) + [159..167) 8-bit sub-frame part | identical to the loop start of the sample; the 8-bit part is non-zero in 680 of 1918 slots (loops tuned below one frame) |
+| [167..199)| **end point** (u32 frames, exclusive) + [199..207) 8-bit sub-frame part | identical to the end point of the sample; also the loop end |
 | [207..210)| **play mode**, 3 bits (0-4, default 1): 0 = loop [loopStart..endPoint], 1 = one-shot (ignores loop, plays to sample end); 2/4 = rare alternative loop modes (alternating/reverse?), 3 = rare one-shot variant. Uneven values do not loop | factory census: mode 1 ×1006, mode 0 ×899, mode 2 ×9, mode 3 ×4 |
 
 ### TVF / TVA / LFO block (record bits 993-1298, all (fw))
@@ -178,10 +193,36 @@ patches matches the table defaults exactly.
 
 ## Not decoded / open
 
-- The hardware curve for envelope times (0-127 → seconds) and the LFO rate table;
-  they likely live in the sound-engine program (`MIAMI.PRG`), not in the main OS.
-- The exact roles of the ±63 sensitivity params around the TVF/TVA envelopes and of
-  the three 32+8-bit values per SMT slot.
+- The hardware curve for envelope times (0-127 → seconds) and the LFO rate table.
+  The parameter block carries no unit: the partial descriptor table of MV-8000 OS
+  3.54 declares the four TVA and TVF times as plain 0-127 fields (defaults
+  0/10/10/10, min 0, max 127) and no code was found which converts them, so the
+  engine program `MIAMI.PRG` - loaded separately by the boot loader, never
+  published by Roland - is what interprets them.
+
+  What *is* in the OS is a **128 entry exponential table** at file offset 0x50538C
+  of the decompressed image (u16 big-endian, 30 → 65535, a constant ratio of
+  1.0624 per step, 11.45 steps per doubling, spanning 2184:1). The same value
+  sequence sits in the S-760 system disk (Roland's own "S-760 System Version 2.24"
+  download, `S760224.OUT` at offset 0xB63EE, u16 little-endian, stored descending):
+  all 127 overlapping entries are identical. Two further tables are shared - a 2:1
+  ramp which is a pitch/frequency ratio table and a linear normalisation ramp - and
+  the S-760 disk identifies itself as `S770 MR25A`, so the MV-8000 inherits the
+  S-7xx sound engine rather than the XV one whose category list it borrows.
+
+  A 128 entry table indexed 0-127 with that span is the natural candidate for the
+  envelope time law, and its range corroborates independently: the ZEN-Core law
+  which ConvertWithMoss measured on a FANTOM-0 spans 2150:1 (0.010 s to 21.5 s).
+  It is **not confirmed** - no code which indexes the table has been located in
+  either firmware, so the tick it counts, and with it the absolute times, are still
+  unknown. What is certain is that the S-7xx formula used today, `20 *
+  2^((v-127)/21)`, spans only 64:1 and cannot represent anything below 302 ms,
+  which no calibrated Roland law does.
+
+  Recording the hardware settles it: a patch which maps one looped sine to a row of
+  pads whose only difference is the envelope time under test gives the law directly.
+- The exact roles of the ±63 sensitivity params around the TVF/TVA envelopes, and the
+  unit of the 8-bit sub-frame parts of the slot playback points (1/256 frame?).
 - Patch common bits 155-416 beyond category/level/pan/mute-group/tuning (contains at
   least one per-patch varying param around bits 317-325).
 - MV-8800: the partial descriptor table in the MV-8800 OS 1.01 firmware (decompressed
