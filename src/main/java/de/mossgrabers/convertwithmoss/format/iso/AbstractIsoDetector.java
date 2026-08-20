@@ -90,14 +90,12 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
                         final String volumeName = s1000Volume.getName ();
                         for (final List<AkaiS1000Program> layeredPrograms: groupLayeredPrograms (s1000Volume.getPrograms ()))
                         {
+                            // The combination is documented by the multi-sample itself - it is
+                            // named after the programs it combines and every one of them becomes a
+                            // group which carries its name - so that it can be seen where the
+                            // source is shown or converted and not for the presets of a disk which
+                            // a run leaves out
                             String programName = createLayeredName (layeredPrograms);
-                            if (layeredPrograms.size () > 1)
-                            {
-                                final List<String> programNames = new ArrayList<> ();
-                                for (final AkaiS1000Program program: layeredPrograms)
-                                    programNames.add (program.getName ());
-                                this.notifier.log ("IDS_ISO_LAYERED_PROGRAMS", programName, String.join (" + ", programNames));
-                            }
                             if (volumeName != null && !volumeName.isBlank ())
                                 programName = volumeName.trim () + " " + programName;
 
