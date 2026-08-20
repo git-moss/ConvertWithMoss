@@ -742,10 +742,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final double filterEnvAmount = modulator.getDepth ();
         parameters.add (new WaldorfQpatParameter ("Filter1EnvAmount", StringUtils.formatPercent (filterEnvAmount, 2), (float) ((filterEnvAmount + 1.0) / 2.0)));
 
-        // Filter1Keytrack: [0.00] "-100.00 %" ... [0.50] "0.00 %" ... [1.00] "+100.00 %". Both
-        // filters track so the patch stays bright across the keyboard.
+        // Filter1Keytrack: [0.00] "-200.00 %" ... [0.50] "0.00 %" ... [0.75] "+100.00 %" ...
+        // [1.00] "+200.00 %" - the same scale which the key tracking of an oscillator uses, where
+        // +100 % is the 1:1 tracking the manual describes. Full tracking is therefore 0.75 and not
+        // the end of the range.
         final double keyTracking = filter.getCutoffKeyTracking ();
-        parameters.add (new WaldorfQpatParameter ("Filter1Keytrack", StringUtils.formatPercent (keyTracking, 2), (float) Math.clamp ((keyTracking + 1.0) / 2.0, 0, 1)));
+        parameters.add (new WaldorfQpatParameter ("Filter1Keytrack", StringUtils.formatPercent (keyTracking, 2), (float) Math.clamp ((keyTracking + 2.0) / 4.0, 0, 1)));
 
         createEnvelope (parameters, modulator.getSource (), "Filter1Env", "Filter1", false);
     }
