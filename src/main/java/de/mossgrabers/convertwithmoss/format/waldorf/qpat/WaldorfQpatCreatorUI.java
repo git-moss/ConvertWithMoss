@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
@@ -135,7 +136,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
             return false;
 
         final String value = parameters.remove (QPAT_LIMIT_TO_16_441);
-        this.limitTo16441 = "1".equals (value);
+        this.limitTo16441 = ICoreTaskSettings.parseBoolean (value, true);
 
         final String authorValue = parameters.remove (QPAT_AUTHOR);
         this.author = authorValue == null ? "" : authorValue;

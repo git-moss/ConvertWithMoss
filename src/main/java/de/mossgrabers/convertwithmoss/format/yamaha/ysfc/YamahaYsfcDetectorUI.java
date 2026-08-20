@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
@@ -112,7 +113,7 @@ public class YamahaYsfcDetectorUI extends MetadataSettingsUI
             return false;
 
         final String value = parameters.remove (YSFC_SOURCE_TYPE);
-        this.sourceType = "1".equals (value);
+        this.sourceType = ICoreTaskSettings.parseBoolean (value, true);
         return true;
     }
 
