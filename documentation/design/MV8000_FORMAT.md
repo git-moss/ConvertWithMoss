@@ -193,8 +193,34 @@ patches matches the table defaults exactly.
 
 ## Not decoded / open
 
-- The hardware curve for envelope times (0-127 → seconds) and the LFO rate table;
-  they likely live in the sound-engine program (`MIAMI.PRG`), not in the main OS.
+- The hardware curve for envelope times (0-127 → seconds) and the LFO rate table.
+  The parameter block carries no unit: the partial descriptor table of MV-8000 OS
+  3.54 declares the four TVA and TVF times as plain 0-127 fields (defaults
+  0/10/10/10, min 0, max 127) and no code was found which converts them, so the
+  engine program `MIAMI.PRG` - loaded separately by the boot loader, never
+  published by Roland - is what interprets them.
+
+  What *is* in the OS is a **128 entry exponential table** at file offset 0x50538C
+  of the decompressed image (u16 big-endian, 30 → 65535, a constant ratio of
+  1.0624 per step, 11.45 steps per doubling, spanning 2184:1). The same value
+  sequence sits in the S-760 system disk (Roland's own "S-760 System Version 2.24"
+  download, `S760224.OUT` at offset 0xB63EE, u16 little-endian, stored descending):
+  all 127 overlapping entries are identical. Two further tables are shared - a 2:1
+  ramp which is a pitch/frequency ratio table and a linear normalisation ramp - and
+  the S-760 disk identifies itself as `S770 MR25A`, so the MV-8000 inherits the
+  S-7xx sound engine rather than the XV one whose category list it borrows.
+
+  A 128 entry table indexed 0-127 with that span is the natural candidate for the
+  envelope time law, and its range corroborates independently: the ZEN-Core law
+  which ConvertWithMoss measured on a FANTOM-0 spans 2150:1 (0.010 s to 21.5 s).
+  It is **not confirmed** - no code which indexes the table has been located in
+  either firmware, so the tick it counts, and with it the absolute times, are still
+  unknown. What is certain is that the S-7xx formula used today, `20 *
+  2^((v-127)/21)`, spans only 64:1 and cannot represent anything below 302 ms,
+  which no calibrated Roland law does.
+
+  Recording the hardware settles it: a patch which maps one looped sine to a row of
+  pads whose only difference is the envelope time under test gives the law directly.
 - The exact roles of the ±63 sensitivity params around the TVF/TVA envelopes, and the
   unit of the 8-bit sub-frame parts of the slot playback points (1/256 frame?).
 - Patch common bits 155-416 beyond category/level/pan/mute-group/tuning (contains at
