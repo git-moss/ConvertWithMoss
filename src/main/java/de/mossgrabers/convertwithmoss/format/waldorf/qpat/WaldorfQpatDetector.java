@@ -692,12 +692,11 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 final WaldorfQpatParameter destParam = parameters.get ("MatrixDst" + i);
                 if (destParam != null && destParam.value == oscIndex + 1.0)
                 {
-                    // MatrixAmount1
-                    final WaldorfQpatParameter amountParam = parameters.get ("MatrixAmount" + i);
-                    if (amountParam.value != 0.5)
+                    // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
+                    final double amount = getMatrixAmount (parameters, i);
+                    if (amount != 0)
                     {
-                        // -24..24 needs to translate to -0.5 to 0.5
-                        final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (amountParam.value - 0.5);
+                        final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (convertToPitchDepth (amount));
                         final String prefix = "FreeEnv" + (int) (sourceParam.value - 3.0);
                         final IEnvelope envelope = parseEnvelope (parameters, prefix, prefix);
                         modulator.setSource (envelope);
@@ -736,10 +735,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             if (amount == 0)
                 continue;
 
-            // One matrix slot reaches MATRIX_PITCH_RANGE semi-tones, the depth of the model covers
-            // IEnvelope#MAX_ENVELOPE_DEPTH cent
-            final double depth = amount * MATRIX_PITCH_RANGE * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
-            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, depth);
+            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, convertToPitchDepth (amount));
             if (modulator.isPresent ())
                 return modulator;
         }
@@ -915,6 +911,20 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
     {
         // Converts [0..1] to [0..maximum] seconds
         return maximum * Math.pow (x, 2);
+    }
+
+
+    /**
+     * Convert the amount of a modulation matrix slot into the depth of a pitch modulation of the
+     * model. One slot of the matrix reaches {@link #MATRIX_PITCH_RANGE} semi-tones, while the
+     * depth of the model covers {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent.
+     *
+     * @param amount The amount in the range of [-1..1]
+     * @return The modulation depth in the range of [-1..1]
+     */
+    private static double convertToPitchDepth (final double amount)
+    {
+        return amount * MATRIX_PITCH_RANGE * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
     }
 
 

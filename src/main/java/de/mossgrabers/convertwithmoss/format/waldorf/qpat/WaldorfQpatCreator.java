@@ -713,7 +713,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     {
         // Use the matrix slots 1-3 and free envelopes 1-3 for the respective oscillator 1-3
         // modulation
-        double depth = pitchEnvelopeModulator.getDepth ();
+        final double depth = pitchEnvelopeModulator.getDepth ();
         if (depth == 0)
             return;
 
@@ -726,10 +726,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // MatrixDstX: [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
         parameters.add (new WaldorfQpatParameter ("MatrixDst" + oscIndex, "Osc" + oscIndex + " Pitch", oscIndex + 1.0f));
 
-        // MatrixAmount1 - Can only pitch -24..24 semi-tones (instead of -48..48)
-        depth = Math.clamp (depth, -0.5, 0.5) * 2;
-        final String depthStr = StringUtils.formatPercent (depth, 2);
-        parameters.add (new WaldorfQpatParameter ("MatrixAmount" + oscIndex, depthStr, (float) ((depth + 1.0) / 2.0)));
+        // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
+        final double amount = convertFromPitchDepth (depth);
+        parameters.add (new WaldorfQpatParameter ("MatrixAmount" + oscIndex, StringUtils.formatPercent (amount, 2), (float) ((amount + 1.0) / 2.0)));
 
         final String prefix = "FreeEnv" + oscIndex;
         createEnvelope (parameters, pitchEnvelopeModulator.getSource (), prefix, prefix, false, false);
@@ -758,11 +757,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final double pitchDepth = pitchLfoModulator.getDepth ();
         if (pitchDepth != 0 && pitchLfo.isSet ())
         {
-            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, one matrix slot
-            // reaches MATRIX_PITCH_RANGE semi-tones
-            final double semitones = pitchDepth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
-            final double amount = Math.clamp (semitones / MATRIX_PITCH_RANGE, -1.0, 1.0);
-            createModulationMatrixEntry (parameters, MATRIX_SLOT_VIBRATO, LFO_VIBRATO, "Pitch", MATRIX_DST_PITCH, amount);
+            createModulationMatrixEntry (parameters, MATRIX_SLOT_VIBRATO, LFO_VIBRATO, "Pitch", MATRIX_DST_PITCH, convertFromPitchDepth (pitchDepth));
             createLfo (parameters, pitchLfo, LFO_VIBRATO, false);
         }
 
@@ -1207,6 +1202,22 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             if (Math.abs (zone.getPanning () - panning) > 0.0001)
                 return 0;
         return Math.clamp (panning, -1.0, 1.0);
+    }
+
+
+    /**
+     * Convert the depth of a pitch modulation of the model into the amount of a modulation matrix
+     * slot. The depth of the model covers {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent, while one
+     * slot of the matrix reaches {@link #MATRIX_PITCH_RANGE} semi-tones - a modulation which asks
+     * for more than the device can pitch is written at the end of its range.
+     *
+     * @param depth The modulation depth in the range of [-1..1]
+     * @return The amount in the range of [-1..1]
+     */
+    private static double convertFromPitchDepth (final double depth)
+    {
+        final double semitones = depth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
+        return Math.clamp (semitones / MATRIX_PITCH_RANGE, -1.0, 1.0);
     }
 
 
