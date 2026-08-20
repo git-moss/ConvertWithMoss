@@ -22,6 +22,7 @@
 * Akai S-1000
   * Fixed: Images with broken sample or program data blocks can now be read. Conversion does not stop but continues with also improved error logging.
   * Fixed: Do not report samples for key-groups with upper velocity set to zero. These are used creatively by some companies to add their copyright info to each key-group.
+  * Fixed: Samples which were recorded at 22050Hz were read with a sample rate of 0Hz. The sampler fills in the exact sample rate only for the samples it records at 44100Hz and marks the 22050Hz ones solely by an index at the start of the sample header, which was not read. Such a sample was written as an unplayable file which claims a sample rate of 0Hz and, with the sample rate processing option enabled, made the conversion fail - which stopped the whole disk image, so that all presets after it were lost (32 of the 124 presets of a commercial CD-ROM).
 * Bliss
   * Fixed: A zone with a trimmed sample start was re-sampled to exactly 96 kHz (the maximum rate of the format was applied as a fixed rate, up-sampling included). Worse, the trim positions count in frames of the source rate, so after the up-sampling they pointed at the wrong place and cut the later part of the sample audio away. The samples now keep their rate; only the actual limits of the format are enforced - a rate above 96 kHz or a bit resolution which the format does not store (e.g. 8 bit) is converted, and this now also happens for zones which are not trimmed, whose samples went into the file unchanged before.
 * CWITEC TX16Wx
