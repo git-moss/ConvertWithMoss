@@ -299,6 +299,11 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
      */
     private void storeMultisamples (final List<IMultisampleSource> multisampleSources, final File multiFile, final YamahaYsfcFileFormat format) throws IOException
     {
+        // The sample data is converted to 44.1 kHz, therefore the sample positions need to be
+        // re-calculated as well
+        for (final IMultisampleSource multisampleSource: multisampleSources)
+            recalculateSamplePositions (multisampleSource, DESTINATION_AUDIO_FORMAT.getMaxSampleRate ());
+
         final boolean addPerformances = !this.settingsConfiguration.createOnlyWaveforms ();
         if (!addPerformances)
             this.notifier.log ("IDS_YSFC_CREATES_ONLY_WAVEFORMS");
@@ -341,6 +346,10 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             final IInstrumentSource instrumentSource = instrumentSources.get (i);
             final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
             final String multisampleName = StringUtils.fixASCII (multisampleSource.getName ());
+
+            // The sample data is converted to 44.1 kHz, therefore the sample positions need to be
+            // re-calculated as well
+            recalculateSamplePositions (multisampleSource, DESTINATION_AUDIO_FORMAT.getMaxSampleRate ());
 
             final YamahaYsfcPerformancePart part = parts.get (i);
             part.setNoteLimitLow (instrumentSource.getClipKeyLow ());
