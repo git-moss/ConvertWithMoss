@@ -77,8 +77,8 @@ public class AkaiS1000Sample
         if (id != AKAI_SAMPLE_ID) // && id != AKAI_SAMPLE_ID2)
             throw new IOException (Functions.getMessage ("IDS_S1000_UNKNOWN_SAMPLE_ID", Integer.toString (id)));
 
-        // 0 for 22050Hz, 1 for 44100Hz - skip
-        disk.readInt8 ();
+        // 0 for 22050Hz, 1 for 44100Hz
+        final int sampleRateIndex = disk.readInt8 ();
         this.midiRootNote = disk.readInt8 ();
 
         this.name = disk.readText ();
@@ -107,6 +107,13 @@ public class AkaiS1000Sample
         // 0, 0, 255, 255 - skip
         disk.readInt32 ();
         this.samplingFrequency = disk.readInt16 () & 0xFFFF;
+        // The sampler only fills in the exact frequency for the samples which it records at
+        // 44100Hz, the ones recorded at 22050Hz leave it at zero and are only marked as such by the
+        // index at the start of the header. Without that fall-back such a sample claims a sample
+        // rate of 0Hz, which makes the written file unplayable and lets the re-sampling of the
+        // processing options fail
+        if (this.samplingFrequency == 0)
+            this.samplingFrequency = sampleRateIndex == 0 ? 22050 : 44100;
         // Only valid on S3000 series
         this.loopTuneOffset = disk.readInt8 ();
 
