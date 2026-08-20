@@ -388,9 +388,11 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         if (filterVeloAmountParameter != null)
             filter.getCutoffVelocityModulator ().setDepth (filterVeloAmountParameter.value * 2.0 - 1.0);
 
+        // Filter1Keytrack: [0.00] "-200.00 %" ... [0.50] "0.00 %" ... [1.00] "+200.00 %", clipped
+        // to the range which the model can express
         final WaldorfQpatParameter filterKeyTrackParameter = parameters.get ("Filter1Keytrack");
         if (filterKeyTrackParameter != null)
-            filter.setCutoffKeyTracking (filterKeyTrackParameter.value * 2.0 - 1.0);
+            filter.setCutoffKeyTracking (Math.clamp (filterKeyTrackParameter.value * 4.0 - 2.0, -1.0, 1.0));
 
         final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
         final WaldorfQpatParameter filterEnvAmountParameter = parameters.get ("Filter1EnvAmount");
