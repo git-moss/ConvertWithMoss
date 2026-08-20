@@ -39,6 +39,10 @@ import de.mossgrabers.convertwithmoss.format.casio.CasioFZDisk.CasioFZFile;
  */
 public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    /** What the sampler adds to a cut-off value before it reaches the filter chips. */
+    private static final int FILTER_CODE_OFFSET = 32;
+
+
     /**
      * Constructor.
      *
@@ -359,14 +363,30 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Map a FZ cutoff value (0-126) to a frequency with an exponential law from ~20 Hz to ~18 kHz.
-     * The law is an approximation, it is not documented in the FZ specification.
+     * Map a FZ cut-off value to a frequency. The value is not what the filter receives: the
+     * sampler adds 32 to it - and the modulation of the filter envelope, the LFO and the key
+     * follow - before it writes the result as an 8 bit quantity to its filter chips. The range of
+     * the value therefore covers exactly the codes 32 to 159 of those chips, and 159 is both the
+     * value the sampler initializes them with and the point at which its own programming
+     * documentation calls the filter fully open.
      *
-     * @param cutoff The cutoff value
+     * The frequencies which those codes produce are not exponential but follow three linear
+     * sections: the service manual of the sampler gives 20 Hz for code 0 and 20 kHz for code 159,
+     * and the operating system picks code 108 for a 4.5 kHz and code 124 for a 9 kHz anti-aliasing
+     * filter when it samples, which fixes the two points in between.
+     *
+     * @param cutoff The cut-off value
      * @return The frequency in Hertz
      */
     static double cutoffToFrequency (final int cutoff)
     {
-        return 20.0 * Math.pow (2, cutoff / 127.0 * 9.8);
+        final int code = Math.clamp (cutoff, 0, 255) + FILTER_CODE_OFFSET;
+        if (code <= 108)
+            return 20.0 + code * 41.48;
+        if (code <= 124)
+            return 4500.0 + (code - 108) * 281.25;
+        if (code <= 159)
+            return 9000.0 + (code - 124) * 314.29;
+        return 20000.0;
     }
 }
