@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
@@ -107,10 +108,10 @@ public class DistingExCreatorUI extends WavChunkSettingsUI
             return false;
 
         String value = parameters.remove (DEX_LIMIT_TO_16_441);
-        this.limitTo16441 = "1".equals (value);
+        this.limitTo16441 = ICoreTaskSettings.parseBoolean (value, true);
 
         value = parameters.remove (DEX_TRIM_START_TO_END);
-        this.trimStartToEnd = "1".equals (value);
+        this.trimStartToEnd = ICoreTaskSettings.parseBoolean (value, true);
 
         return true;
     }

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -104,7 +105,7 @@ public class Emulator4DetectorUI extends MetadataSettingsUI
             return false;
 
         final String value = parameters.remove (this.prefix + PREPEND_BANK_NAME);
-        this.prependBankName = value == null || "1".equals (value);
+        this.prependBankName = value == null || ICoreTaskSettings.parseBoolean (value, true);
         return true;
     }
 

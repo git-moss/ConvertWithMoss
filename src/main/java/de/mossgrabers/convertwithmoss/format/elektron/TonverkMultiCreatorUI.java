@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
@@ -103,7 +104,7 @@ public class TonverkMultiCreatorUI extends WavChunkSettingsUI
             return false;
 
         final String value = parameters.remove (this.prefix + RESAMPLE_TO_24_48);
-        this.resampleTo2448 = "1".equals (value);
+        this.resampleTo2448 = ICoreTaskSettings.parseBoolean (value, true);
 
         return true;
     }

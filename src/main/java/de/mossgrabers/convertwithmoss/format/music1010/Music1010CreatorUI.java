@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
@@ -128,10 +129,10 @@ public class Music1010CreatorUI extends WavChunkSettingsUI
         this.interpolationQuality = "1".equals (value);
 
         value = parameters.remove (this.prefix + RESAMPLE_TO_24_48);
-        this.resampleTo2448 = "1".equals (value);
+        this.resampleTo2448 = ICoreTaskSettings.parseBoolean (value, true);
 
         value = parameters.remove (this.prefix + TRIM_START_TO_END);
-        this.trimStartToEnd = "1".equals (value);
+        this.trimStartToEnd = ICoreTaskSettings.parseBoolean (value, true);
 
         return true;
     }

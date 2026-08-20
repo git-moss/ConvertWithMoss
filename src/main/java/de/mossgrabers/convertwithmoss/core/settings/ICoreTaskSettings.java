@@ -69,4 +69,20 @@ public interface ICoreTaskSettings
      * @return The names
      */
     String [] getCLIParameterNames ();
+
+
+    /**
+     * Parse a boolean command line parameter. A parameter which is not given on the command line
+     * must keep the default of its option, which is the state its check-box has in the user
+     * interface. Testing the value alone turns every option off which is enabled by default, so
+     * the same conversion produces a different result from the command line than from the GUI.
+     *
+     * @param value The value of the parameter, null if the parameter was not given
+     * @param defaultValue The value to use if the parameter was not given
+     * @return The parsed value
+     */
+    static boolean parseBoolean (final String value, final boolean defaultValue)
+    {
+        return value == null ? defaultValue : "1".equals (value);
+    }
 }
