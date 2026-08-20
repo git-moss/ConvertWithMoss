@@ -41,6 +41,30 @@ import de.mossgrabers.tools.FileUtils;
 public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
 {
     /**
+     * The cut-off frequency in Hertz which each of the 100 filter settings produces, one entry per
+     * setting. The sampler does not filter digitally: each of its 8 voices runs through an analog
+     * switched-capacitor low-pass whose corner sits at a fiftieth of the clock it is fed with, and
+     * that clock is a timer which the operating system divides down from 4 MHz. The setting is
+     * scaled by 1.25, offset by 70 and clipped to the range of that divider table, which is why the
+     * filter is fully closed below a setting of 24 and fully open from 76 upwards, and why the
+     * curve in between is anything but a straight line.
+     */
+    private static final int [] FILTER_CUTOFF = 
+    {
+        314, 314, 314, 314, 314, 314, 314, 314, 314, 314,
+        314, 314, 314, 314, 314, 314, 314, 314, 314, 314,
+        314, 314, 314, 314, 352, 374, 396, 419, 471, 497,
+        526, 559, 625, 667, 702, 748, 833, 889, 941, 1000,
+        1111, 1176, 1250, 1333, 1481, 1569, 1667, 1778, 2000, 2105,
+        2222, 2353, 2667, 2857, 2963, 3200, 3478, 3810, 4000, 4211,
+        4706, 5000, 5333, 5714, 6154, 6667, 7273, 7273, 8889, 8889,
+        10000, 10000, 11429, 11429, 13333, 13333, 16000, 16000, 16000, 16000,
+        16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000,
+        16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000
+    };
+
+
+    /**
      * Constructor.
      *
      * @param notifier The notifier
@@ -193,7 +217,7 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         IFilter filter = null;
         if (filterCutoff < 99)
         {
-            final double cutoff = filterCutoff / 99.0 * IFilter.MAX_FREQUENCY;
+            final double cutoff = FILTER_CUTOFF[Math.clamp (filterCutoff, 0, 99)];
             filter = new DefaultFilter (FilterType.LOW_PASS, 3, cutoff, 0);
             sampleZone.setFilter (filter);
         }
