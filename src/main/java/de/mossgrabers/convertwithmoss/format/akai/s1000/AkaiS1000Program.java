@@ -25,7 +25,6 @@ public class AkaiS1000Program
     // AKAI character set
     private String               name;
     // 0..127
-    @SuppressWarnings("unused")
     private byte                 midiProgramNumber;
     // 0..15, 255=OMNI
     private byte                 midiChannel;
@@ -274,6 +273,18 @@ public class AkaiS1000Program
     public String getName ()
     {
         return this.name;
+    }
+
+
+    /**
+     * Get the MIDI program number of the program. Programs of a volume which share the same
+     * program number are all selected together by that number and therefore always play layered.
+     *
+     * @return The MIDI program number, 0..127
+     */
+    public int getMidiProgramNumber ()
+    {
+        return this.midiProgramNumber & 0xFF;
     }
 
 
