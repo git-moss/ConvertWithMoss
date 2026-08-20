@@ -339,10 +339,20 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
      */
     private static int frequencyToCutoff (final double frequency)
     {
-        if (frequency <= 20)
-            return 0;
-        final int cutoff = (int) Math.round (Math.log (frequency / 20.0) / Math.log (2) * 127.0 / 9.8);
-        return Math.clamp (cutoff, 0, 127);
+        // The sections of the law are not invertible in one expression, therefore the value whose
+        // frequency comes closest is searched
+        int bestCutoff = 0;
+        double bestDistance = Double.MAX_VALUE;
+        for (int cutoff = 0; cutoff <= 127; cutoff++)
+        {
+            final double distance = Math.abs (CasioFZDetector.cutoffToFrequency (cutoff) - frequency);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestCutoff = cutoff;
+            }
+        }
+        return bestCutoff;
     }
 
 
