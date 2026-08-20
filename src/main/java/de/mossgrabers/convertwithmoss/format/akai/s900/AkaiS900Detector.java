@@ -41,6 +41,30 @@ import de.mossgrabers.tools.FileUtils;
 public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
 {
     /**
+     * The cut-off frequency in Hertz which each of the 100 filter settings produces, one entry per
+     * setting. The sampler does not filter digitally: each of its 8 voices runs through an analog
+     * switched-capacitor low-pass whose corner sits at a fiftieth of the clock it is fed with, and
+     * that clock is a timer which the operating system divides down from 4 MHz. The setting is
+     * scaled by 1.25, offset by 70 and clipped to the range of that divider table, which is why the
+     * filter is fully closed below a setting of 24 and fully open from 76 upwards, and why the
+     * curve in between is anything but a straight line.
+     */
+    private static final int [] FILTER_CUTOFF = 
+    {
+        125, 125, 125, 125, 125, 125, 125, 125, 125, 125,
+        125, 125, 125, 125, 125, 125, 125, 125, 125, 125,
+        125, 125, 125, 125, 141, 150, 158, 168, 188, 199,
+        211, 224, 250, 267, 281, 299, 333, 356, 376, 400,
+        444, 471, 500, 533, 593, 627, 667, 711, 800, 842,
+        889, 941, 1067, 1143, 1185, 1280, 1391, 1524, 1600, 1684,
+        1882, 2000, 2133, 2286, 2462, 2667, 2909, 2909, 3556, 3556,
+        4000, 4000, 4571, 4571, 5333, 5333, 6400, 6400, 6400, 6400,
+        6400, 6400, 6400, 6400, 6400, 6400, 6400, 6400, 6400, 6400,
+        6400, 6400, 6400, 6400, 6400, 6400, 6400, 6400, 6400, 6400
+    };
+
+
+    /**
      * Constructor.
      *
      * @param notifier The notifier
@@ -193,7 +217,7 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         IFilter filter = null;
         if (filterCutoff < 99)
         {
-            final double cutoff = filterCutoff / 99.0 * IFilter.MAX_FREQUENCY;
+            final double cutoff = FILTER_CUTOFF[Math.clamp (filterCutoff, 0, 99)];
             filter = new DefaultFilter (FilterType.LOW_PASS, 3, cutoff, 0);
             sampleZone.setFilter (filter);
         }
