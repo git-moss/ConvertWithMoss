@@ -361,12 +361,34 @@ public class AkaiS1000ProgramConverter
     }
 
 
+    /**
+     * Convert the sustain of an envelope into the level at which it holds a note. The sustain is
+     * not a part of the level but an attenuation on the loudness scale of the sound hardware: the
+     * operating system scales the parameter with the same table as every other loudness and stores
+     * the remainder to the full level as the attenuation of the voice, which the hardware subtracts
+     * from the index into its gain table while a note is held. A sustain of 50 therefore does not
+     * hold a note at half of its level but 30.4 dB below it, which is 3 % - read as half the level
+     * such a note sits about 24 dB too loud, and the difference a sound designer set between the
+     * layers of a preset disappears.
+     *
+     * @param sustain The sustain in the range of [0..99]
+     * @return The level in the range of [0..1]
+     */
+    private static double scaledSustainToLevel (final int sustain)
+    {
+        final int scaledSustain = PARAMETER_SCALE[Math.clamp (sustain, 0, 99)];
+        if (scaledSustain <= 0)
+            return 0;
+        return Math.pow (10, (scaledSustain - FULL_LEVEL) * DECIBEL_PER_STEP / 20.0);
+    }
+
+
     private static IEnvelope convertEnvelope (final AkaiS1000Envelope akaiEnvelope)
     {
         final IEnvelope envelope = new DefaultEnvelope ();
         envelope.setAttackTime (toSeconds (akaiEnvelope.getAttack ()));
         envelope.setDecayTime (toSeconds (akaiEnvelope.getDecay ()));
-        envelope.setSustainLevel (akaiEnvelope.getSustain () / 99.0);
+        envelope.setSustainLevel (scaledSustainToLevel (akaiEnvelope.getSustain ()));
         envelope.setReleaseTime (toSeconds (akaiEnvelope.getRelease ()));
 
         // The native range of both intensities is [-50..50] which maps to the model range of
