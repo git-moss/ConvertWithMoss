@@ -9,7 +9,6 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
@@ -36,9 +35,95 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 public class AkaiS1000ProgramConverter
 {
     /** The number of voices of an Akai S1000/S3000. */
-    private static final int MAX_POLYPHONY = 16;
+    private static final int     MAX_POLYPHONY       = 16;
 
-    private final INotifier  notifier;
+    /**
+     * The sampler scales every parameter which it displays in the range of [0..99] - and every
+     * signed one in the range of [-50..50] - to the [0..255] resp. [-128..127] range of its sound
+     * hardware with this table, which its operating system applies with a single table look-up.
+     * This is what turns a filter or loudness setting into the value the hardware receives.
+     */
+    private static final int []  PARAMETER_SCALE     =
+    {
+        0, 3, 5, 8, 10, 13, 15, 18, 20, 23,
+        26, 28, 31, 33, 36, 38, 41, 43, 46, 48,
+        51, 54, 56, 59, 61, 64, 66, 69, 71, 74,
+        76, 79, 82, 84, 87, 89, 92, 94, 97, 99,
+        102, 105, 107, 110, 112, 115, 117, 120, 122, 125,
+        127, 130, 133, 135, 138, 140, 143, 145, 148, 150,
+        153, 156, 158, 161, 163, 166, 168, 171, 173, 176,
+        178, 181, 184, 186, 189, 191, 194, 196, 199, 201,
+        204, 207, 209, 212, 214, 217, 219, 222, 224, 227,
+        229, 232, 235, 237, 240, 242, 245, 247, 250, 252
+    };
+
+    /**
+     * The cut-off frequency in Hertz which each of the 100 filter settings produces, one entry per
+     * setting. The sampler scales the setting with {@link #PARAMETER_SCALE} and looks the
+     * coefficient of its low-pass up with the result; the frequencies here are the -3dB points
+     * which those coefficients give for its three one-pole stages in series at 44.1 kHz. The
+     * filter is therefore far from a straight line over its range: it only leaves the audible band
+     * in the upper third, while the middle of the range - where sample libraries place their
+     * evolving layers - sits between 300 Hz and 1 kHz.
+     */
+    private static final int []  FILTER_CUTOFF       =
+    {
+        13, 14, 15, 16, 17, 19, 20, 22, 23, 25,
+        27, 29, 31, 33, 36, 38, 42, 44, 48, 51,
+        56, 61, 64, 70, 74, 81, 86, 94, 99, 108,
+        115, 125, 137, 145, 158, 167, 182, 193, 210, 223,
+        243, 265, 280, 306, 324, 353, 374, 408, 432, 470,
+        498, 543, 592, 627, 683, 723, 788, 834, 909, 962,
+        1048, 1142, 1208, 1316, 1393, 1516, 1605, 1747, 1848, 2011,
+        2127, 2314, 2517, 2661, 2893, 3057, 3321, 3508, 3807, 4019,
+        4356, 4715, 4968, 5364, 5640, 6067, 6359, 6802, 7096, 7530,
+        7808, 8199, 8555, 8774, 9088, 9303, 9696, 10064, 11005, 12275
+    };
+
+    /**
+     * The rate at which the sound hardware moves an envelope towards its next level, one entry per
+     * setting of an envelope stage. The sampler looks the rate up with <code>99 - setting</code>,
+     * so a setting of 0 gives the fastest rate and 99 the slowest, and it uses this one table for
+     * the attack, the decay and the release of both of its envelopes alike. The rates span a range
+     * of 16384 to 1, which is why the times are anything but a straight line over the range of a
+     * setting.
+     */
+    private static final int []  ENVELOPE_RATE       =
+    {
+        2, 2, 2, 3, 3, 3, 4, 4, 4, 5,
+        5, 6, 6, 7, 8, 9, 10, 11, 12, 13,
+        14, 16, 17, 19, 21, 23, 26, 28, 31, 34,
+        38, 42, 46, 51, 56, 62, 68, 75, 83, 91,
+        101, 111, 123, 135, 149, 165, 182, 200, 221, 244,
+        269, 297, 327, 361, 398, 439, 484, 534, 589, 650,
+        716, 790, 872, 961, 1060, 1170, 1290, 1423, 1570, 1731,
+        1909, 2106, 2323, 2562, 2826, 3117, 3438, 3792, 4183, 4614,
+        5089, 5613, 6191, 6828, 7532, 8307, 9163, 10106, 11147, 12295,
+        13562, 14958, 16499, 18198, 20072, 22139, 24419, 26934, 29707, 32767
+    };
+
+    /**
+     * The distance which an envelope covers between silence and the full level, in the units in
+     * which {@link #ENVELOPE_RATE} advances it. The hardware adds the rate to its envelope
+     * accumulator once per sample at 44.1 kHz; the width of that accumulator is the one part of
+     * the law which the operating system does not state, it is taken from the emulation of the
+     * sound hardware. The ratios between the settings do not depend on it.
+     */
+    private static final double  ENVELOPE_FULL_SWING = 32767.0 * 128.0;
+
+    /** The rate at which the sound hardware advances an envelope. */
+    private static final double  ENVELOPE_RATE_HZ    = 44100.0;
+
+    /**
+     * One step of the scaled parameter range on the loudness scale of the sound hardware, which
+     * spans 60.5 dB over its 255 steps.
+     */
+    private static final double  DECIBEL_PER_STEP    = 0.2372;
+
+    /** The scaled value which the loudness of the sound hardware plays at its full level. */
+    private static final int     FULL_LEVEL          = 255;
+
+    private final INotifier      notifier;
 
 
     /**
@@ -66,7 +151,7 @@ public class AkaiS1000ProgramConverter
 
         // Set global values
         final int pitchBendRange = program.getBendToPitch () & 0xFF;
-        final double gain = MathUtils.valueToDb ((program.getVolume () & 0xFF) / 99.0);
+        final double gain = scaledLoudnessToDecibel (program.getVolume () & 0xFF) - FULL_LEVEL * DECIBEL_PER_STEP;
         final double velocityToVolume = Math.clamp (program.getVelocityToVolume () / 50.0, -1.0, 1.0);
         // The native range of the key to volume intensity is [-50..50] which maps to the model
         // range of [-1..1]
@@ -132,7 +217,7 @@ public class AkaiS1000ProgramConverter
             IFilter filter = null;
             if (filterCutoff < 99 || cutoffModulation != 0)
             {
-                final double cutoff = filterCutoff / 99.0 * IFilter.MAX_FREQUENCY;
+                final double cutoff = FILTER_CUTOFF[Math.clamp (filterCutoff, 0, 99)];
                 filter = new DefaultFilter (FilterType.LOW_PASS, 3, cutoff, 0);
                 final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
                 cutoffEnvelopeModulator.setSource (auxEnvelope);
@@ -195,7 +280,7 @@ public class AkaiS1000ProgramConverter
                 // Mixing
                 sampleZone.setPanning (Math.clamp (keygroupSample.getPan (), -50, 50) / 50.0);
                 // Unclear of the +/- range of the loudness parameter, assume +/-6dB
-                sampleZone.setGain (Math.clamp (keygroupSample.getLoudness (), -50, 50) / 50.0 * 6.0);
+                sampleZone.setGain (scaledLoudnessToDecibel (keygroupSample.getLoudness ()));
                 sampleZone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
 
                 // Play-back
@@ -269,13 +354,52 @@ public class AkaiS1000ProgramConverter
     }
 
 
+    /**
+     * Convert a loudness parameter of the sampler into decibel. The sampler scales the parameter to
+     * the range of its sound hardware and adds all of them up - the loudness of the program, the
+     * offset of the key-group sample, the velocity and the key - to one index into its loudness
+     * scale, which is why an offset converts to decibel with the same law as an absolute value.
+     *
+     * @param loudness The loudness in the range of [0..99] for an absolute value resp. [-50..50]
+     *            for an offset
+     * @return The loudness in decibel, relative to the full level for an absolute value
+     */
+    private static double scaledLoudnessToDecibel (final int loudness)
+    {
+        final int magnitude = PARAMETER_SCALE[Math.clamp (Math.abs (loudness), 0, 99)];
+        return (loudness < 0 ? -magnitude : magnitude) * DECIBEL_PER_STEP;
+    }
+
+
+    /**
+     * Convert the sustain of an envelope into the level at which it holds a note. The sustain is
+     * not a part of the level but an attenuation on the loudness scale of the sound hardware: the
+     * operating system scales the parameter with the same table as every other loudness and stores
+     * the remainder to the full level as the attenuation of the voice, which the hardware subtracts
+     * from the index into its gain table while a note is held. A sustain of 50 therefore does not
+     * hold a note at half of its level but 30.4 dB below it, which is 3 % - read as half the level
+     * such a note sits about 24 dB too loud, and the difference a sound designer set between the
+     * layers of a preset disappears.
+     *
+     * @param sustain The sustain in the range of [0..99]
+     * @return The level in the range of [0..1]
+     */
+    private static double scaledSustainToLevel (final int sustain)
+    {
+        final int scaledSustain = PARAMETER_SCALE[Math.clamp (sustain, 0, 99)];
+        if (scaledSustain <= 0)
+            return 0;
+        return Math.pow (10, (scaledSustain - FULL_LEVEL) * DECIBEL_PER_STEP / 20.0);
+    }
+
+
     private static IEnvelope convertEnvelope (final AkaiS1000Envelope akaiEnvelope)
     {
         final IEnvelope envelope = new DefaultEnvelope ();
-        envelope.setAttackTime (toSeconds (akaiEnvelope.getAttack (), false));
-        envelope.setDecayTime (toSeconds (akaiEnvelope.getDecay (), true));
-        envelope.setSustainLevel (akaiEnvelope.getSustain () / 99.0);
-        envelope.setReleaseTime (toSeconds (akaiEnvelope.getRelease (), false));
+        envelope.setAttackTime (toSeconds (akaiEnvelope.getAttack ()));
+        envelope.setDecayTime (toSeconds (akaiEnvelope.getDecay ()));
+        envelope.setSustainLevel (scaledSustainToLevel (akaiEnvelope.getSustain ()));
+        envelope.setReleaseTime (toSeconds (akaiEnvelope.getRelease ()));
 
         // The native range of both intensities is [-50..50] which maps to the model range of
         // [-1..1]. The polarity is inverted: the Akai adds the intensity to the envelope time
@@ -291,9 +415,14 @@ public class AkaiS1000ProgramConverter
     }
 
 
-    private static double toSeconds (final int value, final boolean isLong)
+    /**
+     * Convert a setting of an envelope stage into the time which that stage takes.
+     *
+     * @param value The setting in the range of [0..99], 0 being the fastest
+     * @return The time in seconds
+     */
+    private static double toSeconds (final int value)
     {
-        // No real idea, assume 2 seconds max
-        return value / 99.0 * (isLong ? 6.0 : 2.0);
+        return ENVELOPE_FULL_SWING / ENVELOPE_RATE[99 - Math.clamp (value, 0, 99)] / ENVELOPE_RATE_HZ;
     }
 }
