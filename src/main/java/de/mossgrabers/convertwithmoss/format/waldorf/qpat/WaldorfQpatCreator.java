@@ -954,7 +954,23 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static double getGroupPanningOffset (final IGroup group)
     {
-        return Math.clamp (group.getPanning (), -1.0, 1.0);
+        final double groupPanning = Math.clamp (group.getPanning (), -1.0, 1.0);
+        if (groupPanning != 0)
+            return groupPanning;
+
+        // The detectors flatten the panning of a group into each of its zones, therefore a layer
+        // which the source panned as a whole arrives as a set of zones which all carry the same
+        // panning. Since the device ignores the panning of the single entries of a sample map,
+        // such a layer only stays where the source put it if it becomes the panning of the
+        // oscillator which plays it
+        final List<ISampleZone> zones = group.getSampleZones ();
+        if (zones.isEmpty ())
+            return 0;
+        final double panning = zones.get (0).getPanning ();
+        for (final ISampleZone zone: zones)
+            if (Math.abs (zone.getPanning () - panning) > 0.0001)
+                return 0;
+        return Math.clamp (panning, -1.0, 1.0);
     }
 
 
