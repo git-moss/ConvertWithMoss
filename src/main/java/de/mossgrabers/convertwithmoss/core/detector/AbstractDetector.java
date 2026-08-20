@@ -373,7 +373,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                     break;
 
                 updateCreationDateTime (multisample.getMetadata (), file);
-                this.multisampleSourceConsumer.accept (multisample);
+                this.deliver (() -> this.multisampleSourceConsumer.accept (multisample), multisample.getName ());
             }
         }
         catch (final RuntimeException ex)
@@ -403,7 +403,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                     break;
 
                 updateCreationDateTime (performance.getMetadata (), file);
-                this.performanceSourceConsumer.accept (performance);
+                this.deliver (() -> this.performanceSourceConsumer.accept (performance), performance.getName ());
             }
         }
         catch (final RuntimeException ex)
@@ -413,6 +413,32 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         finally
         {
             MachineProgressReporter.finishFile (file);
+        }
+    }
+
+
+    /**
+     * Convert one preset or performance of a source file. A source file which contains many of them
+     * - a disk image, a bank, a library - delivers all of them from one read, so an error while one
+     * of them is converted would end the loop over them and silently drop all which follow. Such an
+     * error is therefore reported with the name of the entry which caused it and the source is
+     * continued with the next one.
+     *
+     * @param delivery Delivers the preset or performance to its consumer
+     * @param name The name of the preset or performance, to report which one failed
+     */
+    private void deliver (final Runnable delivery, final String name)
+    {
+        try
+        {
+            delivery.run ();
+        }
+        catch (final RuntimeException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_CONVERSION_FAILED", name);
+            // Logged with its stack since an unexpected error of the conversion is a defect, and
+            // the stack is what tells where to look for it
+            this.notifier.logError (ex, true);
         }
     }
 
