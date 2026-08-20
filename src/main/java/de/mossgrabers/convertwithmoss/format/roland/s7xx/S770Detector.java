@@ -261,9 +261,10 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
             performanceSources.add (performanceSource);
 
             final int [] partsPatchSelections = performance.getPartsPatchSelection ();
-            final int [] midiChannels = performance.getMidiChannel ();
-            final boolean [] isMidiEnabled = performance.isMidiEnabled ();
+            final int [] midiChannels = performance.getPartsMidiChannel ();
+            final boolean [] isMidiEnabled = performance.isPartsMidiEnabled ();
             final int [] partsLevels = performance.getPartsLevel ();
+            final int [] partsPanning = performance.getPartsPanning ();
             final int [] partsZoneLower = performance.getPartsZoneLower ();
             final int [] partsZoneUpper = performance.getPartsZoneUpper ();
 
@@ -281,9 +282,8 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
                 }
                 final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, isMidiEnabled[p] ? midiChannels[p] : IInstrumentSource.MIDI_CHANNEL_OFF);
                 performanceSource.addInstrument (instrumentSource);
-
-                // TODO set level
-                // TODO where is panning?
+                instrumentSource.setGain (MathUtils.valueToDb (partsLevels[p] / 127.0));
+                instrumentSource.setPanning (partsPanning[p] / 32.0);
                 instrumentSource.setClipKeyLow (partsZoneLower[p]);
                 instrumentSource.setClipKeyHigh (partsZoneUpper[p]);
             }

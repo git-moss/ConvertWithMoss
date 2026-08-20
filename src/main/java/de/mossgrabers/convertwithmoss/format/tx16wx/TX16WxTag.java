@@ -24,6 +24,14 @@ public class TX16WxTag
     public static final String PERFORMANCE            = "tx:performance";
     /** A program slot in a performance. */
     public static final String SLOT                   = "tx:slot";
+    /** The volume of a slot in a performance. */
+    public static final String SLOT_VOLUME            = "tx:volume";
+    /** The panning of a slot in a performance. */
+    public static final String SLOT_PANNING           = "tx:pan";
+    /** The transpose of a slot in a performance. */
+    public static final String SLOT_TRANSPOSE         = "tx:transpose";
+    /** The de-tuning of a slot in a performance. */
+    public static final String SLOT_DETUNE            = "tx:detune";
 
     /** A bank which references several programs. */
     public static final String BANK                   = "tx:bank";
