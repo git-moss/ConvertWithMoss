@@ -6,7 +6,10 @@ package de.mossgrabers.convertwithmoss.format.roland.mv8000;
 
 /**
  * One of the 4 sample-mix-table (SMT) slots of a MV-8000 partial. Reads/writes the bit-packed
- * fields inside the 210 bit slot frame of a partial record.
+ * fields inside the 210 bit slot frame of a partial record. Besides the mixing parameters a slot
+ * stores the start point, the loop start and the end point of its sample: the hardware plays (and
+ * displays) these points and not the ones of the sample parameter block, which the device keeps
+ * identical to them.
  *
  * @author Jürgen Moßgraber
  */
@@ -27,6 +30,10 @@ public class MV8000Smt
     private static final int     OFFSET_FADE_LOW    = 66;
     private static final int     OFFSET_VELO_HIGH   = 73;
     private static final int     OFFSET_FADE_HIGH   = 80;
+    // Each of the 3 playback points is a 32 bit frame count followed by an 8 bit sub-frame part
+    private static final int     OFFSET_START_POINT = 87;
+    private static final int     OFFSET_LOOP_START  = 127;
+    private static final int     OFFSET_END_POINT   = 167;
     private static final int     OFFSET_PLAY_MODE   = 207;
 
     /** Pitch key-follow value for +100% (normal chromatic tracking). */
@@ -273,6 +280,72 @@ public class MV8000Smt
     public void setVelocityFadeHigh (final int fadeHigh)
     {
         this.bits.setBits (this.baseOffset + OFFSET_FADE_HIGH, 7, fadeHigh);
+    }
+
+
+    /**
+     * Get the start point of the playback in sample frames.
+     *
+     * @return The start point
+     */
+    public int getStartPoint ()
+    {
+        return this.bits.getBits (this.baseOffset + OFFSET_START_POINT, 32);
+    }
+
+
+    /**
+     * Set the start point of the playback in sample frames.
+     *
+     * @param startPoint The start point
+     */
+    public void setStartPoint (final int startPoint)
+    {
+        this.bits.setBits (this.baseOffset + OFFSET_START_POINT, 32, startPoint);
+    }
+
+
+    /**
+     * Get the loop start in sample frames.
+     *
+     * @return The loop start
+     */
+    public int getLoopStart ()
+    {
+        return this.bits.getBits (this.baseOffset + OFFSET_LOOP_START, 32);
+    }
+
+
+    /**
+     * Set the loop start in sample frames.
+     *
+     * @param loopStart The loop start
+     */
+    public void setLoopStart (final int loopStart)
+    {
+        this.bits.setBits (this.baseOffset + OFFSET_LOOP_START, 32, loopStart);
+    }
+
+
+    /**
+     * Get the end point of the playback in sample frames (exclusive). This is also the loop end.
+     *
+     * @return The end point, 0 if the slot does not carry the playback points
+     */
+    public int getEndPoint ()
+    {
+        return this.bits.getBits (this.baseOffset + OFFSET_END_POINT, 32);
+    }
+
+
+    /**
+     * Set the end point of the playback in sample frames (exclusive). This is also the loop end.
+     *
+     * @param endPoint The end point
+     */
+    public void setEndPoint (final int endPoint)
+    {
+        this.bits.setBits (this.baseOffset + OFFSET_END_POINT, 32, endPoint);
     }
 
 
