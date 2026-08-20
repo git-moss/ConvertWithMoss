@@ -17,6 +17,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -50,6 +51,10 @@ public class PresetRenderer
 
     private static final double     DEFAULT_HOLD_SECONDS      = 2.0;
     private static final double     MAXIMUM_SECONDS           = 8.0;
+    /** The longest a key is held, which leaves room for the release within the maximum time. */
+    private static final double     MAXIMUM_HOLD_SECONDS      = 6.0;
+    /** How long a sustained sound dwells on its sustain level, so that it can be heard. */
+    private static final double     SUSTAIN_DWELL_SECONDS     = 1.5;
     private static final int        DEFAULT_VELOCITY          = 100;
     /** Below this level the release is over and the rendering stops. */
     private static final double     SILENCE_LEVEL             = 0.0001;
@@ -93,7 +98,7 @@ public class PresetRenderer
         if (zones.isEmpty ())
             return new byte [0];
 
-        final int holdFrames = (int) Math.round (DEFAULT_HOLD_SECONDS * SAMPLE_RATE);
+        final int holdFrames = computeHoldFrames (zones);
         final int maximumFrames = (int) Math.round (MAXIMUM_SECONDS * SAMPLE_RATE);
         final double [] left = new double [maximumFrames];
         final double [] right = new double [maximumFrames];
@@ -186,6 +191,81 @@ public class PresetRenderer
                     zones.add (zone);
             }
         return zones;
+    }
+
+
+    /**
+     * Get the number of frames to hold the key: long enough that the sound reaches its sustained
+     * character - through the delay, attack, hold and decay of its amplitude envelope - and then
+     * dwells there, or that the body of its longest sample is heard once (an evolving texture or
+     * a phrase which only loops near its end). A sound which decays to silence is held through
+     * its decay instead, so that nothing of its natural tail is cut off. The result is never
+     * shorter than the default hold and never longer than the maximum hold, which leaves room for
+     * the release within the maximum rendering time.
+     *
+     * @param zones The zones which the note triggers
+     * @return The number of frames to hold the key
+     * @throws IOException Could not read the audio metadata of a zone
+     */
+    private static int computeHoldFrames (final List<ISampleZone> zones) throws IOException
+    {
+        double holdSeconds = DEFAULT_HOLD_SECONDS;
+        for (final ISampleZone zone: zones)
+        {
+            final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+            if (envelope == null)
+                continue;
+
+            double steadySeconds = positiveTime (envelope.getDelayTime ()) + positiveTime (envelope.getAttackTime ()) + positiveTime (envelope.getHoldTime ());
+            final double holdLevel = envelope.getHoldLevel () < 0 ? 1 : Math.clamp (envelope.getHoldLevel (), 0, 1);
+            final double sustainLevel = envelope.getSustainLevel () < 0 ? 1 : Math.clamp (envelope.getSustainLevel (), 0, 1);
+            // The decay only takes time when it changes the level
+            if (Math.abs (holdLevel - sustainLevel) > 0.01)
+                steadySeconds += positiveTime (envelope.getDecayTime ());
+
+            double zoneHoldSeconds = steadySeconds;
+            if (sustainLevel > 0.01)
+                zoneHoldSeconds = Math.max (zoneHoldSeconds + SUSTAIN_DWELL_SECONDS, getBodySeconds (zone));
+            holdSeconds = Math.max (holdSeconds, zoneHoldSeconds);
+        }
+        return (int) Math.round (Math.min (holdSeconds, MAXIMUM_HOLD_SECONDS) * SAMPLE_RATE);
+    }
+
+
+    /**
+     * Get the seconds until the audio of a zone has played its body: up to the end of its loop,
+     * which afterwards only repeats, or up to its end when it does not loop. The pitch shift of
+     * the preview key is ignored, since the preview prefers to play at a root key.
+     *
+     * @param zone The zone
+     * @return The seconds
+     * @throws IOException Could not read the audio metadata
+     */
+    private static double getBodySeconds (final ISampleZone zone) throws IOException
+    {
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            return 0;
+        final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+        final double sampleRate = audioMetadata.getSampleRate ();
+        if (sampleRate <= 0)
+            return 0;
+
+        final int start = Math.max (0, zone.getStart ());
+        int end = zone.getStop () > start ? zone.getStop () : audioMetadata.getNumberOfSamples ();
+        for (final ISampleLoop loop: zone.getLoops ())
+            if (loop.getType () == LoopType.FORWARDS && loop.getEnd () > start)
+            {
+                end = Math.min (end, loop.getEnd ());
+                break;
+            }
+        return Math.max (0, end - start) / sampleRate;
+    }
+
+
+    private static double positiveTime (final double time)
+    {
+        return time < 0 ? 0 : time;
     }
 
 

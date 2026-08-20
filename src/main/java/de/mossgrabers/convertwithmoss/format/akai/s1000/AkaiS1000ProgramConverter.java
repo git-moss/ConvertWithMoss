@@ -170,16 +170,23 @@ public class AkaiS1000ProgramConverter
 
 
     /**
-     * Apply the voice settings of the program which are stored on the level of the whole program
+     * Apply the voice settings of the programs which are stored on the level of the whole program
      * and not on the level of a key-group.
      *
      * @param multisampleSource The multi-sample source to which to apply the settings
-     * @param program The program from which to read the settings
+     * @param programs The programs from which to read the settings, several if they play layered
      */
-    public static void applyVoiceSettings (final IMultisampleSource multisampleSource, final AkaiS1000Program program)
+    public static void applyVoiceSettings (final IMultisampleSource multisampleSource, final List<AkaiS1000Program> programs)
     {
-        // The program limits itself to 1-16 of the 16 voices of the sampler
-        final int polyphony = program.getPolyphony ();
+        // Each program limits itself to 1-16 of the 16 voices of the sampler. A note occupies a
+        // voice in every layered program, therefore the smallest limit wins
+        int polyphony = 0;
+        for (final AkaiS1000Program program: programs)
+        {
+            final int programPolyphony = program.getPolyphony ();
+            if (programPolyphony > 0)
+                polyphony = polyphony == 0 ? programPolyphony : Math.min (polyphony, programPolyphony);
+        }
         if (polyphony > 0)
             multisampleSource.setPolyphony (Math.clamp (polyphony, 1, MAX_POLYPHONY));
 
@@ -233,13 +240,16 @@ public class AkaiS1000ProgramConverter
                 if (sampleName == null || sampleName.isBlank ())
                     continue;
 
+                // A zone with an upper velocity of 0 can never be triggered since a velocity of 0
+                // is a note-off. CD-ROM manufacturers use such zones to mute the layers which
+                // belong to a partner program of a layered stack and to add their copyright info
+                if (keygroupSample.getHighVelocity () == 0)
+                    continue;
+
                 final Optional<AkaiS1000Sample> sampleOpt = lookupSample (samples, sampleName);
                 if (sampleOpt.isEmpty ())
                 {
-                    // Some CD-ROM manufacturers misuse key-groups to add their copyright info, can
-                    // be identified by upper velocity of 0
-                    if (keygroupSample.getHighVelocity () != 0)
-                        this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
+                    this.notifier.logError ("IDS_ISO_SAMPLE_NOT_FOUND", sampleName);
                     continue;
                 }
 
