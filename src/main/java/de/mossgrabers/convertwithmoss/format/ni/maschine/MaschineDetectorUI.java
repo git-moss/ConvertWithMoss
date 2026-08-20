@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
@@ -102,7 +103,7 @@ public class MaschineDetectorUI extends MetadataSettingsUI
             return false;
 
         final String value = parameters.remove (MASCHINE_SCAN_FOR_MSND);
-        this.scanForMsnd = value == null || "1".equals (value);
+        this.scanForMsnd = value == null || ICoreTaskSettings.parseBoolean (value, true);
         return true;
     }
 

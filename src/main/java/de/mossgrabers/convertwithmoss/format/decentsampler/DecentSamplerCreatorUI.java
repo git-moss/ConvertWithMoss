@@ -180,10 +180,10 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
         value = parameters.remove (DS_OUTPUT_MAKE_MONOPHONIC);
         this.makeMonophonic = "1".equals (value);
 
-        value = parameters.remove (DS_TEMPLATE_FOLDER_PATH);
-        this.addFilterToGroups = "1".equals (value);
-
         value = parameters.remove (DS_OUTPUT_ADD_FILTER_TO_GROUPS);
+        this.addFilterToGroups = value == null || "1".equals (value);
+
+        value = parameters.remove (DS_TEMPLATE_FOLDER_PATH);
         this.templateFolderPath = new File (value == null ? "" : value);
 
         return true;

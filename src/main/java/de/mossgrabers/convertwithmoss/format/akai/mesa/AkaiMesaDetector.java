@@ -61,7 +61,7 @@ public class AkaiMesaDetector extends AbstractDetector<MetadataSettingsUI>
             final String [] parts = AudioFileUtils.createPathParts (parentFolder, this.sourceFolder, sourceFile.getName ());
             final IGroup group = converter.createGroup (program, this.detectSamples (parentFolder, program));
             final IMultisampleSource multisampleSource = createMultisampleSource (this.settingsConfiguration, sourceFile, parts, program.getName (), Collections.singletonList (group));
-            AkaiS1000ProgramConverter.applyVoiceSettings (multisampleSource, program);
+            AkaiS1000ProgramConverter.applyVoiceSettings (multisampleSource, Collections.singletonList (program));
             return Collections.singletonList (multisampleSource);
         }
         catch (final IOException ex)
