@@ -62,6 +62,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /** The length of the import number prefix, e.g. '05002-'. */
     private static final int                                   NUMBER_PREFIX_LENGTH   = 6;
     private static final WaldorfQpatResourceHeader             EMPTY_RESOURCE_HEADER  = new WaldorfQpatResourceHeader ();
+    /** The shortest amplitude attack/release which the device renders without a click. */
+    private static final double                                DECLICK_SECONDS        = 0.07;
 
     private static final DestinationAudioFormat                OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -782,7 +784,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         }
 
         // xxxEnvRelease
-        final double releaseTime = declickAmpTime (isAmplitude, Math.clamp (envelope.getReleaseTime (), 0, 60));
+        final double releaseTime = declickAmpRelease (isAmplitude, Math.clamp (envelope.getReleaseTime (), 0, 60));
         parameters.add (new WaldorfQpatParameter (prefix + "Release", formatSeconds (releaseTime), (float) convertFromTime (releaseTime)));
 
         // xxxEnvSustain - a flattened amplitude envelope sustains at full level; its level is
@@ -986,7 +988,25 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static double declickAmpTime (final boolean isAmplitude, final double seconds)
     {
-        return isAmplitude && seconds > 0 ? Math.max (seconds, 0.07) : seconds;
+        return isAmplitude && seconds > 0 ? Math.max (seconds, DECLICK_SECONDS) : seconds;
+    }
+
+
+    /**
+     * Get the release time of an amplitude envelope, which always needs to be long enough to be
+     * audible. A release of zero gates the VCA off in one sample, and the waveform is cut wherever
+     * it happens to stand - which is at full level for a looped zone, so the preset clicks on every
+     * key release. Unlike the attack, which starts from silence at the beginning of the sample, a
+     * release always has a sounding waveform to fade out, so the minimum is applied even when the
+     * source leaves the release unset - that lands here as zero after clamping.
+     *
+     * @param isAmplitude True if this is the amplitude envelope
+     * @param seconds The release time in seconds
+     * @return The release time to write
+     */
+    private static double declickAmpRelease (final boolean isAmplitude, final double seconds)
+    {
+        return isAmplitude ? Math.max (seconds, DECLICK_SECONDS) : seconds;
     }
 
 
