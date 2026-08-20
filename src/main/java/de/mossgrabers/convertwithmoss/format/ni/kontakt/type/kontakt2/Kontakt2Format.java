@@ -114,7 +114,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
 
     /** {@inheritDoc} */
     @Override
-    public void writeNKM (final OutputStream out, final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources, final int sizeOfSamples) throws IOException
+    public void writeNKM (final OutputStream out, final String bankName, final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources, final int sizeOfSamples) throws IOException
     {
         // Not supported
     }
