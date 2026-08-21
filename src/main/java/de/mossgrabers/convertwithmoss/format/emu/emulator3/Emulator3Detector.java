@@ -86,19 +86,19 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
     /** Holds the parsed information of one sample of a bank. */
     private static class Sample
     {
-        String  name;
-        byte [] bankData;
+        String                                          name;
+        byte []                                         bankData;
         /** The data of the left channel or of the only channel of a mono sample. */
-        int     dataOffset;
+        int                                             dataOffset;
         /** The data of the right channel of a stereo sample. */
-        int     rightDataOffset;
-        int     numFrames;
-        int     sampleRate;
-        boolean isStereo;
-        boolean hasLoop;
-        boolean loopInRelease;
-        int     loopStart;
-        int     loopEnd;
+        int                                             rightDataOffset;
+        int                                             numFrames;
+        int                                             sampleRate;
+        boolean                                         isStereo;
+        boolean                                         hasLoop;
+        boolean                                         loopInRelease;
+        int                                             loopStart;
+        int                                             loopEnd;
 
         /**
          * The audio data of the channel selections which the zones ask for, created on demand. The
@@ -626,7 +626,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
             final int offset = getPresetOffset (data, bankFormat, currentIndex);
             if (offset < 0)
                 break;
-            this.parseLayers (data, bankFormat, offset, groups, samplesByIndex, repairsByPresetOffset.getOrDefault (Integer.valueOf (offset), Map.of ()), missingSampleIndices, bankName);
+            Emulator3Detector.parseLayers (data, bankFormat, offset, groups, samplesByIndex, repairsByPresetOffset.getOrDefault (Integer.valueOf (offset), Map.of ()), missingSampleIndices);
             final int link = data[offset + Emulator3Constants.PRESET_LINK] & 0xFF;
             currentIndex = link > 0 && link - 1 < numPresets ? link - 1 : -1;
         }
@@ -678,9 +678,8 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param samplesByIndex The samples of the bank by their 1-based index
      * @param indexRepairs The repaired zone sample indices of this preset
      * @param missingSampleIndices Where to collect the indices of referenced but absent samples
-     * @param bankName The name of the bank
      */
-    private void parseLayers (final byte [] data, final Emulator3BankFormat bankFormat, final int presetOffset, final List<IGroup> groups, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Integer> indexRepairs, final Set<Integer> missingSampleIndices, final String bankName)
+    private static void parseLayers (final byte [] data, final Emulator3BankFormat bankFormat, final int presetOffset, final List<IGroup> groups, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Integer> indexRepairs, final Set<Integer> missingSampleIndices)
     {
         final int numNoteZones = data[presetOffset + Emulator3Constants.PRESET_NUM_NOTE_ZONES] & 0xFF;
         if (numNoteZones == 0)

@@ -52,7 +52,7 @@ public class AkaiS900Sample
         this.sampleRate = StreamUtils.readUnsigned16 (input, false);
         this.nominalPitch = StreamUtils.readUnsigned16 (input, false);
         this.loudness = StreamUtils.readSigned16 (input, false);
-        this.playbackMode = (char) input.read ();
+        this.playbackMode = (char) StreamUtils.readUnsigned8 (input);
         input.skipNBytes (1);
         this.end = StreamUtils.readUnsigned32 (input, false);
         this.start = StreamUtils.readUnsigned32 (input, false);

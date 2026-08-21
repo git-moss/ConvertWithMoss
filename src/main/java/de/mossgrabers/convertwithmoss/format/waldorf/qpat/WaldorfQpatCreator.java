@@ -18,9 +18,9 @@ import java.util.Optional;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -50,6 +50,10 @@ import de.mossgrabers.tools.StringUtils;
  */
 public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 {
+    private static final String                                TAG_ACTIVE             = "Active";
+    private static final String                                TAG_DELAY              = "Delay";
+    private static final String                                TAG_ATTACK             = "Attack";
+    private static final String                                TAG_DECAY              = "Decay";
     private static final String                                TAG_PERCUSSIVE         = "Percussive";
 
     private static final String                                AMP_ENV                = "AmpEnv";
@@ -93,7 +97,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final int                                   MATRIX_DST_VCA         = 117;
     /** The pitch which one modulation matrix slot can reach, in semi-tones. */
     private static final double                                MATRIX_PITCH_RANGE     = 24.0;
-    /** The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds. */
+    /**
+     * The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds.
+     */
     private static final double                                LFO_MINIMUM_RATE       = 1.0 / 240.0;
     /** The highest rate of a low frequency oscillator in Hertz. */
     private static final double                                LFO_MAXIMUM_RATE       = 100.0;
@@ -718,7 +724,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             return;
 
         // MatrixOnOffX: [0] "Disabled" [1] "Active"
-        parameters.add (new WaldorfQpatParameter ("MatrixOnOff" + oscIndex, "Active", 1.0f));
+        parameters.add (new WaldorfQpatParameter ("MatrixOnOff" + oscIndex, TAG_ACTIVE, 1.0f));
 
         // MatrixSrcX: [4] "Free Env1" [5] "Free Env2" [6] "Free Env3"
         parameters.add (new WaldorfQpatParameter ("MatrixSrc" + oscIndex, "Free Env" + oscIndex, oscIndex + 3.0f));
@@ -797,13 +803,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static void createModulationMatrixEntry (final List<WaldorfQpatParameter> parameters, final int slot, final int lfoIndex, final String destinationName, final int destination, final double amount)
     {
         // MatrixOnOffX: [0] "Disabled" [1] "Active"
-        parameters.add (new WaldorfQpatParameter ("MatrixOnOff" + slot, "Active", 1.0f));
+        parameters.add (new WaldorfQpatParameter ("MatrixOnOff" + slot, TAG_ACTIVE, 1.0f));
 
         // MatrixSrcX: [7] "LFO 1" ... [12] "LFO 6"
-        parameters.add (new WaldorfQpatParameter ("MatrixSrc" + slot, "LFO " + lfoIndex, (float) (MATRIX_SRC_FIRST_LFO + lfoIndex - 1)));
+        parameters.add (new WaldorfQpatParameter ("MatrixSrc" + slot, "LFO " + lfoIndex, (MATRIX_SRC_FIRST_LFO + lfoIndex - 1)));
 
         // MatrixDstX: [1] "Pitch" ... [117] "VCA"
-        parameters.add (new WaldorfQpatParameter ("MatrixDst" + slot, destinationName, (float) destination));
+        parameters.add (new WaldorfQpatParameter ("MatrixDst" + slot, destinationName, destination));
 
         // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
         parameters.add (new WaldorfQpatParameter ("MatrixAmount" + slot, StringUtils.formatPercent (amount, 2), (float) ((amount + 1.0) / 2.0)));
@@ -841,7 +847,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // LfoXShape: [0] "Sine" [1] "Triangle" [2] "Square" [3] "Saw (down)" [4] "Saw (up)" [5]
         // "S&H"
         final int shape = convertFromWaveform (lfo.getWaveform ());
-        parameters.add (new WaldorfQpatParameter (prefix + "Shape", LFO_SHAPES[shape], (float) shape));
+        parameters.add (new WaldorfQpatParameter (prefix + "Shape", LFO_SHAPES[shape], shape));
 
         // LfoXPolarity: [0] "Bipolar" [1] "Unipolar"
         parameters.add (new WaldorfQpatParameter (prefix + "Polarity", isUnipolar ? "Unipolar" : "Bipolar", isUnipolar ? 1.0f : 0.0f));
@@ -854,15 +860,15 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         // LfoXDelay: [0..1] ~ [0..20] seconds
         final double delay = Math.clamp (lfo.getDelay (), 0, LFO_MAXIMUM_DELAY);
-        parameters.add (new WaldorfQpatParameter (prefix + "Delay", formatSeconds (delay), (float) convertFromLfoTime (delay, LFO_MAXIMUM_DELAY)));
+        parameters.add (new WaldorfQpatParameter (prefix + TAG_DELAY, formatSeconds (delay), (float) convertFromLfoTime (delay, LFO_MAXIMUM_DELAY)));
 
         // LfoXAttack: [0..1] ~ [0..10] seconds - the fade-in of the model
         final double attack = Math.clamp (lfo.getFadeIn (), 0, LFO_MAXIMUM_ATTACK);
-        parameters.add (new WaldorfQpatParameter (prefix + "Attack", formatSeconds (attack), (float) convertFromLfoTime (attack, LFO_MAXIMUM_ATTACK)));
+        parameters.add (new WaldorfQpatParameter (prefix + TAG_ATTACK, formatSeconds (attack), (float) convertFromLfoTime (attack, LFO_MAXIMUM_ATTACK)));
 
         // LfoXDecay: [1] is off. The model has no fade-out, therefore the oscillator keeps its
         // level until the note ends.
-        parameters.add (new WaldorfQpatParameter (prefix + "Decay", "Off", 1.0f));
+        parameters.add (new WaldorfQpatParameter (prefix + TAG_DECAY, "Off", 1.0f));
     }
 
 
@@ -930,7 +936,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final IFilter filter = optFilter.get ();
 
         // FilterState: [0] "Active" [1] "Bypass" [2] "Off"
-        parameters.add (new WaldorfQpatParameter ("FilterState", "Active", 0));
+        parameters.add (new WaldorfQpatParameter ("FilterState", TAG_ACTIVE, 0));
 
         // Filter12Type: [0] "12dB LP" [1] "12dB sat. LP" [2] "12dB dirty LP" [3] "24dB LP" [4]
         // "24dB sat. LP" [5] "24dB dirty LP" [6] "12dB HP" [7] "12dB sat. HP" [8] "12dB dirty HP"
@@ -996,24 +1002,24 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         if (isPitch && envelope.getStartLevel () != 0)
         {
             // xxxEnvDelay
-            parameters.add (new WaldorfQpatParameter (prefix + "Delay", formatSeconds (0), 0));
+            parameters.add (new WaldorfQpatParameter (prefix + TAG_DELAY, formatSeconds (0), 0));
             // xxxEnvAttack
-            parameters.add (new WaldorfQpatParameter (prefix + "Attack", formatSeconds (0), 0));
+            parameters.add (new WaldorfQpatParameter (prefix + TAG_ATTACK, formatSeconds (0), 0));
             // xxxEnvDecay
             final double decayTime = Math.clamp (envelope.getAttackTime (), 0, 60);
-            parameters.add (new WaldorfQpatParameter (prefix + "Decay", formatSeconds (decayTime), (float) convertFromTime (decayTime)));
+            parameters.add (new WaldorfQpatParameter (prefix + TAG_DECAY, formatSeconds (decayTime), (float) convertFromTime (decayTime)));
         }
         else
         {
             // xxxEnvDelay
             final double delayTime = Math.clamp (envelope.getDelayTime (), 0, 2);
-            parameters.add (new WaldorfQpatParameter (prefix + "Delay", formatSeconds (delayTime), (float) convertFromDelayTime (delayTime)));
+            parameters.add (new WaldorfQpatParameter (prefix + TAG_DELAY, formatSeconds (delayTime), (float) convertFromDelayTime (delayTime)));
             // xxxEnvAttack
             final double attackTime = declickAmpTime (isAmplitude && !allowInstantAttack, Math.clamp (envelope.getAttackTime (), 0, 60));
-            parameters.add (new WaldorfQpatParameter (prefix + "Attack", formatSeconds (attackTime), (float) convertFromTime (attackTime)));
+            parameters.add (new WaldorfQpatParameter (prefix + TAG_ATTACK, formatSeconds (attackTime), (float) convertFromTime (attackTime)));
             // xxxEnvDecay
             final double decayTime = Math.clamp (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()), 0, 60);
-            parameters.add (new WaldorfQpatParameter (prefix + "Decay", formatSeconds (decayTime), (float) convertFromTime (decayTime)));
+            parameters.add (new WaldorfQpatParameter (prefix + TAG_DECAY, formatSeconds (decayTime), (float) convertFromTime (decayTime)));
         }
 
         // xxxEnvRelease
@@ -1211,9 +1217,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     /**
      * Convert the depth of a pitch modulation of the model into the amount of a modulation matrix
-     * slot. The depth of the model covers {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent, while one
-     * slot of the matrix reaches {@link #MATRIX_PITCH_RANGE} semi-tones - a modulation which asks
-     * for more than the device can pitch is written at the end of its range.
+     * slot. The depth of the model covers {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent, while one slot
+     * of the matrix reaches {@link #MATRIX_PITCH_RANGE} semi-tones - a modulation which asks for
+     * more than the device can pitch is written at the end of its range.
      *
      * @param depth The modulation depth in the range of [-1..1]
      * @return The amount in the range of [-1..1]

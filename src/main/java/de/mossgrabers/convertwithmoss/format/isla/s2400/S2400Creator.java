@@ -126,7 +126,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
         final List<ISampleZone> zones = new ArrayList<> ();
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
-                if (zone.getSampleData () != null && zone.getSampleData ().isPresent ())
+                if (zone.getSampleData ().isPresent ())
                     zones.add (zone);
         return zones;
     }
@@ -165,6 +165,8 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
     private static void writeTrack (final ByteArrayOutputStream out, final int padIndex, final ISampleZone zone) throws IOException
     {
         final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            throw new IOException ("Could not write track. Sample data is empty.");
         final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
         final int sampleRate = audioMetadata.getSampleRate ();
         final int originalFrames = audioMetadata.getNumberOfSamples ();

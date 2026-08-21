@@ -383,7 +383,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         // 96 kHz, no 8 bit) must be applied here, together with the zone start/end trim
         ISampleData sampleData = sampleDataOpt.get ();
         final boolean trimStart = zone.getStart () > 0;
-        if (trimStart || AudioFileUtils.getRequiredResampling (sampleData.getAudioMetadata (), DESTINATION_AUDIO_FORMAT) != null)
+        if (trimStart || AudioFileUtils.getRequiredResampling (sampleData.getAudioMetadata (), DESTINATION_AUDIO_FORMAT).isPresent ())
         {
             this.logResampling (zone, DESTINATION_AUDIO_FORMAT);
             final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, DESTINATION_AUDIO_FORMAT);

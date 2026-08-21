@@ -58,6 +58,8 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    private static final String                               TAG_MATRIX_DST       = "MatrixDst";
+
     /** The number of slots of the modulation matrix of the device. */
     private static final int                                  MAX_MATRIX_SLOTS     = 40;
     /** The number of low frequency oscillators of the device. */
@@ -70,7 +72,9 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
     private static final int                                  MATRIX_DST_VCA       = 117;
     /** The pitch which one modulation matrix slot can reach, in semi-tones. */
     private static final double                               MATRIX_PITCH_RANGE   = 24.0;
-    /** The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds. */
+    /**
+     * The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds.
+     */
     private static final double                               LFO_MINIMUM_RATE     = 1.0 / 240.0;
     /** The highest rate of a low frequency oscillator in Hertz. */
     private static final double                               LFO_MAXIMUM_RATE     = 100.0;
@@ -81,9 +85,9 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
     /** From this phase on the device runs the low frequency oscillator freely. */
     private static final double                               LFO_FREE_PHASE       = 0.9986;
 
-    private static final Map<Integer, String>                 SYNTH_CODES = HashMap.newHashMap (3);
-    private static final Map<Integer, String>                 LAYER_CODES = HashMap.newHashMap (3);
-    private static final Map<WaldorfQpatResourceType, String> GROUP_NAMES = HashMap.newHashMap (3);
+    private static final Map<Integer, String>                 SYNTH_CODES          = HashMap.newHashMap (3);
+    private static final Map<Integer, String>                 LAYER_CODES          = HashMap.newHashMap (3);
+    private static final Map<WaldorfQpatResourceType, String> GROUP_NAMES          = HashMap.newHashMap (3);
     static
     {
         SYNTH_CODES.put (Integer.valueOf (0), "Quantum");
@@ -689,7 +693,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             if (sourceParam.value == 4.0 || sourceParam.value == 5.0 || sourceParam.value == 6.0)
             {
                 // MatrixDstX: [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
-                final WaldorfQpatParameter destParam = parameters.get ("MatrixDst" + i);
+                final WaldorfQpatParameter destParam = parameters.get (TAG_MATRIX_DST + i);
                 if (destParam != null && destParam.value == oscIndex + 1.0)
                 {
                     // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
@@ -727,7 +731,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
 
             // MatrixDstX: [1] "Pitch" [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
-            final WaldorfQpatParameter destParam = parameters.get ("MatrixDst" + i);
+            final WaldorfQpatParameter destParam = parameters.get (TAG_MATRIX_DST + i);
             if (destParam == null || (destParam.value != MATRIX_DST_PITCH && destParam.value != oscIndex + 1.0))
                 continue;
 
@@ -763,7 +767,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
 
             // MatrixDstX: [117] "VCA"
-            final WaldorfQpatParameter destParam = parameters.get ("MatrixDst" + i);
+            final WaldorfQpatParameter destParam = parameters.get (TAG_MATRIX_DST + i);
             if (destParam == null || destParam.value != MATRIX_DST_VCA)
                 continue;
 
@@ -919,8 +923,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Convert the amount of a modulation matrix slot into the depth of a pitch modulation of the
-     * model. One slot of the matrix reaches {@link #MATRIX_PITCH_RANGE} semi-tones, while the
-     * depth of the model covers {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent.
+     * model. One slot of the matrix reaches {@link #MATRIX_PITCH_RANGE} semi-tones, while the depth
+     * of the model covers {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent.
      *
      * @param amount The amount in the range of [-1..1]
      * @return The modulation depth in the range of [-1..1]

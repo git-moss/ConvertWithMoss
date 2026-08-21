@@ -1314,7 +1314,13 @@ public abstract class AbstractNKIMetadataFileHandler
         final StringReader reader = new StringReader (encodedSampleFileName);
 
         // Indicator for extended path?
-        if ((char) reader.read () != '@')
+        final int startChar = reader.read ();
+        if (startChar < 0)
+        {
+            decodedPath.setPath ("");
+            return decodedPath;
+        }
+        if ((char) startChar != '@')
         {
             decodedPath.setPath (encodedSampleFileName.replace ('\\', '/'));
             return decodedPath;

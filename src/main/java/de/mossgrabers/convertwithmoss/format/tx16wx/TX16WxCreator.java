@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.xml.XMLConstants;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -51,6 +53,10 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
+    private static final String                  XSI_SCHEMA_LOCATION   = "xsi:schemaLocation";
+    private static final String                  XMLNS_XSI             = "xmlns:xsi";
+    private static final String                  XMLNS_TX              = "xmlns:tx";
+
     private static final String                  CREATED_BY_VERSION    = "30601";
     private static final String                  FILTER_1_FREQ         = "Filter 1 Freq";
     private static final String                  IDS_NOTIFY_STORING    = "IDS_NOTIFY_STORING";
@@ -422,9 +428,9 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         document.appendChild (bankElement);
         bankElement.setAttribute (TX16WxTag.PROGRAM_CREATED_BY, CREATED_BY_VERSION);
         bankElement.setAttribute (TX16WxTag.PROGRAM_QUALITY, "Default");
-        bankElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/ bank");
-        bankElement.setAttribute ("xmlns:tx", "http://www.tx16wx.com/3.0/bank");
-        bankElement.setAttribute ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+        bankElement.setAttribute (XSI_SCHEMA_LOCATION, "http://www.tx16wx.com/3.0/ bank");
+        bankElement.setAttribute (XMLNS_TX, "http://www.tx16wx.com/3.0/bank");
+        bankElement.setAttribute (XMLNS_XSI, XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI);
 
         for (int i = 0; i < instrumentSources.size (); i++)
         {
@@ -487,9 +493,9 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 programElement.setAttribute (TX16WxTag.PROGRAM_ICON, "#" + icon);
         }
 
-        programElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/ program");
-        programElement.setAttribute ("xmlns:tx", "http://www.tx16wx.com/3.0/program");
-        programElement.setAttribute ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+        programElement.setAttribute (XSI_SCHEMA_LOCATION, "http://www.tx16wx.com/3.0/ program");
+        programElement.setAttribute (XMLNS_TX, "http://www.tx16wx.com/3.0/program");
+        programElement.setAttribute (XMLNS_XSI, XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI);
 
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
         final List<Element> groupElements = new ArrayList<> ();
@@ -567,9 +573,9 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         document.appendChild (performanceElement);
         performanceElement.setAttribute (TX16WxTag.PROGRAM_CREATED_BY, CREATED_BY_VERSION);
         performanceElement.setAttribute (TX16WxTag.NAME, performanceSource.getName ());
-        performanceElement.setAttribute ("xsi:schemaLocation", "http://www.tx16wx.com/3.0/ performance");
-        performanceElement.setAttribute ("xmlns:tx", "http://www.tx16wx.com/3.0/performance");
-        performanceElement.setAttribute ("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+        performanceElement.setAttribute (XSI_SCHEMA_LOCATION, "http://www.tx16wx.com/3.0/ performance");
+        performanceElement.setAttribute (XMLNS_TX, "http://www.tx16wx.com/3.0/performance");
+        performanceElement.setAttribute (XMLNS_XSI, XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI);
 
         for (int i = 0; i < programFiles.size (); i++)
         {

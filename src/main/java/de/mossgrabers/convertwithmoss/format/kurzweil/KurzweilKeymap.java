@@ -146,9 +146,9 @@ public class KurzweilKeymap
         if ((this.method & METHOD_TUNING_16) > 0)
             entry.setTuning (StreamUtils.readSigned16 (in, true));
         else if ((this.method & METHOD_TUNING_8) > 0)
-            entry.setTuning ((byte) in.read ());
+            entry.setTuning (StreamUtils.readSigned8 (in));
         if ((this.method & METHOD_VOLUME) > 0)
-            entry.setVolumeAdjust ((byte) in.read ());
+            entry.setVolumeAdjust (StreamUtils.readSigned8 (in));
         if ((this.method & METHOD_SAMPLE_ID) > 0)
             entry.setSampleID (StreamUtils.readSigned16 (in, true));
         else
