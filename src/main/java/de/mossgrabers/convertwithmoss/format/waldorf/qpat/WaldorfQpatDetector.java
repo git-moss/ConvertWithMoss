@@ -26,16 +26,21 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
@@ -53,6 +58,29 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    /** The number of slots of the modulation matrix of the device. */
+    private static final int                                  MAX_MATRIX_SLOTS     = 40;
+    /** The number of low frequency oscillators of the device. */
+    private static final int                                  NUM_LFOS             = 6;
+    /** MatrixSrc: [7] "LFO 1" [8] "LFO 2" [9] "LFO 3" [10] "LFO 4" [11] "LFO 5" [12] "LFO 6". */
+    private static final int                                  MATRIX_SRC_FIRST_LFO = 7;
+    /** MatrixDst: [1] "Pitch" - the pitch of all three oscillators at once. */
+    private static final int                                  MATRIX_DST_PITCH     = 1;
+    /** MatrixDst: [117] "VCA" - the amplifier of the voice. */
+    private static final int                                  MATRIX_DST_VCA       = 117;
+    /** The pitch which one modulation matrix slot can reach, in semi-tones. */
+    private static final double                               MATRIX_PITCH_RANGE   = 24.0;
+    /** The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds. */
+    private static final double                               LFO_MINIMUM_RATE     = 1.0 / 240.0;
+    /** The highest rate of a low frequency oscillator in Hertz. */
+    private static final double                               LFO_MAXIMUM_RATE     = 100.0;
+    /** The longest delay of a low frequency oscillator in seconds. */
+    private static final double                               LFO_MAXIMUM_DELAY    = 20.0;
+    /** The longest attack (fade-in) of a low frequency oscillator in seconds. */
+    private static final double                               LFO_MAXIMUM_ATTACK   = 10.0;
+    /** From this phase on the device runs the low frequency oscillator freely. */
+    private static final double                               LFO_FREE_PHASE       = 0.9986;
+
     private static final Map<Integer, String>                 SYNTH_CODES = HashMap.newHashMap (3);
     private static final Map<Integer, String>                 LAYER_CODES = HashMap.newHashMap (3);
     private static final Map<WaldorfQpatResourceType, String> GROUP_NAMES = HashMap.newHashMap (3);
@@ -300,6 +328,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 ampVeloAmount = ampVeloAmountParameter.value * 2.0 - 1.0;
 
             final Optional<IEnvelopeModulator> modulator = findPitchEnvelopeModMatrixEntry (parameters, i + 1);
+            final Optional<ILfoModulator> pitchLfoModulator = findPitchLfoModMatrixEntry (parameters, i + 1);
+            final Optional<ILfoModulator> amplitudeLfoModulator = findAmplitudeLfoModMatrixEntry (parameters);
 
             // The oscillator volume, panning and tuning belong to the whole oscillator, which is
             // one group. Record them as the group offsets - the values are additionally flattened
@@ -327,6 +357,18 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                     final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     pitchModulator.setDepth (modulator.get ().getDepth ());
                     pitchModulator.setSource (modulator.get ().getSource ());
+                }
+                if (pitchLfoModulator.isPresent ())
+                {
+                    final ILfoModulator lfoModulator = zone.getPitchLfoModulator ();
+                    lfoModulator.setDepth (pitchLfoModulator.get ().getDepth ());
+                    lfoModulator.setSource (pitchLfoModulator.get ().getSource ());
+                }
+                if (amplitudeLfoModulator.isPresent ())
+                {
+                    final ILfoModulator lfoModulator = zone.getAmplitudeLfoModulator ();
+                    lfoModulator.setDepth (amplitudeLfoModulator.get ().getDepth ());
+                    lfoModulator.setSource (amplitudeLfoModulator.get ().getSource ());
                 }
             }
         }
@@ -635,7 +677,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
     private static Optional<IEnvelopeModulator> findPitchEnvelopeModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters, final int oscIndex)
     {
-        for (int i = 1; i <= 40; i++)
+        for (int i = 1; i <= MAX_MATRIX_SLOTS; i++)
         {
             // MatrixOnOffX: [0] "Disabled" [1] "Active"
             final WaldorfQpatParameter isActiveParam = parameters.get ("MatrixOnOff" + i);
@@ -666,6 +708,213 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         return Optional.empty ();
+    }
+
+
+    /**
+     * Find a modulation matrix slot which routes a low frequency oscillator to the pitch. The
+     * destination "Pitch" moves all three oscillators at once, "OscX Pitch" only the given one.
+     *
+     * @param parameters The parameters of the preset
+     * @param oscIndex The index of the oscillator [1..3]
+     * @return The vibrato, if there is one
+     */
+    private static Optional<ILfoModulator> findPitchLfoModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters, final int oscIndex)
+    {
+        for (int i = 1; i <= MAX_MATRIX_SLOTS; i++)
+        {
+            final int lfoIndex = getActiveLfoSource (parameters, i);
+            if (lfoIndex < 0)
+                continue;
+
+            // MatrixDstX: [1] "Pitch" [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
+            final WaldorfQpatParameter destParam = parameters.get ("MatrixDst" + i);
+            if (destParam == null || (destParam.value != MATRIX_DST_PITCH && destParam.value != oscIndex + 1.0))
+                continue;
+
+            final double amount = getMatrixAmount (parameters, i);
+            if (amount == 0)
+                continue;
+
+            // One matrix slot reaches MATRIX_PITCH_RANGE semi-tones, the depth of the model covers
+            // IEnvelope#MAX_ENVELOPE_DEPTH cent
+            final double depth = amount * MATRIX_PITCH_RANGE * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, depth);
+            if (modulator.isPresent ())
+                return modulator;
+        }
+
+        return Optional.empty ();
+    }
+
+
+    /**
+     * Find a modulation matrix slot which routes a low frequency oscillator to the amplifier of the
+     * voice.
+     *
+     * @param parameters The parameters of the preset
+     * @return The tremolo, if there is one
+     */
+    private static Optional<ILfoModulator> findAmplitudeLfoModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters)
+    {
+        for (int i = 1; i <= MAX_MATRIX_SLOTS; i++)
+        {
+            final int lfoIndex = getActiveLfoSource (parameters, i);
+            if (lfoIndex < 0)
+                continue;
+
+            // MatrixDstX: [117] "VCA"
+            final WaldorfQpatParameter destParam = parameters.get ("MatrixDst" + i);
+            if (destParam == null || destParam.value != MATRIX_DST_VCA)
+                continue;
+
+            final double amount = getMatrixAmount (parameters, i);
+            if (amount == 0)
+                continue;
+
+            // The amplifier plays at its full level, therefore the modulation is heard as the
+            // attenuation which it reaches at the end of its swing. A modulation which covers the
+            // full range is silence, which is the maximum depth of the model.
+            final double swing = Math.min (Math.abs (amount), 1.0);
+            final double decibels = swing == 1.0 ? ILfoModulator.MAX_VOLUME_DEPTH : -convertToDecibels (1.0 - swing);
+            final double depth = Math.clamp (decibels / ILfoModulator.MAX_VOLUME_DEPTH, 0, 1);
+            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, depth);
+            if (modulator.isPresent ())
+                return modulator;
+        }
+
+        return Optional.empty ();
+    }
+
+
+    /**
+     * Get the index of the low frequency oscillator which drives an active modulation matrix slot.
+     *
+     * @param parameters The parameters of the preset
+     * @param slot The index of the modulation matrix slot [1..40]
+     * @return The index of the low frequency oscillator [1..6] or -1 if the slot is disabled or
+     *         driven by another source
+     */
+    private static int getActiveLfoSource (final Map<String, WaldorfQpatParameter> parameters, final int slot)
+    {
+        // MatrixOnOffX: [0] "Disabled" [1] "Active"
+        final WaldorfQpatParameter isActiveParam = parameters.get ("MatrixOnOff" + slot);
+        if (isActiveParam == null || isActiveParam.value != 1.0)
+            return -1;
+
+        // MatrixSrcX: [7] "LFO 1" ... [12] "LFO 6"
+        final WaldorfQpatParameter sourceParam = parameters.get ("MatrixSrc" + slot);
+        if (sourceParam == null || sourceParam.value < MATRIX_SRC_FIRST_LFO || sourceParam.value > MATRIX_SRC_FIRST_LFO + NUM_LFOS - 1)
+            return -1;
+        return (int) sourceParam.value - MATRIX_SRC_FIRST_LFO + 1;
+    }
+
+
+    /**
+     * Get the amount of a modulation matrix slot.
+     *
+     * @param parameters The parameters of the preset
+     * @param slot The index of the modulation matrix slot [1..40]
+     * @return The amount in the range of [-1..1]
+     */
+    private static double getMatrixAmount (final Map<String, WaldorfQpatParameter> parameters, final int slot)
+    {
+        // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
+        final WaldorfQpatParameter amountParam = parameters.get ("MatrixAmount" + slot);
+        return amountParam == null ? 0 : amountParam.value * 2.0 - 1.0;
+    }
+
+
+    /**
+     * Create a modulator from one of the low frequency oscillators of the preset.
+     *
+     * @param parameters The parameters of the preset
+     * @param lfoIndex The index of the low frequency oscillator [1..6]
+     * @param depth The modulation depth in the range of [-1..1]
+     * @return The modulator or empty if the oscillator runs on the tempo of the song, which a
+     *         multi-sample does not know
+     */
+    private static Optional<ILfoModulator> createLfoModulator (final Map<String, WaldorfQpatParameter> parameters, final int lfoIndex, final double depth)
+    {
+        final String prefix = "Lfo" + lfoIndex;
+
+        // LfoXSync: [0] "Off" [1] "On" - a synchronized oscillator runs on note lengths, which can
+        // only be converted into Hertz with the tempo of the song
+        final WaldorfQpatParameter syncParam = parameters.get (prefix + "Sync");
+        if (syncParam != null && syncParam.value != 0)
+            return Optional.empty ();
+
+        final WaldorfQpatParameter speedParam = parameters.get (prefix + "Speed");
+        if (speedParam == null)
+            return Optional.empty ();
+
+        final ILfo lfo = new DefaultLfo ();
+        // LfoXSpeed: [0..1] ~ [1/240 Hz..100 Hz]
+        lfo.setRate (convertLfoRate (speedParam.value));
+
+        // LfoXShape: [0] "Sine" [1] "Triangle" [2] "Square" [3] "Saw (down)" [4] "Saw (up)" [5]
+        // "S&H"
+        final WaldorfQpatParameter shapeParam = parameters.get (prefix + "Shape");
+        if (shapeParam != null)
+            lfo.setWaveform (convertWaveform ((int) shapeParam.value));
+
+        // LfoXPhase: [0..1] ~ [0..360 degrees], the topmost value means a free running phase
+        final WaldorfQpatParameter phaseParam = parameters.get (prefix + "Phase");
+        if (phaseParam != null && phaseParam.value < LFO_FREE_PHASE)
+            lfo.setStartPhase (phaseParam.value);
+
+        // LfoXDelay: [0..1] ~ [0..20] seconds
+        final WaldorfQpatParameter delayParam = parameters.get (prefix + "Delay");
+        if (delayParam != null)
+            lfo.setDelay (convertLfoTime (delayParam.value, LFO_MAXIMUM_DELAY));
+
+        // LfoXAttack: [0..1] ~ [0..10] seconds - the fade-in of the model
+        final WaldorfQpatParameter attackParam = parameters.get (prefix + "Attack");
+        if (attackParam != null)
+            lfo.setFadeIn (convertLfoTime (attackParam.value, LFO_MAXIMUM_ATTACK));
+
+        // LfoXGlobal: [0] "Poly" [1] "Global" [2] "Single Trig" - only the per-voice oscillator
+        // starts again with every note
+        final WaldorfQpatParameter modeParam = parameters.get (prefix + "Global");
+        lfo.setKeySync (modeParam == null || modeParam.value == 0);
+
+        final ILfoModulator modulator = new DefaultLfoModulator (depth);
+        modulator.setSource (lfo);
+        return Optional.of (modulator);
+    }
+
+
+    /**
+     * Convert the index of a shape of the device into a waveform of the model.
+     *
+     * @param shape The index of the shape
+     * @return The waveform
+     */
+    private static LfoWaveform convertWaveform (final int shape)
+    {
+        return switch (shape)
+        {
+            case 1 -> LfoWaveform.TRIANGLE;
+            case 2 -> LfoWaveform.SQUARE;
+            case 3 -> LfoWaveform.SAWTOOTH_DOWN;
+            case 4 -> LfoWaveform.SAWTOOTH_UP;
+            case 5 -> LfoWaveform.RANDOM;
+            default -> LfoWaveform.SINE;
+        };
+    }
+
+
+    private static double convertLfoRate (final double x)
+    {
+        // Converts [0..1] to [1/240 Hz..100 Hz]
+        return LFO_MINIMUM_RATE + (LFO_MAXIMUM_RATE - LFO_MINIMUM_RATE) * Math.pow (x, 4);
+    }
+
+
+    private static double convertLfoTime (final double x, final double maximum)
+    {
+        // Converts [0..1] to [0..maximum] seconds
+        return maximum * Math.pow (x, 2);
     }
 
 

@@ -27,11 +27,14 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -69,6 +72,47 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final double                                DECLICK_SECONDS        = 0.07;
     /** The share of the peak level at which a step in the audio becomes audible as a click. */
     private static final double                                AUDIBLE_STEP_RATIO     = 0.02;
+
+    /**
+     * The modulation matrix slot which routes the low frequency oscillator of the vibrato. The
+     * slots 1-3 are already used for the pitch envelopes of the 3 oscillators, see
+     * {@link #createPitchEnvelopeModulator(List, IEnvelopeModulator, int)}.
+     */
+    private static final int                                   MATRIX_SLOT_VIBRATO    = 4;
+    /** The modulation matrix slot which routes the low frequency oscillator of the tremolo. */
+    private static final int                                   MATRIX_SLOT_TREMOLO    = 5;
+    /** The low frequency oscillator which plays the vibrato. */
+    private static final int                                   LFO_VIBRATO            = 1;
+    /** The low frequency oscillator which plays the tremolo. */
+    private static final int                                   LFO_TREMOLO            = 2;
+    /** MatrixSrc: [7] "LFO 1" [8] "LFO 2" [9] "LFO 3" [10] "LFO 4" [11] "LFO 5" [12] "LFO 6". */
+    private static final int                                   MATRIX_SRC_FIRST_LFO   = 7;
+    /** MatrixDst: [1] "Pitch" - the pitch of all three oscillators at once. */
+    private static final int                                   MATRIX_DST_PITCH       = 1;
+    /** MatrixDst: [117] "VCA" - the amplifier of the voice. */
+    private static final int                                   MATRIX_DST_VCA         = 117;
+    /** The pitch which one modulation matrix slot can reach, in semi-tones. */
+    private static final double                                MATRIX_PITCH_RANGE     = 24.0;
+    /** The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds. */
+    private static final double                                LFO_MINIMUM_RATE       = 1.0 / 240.0;
+    /** The highest rate of a low frequency oscillator in Hertz. */
+    private static final double                                LFO_MAXIMUM_RATE       = 100.0;
+    /** The longest delay of a low frequency oscillator in seconds. */
+    private static final double                                LFO_MAXIMUM_DELAY      = 20.0;
+    /** The longest attack (fade-in) of a low frequency oscillator in seconds. */
+    private static final double                                LFO_MAXIMUM_ATTACK     = 10.0;
+    /** From this phase on the device runs the low frequency oscillator freely. */
+    private static final double                                LFO_FREE_PHASE         = 0.9986;
+    /** LfoXShape: the waveforms of a low frequency oscillator in the order of the device. */
+    private static final String []                             LFO_SHAPES             = new String []
+    {
+        "Sine",
+        "Triangle",
+        "Square",
+        "Saw (down)",
+        "Saw (up)",
+        "S&H"
+    };
 
     private static final DestinationAudioFormat                OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -656,6 +700,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
                 final double ampVeloAmount = firstZone.getAmplitudeVelocityModulator ().getDepth ();
                 parameters.add (new WaldorfQpatParameter ("AmpVeloAmount", StringUtils.formatPercent (ampVeloAmount, 2), (float) ((ampVeloAmount + 1.0) / 2.0)));
+
+                createLfoModulators (parameters, firstZone);
             }
         }
 
@@ -687,6 +733,184 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         final String prefix = "FreeEnv" + oscIndex;
         createEnvelope (parameters, pitchEnvelopeModulator.getSource (), prefix, prefix, false, false);
+    }
+
+
+    /**
+     * Create the parameters of the vibrato and of the tremolo. The device has 6 low frequency
+     * oscillators and 40 modulation matrix slots, of which this application only ever writes the
+     * slots 1-5: the slots 1-3 carry the pitch envelope of the respective oscillator, therefore the
+     * vibrato takes the slot 4 and the tremolo the slot 5. Nothing has to give way for them and the
+     * slots 6-40 as well as the LFOs 3-6 stay free for the user.
+     * <p>
+     * The vibrato modulates the destination "Pitch", which is the pitch of all three oscillators at
+     * once. This costs one slot instead of one slot per oscillator and matches a vibrato of a
+     * multi-sample, which is a property of the whole instrument and not of a single layer.
+     *
+     * @param parameters Where to add the parameters
+     * @param zone The zone which carries the modulators
+     */
+    private static void createLfoModulators (final List<WaldorfQpatParameter> parameters, final ISampleZone zone)
+    {
+        // Vibrato - the pitch swings around the played note, therefore the LFO stays bipolar
+        final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+        final ILfo pitchLfo = pitchLfoModulator.getSource ();
+        final double pitchDepth = pitchLfoModulator.getDepth ();
+        if (pitchDepth != 0 && pitchLfo.isSet ())
+        {
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, one matrix slot
+            // reaches MATRIX_PITCH_RANGE semi-tones
+            final double semitones = pitchDepth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
+            final double amount = Math.clamp (semitones / MATRIX_PITCH_RANGE, -1.0, 1.0);
+            createModulationMatrixEntry (parameters, MATRIX_SLOT_VIBRATO, LFO_VIBRATO, "Pitch", MATRIX_DST_PITCH, amount);
+            createLfo (parameters, pitchLfo, LFO_VIBRATO, false);
+        }
+
+        // Tremolo - the amplifier already plays at its full level, therefore the LFO is unipolar
+        // and the amount is negative so that the modulation only attenuates. A bipolar LFO would
+        // press the first half of every cycle against the upper end of the amplifier and turn the
+        // waveform into its rectified half.
+        final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
+        final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
+        final double amplitudeDepth = amplitudeLfoModulator.getDepth ();
+        if (amplitudeDepth != 0 && amplitudeLfo.isSet ())
+        {
+            // A negative depth only turns the tremolo by half a cycle, which is not audible on its
+            // own, therefore only its magnitude is written
+            final double decibels = Math.abs (amplitudeDepth) * ILfoModulator.MAX_VOLUME_DEPTH;
+            final double amount = convertFromDecibels (-decibels) - 1.0;
+            createModulationMatrixEntry (parameters, MATRIX_SLOT_TREMOLO, LFO_TREMOLO, "VCA", MATRIX_DST_VCA, amount);
+            createLfo (parameters, amplitudeLfo, LFO_TREMOLO, true);
+        }
+    }
+
+
+    /**
+     * Activate one slot of the modulation matrix.
+     *
+     * @param parameters Where to add the parameters
+     * @param slot The index of the modulation matrix slot [1..40]
+     * @param lfoIndex The index of the low frequency oscillator which drives the slot [1..6]
+     * @param destinationName The name of the destination as the device spells it
+     * @param destination The index of the destination
+     * @param amount The modulation amount in the range of [-1..1]
+     */
+    private static void createModulationMatrixEntry (final List<WaldorfQpatParameter> parameters, final int slot, final int lfoIndex, final String destinationName, final int destination, final double amount)
+    {
+        // MatrixOnOffX: [0] "Disabled" [1] "Active"
+        parameters.add (new WaldorfQpatParameter ("MatrixOnOff" + slot, "Active", 1.0f));
+
+        // MatrixSrcX: [7] "LFO 1" ... [12] "LFO 6"
+        parameters.add (new WaldorfQpatParameter ("MatrixSrc" + slot, "LFO " + lfoIndex, (float) (MATRIX_SRC_FIRST_LFO + lfoIndex - 1)));
+
+        // MatrixDstX: [1] "Pitch" ... [117] "VCA"
+        parameters.add (new WaldorfQpatParameter ("MatrixDst" + slot, destinationName, (float) destination));
+
+        // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
+        parameters.add (new WaldorfQpatParameter ("MatrixAmount" + slot, StringUtils.formatPercent (amount, 2), (float) ((amount + 1.0) / 2.0)));
+    }
+
+
+    /**
+     * Create all parameters of one low frequency oscillator. Every parameter which the modulation
+     * depends on is written, so that the result does not depend on what the previously loaded
+     * preset left in that oscillator.
+     *
+     * @param parameters Where to add the parameters
+     * @param lfo The low frequency oscillator to write
+     * @param lfoIndex The index of the low frequency oscillator [1..6]
+     * @param isUnipolar True to let the oscillator swing from zero to its full level instead of
+     *            around zero
+     */
+    private static void createLfo (final List<WaldorfQpatParameter> parameters, final ILfo lfo, final int lfoIndex, final boolean isUnipolar)
+    {
+        final String prefix = "Lfo" + lfoIndex;
+
+        // LfoXSpeed: [0..1] ~ [1/240 Hz..100 Hz]
+        final double rate = Math.clamp (lfo.getRate (), LFO_MINIMUM_RATE, LFO_MAXIMUM_RATE);
+        parameters.add (new WaldorfQpatParameter (prefix + "Speed", StringUtils.formatDouble (rate, 3, " Hz"), (float) convertFromLfoRate (rate)));
+
+        // LfoXSync: [0] "Off" [1] "On" - the rate of the model is in Hertz and not a note length
+        parameters.add (new WaldorfQpatParameter (prefix + "Sync", "Off", 0.0f));
+
+        // LfoXGlobal: [0] "Poly" [1] "Global" [2] "Single Trig". A vibrato and a tremolo belong to
+        // the played note, therefore the per-voice oscillator is used. The key synchronization of
+        // the model is not read, since no source format fills it and the free running variant
+        // would smear the modulation across the voices of every converted preset.
+        parameters.add (new WaldorfQpatParameter (prefix + "Global", "Poly", 0.0f));
+
+        // LfoXShape: [0] "Sine" [1] "Triangle" [2] "Square" [3] "Saw (down)" [4] "Saw (up)" [5]
+        // "S&H"
+        final int shape = convertFromWaveform (lfo.getWaveform ());
+        parameters.add (new WaldorfQpatParameter (prefix + "Shape", LFO_SHAPES[shape], (float) shape));
+
+        // LfoXPolarity: [0] "Bipolar" [1] "Unipolar"
+        parameters.add (new WaldorfQpatParameter (prefix + "Polarity", isUnipolar ? "Unipolar" : "Bipolar", isUnipolar ? 1.0f : 0.0f));
+
+        // LfoXPhase: [0..1] ~ [0..360 degrees]. From LFO_FREE_PHASE on the device runs the
+        // oscillator freely, therefore a full cycle wraps back to its start.
+        final double phase = lfo.getStartPhase ();
+        final double startPhase = phase < 0 ? 0 : Math.min (phase % 1.0, LFO_FREE_PHASE);
+        parameters.add (new WaldorfQpatParameter (prefix + "Phase", Math.round (startPhase * 360.0) + " deg", (float) startPhase));
+
+        // LfoXDelay: [0..1] ~ [0..20] seconds
+        final double delay = Math.clamp (lfo.getDelay (), 0, LFO_MAXIMUM_DELAY);
+        parameters.add (new WaldorfQpatParameter (prefix + "Delay", formatSeconds (delay), (float) convertFromLfoTime (delay, LFO_MAXIMUM_DELAY)));
+
+        // LfoXAttack: [0..1] ~ [0..10] seconds - the fade-in of the model
+        final double attack = Math.clamp (lfo.getFadeIn (), 0, LFO_MAXIMUM_ATTACK);
+        parameters.add (new WaldorfQpatParameter (prefix + "Attack", formatSeconds (attack), (float) convertFromLfoTime (attack, LFO_MAXIMUM_ATTACK)));
+
+        // LfoXDecay: [1] is off. The model has no fade-out, therefore the oscillator keeps its
+        // level until the note ends.
+        parameters.add (new WaldorfQpatParameter (prefix + "Decay", "Off", 1.0f));
+    }
+
+
+    /**
+     * Convert a waveform of the model to the index of the shape of the device.
+     *
+     * @param waveform The waveform
+     * @return The index in {@link #LFO_SHAPES}
+     */
+    private static int convertFromWaveform (final LfoWaveform waveform)
+    {
+        return switch (waveform)
+        {
+            case SINE -> 0;
+            case TRIANGLE -> 1;
+            case SQUARE -> 2;
+            case SAWTOOTH_DOWN -> 3;
+            case SAWTOOTH_UP -> 4;
+            case RANDOM -> 5;
+        };
+    }
+
+
+    /**
+     * Convert the rate of a low frequency oscillator into the parameter value of the device. The
+     * sound engine calculates the rate as 1/240 Hz + (100 Hz - 1/240 Hz) * x^4.
+     *
+     * @param rate The rate in Hertz
+     * @return The parameter value in the range of [0..1]
+     */
+    private static double convertFromLfoRate (final double rate)
+    {
+        return Math.clamp (Math.pow ((rate - LFO_MINIMUM_RATE) / (LFO_MAXIMUM_RATE - LFO_MINIMUM_RATE), 0.25), 0, 1);
+    }
+
+
+    /**
+     * Convert a time of a low frequency oscillator into the parameter value of the device. The
+     * sound engine calculates all of these times as maximum * x^2.
+     *
+     * @param seconds The time in seconds
+     * @param maximum The time in seconds which the parameter value 1 gives
+     * @return The parameter value in the range of [0..1]
+     */
+    private static double convertFromLfoTime (final double seconds, final double maximum)
+    {
+        return Math.clamp (Math.sqrt (seconds / maximum), 0, 1);
     }
 
 

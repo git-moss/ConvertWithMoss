@@ -10303,9 +10303,9 @@
       <text:p>AmpVeloAmount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce11" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce11" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce20" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+     <text:p>MatrixSrc/Dst/Amount (LFO 2 -&gt; VCA), Lfo2Speed, Lfo2Shape, Lfo2Phase, Lfo2Delay, Lfo2Attack</text:p>
+    </table:table-cell>
      <table:table-cell table:style-name="ce34"/>
      <table:table-cell table:style-name="ce16"/>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -10317,9 +10317,9 @@
      <table:table-cell table:style-name="ce20" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>FreeEnvXEnvDelay, FreeEnvXEnvAttack, FreeEnvXEnvDecay, FreeEnvXEnvRelease, FreeEnvXEnvSustain, FreeEnvXAttackCurve, FreeEnvXDecayCurve, FreeEnvXReleaseCurve</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce11" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce20" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+     <text:p>MatrixSrc/Dst/Amount (LFO 1 -&gt; Pitch), Lfo1Speed, Lfo1Shape, Lfo1Phase, Lfo1Delay, Lfo1Attack</text:p>
+    </table:table-cell>
      <table:table-cell table:style-name="ce3"/>
      <table:table-cell table:style-name="ce20" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>FilterState</text:p>
@@ -10389,13 +10389,11 @@
      <table:table-cell table:style-name="ce8"/>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce3"/>
      <table:table-cell table:style-name="ce11" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce11" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:covered-table-cell table:style-name="ce3"/>
      <table:table-cell table:style-name="ce34"/>
      <table:table-cell table:style-name="ce16"/>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce3"/>
-     <table:table-cell table:style-name="ce11"/>
+     <table:covered-table-cell table:style-name="ce3"/>
      <table:table-cell table:style-name="ce34"/>
      <table:covered-table-cell table:number-columns-repeated="8" table:style-name="ce3"/>
      <table:table-cell table:style-name="ce11" office:value-type="string" calcext:value-type="string">
