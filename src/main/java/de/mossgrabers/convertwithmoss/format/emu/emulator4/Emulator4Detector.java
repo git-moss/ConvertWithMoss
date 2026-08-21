@@ -147,9 +147,25 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public List<IMultisampleSource> readImageBanks (final File sourceFile) throws IOException
     {
+        return this.readImageBanks (sourceFile, Emu3DiskImage.readFiles (sourceFile));
+    }
+
+
+    /**
+     * Read all Emulator IV banks from the already read files of an EOS disk image. Reading the
+     * files of an image means reading all of their content, so the generic ISO/IMG format reads
+     * them once and offers them to both of the E-mu formats instead of letting each of them read
+     * the whole image on its own.
+     *
+     * @param sourceFile The image file, which the sources refer to as their source
+     * @param imageFiles The files of the image
+     * @return The multi-sample sources, empty if the image holds no Emulator IV bank
+     */
+    public List<IMultisampleSource> readImageBanks (final File sourceFile, final List<Emu3DiskImage.ImageFile> imageFiles)
+    {
         final List<IMultisampleSource> results = new ArrayList<> ();
         this.numberOfReadBanks = 0;
-        for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
+        for (final Emu3DiskImage.ImageFile imageFile: imageFiles)
         {
             // Skip files which are not Emulator IV banks, e.g. the banks of the older EIII
             // samplers which use the same filesystem
