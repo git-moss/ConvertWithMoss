@@ -71,8 +71,8 @@ public class KurzweilSampleHeader
     {
         this.rootKey = in.read ();
         this.flags = in.read ();
-        this.volumeAdjust = (byte) in.read ();
-        this.altVolumeAdjust = (byte) in.read ();
+        this.volumeAdjust = StreamUtils.readSigned8 (in);
+        this.altVolumeAdjust = StreamUtils.readSigned8 (in);
         this.maxPitch = StreamUtils.readSigned16 (in, true);
         this.offsetToName = StreamUtils.readSigned16 (in, true);
         this.sampleStart = StreamUtils.readSigned32 (in, true);

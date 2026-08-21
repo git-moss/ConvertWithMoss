@@ -131,8 +131,8 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
     /**
      * Group the programs of a volume which the hardware plays layered. All programs which share
      * their MIDI program number (on the same MIDI channel) are selected together by that program
-     * number and always sound at once - this is how the sound designers of many CD-ROMs build
-     * their final patches from 2 or 3 component programs.
+     * number and always sound at once - this is how the sound designers of many CD-ROMs build their
+     * final patches from 2 or 3 component programs.
      *
      * @param programs The programs of a volume
      * @return The programs grouped into the stacks which play together, in the order of the volume
@@ -143,7 +143,7 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
         for (final AkaiS1000Program program: programs)
         {
             final String selectionKey = program.getMidiProgramNumber () + ":" + (program.getMidiChannel () & 0xFF);
-            layeredPrograms.computeIfAbsent (selectionKey, key -> new ArrayList<> ()).add (program);
+            layeredPrograms.computeIfAbsent (selectionKey, _ -> new ArrayList<> ()).add (program);
         }
         return layeredPrograms.values ();
     }
@@ -151,8 +151,8 @@ public abstract class AbstractIsoDetector<T extends MetadataSettingsUI> extends 
 
     /**
      * Get the name for a multi-sample which combines the given layered programs, which is the
-     * common prefix of their names (e.g. 'DIGIJAZZ' for 'DIGIJAZZ A' + 'DIGIJAZZ B'). If the
-     * names share no reasonable prefix, the name of the first program is used.
+     * common prefix of their names (e.g. 'DIGIJAZZ' for 'DIGIJAZZ A' + 'DIGIJAZZ B'). If the names
+     * share no reasonable prefix, the name of the first program is used.
      *
      * @param layeredPrograms The programs which play layered
      * @return The name

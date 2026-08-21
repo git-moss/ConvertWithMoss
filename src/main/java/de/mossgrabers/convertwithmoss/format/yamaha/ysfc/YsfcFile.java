@@ -330,7 +330,8 @@ public class YsfcFile
     private static String createAsciiString (final byte [] byteArray)
     {
         int lastAsciiIndex = byteArray.length - 1;
-        while (lastAsciiIndex >= 0 && (byteArray[lastAsciiIndex] < 0 || byteArray[lastAsciiIndex] > 127))
+        // 'byteArray[lastAsciiIndex] > 127' is not necessary since it is always false
+        while (lastAsciiIndex >= 0 && byteArray[lastAsciiIndex] < 0)
             lastAsciiIndex--;
         return new String (byteArray, 0, lastAsciiIndex + 1, StandardCharsets.US_ASCII);
     }

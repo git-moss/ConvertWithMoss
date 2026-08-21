@@ -1026,11 +1026,12 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         try
         {
             final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
-            final int [] resampling = AudioFileUtils.getRequiredResampling (audioMetadata, destinationFormat);
-            if (resampling == null)
+            final Optional<int []> resamplingOpt = AudioFileUtils.getRequiredResampling (audioMetadata, destinationFormat);
+            if (resamplingOpt.isEmpty ())
                 return;
             final String bitResolution = Integer.toString (audioMetadata.getBitResolution ());
             final String sampleRate = Integer.toString (audioMetadata.getSampleRate ());
+            final int [] resampling = resamplingOpt.get ();
             final String destinationBitResolution = Integer.toString (resampling[0]);
             final String destinationSampleRate = Integer.toString (resampling[1]);
             if (this.loggedResamplings.add (bitResolution + "/" + sampleRate + ">" + destinationBitResolution + "/" + destinationSampleRate))

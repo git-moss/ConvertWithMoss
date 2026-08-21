@@ -38,6 +38,9 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
 {
+    private static final String IDS_NOTIFY_ERR_LOAD_FILE = "IDS_NOTIFY_ERR_LOAD_FILE";
+
+
     /**
      * Constructor.
      *
@@ -63,7 +66,7 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
 
@@ -124,7 +127,7 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return null;
         }
 
@@ -151,7 +154,7 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
         }
 
         double durationSeconds = 0;
@@ -164,7 +167,7 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
         }
 
         applyFilter (zone, track);
@@ -311,10 +314,10 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
         int currentSlot = -1;
         int currentEnvelope = -1;
 
-        for (final S2400Record record: records)
+        for (final S2400Record s2400Record: records)
         {
-            final int id = record.id ();
-            final int value = (int) record.value ();
+            final int id = s2400Record.id ();
+            final int value = (int) s2400Record.value ();
 
             if (id == S2400Constants.FIELD_TRACK_INDEX)
             {
@@ -332,7 +335,7 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
             switch (id)
             {
                 case S2400Constants.FIELD_TRACK_NAME:
-                    current.name = record.asString ();
+                    current.name = s2400Record.asString ();
                     break;
                 case S2400Constants.FIELD_TRACK_GAIN_DB:
                     current.gainDb = value;

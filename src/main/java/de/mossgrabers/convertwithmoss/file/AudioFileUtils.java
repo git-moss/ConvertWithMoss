@@ -638,19 +638,19 @@ public final class AudioFileUtils
      * @return The resulting bit resolution and sample rate or null if the audio already fulfills
      *         the restrictions
      */
-    public static int [] getRequiredResampling (final IAudioMetadata audioMetadata, final DestinationAudioFormat destinationFormat)
+    public static Optional<int []> getRequiredResampling (final IAudioMetadata audioMetadata, final DestinationAudioFormat destinationFormat)
     {
         final int bitResolution = audioMetadata.getBitResolution ();
         final int sampleRate = audioMetadata.getSampleRate ();
         final int destinationBitResolution = getMatchingBitResolution (bitResolution, destinationFormat.getBitResolutions ());
         final int destinationSampleRate = getMatchingSampleRate (sampleRate, destinationFormat);
         if (destinationBitResolution == bitResolution && destinationSampleRate == sampleRate)
-            return null;
-        return new int []
+            return Optional.empty ();
+        return Optional.of (new int []
         {
             destinationBitResolution,
             destinationSampleRate
-        };
+        });
     }
 
 
