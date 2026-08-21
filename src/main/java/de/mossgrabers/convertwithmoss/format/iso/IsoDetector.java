@@ -15,6 +15,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
 import de.mossgrabers.convertwithmoss.format.emu.emulator3.Emulator3Detector;
+import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emu3DiskImage;
 import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emulator4Detector;
 import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetector;
 import de.mossgrabers.convertwithmoss.format.roland.s5xx.S5xxDetector;
@@ -115,13 +116,18 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
     {
         try
         {
+            // Reading the files of an image reads all of their content, which is the whole image
+            // for a full library CD-ROM. Both formats are offered the same files, otherwise the
+            // format which is tried second reads the image a second time
+            final List<Emu3DiskImage.ImageFile> imageFiles = Emu3DiskImage.readFiles (sourceFile);
+
             this.emulator4Detector.setSourceFolder (this.sourceFolder);
             this.emulator4Detector.setSettings (this.settingsConfiguration);
-            final List<IMultisampleSource> results = new ArrayList<> (this.emulator4Detector.readImageBanks (sourceFile));
+            final List<IMultisampleSource> results = new ArrayList<> (this.emulator4Detector.readImageBanks (sourceFile, imageFiles));
 
             this.emulator3Detector.setSourceFolder (this.sourceFolder);
             this.emulator3Detector.setSettings (this.settingsConfiguration);
-            results.addAll (this.emulator3Detector.readImageBanks (sourceFile));
+            results.addAll (this.emulator3Detector.readImageBanks (sourceFile, imageFiles));
 
             if (results.isEmpty ())
                 this.notifier.logError ("IDS_ISO_NO_EMU_BANKS", sourceFile.getName ());
