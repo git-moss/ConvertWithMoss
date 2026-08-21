@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -70,6 +71,18 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
     private static final int    MAXIMUM_REPORTED_INDICES  = 10;
 
 
+    /** Which channels of a sample the audio data of a zone holds. */
+    private enum ChannelSelection
+    {
+        /** Both channels of a stereo sample. */
+        STEREO,
+        /** The left channel of a stereo sample or the only channel of a mono sample. */
+        LEFT,
+        /** The right channel of a stereo sample. */
+        RIGHT
+    }
+
+
     /** Holds the parsed information of one sample of a bank. */
     private static class Sample
     {
@@ -86,6 +99,14 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         boolean loopInRelease;
         int     loopStart;
         int     loopEnd;
+
+        /**
+         * The audio data of the channel selections which the zones ask for, created on demand. The
+         * presets of a bank reference the same samples over and over - the library banks map a few
+         * dozen samples from hundreds of zones - so the data of a sample is decoded once and shared
+         * by all zones instead of being copied for each of them.
+         */
+        final Map<ChannelSelection, InMemorySampleData> audioData = new EnumMap<> (ChannelSelection.class);
     }
 
 
@@ -179,9 +200,25 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public List<IMultisampleSource> readImageBanks (final File sourceFile) throws IOException
     {
+        return this.readImageBanks (sourceFile, Emu3DiskImage.readFiles (sourceFile));
+    }
+
+
+    /**
+     * Read all Emulator III banks from the already read files of an E-mu disk image. Reading the
+     * files of an image means reading all of their content, so the generic ISO/IMG format reads
+     * them once and offers them to both of the E-mu formats instead of letting each of them read
+     * the whole image on its own.
+     *
+     * @param sourceFile The image file, which the sources refer to as their source
+     * @param imageFiles The files of the image
+     * @return The multi-sample sources, empty if the image holds no EIII bank
+     */
+    public List<IMultisampleSource> readImageBanks (final File sourceFile, final List<Emu3DiskImage.ImageFile> imageFiles)
+    {
         final List<IMultisampleSource> results = new ArrayList<> ();
         this.numberOfReadBanks = 0;
-        for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
+        for (final Emu3DiskImage.ImageFile imageFile: imageFiles)
         {
             // Skip the files which are not EIII banks, e.g. the banks of the newer EOS samplers,
             // which share the filesystem but not the format
@@ -684,7 +721,7 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
                 final int zone = zoneOffset + zoneIndex * Emulator3Constants.ZONE_SIZE;
                 if (zone + Emulator3Constants.ZONE_SIZE > data.length)
                     continue;
-                final ISampleZone sampleZone = this.parseZone (data, bankFormat, zone, presetOffset, keyLow + Emulator3Constants.KEY_OFFSET, keyHigh + Emulator3Constants.KEY_OFFSET, samplesByIndex, indexRepairs, missingSampleIndices, bankName);
+                final ISampleZone sampleZone = parseZone (data, bankFormat, zone, presetOffset, keyLow + Emulator3Constants.KEY_OFFSET, keyHigh + Emulator3Constants.KEY_OFFSET, samplesByIndex, indexRepairs, missingSampleIndices);
                 if (sampleZone != null)
                 {
                     group.addSampleZone (sampleZone);
@@ -761,10 +798,9 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param samplesByIndex The samples of the bank by their 1-based index
      * @param indexRepairs The repaired zone sample indices of the preset
      * @param missingSampleIndices Where to collect the indices of referenced but absent samples
-     * @param bankName The name of the bank
      * @return The zone or null if its sample is not in the bank
      */
-    private ISampleZone parseZone (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int presetOffset, final int keyLow, final int keyHigh, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Integer> indexRepairs, final Set<Integer> missingSampleIndices, final String bankName)
+    private static ISampleZone parseZone (final byte [] data, final Emulator3BankFormat bankFormat, final int offset, final int presetOffset, final int keyLow, final int keyHigh, final Map<Integer, Sample> samplesByIndex, final Map<Integer, Integer> indexRepairs, final Set<Integer> missingSampleIndices)
     {
         final int storedIndex = Emulator3Constants.getU16 (data, offset + Emulator3Constants.ZONE_SAMPLE_INDEX) & bankFormat.getZoneSampleIndexMask ();
         if (storedIndex == 0)
@@ -782,7 +818,8 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         final boolean disableRight = (flags & Emulator3Constants.ZONE_FLAG_DISABLE_RIGHT) > 0;
 
         final ISampleZone zone = new DefaultSampleZone (sample.name, keyLow, keyHigh);
-        zone.setSampleData (createSampleData (sample, disableLeft, disableRight, bankName, this.notifier));
+        final ChannelSelection channels = getChannelSelection (sample, disableLeft, disableRight);
+        zone.setSampleData (sample.audioData.computeIfAbsent (channels, selection -> createSampleData (sample, selection)));
         zone.setKeyRoot ((data[offset + Emulator3Constants.ZONE_ORIGINAL_KEY] & 0xFF) + Emulator3Constants.KEY_OFFSET);
         zone.setStart (0);
         zone.setStop (sample.numFrames);
@@ -927,22 +964,38 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Get the channels of a sample which a zone plays.
+     *
+     * @param sample The sample which the zone references
+     * @param disableLeft True if the zone mutes the left channel
+     * @param disableRight True if the zone mutes the right channel
+     * @return The channel selection
+     */
+    private static ChannelSelection getChannelSelection (final Sample sample, final boolean disableLeft, final boolean disableRight)
+    {
+        if (!sample.isStereo)
+            return ChannelSelection.LEFT;
+        if (!disableLeft && !disableRight)
+            return ChannelSelection.STEREO;
+        // A muted left side leaves the right channel
+        return disableLeft ? ChannelSelection.RIGHT : ChannelSelection.LEFT;
+    }
+
+
+    /**
      * Create the audio data of a sample. The two channels of a stereo sample are stored one after
      * the other in the bank (in either order) and are interleaved here. A zone which mutes one of
      * the two sides only gets the other one.
      *
      * @param sample The sample
-     * @param disableLeft True if the zone mutes the left channel
-     * @param disableRight True if the zone mutes the right channel
-     * @param bankName The name of the bank
-     * @param notifier Where to report a truncated sample
+     * @param channels The channels of the sample which the zone plays
      * @return The audio data
      */
-    private static InMemorySampleData createSampleData (final Sample sample, final boolean disableLeft, final boolean disableRight, final String bankName, final INotifier notifier)
+    private static InMemorySampleData createSampleData (final Sample sample, final ChannelSelection channels)
     {
         final int numFrames = sample.numFrames;
         final byte [] bankData = sample.bankData;
-        final boolean useBothChannels = sample.isStereo && !disableLeft && !disableRight;
+        final boolean useBothChannels = channels == ChannelSelection.STEREO;
         final int numChannels = useBothChannels ? 2 : 1;
         final byte [] pcm = new byte [numFrames * 2 * numChannels];
 
@@ -959,13 +1012,10 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         }
         else
         {
-            // A muted left side leaves the right channel
-            final int channelOffset = sample.isStereo && disableLeft ? sample.rightDataOffset : sample.dataOffset;
+            final int channelOffset = channels == ChannelSelection.RIGHT ? sample.rightDataOffset : sample.dataOffset;
             System.arraycopy (bankData, channelOffset, pcm, 0, numFrames * 2);
         }
 
-        if (notifier != null && bankName != null && numFrames <= 0)
-            notifier.logError (IDS_EIII_MALFORMED_SAMPLE, sample.name, bankName);
         return new InMemorySampleData (new DefaultAudioMetadata (numChannels, sample.sampleRate, 16, numFrames), pcm);
     }
 
