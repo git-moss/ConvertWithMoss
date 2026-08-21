@@ -757,7 +757,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final double pitchDepth = pitchLfoModulator.getDepth ();
         if (pitchDepth != 0 && pitchLfo.isSet ())
         {
-            createModulationMatrixEntry (parameters, MATRIX_SLOT_VIBRATO, LFO_VIBRATO, "Pitch", MATRIX_DST_PITCH, convertFromPitchDepth (pitchDepth));
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, one matrix slot
+            // reaches MATRIX_PITCH_RANGE semi-tones
+            final double semitones = pitchDepth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
+            final double amount = Math.clamp (semitones / MATRIX_PITCH_RANGE, -1.0, 1.0);
+            createModulationMatrixEntry (parameters, MATRIX_SLOT_VIBRATO, LFO_VIBRATO, "Pitch", MATRIX_DST_PITCH, amount);
             createLfo (parameters, pitchLfo, LFO_VIBRATO, false);
         }
 

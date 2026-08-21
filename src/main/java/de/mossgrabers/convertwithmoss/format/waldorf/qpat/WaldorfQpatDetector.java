@@ -735,7 +735,10 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             if (amount == 0)
                 continue;
 
-            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, convertToPitchDepth (amount));
+            // One matrix slot reaches MATRIX_PITCH_RANGE semi-tones, the depth of the model covers
+            // IEnvelope#MAX_ENVELOPE_DEPTH cent
+            final double depth = amount * MATRIX_PITCH_RANGE * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, depth);
             if (modulator.isPresent ())
                 return modulator;
         }
