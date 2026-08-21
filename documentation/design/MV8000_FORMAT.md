@@ -191,36 +191,59 @@ sample IDs), 0xE0 = 32-bit region, 0xF8 = value descriptor of an 8-bit cell,
 offset 0x5372C4 (patch table at 0x536E00). The "Init Partial" record of the factory
 patches matches the table defaults exactly.
 
+## Envelope and LFO times
+
+Every time is a 0-127 setting which the sound engine looks up in a **128 entry table**.
+The table was read out of two firmwares, which hold the identical value sequence:
+
+| firmware | offset | layout |
+|----------|--------|--------|
+| S-760 system disk, version 2.24 (`S760224.OUT`) | `0xB63EE` | u16 little-endian, descending |
+| MV-8000 OS 3.54, decompressed image | `0x50538C` | u16 big-endian, ascending |
+
+All 127 overlapping entries match, which is also the evidence that the MV-8000 runs the
+S-7xx sound engine rather than the XV one whose category list it borrows (two further
+tables are shared - a 2:1 pitch/frequency ratio ramp and a linear ramp - and the S-760
+system disk identifies itself as `S770 MR25A`). The table runs 30 to 65535 as a
+geometric series with a ratio of 1.0624 per step, spanning 2184:1.
+
+**The unit is 1/3000 of a second.** The S-760 owner's manual documents the LFO delay -
+a 0-127 setting like the envelope times - as covering "0.01 - 22 sec". 0.01 s / 30 gives
+1/3000 s per entry, and the last entry is then 65535/3000 = 21.8 s, so both ends of the
+documented range are matched within one percent:
+
+    t(setting) = TABLE[setting] / 3000 seconds     ~ 0.01 * 2^(setting/11.45)
+               = 0.0100 s at 0 .. 21.845 s at 127
+
+The formula used before - `20 * 2^((v-127)/21)`, borrowed from the S-7xx with no
+calibration - spans only 64:1 and cannot express anything below 302 ms, so it was up to
+29 times too slow at the fast end (setting 1 is 0.011 s and not 0.313 s; setting 15, the
+median of the factory patches, is 0.025 s and not 0.496 s) and agreed only near the top.
+
+### What is inference rather than proof
+
+The manual documents that range for the LFO *delay*, and the code which indexes the
+table has not been located, so that the envelope times use the same table is not shown
+directly. What supports it: it is the only long-span geometric time table in the S-760
+(the other two span 131:1 and 102:1 over 5-720 ms), and the ZEN-Core envelope law which
+ConvertWithMoss measured on FANTOM-0 hardware spans 0.010 s to 21.5 s, agreeing at both
+ends within about 1.5 %. Recording an MV-8000 or MV-8800 settles it: a patch which maps
+one looped sine to a row of pads whose only difference is the time under test gives the
+law directly.
+
+Finding the indexing code in the S-760 firmware is blocked on its memory banking. Its CPU
+is an Intel **S80C196KB** (MCS-96, 16 bit, little-endian; block diagram page 4 and parts
+list page 5 of the service notes) whose 64 KB address space is expanded to 1 MB by the
+`HG62E33B0B` gate array (`ABUS0`-`ABUS19`), with 1 MB of program DRAM (`IC68`/`IC69`)
+holding the whole disk image. An overlay mapping can be recovered exactly wherever a
+computed goto appears - `add Rn,#imm; br [Rn]` places the branch table at a known file
+offset, so K = offset - imm, which gives K = `0x8400` for file `0xA5DB`-`0xF100` - but
+under every recovered mapping the table lies outside the 16 bit range, and which window
+the gate array maps is internal to that custom part.
+
 ## Not decoded / open
 
-- The hardware curve for envelope times (0-127 → seconds) and the LFO rate table.
-  The parameter block carries no unit: the partial descriptor table of MV-8000 OS
-  3.54 declares the four TVA and TVF times as plain 0-127 fields (defaults
-  0/10/10/10, min 0, max 127) and no code was found which converts them, so the
-  engine program `MIAMI.PRG` - loaded separately by the boot loader, never
-  published by Roland - is what interprets them.
-
-  What *is* in the OS is a **128 entry exponential table** at file offset 0x50538C
-  of the decompressed image (u16 big-endian, 30 → 65535, a constant ratio of
-  1.0624 per step, 11.45 steps per doubling, spanning 2184:1). The same value
-  sequence sits in the S-760 system disk (Roland's own "S-760 System Version 2.24"
-  download, `S760224.OUT` at offset 0xB63EE, u16 little-endian, stored descending):
-  all 127 overlapping entries are identical. Two further tables are shared - a 2:1
-  ramp which is a pitch/frequency ratio table and a linear normalisation ramp - and
-  the S-760 disk identifies itself as `S770 MR25A`, so the MV-8000 inherits the
-  S-7xx sound engine rather than the XV one whose category list it borrows.
-
-  A 128 entry table indexed 0-127 with that span is the natural candidate for the
-  envelope time law, and its range corroborates independently: the ZEN-Core law
-  which ConvertWithMoss measured on a FANTOM-0 spans 2150:1 (0.010 s to 21.5 s).
-  It is **not confirmed** - no code which indexes the table has been located in
-  either firmware, so the tick it counts, and with it the absolute times, are still
-  unknown. What is certain is that the S-7xx formula used today, `20 *
-  2^((v-127)/21)`, spans only 64:1 and cannot represent anything below 302 ms,
-  which no calibrated Roland law does.
-
-  Recording the hardware settles it: a patch which maps one looped sine to a row of
-  pads whose only difference is the envelope time under test gives the law directly.
+- The LFO rate table (the LFO rate is a 0-149 setting, 128 and above being tempo-sync).
 - The exact roles of the ±63 sensitivity params around the TVF/TVA envelopes, and the
   unit of the 8-bit sub-frame parts of the slot playback points (1/256 frame?).
 - Patch common bits 155-416 beyond category/level/pan/mute-group/tuning (contains at
