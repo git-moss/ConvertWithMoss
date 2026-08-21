@@ -209,6 +209,7 @@ public class AkaiS1000ProgramConverter
             final boolean [] sampleKeyTracking = keygroup.getSampleKeyTracking ();
             final double keygroupTuning = calculateTuning (keygroup.getTuneSemitones (), keygroup.getTuneCents ());
             final IEnvelope amplitudeEnvelope = convertEnvelope (keygroup.getAmplitudeEnvelope ());
+            applyLoudnessCurve (amplitudeEnvelope);
             final IEnvelope auxEnvelope = convertEnvelope (keygroup.getAuxEnvelope ());
 
             // Filter
@@ -390,6 +391,31 @@ public class AkaiS1000ProgramConverter
         if (scaledSustain <= 0)
             return 0;
         return Math.pow (10, (scaledSustain - FULL_LEVEL) * DECIBEL_PER_STEP / 20.0);
+    }
+
+
+    /**
+     * Shape the envelope of the loudness the way the sound hardware moves it. The level of a voice
+     * is an index into the gain table of the sampler, which is exponential with a step of 0.237 dB,
+     * and the operating system adds the rate of the envelope to that index once per tick - so a
+     * stage of the envelope is a straight line in decibel and therefore a curve in loudness. Since
+     * the destination formats describe a stage in loudness, a stage which is written as a straight
+     * line keeps a note near its full level for most of its length and then drops it: an electric
+     * piano with a decay of 9.5 seconds does not sound like one at all.
+     *
+     * The envelope of the filter is deliberately left as it is: its index addresses the cut-off
+     * table, which is exponential in frequency, so a straight line there already is a straight line
+     * in the cut-off of the destination.
+     *
+     * @param envelope The envelope of the loudness
+     */
+    private static void applyLoudnessCurve (final IEnvelope envelope)
+    {
+        // The loudness rises the slower the quieter it is, which is the exponential shape of the
+        // model, and falls the faster the louder it is, which is its logarithmic one
+        envelope.setAttackSlope (1);
+        envelope.setDecaySlope (-1);
+        envelope.setReleaseSlope (-1);
     }
 
 
