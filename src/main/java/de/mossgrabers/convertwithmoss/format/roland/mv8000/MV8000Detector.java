@@ -36,6 +36,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.roland.RolandTimeTable;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -346,15 +347,15 @@ public class MV8000Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Convert an envelope time value to seconds. The exact hardware curve is unknown, the formula
-     * of the S-7xx series (same lineage, up to 20 seconds) is used as an approximation.
+     * Convert an envelope time value to seconds with the time table of the sound engine, which the
+     * MV-8000 inherits from the S-7xx series (see {@link RolandTimeTable}).
      *
      * @param value The time value in the range of 0..127
      * @return The time in seconds
      */
     private static double calculateTime (final int value)
     {
-        return value == 0 ? 0 : 20.0 * Math.pow (2.0, (value - 127.0) / 21.0);
+        return RolandTimeTable.valueToSeconds (value);
     }
 
 

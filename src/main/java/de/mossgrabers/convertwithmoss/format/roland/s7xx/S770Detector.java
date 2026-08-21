@@ -43,6 +43,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.roland.RolandTimeTable;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.SampleSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvaSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvfSection;
@@ -566,10 +567,16 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
+    /**
+     * Convert an envelope time value to seconds with the time table of the sound engine (see
+     * {@link RolandTimeTable}).
+     *
+     * @param value The time value in the range of 0..127
+     * @return The time in seconds
+     */
     private static double calculateTime (final int value)
     {
-        // 0 is instant - without this case every envelope stage would take at least 302 ms
-        return value == 0 ? 0 : 20.0 * Math.pow (2.0, (value - 127.0) / 21.0);
+        return RolandTimeTable.valueToSeconds (value);
     }
 
 
