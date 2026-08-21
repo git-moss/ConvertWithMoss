@@ -16,6 +16,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.sound.sampled.UnsupportedAudioFileException;
+
+import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
@@ -64,6 +67,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final WaldorfQpatResourceHeader             EMPTY_RESOURCE_HEADER  = new WaldorfQpatResourceHeader ();
     /** The shortest amplitude attack/release which the device renders without a click. */
     private static final double                                DECLICK_SECONDS        = 0.07;
+    /** The share of the peak level at which a step in the audio becomes audible as a click. */
+    private static final double                                AUDIBLE_STEP_RATIO     = 0.02;
 
     private static final DestinationAudioFormat                OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -643,7 +648,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
                 final IEnvelopeModulator amplitudeEnvelopeModulator = firstZone.getAmplitudeEnvelopeModulator ();
                 final IEnvelope envelope = amplitudeEnvelopeModulator.getSource ();
-                createEnvelope (parameters, envelope, AMP_ENV, AMP_ENV, flattenAmpEnvelope);
+                // The audio is only inspected when the attack is short enough to be affected at all
+                final double sourceAttackTime = envelope.getAttackTime ();
+                final boolean allowInstantAttack = sourceAttackTime > 0 && sourceAttackTime < DECLICK_SECONDS && !startsWithAudibleStep (groups);
+                createEnvelope (parameters, envelope, AMP_ENV, AMP_ENV, flattenAmpEnvelope, allowInstantAttack);
 
                 // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
                 final double ampVeloAmount = firstZone.getAmplitudeVelocityModulator ().getDepth ();
@@ -678,7 +686,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         parameters.add (new WaldorfQpatParameter ("MatrixAmount" + oscIndex, depthStr, (float) ((depth + 1.0) / 2.0)));
 
         final String prefix = "FreeEnv" + oscIndex;
-        createEnvelope (parameters, pitchEnvelopeModulator.getSource (), prefix, prefix, false);
+        createEnvelope (parameters, pitchEnvelopeModulator.getSource (), prefix, prefix, false, false);
     }
 
 
@@ -751,11 +759,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final double keyTracking = filter.getCutoffKeyTracking ();
         parameters.add (new WaldorfQpatParameter ("Filter1Keytrack", StringUtils.formatPercent (keyTracking, 2), (float) Math.clamp ((keyTracking + 2.0) / 4.0, 0, 1)));
 
-        createEnvelope (parameters, modulator.getSource (), "Filter1Env", "Filter1", false);
+        createEnvelope (parameters, modulator.getSource (), "Filter1Env", "Filter1", false, false);
     }
 
 
-    private static void createEnvelope (final List<WaldorfQpatParameter> parameters, final IEnvelope envelope, final String prefix, final String slopePrefix, final boolean flattenSustain)
+    private static void createEnvelope (final List<WaldorfQpatParameter> parameters, final IEnvelope envelope, final String prefix, final String slopePrefix, final boolean flattenSustain, final boolean allowInstantAttack)
     {
         final boolean isPitch = prefix.startsWith ("Free");
         // Only the amplitude envelope gates the VCA, so only it can click when a stage is instant;
@@ -778,7 +786,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             final double delayTime = Math.clamp (envelope.getDelayTime (), 0, 2);
             parameters.add (new WaldorfQpatParameter (prefix + "Delay", formatSeconds (delayTime), (float) convertFromDelayTime (delayTime)));
             // xxxEnvAttack
-            final double attackTime = declickAmpTime (isAmplitude, Math.clamp (envelope.getAttackTime (), 0, 60));
+            final double attackTime = declickAmpTime (isAmplitude && !allowInstantAttack, Math.clamp (envelope.getAttackTime (), 0, 60));
             parameters.add (new WaldorfQpatParameter (prefix + "Attack", formatSeconds (attackTime), (float) convertFromTime (attackTime)));
             // xxxEnvDecay
             final double decayTime = Math.clamp (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()), 0, 60);
@@ -1000,13 +1008,55 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * Iridium hardware); a genuine zero stays instant. Only the amplitude envelope gates the VCA,
      * so a short filter or pitch envelope stage is left unchanged.
      *
-     * @param isAmplitude True if this is the amplitude (VCA) envelope
+     * @param declick True to lift the stage to the shortest audible length
      * @param seconds The envelope stage time in seconds
      * @return The de-clicked time in seconds
      */
-    private static double declickAmpTime (final boolean isAmplitude, final double seconds)
+    private static double declickAmpTime (final boolean declick, final double seconds)
     {
-        return isAmplitude && seconds > 0 ? Math.max (seconds, DECLICK_SECONDS) : seconds;
+        return declick && seconds > 0 ? Math.max (seconds, DECLICK_SECONDS) : seconds;
+    }
+
+
+    /**
+     * Test whether the audio of any zone starts with a step which is large enough to be heard as a
+     * click when the amplitude envelope opens the VCA instantly. Only such a source is worth the
+     * loss of its attack transient, which lifting the stage to the shortest length of the device
+     * costs. The step is measured against the peak level of the same audio, so it does not depend
+     * on the bit resolution, and it uses the ratio at which a step becomes audible at a loop wrap.
+     *
+     * @param groups The groups of the multi-sample
+     * @return True if a zone starts with an audible step or its audio could not be read
+     */
+    private static boolean startsWithAudibleStep (final List<IGroup> groups)
+    {
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final int [] signal;
+                try
+                {
+                    signal = LoopZeroSnapper.readMonoSignal (zone);
+                }
+                catch (final IOException | UnsupportedAudioFileException _)
+                {
+                    // The audio cannot be judged, therefore keep the variant which cannot click
+                    return true;
+                }
+                if (signal.length == 0)
+                    continue;
+
+                int peak = 0;
+                for (final int value: signal)
+                    peak = Math.max (peak, Math.abs (value));
+                if (peak == 0)
+                    continue;
+
+                final int start = Math.clamp (zone.getStart (), 0, signal.length - 1);
+                if (Math.abs (signal[start]) > peak * AUDIBLE_STEP_RATIO)
+                    return true;
+            }
+        return false;
     }
 
 
