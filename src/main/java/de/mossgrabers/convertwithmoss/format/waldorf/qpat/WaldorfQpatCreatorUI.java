@@ -34,6 +34,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private static final String QPAT_NUMBER_PREFIX      = "QPATNumberPrefix";
     private static final String QPAT_SHORT_FILE_NAMES   = "QPATShortFileNames";
     private static final String QPAT_NUMBER_PREFIX_START = "QPATNumberPrefixStart";
+    private static final String QPAT_SECOND_LAYER      = "QPATUseSecondLayer";
 
     private CheckBox            limitTo16441CheckBox;
     private TextField           authorField;
@@ -41,12 +42,14 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private CheckBox            numberPrefixCheckBox;
     private TextField           numberPrefixStartField;
     private CheckBox            shortFileNamesCheckBox;
+    private CheckBox            secondLayerCheckBox;
     private boolean             limitTo16441;
     private String              author                  = "";
     private String              bank                    = "";
     private boolean             numberPrefix;
     private int                 numberPrefixStart       = 0;
     private boolean             shortFileNames;
+    private boolean             useSecondLayer;
 
 
     /**
@@ -74,6 +77,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.numberPrefixStartField = panel.createPositiveIntegerField ("@IDS_QPAT_NUMBER_PREFIX_START");
         this.numberPrefixStartField.disableProperty ().bind (this.numberPrefixCheckBox.selectedProperty ().not ());
         this.shortFileNamesCheckBox = panel.createCheckBox ("@IDS_QPAT_SHORT_FILE_NAMES");
+        this.secondLayerCheckBox = panel.createCheckBox ("@IDS_QPAT_SECOND_LAYER");
 
         final TitledSeparator separator = this.addWavChunkOptions (panel);
         separator.getStyleClass ().add ("titled-separator-pane");
@@ -91,6 +95,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.numberPrefixCheckBox.setSelected (config.getBoolean (QPAT_NUMBER_PREFIX, false));
         this.numberPrefixStartField.setText (Integer.toString (config.getInteger (QPAT_NUMBER_PREFIX_START, 0)));
         this.shortFileNamesCheckBox.setSelected (config.getBoolean (QPAT_SHORT_FILE_NAMES, false));
+        this.secondLayerCheckBox.setSelected (config.getBoolean (QPAT_SECOND_LAYER, false));
 
         super.loadSettings (config);
     }
@@ -106,6 +111,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         config.setBoolean (QPAT_NUMBER_PREFIX, this.numberPrefixCheckBox.isSelected ());
         config.setInteger (QPAT_NUMBER_PREFIX_START, this.parseNumberPrefixStart ());
         config.setBoolean (QPAT_SHORT_FILE_NAMES, this.shortFileNamesCheckBox.isSelected ());
+        config.setBoolean (QPAT_SECOND_LAYER, this.secondLayerCheckBox.isSelected ());
 
         super.saveSettings (config);
     }
@@ -124,6 +130,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.numberPrefix = this.numberPrefixCheckBox.isSelected ();
         this.numberPrefixStart = this.parseNumberPrefixStart ();
         this.shortFileNames = this.shortFileNamesCheckBox.isSelected ();
+        this.useSecondLayer = this.secondLayerCheckBox.isSelected ();
         return true;
     }
 
@@ -160,6 +167,8 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
 
         this.shortFileNames = "1".equals (parameters.remove (QPAT_SHORT_FILE_NAMES));
 
+        this.useSecondLayer = "1".equals (parameters.remove (QPAT_SECOND_LAYER));
+
         return true;
     }
 
@@ -175,7 +184,20 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         parameterNames.add (QPAT_NUMBER_PREFIX);
         parameterNames.add (QPAT_NUMBER_PREFIX_START);
         parameterNames.add (QPAT_SHORT_FILE_NAMES);
+        parameterNames.add (QPAT_SECOND_LAYER);
         return parameterNames.toArray (new String [parameterNames.size ()]);
+    }
+
+
+    /**
+     * Get the maximum number of layers to write into one patch. Each layer plays up to 3 sample
+     * maps, so one layer holds 3 groups of the source and two hold 6.
+     *
+     * @return The maximum number of layers: 1 or 2
+     */
+    public int getMaximumLayers ()
+    {
+        return this.useSecondLayer ? 2 : 1;
     }
 
 
