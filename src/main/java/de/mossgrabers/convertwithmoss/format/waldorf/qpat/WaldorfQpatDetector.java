@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.waldorf.qpat;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -84,19 +85,38 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
     private static final double                               LFO_MAXIMUM_ATTACK   = 10.0;
     /** From this phase on the device runs the low frequency oscillator freely. */
     private static final double                               LFO_FREE_PHASE       = 0.9986;
+    /** The size of the header of a patch, which every layer of a patch has as well. */
+    private static final int                                  HEADER_SIZE          = 512;
+    /** The offset of the number of layers in the header. */
+    private static final int                                  OFFSET_LAYER_COUNT   = 428;
+    /** The offsets at which the file offsets of the layers 2, 3 and 4 are stored. */
+    private static final int []                               OFFSET_LAYERS        =
+    {
+        432,
+        440,
+        444
+    };
+    /** Layer count: two layers, the offset of the 2nd one is stored at 432. */
+    private static final int                                  LAYER_COUNT_TWO      = 1;
+    /**
+     * Layer count: up to four layers, the offsets are stored at 432, 440 and 444. Written by the
+     * MK2 generation of the instruments, which always stores four layers.
+     */
+    private static final int                                  LAYER_COUNT_FOUR     = 2;
 
-    private static final Map<Integer, String>                 SYNTH_CODES          = HashMap.newHashMap (3);
-    private static final Map<Integer, String>                 LAYER_CODES          = HashMap.newHashMap (3);
+    private static final Map<Integer, String>                 SYNTH_CODES          = HashMap.newHashMap (4);
+    private static final Map<Integer, String>                 TIMBRE_MODES         = HashMap.newHashMap (3);
     private static final Map<WaldorfQpatResourceType, String> GROUP_NAMES          = HashMap.newHashMap (3);
     static
     {
         SYNTH_CODES.put (Integer.valueOf (0), "Quantum");
         SYNTH_CODES.put (Integer.valueOf (1), "Iridium");
         SYNTH_CODES.put (Integer.valueOf (2), "Iridium Core");
+        SYNTH_CODES.put (Integer.valueOf (3), "Iridium MK2");
 
-        LAYER_CODES.put (Integer.valueOf (0), "1 Layer");
-        LAYER_CODES.put (Integer.valueOf (1), "2 Layers (Split)");
-        LAYER_CODES.put (Integer.valueOf (2), "2 Layers (Layered)");
+        TIMBRE_MODES.put (Integer.valueOf (0), "Single");
+        TIMBRE_MODES.put (Integer.valueOf (1), "Split");
+        TIMBRE_MODES.put (Integer.valueOf (2), "Layered");
 
         GROUP_NAMES.put (WaldorfQpatResourceType.USER_SAMPLE_MAP1, "Sample Map 1");
         GROUP_NAMES.put (WaldorfQpatResourceType.USER_SAMPLE_MAP2, "Sample Map 2");
@@ -135,11 +155,12 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Load and parse the QPAT file.
+     * Load and parse the QPAT file. A patch consists of 1, 2 or 4 layers, each of which is a
+     * complete patch of its own; each layer becomes one multi-sample.
      *
      * @param in The input stream to read from
      * @param file The source file
-     * @return The parsed multi-sample source
+     * @return The parsed multi-sample sources, one for each layer which contains samples
      * @throws IOException Could not read from the file
      */
     private List<IMultisampleSource> parseFile (final InputStream in, final File file) throws IOException
@@ -147,74 +168,186 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         final String name = FileUtils.getNameWithoutType (file);
         final String [] parts = AudioFileUtils.createPathParts (file.getParentFile (), this.sourceFolder, name);
 
-        in.mark (in.available () + 1);
+        final byte [] fileData = in.readAllBytes ();
+        final int [] layerOffsets = readLayerOffsets (fileData);
+
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
-
-        boolean readSecondLayer = false;
-        boolean isMulti = true;
-        while (isMulti)
+        for (int layerIndex = 0; layerIndex < layerOffsets.length; layerIndex++)
         {
-            final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
-
-            final long version = readHeader (in, multisampleSource);
-
-            final long numParams = StreamUtils.readUnsigned16 (in, false);
-            // Skip padding
-            in.skipNBytes (2);
-
-            final WaldorfQpatResourceHeader [] resources = readResourceHeaders (in);
-
-            final int flags = StreamUtils.readUnsigned16 (in, false);
-
-            // True, if a 2nd layer is present
-            isMulti = (flags & 1) > 0;
-            // Multi-mode, only valid when multi-flag is set: Single / Split / Layered
-            final int timbreMode = StreamUtils.readUnsigned16 (in, false);
-            // For multi-layer patches the alternate layer is stored directly after the main layer.
-            // This points to the beginning byte of the alternate layer. This is a complete(!) patch
-            // including a the header!
-            final long altTimbreOffset = StreamUtils.readUnsigned32 (in, false);
-
-            // Available from version 9 onwards. Instrument type on which the patch was saved last.
-            int synthCode = in.read ();
-            if (version < 9)
-                synthCode = 0;
-            this.notifier.log ("IDS_QPAT_VERSION", Long.toString (version), SYNTH_CODES.get (Integer.valueOf (synthCode)), LAYER_CODES.get (Integer.valueOf (timbreMode)));
-
-            // Padding up to 512 bytes.
-            in.skipNBytes (75);
-
-            // Read all parameters
-            final Map<String, WaldorfQpatParameter> parameters = new TreeMap<> ();
-            for (int i = 0; i < numParams; i++)
-            {
-                final WaldorfQpatParameter param = new WaldorfQpatParameter (in);
-                parameters.put (param.name, param);
-            }
-
-            this.readSampleMaps (in, file, multisampleSource, resources, parameters);
-
-            multisampleSources.add (multisampleSource);
-
-            if (readSecondLayer)
-            {
-                multisampleSource.setName (multisampleSource.getName () + " 2");
-                break;
-            }
-
-            if (isMulti)
-            {
-                readSecondLayer = true;
-                in.reset ();
-                in.skipNBytes (altTimbreOffset);
-            }
+            final IMultisampleSource multisampleSource = this.parseLayer (fileData, layerOffsets[layerIndex], layerIndex, layerOffsets.length, file, parts, name);
+            if (multisampleSource != null)
+                multisampleSources.add (multisampleSource);
         }
 
+        if (multisampleSources.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_QPAT_NOT_SAMPLE_BASED"));
         return multisampleSources;
     }
 
 
-    private void readSampleMaps (final InputStream in, final File file, final IMultisampleSource multisampleSource, final WaldorfQpatResourceHeader [] resources, final Map<String, WaldorfQpatParameter> parameters) throws IOException
+    /**
+     * Read the offsets of all layers of the patch. The first layer starts at the beginning of the
+     * file, the offsets of the further ones are stored in its header: one further layer for the
+     * layer count 1 and up to three for the layer count 2, which the MK2 generation writes. An
+     * offset is only accepted if it points to a layer, since the headers of the later layers of a
+     * patch repeat the offsets of the previous ones and unused layers store a zero.
+     *
+     * @param fileData The content of the file
+     * @return The offsets of all layers, the first one is always zero
+     * @throws IOException The file is too short to contain a patch
+     */
+    private static int [] readLayerOffsets (final byte [] fileData) throws IOException
+    {
+        if (fileData.length < HEADER_SIZE)
+            throw new IOException (Functions.getMessage ("IDS_QPAT_UNKNOWN_TYPE"));
+
+        final List<Integer> offsets = new ArrayList<> ();
+        offsets.add (Integer.valueOf (0));
+
+        final int layerCount = readUnsigned16 (fileData, OFFSET_LAYER_COUNT);
+        final int numOffsets = switch (layerCount)
+        {
+            case LAYER_COUNT_TWO -> 1;
+            case LAYER_COUNT_FOUR -> OFFSET_LAYERS.length;
+            default -> 0;
+        };
+
+        for (int i = 0; i < numOffsets; i++)
+        {
+            final int offset = readUnsigned32 (fileData, OFFSET_LAYERS[i]);
+            if (offset > 0 && offset <= fileData.length - HEADER_SIZE && readUnsigned32 (fileData, offset) == WaldorfQpatConstants.MAGIC)
+            {
+                final Integer offsetObject = Integer.valueOf (offset);
+                if (!offsets.contains (offsetObject))
+                    offsets.add (offsetObject);
+            }
+        }
+
+        final int [] result = new int [offsets.size ()];
+        for (int i = 0; i < result.length; i++)
+            result[i] = offsets.get (i).intValue ();
+        return result;
+    }
+
+
+    /**
+     * Parse one layer of the patch.
+     *
+     * @param fileData The content of the file
+     * @param layerOffset The offset at which the layer starts
+     * @param layerIndex The index of the layer
+     * @param numLayers The number of layers of the patch
+     * @param file The source file
+     * @param parts The path parts
+     * @param name The name of the file
+     * @return The parsed multi-sample source or null if the layer does not sound or contains no
+     *         samples
+     * @throws IOException Could not read the layer
+     */
+    private IMultisampleSource parseLayer (final byte [] fileData, final int layerOffset, final int layerIndex, final int numLayers, final File file, final String [] parts, final String name) throws IOException
+    {
+        final IMultisampleSource multisampleSource = new DefaultMultisampleSource (file, parts, name);
+        final InputStream in = new ByteArrayInputStream (fileData, layerOffset, fileData.length - layerOffset);
+
+        final long version = readHeader (in, multisampleSource);
+
+        final long numParams = StreamUtils.readUnsigned16 (in, false);
+        // Skip padding
+        in.skipNBytes (2);
+
+        final WaldorfQpatResourceHeader [] resources = this.readResourceHeaders (in);
+
+        // The number of layers and the mode in which they are combined. Both are only meaningful
+        // in the header of the first layer; the later layers repeat them.
+        final int layerCount = StreamUtils.readUnsigned16 (in, false);
+        final int timbreMode = StreamUtils.readUnsigned16 (in, false);
+        // The offsets of the further layers, which are already read from the first layer
+        in.skipNBytes (4);
+
+        // Available from version 9 onwards. Instrument type on which the patch was saved last.
+        int synthCode = in.read ();
+        if (version < 9)
+            synthCode = 0;
+        if (layerIndex == 0)
+            this.notifier.log ("IDS_QPAT_VERSION", Long.toString (version), SYNTH_CODES.getOrDefault (Integer.valueOf (synthCode), Integer.toString (synthCode)), formatLayerInfo (layerCount, timbreMode, numLayers));
+
+        // Padding up to 512 bytes, which holds the offsets of the layers 3 and 4
+        in.skipNBytes (75);
+
+        // Read all parameters
+        final Map<String, WaldorfQpatParameter> parameters = new TreeMap<> ();
+        for (int i = 0; i < numParams; i++)
+        {
+            final WaldorfQpatParameter param = new WaldorfQpatParameter (in);
+            parameters.put (param.name, param);
+        }
+
+        // A layer which is switched off does not sound. The MK2 always stores four layers, of
+        // which the unused ones are switched off and left at their initial values.
+        final WaldorfQpatParameter layerActive = parameters.get ("LayerActive");
+        if (layerActive != null && layerActive.value == 0)
+        {
+            this.notifier.log ("IDS_QPAT_LAYER_INACTIVE", Integer.toString (layerIndex + 1));
+            return null;
+        }
+
+        if (!this.readSampleMaps (in, file, multisampleSource, resources, parameters))
+        {
+            // Only a layer which plays no samples at all is skipped; a patch without any such
+            // layer is reported by the caller
+            if (numLayers > 1)
+                this.notifier.log ("IDS_QPAT_LAYER_NOT_SAMPLE_BASED", Integer.toString (layerIndex + 1));
+            return null;
+        }
+
+        // Keep the name of the file for the first layer, as before multi-layer support
+        if (layerIndex > 0)
+            multisampleSource.setName (multisampleSource.getName () + " " + (layerIndex + 1));
+        return multisampleSource;
+    }
+
+
+    /**
+     * Format the layer information of a patch for the log.
+     *
+     * @param layerCount The layer count stored in the header
+     * @param timbreMode The mode in which the layers are combined
+     * @param numLayers The number of layers which were found
+     * @return The formatted text
+     */
+    private static String formatLayerInfo (final int layerCount, final int timbreMode, final int numLayers)
+    {
+        // The mode is only filled when the patch has more than one layer
+        if (layerCount != LAYER_COUNT_TWO && layerCount != LAYER_COUNT_FOUR)
+            return "1 Layer";
+        return numLayers + " Layers (" + TIMBRE_MODES.getOrDefault (Integer.valueOf (timbreMode), Integer.toString (timbreMode)) + ")";
+    }
+
+
+    private static int readUnsigned16 (final byte [] data, final int offset)
+    {
+        return data[offset] & 0xFF | (data[offset + 1] & 0xFF) << 8;
+    }
+
+
+    private static int readUnsigned32 (final byte [] data, final int offset)
+    {
+        return data[offset] & 0xFF | (data[offset + 1] & 0xFF) << 8 | (data[offset + 2] & 0xFF) << 16 | (data[offset + 3] & 0xFF) << 24;
+    }
+
+
+    /**
+     * Read the sample maps of the three oscillators of a layer.
+     *
+     * @param in The input stream, positioned at the end of the parameters
+     * @param file The source file
+     * @param multisampleSource Where to store the groups
+     * @param resources The resource headers of the sample maps
+     * @param parameters The parameters of the layer
+     * @return True if the layer contains at least one sample map
+     * @throws IOException Could not read the sample maps
+     */
+    private boolean readSampleMaps (final InputStream in, final File file, final IMultisampleSource multisampleSource, final WaldorfQpatResourceHeader [] resources, final Map<String, WaldorfQpatParameter> parameters) throws IOException
     {
         // Read all sample maps (max. 3, one for each oscillator)
         final byte [] resourcesData = in.readAllBytes ();
@@ -232,28 +365,32 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             groups.add (groupsArray[i]);
         }
         if (groups.isEmpty ())
-            throw new IOException (Functions.getMessage ("IDS_QPAT_NOT_SAMPLE_BASED"));
+            return false;
         multisampleSource.setGroups (groups);
 
         this.applyParameters (groupsArray, parameters);
+        return true;
     }
 
 
     /**
-     * Read all 3 resource headers.
+     * Read all 3 resource headers of the sample maps. Resources of another type - the user
+     * wave-tables and the types which newer firmware versions added - are skipped.
      *
      * @param in The input stream to read from
      * @return The resource headers
      * @throws IOException Could not read the headers
      */
-    private static WaldorfQpatResourceHeader [] readResourceHeaders (final InputStream in) throws IOException
+    private WaldorfQpatResourceHeader [] readResourceHeaders (final InputStream in) throws IOException
     {
         final WaldorfQpatResourceHeader [] resources = new WaldorfQpatResourceHeader [3];
         for (int i = 0; i < WaldorfQpatConstants.MAX_RESOURCES; i++)
         {
             final WaldorfQpatResourceHeader resourceHeader = new WaldorfQpatResourceHeader ();
             resourceHeader.read (in);
-            if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP1)
+            if (resourceHeader.isUnknownType ())
+                this.notifier.log ("IDS_QPAT_UNKNOWN_RESOURCE_TYPE", Integer.toString (resourceHeader.rawType));
+            else if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP1)
                 resources[0] = resourceHeader;
             else if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP2)
                 resources[1] = resourceHeader;
