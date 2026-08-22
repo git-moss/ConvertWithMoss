@@ -21,16 +21,14 @@ public class AkaiS900Sample
     private final long    sampleLength;
     private final int     sampleRate;
     private final int     nominalPitch;
-    private final int     loudness;
+    private final int     loudnessOffset;
     private final char    playbackMode;
     private final long    end;
     private final long    start;
     private final long    loopLength;
     private final int     type;
     private final int     direction;
-
     private final byte [] sampleData;
-
     private final int     compression;
 
 
@@ -46,22 +44,32 @@ public class AkaiS900Sample
         this.compression = compression;
 
         this.name = StreamUtils.readAscii (input, 10).trim ();
-        // Padding
+
+        // Undefined
         input.skipNBytes (6);
+
         this.sampleLength = StreamUtils.readUnsigned32 (input, false);
         this.sampleRate = StreamUtils.readUnsigned16 (input, false);
         this.nominalPitch = StreamUtils.readUnsigned16 (input, false);
-        this.loudness = StreamUtils.readSigned16 (input, false);
+        this.loudnessOffset = StreamUtils.readSigned16 (input, false);
         this.playbackMode = (char) StreamUtils.readUnsigned8 (input);
+
+        // Reserved
         input.skipNBytes (1);
+
         this.end = StreamUtils.readUnsigned32 (input, false);
         this.start = StreamUtils.readUnsigned32 (input, false);
         this.loopLength = StreamUtils.readUnsigned32 (input, false);
+
+        // Reserved
         input.skipNBytes (2);
-        this.type = input.read ();
-        this.direction = input.read ();
-        // Unknown content in 11-13
+
+        this.type = StreamUtils.readUnsigned8 (input);
+        this.direction = StreamUtils.readUnsigned8 (input);
+
+        // Undefined
         input.skipNBytes (16);
+
         this.sampleData = input.readAllBytes ();
     }
 
@@ -113,11 +121,11 @@ public class AkaiS900Sample
     /**
      * Get the loudness offset (signed).
      *
-     * @return The loudness value
+     * @return The loudness value in the range of [-50..50], units of 0.375dB
      */
-    public int getLoudness ()
+    public int getLoudnessOffset ()
     {
-        return this.loudness;
+        return this.loudnessOffset;
     }
 
 

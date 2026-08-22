@@ -38,6 +38,8 @@ public class AkaiS900DiskImage
     private final List<AkaiS900Program>       programs                            = new ArrayList<> ();
     private final Map<String, AkaiS900Sample> samples                             = new HashMap<> ();
 
+    private AkaiS900DirectoryEntry            continuationEntry                   = null;
+
 
     /**
      * Open an image from a file path.
@@ -49,7 +51,8 @@ public class AkaiS900DiskImage
     {
         try (final RandomAccessFile randomAccessFile = new RandomAccessFile (file, "r"))
         {
-            for (final AkaiS900DirectoryEntry entry: readDirectory (randomAccessFile))
+            final List<AkaiS900DirectoryEntry> directory = readDirectory (randomAccessFile);
+            for (final AkaiS900DirectoryEntry entry: directory)
             {
                 final int start = entry.getStartBlock () * BLOCK_SIZE;
                 final int length = entry.getLength ();
@@ -67,12 +70,27 @@ public class AkaiS900DiskImage
                         final AkaiS900Sample sample = readSample (data, entry.getCompression ());
                         this.samples.put (sample.getName (), sample);
                         break;
+                    // Indicates a continuation disk
+                    case '\u0000':
+                        this.continuationEntry = entry;
+                        break;
                     default:
                         // Ignore others
                         break;
                 }
             }
         }
+    }
+
+
+    /**
+     * Check if there is a continuation disk necessary which contains referenced samples.
+     *
+     * @return The first entry which is stored on a continuation disk otherwise null
+     */
+    public AkaiS900DirectoryEntry doesRequireContinuationDisk ()
+    {
+        return this.continuationEntry;
     }
 
 
@@ -111,7 +129,7 @@ public class AkaiS900DiskImage
         for (int i = 0; i < 64; i++)
         {
             final AkaiS900DirectoryEntry entry = new AkaiS900DirectoryEntry (randomAccessFile);
-            if (entry.getStartBlock () > 0 && entry.getLength () > 0)
+            if (entry.getLength () > 0)
                 entries.add (entry);
         }
         return entries;

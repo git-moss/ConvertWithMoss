@@ -85,9 +85,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /**
      * TimbreMode: [2] - all active layers sound simultaneously over the whole keyboard range. The
      * parameter of the device is labelled "Layered"; the manual of the MK2 calls the page which
-     * holds it "Multi" and offers the round-robin variants next to it in MultiAllocMode. The
-     * device has no velocity range for a layer, therefore this is the only mode in which all the
-     * layers of a converted multi-sample can be heard.
+     * holds it "Multi" and offers the round-robin variants next to it in MultiAllocMode. The device
+     * has no velocity range for a layer, therefore this is the only mode in which all the layers of
+     * a converted multi-sample can be heard.
      */
     private static final float                                 TIMBRE_MODE_MULTI      = 2.0f;
 
@@ -323,7 +323,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      *
      * @param multisampleSource The multi-sample source
      * @param multiFile The file in which to store
-     * @param groups The pre-processed groups
+     * @param layers The layers
      * @param relativeSamplePath The relative sample path
      * @param deviceName The name to write into the name field, which the device displays
      * @throws IOException Could not store the file
@@ -379,8 +379,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         // The absolute file offsets of the layers 2, 3 and 4; a layer which is not stored keeps 0
         final int [] layerOffsets = new int [NUM_LAYER_OFFSETS];
-        for (int i = 0; i < numLayers - 1; i++)
-            layerOffsets[i] = layerSizes[i];
+        System.arraycopy (layerSizes, 0, layerOffsets, 0, numLayers - 1);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
@@ -457,16 +456,16 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Distribute the groups across the layers of the patch. Each layer plays up to 3 groups, one
-     * on each of its oscillators, so a patch reaches 3 groups with one layer and 6 with two.
-     * Groups which do not fit into the available layers are added to the last group, as they are
-     * when only one layer is written.
+     * Distribute the groups across the layers of the patch. Each layer plays up to 3 groups, one on
+     * each of its oscillators, so a patch reaches 3 groups with one layer and 6 with two. Groups
+     * which do not fit into the available layers are added to the last group, as they are when only
+     * one layer is written.
      * <p>
-     * The layers are combined in the Multi mode, in which all of them sound over the whole
-     * keyboard range: the device can split its layers by key or cycle them, but it has no velocity
-     * range for a layer, so a velocity split has to stay inside the sample maps - which is where
-     * the splitting of the source put it, since only zones which sound at the same time are
-     * separated into layers.
+     * The layers are combined in the Multi mode, in which all of them sound over the whole keyboard
+     * range: the device can split its layers by key or cycle them, but it has no velocity range for
+     * a layer, so a velocity split has to stay inside the sample maps - which is where the
+     * splitting of the source put it, since only zones which sound at the same time are separated
+     * into layers.
      *
      * @param groups The groups
      * @param maximumLayers The maximum number of layers to use, at most {@link #MAX_LAYERS}
@@ -766,7 +765,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // All layers sound simultaneously over the whole keyboard range
             parameters.add (new WaldorfQpatParameter ("TimbreMode", "Layered", TIMBRE_MODE_MULTI));
             parameters.add (new WaldorfQpatParameter ("MultiAllocMode", "Layered", 0));
-            parameters.add (new WaldorfQpatParameter ("LayerActive", "Active", 1));
+            parameters.add (new WaldorfQpatParameter ("LayerActive", TAG_ACTIVE, 1));
         }
 
         for (int i = 0; i < groups.size (); i++)

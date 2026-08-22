@@ -51,9 +51,6 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
     private static final double MIN_TIME_MS           = 1.0;
 
     // Guessed LFO mappings until there is a device available for measuring the values.
-    // Hertz = min + 20 * (100 ^ value - 1) / 99 with a constant zero-point of about 2 mHz; the
-    // onset (delay) time uses the same cubic curve family as the envelope times with a maximum of 8
-    // seconds.
     private static final double LFO_MIN_HERTZ         = 0.001953125;
     private static final double LFO_MAX_HERTZ         = 20.0;
     private static final double LFO_FREQUENCY_BASE    = 4.0;
