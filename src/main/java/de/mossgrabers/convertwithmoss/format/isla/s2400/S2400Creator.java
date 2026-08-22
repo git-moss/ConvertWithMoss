@@ -175,7 +175,6 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
         final boolean stereo = audioMetadata.getChannels () > 1;
 
         final int gainDb = (int) Math.round (zone.getGain ());
-        final int pitchFineCents = (int) Math.round (zone.getTuning () * 100.0);
         final int chokeGroup = Math.max (0, zone.getExclusiveGroup ());
         final int gate = zone.isOneShot () ? 0 : 1;
         final int mixdown = stereo ? S2400Constants.MIXDOWN_STEREO : S2400Constants.MIXDOWN_MONO_LR;
@@ -223,6 +222,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
     private static void writeMainSlot (final ByteArrayOutputStream out, final ISampleZone zone, final int frames, final double durationSeconds)
     {
         final int end = Math.max (0, frames - 1);
+        final int pitchFineCents = (int) Math.round (zone.getTuning () * 100.0);
 
         int filterMode = S2400Constants.FILTER_LOW_PASS;
         int resonance = 0;
@@ -245,7 +245,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
         writeU32Record (out, S2400Constants.FIELD_FILTER_MODE, filterMode);
         writeU32Record (out, S2400Constants.FIELD_FILTER_RESONANCE, resonance);
         writeU32Record (out, S2400Constants.FIELD_FILTER_CUTOFF, cutoffHertz);
-        writeI32Record (out, S2400Constants.FIELD_PITCH_FINE, (int) Math.round (zone.getTuning () * 100.0));
+        writeI32Record (out, S2400Constants.FIELD_PITCH_FINE, pitchFineCents);
         writeU32Record (out, S2400Constants.FIELD_SLICE_START, 0);
         writeU32Record (out, S2400Constants.FIELD_SLICE_END, end);
         writeU32Record (out, S2400Constants.FIELD_RESERVED_34, 0);
