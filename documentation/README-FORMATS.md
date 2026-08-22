@@ -955,8 +955,9 @@ Writing creates such a folder, which only needs to be copied to the device. Note
 
 ## Waldorf Quantum MkI, MkII / Iridium / Iridium Core
 
-This family of Waldorf synthesizers supports the playback of multi-samples. One preset can contain 2 layers. A layer is a complete preset in itself and simply concatenates 2 single presets. Each preset can have up to 3 oscillators of which each oscillator can contain its own multi-sample.
-If this format is used as the source it produces 1 or 2 output presets, one for each layer. If used as the destination format, each group of the source multi-sample is applied to one of the 3 oscillators. If the source contains more than 3 groups, all zones of the additional groups are added to the multi-sample of the 3rd oscillator.
+This family of Waldorf synthesizers supports the playback of multi-samples. One preset can contain several layers - 2 on the first generation of the instruments and 4 on the MK2 generation (Iridium MK2, Quantum MK2 and instruments upgraded to MK2 hardware). A layer is a complete preset in itself and the layers are simply concatenated. Each layer can have up to 3 oscillators of which each oscillator can contain its own multi-sample. The format is not documented by Waldorf; the file layout, the sample map and the value laws which are read and written are described in *documentation/design/WALDORF_QPAT_FORMAT.md*.
+
+If this format is used as the source it produces one output preset per layer which plays samples; a layer which is switched off, or which plays a wave-table instead of samples, is reported and skipped. If used as the destination format, each group of the source multi-sample is applied to one of the 3 oscillators of a layer, and all groups which do not fit are added to the multi-sample of the last oscillator.
 
 The volume, panning and tuning of an oscillator are offsets on top of the values of its sample map entries, therefore the two are combined when reading instead of the oscillator replacing the sample map. When writing, the volume and panning of a group are stored on its oscillator and only the remainder in its sample map, so they survive a Quantum/Iridium round-trip - previously the oscillator was always written as 0 dB and Center.
 
