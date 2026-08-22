@@ -19,16 +19,9 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class AkaiS900Program
 {
-    /** The name of the program. */
     private final String                 name;
-
-    /**
-     * Key-group (positional) cross-fade enable: Samples may be assigned so that the high range of
-     * one sample overlaps the low range of another sample. With positional cross-fade on, the lower
-     * sample will fade out as the higher sample fades in over the range of the overlap.
-     */
+    private final int                    keyboardTilt;
     private final int                    keygroupCrossfadeEnable;
-
     private final List<AkaiS900Keygroup> keygroups = new ArrayList<> ();
 
 
@@ -42,24 +35,28 @@ public class AkaiS900Program
     {
         this.name = StreamUtils.readAscii (input, 10).trim ();
 
-        // Padding
-        input.skipNBytes (6);
-
-        // Always 00 00
+        // Undefined
+        input.skipNBytes (4);
+        // Undefined
         input.skipNBytes (2);
+
+        this.keyboardTilt = StreamUtils.readSigned8 (input);
+
+        // Undefined
+        input.skipNBytes (1);
 
         // Address of first key-group
         StreamUtils.readUnsigned16 (input, false);
 
-        // 00
+        // Undefined
         input.skipNBytes (1);
 
-        this.keygroupCrossfadeEnable = input.read ();
+        this.keygroupCrossfadeEnable = StreamUtils.readUnsigned8 (input);
 
-        // FF
+        // Reserved, set to 0xFF
         input.skipNBytes (1);
 
-        final int numberOfKeygroups = input.read ();
+        final int numberOfKeygroups = StreamUtils.readUnsigned8 (input);
 
         // Nothing meaningful in there (1 increasing number and FF)
         input.skipNBytes (14);
@@ -70,7 +67,7 @@ public class AkaiS900Program
 
 
     /**
-     * Get the name of the entry.
+     * Get the name of the program.
      *
      * @return The name
      */
@@ -81,7 +78,24 @@ public class AkaiS900Program
 
 
     /**
-     * Check if key-groups should be cross-faded in the overlapping key-range.
+     * Get the keyboard tilt (loudness). Key versus loudness. A value of +00 will have no effect on
+     * the level of the sample across the keyboard range whilst a value of -50 will reduce the level
+     * in the upper octaves and increase the level in the lower octaves. Conversely, a value of +50
+     * will increase the level of the upper octaves and decrease the level in the lower octaves.
+     *
+     * @return The keyboard tilt in the range of [-50..50]
+     */
+    public int getKeyboardTilt ()
+    {
+        return this.keyboardTilt;
+    }
+
+
+    /**
+     * Check if key-groups should be cross-faded in the overlapping key-range. Key-group
+     * (positional) cross-fade enable: Samples may be assigned so that the high range of one sample
+     * overlaps the low range of another sample. With positional cross-fade on, the lower sample
+     * will fade out as the higher sample fades in over the range of the overlap.
      *
      * @return True if cross-fade should be applied
      */

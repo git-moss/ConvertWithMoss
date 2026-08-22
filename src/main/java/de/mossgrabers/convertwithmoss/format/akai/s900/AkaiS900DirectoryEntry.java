@@ -67,7 +67,8 @@ public class AkaiS900DirectoryEntry
     /**
      * Get the directory entry type.
      *
-     * @return The type, 'P' = Program, 'S' = Sample
+     * @return The type, 'P' = Program, 'S' = Sample, 'D' = Drum Configuration, 'O' = Overall
+     *         settings
      */
     public char getType ()
     {
@@ -105,5 +106,19 @@ public class AkaiS900DirectoryEntry
     public int getCompression ()
     {
         return this.compression;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String toString ()
+    {
+        final StringBuilder sb = new StringBuilder ();
+        sb.append ("Name: " + this.name);
+        sb.append (", Type: " + this.type);
+        sb.append (", Start Block: " + this.startBlock);
+        sb.append (", Length: " + this.length);
+        sb.append (", Compression: " + this.compression);
+        return sb.toString ();
     }
 }
