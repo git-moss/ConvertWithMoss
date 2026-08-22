@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
-import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -19,9 +18,10 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class WaldorfQpatResourceHeader
 {
-    WaldorfQpatResourceType type   = WaldorfQpatResourceType.UNUSED;
-    int                     offset = 0;
-    int                     length = 0;
+    WaldorfQpatResourceType type    = WaldorfQpatResourceType.UNUSED;
+    int                     rawType = 0;
+    int                     offset  = 0;
+    int                     length  = 0;
 
 
     /**
@@ -32,13 +32,25 @@ public class WaldorfQpatResourceHeader
      */
     public void read (final InputStream in) throws IOException
     {
-        final int resourceType = (int) StreamUtils.readUnsigned32 (in, false);
+        this.rawType = (int) StreamUtils.readUnsigned32 (in, false);
+        // Newer firmware versions add resource types - the MK2 stores a parameter sequence in one
+        // of them. An unknown type is not an error since only the sample maps are read, therefore
+        // it is kept as unused and the caller skips it.
         final WaldorfQpatResourceType [] values = WaldorfQpatResourceType.values ();
-        if (resourceType < 0 || resourceType >= values.length)
-            throw new IOException (Functions.getMessage ("IDS_QPAT_UNKNOWN_RESOURCE_TYPE"));
-        this.type = WaldorfQpatResourceType.values ()[resourceType];
+        this.type = this.rawType < 0 || this.rawType >= values.length ? WaldorfQpatResourceType.UNUSED : values[this.rawType];
         this.offset = (int) StreamUtils.readUnsigned32 (in, false);
         this.length = (int) StreamUtils.readUnsigned32 (in, false);
+    }
+
+
+    /**
+     * Test whether the resource has a type which this application does not know.
+     *
+     * @return True if the type is unknown
+     */
+    public boolean isUnknownType ()
+    {
+        return this.rawType != 0 && this.type == WaldorfQpatResourceType.UNUSED;
     }
 
 
