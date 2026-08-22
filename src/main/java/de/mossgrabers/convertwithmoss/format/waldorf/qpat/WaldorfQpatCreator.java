@@ -65,6 +65,32 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     private static final int                                   PRESET_VERSION         = 14;
 
+    /** The size of the header of a patch, which every layer of a patch has as well. */
+    private static final int                                   HEADER_SIZE            = 512;
+    /** The size of one parameter record: the value plus the name and the hint. */
+    private static final int                                   PARAMETER_SIZE         = 4 + 2 * WaldorfQpatConstants.MAX_STRING_LENGTH;
+    /** The number of oscillators of one layer, each of which can play one sample map. */
+    private static final int                                   MAX_OSCILLATORS        = 3;
+    /**
+     * The maximum number of layers which is written. The MK2 generation of the instruments stores
+     * four layers, but that layer count has only ever been observed in files of the format version
+     * 15, while two layers are stored the same way from the version 8 on - so a patch with two
+     * layers plays on every instrument of the family.
+     */
+    private static final int                                   MAX_LAYERS             = 2;
+    /** Layer count: two layers, the file offset of the 2nd one is stored at 432. */
+    private static final int                                   LAYER_COUNT_TWO        = 1;
+    /** The header holds the file offsets of the layers 2, 3 and 4. */
+    private static final int                                   NUM_LAYER_OFFSETS      = 3;
+    /**
+     * TimbreMode: [2] - all active layers sound simultaneously over the whole keyboard range. The
+     * parameter of the device is labelled "Layered"; the manual of the MK2 calls the page which
+     * holds it "Multi" and offers the round-robin variants next to it in MultiAllocMode. The
+     * device has no velocity range for a layer, therefore this is the only mode in which all the
+     * layers of a converted multi-sample can be heard.
+     */
+    private static final float                                 TIMBRE_MODE_MULTI      = 2.0f;
+
     /** What the import screen of an Iridium MK2 can show of a file name, minus a small margin. */
     private static final int                                   FILE_NAME_BUDGET       = 40;
     /** The length of the '.qpat' file ending. */
@@ -207,10 +233,15 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         final String relativeSamplePath = "samples/" + sampleName;
 
-        final List<IGroup> groups = reduceGroups (splitLayers (this.combineSplitStereo (multisampleSource)));
+        final List<List<IGroup>> layers = distributeToLayers (splitLayers (this.combineSplitStereo (multisampleSource)), this.settingsConfiguration.getMaximumLayers ());
+        final List<IGroup> groups = new ArrayList<> ();
+        for (final List<IGroup> layerGroups: layers)
+            groups.addAll (layerGroups);
         multisampleSource.setGroups (groups);
+        if (layers.size () > 1)
+            this.notifier.log ("IDS_QPAT_NOTIFY_LAYERS", Integer.toString (layers.size ()), Integer.toString (groups.size ()));
 
-        this.storeMultisample (multisampleSource, multiFile, groups, relativeSamplePath, deviceName);
+        this.storeMultisample (multisampleSource, multiFile, layers, relativeSamplePath, deviceName);
 
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeSamplePath);
@@ -297,16 +328,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param deviceName The name to write into the name field, which the device displays
      * @throws IOException Could not store the file
      */
-    private void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<IGroup> groups, final String relativeSamplePath, final String deviceName) throws IOException
+    private void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<List<IGroup>> layers, final String relativeSamplePath, final String deviceName) throws IOException
     {
-        // A zero-attack/zero-decay amplitude envelope that sustains below full level makes the
-        // device pop at the start of each note: it snaps to the 100% attack peak and then instantly
-        // drops to the sustain level. Such an envelope is meant to be flat, so write a full sustain
-        // and fold the sustain level into the zone gain instead.
-        final double ampGainFold = computeFlatAmpEnvelopeLevel (groups);
-        final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0);
-        final List<String> sampleMaps = createSampleMaps (groups, relativeSamplePath, ampGainFold);
-
         final IMetadata metadata = multisampleSource.getMetadata ();
         final String author = this.settingsConfiguration.getAuthor ();
         if (author != null && !author.isBlank ())
@@ -325,52 +348,139 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         if (replacesSourceBank)
             metadata.setDescription (bank);
 
+        final int numLayers = layers.size ();
+        final int layerCount = numLayers == 1 ? 0 : LAYER_COUNT_TWO;
+
+        // The content of every layer has to be known before the first one can be written, since
+        // the header holds the file offset of the following layer
+        final List<List<WaldorfQpatParameter>> layerParameters = new ArrayList<> ();
+        final List<List<byte []>> layerSampleMaps = new ArrayList<> ();
+        final int [] layerSizes = new int [numLayers];
+        for (int i = 0; i < numLayers; i++)
+        {
+            final List<IGroup> groups = layers.get (i);
+            // A zero-attack/zero-decay amplitude envelope that sustains below full level makes the
+            // device pop at the start of each note: it snaps to the 100% attack peak and then
+            // instantly drops to the sustain level. Such an envelope is meant to be flat, so write
+            // a full sustain and fold the sustain level into the zone gain instead.
+            final double ampGainFold = computeFlatAmpEnvelopeLevel (groups);
+            final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0, numLayers > 1);
+            final List<byte []> sampleMaps = new ArrayList<> ();
+            for (final String sampleMap: createSampleMaps (groups, relativeSamplePath, ampGainFold))
+                sampleMaps.add (sampleMap.getBytes ());
+            layerParameters.add (parameters);
+            layerSampleMaps.add (sampleMaps);
+
+            int size = HEADER_SIZE + parameters.size () * PARAMETER_SIZE;
+            for (final byte [] sampleMap: sampleMaps)
+                size += sampleMap.length;
+            layerSizes[i] = size;
+        }
+
+        // The absolute file offsets of the layers 2, 3 and 4; a layer which is not stored keeps 0
+        final int [] layerOffsets = new int [NUM_LAYER_OFFSETS];
+        for (int i = 0; i < numLayers - 1; i++)
+            layerOffsets[i] = layerSizes[i];
+
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            writeHeader (out, metadata, deviceName);
-
-            StreamUtils.writeUnsigned16 (out, parameters.size (), false);
-            StreamUtils.padBytes (out, 2);
-
-            // Write up to 3 sample maps (groups have already been reduced to a max. of 3). Each
-            // map's offset is relative to the start of the concatenated resource data written
-            // further down, so it must accumulate the lengths of the preceding maps. Without this,
-            // maps 2 and 3 keep the default offset 0 and are read overlapping map 1, so the device
-            // cannot locate their samples and shows the "Find Sample Map" screen for
-            // multi-oscillator patches.
-            int resourceOffset = 0;
-            for (int i = 0; i < sampleMaps.size (); i++)
-            {
-                final byte [] sampleMapBytes = sampleMaps.get (i).getBytes ();
-                final WaldorfQpatResourceHeader resourceHeader = new WaldorfQpatResourceHeader ();
-                resourceHeader.type = TYPE_LOOKUP.get (Integer.valueOf (i));
-                resourceHeader.offset = resourceOffset;
-                resourceHeader.length = sampleMapBytes.length;
-                resourceHeader.write (out);
-                resourceOffset += sampleMapBytes.length;
-            }
-            // .... and pad with empty resources
-            for (int i = 0; i < WaldorfQpatConstants.MAX_RESOURCES - sampleMaps.size (); i++)
-                EMPTY_RESOURCE_HEADER.write (out);
-
-            // No 2nd layer
-            StreamUtils.writeUnsigned16 (out, 0, false);
-            StreamUtils.writeUnsigned16 (out, 0, false);
-            StreamUtils.writeUnsigned32 (out, 0, false);
-            // Instrument type on which the patch was saved last. Set to Quantum.
-            out.write (0);
-
-            // Padding up to 512 bytes.
-            StreamUtils.padBytes (out, 75);
-
-            // Write all parameters
-            for (final WaldorfQpatParameter param: parameters)
-                param.write (out);
-
-            // Write resource(s)
-            for (final String sampleMap: sampleMaps)
-                out.write (sampleMap.getBytes ());
+            for (int i = 0; i < numLayers; i++)
+                writeLayer (out, metadata, deviceName, layerParameters.get (i), layerSampleMaps.get (i), layerCount, numLayers == 1 ? 0 : (int) TIMBRE_MODE_MULTI, layerOffsets);
         }
+    }
+
+
+    /**
+     * Write one layer of the patch: its header, its parameters and its sample maps. A layer is a
+     * complete patch of its own; the layers of a patch are simply stored one after the other.
+     *
+     * @param out The output stream to write to
+     * @param metadata The metadata of the multi-sample
+     * @param deviceName The name to write into the name field, which the device displays
+     * @param parameters The parameters of the layer
+     * @param sampleMaps The sample maps of the layer
+     * @param layerCount The number of layers of the patch, coded as the device does
+     * @param timbreMode The mode in which the layers are combined
+     * @param layerOffsets The absolute file offsets of the layers 2, 3 and 4
+     * @throws IOException Could not write the layer
+     */
+    private static void writeLayer (final OutputStream out, final IMetadata metadata, final String deviceName, final List<WaldorfQpatParameter> parameters, final List<byte []> sampleMaps, final int layerCount, final int timbreMode, final int [] layerOffsets) throws IOException
+    {
+        writeHeader (out, metadata, deviceName);
+
+        StreamUtils.writeUnsigned16 (out, parameters.size (), false);
+        StreamUtils.padBytes (out, 2);
+
+        // Write up to 3 sample maps (the groups of a layer have already been reduced to a max. of
+        // 3). Each map's offset is relative to the start of the concatenated resource data written
+        // further down, so it must accumulate the lengths of the preceding maps. Without this,
+        // maps 2 and 3 keep the default offset 0 and are read overlapping map 1, so the device
+        // cannot locate their samples and shows the "Find Sample Map" screen for multi-oscillator
+        // patches.
+        int resourceOffset = 0;
+        for (int i = 0; i < sampleMaps.size (); i++)
+        {
+            final byte [] sampleMapBytes = sampleMaps.get (i);
+            final WaldorfQpatResourceHeader resourceHeader = new WaldorfQpatResourceHeader ();
+            resourceHeader.type = TYPE_LOOKUP.get (Integer.valueOf (i));
+            resourceHeader.offset = resourceOffset;
+            resourceHeader.length = sampleMapBytes.length;
+            resourceHeader.write (out);
+            resourceOffset += sampleMapBytes.length;
+        }
+        // .... and pad with empty resources
+        for (int i = 0; i < WaldorfQpatConstants.MAX_RESOURCES - sampleMaps.size (); i++)
+            EMPTY_RESOURCE_HEADER.write (out);
+
+        // The number of layers and the mode in which they are combined
+        StreamUtils.writeUnsigned16 (out, layerCount, false);
+        StreamUtils.writeUnsigned16 (out, timbreMode, false);
+        // The file offset of the 2nd layer
+        StreamUtils.writeUnsigned32 (out, layerOffsets[0], false);
+        // Instrument type on which the patch was saved last. Set to Quantum.
+        out.write (0);
+        StreamUtils.padBytes (out, 3);
+        // The file offsets of the layers 3 and 4
+        StreamUtils.writeUnsigned32 (out, layerOffsets[1], false);
+        StreamUtils.writeUnsigned32 (out, layerOffsets[2], false);
+        // Padding up to 512 bytes.
+        StreamUtils.padBytes (out, 64);
+
+        // Write all parameters
+        for (final WaldorfQpatParameter param: parameters)
+            param.write (out);
+
+        // Write resource(s)
+        for (final byte [] sampleMap: sampleMaps)
+            out.write (sampleMap);
+    }
+
+
+    /**
+     * Distribute the groups across the layers of the patch. Each layer plays up to 3 groups, one
+     * on each of its oscillators, so a patch reaches 3 groups with one layer and 6 with two.
+     * Groups which do not fit into the available layers are added to the last group, as they are
+     * when only one layer is written.
+     * <p>
+     * The layers are combined in the Multi mode, in which all of them sound over the whole
+     * keyboard range: the device can split its layers by key or cycle them, but it has no velocity
+     * range for a layer, so a velocity split has to stay inside the sample maps - which is where
+     * the splitting of the source put it, since only zones which sound at the same time are
+     * separated into layers.
+     *
+     * @param groups The groups
+     * @param maximumLayers The maximum number of layers to use, at most {@link #MAX_LAYERS}
+     * @return The groups of each layer
+     */
+    private static List<List<IGroup>> distributeToLayers (final List<IGroup> groups, final int maximumLayers)
+    {
+        final List<IGroup> reducedGroups = reduceGroups (groups, Math.clamp (maximumLayers, 1, MAX_LAYERS) * MAX_OSCILLATORS);
+        final List<List<IGroup>> layers = new ArrayList<> ();
+        for (int i = 0; i < reducedGroups.size (); i += MAX_OSCILLATORS)
+            layers.add (new ArrayList<> (reducedGroups.subList (i, Math.min (i + MAX_OSCILLATORS, reducedGroups.size ()))));
+        if (layers.isEmpty ())
+            layers.add (new ArrayList<> ());
+        return layers;
     }
 
 
@@ -517,29 +627,30 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Reduces the groups of the multi-sample to a maximum of 3. The sample zones of all other
-     * groups are added to the 3rd group.
+     * Reduces the groups of the multi-sample to the given maximum. The sample zones of all other
+     * groups are added to the last group which fits.
      *
      * @param groups The groups
+     * @param maximumGroups The maximum number of groups to keep
      * @return The reduced groups
      */
-    private static List<IGroup> reduceGroups (final List<IGroup> groups)
+    private static List<IGroup> reduceGroups (final List<IGroup> groups, final int maximumGroups)
     {
-        if (groups.size () > 3)
+        if (groups.size () > maximumGroups)
         {
-            // Add all sample zones of groups 4..last to group 3
-            final IGroup lastGroup = groups.get (2);
+            // Add all sample zones of the groups which do not fit to the last one which does
+            final IGroup lastGroup = groups.get (maximumGroups - 1);
             // The added zones already carry the (flattened) offsets of their own group, which
             // differ from the ones of the target group. Clear the offsets of the target group so
             // that gain and panning are stored completely per zone in the sample map.
             lastGroup.setGain (0);
             lastGroup.setPanning (0);
             lastGroup.setTuning (0);
-            for (int i = 3; i < groups.size (); i++)
+            for (int i = maximumGroups; i < groups.size (); i++)
                 for (final ISampleZone zone: groups.get (i).getSampleZones ())
                     lastGroup.addSampleZone (zone);
-            // Remove groups 4..last
-            final int count = groups.size () - 3;
+            // Remove the groups which were merged
+            final int count = groups.size () - maximumGroups;
             for (int i = 0; i < count; i++)
                 groups.removeLast ();
         }
@@ -646,9 +757,17 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     }
 
 
-    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope)
+    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope, final boolean isMultiLayer)
     {
         final List<WaldorfQpatParameter> parameters = new ArrayList<> ();
+
+        if (isMultiLayer)
+        {
+            // All layers sound simultaneously over the whole keyboard range
+            parameters.add (new WaldorfQpatParameter ("TimbreMode", "Layered", TIMBRE_MODE_MULTI));
+            parameters.add (new WaldorfQpatParameter ("MultiAllocMode", "Layered", 0));
+            parameters.add (new WaldorfQpatParameter ("LayerActive", "Active", 1));
+        }
 
         for (int i = 0; i < groups.size (); i++)
         {
