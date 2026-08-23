@@ -189,40 +189,76 @@ named like the second-to-last component of the stored path.
 ## Monolithic files
 
 A program saved with the *Monolithic file* option keeps exactly the same preamble and block
-structure; the samples are added as one extra block per sample container:
+structure; the samples are added as one extra block per sample container, which is the last
+block of the container - after the sixteen 0x0204 blocks and before the 0x0004 terminator. The
+block writer of the plug-in has two variants of it, selected by a mode value right before the
+block is written:
 
-| tag | position | content |
-|----:|----------|---------|
-| 0x0206 | the last block of a sample container, after the sixteen 0x0204 blocks and before the 0x0004 terminator | `u32 length, u32 0, FLAC stream` |
+| tag | content |
+|----:|---------|
+| 0x0205 | **uncompressed PCM**, one channel after the other (planar, not interleaved): for each channel `frameCount + 512` samples of the resolution of the audio format block - little-endian integers for 16 and 24 bit, floats for 32 bit. The writer loops over the channels and writes `(frameCount + 512) * bytesPerSample` bytes per channel. |
+| 0x0206 | `u32 length, u32 0, FLAC stream` - the same audio **FLAC compressed**; the plug-in encodes it through a temporary file (`DirectWaveTemporaryFLACFile_can_be_deleted.flac`). |
 
-The audio is therefore **FLAC compressed** - the block payload carries the length of the
-FLAC data, four unused bytes and then a complete FLAC stream starting with its `fLaC`
-magic. The sample path block (0x01F6) is still present and still holds the path of the
+The FLAC variant was confirmed on 85 monolithic programs of a commercial library (2040 sample
+containers, version 0x26): in every one of them the length field equals the payload size minus
+8, the field at offset 4 is 0, and the block sits between the last 0x0204 block and the
+terminator. Every one of the 2040 embedded samples is 16 bit, stereo and 44.1 kHz, but the
+resolution is not a constraint - a written program with 24 bit audio loads and plays.
+
+The PCM variant is what older versions of the plug-in wrote (issue #381): a version 0x25
+program saved by the DirectWave of 2018 carries its four stereo 16 bit samples as 0x0205 blocks
+of exactly `(frameCount + 512) * 2 * 2` bytes, the first half of each block being the left
+channel. The two halves are *not* interleaved frames: the right channel of the specimen is the
+left one attenuated by 1.3 dB (a slightly panned source, identical apart from the gain in every
+frequency band), and read as interleaved stereo the samples play an octave too high, since
+every other sample then belongs to the other channel. The detector reads both variants; the
+creator writes the FLAC one.
+
+The sample path block (0x01F6) is still present in both variants and still holds the path of the
 machine which saved the program, which is why the
 [dwsanitizer](https://github.com/kachine/dwsanitizer) project can mask paths in monolithic
 files; it is ignored when the embedded audio is present.
 
-This was confirmed on 85 monolithic programs (2040 sample containers): in every one of them
-the length field equals the payload size minus 8, the field at offset 4 is 0, and the block
-sits between the last 0x0204 block and the terminator. Both reading and writing use it. Every
-one of the 2040 embedded samples is 16 bit, stereo and 44.1 kHz, but the resolution is not a
-constraint - a written program with 24 bit audio loads and plays.
+### The audio is stored in blocks of 512 frames, with a guard of 256 frames at each end
 
-### The audio is stored in blocks of 512 frames
+The frame count of every one of the 2040 FLAC embedded samples is a **multiple of 512**, and the
+embedded audio of both variants always holds exactly 512 frames *more* than the frame count in
+the audio format block: **256 frames of silence before the sample and 256 after it**. The FLAC
+specimens of the commercial library decode to `[256 zero frames][frameCount frames of
+audio][256 zero frames]`, and each channel plane of the PCM specimen has the same layout. Samples
+in the non-monolithic programs have arbitrary lengths, so the rule belongs to the embedded-audio
+path.
 
-The frame count of every one of the 2040 embedded samples is a **multiple of 512**, and the
-FLAC stream always holds exactly 512 frames *more* than the frame count in the audio format
-block. Samples in the non-monolithic programs have arbitrary lengths, so the rule belongs to
-the embedded-audio path. A program whose samples do not fill their last block crashes the
-plug-in while loading (see the crash section below), therefore written audio is padded with
-silence up to a full block and the encoded stream gets one block more, which reproduces what
-DirectWave itself writes.
+**The loop points do not count the guard**: a loop position addresses the sample, which starts
+behind the leading 256 frames. Three independent observations pin this down:
 
-The tag was found before a specimen was available by dumping the block writer of the
+* The loops of the PCM specimen are cross-faded (the last ca. 20000 frames before the loop end
+  equal the frames before the loop start, converging to a bit-exact match at the end). That
+  match holds up to the decoded frame `loopEnd + 256` and collapses within the next 16 frames
+  (relative error 0.0 → 0.76 → 1.0 in all four zones), so the stored loop end is 256 frames
+  before the end of the cross-fade in the padded buffer - i.e. the stored positions are relative
+  to the sample.
+* The loop end of a zone never exceeds the frame count - in 0 of the 1776 looped zones of the
+  FLAC corpus (the loop ends sit 4 to 2952 frames before it, 1143 of them within 50) - where
+  positions which count the guard could legitimately reach `frameCount + 255`.
+* 11 of the 12 zones of the 'Strings Section' factory program (external samples) loop to
+  exactly the frame count of their sample, 132300 = 3.000 s.
+
+The detector therefore cuts the guard off and hands over `frameCount` frames starting at frame
+256 with the loop points as stored, for both variants. The creator writes the same layout - 256
+silent frames, the audio padded with silence to a multiple of 512 frames, 256 silent frames -
+which reproduces what DirectWave itself writes; before this was understood it padded only at the
+end, which made the plug-in skip the first 256 frames (5.8 ms) of every written sample and land
+the loops 256 frames late.
+
+A program whose samples do not fill their last block crashes the plug-in while loading (see the
+crash section below), which is why the audio is padded to a full block.
+
+The tags were found before a specimen was available by dumping the block writer of the
 plug-in binary (see below): the payload length is a constant 8 bytes before the tag for
 every block of fixed size, so the blocks *without* such a constant are the variable-length
-ones - the sample name, the sample path and the two otherwise unused tags 0x0205 and
-0x0206.
+ones - the sample name, the sample path and the two tags 0x0205 and 0x0206. The writer of the
+current plug-in (FL Studio 2026) still carries both branches.
 
 ## Amplitude envelope (0x01FD)
 
@@ -502,8 +538,6 @@ Studio, not the 47 DirectWave parameters.
 
 * The LFO block layout and the source/target enums of the modulation matrix.
 * Trigger groups (round-robin/random cycles) and their location in the opaque bytes.
-* The purpose of the tag 0x0205, which the block writer of the plug-in knows but which
-  appears in none of the available specimens.
 * The structure of .dwb banks — no specimens. The file-name fall-back of the detector
   (see below) covers non-monolithic .dwb exports.
 
