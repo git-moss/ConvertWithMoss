@@ -1,6 +1,6 @@
 # Changes
 
-## 20.2.0 (work-in-progress)
+## 20.2.0
 
 * New: Added support for the ISLA Instruments S2400 kit format (KIT). Each pad of a kit becomes one zone mapped to a MIDI note (A1 is note 36, as in the default sample track MIDI map), carrying its sample, gain, fine tuning, choke group, filter (low/band/high-pass with its cutoff in Hertz and resonance) and HiFi volume envelope; loops are read from and written to the WAV 'smpl' chunk, where the device stores them. Writing creates the kit folder with the kit file named after it and one WAV per pad in the device native 48 kHz / 16-bit format. The format was reverse-engineered from the official S2400 Kit Builder web application since the device firmware is encrypted - not yet verified on real hardware.
 * New: Added support for the E-mu Emulator II (IMG, EMUIIFD, HFE). One disk becomes one multi-sample: the key map of the bank gives the zones with their key ranges and root keys and each voice its name, its loop and its audio, which is expanded from the companded bytes the sampler feeds to its AM6072 DAC. A bank which is larger than one floppy is reported as continuing on another disk. Read only.
