@@ -2,7 +2,9 @@
 
 ## 20.3.0 (work-in-progress)
 
-* ...
+* E-mu Emulator III
+  * Fixed: Forward/backward ('fwd/bkwd') loops of Emulator III banks were lost. The loop type of a sample is a 2 bit field - 0: off, 1: forward, 2: forward/backward - and only the forward bit was tested, so a forward/backward sample was converted as not looped at all. Such loops are now read as alternating loops, which destinations that support them play as intended (e.g. TAL Sampler as a ping-pong loop). The field layout was verified against the sampler's OS 2.42 firmware; only the original Emulator III knows this loop type, the Emulator IIIX and ESI have dropped it.
+  * New: The 'Reverse Playback' flag of a sample is now read and applied to its zones.
 
 ## 20.2.0
 

@@ -96,7 +96,9 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         int                                             sampleRate;
         boolean                                         isStereo;
         boolean                                         hasLoop;
+        boolean                                         alternatingLoop;
         boolean                                         loopInRelease;
+        boolean                                         reversePlayback;
         int                                             loopStart;
         int                                             loopEnd;
 
@@ -571,8 +573,13 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         sample.sampleRate = sampleRate;
         sample.isStereo = isStereo;
 
-        if ((options & Emulator3Constants.OPTION_LOOP) > 0)
+        // The loop type is a 2 bit field: 0 = no loop, 1 = forward, 2 = forward/backward. Only
+        // testing the forward bit would treat the forward/backward samples of Emulator III banks
+        // as not looped at all
+        final int loopType = options & Emulator3Constants.OPTION_LOOP_TYPE_MASK;
+        if (loopType != 0)
         {
+            sample.alternatingLoop = loopType >= Emulator3Constants.OPTION_LOOP_ALTERNATING;
             sample.loopStart = (int) ((Emulator3Constants.getU32 (data, offset + loopStartField) - start) / 2);
             // The stored position is the frame before the last one of the loop while the model
             // counts the end as inclusive. Measuring the step at the loop seam of 2798 looped
@@ -585,6 +592,8 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
             // Without this flag the loop stops as soon as the key is released
             sample.loopInRelease = (options & Emulator3Constants.OPTION_LOOP_IN_RELEASE) > 0;
         }
+        // The whole sample plays backwards, e.g. 'Backwards Bell' of the library CD-ROMs
+        sample.reversePlayback = (options & Emulator3Constants.OPTION_REVERSE_PLAYBACK) > 0;
         return sample;
     }
 
@@ -835,12 +844,15 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         if (sample.hasLoop && (flags & Emulator3Constants.ZONE_FLAG_DISABLE_LOOP) == 0)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
-            loop.setType (LoopType.FORWARDS);
+            loop.setType (sample.alternatingLoop ? LoopType.ALTERNATING : LoopType.FORWARDS);
             loop.setStart (sample.loopStart);
             loop.setEnd (sample.loopEnd);
             loop.setLoopUntilRelease (!sample.loopInRelease);
             zone.getLoops ().add (loop);
         }
+
+        if (sample.reversePlayback)
+            zone.setReversed (true);
 
         zone.getAmplitudeEnvelopeModulator ().setSource (parseEnvelope (data, offset + Emulator3Constants.ZONE_VCA_ENVELOPE));
         zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (data[offset + Emulator3Constants.ZONE_VELOCITY_TO_VCA_LEVEL] / 127.0, -1, 1));
