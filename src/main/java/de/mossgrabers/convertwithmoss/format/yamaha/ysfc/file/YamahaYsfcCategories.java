@@ -69,6 +69,7 @@ public class YamahaYsfcCategories
         WAVE_FORM_INDICES.put (TagDetector.CATEGORY_ENSEMBLE, Integer.valueOf (81));
         WAVE_FORM_INDICES.put (TagDetector.CATEGORY_FX, Integer.valueOf (208));
         WAVE_FORM_INDICES.put (TagDetector.CATEGORY_GUITAR, Integer.valueOf (48));
+        WAVE_FORM_INDICES.put (TagDetector.CATEGORY_HITS, Integer.valueOf (227));
         WAVE_FORM_INDICES.put (TagDetector.CATEGORY_HI_HAT, Integer.valueOf (194));
         WAVE_FORM_INDICES.put (TagDetector.CATEGORY_KEYBOARD, Integer.valueOf (16));
         WAVE_FORM_INDICES.put (TagDetector.CATEGORY_KICK, Integer.valueOf (192));

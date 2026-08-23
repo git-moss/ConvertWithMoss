@@ -42,6 +42,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -58,13 +59,52 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
-    private static final String TAG_ACTIVE      = "active";
-    private static final String PLUGIN_VERSION  = "1.0.0b19";
-    private static final int    MAX_LAYERS      = 4;
+    private static final String               TAG_ACTIVE      = "active";
+    private static final String               PLUGIN_VERSION  = "1.0.0b19";
+    private static final int                  MAX_LAYERS      = 4;
 
     // The default engine state and sequence blobs as written by the Soundbox plug-in
-    private static final String ENGINE_STATE    = "13..DPyLybOF....D.HA.";
-    private static final String ENGINE_SEQUENCE = "128.MyLS9....7iYlY1OMyLy8LyLy7ilYloOMyLy9zLyL8ilYlwO.........7SyLyjOMyLy8nYlY5yLyLyOMyLS+zLyL6iYlY1OZlYF+.....PyLybOMyLS9nYlY5SyLyrO....+nYlY7yLyLyOMyLS+XlYl8C.....MyLy8zLyL4C";
+    private static final String               ENGINE_STATE    = "13..DPyLybOF....D.HA.";
+    private static final String               ENGINE_SEQUENCE = "128.MyLS9....7iYlY1OMyLy8LyLy7ilYloOMyLy9zLyL8ilYlwO.........7SyLyjOMyLy8nYlY5yLyLyOMyLS+zLyL6iYlY1OZlYF+.....PyLybOMyLS9nYlY5SyLyrO....+nYlY7yLyLyOMyLS+XlYl8C.....MyLy8zLyL4C";
+
+    private static final Map<String, Integer> CATEGORIES_MAP  = new HashMap<> ();
+    static
+    {
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_UNKNOWN, Integer.valueOf (140)); // Others
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_ACOUSTIC_DRUM, Integer.valueOf (130)); // Drums&Perc
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_BASS, Integer.valueOf (128)); // Bass
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_BELL, Integer.valueOf (132)); // Mallets
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_BRASS, Integer.valueOf (129)); // Brass
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_CHIP, Integer.valueOf (135)); // FX
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_VOCAL, Integer.valueOf (138)); // Vocals
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_CHROMATIC_PERCUSSION, Integer.valueOf (132)); // Mallets
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_CLAP, Integer.valueOf (130)); // Drums & Perc
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_DESTRUCTION, Integer.valueOf (135)); // FX
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_DRONE, Integer.valueOf (137)); // Synths
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_DRUM, Integer.valueOf (130)); // Drums & Perc
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_ENSEMBLE, Integer.valueOf (136)); // Strings
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_FX, Integer.valueOf (135)); // FX
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_GUITAR, Integer.valueOf (131)); // Guitar & Plucked
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_HITS, Integer.valueOf (136)); // Strings
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_HI_HAT, Integer.valueOf (130)); // Drums & Perc
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_KEYBOARD, Integer.valueOf (134)); // Piano & Keys
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_KICK, Integer.valueOf (130)); // Drums & Perc
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_LEAD, Integer.valueOf (137)); // Synths
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_MONOSYNTH, Integer.valueOf (137)); // Synths
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_ORCHESTRAL, Integer.valueOf (136)); // Strings
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_ORGAN, Integer.valueOf (134)); // Piano & Keys
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_PAD, Integer.valueOf (133)); // Pads
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_PERCUSSION, Integer.valueOf (130)); // Drums & Perc
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_PIANO, Integer.valueOf (134)); // Piano & Keys
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_PIPE, Integer.valueOf (134)); // Piano & Keys
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_PLUCK, Integer.valueOf (131)); // Guitar & Plucked
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_SNARE, Integer.valueOf (130)); // Drums & Perc
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_STRINGS, Integer.valueOf (136)); // Strings
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_SYNTH, Integer.valueOf (137)); // Synths
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_WINDS, Integer.valueOf (139)); // Winds
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_LOOPS, Integer.valueOf (130)); // Drums & Perc
+        CATEGORIES_MAP.put (TagDetector.CATEGORY_WORLD, Integer.valueOf (67)); // World
+    }
 
 
     /**
@@ -163,7 +203,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 for (final LayerPlan layerPlan: layerPlans)
                     this.createGroup (packDocument, groupsElement, soundsElement, layerPlan, multisampleSource, samplePool);
 
-                final Optional<String> presetContent = this.createPresetDocument (layerPlans);
+                final Optional<String> presetContent = this.createPresetDocument (multisampleSource.getMetadata ().getCategory (), layerPlans);
                 if (presetContent.isEmpty ())
                     return;
                 presetContents.add (presetContent.get ());
@@ -580,11 +620,12 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     /**
      * Creates the XML document of one preset.
-     *
+     * 
+     * @param category The category of the preset
      * @param layerPlans The layers of the preset, 1..4 entries
      * @return The formatted XML document
      */
-    private Optional<String> createPresetDocument (final List<LayerPlan> layerPlans)
+    private Optional<String> createPresetDocument (final String category, final List<LayerPlan> layerPlans)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -598,7 +639,9 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         presetElement.setAttribute ("pv", PLUGIN_VERSION);
         for (int layerIndex = 0; layerIndex < MAX_LAYERS; layerIndex++)
             presetElement.setAttribute ("g" + layerIndex, layerIndex < layerPlans.size () ? layerPlans.get (layerIndex).groupName : "");
-        presetElement.setAttribute ("t0", "120");
+
+        final Integer categoryID = CATEGORIES_MAP.getOrDefault (category, Integer.valueOf (140)); // Others
+        presetElement.setAttribute ("t0", categoryID.toString ());
         presetElement.setAttribute ("t1", "0");
         presetElement.setAttribute ("t2", "0");
 

@@ -51,8 +51,8 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
     }, MV8000Sample.SAMPLE_RATE, true);
 
     /**
-     * The device keeps at least this number of frames of wave data behind the end point of a
-     * sample (no sample of the factory patches ends closer to the end of its data).
+     * The device keeps at least this number of frames of wave data behind the end point of a sample
+     * (no sample of the factory patches ends closer to the end of its data).
      */
     private static final int                    GUARD_FRAMES       = 2;
 
@@ -65,6 +65,7 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
         CATEGORY_MAP.put (TagDetector.CATEGORY_CHROMATIC_PERCUSSION, Integer.valueOf (5));
         CATEGORY_MAP.put (TagDetector.CATEGORY_ORGAN, Integer.valueOf (6));
         CATEGORY_MAP.put (TagDetector.CATEGORY_GUITAR, Integer.valueOf (10));
+        CATEGORY_MAP.put (TagDetector.CATEGORY_HITS, Integer.valueOf (27));
         CATEGORY_MAP.put (TagDetector.CATEGORY_BASS, Integer.valueOf (12));
         CATEGORY_MAP.put (TagDetector.CATEGORY_STRINGS, Integer.valueOf (14));
         CATEGORY_MAP.put (TagDetector.CATEGORY_ORCHESTRAL, Integer.valueOf (15));

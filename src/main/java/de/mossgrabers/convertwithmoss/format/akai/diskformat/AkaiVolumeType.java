@@ -15,10 +15,12 @@ import java.util.Map;
  */
 public enum AkaiVolumeType
 {
+    /** Undefined format ID. -6683 = 0xFFFFE5E5 */
+    UNDEFINED(-6683, "Undefined Format"),
     /** Unknown format ID. */
     UNKNOWN(-1, "Unknown Format"),
     /** Type ID for an empty/unused volume. Empty slot. */
-    NOT_USED(0, "Empty"),
+    NOT_EMPTY(0, "Empty"),
     /** Type ID for S1000 format. Baseline Akai 'classic' volume. */
     S1000(1, "Akai S1000"),
     /** Type ID for MPC2000 format. Transitional format between S1000 and S3000. */

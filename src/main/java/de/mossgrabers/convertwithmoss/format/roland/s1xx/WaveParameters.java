@@ -16,9 +16,6 @@ import de.mossgrabers.tools.ui.Functions;
 /**
  * One 73-byte S-10 wave parameter block.
  *
- * The first 56 bytes are documented by the S-10 specification. The remaining 17 bytes are retained
- * unchanged for round-tripping.
- *
  * @author Jürgen Moßgraber
  */
 public class WaveParameters

@@ -39,6 +39,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.FlacFileSampleData;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.XMLUtils;
 
@@ -52,7 +53,26 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
 {
-    private static final String ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String               ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+
+    private static final Map<Integer, String> CATEGORY_MAP          = new HashMap<> ();
+    static
+    {
+        CATEGORY_MAP.put (Integer.valueOf (128), TagDetector.CATEGORY_BASS); // Bass
+        CATEGORY_MAP.put (Integer.valueOf (129), TagDetector.CATEGORY_BRASS); // Brass
+        CATEGORY_MAP.put (Integer.valueOf (130), TagDetector.CATEGORY_DRUM); // Drums & Perc
+        CATEGORY_MAP.put (Integer.valueOf (131), TagDetector.CATEGORY_GUITAR); // Guitar & Plucked
+        CATEGORY_MAP.put (Integer.valueOf (132), TagDetector.CATEGORY_CHROMATIC_PERCUSSION); // Mallets
+        CATEGORY_MAP.put (Integer.valueOf (133), TagDetector.CATEGORY_PAD); // Pads
+        CATEGORY_MAP.put (Integer.valueOf (134), TagDetector.CATEGORY_PIANO); // Piano & Keys
+        CATEGORY_MAP.put (Integer.valueOf (135), TagDetector.CATEGORY_FX); // FX
+        CATEGORY_MAP.put (Integer.valueOf (136), TagDetector.CATEGORY_STRINGS); // Strings
+        CATEGORY_MAP.put (Integer.valueOf (137), TagDetector.CATEGORY_SYNTH); // Synths
+        CATEGORY_MAP.put (Integer.valueOf (138), TagDetector.CATEGORY_VOCAL); // Vocals
+        CATEGORY_MAP.put (Integer.valueOf (139), TagDetector.CATEGORY_WINDS); // Winds
+        CATEGORY_MAP.put (Integer.valueOf (140), TagDetector.CATEGORY_UNKNOWN); // Others
+        CATEGORY_MAP.put (Integer.valueOf (67), TagDetector.CATEGORY_WORLD); // World
+    }
 
 
     /**
@@ -195,6 +215,8 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
             return null;
         }
 
+        final String category = detectCategory (presetElement);
+
         final Element layersElement = XMLUtils.getChildElementByName (presetElement, SoundboxTag.LAYERS);
         if (layersElement == null)
             return null;
@@ -245,6 +267,10 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
 
         final IMultisampleSource multisampleSource = this.createMultisampleSource (packFile, presetName, groups, description);
         final IMetadata metadata = multisampleSource.getMetadata ();
+
+        if (category != null)
+            metadata.setCategory (category);
+
         if (!author.isBlank ())
             metadata.setCreator (author);
 
@@ -262,6 +288,22 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
         }
 
         return multisampleSource;
+    }
+
+
+    private static String detectCategory (final Element presetElement)
+    {
+        String category = null;
+        for (int i = 0; i < 3; i++)
+        {
+            final String categoryID = presetElement.getAttribute ("t" + i);
+            if (categoryID == null || categoryID.isBlank ())
+                continue;
+            category = CATEGORY_MAP.get (Integer.valueOf (categoryID));
+            if (category != null)
+                break;
+        }
+        return category;
     }
 
 
