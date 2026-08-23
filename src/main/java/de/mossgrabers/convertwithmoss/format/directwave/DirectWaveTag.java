@@ -78,10 +78,21 @@ public class DirectWaveTag
     /** The size of the header before the FLAC stream in the embedded audio block. */
     public static final int         EMBEDDED_AUDIO_OFFSET   = 8;
     /**
+     * The tag of the block which contains the embedded audio of a monolithic program as
+     * uncompressed PCM. The block writer of the plug-in has this variant next to the FLAC one of
+     * {@link #TAG_EMBEDDED_AUDIO} and older versions wrote only this one. The payload holds the
+     * channels one after the other (planar, not interleaved): for each channel the frame count plus
+     * {@link #EMBEDDED_AUDIO_BLOCK} samples of the resolution given in the audio format block,
+     * little-endian integers for 16 and 24 bit and floats for 32 bit.
+     */
+    public static final int         TAG_EMBEDDED_PCM        = 0x0205;
+    /**
      * DirectWave stores embedded audio in blocks of this many frames: the frame count of every
-     * sample of every factory program is a multiple of it and the encoded audio is one block longer
-     * than the frame count. A sample which does not fill its last block crashes the plug-in when
-     * the program is loaded, therefore written audio is padded with silence.
+     * sample of every factory program is a multiple of it and the embedded audio is one block longer
+     * than the frame count - half of the block is silent guard frames before the sample and half
+     * after it, and the loop points do not count the leading half. A sample which does not fill its
+     * last block crashes the plug-in when the program is loaded, therefore written audio is padded
+     * with silence.
      */
     public static final int         EMBEDDED_AUDIO_BLOCK    = 512;
     /** The offset of the waveform (a 32-bit integer) in an LFO block. */
@@ -241,6 +252,8 @@ public class DirectWaveTag
     public static final int         FORMAT_LOOP_START       = 24;
     /** The offset of the loop end (in frames) in the audio format block. */
     public static final int         FORMAT_LOOP_END         = 28;
+    /** The offset of the sample resolution in bits in the audio format block. */
+    public static final int         FORMAT_RESOLUTION       = 36;
     /** The loop mode value of a sample which is not looped. */
     public static final int         LOOP_MODE_DISABLED      = 0;
     /** The loop mode value which plays the sample to its end and ignores a note-off. */

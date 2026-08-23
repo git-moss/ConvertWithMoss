@@ -42,6 +42,9 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.directwave.DirectWaveFileNameParser.ParsedZone;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
@@ -214,11 +217,11 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         byte [] ampEnvelope = null;
         byte [] filter = null;
         byte [] embeddedAudio = null;
+        byte [] embeddedPcm = null;
         String sampleName = null;
         String samplePath = null;
         final List<byte []> lfoBlocks = new ArrayList<> ();
         final List<byte []> modulations = new ArrayList<> ();
-        final List<byte []> unknownChunks = new ArrayList<> ();
         for (final DirectWaveChunk chunk: chunks.get ())
             switch (chunk.getTag ())
             {
@@ -247,6 +250,10 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
                     embeddedAudio = chunk.getPayload ();
                     break;
 
+                case DirectWaveTag.TAG_EMBEDDED_PCM:
+                    embeddedPcm = chunk.getPayload ();
+                    break;
+
                 case DirectWaveTag.TAG_LFO:
                     lfoBlocks.add (chunk.getPayload ());
                     break;
@@ -260,8 +267,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
                     // conversion
                     break;
                 default:
-                    // In a monolithic file one of the unknown blocks is the embedded audio
-                    unknownChunks.add (chunk.getPayload ());
+                    // Unknown block
                     break;
             }
 
@@ -275,8 +281,9 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         }
         else
         {
-            // Monolithic file: the audio is embedded in the container
-            sampleData = embeddedAudio == null ? createEmbeddedSampleData (unknownChunks, audioFormat) : createEmbeddedSampleData (embeddedAudio);
+            // Monolithic file: the audio is embedded in the container, FLAC compressed or as
+            // uncompressed PCM
+            sampleData = embeddedAudio == null ? createEmbeddedPcmSampleData (embeddedPcm, audioFormat) : createEmbeddedSampleData (embeddedAudio, audioFormat);
             if (sampleData == null)
             {
                 this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleName == null ? file.getAbsolutePath () : sampleName);
@@ -525,15 +532,17 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Create the sample data from the embedded audio block of a monolithic program. The block
-     * starts with the length of the audio data as a 32-bit integer and 4 unused bytes, followed by
-     * the audio as a FLAC stream.
+     * Create the sample data from the FLAC compressed audio block of a monolithic program. The
+     * block starts with the length of the audio data as a 32-bit integer and 4 unused bytes,
+     * followed by the audio as a FLAC stream. The decoded audio carries the guard frames of
+     * DirectWave, which are cut off, see {@link #removeGuard}.
      *
      * @param embeddedAudio The payload of the embedded audio block
+     * @param audioFormat The payload of the audio format block, may be null
      * @return The sample data or null if the block does not contain a FLAC stream
      * @throws IOException Could not decode the audio
      */
-    private static ISampleData createEmbeddedSampleData (final byte [] embeddedAudio) throws IOException
+    private static ISampleData createEmbeddedSampleData (final byte [] embeddedAudio, final byte [] audioFormat) throws IOException
     {
         final int offset = DirectWaveTag.EMBEDDED_AUDIO_OFFSET;
         if (embeddedAudio.length <= offset + DirectWaveTag.FLAC_MAGIC.length)
@@ -547,45 +556,104 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
         final ByteArrayOutputStream wavStream = new ByteArrayOutputStream ();
         AudioFileUtils.decompressToWav (new ByteArrayInputStream (embeddedAudio, offset, length), wavStream);
-        return new WavFileSampleData (new ByteArrayInputStream (wavStream.toByteArray ()));
+        final WaveFile waveFile = new WavFileSampleData (new ByteArrayInputStream (wavStream.toByteArray ())).getWaveFile ();
+        final FormatChunk formatChunk = waveFile.getFormatChunk ();
+        final int frameSize = formatChunk.getNumberOfChannels () * (formatChunk.getSignificantBitsPerSample () / 8);
+        final byte [] data = waveFile.getDataChunk ().getData ();
+        final byte [] audio = removeGuard (data, frameSize, readFrameCount (audioFormat));
+        return new WavFileSampleData (audio == data ? waveFile : new WaveFile (formatChunk, new DataChunk (formatChunk, audio)));
     }
 
 
     /**
-     * Identify the embedded audio of a monolithic file among the unknown blocks of a sample
-     * container. The audio format block provides the frame count, the channel count and the sample
-     * rate, therefore the audio data is the block whose size is exactly frame count times channel
-     * count times 2, 3 or 4 bytes per sample - a check which cannot match by accident. (The
-     * bytes-per-frame field of the audio format block is not used since it does not hold
-     * bytes-per-frame in all DirectWave versions, see the design document.) 16 and 24 bit integer
-     * data is taken over as-is, 4 bytes per sample are the 32-bit float format of DirectWave and
-     * are converted to 24 bit.
+     * Create the sample data from the uncompressed audio block of a monolithic program. The block
+     * holds the channels one after the other (planar): each channel plane has the frame count plus
+     * the guard block of samples, see {@link DirectWaveTag#TAG_EMBEDDED_PCM}. The planes are
+     * interleaved into the usual frame order and the guard frames are cut off, see
+     * {@link #removeGuard}. 16 and 24 bit integer data is taken over as-is, 4 bytes per sample
+     * are the 32-bit float format of DirectWave and are converted to 24 bit.
      *
-     * @param unknownChunks The payloads of all unknown blocks of the sample container
-     * @param audioFormat The payload of the audio format block
-     * @return The sample data or null if no block matches
+     * @param payload The payload of the uncompressed audio block, may be null
+     * @param audioFormat The payload of the audio format block, may be null
+     * @return The sample data or null if the block does not match the audio format
      */
-    private static ISampleData createEmbeddedSampleData (final List<byte []> unknownChunks, final byte [] audioFormat)
+    private static ISampleData createEmbeddedPcmSampleData (final byte [] payload, final byte [] audioFormat)
     {
-        if (audioFormat == null || audioFormat.length < 20)
+        if (payload == null || audioFormat == null || audioFormat.length < DirectWaveTag.FORMAT_RESOLUTION + 4)
             return null;
 
-        final int frames = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_FRAME_COUNT);
+        final int frames = readFrameCount (audioFormat);
         final int channels = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_CHANNELS);
-        final float sampleRate = Float.intBitsToFloat (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_SAMPLE_RATE));
+        final float sampleRate = DirectWaveChunk.readFloatLE (audioFormat, DirectWaveTag.FORMAT_SAMPLE_RATE);
+        final int resolution = DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_RESOLUTION);
         if (frames <= 0 || channels < 1 || channels > 8 || sampleRate <= 0)
             return null;
+        final int bytesPerSample = switch (resolution)
+        {
+            case 16 -> 2;
+            case 24 -> 3;
+            case 32 -> 4;
+            default -> 0;
+        };
+        if (bytesPerSample == 0)
+            return null;
 
-        for (final byte [] payload: unknownChunks)
-            for (int bytesPerSample = 2; bytesPerSample <= 4; bytesPerSample++)
-            {
-                if (payload.length != (long) frames * channels * bytesPerSample)
-                    continue;
-                if (bytesPerSample == 4)
-                    return new InMemorySampleData (new DefaultAudioMetadata (channels, Math.round (sampleRate), 24, frames), convertFloat32ToInt24 (payload));
-                return new InMemorySampleData (new DefaultAudioMetadata (channels, Math.round (sampleRate), bytesPerSample * 8, frames), payload);
-            }
-        return null;
+        // Every channel plane holds the frames plus the guard block - accept any plane length
+        // which covers the frame count
+        final int planeBytes = payload.length / channels;
+        final int planeSamples = planeBytes / bytesPerSample;
+        if (planeBytes * channels != payload.length || planeSamples * bytesPerSample != planeBytes || planeSamples < frames)
+            return null;
+
+        final byte [] interleaved = new byte [payload.length];
+        for (int channel = 0; channel < channels; channel++)
+        {
+            final int planeOffset = channel * planeBytes;
+            for (int sample = 0; sample < planeSamples; sample++)
+                System.arraycopy (payload, planeOffset + sample * bytesPerSample, interleaved, (sample * channels + channel) * bytesPerSample, bytesPerSample);
+        }
+
+        final int frameSize = channels * bytesPerSample;
+        final byte [] audio = removeGuard (interleaved, frameSize, frames);
+        final int numberOfFrames = audio.length / frameSize;
+        if (bytesPerSample == 4)
+            return new InMemorySampleData (new DefaultAudioMetadata (channels, Math.round (sampleRate), 24, numberOfFrames), convertFloat32ToInt24 (audio));
+        return new InMemorySampleData (new DefaultAudioMetadata (channels, Math.round (sampleRate), resolution, numberOfFrames), audio);
+    }
+
+
+    /**
+     * Read the frame count from the audio format block.
+     *
+     * @param audioFormat The payload of the audio format block, may be null
+     * @return The frame count or 0 if the block is missing
+     */
+    private static int readFrameCount (final byte [] audioFormat)
+    {
+        return audioFormat == null || audioFormat.length < DirectWaveTag.FORMAT_FRAME_COUNT + 4 ? 0 : DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_FRAME_COUNT);
+    }
+
+
+    /**
+     * Cut the guard frames off the embedded audio. DirectWave stores a sample with a block of
+     * {@link DirectWaveTag#EMBEDDED_AUDIO_BLOCK} silent guard frames, half of it before the sample
+     * and half after it, and its playback and loop points do not count the guard - the sample
+     * starts behind the leading half (see the design document). The audio is therefore trimmed to
+     * the frame count of the audio format block starting after the leading half of the guard.
+     * Audio which does not exceed the frame count is returned unchanged.
+     *
+     * @param audio The interleaved audio data
+     * @param frameSize The size of one frame in bytes
+     * @param frames The frame count of the audio format block
+     * @return The trimmed audio (the same array if nothing was cut)
+     */
+    private static byte [] removeGuard (final byte [] audio, final int frameSize, final int frames)
+    {
+        final int totalFrames = audio.length / frameSize;
+        if (frames <= 0 || totalFrames <= frames)
+            return audio;
+        final int guard = (totalFrames - frames) / 2;
+        return Arrays.copyOfRange (audio, guard * frameSize, (guard + frames) * frameSize);
     }
 
 
