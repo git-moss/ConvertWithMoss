@@ -65,6 +65,7 @@ public class KontaktIcon
         ICON_NAME_TO_ID_MAP.put (TagDetector.CATEGORY_ENSEMBLE, Integer.valueOf (0x11));
         ICON_NAME_TO_ID_MAP.put (TagDetector.CATEGORY_FX, Integer.valueOf (0x14));
         ICON_NAME_TO_ID_MAP.put (TagDetector.CATEGORY_GUITAR, Integer.valueOf (0x05));
+        ICON_NAME_TO_ID_MAP.put (TagDetector.CATEGORY_HITS, Integer.valueOf (0x08));
         ICON_NAME_TO_ID_MAP.put (TagDetector.CATEGORY_HI_HAT, Integer.valueOf (0x02));
         ICON_NAME_TO_ID_MAP.put (TagDetector.CATEGORY_KEYBOARD, Integer.valueOf (0x09));
         ICON_NAME_TO_ID_MAP.put (TagDetector.CATEGORY_KICK, Integer.valueOf (0x02));

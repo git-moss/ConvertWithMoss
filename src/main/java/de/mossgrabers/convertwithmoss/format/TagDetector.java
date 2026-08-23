@@ -48,6 +48,7 @@ public class TagDetector
     public static final String                  CATEGORY_ENSEMBLE             = "Ensemble";
     public static final String                  CATEGORY_FX                   = "FX";
     public static final String                  CATEGORY_GUITAR               = "Guitar";
+    public static final String                  CATEGORY_HITS                 = "Hits";
     public static final String                  CATEGORY_HI_HAT               = "Hi-Hat";
     public static final String                  CATEGORY_KEYBOARD             = "Keyboard";
     public static final String                  CATEGORY_KICK                 = "Kick";
@@ -156,11 +157,14 @@ public class TagDetector
         {
             "Acoustic Bs",
             "Bass Guitar",
+            "Funk Slide",
             "Picked Bs",
             "Fingered",
             "Fretless",
+            "Fretl",
             "Reese",
             "Slap",
+            "Funk",
             CATEGORY_BASS,
             "303"
         });
@@ -180,9 +184,13 @@ public class TagDetector
             "Trombone",
             "Trumpet",
             "Cornet",
+            "Trombon",
             "Bugle",
+            "Tromb",
             "Horn",
             "Tuba",
+            "Trpt",
+            "Bras",
             "Brs"
         });
         CATEGORIES.put (CATEGORY_CHIP, new String []
@@ -197,23 +205,31 @@ public class TagDetector
             CATEGORY_VOCAL,
             "Microphone",
             "Gregorian",
+            "Mixed Cho",
             "Whisper",
+            "Female",
             "Vocode",
             "Choral",
             "Speech",
             "Speack",
+            "Adlibs",
             "Choir",
             "Voice",
             "Shout",
             "Sing",
+            "Male",
             "Vox",
-            "Ahh"
+            "Boy",
+            "Ahh",
+            "Ohh"
         });
         CATEGORIES.put (CATEGORY_CHROMATIC_PERCUSSION, new String []
         {
             CATEGORY_CHROMATIC_PERCUSSION,
             "Glockenspiel",
             "Vibraphone",
+            "Vebraphone",
+            "Vabraphone",
             "Xylophone",
             "SteelDrum",
             "SteelDrm",
@@ -222,6 +238,7 @@ public class TagDetector
             "Kalimba",
             "Balafon",
             "Barafon",
+            "Talkdr",
             "Mallet",
             "Xylo"
         });
@@ -231,7 +248,8 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_DESTRUCTION, new String []
         {
-            CATEGORY_DESTRUCTION
+            CATEGORY_DESTRUCTION,
+            "Distort",
         });
         CATEGORIES.put (CATEGORY_DRONE, new String []
         {
@@ -247,6 +265,7 @@ public class TagDetector
             "Rhythm",
             "Cymbal",
             "Crash",
+            "Linn",
             "CR78",
             "Gong",
             "Ride",
@@ -258,7 +277,10 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_ENSEMBLE, new String []
         {
-            CATEGORY_ENSEMBLE
+            CATEGORY_ENSEMBLE,
+            "Str Ens",
+            "Slo Ens",
+            "Ensmbl"
         });
         CATEGORIES.put (CATEGORY_FX, new String []
         {
@@ -267,6 +289,8 @@ public class TagDetector
             "Telephone",
             "Experiment",
             "Explosion",
+            "Turntable",
+            "Airplane",
             "Seashore",
             "Applause",
             "Surround",
@@ -275,13 +299,23 @@ public class TagDetector
             "Stadium",
             "Cricket",
             "Thunder",
+            "Airport",
+            "Bicycle",
+            "Printer",
+            "Subway",
+            "Nature",
             "Effect",
             "Animal",
             "Bubble",
             "Stream",
             "Scream",
+            "Humour",
             "Sci-Fi",
+            "Office",
+            "Truck",
+            "Drill",
             "SciFi",
+            "Paper",
             "Laugh",
             "Punch",
             "Heart",
@@ -293,11 +327,17 @@ public class TagDetector
             "Siren",
             "Glass",
             "Chirp",
+            "Sport",
+            "Space",
+            "Boat",
+            "Park",
             "Wind",
             "Rain",
+            "Sand",
             "Bird",
             "Door",
             "Yell",
+            "Baby",
             "Cow",
             "Gun",
             "Car",
@@ -309,8 +349,10 @@ public class TagDetector
         {
             "Electric Guitar",
             "Distortion",
+            "Acoustic G",
             "Chorus Gt",
             "Overdrive",
+            "Steel Git",
             "Hawaiian",
             "Feedback",
             "Charango",
@@ -323,11 +365,22 @@ public class TagDetector
             "Funk Gt",
             CATEGORY_GUITAR,
             "RockGit",
+            "Ovation",
+            "Fender",
+            "Gibson",
             "Nylon",
             "Rajao",
             "Banjo",
             "RockGt",
+            "GMute",
+            "Strat",
+            "Mute",
+            "Guit",
             "GTR"
+        });
+        CATEGORIES.put (CATEGORY_HITS, new String []
+        {
+            "Hit"
         });
         CATEGORIES.put (CATEGORY_HI_HAT, new String []
         {
@@ -362,17 +415,19 @@ public class TagDetector
         CATEGORIES.put (CATEGORY_MONOSYNTH, new String []
         {
             CATEGORY_MONOSYNTH,
-            // The wording of the Waldorf Quantum/Iridium sound sets
+            "Mono Synth",
             "Monophon",
-            "Mono Synth"
+            "Acid"
         });
         CATEGORIES.put (CATEGORY_ORCHESTRAL, new String []
         {
             CATEGORY_ORCHESTRAL,
             "Soundtrack",
             "Orchestra",
-            "Score",
+            "Soundtr",
             "Cinema",
+            "Score",
+            "Orch"
         });
         CATEGORIES.put (CATEGORY_ORGAN, new String []
         {
@@ -396,12 +451,15 @@ public class TagDetector
             CATEGORY_PAD,
             "Mellotron",
             "Ambient",
+            "Newage",
+            "Heaven",
             "Atmo"
         });
         CATEGORIES.put (CATEGORY_PERCUSSION, new String []
         {
             CATEGORY_PERCUSSION,
             "Tambourine",
+            "Wood block",
             "Woodblock",
             "Triangle",
             "Castanet",
@@ -421,10 +479,13 @@ public class TagDetector
             "Dombak",
             "Donbak",
             "Dumbek",
+            "Brazil",
+            "Stick",
             "Chime",
             "Agogo",
             "Bongo",
             "Conga",
+            "Guiro",
             "Cuica",
             "Tabla",
             "Taiko",
@@ -455,7 +516,9 @@ public class TagDetector
             "Rhodes",
             "Grand",
             "SCase",
+            "Honky",
             "Clav",
+            "E.P",
             "Pno",
             "EP"
         });
@@ -491,6 +554,7 @@ public class TagDetector
             "Zither",
             "Santur",
             "Sitar",
+            "Pick",
             "Harp",
             "Koto",
             "Lyre",
@@ -500,24 +564,30 @@ public class TagDetector
         });
         CATEGORIES.put (CATEGORY_SNARE, new String []
         {
-            CATEGORY_SNARE
+            CATEGORY_SNARE,
+            "Rim"
         });
         CATEGORIES.put (CATEGORY_STRINGS, new String []
         {
             "Double Bass",
             "Pizzicato",
             "Tremolo",
+            "Rich St",
             "Solina",
             "Violin",
             "Fiddle",
             "String",
+            "Stacc",
+            "Violn",
             "Viola",
             "Cello",
+            "Celli",
             "Bowed",
             "Score",
             "Arco",
             "Strn",
-            "Str."
+            "Pizz",
+            "Str"
         });
         CATEGORIES.put (CATEGORY_SYNTH, new String []
         {
@@ -526,9 +596,14 @@ public class TagDetector
             "Prophet",
             "Trance",
             "Analog",
+            "Filter",
+            "Square",
             "Sweep",
             "Swell",
+            "Pulse",
             "Virus",
+            "Stack",
+            "Sine",
             "Juno",
             "Mini",
             "Moog",
@@ -542,6 +617,7 @@ public class TagDetector
         {
             "Klarinette",
             "Harmonica",
+            "Harmonium",
             "Clarinet",
             "Bag Pipe",
             "Melodica",
@@ -549,23 +625,36 @@ public class TagDetector
             "Bassoon",
             "Musette",
             "Ocarina",
-            "Bottle",
             "BasClar",
+            "Bottle",
+            "Hohner",
             "Oboe",
             "Alto",
             "Sax"
         });
         CATEGORIES.put (CATEGORY_LOOPS, new String []
         {
-            "Loop",
-            "Lps",
+            "Speaker",
             "Record",
             "Player",
-            "Speaker"
+            "Loop",
+            "Beat",
+            "Lps",
+            "BPM"
         });
         CATEGORIES.put (CATEGORY_WORLD, new String []
         {
-            "Asian"
+            "Chinese",
+            "Jamaica",
+            "Mideast",
+            "Africa",
+            "Tribal",
+            "Ethnic",
+            "India",
+            "Asian",
+            "Korea",
+            "Japan",
+            "Cuba"
         });
 
         // Create inverse map and order by longest names first, to find the most relevant categories

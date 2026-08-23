@@ -84,19 +84,14 @@ public class AkaiDiskImage extends AbstractAkaiImage
      */
     public Optional<IAkaiVolume> readVolume (final AkaiPartition partition, final AkaiDirEntry entry) throws IOException
     {
-        final AkaiVolumeType type = AkaiVolumeType.fromTypeId (entry.getType ());
-        switch (type)
+        final AkaiVolumeType volumeType = AkaiVolumeType.fromTypeId (entry.getType ());
+        return switch (volumeType)
         {
-            case S1000:
-                return Optional.of (new AkaiS1000Volume (this, partition, entry, false));
-            case S3000_PRE:
-            case S3000:
-                return Optional.of (new AkaiS1000Volume (this, partition, entry, true));
-            case NOT_USED:
-                return Optional.empty ();
-            default:
-                throw new IOException (Functions.getMessage ("IDS_ISO_UNSUPPORTED_FORMAT", type.getName ()));
-        }
+            case S1000 -> Optional.of (new AkaiS1000Volume (this, partition, entry, false));
+            case S3000_PRE, S3000 -> Optional.of (new AkaiS1000Volume (this, partition, entry, true));
+            case UNDEFINED, NOT_EMPTY -> Optional.empty ();
+            default -> throw new IOException (Functions.getMessage ("IDS_ISO_UNSUPPORTED_FORMAT", volumeType.getName ()));
+        };
     }
 
 

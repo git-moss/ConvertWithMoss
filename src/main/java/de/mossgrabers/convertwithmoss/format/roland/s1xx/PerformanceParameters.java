@@ -10,9 +10,6 @@ import de.mossgrabers.tools.ui.Functions;
 /**
  * S-10 performance parameter block. Applies to all samples.
  *
- * The first 25 bytes (address 00 08 00 through 00 08 18) are documented by the S-10 specification.
- * The remaining 15 bytes are retained unchanged for full dump round-tripping.
- *
  * @author Jürgen Moßgraber
  */
 public final class PerformanceParameters
