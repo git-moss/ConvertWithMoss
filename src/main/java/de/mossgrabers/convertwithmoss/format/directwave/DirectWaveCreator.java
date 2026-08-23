@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -266,7 +265,7 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 
                 case DirectWaveTag.TAG_SAMPLE_TERMINATOR:
                     // The embedded audio is the last block of the container
-                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_EMBEDDED_AUDIO, createEmbeddedAudio (sampleData.get (), frames + DirectWaveTag.EMBEDDED_AUDIO_BLOCK));
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_EMBEDDED_AUDIO, createEmbeddedAudio (sampleData.get (), frames));
                     DirectWaveChunk.writeChunk (out, chunk.getTag (), chunk.getPayload ());
                     break;
 
@@ -283,13 +282,14 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
      * integer, 4 unused bytes and the audio as a FLAC stream.
      *
      * @param sampleData The sample data to embed
-     * @param frames The number of frames to write, the audio is padded with silence to that length
+     * @param frames The number of frames of the sample, a multiple of the audio block size; the
+     *            audio is padded with silence to that length and put between the guard frames
      * @return The payload
      * @throws IOException Could not compress the audio
      */
     private static byte [] createEmbeddedAudio (final ISampleData sampleData, final int frames) throws IOException
     {
-        final byte [] flac = AudioFileUtils.compressToFLAC (padWithSilence (sampleData, frames));
+        final byte [] flac = AudioFileUtils.compressToFLAC (addGuard (sampleData, frames));
         final byte [] payload = new byte [DirectWaveTag.EMBEDDED_AUDIO_OFFSET + flac.length];
         DirectWaveChunk.writeIntLE (payload, 0, flac.length);
         System.arraycopy (flac, 0, payload, DirectWaveTag.EMBEDDED_AUDIO_OFFSET, flac.length);
@@ -298,25 +298,28 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Extend the audio with silence up to the given number of frames. DirectWave reads the embedded
-     * audio in blocks, a sample which does not fill its last block crashes the plug-in when the
-     * program is loaded.
+     * Put the audio into the buffer layout of DirectWave: half of a guard block of silence, the
+     * audio extended with silence to the given number of frames, and the other half of the guard
+     * block, which is what the plug-in itself writes. DirectWave reads the embedded audio in
+     * blocks - a sample which does not fill its last block crashes the plug-in when the program is
+     * loaded - and plays the sample and addresses its loop points behind the leading guard, see
+     * the design document.
      *
      * @param sampleData The sample data to extend
-     * @param frames The number of frames of the result
+     * @param frames The number of frames of the sample without the guard
      * @return The extended sample data
      * @throws IOException Could not read the sample data
      */
-    private static ISampleData padWithSilence (final ISampleData sampleData, final int frames) throws IOException
+    private static ISampleData addGuard (final ISampleData sampleData, final int frames) throws IOException
     {
         final WaveFile waveFile = AudioFileUtils.convertToWav (sampleData, EMBEDDED_AUDIO_FORMAT);
         final FormatChunk formatChunk = waveFile.getFormatChunk ();
         final int frameSize = formatChunk.getNumberOfChannels () * (formatChunk.getSignificantBitsPerSample () / 8);
         final byte [] data = waveFile.getDataChunk ().getData ();
-        final int length = frames * frameSize;
-        if (length <= data.length)
-            return sampleData;
-        return new WavFileSampleData (new WaveFile (formatChunk, new DataChunk (formatChunk, Arrays.copyOf (data, length))));
+        final int guard = DirectWaveTag.EMBEDDED_AUDIO_BLOCK / 2 * frameSize;
+        final byte [] padded = new byte [guard + frames * frameSize + guard];
+        System.arraycopy (data, 0, padded, guard, Math.min (data.length, frames * frameSize));
+        return new WavFileSampleData (new WaveFile (formatChunk, new DataChunk (formatChunk, padded)));
     }
 
 
