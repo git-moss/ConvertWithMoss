@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:ooo="http://openoffice.org/2004/office" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:rpt="http://openoffice.org/2005/report" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:dr3d="urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:chart="urn:oasis:names:tc:opendocument:xmlns:chart:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:number="urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0" xmlns:ooow="http://openoffice.org/2004/writer" xmlns:oooc="http://openoffice.org/2004/calc" xmlns:of="urn:oasis:names:tc:opendocument:xmlns:of:1.2" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:tableooo="http://openoffice.org/2009/table" xmlns:calcext="urn:org:documentfoundation:names:experimental:calc:xmlns:calcext:1.0" xmlns:drawooo="http://openoffice.org/2010/draw" xmlns:loext="urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0" xmlns:field="urn:openoffice:names:experimental:ooo-ms-interop:xmlns:field:1.0" xmlns:math="http://www.w3.org/1998/Math/MathML" xmlns:form="urn:oasis:names:tc:opendocument:xmlns:form:1.0" xmlns:script="urn:oasis:names:tc:opendocument:xmlns:script:1.0" xmlns:formx="urn:openoffice:names:experimental:ooxml-odf-interop:xmlns:form:1.0" xmlns:dom="http://www.w3.org/2001/xml-events" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:grddl="http://www.w3.org/2003/g/data-view#" xmlns:css3t="http://www.w3.org/TR/css3-text/" xmlns:presentation="urn:oasis:names:tc:opendocument:xmlns:presentation:1.0" office:version="1.4" office:mimetype="application/vnd.oasis.opendocument.spreadsheet">
- <office:meta><meta:creation-date>2021-03-31T19:20:13Z</meta:creation-date><dc:date>2026-08-23T15:48:54.087954800</dc:date><meta:editing-cycles>1098</meta:editing-cycles><meta:editing-duration>P2DT6H25M34S</meta:editing-duration><meta:generator>LibreOffice/26.2.5.2$Windows_X86_64 LibreOffice_project/cd7284b4cbbfeb507e630c1aac019f4157393acb</meta:generator><meta:document-statistic meta:table-count="2" meta:cell-count="2405" meta:object-count="0"/></office:meta>
+ <office:meta><meta:creation-date>2021-03-31T19:20:13Z</meta:creation-date><dc:date>2026-08-24T18:46:57.289938500</dc:date><meta:editing-cycles>1105</meta:editing-cycles><meta:editing-duration>P2DT7H56M43S</meta:editing-duration><meta:generator>LibreOffice/26.2.5.2$Windows_X86_64 LibreOffice_project/cd7284b4cbbfeb507e630c1aac019f4157393acb</meta:generator><meta:document-statistic meta:table-count="2" meta:cell-count="2401" meta:object-count="0"/></office:meta>
  <office:settings>
   <config:config-item-set config:name="ooo:view-settings">
    <config:config-item config:name="VisibleAreaTop" config:type="int">0</config:config-item>
    <config:config-item config:name="VisibleAreaLeft" config:type="int">0</config:config-item>
    <config:config-item config:name="VisibleAreaWidth" config:type="int">281249</config:config-item>
-   <config:config-item config:name="VisibleAreaHeight" config:type="int">80479</config:config-item>
+   <config:config-item config:name="VisibleAreaHeight" config:type="int">80460</config:config-item>
    <config:config-item-map-indexed config:name="Views">
     <config:config-item-map-entry>
      <config:config-item config:name="ViewId" config:type="string">view1</config:config-item>
@@ -36,16 +36,16 @@
       </config:config-item-map-entry>
       <config:config-item-map-entry config:name="Preset">
        <config:config-item config:name="CursorPositionX" config:type="int">53</config:config-item>
-       <config:config-item config:name="CursorPositionY" config:type="int">69</config:config-item>
+       <config:config-item config:name="CursorPositionY" config:type="int">21</config:config-item>
        <config:config-item config:name="HorizontalSplitMode" config:type="short">2</config:config-item>
        <config:config-item config:name="VerticalSplitMode" config:type="short">2</config:config-item>
        <config:config-item config:name="HorizontalSplitPosition" config:type="int">1</config:config-item>
        <config:config-item config:name="VerticalSplitPosition" config:type="int">1</config:config-item>
        <config:config-item config:name="ActiveSplitRange" config:type="short">3</config:config-item>
        <config:config-item config:name="PositionLeft" config:type="int">0</config:config-item>
-       <config:config-item config:name="PositionRight" config:type="int">46</config:config-item>
+       <config:config-item config:name="PositionRight" config:type="int">45</config:config-item>
        <config:config-item config:name="PositionTop" config:type="int">0</config:config-item>
-       <config:config-item config:name="PositionBottom" config:type="int">54</config:config-item>
+       <config:config-item config:name="PositionBottom" config:type="int">10</config:config-item>
        <config:config-item config:name="ZoomType" config:type="short">0</config:config-item>
        <config:config-item config:name="ZoomValue" config:type="int">120</config:config-item>
        <config:config-item config:name="PageViewZoomValue" config:type="int">60</config:config-item>
@@ -58,7 +58,7 @@
       </config:config-item-map-entry>
      </config:config-item-map-named>
      <config:config-item config:name="ActiveTable" config:type="string">Preset</config:config-item>
-     <config:config-item config:name="HorizontalScrollbarWidth" config:type="int">1895</config:config-item>
+     <config:config-item config:name="HorizontalScrollbarWidth" config:type="int">4749</config:config-item>
      <config:config-item config:name="ZoomType" config:type="short">0</config:config-item>
      <config:config-item config:name="ZoomValue" config:type="int">120</config:config-item>
      <config:config-item config:name="PageViewZoomValue" config:type="int">60</config:config-item>
@@ -82,7 +82,7 @@
      <config:config-item config:name="RasterSubdivisionY" config:type="int">1</config:config-item>
      <config:config-item config:name="IsRasterAxisSynchronized" config:type="boolean">true</config:config-item>
      <config:config-item config:name="FormulaBarHeight" config:type="short">1</config:config-item>
-     <config:config-item config:name="WindowState" config:type="string">0,23,1920,1129;4;,,,;</config:config-item>
+     <config:config-item config:name="WindowState" config:type="string">0,56,4800,2824;4;,,,;</config:config-item>
      <config:config-item config:name="AnchoredTextOverflowLegacy" config:type="boolean">false</config:config-item>
      <config:config-item config:name="LegacySingleLineFontwork" config:type="boolean">false</config:config-item>
      <config:config-item config:name="ConnectorUseSnapRect" config:type="boolean">false</config:config-item>
@@ -170,6 +170,7 @@
   <style:font-face style:name="Liberation Sans" svg:font-family="&apos;Liberation Sans&apos;" style:font-family-generic="swiss" style:font-pitch="variable"/>
   <style:font-face style:name="Liberation Sans1" svg:font-family="&apos;Liberation Sans&apos;"/>
   <style:font-face style:name="Liberation Sans11" svg:font-family="&apos;Liberation Sans1&apos;"/>
+  <style:font-face style:name="Lucida Sans" svg:font-family="&apos;Lucida Sans&apos;" style:font-family-generic="system" style:font-pitch="variable"/>
   <style:font-face style:name="Microsoft YaHei" svg:font-family="&apos;Microsoft YaHei&apos;" style:font-family-generic="system" style:font-pitch="variable"/>
  </office:font-face-decls>
  <office:styles>
@@ -486,13 +487,13 @@
    <style:table-row-properties style:row-height="0.453cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
   </style:style>
   <style:style style:name="ro4" style:family="table-row">
-   <style:table-row-properties style:row-height="1.626cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
+   <style:table-row-properties style:row-height="1.619cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
   </style:style>
   <style:style style:name="ro5" style:family="table-row">
-   <style:table-row-properties style:row-height="1.235cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
+   <style:table-row-properties style:row-height="1.231cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
   </style:style>
   <style:style style:name="ro6" style:family="table-row">
-   <style:table-row-properties style:row-height="1.236cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
+   <style:table-row-properties style:row-height="1.235cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
   </style:style>
   <style:style style:name="ro7" style:family="table-row">
    <style:table-row-properties style:row-height="0.931cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
@@ -522,24 +523,27 @@
    <style:table-row-properties style:row-height="0.485cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ro16" style:family="table-row">
-   <style:table-row-properties style:row-height="0.833cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+   <style:table-row-properties style:row-height="1.626cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
   </style:style>
   <style:style style:name="ro17" style:family="table-row">
-   <style:table-row-properties style:row-height="1.623cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
+   <style:table-row-properties style:row-height="0.833cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ro18" style:family="table-row">
-   <style:table-row-properties style:row-height="0.811cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+   <style:table-row-properties style:row-height="1.623cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
   </style:style>
   <style:style style:name="ro19" style:family="table-row">
-   <style:table-row-properties style:row-height="0.855cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+   <style:table-row-properties style:row-height="0.811cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ro20" style:family="table-row">
-   <style:table-row-properties style:row-height="0.94cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+   <style:table-row-properties style:row-height="0.855cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ro21" style:family="table-row">
-   <style:table-row-properties style:row-height="0.921cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+   <style:table-row-properties style:row-height="0.94cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ro22" style:family="table-row">
+   <style:table-row-properties style:row-height="0.921cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+  </style:style>
+  <style:style style:name="ro23" style:family="table-row">
    <style:table-row-properties style:row-height="0.702cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ta1" style:family="table" style:master-page-name="Default">
@@ -782,7 +786,7 @@
      <text:p><text:sheet-name>???</text:sheet-name><text:s/>(<text:title>???</text:title>)</text:p>
     </style:region-left>
     <style:region-right>
-     <text:p><text:date style:data-style-name="N2" text:date-value="2026-08-23">00.00.0000</text:date>, <text:time style:data-style-name="N2" text:time-value="15:34:26.886139500">00:00:00</text:time></text:p>
+     <text:p><text:date style:data-style-name="N2" text:date-value="2026-08-24">00.00.0000</text:date>, <text:time style:data-style-name="N2" text:time-value="17:15:46.344490300">00:00:00</text:time></text:p>
     </style:region-right>
    </style:header>
    <style:header-left style:display="false"/>
@@ -1101,7 +1105,9 @@
      <table:table-cell table:style-name="ce19"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce39"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce8"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -1162,12 +1168,12 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="4"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:table-cell table:style-name="ce63"/>
@@ -1187,7 +1193,7 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -1246,10 +1252,13 @@
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="5"/>
+     <table:table-cell table:style-name="ce39" table:number-columns-repeated="4"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO Implement</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce63"/>
      <table:covered-table-cell table:style-name="ce26"/>
@@ -1259,7 +1268,7 @@
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -1301,7 +1310,9 @@
      <table:table-cell table:style-name="ce19"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce39"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce8"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -1353,12 +1364,12 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="4"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:table-cell table:style-name="ce63"/>
@@ -1378,7 +1389,7 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -1438,10 +1449,13 @@
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="5"/>
+     <table:table-cell table:style-name="ce39" table:number-columns-repeated="4"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO Implement</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce63"/>
      <table:covered-table-cell table:style-name="ce26"/>
@@ -1451,7 +1465,7 @@
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -1571,7 +1585,7 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:table-cell table:style-name="ce63"/>
@@ -1585,7 +1599,7 @@
       <text:p>AttackTime, DecayTime, ReleaseTime, AttackLevel, SustainLevel, ReleaseLevel</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -1613,7 +1627,7 @@
       <text:p>ModByPitch (global)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -1660,7 +1674,7 @@
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:table-cell table:style-name="ce63"/>
@@ -1669,7 +1683,7 @@
      <table:table-cell table:style-name="ce26"/>
      <table:covered-table-cell table:number-columns-repeated="8" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -1856,7 +1870,7 @@
       <text:p>AUX: 4-stage</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce56"/>
@@ -1872,7 +1886,7 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce56" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -1998,7 +2012,7 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>PitchEnvAmount, PitchAttack, PitchHold, PitchDecay,</text:p><text:p>PitchSustain, PitchRelease, PitchAttackCurve, PitchDecayCurve, PitchReleaseCurve</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce8"/>
@@ -2024,7 +2038,7 @@
       <text:p>FilterKeytrack</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -2087,7 +2101,7 @@
      <table:table-cell table:style-name="ce56"/>
      <table:covered-table-cell table:number-columns-repeated="7" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -2161,20 +2175,13 @@
      <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string">
       <text:p>TODO</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce39" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce19" table:number-columns-repeated="4"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce19" table:number-columns-repeated="8"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
@@ -2266,13 +2273,13 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement (except 500)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce8"/>
      <table:table-cell table:style-name="ce19" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement (except 500)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce56"/>
@@ -2296,7 +2303,7 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce19"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement (except 500)</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
@@ -2383,16 +2390,11 @@
      <table:table-cell table:style-name="ce8" office:value-type="string" calcext:value-type="string">
       <text:p>veloAttackLevel</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce39" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce8"/>
      <table:table-cell table:style-name="ce19" table:number-columns-repeated="3"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce56"/>
      <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string">
@@ -2414,9 +2416,7 @@
       <text:p>veloFilterFreq</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
@@ -2551,7 +2551,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro6">
+    <table:table-row table:style-name="ro5">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string"><text:p>Akai S1000/S3000 Image</text:p><text:p>Akai MESA (S3P)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
@@ -2649,16 +2649,14 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string"><text:p>Velocity to attack,</text:p><text:p>key to decay &amp; release</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce78"/>
      <table:table-cell table:style-name="ce56" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string">
       <text:p>AUX: ADSR</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce63"/>
@@ -2681,9 +2679,7 @@
      <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string">
       <text:p>keyToFilter</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
-     </table:table-cell>
+     <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
@@ -4558,7 +4554,7 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro5">
+    <table:table-row table:style-name="ro6">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -4701,7 +4697,7 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro5">
+    <table:table-row table:style-name="ro6">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
       <text:p>Ensoniq EPS/EPS16+/ASR-10</text:p>
      </table:table-cell>
@@ -5827,7 +5823,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro5">
+    <table:table-row table:style-name="ro6">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Kurzweil K2000/K2500/K2600</text:p>
      </table:table-cell>
@@ -5951,7 +5947,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro5">
+    <table:table-row table:style-name="ro6">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -6028,7 +6024,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro5">
+    <table:table-row table:style-name="ro6">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p><text:span text:style-name="T1">Native Instruments </text:span>Kontakt 1-4</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
@@ -6258,7 +6254,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro5">
+    <table:table-row table:style-name="ro6">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string"><text:p><text:span text:style-name="T1">Native Instruments </text:span>Kontakt 4.2-7</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
@@ -7317,7 +7313,7 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro4">
+    <table:table-row table:style-name="ro16">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Propellerhead Reason NN-XT</text:p>
      </table:table-cell>
@@ -8066,7 +8062,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro16">
+    <table:table-row table:style-name="ro17">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
       <text:p>Roland S-10/S-220/MKS-100</text:p>
      </table:table-cell>
@@ -8432,7 +8428,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro17">
+    <table:table-row table:style-name="ro18">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -8752,7 +8748,7 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro18">
+    <table:table-row table:style-name="ro19">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Soundfont 2</text:p>
      </table:table-cell>
@@ -8896,7 +8892,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro19">
+    <table:table-row table:style-name="ro20">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -8954,7 +8950,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro20">
+    <table:table-row table:style-name="ro21">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>SFZ</text:p>
      </table:table-cell>
@@ -9124,7 +9120,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro21">
+    <table:table-row table:style-name="ro22">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -9302,7 +9298,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro4">
+    <table:table-row table:style-name="ro16">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -9782,7 +9778,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro5">
+    <table:table-row table:style-name="ro6">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>TX16Wx</text:p>
      </table:table-cell>
@@ -10568,7 +10564,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro5">
+    <table:table-row table:style-name="ro6">
      <table:table-cell table:style-name="ce33" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Yamaha YSFC</text:p>
      </table:table-cell>
@@ -10897,7 +10893,7 @@
      <table:covered-table-cell table:number-columns-repeated="3"/>
      <table:table-cell table:number-columns-repeated="3"/>
     </table:table-row>
-    <table:table-row table:style-name="ro22">
+    <table:table-row table:style-name="ro23">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
       <text:p>Akai AKM (S5000/S6000/Z4/Z8/MPC4000)</text:p>
      </table:table-cell>
