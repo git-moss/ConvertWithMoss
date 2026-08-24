@@ -430,7 +430,7 @@ public class Emulator3FloppySet
             if (writeRight)
                 options |= Emulator3Constants.OPTION_CHANNEL_RIGHT;
             if (this.hasLoop)
-                options |= Emulator3Constants.OPTION_LOOP;
+                options |= Emulator3Constants.OPTION_LOOP_FORWARD;
             if (this.loopInRelease)
                 options |= Emulator3Constants.OPTION_LOOP_IN_RELEASE;
             Emulator3Constants.putU16 (bank, offset + Emulator3Constants.SAMPLE_OPTIONS, options);

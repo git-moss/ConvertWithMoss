@@ -273,19 +273,32 @@ store the right channel at 92 and the left one behind it. The number of frames m
 computed from the channel's own start and end - reading a right-first sample with an assumed
 start of 92 doubles its length and mixes the channels.
 
-Option flags:
+Option flags (bit assignments verified against the OS 2.42 firmware of the Emulator III, whose
+Setup screen reads exactly these fields to render its `Loop Type`, `Loop in Release` and
+`Reverse Playback` lines):
 
 ```
-0x0001  looped
+0x0003  loop type, a 2 bit field: 0 = no loop, 1 = forward, 2 = forward/backward
+        ('fwd/bkwd'). A forward/backward sample does NOT have the 0x0001 bit set
+0x0004  reverse playback: the sample plays backwards
 0x0008  the loop continues to play during the release phase; without this flag the
         loop stops as soon as the key is released
+0x0010  set by the OS when a sample is created; meaning unknown (set on almost every
+        library sample)
 0x0020  the sample has a left channel
 0x0040  the sample has a right channel
 ```
 
+The forward/backward loop type exists only on the original Emulator III. The operation manuals of
+the Emulator IIIX and the ESI state that importing such a sample permanently converts the loop "to
+contain both the forwards and backwards sound data", so their own banks only hold forward loops.
+The factory library confirms both flags: of 6537 samples on six library CD-ROMs none uses loop
+type 2 - E-mu mastered forward loops throughout - and three one-shot samples (among them
+'Backwards Bell') carry the reverse playback flag. On the original Emulator III the high byte of
+the options word holds garbage in many library banks, so only the low byte is meaningful there.
+
 A sample which only carries its *right* channel (0x40 without 0x20) exists in the libraries; its
-positions have to be read from the right hand set of fields. Bit 0x10 is set in almost every sample
-of the libraries and its meaning is unknown.
+positions have to be read from the right hand set of fields.
 
 Sample rates are arbitrary, not a fixed set - the libraries contain rates such as 7000, 12000,
 15625, 27777 and 31396 Hz. The samplers always play back at 44.1 kHz and compensate with the
