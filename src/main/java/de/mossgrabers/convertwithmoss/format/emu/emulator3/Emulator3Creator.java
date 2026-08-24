@@ -760,7 +760,8 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         int options = isStereo ? Emulator3Constants.OPTION_STEREO : Emulator3Constants.OPTION_CHANNEL_LEFT;
         if (sample.hasLoop)
         {
-            options |= Emulator3Constants.OPTION_LOOP;
+            // The written formats are the EIIIX and ESI ones, which only know forward loops
+            options |= Emulator3Constants.OPTION_LOOP_FORWARD;
             if (sample.loopInRelease)
                 options |= Emulator3Constants.OPTION_LOOP_IN_RELEASE;
         }

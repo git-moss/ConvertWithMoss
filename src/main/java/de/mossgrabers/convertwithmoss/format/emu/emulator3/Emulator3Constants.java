@@ -194,8 +194,19 @@ public class Emulator3Constants
     public static final int            SAMPLE_DATA_OFFSET_RIGHT       = 0x40;
 
     // The option flags of a sample
-    /** The sample is looped. */
-    public static final int            OPTION_LOOP                    = 0x0001;
+    /**
+     * The mask of the loop type, which is a 2 bit field: 0 = no loop, 1 = forward loop, 2 =
+     * forward/backward loop ('fwd/bkwd' in the Setup screen of the sampler). The Emulator IIIX and
+     * ESI dropped the forward/backward type - importing an Emulator III bank converts such a loop
+     * into sample data - so the value 2 only occurs in banks of the original Emulator III.
+     */
+    public static final int            OPTION_LOOP_TYPE_MASK          = 0x0003;
+    /** The value of the loop type field for a forward loop. */
+    public static final int            OPTION_LOOP_FORWARD            = 0x0001;
+    /** The value of the loop type field for a forward/backward loop. */
+    public static final int            OPTION_LOOP_ALTERNATING        = 0x0002;
+    /** The sample plays backwards. */
+    public static final int            OPTION_REVERSE_PLAYBACK        = 0x0004;
     /** The loop continues to play during the release phase. */
     public static final int            OPTION_LOOP_IN_RELEASE         = 0x0008;
     /** The sample has a left channel. */
