@@ -59,6 +59,7 @@ import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiCreator;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiDetector;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetCreator;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetDetector;
+import de.mossgrabers.convertwithmoss.format.emu.emulator2.Emulator2Creator;
 import de.mossgrabers.convertwithmoss.format.emu.emulator2.Emulator2Detector;
 import de.mossgrabers.convertwithmoss.format.emu.emulator3.Emulator3Creator;
 import de.mossgrabers.convertwithmoss.format.emu.emulator3.Emulator3Detector;
@@ -263,6 +264,7 @@ public class ConverterBackend
         this.creators.add (new CasioFZCreator (notifier));
         this.creators.add (new TX16WxCreator (notifier));
         this.creators.add (new DecentSamplerCreator (notifier));
+        this.creators.add (new Emulator2Creator (notifier));
         this.creators.add (new Emulator3Creator (notifier));
         this.creators.add (new Emulator4Creator (notifier));
         this.creators.add (new EmulatorXCreator (notifier));

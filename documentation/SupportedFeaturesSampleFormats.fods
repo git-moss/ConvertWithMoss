@@ -3790,74 +3790,151 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro9">
-     <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
-      <text:p>E-mu Emulator II</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
-      <text:p>Read</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce56"/>
-     <table:table-cell table:style-name="ce41"/>
-     <table:table-cell table:style-name="ce43" office:value-type="float" office:value="16" calcext:value-type="float">
-      <text:p>16</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>27777Hz</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43"/>
-     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string">
-      <text:p>Name</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="5"/>
-     <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce19" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce39"/>
-     <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce39"/>
-     <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce8"/>
-     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string">
-      <text:p>TRANSPOSE_UNITY</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce22" office:value-type="string" calcext:value-type="string">
-      <text:p>lowKey to next lowKey</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce19" table:number-columns-repeated="13"/>
-     <table:table-cell table:style-name="ce39"/>
-     <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce8"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>Forward / Off</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce19"/>
-     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string">
-      <text:p>loopStart</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string">
-      <text:p>loopLength</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce19" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce19" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="4"/>
-     <table:table-cell table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="4"/>
-     <table:table-cell table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce19" table:number-columns-repeated="8"/>
-     <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
-     <table:table-cell/>
-     <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
+    <table:table-row table:style-name="ro7">
+     <table:table-cell table:style-name="ce2" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>E-mu Emulator II</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string"><text:p>Read</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>img, emuiifd, eii, hfe</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Bank with up to 100 presets</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce43" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>8 bit companded (AM6072)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce63" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>27777 Hz</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce26" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce43" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Preset name (12 characters)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce56" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>First / second voice of a key range</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="Default" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce8" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Transposition of the range</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Key ranges of the preset (MIDI 36-96)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce8" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Forward / Off</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Loop start</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Loop length</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce78" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/><table:table-cell/><table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro3">
+     <table:covered-table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string"><text:p>E-mu Emulator II</text:p></table:covered-table-cell>
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string"><text:p>Write</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>hfe, emuiifd</text:p></table:table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Bank with up to 100 presets</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string"><text:p>8 bit companded (AM6072)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>27777 Hz</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce43"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Preset name (12 characters)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce56" office:value-type="string" calcext:value-type="string"><text:p>First / second voice of a key range</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="Default"/>
+     <table:covered-table-cell table:style-name="ce8"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Transposition of the range</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Key ranges of the preset (MIDI 36-96)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce8"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Forward / Off</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Loop start</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Loop length</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce39"/>
+     <table:covered-table-cell table:style-name="ce78"/>
+     <table:covered-table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce39"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string"><text:p>TODO not decoded</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/><table:table-cell/><table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
     <table:table-row table:style-name="ro7">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
