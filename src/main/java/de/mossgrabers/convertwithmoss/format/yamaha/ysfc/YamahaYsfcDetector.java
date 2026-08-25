@@ -283,13 +283,12 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             performanceSource.setName (performanceName);
 
             final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
-            for (int p = 0; p < parts.size (); p++)
+            for (final YamahaYsfcPerformancePart part: parts)
             {
                 final IMultisampleSource multisampleSource = new DefaultMultisampleSource (globalSourceFile, globalSubPath, performanceName);
 
                 fillMetadata (globalMetadata, multisampleSource.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
 
-                final YamahaYsfcPerformancePart part = parts.get (p);
                 final IGroup group = new DefaultGroup ();
                 group.setName (part.getName ());
                 final int commonXaMode = part.getCommonXaMode ();

@@ -204,7 +204,6 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             if (preparedZone == null)
                 continue;
             if (preparedZone.id == 0)
-            {
                 if (subVoices.size () >= MAX_SUB_VOICES)
                 {
                     preparedZone.id = -1;
@@ -215,7 +214,6 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
                     preparedZone.id = subVoices.size () + 1;
                     subVoices.add (preparedZone);
                 }
-            }
             if (preparedZone.id > 0)
                 mapping[key] = (byte) preparedZone.id;
         }

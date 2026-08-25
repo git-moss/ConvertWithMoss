@@ -31,7 +31,7 @@ public enum AkmRiffChunkId implements RiffChunkId
      * @param description A descriptive text for the chunk
      * @param asciiID The ASCII representation of the ID
      */
-    private AkmRiffChunkId (final String description, final String asciiID)
+    AkmRiffChunkId (final String description, final String asciiID)
     {
         this.description = description;
         this.fourCC = asciiID == null ? -1 : RiffChunkId.toFourCC (asciiID);

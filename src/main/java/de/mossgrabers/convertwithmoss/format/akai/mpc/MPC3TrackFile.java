@@ -372,7 +372,7 @@ public class MPC3TrackFile
 
     /**
      * The created JSON document and the number of key-groups it holds.
-     * 
+     *
      * @param json The JSON code
      * @param numKeygroups The number of key-groups
      */

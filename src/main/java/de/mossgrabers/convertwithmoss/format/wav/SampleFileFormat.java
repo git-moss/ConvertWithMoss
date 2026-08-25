@@ -12,17 +12,17 @@ package de.mossgrabers.convertwithmoss.format.wav;
 public enum SampleFileFormat
 {
     /** Write WAV files. */
-    WAV ("WAV", ".wav"),
+    WAV("WAV", ".wav"),
     /** Write AIFF files. */
-    AIFF ("AIFF", ".aif"),
+    AIFF("AIFF", ".aif"),
     /** Write CAF files with linear PCM audio data. */
-    CAF ("CAF", ".caf"),
+    CAF("CAF", ".caf"),
     /** Write CAF files with Apple Lossless compressed audio data. */
-    CAF_ALAC ("CAF-ALAC", ".caf"),
+    CAF_ALAC("CAF-ALAC", ".caf"),
     /** Write CAF files with MPEG-4 AAC compressed audio data. */
-    CAF_AAC ("CAF-AAC", ".caf"),
+    CAF_AAC("CAF-AAC", ".caf"),
     /** Write FLAC files. */
-    FLAC ("FLAC", ".flac");
+    FLAC("FLAC", ".flac");
 
 
     private final String name;
@@ -35,7 +35,7 @@ public enum SampleFileFormat
      * @param name The name to display for the format
      * @param ending The file ending to use for the format
      */
-    private SampleFileFormat (final String name, final String ending)
+    SampleFileFormat (final String name, final String ending)
     {
         this.name = name;
         this.ending = ending;

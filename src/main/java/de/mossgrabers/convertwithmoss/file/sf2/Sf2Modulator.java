@@ -23,10 +23,9 @@ public class Sf2Modulator
     public static final Integer               MODULATOR_PITCH_BEND      = Integer.valueOf (14);
 
     /**
-     * Source operand flag: the direction of the source is negative, it runs from its maximum to
-     * its minimum - e.g. velocity 127 gives 0 and velocity 0 gives the full amount, as in the
-     * default modulators of the SoundFont specification. Without the flag the direction is
-     * positive.
+     * Source operand flag: the direction of the source is negative, it runs from its maximum to its
+     * minimum - e.g. velocity 127 gives 0 and velocity 0 gives the full amount, as in the default
+     * modulators of the SoundFont specification. Without the flag the direction is positive.
      */
     public static final int                   SOURCE_DIRECTION_NEGATIVE = 0x0100;
     /** Source operand flag: the source is bipolar (-1..1) instead of unipolar (0..1). */

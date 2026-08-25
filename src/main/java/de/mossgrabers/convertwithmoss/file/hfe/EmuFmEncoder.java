@@ -15,9 +15,9 @@ import java.util.Arrays;
  * rest of the track.
  * <p>
  * The two samplers space the fields of a track slightly differently, which is described by a
- * {@link TrackLayout}. The layout of the Emulator follows the description of ///Esynthesist and
- * is what the machine writes itself; the layout of the Emulator II is the one of the images which
- * the HxC tools generate for it - which put the data mark half a byte earlier than the published
+ * {@link TrackLayout}. The layout of the Emulator follows the description of ///Esynthesist and is
+ * what the machine writes itself; the layout of the Emulator II is the one of the images which the
+ * HxC tools generate for it - which put the data mark half a byte earlier than the published
  * description - since those are the images which the Emulator II is known to read.
  *
  * @author Jürgen Moßgraber
@@ -25,9 +25,9 @@ import java.util.Arrays;
 public class EmuFmEncoder
 {
     /**
-     * The spacing of the fields of a track. All counts are bytes except for the gap and the sync
-     * in front of the data mark, which are given in bit cells because the Emulator II uses seven
-     * and a half bytes of gap there.
+     * The spacing of the fields of a track. All counts are bytes except for the gap and the sync in
+     * front of the data mark, which are given in bit cells because the Emulator II uses seven and a
+     * half bytes of gap there.
      *
      * @param leadGapBytes The gap of 0xFF bytes at the start of the track
      * @param leadSyncBytes The sync of 0x00 bytes in front of the header mark

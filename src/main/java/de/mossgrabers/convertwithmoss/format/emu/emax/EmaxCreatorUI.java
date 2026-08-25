@@ -27,15 +27,15 @@ import javafx.scene.layout.Pane;
 public class EmaxCreatorUI implements ICoreTaskSettings
 {
     private static final String TARGET_DEVICE         = "TargetDevice";
-    private static final String SAMPLE_RATE          = "SampleRate";
+    private static final String SAMPLE_RATE           = "SampleRate";
     /** The setting which picks the highest rate that still allows the necessary transposition. */
     private static final int    SAMPLE_RATE_AUTOMATIC = -1;
 
     private final String        prefix;
     private ComboBox<String>    targetDeviceBox;
     private ComboBox<String>    sampleRateBox;
-    private EmaxModel           targetModel          = EmaxModel.EMAX;
-    private int                 sampleRateIndex      = SAMPLE_RATE_AUTOMATIC;
+    private EmaxModel           targetModel           = EmaxModel.EMAX;
+    private int                 sampleRateIndex       = SAMPLE_RATE_AUTOMATIC;
 
 
     /**
@@ -111,7 +111,7 @@ public class EmaxCreatorUI implements ICoreTaskSettings
             switch (device.trim ().toLowerCase (Locale.US))
             {
                 case "emax", "emax1", "emaxi", "1":
-                    this.targetModel = EmaxModel.EMAX;
+                    // this.targetModel is already EmaxModel.EMAX;
                     break;
                 case "emax2", "emaxii", "2":
                     this.targetModel = EmaxModel.EMAX_2;

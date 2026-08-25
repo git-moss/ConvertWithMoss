@@ -283,10 +283,8 @@ public class AacDecoder
             }
 
             if (channelIndex >= this.numChannels && !done)
-            {
                 // All channels are decoded, the frame should end now
                 done = bits.remaining () < 3 || bits.peek (3) == ID_END;
-            }
         }
 
         // Interleave the output samples as 16-bit
@@ -324,13 +322,20 @@ public class AacDecoder
             copyIcsInfo (left, right);
 
             final int msPresent = bits.read (2);
-            if (msPresent == 3)
-                throw new IOException ("Malformed AAC channel pair.");
-            if (msPresent == 2)
-                Arrays.fill (msUsed, 0, left.numWindowGroups * left.maxSfb, true);
-            else if (msPresent == 1)
-                for (int i = 0; i < left.numWindowGroups * left.maxSfb; i++)
-                    msUsed[i] = bits.read (1) != 0;
+            switch (msPresent)
+            {
+                case 3:
+                    throw new IOException ("Malformed AAC channel pair.");
+                case 2:
+                    Arrays.fill (msUsed, 0, left.numWindowGroups * left.maxSfb, true);
+                    break;
+                case 1:
+                    for (int i = 0; i < left.numWindowGroups * left.maxSfb; i++)
+                        msUsed[i] = bits.read (1) != 0;
+                    break;
+                default:
+                    break;
+            }
         }
 
         this.decodeIcs (bits, left, commonWindow, false);
@@ -602,7 +607,6 @@ public class AacDecoder
                 {
                     final int coefficientBase = (windowStart + windowInGroup) * (isShort ? 128 : 0);
                     if (bandType < BAND_TYPE_FIRST_PAIR)
-                    {
                         // Quads
                         for (int k = start; k < end; k += 4)
                         {
@@ -616,9 +620,7 @@ public class AacDecoder
                                 channel.coefficients[coefficientBase + k + j] = value;
                             }
                         }
-                    }
                     else
-                    {
                         // Pairs; for the escape codebook all sign bits are read first, then the
                         // escape values
                         for (int k = start; k < end; k += 2)
@@ -645,7 +647,6 @@ public class AacDecoder
                                 channel.coefficients[coefficientBase + k + j] = value;
                             }
                         }
-                    }
                 }
             }
             windowStart += groupLength;
@@ -817,12 +818,10 @@ public class AacDecoder
 
                 final float [] lpc = channel.tnsCoefficients[window][filter];
                 if (channel.tnsDirection[window][filter] != 0)
-                {
                     // Backwards
                     for (int m = end - 1; m >= start; m--)
                         for (int i = 1; i <= Math.min (order, end - 1 - m); i++)
                             channel.coefficients[m] -= channel.coefficients[m + i] * lpc[i - 1];
-                }
                 else
                     for (int m = start; m < end; m++)
                         for (int i = 1; i <= Math.min (order, m - start); i++)
@@ -893,11 +892,9 @@ public class AacDecoder
         // combined result behaves like one long transform aligned at an offset of 448
         final float [] combined = new float [2048];
         if (channel.windowSequence == EIGHT_SHORT_SEQUENCE)
-        {
             for (int window = 0; window < 8; window++)
                 for (int i = 0; i < 256; i++)
                     combined[448 + window * 128 + i] += buffer[window * 256 + i];
-        }
         else
             System.arraycopy (buffer, 0, combined, 0, 2048);
 

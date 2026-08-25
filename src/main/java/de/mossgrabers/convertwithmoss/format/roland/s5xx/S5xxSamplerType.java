@@ -41,7 +41,7 @@ public enum S5xxSamplerType
      * @param id The ID of the type
      * @param description The description
      */
-    private S5xxSamplerType (final String id, final String description)
+    S5xxSamplerType (final String id, final String description)
     {
         this.id = id;
         this.description = description;

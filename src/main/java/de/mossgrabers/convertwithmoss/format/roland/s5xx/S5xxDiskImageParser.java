@@ -93,7 +93,7 @@ public class S5xxDiskImageParser
 
         final S5xxSamplerType samplerType = header.getSamplerType ();
         if (samplerType == S5xxSamplerType.LAND)
-            return parseCD (header);
+            return this.parseCD (header);
 
         return Collections.singletonList (new S5xxDiskImage (header, this.parsePatches (samplerType, 0), this.parseTones (0), this.parseDiskLabel (0), this.readWaveData (WAVE_DATA_A_DISKETTE, false)));
     }

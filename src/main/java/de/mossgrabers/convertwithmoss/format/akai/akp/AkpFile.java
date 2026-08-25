@@ -186,10 +186,8 @@ public class AkpFile extends AbstractRIFFFile
         }
 
         if (id == AkpRiffChunkId.LFO_ID.getFourCC ())
-        {
             // TODO Implement LFO support in combination with modsChunk
             return;
-        }
 
         if (id == AkpRiffChunkId.TUNE_ID.getFourCC ())
         {

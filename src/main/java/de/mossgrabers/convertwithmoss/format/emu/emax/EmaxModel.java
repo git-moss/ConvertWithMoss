@@ -5,8 +5,8 @@
 package de.mossgrabers.convertwithmoss.format.emu.emax;
 
 /**
- * The two samplers which use this bank format. They share all of their structures and differ only in
- * how they store their audio and in how much memory they have for it.
+ * The two samplers which use this bank format. They share all of their structures and differ only
+ * in how they store their audio and in how much memory they have for it.
  *
  * @author Jürgen Moßgraber
  */
@@ -24,7 +24,7 @@ public enum EmaxModel
     private final String fileEnding;
 
 
-    private EmaxModel (final String name, final int bytesPerFrame, final int memoryFrames, final String fileEnding)
+    EmaxModel (final String name, final int bytesPerFrame, final int memoryFrames, final String fileEnding)
     {
         this.name = name;
         this.bytesPerFrame = bytesPerFrame;
@@ -78,8 +78,8 @@ public enum EmaxModel
 
 
     /**
-     * Get the sampler which a bank belongs to. An unused sequence slot holds the number of frames of
-     * the sample memory, and the 512 KB of the Emax are the smallest memory of the two.
+     * Get the sampler which a bank belongs to. An unused sequence slot holds the number of frames
+     * of the sample memory, and the 512 KB of the Emax are the smallest memory of the two.
      *
      * @param memoryFrames The number of frames which the sequence table reports
      * @return The sampler

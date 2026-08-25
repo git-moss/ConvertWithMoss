@@ -77,7 +77,7 @@ public enum WaveRiffChunkId implements RiffChunkId
      * @param description A descriptive text for the chunk
      * @param asciiID The ASCII representation of the ID
      */
-    private WaveRiffChunkId (final String description, final String asciiID)
+    WaveRiffChunkId (final String description, final String asciiID)
     {
         this.description = description;
         this.fourCC = asciiID == null ? -1 : RiffChunkId.toFourCC (asciiID);

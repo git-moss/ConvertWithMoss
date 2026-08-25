@@ -85,7 +85,7 @@ public class AkaiS1000Volume implements IAkaiVolume
     /**
      * Get the errors that might have been detected during reading programs and samples from the
      * volume.
-     * 
+     *
      * @return The errors
      */
     public List<String> getErrors ()

@@ -96,7 +96,7 @@ public enum NIContainerChunkType
      * @param id The ID of the chunk type
      * @param name The name of the chunk type
      */
-    private NIContainerChunkType (final int id, final String name)
+    NIContainerChunkType (final int id, final String name)
     {
         this.id = id;
         this.name = name;

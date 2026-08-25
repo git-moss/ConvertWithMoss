@@ -36,34 +36,34 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class KSFFile
 {
-    static final DestinationAudioFormat         DESTINATION_FORMAT          = new DestinationAudioFormat (new int []
+    static final DestinationAudioFormat DESTINATION_FORMAT          = new DestinationAudioFormat (new int []
     {
         8,
         16
     }, 48000, false);
 
     /** ID for KSF Sample parameter chunk. */
-    private static final String                 KSF_SAMPLE_PARAM_ID         = "SMP1";
+    private static final String         KSF_SAMPLE_PARAM_ID         = "SMP1";
     /** ID for KSF Sample parameter 2 chunk. */
-    private static final String                 KSF_SAMPLE_PARAM_2_ID       = "SMP2";
+    private static final String         KSF_SAMPLE_PARAM_2_ID       = "SMP2";
     /** ID for KSF Sample data chunk. */
-    private static final String                 KSF_SAMPLE_DATA_ID          = "SMD1";
+    private static final String         KSF_SAMPLE_DATA_ID          = "SMD1";
     /** ID for KSF Sample number chunk. */
-    private static final String                 KSF_SAMPLE_NUMBER_ID        = "SNO1";
+    private static final String         KSF_SAMPLE_NUMBER_ID        = "SNO1";
     /** ID for KSF Sample name chunk. */
-    private static final String                 KSF_SAMPLE_NAME_ID          = "NAME";
+    private static final String         KSF_SAMPLE_NAME_ID          = "NAME";
     /** ID for KSF Sample file name chunk. */
-    private static final String                 KSF_SAMPLE_FILENAME_ID      = "SMF1";
+    private static final String         KSF_SAMPLE_FILENAME_ID      = "SMF1";
     /** ID for KSF divided sample parameter chunk. */
-    private static final String                 KSF_SAMPLE_DIVIDED_PARAM_ID = "SPD1";
+    private static final String         KSF_SAMPLE_DIVIDED_PARAM_ID = "SPD1";
     /** ID for KSF divided sample data chunk. */
-    private static final String                 KSF_SAMPLE_DIVIDED_DATA_ID  = "SDD1";
+    private static final String         KSF_SAMPLE_DIVIDED_DATA_ID  = "SDD1";
 
-    private static final int                    KSF_SAMPLE_PARAM_SIZE       = 32;
-    private static final int                    KSF_SAMPLE_DATA_SIZE        = 12;
-    private static final int                    KSF_SAMPLE_NUMBER_SIZE      = 4;
-    private static final int                    KSF_SAMPLE_NAME_SIZE        = 24;
-    private static final int                    KSF_SAMPLE_FILENAME_SIZE    = 12;
+    private static final int            KSF_SAMPLE_PARAM_SIZE       = 32;
+    private static final int            KSF_SAMPLE_DATA_SIZE        = 12;
+    private static final int            KSF_SAMPLE_NUMBER_SIZE      = 4;
+    private static final int            KSF_SAMPLE_NAME_SIZE        = 24;
+    private static final int            KSF_SAMPLE_FILENAME_SIZE    = 12;
 
 
     /**

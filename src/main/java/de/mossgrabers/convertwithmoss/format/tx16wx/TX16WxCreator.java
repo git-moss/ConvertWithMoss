@@ -320,7 +320,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (instruments.isEmpty ())
             return;
 
-        createPerformanceWithResults (destinationFolder, performanceSource);
+        this.createPerformanceWithResults (destinationFolder, performanceSource);
 
         this.progress.notifyDone ();
     }
@@ -410,7 +410,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     /**
      * Create the text of the TX bank description file.
-     * 
+     *
      * @param performanceFileName The name of the performance file
      * @param instrumentSources The multi-samples to add to the bank
      * @param programFiles The already created TX16w program files
@@ -432,19 +432,17 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         bankElement.setAttribute (XMLNS_TX, "http://www.tx16wx.com/3.0/bank");
         bankElement.setAttribute (XMLNS_XSI, XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI);
 
-        for (int i = 0; i < instrumentSources.size (); i++)
+        for (final IInstrumentSource element: instrumentSources)
         {
-            final IMultisampleSource multisampleSource = instrumentSources.get (i).getMultisampleSource ();
+            final IMultisampleSource multisampleSource = element.getMultisampleSource ();
             final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
             final String relativeFolderName = multisampleName + FOLDER_POSTFIX;
             for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
-            {
                 for (final ISampleZone zone: group.getSampleZones ())
                 {
                     final Element waveElement = XMLUtils.addElement (document, bankElement, TX16WxTag.SAMPLE);
                     waveElement.setAttribute (TX16WxTag.PATH, AbstractCreator.formatFileName (relativeFolderName, zone.getName () + ".wav"));
                 }
-            }
         }
         for (int i = 0; i < instrumentSources.size (); i++)
         {
@@ -528,9 +526,9 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 groupElement.setAttribute (TX16WxTag.GROUP_PLAYMODE, "Oneshot");
             groupElement.setAttribute (TX16WxTag.OUTPUT, "--");
 
-            for (int i = 0; i < zones.size (); i++)
+            for (final ISampleZone zone: zones)
             {
-                createSample (document, folderName, programElement, groupElement, zones.get (i), waveID);
+                createSample (document, folderName, programElement, groupElement, zone, waveID);
                 waveID++;
             }
 

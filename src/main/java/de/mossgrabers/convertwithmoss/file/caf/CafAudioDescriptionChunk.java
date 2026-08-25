@@ -14,46 +14,46 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
- * The CAF Audio Description chunk. It is required to be the first chunk of a CAF file and
- * describes the format of the audio data.
+ * The CAF Audio Description chunk. It is required to be the first chunk of a CAF file and describes
+ * the format of the audio data.
  *
  * @author Jürgen Moßgraber
  */
 public class CafAudioDescriptionChunk
 {
     /** Linear PCM. */
-    public static final String        FORMAT_LINEAR_PCM         = "lpcm";
+    public static final String               FORMAT_LINEAR_PCM     = "lpcm";
     /** Apple's implementation of IMA 4:1 ADPCM. */
-    public static final String        FORMAT_APPLE_IMA4         = "ima4";
+    public static final String               FORMAT_APPLE_IMA4     = "ima4";
     /** MPEG-4 AAC. */
-    public static final String        FORMAT_MPEG4_AAC          = "aac ";
+    public static final String               FORMAT_MPEG4_AAC      = "aac ";
     /** MACE 3:1. */
-    public static final String        FORMAT_MACE3              = "MAC3";
+    public static final String               FORMAT_MACE3          = "MAC3";
     /** MACE 6:1. */
-    public static final String        FORMAT_MACE6              = "MAC6";
+    public static final String               FORMAT_MACE6          = "MAC6";
     /** µLaw 2:1. */
-    public static final String        FORMAT_ULAW               = "ulaw";
+    public static final String               FORMAT_ULAW           = "ulaw";
     /** aLaw 2:1. */
-    public static final String        FORMAT_ALAW               = "alaw";
+    public static final String               FORMAT_ALAW           = "alaw";
     /** MPEG-1 or 2, Layer 1 audio. */
-    public static final String        FORMAT_MPEG_LAYER_1       = ".mp1";
+    public static final String               FORMAT_MPEG_LAYER_1   = ".mp1";
     /** MPEG-1 or 2, Layer 2 audio. */
-    public static final String        FORMAT_MPEG_LAYER_2       = ".mp2";
+    public static final String               FORMAT_MPEG_LAYER_2   = ".mp2";
     /** MPEG-1 or 2, Layer 3 audio. */
-    public static final String        FORMAT_MPEG_LAYER_3       = ".mp3";
+    public static final String               FORMAT_MPEG_LAYER_3   = ".mp3";
     /** Apple Lossless. */
-    public static final String        FORMAT_APPLE_LOSSLESS     = "alac";
+    public static final String               FORMAT_APPLE_LOSSLESS = "alac";
     /** Opus. */
-    public static final String        FORMAT_OPUS               = "opus";
+    public static final String               FORMAT_OPUS           = "opus";
     /** FLAC. */
-    public static final String        FORMAT_FLAC               = "flac";
+    public static final String               FORMAT_FLAC           = "flac";
 
     /** Linear PCM format flag: the data is stored as floating point numbers. */
-    public static final long          FLAG_IS_FLOAT             = 1;
+    public static final long                 FLAG_IS_FLOAT         = 1;
     /** Linear PCM format flag: the data is stored in little-endian byte order. */
-    public static final long          FLAG_IS_LITTLE_ENDIAN     = 2;
+    public static final long                 FLAG_IS_LITTLE_ENDIAN = 2;
 
-    private static final Map<String, String> FORMAT_NAMES       = new HashMap<> ();
+    private static final Map<String, String> FORMAT_NAMES          = new HashMap<> ();
     static
     {
         FORMAT_NAMES.put (FORMAT_LINEAR_PCM, "Linear PCM");

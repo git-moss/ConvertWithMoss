@@ -36,7 +36,7 @@ public interface RiffChunkId
      * @param text The string to be converted
      * @return ID representation of the string
      */
-    public static int toFourCC (final String text)
+    static int toFourCC (final String text)
     {
         final byte [] bytes = text.getBytes ();
         return bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
@@ -49,7 +49,7 @@ public interface RiffChunkId
      * @param id ID to be converted.
      * @return Text representation of the ID
      */
-    public static String toASCII (final int id)
+    static String toASCII (final int id)
     {
         return new String (new byte []
         {

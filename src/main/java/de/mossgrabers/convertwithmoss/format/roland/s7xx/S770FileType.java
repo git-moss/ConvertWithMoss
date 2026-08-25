@@ -33,7 +33,7 @@ public enum S770FileType
      *
      * @param value The ID of the type
      */
-    private S770FileType (final int value)
+    S770FileType (final int value)
     {
         this.value = value;
     }

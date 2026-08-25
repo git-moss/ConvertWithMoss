@@ -17,7 +17,7 @@ import java.nio.ByteOrder;
  */
 public class SoundboxEngineSettings
 {
-    private static final int SIZE          = 33;
+    private static final int   SIZE                = 33;
 
     /** The voice mode value for monophonic play-back. */
     public static final int    VOICE_MODE_MONO     = 0;
@@ -28,36 +28,36 @@ public class SoundboxEngineSettings
     /** The octave index which means no octave offset. */
     public static final int    OCTAVE_CENTER       = 2;
     /**
-     * The attack time in seconds when the attack knob is at 100%. Measured with plug-in 1.2.1:
-     * the knob maps linearly to the time (25% = 1.0s, 50% = 2.0s, 100% = 4.0s) and the ramp
-     * itself is linear as well.
+     * The attack time in seconds when the attack knob is at 100%. Measured with plug-in 1.2.1: the
+     * knob maps linearly to the time (25% = 1.0s, 50% = 2.0s, 100% = 4.0s) and the ramp itself is
+     * linear as well.
      */
     public static final double MAX_ATTACK_SECONDS  = 4.0;
     /**
-     * The release time in seconds when the release knob is at 100%. Measured with plug-in
-     * 1.2.1: the knob maps linearly to the time until silence (10% = 2s, 25% = 5s), the ramp is
-     * slightly convex. The decay knob is assumed to follow the same law.
+     * The release time in seconds when the release knob is at 100%. Measured with plug-in 1.2.1:
+     * the knob maps linearly to the time until silence (10% = 2s, 25% = 5s), the ramp is slightly
+     * convex. The decay knob is assumed to follow the same law.
      */
     public static final double MAX_RELEASE_SECONDS = 20.0;
 
     /** The voice mode (2 = polyphonic). */
-    public int    voiceMode         = VOICE_MODE_POLY;
+    public int                 voiceMode           = VOICE_MODE_POLY;
     /** The glide amount as the normalized knob position (0..1 = 0-100%). */
-    public double glide             = 0;
+    public double              glide               = 0;
     /** The transpose in semi-tones. */
-    public double transposeSemitones = 0;
+    public double              transposeSemitones  = 0;
     /** The fine tune in cents. */
-    public double fineTuneCents     = 0;
+    public double              fineTuneCents       = 0;
     /** The octave offset as an index with center 2 (= no offset). */
-    public int    octaveIndex       = OCTAVE_CENTER;
+    public int                 octaveIndex         = OCTAVE_CENTER;
     /** The amplitude envelope attack as the normalized knob position (0..1 = 0-100%). */
-    public double attack            = 0;
+    public double              attack              = 0;
     /** The amplitude envelope decay as the normalized knob position (0..1, default 20%). */
-    public double decay             = 0.2;
+    public double              decay               = 0.2;
     /** The amplitude envelope sustain level (0..1). */
-    public double sustain           = 1;
+    public double              sustain             = 1;
     /** The amplitude envelope release as the normalized knob position (0..1). */
-    public double release           = 0;
+    public double              release             = 0;
 
 
     /**

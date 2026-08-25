@@ -12,8 +12,7 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
 /**
- * The CAF Instrument chunk. Describes how to use the audio data as the sample of a MIDI
- * instrument.
+ * The CAF Instrument chunk. Describes how to use the audio data as the sample of a MIDI instrument.
  *
  * @author Jürgen Moßgraber
  */

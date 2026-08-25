@@ -267,67 +267,70 @@ public final class ZenCoreSvz
     public static final class SvzInstrument
     {
         /** The instrument (tone) name. */
-        public String           name;
+        public String                     name;
         /**
          * The left (or only) multi-sample name: the tone name plus a content hash, since the device
          * re-uses an already imported multi-sample of the same name (whose key map indexes other
          * sample slots) instead of loading the new one. Equal names then imply equal content.
          */
-        public String           multisampleName;
+        public String                     multisampleName;
         /** The right-channel multi-sample name, or null for a mono instrument. */
-        public String           multisampleNameRight;
+        public String                     multisampleNameRight;
         /** Whether the instrument is stereo (two panned partials over two mono multi-samples). */
-        public boolean          stereo;
+        public boolean                    stereo;
         /** For each of the 128 keys the 1-based left/only pool sample index, 0 if unassigned. */
-        public final int []     keyToSample      = new int [128];
+        public final int []               keyToSample      = new int [128];
         /** For each of the 128 keys the 1-based right-channel pool sample index (stereo only). */
-        public final int []     keyToSampleRight = new int [128];
+        public final int []               keyToSampleRight = new int [128];
         /**
          * When set (two or more entries), the tone is built as a velocity-layered multi-partial
          * tone from these partials instead of the single mono/stereo multi-sample above; each
          * partial has its own multi-sample, pan and velocity window.
          */
-        public List<SvzPartial> partials;
-        /** The enabled partials with their multi-sample numbers, pan and velocity window (read side). */
-        public final List<SvzTonePartial> tonePartials = new ArrayList<> ();
+        public List<SvzPartial>           partials;
+        /**
+         * The enabled partials with their multi-sample numbers, pan and velocity window (read
+         * side).
+         */
+        public final List<SvzTonePartial> tonePartials     = new ArrayList<> ();
 
         // ----------------------------------------------------------------------------------------
         // Optional Partial-1 tone parameters taken from the source; -1 keeps the template default
 
         /** Filter type: 1=LPF, 2=BPF, 3=HPF (-1 = keep template). */
-        public int              filterType       = -1;
+        public int                        filterType       = -1;
         /** Filter cutoff 0-1023. */
-        public int              cutoff           = -1;
+        public int                        cutoff           = -1;
         /** Filter resonance 0-1023. */
-        public int              resonance        = -1;
+        public int                        resonance        = -1;
         /** TVA amplitude-envelope time values 0-1023 - attack. */
-        public int              envAttack        = -1;
+        public int                        envAttack        = -1;
         /** TVA amplitude-envelope time values 0-1023 - hold. */
-        public int              envHold          = -1;
+        public int                        envHold          = -1;
         /** TVA amplitude-envelope time values 0-1023 - decay. */
-        public int              envDecay         = -1;
+        public int                        envDecay         = -1;
         /** TVA amplitude-envelope time values 0-1023 - release. */
-        public int              envRelease       = -1;
+        public int                        envRelease       = -1;
         /** TVA amplitude-envelope hold + sustain levels 0-1023 - hold. */
-        public int              envHoldLevel     = -1;
+        public int                        envHoldLevel     = -1;
         /** TVA amplitude-envelope hold + sustain levels 0-1023 - sustain. */
-        public int              envSustain       = -1;
+        public int                        envSustain       = -1;
 
         // Optional pitch and TVF (filter) modulation envelopes. depth is a signed amount (pitch
         // -63..+63, filter -100..+100); a null times array keeps the template default. times =
         // {T1..T4} (0-1023), levels = {L0..L4} (signed, the modulation shape scaled by depth).
         /** Pitch-envelope depth (signed), or 0 with null times to keep the default. */
-        public int              pitchEnvDepth;
+        public int                        pitchEnvDepth;
         /** Pitch-envelope times {T1..T4} 0-1023, or null. */
-        public int []           pitchEnvTimes;
+        public int []                     pitchEnvTimes;
         /** Pitch-envelope levels {L0..L4} signed. */
-        public int []           pitchEnvLevels;
+        public int []                     pitchEnvLevels;
         /** TVF (filter) envelope depth (signed), or 0 with null times to keep the default. */
-        public int              filterEnvDepth;
+        public int                        filterEnvDepth;
         /** TVF (filter) envelope times {T1..T4} 0-1023, or null. */
-        public int []           filterEnvTimes;
+        public int []                     filterEnvTimes;
         /** TVF (filter) envelope levels {L0..L4} signed. */
-        public int []           filterEnvLevels;
+        public int []                     filterEnvLevels;
     }
 
 
@@ -745,7 +748,6 @@ public final class ZenCoreSvz
                 final int chunkSize = (int) ZenCoreUtil.readUnsigned32 (file, entryOffset + 8, false);
                 final int chunkStart = usdSectionStart + chunkOffset;
                 if (chunkStart >= 0 && chunkSize > SMPD_HEADER_COMPACT && chunkStart + chunkSize <= file.length)
-                {
                     // A third SMPd variant - the output of Roland's SF2-to-SVZ converter, used by
                     // some commercial packs - embeds a complete RIFF/WAVE file after a 0x20 byte
                     // header instead of raw PCM (its byte at 0x08 is an unrelated 0x32, so the
@@ -753,7 +755,6 @@ public final class ZenCoreSvz
                     // reader. Otherwise the header is one of the two raw-PCM variants (see
                     // resolveSmpdLayout); an unrecognized chunk leaves the sample without audio.
                     if (isEmbeddedWaveChunk (file, chunkStart))
-                    {
                         try
                         {
                             sample.setSampleData (readEmbeddedWave (file, chunkStart, chunkSize));
@@ -762,7 +763,6 @@ public final class ZenCoreSvz
                         {
                             // A malformed embedded WAV leaves the sample without audio.
                         }
-                    }
                     else
                     {
                         final Optional<Pair<Integer, Integer>> layout = resolveSmpdLayout (file, chunkStart, chunkSize);
@@ -777,7 +777,6 @@ public final class ZenCoreSvz
                             sample.setSampleData (decodePcm (file, pcmStart, pcmSize, channels, rate < 8000 || rate > 192000 ? 48000 : rate));
                         }
                     }
-                }
             }
             result.add (sample);
         }

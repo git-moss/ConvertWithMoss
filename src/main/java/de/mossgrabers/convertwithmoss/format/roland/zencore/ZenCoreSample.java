@@ -16,18 +16,18 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 public class ZenCoreSample
 {
     /** Loop is off, the sample plays once to its end. */
-    public static final int    LOOP_MODE_ONE_SHOT = 1;
+    public static final int LOOP_MODE_ONE_SHOT = 1;
 
-    private String             name               = "";
-    private int                originalKey        = 60;
-    private int                loopMode           = LOOP_MODE_ONE_SHOT;
-    private int                level              = 127;
-    private int                gain               = 0;
-    private int                fineTune           = 0;
-    private int                startPoint         = 0;
-    private int                loopStart          = 0;
-    private int                endPoint           = 0;
-    private ISampleData sampleData;
+    private String          name               = "";
+    private int             originalKey        = 60;
+    private int             loopMode           = LOOP_MODE_ONE_SHOT;
+    private int             level              = 127;
+    private int             gain               = 0;
+    private int             fineTune           = 0;
+    private int             startPoint         = 0;
+    private int             loopStart          = 0;
+    private int             endPoint           = 0;
+    private ISampleData     sampleData;
 
 
     /**

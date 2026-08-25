@@ -77,24 +77,24 @@ public class KurzweilProgram
     public static class Layer
     {
         private int              keymapID;
-        private int              lowKey               = 0;
-        private int              highKey              = 127;
-        private int              transpose            = 0;
-        private int              velocityLow          = 1;
-        private int              velocityHigh         = 127;
+        private int              lowKey                 = 0;
+        private int              highKey                = 127;
+        private int              transpose              = 0;
+        private int              velocityLow            = 1;
+        private int              velocityHigh           = 127;
 
-        private boolean          isNaturalEnvelope       = true;
-        private KurzweilEnvelope amplitudeEnvelope       = null;
-        private KurzweilEnvelope filterEnvelope          = null;
-        private int              cutoffModulationSource  = 0;
-        private int              cutoffModulationDepth   = 0;
+        private boolean          isNaturalEnvelope      = true;
+        private KurzweilEnvelope amplitudeEnvelope      = null;
+        private KurzweilEnvelope filterEnvelope         = null;
+        private int              cutoffModulationSource = 0;
+        private int              cutoffModulationDepth  = 0;
 
-        private int              algorithm            = 1;
-        private int              filterType           = FILTER_NONE;
-        private int              cutoff               = 0;
-        private int              f2Type               = F3_NONE;
-        private int              f2Value              = 0;
-        private int              f3Type               = F3_NONE;
+        private int              algorithm              = 1;
+        private int              filterType             = FILTER_NONE;
+        private int              cutoff                 = 0;
+        private int              f2Type                 = F3_NONE;
+        private int              f2Value                = 0;
+        private int              f3Type                 = F3_NONE;
 
 
         /**
@@ -235,8 +235,8 @@ public class KurzweilProgram
 
 
         /**
-         * Get the depth of the velocity modulation of the filter frequency (the attack velocity
-         * as the cutoff control source).
+         * Get the depth of the velocity modulation of the filter frequency (the attack velocity as
+         * the cutoff control source).
          *
          * @return The depth in cents, 0 if the velocity is not routed to the filter frequency
          */

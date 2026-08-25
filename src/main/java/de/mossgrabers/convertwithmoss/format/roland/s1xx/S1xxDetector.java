@@ -108,10 +108,8 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
 
         final WaveParameters wave = sysEx.waveParameters[0];
         if (wave.samplingStructure <= 6)
-        {
             // Create 1 layer
             zones.add (createSampleZoneFromWave (wave, 0, 127));
-        }
         else if (wave.samplingStructure <= 9)
         {
             // Create 2 layers
@@ -137,7 +135,7 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Fills one sample zone with the data of one wave parameter block.
-     * 
+     *
      * @param wave The wave parameters to read from
      * @param keyLow The lowest key to set
      * @param keyHigh The highest key to set
@@ -214,7 +212,7 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Maps the S-10 rate/level envelope (4 rates, 3 levels, last stage decays to 0) onto the
      * generic ADSR-style {@link IEnvelope}. Exact S-10 rate-to-time scaling is undocumented.
-     * 
+     *
      * @param zone The zone to which to add the envelope
      * @param wave The wave parameters which contain the envelope
      */
@@ -249,7 +247,7 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Applies global performance parameters, currently the key transpose.
-     * 
+     *
      * @param multisampleSource The multi-sample source to apply the performance parameters to
      * @param performance The performance parameters to apply
      */

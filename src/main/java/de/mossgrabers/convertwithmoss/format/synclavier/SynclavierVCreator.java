@@ -166,8 +166,7 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
         // widened so the whole keyboard stays playable
         final List<ISampleZone> zones = new ArrayList<> ();
         for (final IGroup group: multisampleSource.getGroups ())
-            for (final ISampleZone zone: group.getSampleZones ())
-                zones.add (zone);
+            zones.addAll (group.getSampleZones ());
         if (zones.size () > MAX_PARTIALS)
         {
             this.notifier.log ("IDS_SYNCLAVIER_V_ZONE_REDUCTION", multisampleSource.getName (), Integer.toString (zones.size ()));

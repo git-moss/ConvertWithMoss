@@ -330,9 +330,8 @@ public final class AudioFileUtils
 
 
     /**
-     * Convert 32-bit float audio to signed integer PCM of 16, 24 or 32 bit. The nominal float
-     * range of -1..1 is mapped onto the full scale of the integer format, values beyond it are
-     * clipped.
+     * Convert 32-bit float audio to signed integer PCM of 16, 24 or 32 bit. The nominal float range
+     * of -1..1 is mapped onto the full scale of the integer format, values beyond it are clipped.
      *
      * @param inputStream The float audio
      * @param sourceAudioFormat The format of the float audio

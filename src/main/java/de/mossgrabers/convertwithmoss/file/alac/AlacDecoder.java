@@ -603,7 +603,7 @@ public class AlacDecoder
                 throw new IOException ("Malformed ALAC packet.");
 
             int m = meanB >>> QBSHIFT;
-            int k = Math.min (lg3a (m), this.kb);
+            final int k = Math.min (lg3a (m), this.kb);
             m = (1 << k) - 1;
 
             // dyn_get_32bit()
@@ -652,7 +652,7 @@ public class AlacDecoder
             if (Integer.compareUnsigned (meanB << MMULSHIFT, QB) < 0 && c < numSamples)
             {
                 zmode = 1;
-                int kz = Integer.numberOfLeadingZeros (meanB) - BITOFF + (meanB + MOFF >> MDENSHIFT);
+                final int kz = Integer.numberOfLeadingZeros (meanB) - BITOFF + (meanB + MOFF >> MDENSHIFT);
                 final int mz = (1 << kz) - 1 & wb;
 
                 // dyn_get()
@@ -765,7 +765,6 @@ public class AlacDecoder
             out[j] = del << chanshift >> chanshift;
 
             if (sg > 0)
-            {
                 for (int k = numactive - 1; k >= 0; k--)
                 {
                     final int dd = top - out[base - k];
@@ -775,9 +774,7 @@ public class AlacDecoder
                     if (del0 <= 0)
                         break;
                 }
-            }
             else if (sg < 0)
-            {
                 for (int k = numactive - 1; k >= 0; k--)
                 {
                     final int dd = top - out[base - k];
@@ -787,7 +784,6 @@ public class AlacDecoder
                     if (del0 >= 0)
                         break;
                 }
-            }
         }
     }
 

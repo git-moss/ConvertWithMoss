@@ -16,19 +16,19 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
  * Reads and writes the HxC images of the floppy disks of the E-mu Emulator and Emulator II. Both
  * samplers write the same FM track format with one sector of 3584 bytes per track; the Emulator
  * uses 35 tracks on one side, the Emulator II 80 tracks on two sides. A raw image is the sectors
- * one after another in the order of the tracks, which is the order in which the samplers load
- * them into memory.
+ * one after another in the order of the tracks, which is the order in which the samplers load them
+ * into memory.
  *
  * @author Jürgen Moßgraber
  */
 public class EmuFmDisk
 {
     /** The length of the interleaved bit-stream of a track in the images of the samplers. */
-    public static final int TRACK_LENGTH = 31250;
+    public static final int   TRACK_LENGTH = 31250;
     /** The bit-rate which the images of the samplers declare in kbit/s. */
-    public static final int BITRATE      = 312;
+    public static final int   BITRATE      = 312;
     /** The closing gap of a track continues into the padding of the last block of the track. */
-    private static final byte PAD_BYTE   = (byte) 0xAA;
+    private static final byte PAD_BYTE     = (byte) 0xAA;
 
 
     /**

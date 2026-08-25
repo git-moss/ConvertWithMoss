@@ -602,7 +602,6 @@ public class AlacEncoder
 
             final int sg = signOfInt (del);
             if (sg > 0)
-            {
                 for (int k = numactive - 1; k >= 0; k--)
                 {
                     final int dd = top - in[base - k];
@@ -612,9 +611,7 @@ public class AlacEncoder
                     if (del0 <= 0)
                         break;
                 }
-            }
             else if (sg < 0)
-            {
                 for (int k = numactive - 1; k >= 0; k--)
                 {
                     final int dd = top - in[base - k];
@@ -624,7 +621,6 @@ public class AlacEncoder
                     if (del0 >= 0)
                         break;
                 }
-            }
         }
     }
 
@@ -658,7 +654,7 @@ public class AlacEncoder
         while (c < numSamples)
         {
             int m = mb >>> QBSHIFT;
-            int k = Math.min (lg3a (m), kb);
+            final int k = Math.min (lg3a (m), kb);
             m = (1 << k) - 1;
 
             final int del = pc[inIndex];
@@ -801,7 +797,7 @@ public class AlacEncoder
          */
         void write (final int value, final int numBits)
         {
-            long bits = numBits == 32 ? value & 0xFFFFFFFFL : value & (1L << numBits) - 1;
+            final long bits = numBits == 32 ? value & 0xFFFFFFFFL : value & (1L << numBits) - 1;
             int remaining = numBits;
             while (remaining > 0)
             {

@@ -176,13 +176,13 @@ public class Sf2SampleData extends AbstractSampleData
      * one. Some conversion tools write one channel with extra frames at its start, which offsets
      * its loop and its length by the same amount (e.g. in the DigitalSoundFactory E-mu E4 banks
      * every right channel sample is 1 frame longer and its loop starts 1 frame later). If both
-     * loops have the same length and the loop offset matches the length offset, the pair is
-     * aligned by skipping (or delaying by) that many frames of the right channel.
+     * loops have the same length and the loop offset matches the length offset, the pair is aligned
+     * by skipping (or delaying by) that many frames of the right channel.
      *
      * @param left The sample of the left channel
      * @param right The sample of the right channel
-     * @return The number of frames the right channel must be moved to line up with the left one,
-     *         0 if the pair is already aligned or cannot be aligned
+     * @return The number of frames the right channel must be moved to line up with the left one, 0
+     *         if the pair is already aligned or cannot be aligned
      */
     public static int computeAlignmentOffset (final Sf2SampleDescriptor left, final Sf2SampleDescriptor right)
     {

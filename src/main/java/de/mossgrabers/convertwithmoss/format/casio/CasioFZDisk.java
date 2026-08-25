@@ -22,42 +22,42 @@ import de.mossgrabers.tools.ui.Functions;
 /**
  * Access to the files on a Casio FZ-1/FZ-10M/FZ-20M floppy disk. The disk is double sided with 80
  * tracks, 8 sectors per track and 1,024 bytes per sector. Sector 0 contains the disk name and the
- * cluster allocation table, sector 1 the directory with up to 64 entries. A file consists of a
- * file head sector, which contains up to 64 start/end sector ranges and the object counts, and
- * the content sectors. Additionally, bare dump files (fzf = full dump, fzv = voice, fzb = bank)
- * are supported, which contain the file head followed by the content blocks in sequential order.
- * Full dumps without a file head, as written by the 'fzdump' MIDI utility (e.g. the factory
- * library), are recognized and read as well.
+ * cluster allocation table, sector 1 the directory with up to 64 entries. A file consists of a file
+ * head sector, which contains up to 64 start/end sector ranges and the object counts, and the
+ * content sectors. Additionally, bare dump files (fzf = full dump, fzv = voice, fzb = bank) are
+ * supported, which contain the file head followed by the content blocks in sequential order. Full
+ * dumps without a file head, as written by the 'fzdump' MIDI utility (e.g. the factory library),
+ * are recognized and read as well.
  *
  * @author Jürgen Moßgraber
  */
 public class CasioFZDisk
 {
     /** The size of a sector in bytes. */
-    public static final int  SECTOR_SIZE      = 1024;
+    public static final int         SECTOR_SIZE        = 1024;
     /** The number of sectors of a disk. */
-    public static final int  NUM_SECTORS      = 1280;
+    public static final int         NUM_SECTORS        = 1280;
     /** The size of a disk image in bytes. */
-    public static final int  DISK_SIZE        = NUM_SECTORS * SECTOR_SIZE;
+    public static final int         DISK_SIZE          = NUM_SECTORS * SECTOR_SIZE;
 
     /** File type: full dump data. */
-    public static final int  TYPE_FULL_DUMP   = 0;
+    public static final int         TYPE_FULL_DUMP     = 0;
     /** File type: voice data. */
-    public static final int  TYPE_VOICE       = 1;
+    public static final int         TYPE_VOICE         = 1;
     /** File type: bank data. */
-    public static final int  TYPE_BANK        = 2;
+    public static final int         TYPE_BANK          = 2;
     /** File type: effect data. */
-    public static final int  TYPE_EFFECT      = 3;
+    public static final int         TYPE_EFFECT        = 3;
     /** File type: sequence data. */
-    public static final int  TYPE_SEQUENCE    = 4;
+    public static final int         TYPE_SEQUENCE      = 4;
     /** File type: expanded program data. */
-    public static final int  TYPE_PROGRAM     = 5;
+    public static final int         TYPE_PROGRAM       = 5;
 
-    private static final int MAX_DIR_ENTRIES  = 64;
-    private static final int MAX_BLOCK_POINTERS = 64;
+    private static final int        MAX_DIR_ENTRIES    = 64;
+    private static final int        MAX_BLOCK_POINTERS = 64;
 
-    private String           diskName         = "";
-    private final List<CasioFZFile> files     = new ArrayList<> ();
+    private String                  diskName           = "";
+    private final List<CasioFZFile> files              = new ArrayList<> ();
 
 
     /**
@@ -157,11 +157,10 @@ public class CasioFZDisk
     /**
      * Test if a bare dump file is stored without a file head. The counters in the system area at
      * the end of the first content block must be consistent with the file type: a voice dump
-     * contains exactly 1 voice and no banks, a bank dump 1 bank and a full dump 0-8 banks. For
-     * full dumps additionally the block pointer table decides: a file head holds sector ranges,
-     * while a head-less dump starts with the area count and the ascending high keys of the first
-     * bank block (or with the wave addresses of a voice block), which can never form a valid
-     * range.
+     * contains exactly 1 voice and no banks, a bank dump 1 bank and a full dump 0-8 banks. For full
+     * dumps additionally the block pointer table decides: a file head holds sector ranges, while a
+     * head-less dump starts with the area count and the ascending high keys of the first bank block
+     * (or with the wave addresses of a voice block), which can never form a valid range.
      *
      * @param dump The bare dump file
      * @param type The type of the file, one of the TYPE_* constants

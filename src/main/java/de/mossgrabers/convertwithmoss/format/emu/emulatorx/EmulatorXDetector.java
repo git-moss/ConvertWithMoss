@@ -64,7 +64,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * The velocity range of a group of voices.
-     * 
+     *
      * @param low The low velocity value
      * @param high The high velocity value
      */

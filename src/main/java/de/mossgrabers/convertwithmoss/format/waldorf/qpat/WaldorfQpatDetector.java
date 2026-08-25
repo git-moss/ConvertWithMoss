@@ -390,12 +390,22 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             resourceHeader.read (in);
             if (resourceHeader.isUnknownType ())
                 this.notifier.log ("IDS_QPAT_UNKNOWN_RESOURCE_TYPE", Integer.toString (resourceHeader.rawType));
-            else if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP1)
-                resources[0] = resourceHeader;
-            else if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP2)
-                resources[1] = resourceHeader;
-            else if (resourceHeader.type == WaldorfQpatResourceType.USER_SAMPLE_MAP3)
-                resources[2] = resourceHeader;
+            else
+                switch (resourceHeader.type)
+                {
+                    case USER_SAMPLE_MAP1:
+                        resources[0] = resourceHeader;
+                        break;
+                    case USER_SAMPLE_MAP2:
+                        resources[1] = resourceHeader;
+                        break;
+                    case USER_SAMPLE_MAP3:
+                        resources[2] = resourceHeader;
+                        break;
+                    case null:
+                    default:
+                        break;
+                }
         }
         return resources;
     }

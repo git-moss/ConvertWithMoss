@@ -177,33 +177,29 @@ public class TonverkMultiFile
             if (line.isEmpty () || line.startsWith ("#"))
                 continue;
 
-            if (line.equals ("[[key-zones]]"))
+            switch (line)
             {
-                hierarchy.currentZone = new TonverkKeyZone ();
-                this.keyZones.add (hierarchy.currentZone);
-                hierarchy.currentLayer = null;
-                hierarchy.currentSlot = null;
-                continue;
-            }
-
-            if (line.equals ("[[key-zones.velocity-layers]]"))
-            {
-                if (hierarchy.currentZone == null)
-                    throw new IllegalStateException ("velocity-layer without key-zone");
-
-                hierarchy.currentLayer = new TonverkVelocityLayer ();
-                hierarchy.currentZone.velocityLayers.add (hierarchy.currentLayer);
-                hierarchy.currentSlot = null;
-                continue;
-            }
-
-            if (line.equals ("[[key-zones.velocity-layers.sample-slots]]"))
-            {
-                if (hierarchy.currentLayer == null)
-                    throw new IllegalStateException ("sample-slot without velocity-layer");
-                hierarchy.currentSlot = new TonverkSampleSlot ();
-                hierarchy.currentLayer.sampleSlots.add (hierarchy.currentSlot);
-                continue;
+                case "[[key-zones]]":
+                    hierarchy.currentZone = new TonverkKeyZone ();
+                    this.keyZones.add (hierarchy.currentZone);
+                    hierarchy.currentLayer = null;
+                    hierarchy.currentSlot = null;
+                    continue;
+                case "[[key-zones.velocity-layers]]":
+                    if (hierarchy.currentZone == null)
+                        throw new IllegalStateException ("velocity-layer without key-zone");
+                    hierarchy.currentLayer = new TonverkVelocityLayer ();
+                    hierarchy.currentZone.velocityLayers.add (hierarchy.currentLayer);
+                    hierarchy.currentSlot = null;
+                    continue;
+                case "[[key-zones.velocity-layers.sample-slots]]":
+                    if (hierarchy.currentLayer == null)
+                        throw new IllegalStateException ("sample-slot without velocity-layer");
+                    hierarchy.currentSlot = new TonverkSampleSlot ();
+                    hierarchy.currentLayer.sampleSlots.add (hierarchy.currentSlot);
+                    continue;
+                default:
+                    break;
             }
 
             final Pair<String, String> keyValue = getKeyValue (line);

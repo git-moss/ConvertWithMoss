@@ -46,7 +46,7 @@ public enum AkaiVolumeType
      * @param typeId The type ID
      * @param name The readable name
      */
-    private AkaiVolumeType (final int typeId, final String name)
+    AkaiVolumeType (final int typeId, final String name)
     {
         this.typeId = typeId;
         this.name = name;

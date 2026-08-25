@@ -57,35 +57,38 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 {
-    private static final String   ENDING_HFE           = "hfe";
-    private static final String   ENDING_RAW           = "emuiifd";
-    private static final int []   ALLOWED_BIT_DEPTHS   =
+    private static final String  ENDING_HFE           = "hfe";
+    private static final String  ENDING_RAW           = "emuiifd";
+    private static final int []  ALLOWED_BIT_DEPTHS   =
     {
         16
     };
     /** The Emulator II plays one channel per voice, so the audio has to be mixed down to mono. */
-    private static final int      MINIMUM_FRAMES       = 8;
+    private static final int     MINIMUM_FRAMES       = 8;
     /** A loop shorter than this does not survive the companding of the audio. */
-    private static final int      MINIMUM_LOOP_LENGTH  = 8;
+    private static final int     MINIMUM_LOOP_LENGTH  = 8;
     /** The loop length which a voice without a loop carries, which reserves a bit of slot. */
-    private static final int      UNLOOPED_LOOP_LENGTH = 64;
+    private static final int     UNLOOPED_LOOP_LENGTH = 64;
     /** The largest transposition a key range entry can hold. */
-    private static final int      MAX_TRANSPOSE        = 0x3F;
+    private static final int     MAX_TRANSPOSE        = 0x3F;
     /** The level of a key range, which is what the factory library uses throughout. */
-    private static final int      RANGE_LEVEL          = 0x70;
+    private static final int     RANGE_LEVEL          = 0x70;
     /** The flags of a voice record without its loop bit. */
-    private static final int      VOICE_FLAGS_DEFAULT  = 0x24;
+    private static final int     VOICE_FLAGS_DEFAULT  = 0x24;
     /** The sample memory of a bank starts this far behind the end of its records. */
-    private static final int      SAMPLE_MEMORY_GAP    = 0x95FE;
+    private static final int     SAMPLE_MEMORY_GAP    = 0x95FE;
     /** The memory address behind the sample memory, to which the negative counters count. */
-    private static final int      COUNTER_BASE         = 0x500000;
+    private static final int     COUNTER_BASE         = 0x500000;
     /** The size of the operating system of the disk: tracks 0 to 21. */
-    private static final int      OS_SIZE              = Emulator2Constants.BANK_OFFSET;
-    /** The size of the system file (E2O) which the EMXP project publishes: the OS without the empty rest of its tracks. */
-    private static final int      OS_FILE_SIZE         = 72704;
+    private static final int     OS_SIZE              = Emulator2Constants.BANK_OFFSET;
+    /**
+     * The size of the system file (E2O) which the EMXP project publishes: the OS without the empty
+     * rest of its tracks.
+     */
+    private static final int     OS_FILE_SIZE         = 72704;
 
     /** The header which starts every preset record. */
-    private static final byte []  PRESET_HEADER        =
+    private static final byte [] PRESET_HEADER        =
     {
         0x01,
         0x04,
@@ -98,7 +101,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         (byte) 0x89
     };
     /** The parameters of a preset, the most frequent setting of the factory library. */
-    private static final byte []  PRESET_PARAMETERS    =
+    private static final byte [] PRESET_PARAMETERS    =
     {
         0x00,
         0x0B,
@@ -118,30 +121,270 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
     /**
      * A voice record of the factory library - the voice 'piano A2' of the disk 'Grand Piano' -
-     * whose settings are used for every written voice. The fields which are decoded - the name,
-     * the addresses, the loop and the pointers into the record - are overwritten.
+     * whose settings are used for every written voice. The fields which are decoded - the name, the
+     * addresses, the loop and the pointers into the record - are overwritten.
      */
-    private static final int []   VOICE_TEMPLATE       =
+    private static final int []  VOICE_TEMPLATE       =
     {
-        0x04, 0x03, 0xE7, 0xF9, 0x00, 0x02, 0xF8, 0x37, 0x4F, 0x01, 0xEF, 0xC1, 0x01, 0x00, 0xC4, 0xD9,
-        0x4F, 0x01, 0x00, 0xC4, 0xD9, 0x4F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x61, 0x00, 0x80,
-        0x00, 0xFF, 0xA5, 0x9B, 0x00, 0x04, 0x90, 0x9B, 0x00, 0x1C, 0x00, 0x1C, 0x00, 0x1C, 0x00, 0x7F,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9, 0xE9,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0xFF, 0xFF, 0x00, 0x04, 0x00, 0x97, 0x9B, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x97, 0x00, 0x01, 0x01,
-        0xFD, 0x00, 0x00, 0xF3, 0x0F, 0x06, 0x06, 0xFF, 0xFF, 0x07, 0xAC, 0x9B, 0xFF, 0xFF, 0x00, 0x07,
-        0x00, 0xAC, 0x00, 0x01, 0x01, 0xFD, 0x07, 0x00, 0xF3, 0x0F, 0x70, 0x69, 0x61, 0x6E, 0x6F, 0x20,
-        0x41, 0x32, 0x20, 0x20, 0x20, 0x20, 0x24, 0xE8, 0xF9, 0x00, 0x48, 0xEE, 0x00, 0xF0, 0xC1, 0x01,
-        0x3C, 0x26, 0x00, 0xE8, 0xF9, 0x00, 0x48, 0xEE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F
+        0x04,
+        0x03,
+        0xE7,
+        0xF9,
+        0x00,
+        0x02,
+        0xF8,
+        0x37,
+        0x4F,
+        0x01,
+        0xEF,
+        0xC1,
+        0x01,
+        0x00,
+        0xC4,
+        0xD9,
+        0x4F,
+        0x01,
+        0x00,
+        0xC4,
+        0xD9,
+        0x4F,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x61,
+        0x00,
+        0x80,
+        0x00,
+        0xFF,
+        0xA5,
+        0x9B,
+        0x00,
+        0x04,
+        0x90,
+        0x9B,
+        0x00,
+        0x1C,
+        0x00,
+        0x1C,
+        0x00,
+        0x1C,
+        0x00,
+        0x7F,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0xE9,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0xFF,
+        0xFF,
+        0x00,
+        0x04,
+        0x00,
+        0x97,
+        0x9B,
+        0xFF,
+        0xFF,
+        0x00,
+        0x00,
+        0x00,
+        0x97,
+        0x00,
+        0x01,
+        0x01,
+        0xFD,
+        0x00,
+        0x00,
+        0xF3,
+        0x0F,
+        0x06,
+        0x06,
+        0xFF,
+        0xFF,
+        0x07,
+        0xAC,
+        0x9B,
+        0xFF,
+        0xFF,
+        0x00,
+        0x07,
+        0x00,
+        0xAC,
+        0x00,
+        0x01,
+        0x01,
+        0xFD,
+        0x07,
+        0x00,
+        0xF3,
+        0x0F,
+        0x70,
+        0x69,
+        0x61,
+        0x6E,
+        0x6F,
+        0x20,
+        0x41,
+        0x32,
+        0x20,
+        0x20,
+        0x20,
+        0x20,
+        0x24,
+        0xE8,
+        0xF9,
+        0x00,
+        0x48,
+        0xEE,
+        0x00,
+        0xF0,
+        0xC1,
+        0x01,
+        0x3C,
+        0x26,
+        0x00,
+        0xE8,
+        0xF9,
+        0x00,
+        0x48,
+        0xEE,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F,
+        0x0F
     };
     /** The high bytes of the pointers of a voice record into itself, which name the record. */
-    private static final int []   VOICE_POINTER_BYTES  =
+    private static final int []  VOICE_POINTER_BYTES  =
     {
         0x23,
         0x27,
@@ -149,7 +392,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         0xAA
     };
     /** The memory address of the first voice record, to which the pointers refer. */
-    private static final int      VOICE_RECORD_ADDRESS = Emulator2Constants.BANK_ADDRESS + Emulator2Constants.VOICE_TABLE;
+    private static final int     VOICE_RECORD_ADDRESS = Emulator2Constants.BANK_ADDRESS + Emulator2Constants.VOICE_TABLE;
 
 
     /**
@@ -318,20 +561,18 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
         final ISampleZone [] [] zonesByKey = new ISampleZone [2] [Emulator2Constants.NUM_KEYS];
         int dropped = 0;
-        for (int layer = 0; layer < groups.size (); layer++)
-            for (final ISampleZone zone: groups.get (layer).getSampleZones ())
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
             {
                 if (zone.getSampleData ().isEmpty ())
                     continue;
                 for (int key = Math.max (0, zone.getKeyLow () - Emulator2Constants.LOWEST_KEY); key <= Math.min (Emulator2Constants.NUM_KEYS - 1, zone.getKeyHigh () - Emulator2Constants.LOWEST_KEY); key++)
-                {
                     if (zonesByKey[0][key] == null)
                         zonesByKey[0][key] = zone;
                     else if (zonesByKey[1][key] == null)
                         zonesByKey[1][key] = zone;
                     else
                         dropped++;
-                }
             }
         if (dropped > 0)
             this.notifier.logError ("IDS_EII_TOO_MANY_LAYERS", multisampleSource.getName ());
@@ -386,7 +627,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
      */
     private static int getTransposition (final ISampleZone zone, final int firstKey)
     {
-        return Math.clamp (Emulator2Constants.TRANSPOSE_UNITY + Emulator2Constants.LOWEST_KEY + firstKey - getRootKey (zone), 0, MAX_TRANSPOSE);
+        return Math.clamp (Emulator2Constants.TRANSPOSE_UNITY + Emulator2Constants.LOWEST_KEY + firstKey - (long) getRootKey (zone), 0, MAX_TRANSPOSE);
     }
 
 
@@ -589,22 +830,21 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
             image[directory + 1] = (byte) (link & 0xFF);
             directory += 2;
         }
-        writeKeyMaps (image, bank, presets.get (0), voices);
+        writeKeyMaps (image, bank, presets.get (0));
         return true;
     }
 
 
     /**
      * Write the expanded key maps of the selected preset: for every key its voice number, the
-     * identifier of the voice, the transposition, the level and the marker of the start of a
-     * range, in the eleven tables which the sampler keeps for its playing state.
+     * identifier of the voice, the transposition, the level and the marker of the start of a range,
+     * in the eleven tables which the sampler keeps for its playing state.
      *
      * @param image The disk image
      * @param bank The position of the bank in the image
      * @param preset The selected preset
-     * @param voices The voices of the bank
      */
-    private static void writeKeyMaps (final byte [] image, final int bank, final Preset preset, final List<Voice> voices)
+    private static void writeKeyMaps (final byte [] image, final int bank, final Preset preset)
     {
         final int tableSize = Emulator2Constants.NUM_KEYS;
         final int transposeCopy = bank + Emulator2Constants.KEY_MAP_TRANSPOSE + 3 * tableSize;
@@ -630,8 +870,8 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
 
     /**
-     * Create the record of a preset: the header, the name, the parameters, one entry per key
-     * range, the end marker and the room for the length of the next record.
+     * Create the record of a preset: the header, the name, the parameters, one entry per key range,
+     * the end marker and the room for the length of the next record.
      *
      * @param preset The preset
      * @return The record
@@ -642,69 +882,69 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         for (final KeyRange range: preset.ranges)
             size += Emulator2Constants.ENTRY_SIZE + (range.secondVoice > 0 ? Emulator2Constants.ENTRY_SECONDARY_SIZE : 0);
 
-        final byte [] record = new byte [size];
-        System.arraycopy (PRESET_HEADER, 0, record, 0, PRESET_HEADER.length);
+        final byte [] presetRecord = new byte [size];
+        System.arraycopy (PRESET_HEADER, 0, presetRecord, 0, PRESET_HEADER.length);
         final byte [] name = pad (preset.name, Emulator2Constants.PRESET_NAME_LENGTH);
-        System.arraycopy (name, 0, record, Emulator2Constants.PRESET_NAME_OFFSET, Emulator2Constants.PRESET_NAME_LENGTH);
-        System.arraycopy (PRESET_PARAMETERS, 0, record, Emulator2Constants.PRESET_NAME_OFFSET + Emulator2Constants.PRESET_NAME_LENGTH, PRESET_PARAMETERS.length);
+        System.arraycopy (name, 0, presetRecord, Emulator2Constants.PRESET_NAME_OFFSET, Emulator2Constants.PRESET_NAME_LENGTH);
+        System.arraycopy (PRESET_PARAMETERS, 0, presetRecord, Emulator2Constants.PRESET_NAME_OFFSET + Emulator2Constants.PRESET_NAME_LENGTH, PRESET_PARAMETERS.length);
 
         int position = Emulator2Constants.PRESET_ENTRIES_OFFSET;
         for (final KeyRange range: preset.ranges)
         {
             final int mode = range.voice == 0 ? 1 : range.secondVoice > 0 ? Emulator2Constants.ENTRY_MODE_DUAL : 2;
-            record[position] = (byte) (mode << Emulator2Constants.ENTRY_MODE_SHIFT | range.numKeys);
-            record[position + 1] = 0x08;
-            record[position + Emulator2Constants.ENTRY_VOICE] = (byte) range.voice;
-            record[position + Emulator2Constants.ENTRY_TRANSPOSE] = (byte) range.transpose;
-            record[position + Emulator2Constants.ENTRY_LEVEL] = (byte) (range.voice > 0 ? RANGE_LEVEL : 0);
+            presetRecord[position] = (byte) (mode << Emulator2Constants.ENTRY_MODE_SHIFT | range.numKeys);
+            presetRecord[position + 1] = 0x08;
+            presetRecord[position + Emulator2Constants.ENTRY_VOICE] = (byte) range.voice;
+            presetRecord[position + Emulator2Constants.ENTRY_TRANSPOSE] = (byte) range.transpose;
+            presetRecord[position + Emulator2Constants.ENTRY_LEVEL] = (byte) (range.voice > 0 ? RANGE_LEVEL : 0);
             position += Emulator2Constants.ENTRY_SIZE;
             if (range.secondVoice > 0)
             {
-                record[position] = (byte) range.secondVoice;
-                record[position + 1] = (byte) range.secondTranspose;
-                record[position + 2] = (byte) RANGE_LEVEL;
+                presetRecord[position] = (byte) range.secondVoice;
+                presetRecord[position + 1] = (byte) range.secondTranspose;
+                presetRecord[position + 2] = (byte) RANGE_LEVEL;
                 position += Emulator2Constants.ENTRY_SECONDARY_SIZE;
             }
         }
         // The end marker: an entry of no keys at the key behind the keyboard
-        record[position + 1] = (byte) Emulator2Constants.NUM_KEYS;
-        return record;
+        presetRecord[position + 1] = (byte) Emulator2Constants.NUM_KEYS;
+        return presetRecord;
     }
 
 
     /**
-     * Write a voice record: the template of the factory library with the name, the addresses of
-     * the audio and the loop, the loop flag and the pointers of the record.
+     * Write a voice record: the template of the factory library with the name, the addresses of the
+     * audio and the loop, the loop flag and the pointers of the record.
      *
      * @param image The disk image
-     * @param record The position of the record
+     * @param voiceRecord The position of the record
      * @param index The index of the record
      * @param voice The voice
      */
-    private static void writeVoiceRecord (final byte [] image, final int record, final int index, final Voice voice)
+    private static void writeVoiceRecord (final byte [] image, final int voiceRecord, final int index, final Voice voice)
     {
         for (int i = 0; i < Emulator2Constants.VOICE_SIZE; i++)
-            image[record + i] = (byte) VOICE_TEMPLATE[i];
+            image[voiceRecord + i] = (byte) VOICE_TEMPLATE[i];
         for (final int pointer: VOICE_POINTER_BYTES)
-            image[record + pointer] = (byte) (VOICE_RECORD_ADDRESS + index * Emulator2Constants.VOICE_SIZE >> 8);
+            image[voiceRecord + pointer] = (byte) (VOICE_RECORD_ADDRESS + index * Emulator2Constants.VOICE_SIZE >> 8);
 
         final byte [] name = pad (voice.name, Emulator2Constants.VOICE_NAME_LENGTH);
-        System.arraycopy (name, 0, image, record + Emulator2Constants.VOICE_NAME, Emulator2Constants.VOICE_NAME_LENGTH);
+        System.arraycopy (name, 0, image, voiceRecord + Emulator2Constants.VOICE_NAME, Emulator2Constants.VOICE_NAME_LENGTH);
 
         final int end = voice.start + voice.audio.length;
         final int slot = voice.audio.length + voice.loopLength + Emulator2Constants.VOICE_SLOT_PADDING;
-        writeAddress (image, record + Emulator2Constants.VOICE_START_MINUS_ONE, voice.start - 1);
-        writeAddress (image, record + 0x06, COUNTER_BASE - voice.audio.length);
-        writeAddress (image, record + 0x0A, end - 1);
-        writeAddress (image, record + 0x0E, COUNTER_BASE - voice.loopLength);
-        writeAddress (image, record + 0x13, COUNTER_BASE - voice.loopLength);
-        image[record + Emulator2Constants.VOICE_FLAGS] = (byte) (VOICE_FLAGS_DEFAULT | (voice.hasLoop ? Emulator2Constants.VOICE_FLAG_LOOP : 0));
-        writeAddress (image, record + Emulator2Constants.VOICE_SAMPLE_START, voice.start);
-        writeAddress (image, record + Emulator2Constants.VOICE_SLOT_SIZE, slot);
-        writeAddress (image, record + Emulator2Constants.VOICE_SAMPLE_END, end);
-        writeAddress (image, record + Emulator2Constants.VOICE_LOOP_LENGTH, voice.loopLength);
-        writeAddress (image, record + Emulator2Constants.VOICE_LOOP_START, voice.start + voice.loopStart);
-        writeAddress (image, record + Emulator2Constants.VOICE_LOOP_START + 3, slot);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_START_MINUS_ONE, voice.start - 1);
+        writeAddress (image, voiceRecord + 0x06, COUNTER_BASE - voice.audio.length);
+        writeAddress (image, voiceRecord + 0x0A, end - 1);
+        writeAddress (image, voiceRecord + 0x0E, COUNTER_BASE - voice.loopLength);
+        writeAddress (image, voiceRecord + 0x13, COUNTER_BASE - voice.loopLength);
+        image[voiceRecord + Emulator2Constants.VOICE_FLAGS] = (byte) (VOICE_FLAGS_DEFAULT | (voice.hasLoop ? Emulator2Constants.VOICE_FLAG_LOOP : 0));
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_SAMPLE_START, voice.start);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_SLOT_SIZE, slot);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_SAMPLE_END, end);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_LOOP_LENGTH, voice.loopLength);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_LOOP_START, voice.start + voice.loopStart);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_LOOP_START + 3, slot);
     }
 
 

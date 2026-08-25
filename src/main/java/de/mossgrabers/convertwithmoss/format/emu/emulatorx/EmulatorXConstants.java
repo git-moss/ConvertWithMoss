@@ -305,7 +305,7 @@ public class EmulatorXConstants
     /**
      * Converts the filter cutoff frequency of the given filter in Hertz to the normalized cutoff.
      * The inverse of {@link #cutoffToHertz}.
-     * 
+     *
      * @param filterOpt The filter if present
      * @param filterType The filter type
      * @return The cutoff in the range of 0..1, 1 if no filter is present or if it is bypassed

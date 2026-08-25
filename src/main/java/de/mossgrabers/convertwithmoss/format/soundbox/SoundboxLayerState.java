@@ -17,21 +17,21 @@ import java.nio.ByteOrder;
  */
 public class SoundboxLayerState
 {
-    private static final int SIZE           = 11;
+    private static final int   SIZE           = 11;
 
     /** The default layer volume (unity gain position). */
     public static final double DEFAULT_VOLUME = 0.75;
 
     /** True if the layer is active. */
-    public boolean active  = false;
+    public boolean             active         = false;
     /** True if the layer is soloed. */
-    public boolean solo    = false;
+    public boolean             solo           = false;
     /** True if the layer is linked. */
-    public boolean link    = false;
+    public boolean             link           = false;
     /** The panning (-1..1). */
-    public double  panning = 0;
+    public double              panning        = 0;
     /** The volume (0..1, default 0.75). */
-    public double  volume  = DEFAULT_VOLUME;
+    public double              volume         = DEFAULT_VOLUME;
 
 
     /**

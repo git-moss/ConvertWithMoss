@@ -64,7 +64,7 @@ public class Emulator3SampleIndexRepair
 
     /**
      * A note parsed from a sample name.
-     * 
+     *
      * @param pitchClass The index of the note in the scale
      * @param octave The octave offset
      * @param hasAccidental Flat or sharp symbol
@@ -77,7 +77,7 @@ public class Emulator3SampleIndexRepair
 
     /**
      * One way to interpret the stored indices of a preset: as they are or moved to a page.
-     * 
+     *
      * @param asIs Use the candidate as is otherwise use the candidate on the given page
      * @param page The page on which the alternative candidate is located
      */
@@ -89,7 +89,7 @@ public class Emulator3SampleIndexRepair
 
     /**
      * The evidence collected for one candidate.
-     * 
+     *
      * @param hits The number of reference hits
      * @param parseable The overall number of references
      * @param distinctRoots The number of roots
@@ -252,7 +252,6 @@ public class Emulator3SampleIndexRepair
             int affine = 0;
             boolean unique = true;
             for (int i = 1; i < scores.length; i++)
-            {
                 if (scores[i].affinity () > scores[affine].affinity ())
                 {
                     affine = i;
@@ -260,7 +259,6 @@ public class Emulator3SampleIndexRepair
                 }
                 else if (i != affine && scores[i].affinity () == scores[affine].affinity ())
                     unique = false;
-            }
             if (scores[affine].affinity () >= 0.5 && (unique || candidates.size () == 1))
                 best = affine;
         }

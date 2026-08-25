@@ -110,7 +110,7 @@ public enum AuthoringApplication
      * @param id The ID of the authoring application
      * @param name The name of the authoring application
      */
-    private AuthoringApplication (final int id, final String name)
+    AuthoringApplication (final int id, final String name)
     {
         this.id = id;
         this.name = name;

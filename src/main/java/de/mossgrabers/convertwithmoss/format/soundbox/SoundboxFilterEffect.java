@@ -13,8 +13,8 @@ import de.mossgrabers.tools.XMLUtils;
 
 
 /**
- * Reads and writes the filter effect of a Soundbox effects section. The effects element carries
- * the loaded effect type of each of its 4 slots in the attributes s0fx..s3fx (4 = the filter), a
+ * Reads and writes the filter effect of a Soundbox effects section. The effects element carries the
+ * loaded effect type of each of its 4 slots in the attributes s0fx..s3fx (4 = the filter), a
  * bypassed slot is marked with s0..s3 = 1 and the S child elements hold the parameters of a slot
  * which differ from the defaults: FREQUENCY (in Hertz, up to 15001 = fully open), RESONANCE
  * (quality factor, up to about 3.14) and TYPE (0 = low-pass; the other indices are assumed to
@@ -56,10 +56,8 @@ public class SoundboxFilterEffect
 
         for (int slot = 0; slot < 4; slot++)
         {
-            if (XMLUtils.getIntegerAttribute (effectsElement, "s" + slot + "fx", 0) != FILTER_TYPE_ID)
-                continue;
             // A bypassed slot is marked with s<n>="1"
-            if (XMLUtils.getIntegerAttribute (effectsElement, "s" + slot, 0) == 1)
+            if ((XMLUtils.getIntegerAttribute (effectsElement, "s" + slot + "fx", 0) != FILTER_TYPE_ID) || (XMLUtils.getIntegerAttribute (effectsElement, "s" + slot, 0) == 1))
                 continue;
 
             double frequency = DEFAULT_FREQUENCY;

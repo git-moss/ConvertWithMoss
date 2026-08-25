@@ -25,12 +25,12 @@ public enum Emulator3BankFormat
 
 
     /** The number of bytes of the identifier at the start of a bank. */
-    public static final int     IDENTIFIER_LENGTH = 16;
+    public static final int IDENTIFIER_LENGTH = 16;
 
-    private final String        identifier;
-    private final String        deviceName;
-    private final String        fileEnding;
-    private final int           sampleAreaMarker;
+    private final String    identifier;
+    private final String    deviceName;
+    private final String    fileEnding;
+    private final int       sampleAreaMarker;
 
 
     /**
@@ -43,7 +43,7 @@ public enum Emulator3BankFormat
      * @param sampleAreaMarker The value of the filler byte which separates the presets from the
      *            samples
      */
-    private Emulator3BankFormat (final String identifier, final String deviceName, final String fileEnding, final int sampleAreaMarker)
+    Emulator3BankFormat (final String identifier, final String deviceName, final String fileEnding, final int sampleAreaMarker)
     {
         this.identifier = identifier;
         this.deviceName = deviceName;
@@ -186,10 +186,8 @@ public enum Emulator3BankFormat
      */
     public static Emulator3BankFormat get (final byte [] data)
     {
-        if (data.length < IDENTIFIER_LENGTH)
-            return null;
         // The identifier is 15 characters followed by a terminating zero byte
-        if (data[IDENTIFIER_LENGTH - 1] != 0)
+        if ((data.length < IDENTIFIER_LENGTH) || (data[IDENTIFIER_LENGTH - 1] != 0))
             return null;
         final String text = new String (data, 0, IDENTIFIER_LENGTH - 1, StandardCharsets.US_ASCII);
         for (final Emulator3BankFormat format: values ())

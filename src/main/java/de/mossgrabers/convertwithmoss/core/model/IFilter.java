@@ -15,9 +15,9 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 public interface IFilter
 {
     /** The maximum filter cutoff frequency. */
-    public static final double MAX_FREQUENCY = 20000;
+    double MAX_FREQUENCY = 20000;
     /** The maximum resonance volume in dB. */
-    public static final double MAX_RESONANCE = 40;
+    double MAX_RESONANCE = 40;
 
 
     /**

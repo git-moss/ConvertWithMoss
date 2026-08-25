@@ -50,16 +50,14 @@ public class S5xxDiskImageHeader
         input.skipNBytes (194);
 
         if (this.samplerType == S5xxSamplerType.LAND)
-        {
             for (int i = 0; i < 3; i++)
                 this.sectionHeaders.add (new S5xxCDSectionHeader (input));
-        }
     }
 
 
     /**
      * Looks up the section header with the given ID.
-     * 
+     *
      * @param headerID SECTION_INSTRUMENT_GROUP, SECTION_SOUND_DIRECTORY or SECTION_INSTRUMENT_MAP
      * @return The section header if present
      */

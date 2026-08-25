@@ -62,14 +62,14 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String                  ERR_MISSING_TAG      = "IDS_NOTIFY_ERR_MISSING_TAG";
+    private static final String                  ERR_MISSING_TAG     = "IDS_NOTIFY_ERR_MISSING_TAG";
 
     /** The name of the folder which is present in every Ableton project folder. */
-    private static final String                  PROJECT_INFO_FOLDER  = "Ableton Project Info";
+    private static final String                  PROJECT_INFO_FOLDER = "Ableton Project Info";
     /** The number of folders to move upwards to start a search for a sample file. */
-    private static final int                     SEARCH_LEVELS        = 1;
+    private static final int                     SEARCH_LEVELS       = 1;
 
-    private static final Map<String, FilterType> FILTER_TYPES         = new HashMap<> ();
+    private static final Map<String, FilterType> FILTER_TYPES        = new HashMap<> ();
     static
     {
         FILTER_TYPES.put ("0", FilterType.LOW_PASS);
@@ -688,9 +688,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Detect round-robin cycles which are stored on the sample-select (selector) axis, the only
-     * way to store them before the round-robin flag was added in Live 12: zones which occupy the
-     * same key and velocity range but disjoint selector ranges play one at a time depending on the
+     * Detect round-robin cycles which are stored on the sample-select (selector) axis, the only way
+     * to store them before the round-robin flag was added in Live 12: zones which occupy the same
+     * key and velocity range but disjoint selector ranges play one at a time depending on the
      * selector position. Such zones are split into one group per selector slice in ascending
      * selector order. Zones with overlapping selector ranges or with selector cross-fades (a
      * morphing setup rather than round-robin) are left as they are.
@@ -739,8 +739,8 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Check if the zones of the cluster form a round-robin setup on the selector axis: at least
-     * two zones which all have no selector cross-fade and do not overlap each other.
+     * Check if the zones of the cluster form a round-robin setup on the selector axis: at least two
+     * zones which all have no selector cross-fade and do not overlap each other.
      *
      * @param cluster The zones which occupy the same key and velocity range
      * @param selectorRanges The selector range of each zone

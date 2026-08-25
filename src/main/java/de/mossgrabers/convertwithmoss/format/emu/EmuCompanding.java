@@ -16,9 +16,9 @@ package de.mossgrabers.convertwithmoss.format.emu;
 public final class EmuCompanding
 {
     /** The largest magnitude the DAC produces. */
-    public static final int      FULL_SCALE = 8031;
+    public static final int       FULL_SCALE = 8031;
     /** The factor which scales the output of the DAC to the 16 bit range. */
-    private static final int     SCALE      = 4;
+    private static final int      SCALE      = 4;
 
     /** Expansion of the 256 possible sample bytes into signed 16 bit audio. */
     private static final short [] EXPANSION  = createExpansionTable ();

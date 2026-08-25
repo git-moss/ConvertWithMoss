@@ -156,8 +156,8 @@ public final class ZenCoreUtil
 
 
     /**
-     * Convert a FANTOM 0-1023 envelope time value to seconds with the hardware-calibrated law -
-     * the inverse of {@link #timeToValue}.
+     * Convert a FANTOM 0-1023 envelope time value to seconds with the hardware-calibrated law - the
+     * inverse of {@link #timeToValue}.
      *
      * @param value The 0-1023 time value
      * @return The time in seconds

@@ -42,10 +42,10 @@ import de.mossgrabers.tools.ui.Functions;
  * one for each half of the 49 key keyboard; each bank divides its half into up to eight zones of
  * equal width which each play one sample, holds 57,088 bytes of companded audio for them and a
  * pitch table which sets the sample clock for every key. One multi-sample becomes one disk: its
- * zones are spread over the two halves and the pitch of every key follows from the root key and
- * the tuning of the zone which plays it. The audio is converted to mono, re-sampled to the 27,778
- * Hz of the sampler where its rate is higher and companded into the bytes which the AM6072 DAC of
- * the sampler expands. See documentation/design/EMULATOR1_FORMAT.md.
+ * zones are spread over the two halves and the pitch of every key follows from the root key and the
+ * tuning of the zone which plays it. The audio is converted to mono, re-sampled to the 27,778 Hz of
+ * the sampler where its rate is higher and companded into the bytes which the AM6072 DAC of the
+ * sampler expands. See documentation/design/EMULATOR1_FORMAT.md.
  * <p>
  * The disk is written as an image for the HxC floppy emulators (HFE), which is how it gets into a
  * sampler with a floppy emulator, or as a raw sector image (EMUFD). The operating system of the
@@ -57,16 +57,14 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Emulator1Creator extends AbstractCreator<EmuDiskCreatorUI>
 {
-    private static final String   ENDING_HFE         = "hfe";
-    private static final String   ENDING_RAW         = "emufd";
-    /** The Emulator plays one channel per voice, so the audio has to be mixed down to mono. */
-    private static final int      NUM_CHANNELS       = 1;
-    private static final int []   ALLOWED_BIT_DEPTHS =
+    private static final String ENDING_HFE         = "hfe";
+    private static final String ENDING_RAW         = "emufd";
+    private static final int [] ALLOWED_BIT_DEPTHS =
     {
         16
     };
     /** A sample which is shorter than this cannot be stored in a sensible way. */
-    private static final int      MINIMUM_FRAMES     = 8;
+    private static final int    MINIMUM_FRAMES     = 8;
 
 
     /**
@@ -242,7 +240,7 @@ public class Emulator1Creator extends AbstractCreator<EmuDiskCreatorUI>
             final ISampleZone zone = zoneOfSlot[slot];
             if (blocks.containsKey (zone))
                 continue;
-            final SampleBlock block = this.convertSample (zone, half);
+            final SampleBlock block = this.convertSample (zone);
             if (block == null)
                 continue;
             final int available = Emulator1Constants.SAMPLE_MEMORY_END - address - Emulator1Constants.SAMPLE_ALIGNMENT;
@@ -291,9 +289,14 @@ public class Emulator1Creator extends AbstractCreator<EmuDiskCreatorUI>
         final int header = bankOffset;
         for (int slot = 0; slot < numZones; slot++)
         {
-            final int record = header + Emulator1Constants.RECORD_FIRST_ZONE + slot * Emulator1Constants.RECORD_SIZE;
-            final int count = slot == 0 ? numZones : slot == 1 ? zoneWidth : 0;
-            writeRecord (image, record, count, zoneOfSlot[slot], blocks.get (zoneOfSlot[slot]), Emulator1Constants.BANK_ADDRESS + Emulator1Constants.TABLE_OFFSET);
+            final int zoneRecord = header + Emulator1Constants.RECORD_FIRST_ZONE + slot * Emulator1Constants.RECORD_SIZE;
+            final int count = switch (slot)
+            {
+                case 0 -> numZones;
+                case 1 -> zoneWidth;
+                default -> 0;
+            };
+            writeRecord (image, zoneRecord, count, zoneOfSlot[slot], blocks.get (zoneOfSlot[slot]), Emulator1Constants.BANK_ADDRESS + Emulator1Constants.TABLE_OFFSET);
         }
         if (numZones == 1)
             image[header + Emulator1Constants.RECORD_FIRST_ZONE + Emulator1Constants.RECORD_SIZE] = 0x19;
@@ -350,11 +353,10 @@ public class Emulator1Creator extends AbstractCreator<EmuDiskCreatorUI>
      * kept and compensated with the pitch table, which saves sample memory.
      *
      * @param zone The zone
-     * @param half The name of the half of the keyboard for messages
      * @return The block or null if the zone holds no audio
      * @throws IOException Could not convert the sample data
      */
-    private SampleBlock convertSample (final ISampleZone zone, final String half) throws IOException
+    private SampleBlock convertSample (final ISampleZone zone) throws IOException
     {
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())
@@ -419,32 +421,31 @@ public class Emulator1Creator extends AbstractCreator<EmuDiskCreatorUI>
      * Write one record of the header.
      *
      * @param image The disk image
-     * @param record The position of the record in the image
+     * @param zoneRecord The position of the record in the image
      * @param firstByte The first byte of the record: the flags of the selected sample or, for the
      *            records of the zones, the number of zones in the first one and the number of keys
      *            per zone in the second one
      * @param zone The zone
      * @param block The stored sample of the zone
-     * @param tableAddress The address of the pitch table or 0 for the record of the selected
-     *            sample
+     * @param tableAddress The address of the pitch table or 0 for the record of the selected sample
      */
-    private static void writeRecord (final byte [] image, final int record, final int firstByte, final ISampleZone zone, final SampleBlock block, final int tableAddress)
+    private static void writeRecord (final byte [] image, final int zoneRecord, final int firstByte, final ISampleZone zone, final SampleBlock block, final int tableAddress)
     {
-        image[record + Emulator1Constants.RECORD_FLAGS] = (byte) firstByte;
-        image[record + Emulator1Constants.RECORD_FILTER] = (byte) (getFilterSetting (zone) << 5);
-        writeAddress (image, record + Emulator1Constants.RECORD_TABLE_ADDRESS, tableAddress);
+        image[zoneRecord + Emulator1Constants.RECORD_FLAGS] = (byte) firstByte;
+        image[zoneRecord + Emulator1Constants.RECORD_FILTER] = (byte) (getFilterSetting (zone) << 5);
+        writeAddress (image, zoneRecord + Emulator1Constants.RECORD_TABLE_ADDRESS, tableAddress);
 
         final int numFrames = block.audio.length;
         // A sample which does not loop carries a loop of two frames right behind its audio
         final int loopStart = block.hasLoop ? block.loopStart : numFrames;
         final int loopLength = block.hasLoop ? block.loopEnd - block.loopStart : Emulator1Constants.NO_LOOP_LENGTH;
         final int loopEnd = loopStart + loopLength;
-        writeAddress (image, record + Emulator1Constants.RECORD_SAMPLE_START, block.start);
-        writeAddress (image, record + Emulator1Constants.RECORD_LOOP_START_REL, loopStart - 1);
-        writeAddress (image, record + Emulator1Constants.RECORD_LOOP_START, block.start + loopStart);
-        writeAddress (image, record + Emulator1Constants.RECORD_LOOP_LENGTH, loopLength - 1);
-        writeAddress (image, record + Emulator1Constants.RECORD_LOOP_END, block.start + loopEnd);
-        writeAddress (image, record + Emulator1Constants.RECORD_RELEASE_LENGTH, numFrames + Emulator1Constants.SAMPLE_END_GUARD - loopEnd);
+        writeAddress (image, zoneRecord + Emulator1Constants.RECORD_SAMPLE_START, block.start);
+        writeAddress (image, zoneRecord + Emulator1Constants.RECORD_LOOP_START_REL, loopStart - 1);
+        writeAddress (image, zoneRecord + Emulator1Constants.RECORD_LOOP_START, block.start + loopStart);
+        writeAddress (image, zoneRecord + Emulator1Constants.RECORD_LOOP_LENGTH, loopLength - 1);
+        writeAddress (image, zoneRecord + Emulator1Constants.RECORD_LOOP_END, block.start + loopEnd);
+        writeAddress (image, zoneRecord + Emulator1Constants.RECORD_RELEASE_LENGTH, numFrames + Emulator1Constants.SAMPLE_END_GUARD - loopEnd);
     }
 
 

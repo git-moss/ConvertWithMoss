@@ -160,9 +160,9 @@ public class SfzOpcode
     /** Amplifier velocity tracking. */
     public static final String AMP_VELOCITY_TRACK    = "amp_veltrack";
     /**
-     * SFZ v1. The prefix of the amplifier velocity curve opcodes. The full opcode is
-     * amp_velcurve_N with N being a velocity from 1 to 127 and the value the amplitude (0..1) at
-     * that velocity. Players interpolate linearly between the given points.
+     * SFZ v1. The prefix of the amplifier velocity curve opcodes. The full opcode is amp_velcurve_N
+     * with N being a velocity from 1 to 127 and the value the amplitude (0..1) at that velocity.
+     * Players interpolate linearly between the given points.
      */
     public static final String AMP_VELOCITY_CURVE    = "amp_velcurve_";
     /** SFZ v1. Amplitude key tracking in decibels per key, relative to the amplitude center key. */

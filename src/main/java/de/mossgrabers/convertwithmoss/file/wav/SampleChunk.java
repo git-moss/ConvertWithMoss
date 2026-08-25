@@ -142,10 +142,10 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      * The MIDI unity note value has the same meaning as the instrument chunk's MIDI Unshifted Note
      * field which specifies the musical note at which the sample will be played at it's original
      * sample rate (the sample rate specified in the format chunk). Since the pitch fraction can
-     * only tune upwards, a note with a negative fine tuning is stored as the next higher unity
-     * note with the complementary positive fraction (see {@link #getMIDIPitchFraction()}); this
-     * getter reverses that encoding, so together with
-     * {@link #getMIDIPitchFractionAsCents()} it returns the intended root key and fine tuning.
+     * only tune upwards, a note with a negative fine tuning is stored as the next higher unity note
+     * with the complementary positive fraction (see {@link #getMIDIPitchFraction()}); this getter
+     * reverses that encoding, so together with {@link #getMIDIPitchFractionAsCents()} it returns
+     * the intended root key and fine tuning.
      *
      * @return The four bytes converted to an integer
      */

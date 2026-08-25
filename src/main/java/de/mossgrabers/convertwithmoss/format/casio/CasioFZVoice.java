@@ -18,48 +18,160 @@ import java.nio.charset.StandardCharsets;
 public class CasioFZVoice
 {
     /** The size of the voice parameters in bytes. */
-    public static final int       SIZE                = 192;
+    public static final int       SIZE                  = 192;
 
     /** Sounding style: the waveform is not yet defined. */
-    public static final int       MODE_NO_SOUND       = 0x0000;
+    public static final int       MODE_NO_SOUND         = 0x0000;
     /** Sounding style: normal sound. */
-    public static final int       MODE_NORMAL         = 0x01D7;
+    public static final int       MODE_NORMAL           = 0x01D7;
     /** Sounding style: reversed sound. */
-    public static final int       MODE_REVERSED       = 0x101D;
+    public static final int       MODE_REVERSED         = 0x101D;
     /** Sounding style: cuing sound. */
-    public static final int       MODE_CUE            = 0x2014;
+    public static final int       MODE_CUE              = 0x2014;
     /** Sounding style: synthesized waveform. */
-    public static final int       MODE_SYNTHESIZED    = 0x0013;
+    public static final int       MODE_SYNTHESIZED      = 0x0013;
 
     /** The number of multi-loops. */
-    public static final int       NUM_LOOPS           = 8;
+    public static final int       NUM_LOOPS             = 8;
     /**
-     * The amount by which the sampler moves an envelope towards the level of its stage on every
-     * one of its envelope interrupts, one entry per rate. The sampler adds this to a 16 bit level
-     * whose upper byte is the 0-255 level which its amplifier and its filter receive. Its timer
-     * interrupt runs 2000 times a second - it is reloaded with 1000 on a 2 MHz clock - and serves
-     * every voice with one of 8 tasks in turn, two of which advance the amplitude envelope, so an
-     * envelope is advanced 500 times a second. The increments span 3 to 32767, which is why the
-     * times are anything but a straight line over the rates.
+     * The amount by which the sampler moves an envelope towards the level of its stage on every one
+     * of its envelope interrupts, one entry per rate. The sampler adds this to a 16 bit level whose
+     * upper byte is the 0-255 level which its amplifier and its filter receive. Its timer interrupt
+     * runs 2000 times a second - it is reloaded with 1000 on a 2 MHz clock - and serves every voice
+     * with one of 8 tasks in turn, two of which advance the amplitude envelope, so an envelope is
+     * advanced 500 times a second. The increments span 3 to 32767, which is why the times are
+     * anything but a straight line over the rates.
      */
-    private static final int []   ENVELOPE_INCREMENT  =
+    private static final int []   ENVELOPE_INCREMENT    =
     {
-        0, 3, 6, 9, 13, 16, 20, 24,
-        28, 33, 37, 42, 47, 52, 58, 64,
-        70, 77, 84, 91, 99, 107, 115, 124,
-        133, 143, 153, 164, 175, 187, 200, 213,
-        227, 241, 257, 273, 290, 307, 326, 346,
-        366, 388, 411, 435, 460, 487, 515, 544,
-        575, 607, 641, 677, 715, 754, 796, 840,
-        886, 934, 985, 1038, 1094, 1153, 1215, 1281,
-        1349, 1421, 1497, 1577, 1661, 1749, 1841, 1939,
-        2041, 2149, 2262, 2381, 2506, 2637, 2775, 2920,
-        3073, 3234, 3402, 3580, 3766, 3962, 4168, 4385,
-        4613, 4852, 5104, 5368, 5647, 5939, 6247, 6570,
-        6910, 7267, 7642, 8037, 8452, 8888, 9347, 9829,
-        10336, 10869, 11429, 12018, 12637, 13288, 13972, 14692,
-        15448, 16243, 17078, 17957, 18881, 19852, 20872, 21945,
-        23074, 24260, 25506, 26817, 28195, 29643, 31166, 32767
+        0,
+        3,
+        6,
+        9,
+        13,
+        16,
+        20,
+        24,
+        28,
+        33,
+        37,
+        42,
+        47,
+        52,
+        58,
+        64,
+        70,
+        77,
+        84,
+        91,
+        99,
+        107,
+        115,
+        124,
+        133,
+        143,
+        153,
+        164,
+        175,
+        187,
+        200,
+        213,
+        227,
+        241,
+        257,
+        273,
+        290,
+        307,
+        326,
+        346,
+        366,
+        388,
+        411,
+        435,
+        460,
+        487,
+        515,
+        544,
+        575,
+        607,
+        641,
+        677,
+        715,
+        754,
+        796,
+        840,
+        886,
+        934,
+        985,
+        1038,
+        1094,
+        1153,
+        1215,
+        1281,
+        1349,
+        1421,
+        1497,
+        1577,
+        1661,
+        1749,
+        1841,
+        1939,
+        2041,
+        2149,
+        2262,
+        2381,
+        2506,
+        2637,
+        2775,
+        2920,
+        3073,
+        3234,
+        3402,
+        3580,
+        3766,
+        3962,
+        4168,
+        4385,
+        4613,
+        4852,
+        5104,
+        5368,
+        5647,
+        5939,
+        6247,
+        6570,
+        6910,
+        7267,
+        7642,
+        8037,
+        8452,
+        8888,
+        9347,
+        9829,
+        10336,
+        10869,
+        11429,
+        12018,
+        12637,
+        13288,
+        13972,
+        14692,
+        15448,
+        16243,
+        17078,
+        17957,
+        18881,
+        19852,
+        20872,
+        21945,
+        23074,
+        24260,
+        25506,
+        26817,
+        28195,
+        29643,
+        31166,
+        32767
     };
 
     /** How often per second the sampler advances an envelope. */
@@ -70,10 +182,10 @@ public class CasioFZVoice
     private static final double   LONGEST_STAGE_SECONDS = 60.0;
 
     /** The number of envelope stages. */
-    public static final int       NUM_ENVELOPE_STAGES = 8;
+    public static final int       NUM_ENVELOPE_STAGES   = 8;
 
     /** The sample rates addressed by the samp field. */
-    protected static final int [] SAMPLE_RATES        =
+    protected static final int [] SAMPLE_RATES          =
     {
         36000,
         18000,
@@ -84,29 +196,29 @@ public class CasioFZVoice
     long                          waveEnd;
     long                          generatorStart;
     long                          generatorEnd;
-    int                           mode                = MODE_NORMAL;
-    int                           loopSustain         = 8;
-    int                           loopEnd             = 0;
-    final long []                 loopStart           = new long [NUM_LOOPS];
-    final int []                  loopFine            = new int [NUM_LOOPS];
-    final long []                 loopEndAddress      = new long [NUM_LOOPS];
-    final boolean []              loopSkip            = new boolean [NUM_LOOPS];
-    final int []                  loopCrossfade       = new int [NUM_LOOPS];
-    final int []                  loopTime            = new int [NUM_LOOPS];
+    int                           mode                  = MODE_NORMAL;
+    int                           loopSustain           = 8;
+    int                           loopEnd               = 0;
+    final long []                 loopStart             = new long [NUM_LOOPS];
+    final int []                  loopFine              = new int [NUM_LOOPS];
+    final long []                 loopEndAddress        = new long [NUM_LOOPS];
+    final boolean []              loopSkip              = new boolean [NUM_LOOPS];
+    final int []                  loopCrossfade         = new int [NUM_LOOPS];
+    final int []                  loopTime              = new int [NUM_LOOPS];
     int                           pitch;
-    int                           cutoff              = 127;
+    int                           cutoff                = 127;
     int                           resonance;
     int                           ampSustainPoint;
     int                           ampEndPoint;
-    final int []                  ampRate             = new int [NUM_ENVELOPE_STAGES];
-    final int []                  ampStop             = new int [NUM_ENVELOPE_STAGES];
+    final int []                  ampRate               = new int [NUM_ENVELOPE_STAGES];
+    final int []                  ampStop               = new int [NUM_ENVELOPE_STAGES];
     int                           filterSustainPoint;
     int                           filterEndPoint;
-    final int []                  filterRate          = new int [NUM_ENVELOPE_STAGES];
-    final int []                  filterStop          = new int [NUM_ENVELOPE_STAGES];
+    final int []                  filterRate            = new int [NUM_ENVELOPE_STAGES];
+    final int []                  filterStop            = new int [NUM_ENVELOPE_STAGES];
     int                           lfoDelay;
     int                           lfoWaveform;
-    int                           lfoAttack           = 1;
+    int                           lfoAttack             = 1;
     int                           lfoRate;
     int                           lfoPitchDepth;
     int                           lfoAmpDepth;
@@ -121,11 +233,11 @@ public class CasioFZVoice
     int                           velocityAmpRate;
     int                           velocityFilterDepth;
     int                           velocityFilterRate;
-    int                           highKey             = 127;
-    int                           lowKey              = 0;
-    int                           centerKey           = 60;
-    int                           sampleRateIndex     = 0;
-    String                        name                = "";
+    int                           highKey               = 127;
+    int                           lowKey                = 0;
+    int                           centerKey             = 60;
+    int                           sampleRateIndex       = 0;
+    String                        name                  = "";
 
 
     /**

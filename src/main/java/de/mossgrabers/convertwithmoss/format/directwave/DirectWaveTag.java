@@ -88,11 +88,11 @@ public class DirectWaveTag
     public static final int         TAG_EMBEDDED_PCM        = 0x0205;
     /**
      * DirectWave stores embedded audio in blocks of this many frames: the frame count of every
-     * sample of every factory program is a multiple of it and the embedded audio is one block longer
-     * than the frame count - half of the block is silent guard frames before the sample and half
-     * after it, and the loop points do not count the leading half. A sample which does not fill its
-     * last block crashes the plug-in when the program is loaded, therefore written audio is padded
-     * with silence.
+     * sample of every factory program is a multiple of it and the embedded audio is one block
+     * longer than the frame count - half of the block is silent guard frames before the sample and
+     * half after it, and the loop points do not count the leading half. A sample which does not
+     * fill its last block crashes the plug-in when the program is loaded, therefore written audio
+     * is padded with silence.
      */
     public static final int         EMBEDDED_AUDIO_BLOCK    = 512;
     /** The offset of the waveform (a 32-bit integer) in an LFO block. */

@@ -330,12 +330,20 @@ public final class ContentsImporter
             {
                 if (c == '\n')
                     break;
-                if (c == ',')
-                    commas++;
-                else if (c == ';')
-                    semicolons++;
-                else if (c == '\t')
-                    tabulators++;
+                switch (c)
+                {
+                    case ',':
+                        commas++;
+                        break;
+                    case ';':
+                        semicolons++;
+                        break;
+                    case '\t':
+                        tabulators++;
+                        break;
+                    default:
+                        break;
+                }
             }
         }
         if (semicolons > commas && semicolons >= tabulators)

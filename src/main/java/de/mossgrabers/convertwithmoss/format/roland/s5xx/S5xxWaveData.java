@@ -42,7 +42,7 @@ public class S5xxWaveData
 
     /**
      * Get the extracted samples.
-     * 
+     *
      * @return The samples, each array entry contains a 12-bit sample
      */
     public short [] getSamples ()

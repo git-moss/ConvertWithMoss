@@ -14,7 +14,7 @@ package de.mossgrabers.convertwithmoss.core.model;
 public interface ILfoModulator extends IModulator
 {
     /** The maximum depth of a volume modulation in dB. */
-    public static final int MAX_VOLUME_DEPTH = 96;
+    int MAX_VOLUME_DEPTH = 96;
 
 
     /**

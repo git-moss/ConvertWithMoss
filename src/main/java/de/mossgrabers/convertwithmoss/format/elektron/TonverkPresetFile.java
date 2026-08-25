@@ -47,7 +47,7 @@ public class TonverkPresetFile
         private final String parameterPrefix;
 
 
-        private Machine (final String parameterPrefix)
+        Machine (final String parameterPrefix)
         {
             this.parameterPrefix = parameterPrefix;
         }

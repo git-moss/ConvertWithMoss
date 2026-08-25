@@ -94,7 +94,7 @@ public interface IAkaiImage
      * @param buffer The buffer in AKAI format
      * @param length The length of the text to convert
      */
-    public static void akaiToAscii (final byte [] buffer, final int length)
+    static void akaiToAscii (final byte [] buffer, final int length)
     {
         for (int i = 0; i < length; i++)
         {
@@ -108,16 +108,25 @@ public interface IAkaiImage
             // A-Z
             else if (b >= 11 && b <= 36)
                 buffer[i] = (byte) (64 + b - 10);
-            else if (b == 37)
-                buffer[i] = (byte) '#';
-            else if (b == 38)
-                buffer[i] = (byte) '+';
-            else if (b == 39)
-                buffer[i] = (byte) '-';
-            else if (b == 40)
-                buffer[i] = (byte) '.';
             else
-                buffer[i] = 32;
+                switch (b)
+                {
+                    case 37:
+                        buffer[i] = (byte) '#';
+                        break;
+                    case 38:
+                        buffer[i] = (byte) '+';
+                        break;
+                    case 39:
+                        buffer[i] = (byte) '-';
+                        break;
+                    case 40:
+                        buffer[i] = (byte) '.';
+                        break;
+                    default:
+                        buffer[i] = 32;
+                        break;
+                }
         }
     }
 }

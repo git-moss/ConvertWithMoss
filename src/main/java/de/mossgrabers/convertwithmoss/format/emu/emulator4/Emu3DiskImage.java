@@ -265,11 +265,11 @@ public class Emu3DiskImage
 
 
     /** The number of file entries which one dir-content block holds. */
-    private static final int    ENTRIES_PER_BLOCK   = BLOCK_SIZE / ENTRY_SIZE;
+    private static final int   ENTRIES_PER_BLOCK   = BLOCK_SIZE / ENTRY_SIZE;
     /** The first block of the cluster chain list, which follows the superblock and its padding. */
-    private static final int    FAT_START           = 2;
+    private static final int   FAT_START           = 2;
     /** The name of the folder which holds the written files. */
-    public static final String  DEFAULT_FOLDER_NAME = "Default Folder";
+    public static final String DEFAULT_FOLDER_NAME = "Default Folder";
 
 
     /**
@@ -310,7 +310,7 @@ public class Emu3DiskImage
          * @param paddingFill The byte with which the padding block behind the superblock is filled
          * @param hasEosFlag Whether the superblock carries the flag byte of the EOS volumes
          */
-        private ImageLayout (final int fatBlocks, final int rootBlocks, final int dirBlocks, final byte [] fileType, final byte paddingFill, final boolean hasEosFlag)
+        ImageLayout (final int fatBlocks, final int rootBlocks, final int dirBlocks, final byte [] fileType, final byte paddingFill, final boolean hasEosFlag)
         {
             this.fatBlocks = fatBlocks;
             this.rootBlocks = rootBlocks;

@@ -27,7 +27,7 @@ public class S5xxSoundDirectoryEntry
 
     /**
      * Constructor.
-     * 
+     *
      * @param input The input stream to read from
      * @throws IOException Could not read the directory entry
      */
@@ -73,7 +73,7 @@ public class S5xxSoundDirectoryEntry
 
     /**
      * Get the offset in sectors (multiply by 0x200 for byte offset).
-     * 
+     *
      * @return The offset
      */
     public long getOffset ()
@@ -84,7 +84,7 @@ public class S5xxSoundDirectoryEntry
 
     /**
      * Get the size in sectors.
-     * 
+     *
      * @return The size in sectors
      */
     public long getSize ()
@@ -95,7 +95,7 @@ public class S5xxSoundDirectoryEntry
 
     /**
      * Get the group identifier.
-     * 
+     *
      * @return THe group identifier
      */
     public int getGroupIdentifier ()

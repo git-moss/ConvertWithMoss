@@ -620,7 +620,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     /**
      * Creates the XML document of one preset.
-     * 
+     *
      * @param category The category of the preset
      * @param layerPlans The layers of the preset, 1..4 entries
      * @return The formatted XML document

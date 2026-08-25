@@ -20,10 +20,10 @@ import javafx.scene.layout.Pane;
 
 
 /**
- * Settings for the creators which write the floppy disks of the E-mu Emulator and Emulator II:
- * the format of the image to write and the operating system to put onto the system tracks of the
- * disk. The system is not part of this program; it is taken from a system file of the sampler or
- * from an image of one of its disks.
+ * Settings for the creators which write the floppy disks of the E-mu Emulator and Emulator II: the
+ * format of the image to write and the operating system to put onto the system tracks of the disk.
+ * The system is not part of this program; it is taken from a system file of the sampler or from an
+ * image of one of its disks.
  *
  * @author Jürgen Moßgraber
  */
@@ -112,7 +112,7 @@ public class EmuDiskCreatorUI implements ICoreTaskSettings
             switch (format.trim ().toLowerCase (Locale.US))
             {
                 case FORMAT_HFE:
-                    this.writeRawImage = false;
+                    // this.writeRawImage is already false;
                     break;
                 case FORMAT_RAW:
                     this.writeRawImage = true;

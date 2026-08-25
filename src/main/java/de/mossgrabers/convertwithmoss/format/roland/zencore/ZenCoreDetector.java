@@ -120,12 +120,10 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
                     group.addSampleZone (createZone (sample, sample.getOriginalKey (), sample.getOriginalKey ()));
         }
         else if (tones.size () == 1 && !tones.get (0).tonePartials.isEmpty ())
-        {
             // A single tone also carries the partial pans and velocity windows, e.g. the two
             // hard-panned partials of a stereo instrument
             for (final ZenCoreSvz.SvzTonePartial partial: tones.get (0).tonePartials)
                 addPartialZones (group, samples, keyMaps, partial);
-        }
         else
             buildZonesFromKeyMap (group, samples, keyMaps.get (0));
 

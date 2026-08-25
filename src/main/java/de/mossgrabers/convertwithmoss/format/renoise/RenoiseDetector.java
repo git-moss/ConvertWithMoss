@@ -418,8 +418,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Parse all modulation sets into an indexed list. Each set carries the optional amplitude
-     * (Volume), pitch and filter (Cutoff) envelopes from its AHDSR devices as well as the pitch
-     * LFO (vibrato) from a LFO device.
+     * (Volume), pitch and filter (Cutoff) envelopes from its AHDSR devices as well as the pitch LFO
+     * (vibrato) from a LFO device.
      *
      * @param sampleGenerator The sample generator element
      * @return The indexed list of modulation sets
@@ -474,8 +474,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Read the first active LFO device which modulates the pitch (vibrato) into the modulation
-     * set.
+     * Read the first active LFO device which modulates the pitch (vibrato) into the modulation set.
      *
      * @param devicesElement The devices element of the modulation set
      * @param modulationSet The modulation set to fill
@@ -485,12 +484,9 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
     {
         for (final Element deviceElement: XMLUtils.getChildElementsByName (devicesElement, RenoiseTag.LFO_DEVICE, false))
         {
-            if (!RenoiseTag.TARGET_PITCH.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0)
-                continue;
-
             // A tempo synchronized rate has no representation without a tempo, which is not part
             // of a multi-sample
-            if ("true".equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TEMPO_SYNCED)))
+            if (!RenoiseTag.TARGET_PITCH.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0 || "true".equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TEMPO_SYNCED)))
                 continue;
 
             final double depth = RenoiseValueConverter.amplitudeToLfoDepth (paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0), pitchModulationRange);
@@ -515,12 +511,9 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
     {
         for (final Element deviceElement: XMLUtils.getChildElementsByName (devicesElement, RenoiseTag.LFO_DEVICE, false))
         {
-            if (!RenoiseTag.TARGET_VOLUME.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0)
-                continue;
-
             // A tempo synchronized rate has no representation without a tempo, which is not part
             // of a multi-sample
-            if ("true".equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TEMPO_SYNCED)))
+            if (!RenoiseTag.TARGET_VOLUME.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0 || "true".equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TEMPO_SYNCED)))
                 continue;
 
             final double depth = RenoiseValueConverter.amplitudeToVolumeLfoDepth (paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0));
@@ -563,12 +556,18 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static LfoWaveform modeToWaveform (final String mode)
     {
-        if (RenoiseTag.LFO_MODE_SAW.equals (mode))
-            return LfoWaveform.SAWTOOTH_UP;
-        if (RenoiseTag.LFO_MODE_PULSE.equals (mode))
-            return LfoWaveform.SQUARE;
-        if (RenoiseTag.LFO_MODE_RANDOM.equals (mode))
-            return LfoWaveform.RANDOM;
+        switch (mode)
+        {
+            case RenoiseTag.LFO_MODE_SAW:
+                return LfoWaveform.SAWTOOTH_UP;
+            case RenoiseTag.LFO_MODE_PULSE:
+                return LfoWaveform.SQUARE;
+            case RenoiseTag.LFO_MODE_RANDOM:
+                return LfoWaveform.RANDOM;
+            case null:
+            default:
+                break;
+        }
         return LfoWaveform.SINE;
     }
 
@@ -748,7 +747,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
         IEnvelope                   volumeEnvelope;
         IEnvelope                   pitchEnvelope;
-        int                         pitchModulationRange = RenoiseValueConverter.PITCH_MODULATION_RANGE;
+        int                         pitchModulationRange            = RenoiseValueConverter.PITCH_MODULATION_RANGE;
         IEnvelope                   cutoffEnvelope;
         ILfo                        pitchLfo;
         double                      pitchLfoDepth;

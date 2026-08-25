@@ -146,13 +146,13 @@ public class KurzweilEnvelope
 
     /**
      * Fill a model envelope from the stages. A stage with both a zero time and a zero level is
-     * unused on the device and keeps the level of the previous stage - many factory programs
-     * leave the decay stage unused so the envelope sustains at the attack level and only the
-     * release stages fade the (naturally decaying) sample out. Leading attack stages which stay
-     * at level 0 form the delay, the following stages up to the peak level the attack and the
-     * remaining attack stages the hold. A used decay stage sets the decay time and sustain level;
-     * an unused one sustains at the level which the attack stages reached. The used release
-     * stages up to the first which reaches level 0 sum to the release time.
+     * unused on the device and keeps the level of the previous stage - many factory programs leave
+     * the decay stage unused so the envelope sustains at the attack level and only the release
+     * stages fade the (naturally decaying) sample out. Leading attack stages which stay at level 0
+     * form the delay, the following stages up to the peak level the attack and the remaining attack
+     * stages the hold. A used decay stage sets the decay time and sustain level; an unused one
+     * sustains at the level which the attack stages reached. The used release stages up to the
+     * first which reaches level 0 sum to the release time.
      *
      * @param envelope The envelope to fill
      */
@@ -220,8 +220,8 @@ public class KurzweilEnvelope
 
 
     /**
-     * Check if a stage is unused: both its time and its target level are zero. The device keeps
-     * the level of the previous stage in this case.
+     * Check if a stage is unused: both its time and its target level are zero. The device keeps the
+     * level of the previous stage in this case.
      *
      * @param stage The index of the stage
      * @return True if the stage is unused

@@ -76,9 +76,7 @@ public class EmulatorXSampleFile
         final int leftLength = leftEnd - leftStart;
         final int rightLength = rightEnd - rightStart;
         final boolean isStereo = rightStart != leftStart && rightLength > 0 && rightLength == leftLength;
-        if (leftLength <= 0 || payload + leftStart + leftLength > fileData.length)
-            throw new ParseException ("IDS_EXB_MALFORMED_SAMPLE");
-        if (isStereo && payload + rightStart + rightLength > fileData.length)
+        if (leftLength <= 0 || payload + leftStart + leftLength > fileData.length || (isStereo && payload + rightStart + rightLength > fileData.length))
             throw new ParseException ("IDS_EXB_MALFORMED_SAMPLE");
 
         sample.numChannels = isStereo ? 2 : 1;

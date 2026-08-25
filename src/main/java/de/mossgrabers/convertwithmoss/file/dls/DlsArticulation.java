@@ -293,7 +293,6 @@ public class DlsArticulation
     public static final int TRANSFORM_SRC_INVERT_SHIFT     = 15;
 
     private final int       source;
-    @SuppressWarnings("unused")
     private final int       control;
     private final int       destination;
     private final int       transform;
@@ -414,8 +413,8 @@ public class DlsArticulation
 
 
     /**
-     * Convert a relative pitch connection value to cent. The value is stored as a 32-bit fixed point
-     * number with 65536 representing one cent.
+     * Convert a relative pitch connection value to cent. The value is stored as a 32-bit fixed
+     * point number with 65536 representing one cent.
      *
      * @param value The raw 32-bit relative pitch value
      * @return The pitch in cent

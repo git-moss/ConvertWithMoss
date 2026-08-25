@@ -407,7 +407,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
     private static String formatVersion (final int version)
     {
         String hex = StringUtils.padLeftSpaces (StringUtils.formatHexStr (version), 6);
-        hex = hex.substring (hex.length () - 6, hex.length ());
+        hex = hex.substring (hex.length () - 6);
         return hex.length () != 6 ? hex : hex.substring (0, 2).trim () + "." + hex.substring (2, 4) + "." + hex.substring (4, 6);
     }
 

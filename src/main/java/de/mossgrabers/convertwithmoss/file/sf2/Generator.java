@@ -45,7 +45,9 @@ public class Generator
 
     /** The ID of the modulation low frequency oscillator delay generator (in time-cents). */
     public static final int     DELAY_MOD_LFO            = 21;
-    /** The ID of the modulation low frequency oscillator frequency generator (in absolute cents). */
+    /**
+     * The ID of the modulation low frequency oscillator frequency generator (in absolute cents).
+     */
     public static final int     FREQ_MOD_LFO             = 22;
 
     /** The ID of the vibrato low frequency oscillator delay generator (in time-cents). */
