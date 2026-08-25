@@ -233,23 +233,39 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 zone.setBendDown (-amount);
             }
 
+        // The direction of a velocity modulator decides at which end of the velocity range the
+        // amount applies: with the negative direction of the SoundFont default modulators the full
+        // amount applies at velocity 0 and nothing at velocity 127, the positive direction inverts
+        // this. The depth is the difference between the two ends, so the modulators of a
+        // destination add up.
+        int attenuationAmount = 0;
+        int cutoffAmount = 0;
+        boolean hasAttenuation = false;
+        boolean hasCutoff = false;
         for (final Sf2Modulator sf2Modulator: getModulators (sf2Zone, instrZone, Sf2Modulator.MODULATOR_VELOCITY))
         {
+            if (sf2Modulator.getAmountSourceOperand () != 0)
+                continue;
+            final int amount = sf2Modulator.isNegativeDirection () ? sf2Modulator.getModulationAmount () : -sf2Modulator.getModulationAmount ();
             final int destinationGenerator = sf2Modulator.getDestinationGenerator ();
             if (destinationGenerator == Generator.INITIAL_ATTENUATION)
             {
-                final int amount = sf2Modulator.getModulationAmount ();
-                zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (amount / 960.0, 0, 1));
+                attenuationAmount += amount;
+                hasAttenuation = true;
             }
             else if (destinationGenerator == Generator.INITIAL_FILTER_CUTOFF)
             {
-                final Optional<IFilter> filterOpt = zone.getFilter ();
-                if (filterOpt.isPresent ())
-                {
-                    final int amount = sf2Modulator.getModulationAmount ();
-                    filterOpt.get ().getCutoffVelocityModulator ().setDepth (Math.clamp (amount / -2400.0, 0, 1));
-                }
+                cutoffAmount += amount;
+                hasCutoff = true;
             }
+        }
+        if (hasAttenuation)
+            zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (attenuationAmount / 960.0, -1, 1));
+        if (hasCutoff)
+        {
+            final Optional<IFilter> filterOpt = zone.getFilter ();
+            if (filterOpt.isPresent ())
+                filterOpt.get ().getCutoffVelocityModulator ().setDepth (Math.clamp (cutoffAmount / -2400.0, -1, 1));
         }
     }
 
