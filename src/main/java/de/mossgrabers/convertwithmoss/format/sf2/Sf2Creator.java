@@ -354,6 +354,11 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         instrumentZone.setSample (sampleDescriptor);
         instrument.addZone (instrumentZone);
 
+        // The key range must be the first and the velocity range the second generator of a zone
+        // (SoundFont specification 8.1.2), players which enforce this discard them otherwise
+        instrumentZone.addGenerator (Generator.KEY_RANGE, limitToDefault (sampleZone.getKeyLow (), 0), limitToDefault (sampleZone.getKeyHigh (), 127));
+        instrumentZone.addGenerator (Generator.VELOCITY_RANGE, limitToDefault (sampleZone.getVelocityLow (), 1), limitToDefault (sampleZone.getVelocityHigh (), 127));
+
         // Set pitch bend modulator
         final int bendUp = sampleZone.getBendUp ();
         instrumentZone.addModulator (Sf2Modulator.MODULATOR_PITCH_BEND.intValue (), Generator.FINE_TUNE, bendUp, 0x10, 0);
@@ -376,10 +381,6 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         instrumentZone.addSignedGenerator (Generator.FINE_TUNE, (int) Math.round ((tune - coarse) * 100.0));
         instrumentZone.addGenerator (Generator.SCALE_TUNE, (int) Math.round (sampleZone.getKeyTracking () * 100.0));
 
-        // Set the key & velocity range
-        instrumentZone.addGenerator (Generator.KEY_RANGE, limitToDefault (sampleZone.getKeyLow (), 0), limitToDefault (sampleZone.getKeyHigh (), 127));
-        instrumentZone.addGenerator (Generator.VELOCITY_RANGE, limitToDefault (sampleZone.getVelocityLow (), 1), limitToDefault (sampleZone.getVelocityHigh (), 127));
-
         // Set the exclusive group. Only written if set since 0 (= no exclusive class) is the
         // default value of the generator
         final int exclusiveGroup = sampleZone.getExclusiveGroup ();
@@ -393,9 +394,10 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         // Gain
         instrumentZone.addGenerator (Generator.INITIAL_ATTENUATION, (int) Math.round (-sampleZone.getGain () * 10.0));
 
-        final double ampDepth = sampleZone.getAmplitudeVelocityModulator ().getDepth ();
-        if (ampDepth != 0)
-            instrumentZone.addModulator (Sf2Modulator.MODULATOR_VELOCITY.intValue (), Generator.INITIAL_ATTENUATION, (int) Math.round (ampDepth * 960), 0, 0);
+        // Velocity to volume: the concave modulator of the SoundFont default, which this one
+        // supersedes since it has the same source, destination and amount source - an amount of 0
+        // therefore switches the velocity sensitivity off instead of falling back to the default
+        addVelocityModulator (instrumentZone, Generator.INITIAL_ATTENUATION, Sf2Modulator.SOURCE_TYPE_CONCAVE, sampleZone.getAmplitudeVelocityModulator ().getDepth (), 960);
 
         // Volume envelope
         final IEnvelope amplitudeEnvelope = sampleZone.getAmplitudeEnvelopeModulator ().getSource ();
@@ -501,14 +503,41 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                     setEnvelopeKeyTracking (instrumentZone, Generator.KEYNUM_TO_MOD_ENV_HOLD, Generator.KEYNUM_TO_MOD_ENV_DECAY, filterEnvelope.getTimeKeyTracking ());
                 }
 
-                final double cutoffDepth = filter.getCutoffVelocityModulator ().getDepth ();
-                if (cutoffDepth != 0)
-                    instrumentZone.addModulator (Sf2Modulator.MODULATOR_VELOCITY.intValue (), Generator.INITIAL_FILTER_CUTOFF, (int) Math.round (cutoffDepth * -2400), 0, 0);
+                // Velocity to cutoff: the linear modulator of the SoundFont default, which lowers
+                // the cutoff by up to 2400 cent at velocity 0 and leaves it alone at velocity 127
+                addVelocityModulator (instrumentZone, Generator.INITIAL_FILTER_CUTOFF, Sf2Modulator.SOURCE_TYPE_LINEAR, filter.getCutoffVelocityModulator ().getDepth (), -2400);
             }
         }
 
         // Sample reference needs to be last
         instrumentZone.addGenerator (Generator.SAMPLE_ID, sampleDescriptor.getSampleIndex ());
+    }
+
+
+    /**
+     * Add a velocity modulator to an instrument zone. A positive depth has the direction of the
+     * default modulators of the SoundFont specification: the full amount applies at velocity 0 and
+     * nothing at velocity 127. A negative depth inverts this. Since a modulator with the positive
+     * direction does not supersede the default modulator of the destination, that one is switched
+     * off explicitly in this case.
+     *
+     * @param instrumentZone The zone to add the modulator to
+     * @param destinationGenerator The generator to modulate
+     * @param sourceType The curve of the source, one of the Sf2Modulator.SOURCE_TYPE_* constants
+     * @param depth The modulation depth in the range of [-1..1]
+     * @param fullAmount The amount which a depth of 1 stands for
+     */
+    private static void addVelocityModulator (final Sf2InstrumentZone instrumentZone, final int destinationGenerator, final int sourceType, final double depth, final int fullAmount)
+    {
+        final int source = Sf2Modulator.MODULATOR_VELOCITY.intValue () | sourceType;
+        final int amount = (int) Math.round (Math.abs (depth) * fullAmount);
+        if (depth >= 0)
+        {
+            instrumentZone.addModulator (source | Sf2Modulator.SOURCE_DIRECTION_NEGATIVE, destinationGenerator, amount, 0, 0);
+            return;
+        }
+        instrumentZone.addModulator (source | Sf2Modulator.SOURCE_DIRECTION_NEGATIVE, destinationGenerator, 0, 0, 0);
+        instrumentZone.addModulator (source, destinationGenerator, amount, 0, 0);
     }
 
 
