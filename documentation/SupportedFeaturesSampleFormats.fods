@@ -3790,6 +3790,257 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
+    <table:table-row table:style-name="ro7">
+     <table:table-cell table:style-name="ce2" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>E-mu Emax / Emax II</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+      <text:p>Read</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>em1, eb1, em2, eb2, em1fd, em2fd, ez1, ez2, img, iso, hfe</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Bank with up to 100 presets</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce63" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Emax: 8 bit companded / Emax II: 16 bit</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>10000 / 15625 / 20000 / 22050 / 27778 / 31250 / 41667 / 44100 Hz</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce26" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce43" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Preset name (12 characters)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59"/>
+     <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string">
+      <text:p>File name of the bank</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59"/>
+     <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Primary / secondary voice</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce5" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Original key</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Key map (MIDI 21-108)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Voice tuning (-48 to +45 cents)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Non-transpose flag</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Voice attenuation (0 - 46 dB)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Voice panning (-07 to +07)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce5" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Forward</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Sustain loop start</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Sustain loop end</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Attack, hold, decay, sustain, release</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Velocity to level</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to volume (tremolo)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to pitch (vibrato)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Low-pass</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>4</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce63" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter cutoff (0-120, 20 Hz - 19 kHz)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter Q</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter envelope + amount</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Velocity to filter cutoff</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter keyboard tracking</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to filter cutoff</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
+     <table:table-cell/>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro3">
+     <table:covered-table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
+      <text:p>E-mu Emax / Emax II</text:p>
+     </table:covered-table-cell>
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+      <text:p>Write</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>em1 (Emax) / eb2 (Emax II)</text:p>
+     </table:table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Bank with up to 100 presets</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string">
+      <text:p>Emax: 8 bit companded / Emax II: 16 bit</text:p>
+     </table:covered-table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>10000 / 15625 / 20000 / 22050 / 27778 / 31250 / 41667 / 44100 Hz</text:p>
+     </table:table-cell>
+     <table:covered-table-cell table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce43"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Preset name (12 characters)</text:p>
+     </table:covered-table-cell>
+     <table:table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="Default"/>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="2"/>
+     <table:covered-table-cell table:style-name="Default"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Primary / secondary voice</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:number-columns-repeated="5" table:style-name="Default"/>
+     <table:covered-table-cell table:style-name="ce5"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Original key</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Key map (MIDI 21-108)</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Voice tuning (-48 to +45 cents)</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Non-transpose flag</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Voice attenuation (0 - 46 dB)</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Voice panning (-07 to +07)</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce19"/>
+     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="Default"/>
+     <table:covered-table-cell table:style-name="ce5"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Forward</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Sustain loop start</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Sustain loop end</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="Default"/>
+     <table:covered-table-cell table:style-name="ce14"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Attack, hold, decay, sustain, release</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Velocity to level</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="Default"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to volume (tremolo)</text:p>
+     </table:table-cell>
+     <table:covered-table-cell table:style-name="Default"/>
+     <table:covered-table-cell table:style-name="ce14"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="Default"/>
+     <table:covered-table-cell table:style-name="ce14"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Low-pass</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>4</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter cutoff (0-120, 20 Hz - 19 kHz)</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter Q</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter envelope + amount</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Velocity to filter cutoff</text:p>
+     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter keyboard tracking</text:p>
+     </table:covered-table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to filter cutoff</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
+     <table:table-cell/>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
+    </table:table-row>
     <table:table-row table:style-name="ro9">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
       <text:p>E-mu Emulator II</text:p>
