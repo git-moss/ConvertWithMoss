@@ -53,6 +53,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
@@ -78,6 +79,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -355,6 +357,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.configureTraversalManager ();
 
         this.show ();
+        fitToScreen (stage);
     }
 
 
@@ -640,6 +643,46 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setBoolean (DESTINATION_ADD_NEW_FILES, this.addNewFiles);
         this.config.setBoolean (ANALYSIS_DETAILS, this.detectSettings.logAnalysisDetails);
         this.config.setBoolean (ENABLE_DARK_MODE, this.enableDarkMode);
+    }
+
+
+    /**
+     * Fit the shown window into the visible area of its screen. The window opens with the
+     * preferred size of its content, which exceeds smaller screens (e.g. 1366x768 pixels), and
+     * its minimum size of 1280x840 pixels prevents that it is resized to fit such a screen. The
+     * minimum size and the size are therefore limited to the screen and the window is moved
+     * onto it.
+     *
+     * @param stage The shown window
+     */
+    private static void fitToScreen (final Stage stage)
+    {
+        final Rectangle2D screenBounds = getScreenBounds (stage);
+        stage.setMinWidth (Math.min (stage.getMinWidth (), screenBounds.getWidth ()));
+        stage.setMinHeight (Math.min (stage.getMinHeight (), screenBounds.getHeight ()));
+        if (stage.isMaximized ())
+            return;
+
+        final double width = Math.min (stage.getWidth (), screenBounds.getWidth ());
+        final double height = Math.min (stage.getHeight (), screenBounds.getHeight ());
+        stage.setWidth (width);
+        stage.setHeight (height);
+        stage.setX (Math.clamp (stage.getX (), screenBounds.getMinX (), Math.max (screenBounds.getMinX (), screenBounds.getMaxX () - width)));
+        stage.setY (Math.clamp (stage.getY (), screenBounds.getMinY (), Math.max (screenBounds.getMinY (), screenBounds.getMaxY () - height)));
+    }
+
+
+    /**
+     * Get the visible area of the screen on which the window is shown, the primary screen if it
+     * is on none.
+     *
+     * @param stage The shown window
+     * @return The visible area of the screen
+     */
+    private static Rectangle2D getScreenBounds (final Stage stage)
+    {
+        final List<Screen> screens = Screen.getScreensForRectangle (stage.getX (), stage.getY (), stage.getWidth (), stage.getHeight ());
+        return (screens.isEmpty () ? Screen.getPrimary () : screens.get (0)).getVisualBounds ();
     }
 
 
