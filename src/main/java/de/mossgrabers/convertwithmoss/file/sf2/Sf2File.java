@@ -371,7 +371,7 @@ public class Sf2File extends AbstractRIFFFile
             final int offset = (firstModulator + index) * LENGTH_PMOD;
             final int sourceModulator = chunk.getTwoBytesAsUnsignedInt (offset);
             final int destinationGenerator = chunk.getTwoBytesAsUnsignedInt (offset + 2);
-            final int modAmount = chunk.getTwoBytesAsUnsignedInt (offset + 4);
+            final int modAmount = chunk.getTwoBytesAsSignedInt (offset + 4);
             final int amountSourceOperand = chunk.getTwoBytesAsUnsignedInt (offset + 6);
             final int transformOperand = chunk.getTwoBytesAsUnsignedInt (offset + 8);
             zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
@@ -542,7 +542,7 @@ public class Sf2File extends AbstractRIFFFile
             final int offset = (firstModulator + index) * LENGTH_IMOD;
             final int sourceModulator = chunk.getTwoBytesAsUnsignedInt (offset);
             final int destinationGenerator = chunk.getTwoBytesAsUnsignedInt (offset + 2);
-            final int modAmount = chunk.getTwoBytesAsUnsignedInt (offset + 4);
+            final int modAmount = chunk.getTwoBytesAsSignedInt (offset + 4);
             final int amountSourceOperand = chunk.getTwoBytesAsUnsignedInt (offset + 6);
             final int transformOperand = chunk.getTwoBytesAsUnsignedInt (offset + 8);
             zone.addModulator (sourceModulator, destinationGenerator, modAmount, amountSourceOperand, transformOperand);
@@ -754,7 +754,7 @@ public class Sf2File extends AbstractRIFFFile
 
                     for (final Sf2Modulator modulator: presetZone.getModulators ())
                     {
-                        StreamUtils.writeUnsigned16 (pmodOut, modulator.getControllerSource (), false);
+                        StreamUtils.writeUnsigned16 (pmodOut, modulator.getSourceOperand (), false);
                         StreamUtils.writeUnsigned16 (pmodOut, modulator.getDestinationGenerator (), false);
                         StreamUtils.writeUnsigned16 (pmodOut, modulator.getModulationAmount (), false);
                         StreamUtils.writeUnsigned16 (pmodOut, modulator.getAmountSourceOperand (), false);
@@ -787,7 +787,7 @@ public class Sf2File extends AbstractRIFFFile
 
                         for (final Sf2Modulator modulator: instZone.getModulators ())
                         {
-                            StreamUtils.writeUnsigned16 (imodOut, modulator.getControllerSource (), false);
+                            StreamUtils.writeUnsigned16 (imodOut, modulator.getSourceOperand (), false);
                             StreamUtils.writeUnsigned16 (imodOut, modulator.getDestinationGenerator (), false);
                             StreamUtils.writeUnsigned16 (imodOut, modulator.getModulationAmount (), false);
                             StreamUtils.writeUnsigned16 (imodOut, modulator.getAmountSourceOperand (), false);
