@@ -298,21 +298,28 @@ public final class AudioFileUtils
         try (final AudioInputStream audioInputStream = AudioSystem.getAudioInputStream (inputStream))
         {
             final AudioFormat audioFormat = audioInputStream.getFormat ();
-            final int bitResolution = getMatchingBitResolution (audioFormat.getSampleSizeInBits (), destinationFormat.getBitResolutions ());
+            final int [] bitResolutions = destinationFormat.getBitResolutions ();
+            final int bitResolution = getMatchingBitResolution (audioFormat.getSampleSizeInBits (), bitResolutions);
 
             final int sampleRate = getMatchingSampleRate ((int) audioFormat.getSampleRate (), destinationFormat);
 
             final Encoding encoding = audioFormat.getEncoding ();
-            final boolean is32BitFloat = encoding == Encoding.PCM_FLOAT && audioFormat.getSampleSizeInBits () == 32;
-            final AudioFormat newAudioFormat = new AudioFormat (sampleRate, is32BitFloat ? 16 : bitResolution, audioFormat.getChannels (), encoding == Encoding.PCM_SIGNED || is32BitFloat, audioFormat.isBigEndian ());
+            if (encoding == Encoding.PCM_FLOAT && audioFormat.getSampleSizeInBits () == 32)
+            {
+                // A destination which does not restrict the resolution keeps the float format,
+                // otherwise the audio is converted to the integer PCM of the matching resolution.
+                // AudioSystem handles 32bit float values incorrect. We need our own implementation.
+                if (bitResolutions == null)
+                    return doConvertToWav (audioInputStream, new AudioFormat (Encoding.PCM_FLOAT, sampleRate, 32, audioFormat.getChannels (), audioFormat.getFrameSize (), sampleRate, audioFormat.isBigEndian ()));
 
-            // AudioSystem handles 32bit float values incorrect. We need our own implementation.
-            if (is32BitFloat)
-                try (AudioInputStream convertedAudioInputStream = convertAudioStreamFrom32BitFloatTo16BitPCM (audioInputStream, audioFormat, newAudioFormat))
+                final AudioFormat newAudioFormat = new AudioFormat (sampleRate, bitResolution, audioFormat.getChannels (), true, audioFormat.isBigEndian ());
+                try (AudioInputStream convertedAudioInputStream = convertAudioStreamFrom32BitFloatToPCM (audioInputStream, audioFormat, newAudioFormat))
                 {
                     return doConvertToWav (convertedAudioInputStream, newAudioFormat);
                 }
+            }
 
+            final AudioFormat newAudioFormat = new AudioFormat (sampleRate, bitResolution, audioFormat.getChannels (), encoding == Encoding.PCM_SIGNED, audioFormat.isBigEndian ());
             return doConvertToWav (audioInputStream, newAudioFormat);
         }
         catch (final UnsupportedAudioFileException ex)
@@ -322,26 +329,40 @@ public final class AudioFileUtils
     }
 
 
-    private static AudioInputStream convertAudioStreamFrom32BitFloatTo16BitPCM (final AudioInputStream inputStream, final AudioFormat sourceAudioFormat, final AudioFormat destinationAudioFormat) throws IOException
+    /**
+     * Convert 32-bit float audio to signed integer PCM of 16, 24 or 32 bit. The nominal float
+     * range of -1..1 is mapped onto the full scale of the integer format, values beyond it are
+     * clipped.
+     *
+     * @param inputStream The float audio
+     * @param sourceAudioFormat The format of the float audio
+     * @param destinationAudioFormat The integer PCM format to convert to
+     * @return The converted audio
+     * @throws IOException Could not read the audio or the resolution is not supported
+     */
+    private static AudioInputStream convertAudioStreamFrom32BitFloatToPCM (final AudioInputStream inputStream, final AudioFormat sourceAudioFormat, final AudioFormat destinationAudioFormat) throws IOException
     {
-        if (destinationAudioFormat.getSampleSizeInBits () != 16)
-            throw new IOException (Functions.getMessage ("IDS_WAV_ONLY_16_BIT_SUPPORTED", Integer.toString (destinationAudioFormat.getSampleSizeInBits ())));
+        final int bits = destinationAudioFormat.getSampleSizeInBits ();
+        if (bits != 16 && bits != 24 && bits != 32)
+            throw new IOException (Functions.getMessage ("IDS_WAV_FLOAT_CONVERSION_NOT_SUPPORTED", Integer.toString (bits)));
 
         final byte [] sourceData = inputStream.readAllBytes ();
         final ByteBuffer inputBuffer = ByteBuffer.wrap (sourceData).order (sourceAudioFormat.isBigEndian () ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
-        final ByteBuffer outputBuffer = ByteBuffer.allocate (sourceData.length / 2).order (destinationAudioFormat.isBigEndian () ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN);
-
-        for (int i = 0; i < sourceData.length; i += 4)
+        final boolean isBigEndian = destinationAudioFormat.isBigEndian ();
+        final int bytesPerSample = bits / 8;
+        final int numSamples = sourceData.length / 4;
+        final byte [] outputData = new byte [numSamples * bytesPerSample];
+        final long maxValue = (1L << bits - 1) - 1;
+        for (int i = 0; i < numSamples; i++)
         {
-            final float floatValue = inputBuffer.getFloat (i);
-
-            // Convert float to 16-bit PCM
-            outputBuffer.putShort ((short) (floatValue * Short.MAX_VALUE));
+            final long value = Math.clamp (Math.round (inputBuffer.getFloat (i * 4) * (double) maxValue), -maxValue - 1, maxValue);
+            final int offset = i * bytesPerSample;
+            for (int b = 0; b < bytesPerSample; b++)
+                outputData[offset + (isBigEndian ? bytesPerSample - 1 - b : b)] = (byte) (value >> 8 * b & 0xFF);
         }
 
-        final byte [] outputData = outputBuffer.array ();
         final long frameLength = outputData.length / destinationAudioFormat.getFrameSize ();
-        return new AudioInputStream (new ByteArrayInputStream (outputBuffer.array ()), destinationAudioFormat, frameLength);
+        return new AudioInputStream (new ByteArrayInputStream (outputData), destinationAudioFormat, frameLength);
     }
 
 
