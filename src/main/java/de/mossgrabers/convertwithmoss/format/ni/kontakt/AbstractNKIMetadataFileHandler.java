@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -933,7 +934,15 @@ public abstract class AbstractNKIMetadataFileHandler
 
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", type.toString ());
         }
-        catch (final UnsupportedAudioFileException | IOException _)
+        catch (final UnsupportedAudioFileException ex)
+        {
+            this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED_LONG", ex.getMessage (), sampleFile.getName ());
+        }
+        catch (final NoSuchFileException ex)
+        {
+            this.notifier.logError ("IDS_ERR_SAMPLE_FILE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
+        }
+        catch (final IOException ex)
         {
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ());
         }
