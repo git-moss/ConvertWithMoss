@@ -142,14 +142,21 @@ public class HfeFile
     public List<Sector> decodeSectors () throws IOException
     {
         final IDecoder decoder;
-        if (this.trackEncoding == ENCODING_EMU_FM)
-            decoder = new EmuFmDecoder ();
-        else if (this.trackEncoding == ENCODING_ISOIBM_FM)
-            decoder = new FmDecoder ();
-        else if (this.trackEncoding == ENCODING_ISOIBM_MFM || this.trackEncoding == ENCODING_AMIGA_MFM)
-            decoder = new MfmDecoder ();
-        else
-            throw new IOException (Functions.getMessage ("IDS_HFE_UNSUPPORTED_TRACK_ENCODING", Integer.toString (this.track0s0Encoding)));
+        switch (this.trackEncoding)
+        {
+            case ENCODING_EMU_FM:
+                decoder = new EmuFmDecoder ();
+                break;
+            case ENCODING_ISOIBM_FM:
+                decoder = new FmDecoder ();
+                break;
+            case ENCODING_ISOIBM_MFM:
+            case ENCODING_AMIGA_MFM:
+                decoder = new MfmDecoder ();
+                break;
+            default:
+                throw new IOException (Functions.getMessage ("IDS_HFE_UNSUPPORTED_TRACK_ENCODING", Integer.toString (this.track0s0Encoding)));
+        }
 
         final List<Sector> allSectors = new ArrayList<> ();
         for (int track = 0; track < this.getNumTracks (); track++)

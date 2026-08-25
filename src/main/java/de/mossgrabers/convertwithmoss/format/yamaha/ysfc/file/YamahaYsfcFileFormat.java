@@ -44,7 +44,7 @@ public enum YamahaYsfcFileFormat
      * @param endingUser The file ending for user banks of that type
      * @param endingLibrary The file ending for libraries of that type
      */
-    private YamahaYsfcFileFormat (final String title, final String maxVersionStr, final int maxVersion, final String endingUser, final String endingLibrary)
+    YamahaYsfcFileFormat (final String title, final String maxVersionStr, final int maxVersion, final String endingUser, final String endingLibrary)
     {
         this.title = title;
         this.maxVersionStr = maxVersionStr;

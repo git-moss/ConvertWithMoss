@@ -20,16 +20,16 @@ import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
 public class AiffCommonChunk extends AiffChunk
 {
     /** The AIFC compression types which mark plain (un-compressed) PCM sound data. */
-    private static final Set<String> PCM_COMPRESSION_TYPES   = Set.of ("NONE", "twos", "sowt", "in24", "in32", "23ni");
+    private static final Set<String> PCM_COMPRESSION_TYPES = Set.of ("NONE", "twos", "sowt", "in24", "in32", "23ni");
     /** The AIFC compression types which store the PCM sound data in little-endian order. */
-    private static final Set<String> LITTLE_ENDIAN_TYPES     = Set.of ("sowt", "23ni");
+    private static final Set<String> LITTLE_ENDIAN_TYPES   = Set.of ("sowt", "23ni");
 
     int                              numChannels;
     long                             numSampleFrames;
     int                              sampleSize;
     int                              sampleRate;
-    String                           compressionType = null;
-    String                           compressionName = null;
+    String                           compressionType       = null;
+    String                           compressionName       = null;
 
 
     /**
@@ -138,9 +138,9 @@ public class AiffCommonChunk extends AiffChunk
 
 
     /**
-     * Check if the sound data is plain (un-compressed) PCM. This is the case for AIFF files and
-     * for AIFC files with one of the PCM compression types (e.g. 'sowt' which only marks the data
-     * as little-endian).
+     * Check if the sound data is plain (un-compressed) PCM. This is the case for AIFF files and for
+     * AIFC files with one of the PCM compression types (e.g. 'sowt' which only marks the data as
+     * little-endian).
      *
      * @return True if the sound data is plain PCM
      */

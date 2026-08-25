@@ -44,7 +44,7 @@ public class KurzweilCreatorUI extends ShortNameSettingsUI
         private final String extension;
 
 
-        private TargetDevice (final String extension)
+        TargetDevice (final String extension)
         {
             this.extension = extension;
         }

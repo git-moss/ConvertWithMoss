@@ -1026,7 +1026,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         private final String name;
 
 
-        private JSONFormat (final String name)
+        JSONFormat (final String name)
         {
             this.name = name;
         }

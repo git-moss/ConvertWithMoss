@@ -47,10 +47,10 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String IDS_KURZWEIL_READING            = "IDS_KURZWEIL_READING";
+    private static final String IDS_KURZWEIL_READING          = "IDS_KURZWEIL_READING";
 
     /** A full cutoff velocity modulation is 8 octaves (the SFZ 'fil_veltrack' range). */
-    static final int            MAX_VELOCITY_MODULATION_CENTS   = 9600;
+    static final int            MAX_VELOCITY_MODULATION_CENTS = 9600;
 
 
     /**

@@ -8,10 +8,10 @@ import java.io.IOException;
 
 
 /**
- * Encoder/decoder for the Base64 variant of the JUCE framework (MemoryBlock::toBase64Encoding).
- * The encoded text is the decimal number of bytes followed by a '.' and the data encoded with a
- * custom 64 character alphabet. Character i holds the bits i*6..i*6+5 of the data where bit n is
- * bit (n &amp; 7) of byte (n &gt;&gt; 3).
+ * Encoder/decoder for the Base64 variant of the JUCE framework (MemoryBlock::toBase64Encoding). The
+ * encoded text is the decimal number of bytes followed by a '.' and the data encoded with a custom
+ * 64 character alphabet. Character i holds the bits i*6..i*6+5 of the data where bit n is bit (n
+ * &amp; 7) of byte (n &gt;&gt; 3).
  *
  * @author Jürgen Moßgraber
  */

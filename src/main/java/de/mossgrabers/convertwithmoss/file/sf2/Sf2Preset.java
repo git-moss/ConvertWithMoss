@@ -34,7 +34,6 @@ public class Sf2Preset extends AbstractGroupedZones<Sf2PresetZone>
      */
     public Sf2Preset ()
     {
-        super ();
     }
 
 

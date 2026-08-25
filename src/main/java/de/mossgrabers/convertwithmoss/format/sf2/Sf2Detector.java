@@ -19,9 +19,9 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -59,7 +59,9 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
      * dithered 'digital silence'.
      */
     private static final int SILENCE_THRESHOLD = 32;
-    /** The range of the coarse tuning generator in semi-tones as defined by the SoundFont 2 spec. */
+    /**
+     * The range of the coarse tuning generator in semi-tones as defined by the SoundFont 2 spec.
+     */
     private static final int MAX_COARSE_TUNE   = 120;
 
 
@@ -443,7 +445,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                         {
                             updateFilename (panLeftSampleZone, panRightSampleZone);
                             final Optional<ISampleData> rightSampleDataOpt = panRightSampleZone.getSampleData ();
-                            if (rightSampleDataOpt.isPresent () && rightSampleDataOpt.get () instanceof Sf2SampleData rightSampleData)
+                            if (rightSampleDataOpt.isPresent () && rightSampleDataOpt.get () instanceof final Sf2SampleData rightSampleData)
                             {
                                 leftSampleData.setRightSample (rightSampleData.getSample ());
                                 panLeftSampleZone.setPanning (Math.clamp (panLeftSampleZone.getPanning () + panRightSampleZone.getPanning (), -1.0, 1.0));
@@ -551,7 +553,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 final Optional<ISampleData> sampleDataOpt = zone.getSampleData ();
-                if (sampleDataOpt.isPresent () && sampleDataOpt.get () instanceof Sf2SampleData sampleData)
+                if (sampleDataOpt.isPresent () && sampleDataOpt.get () instanceof final Sf2SampleData sampleData)
                 {
                     final Sf2SampleDescriptor sample = sampleData.getSample ();
                     final Sf2SampleDescriptor rightSample = sampleData.getRightSample ();

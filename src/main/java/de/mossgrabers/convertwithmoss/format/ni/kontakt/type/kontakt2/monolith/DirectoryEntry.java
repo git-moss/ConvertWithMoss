@@ -80,7 +80,7 @@ public class DirectoryEntry
 
     /**
      * Get the raw content.
-     * 
+     *
      * @return The content
      */
     public byte [] getContent ()

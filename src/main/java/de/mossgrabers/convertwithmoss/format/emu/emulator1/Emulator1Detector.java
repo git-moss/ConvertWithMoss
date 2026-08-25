@@ -39,8 +39,8 @@ import de.mossgrabers.tools.ui.Functions;
  * Detects and reads the sound disks of the E-mu Emulator, the first Emulator of 1981. A disk holds
  * the operating system, the two banks of the lower and the upper half of the keyboard and the
  * memory of the sequencer; it is read either from a raw sector image (EMUFD, IMG) or from a HxC
- * floppy emulator image (HFE) - the Emulator writes a FM track format which no PC floppy
- * controller can read, so an image is the only way to get such a disk onto a computer.
+ * floppy emulator image (HFE) - the Emulator writes a FM track format which no PC floppy controller
+ * can read, so an image is the only way to get such a disk onto a computer.
  * <p>
  * One disk becomes one multi-sample: each bank divides its half of the keyboard into up to eight
  * zones of equal width which each play one sample, and its pitch table gives the pitch of every
@@ -123,8 +123,8 @@ public class Emulator1Detector extends AbstractDetector<MetadataSettingsUI>
     private List<IMultisampleSource> parseDisk (final File sourceFile, final byte [] image)
     {
         final List<ISampleZone> zones = new ArrayList<> ();
-        zones.addAll (this.parseBank (image, Emulator1Constants.LOWER_BANK_OFFSET, Emulator1Constants.LOWEST_KEY, Emulator1Constants.KEYS_PER_HALF, Emulator1Constants.DEFAULT_ROOT_LOWER, "Lower"));
-        zones.addAll (this.parseBank (image, Emulator1Constants.UPPER_BANK_OFFSET, Emulator1Constants.SPLIT_KEY, Emulator1Constants.NUM_KEYS - Emulator1Constants.KEYS_PER_HALF, Emulator1Constants.DEFAULT_ROOT_UPPER, "Upper"));
+        zones.addAll (parseBank (image, Emulator1Constants.LOWER_BANK_OFFSET, Emulator1Constants.LOWEST_KEY, Emulator1Constants.KEYS_PER_HALF, Emulator1Constants.DEFAULT_ROOT_LOWER, "Lower"));
+        zones.addAll (parseBank (image, Emulator1Constants.UPPER_BANK_OFFSET, Emulator1Constants.SPLIT_KEY, Emulator1Constants.NUM_KEYS - Emulator1Constants.KEYS_PER_HALF, Emulator1Constants.DEFAULT_ROOT_UPPER, "Upper"));
         if (zones.isEmpty ())
         {
             this.notifier.logError ("IDS_EI_NO_SAMPLES", sourceFile.getName ());
@@ -150,7 +150,7 @@ public class Emulator1Detector extends AbstractDetector<MetadataSettingsUI>
      * @param zoneName The name of the zones of the bank
      * @return The zones
      */
-    private List<ISampleZone> parseBank (final byte [] image, final int bankOffset, final int lowestKey, final int numKeys, final int defaultRoot, final String zoneName)
+    private static List<ISampleZone> parseBank (final byte [] image, final int bankOffset, final int lowestKey, final int numKeys, final int defaultRoot, final String zoneName)
     {
         final List<ISampleZone> zones = new ArrayList<> ();
         if (bankOffset + Emulator1Constants.HEADER_SIZE > image.length)
@@ -210,15 +210,13 @@ public class Emulator1Detector extends AbstractDetector<MetadataSettingsUI>
     private static List<Integer> findZoneRecords (final byte [] image, final int bankOffset)
     {
         final List<Integer> records = new ArrayList<> ();
-        for (int record = Emulator1Constants.RECORD_FIRST_ZONE; records.size () < Emulator1Constants.MAX_ZONES; record += Emulator1Constants.RECORD_SIZE)
+        for (int zoneRecord = Emulator1Constants.RECORD_FIRST_ZONE; records.size () < Emulator1Constants.MAX_ZONES; zoneRecord += Emulator1Constants.RECORD_SIZE)
         {
-            final int tableAddress = readAddress (image, bankOffset + record + Emulator1Constants.RECORD_TABLE_ADDRESS);
-            final int sampleStart = readAddress (image, bankOffset + record + Emulator1Constants.RECORD_SAMPLE_START);
-            if (tableAddress < Emulator1Constants.BANK_ADDRESS + Emulator1Constants.RECORD_FIRST_ZONE || tableAddress >= Emulator1Constants.BANK_ADDRESS + Emulator1Constants.HEADER_SIZE)
+            final int tableAddress = readAddress (image, bankOffset + zoneRecord + Emulator1Constants.RECORD_TABLE_ADDRESS);
+            final int sampleStart = readAddress (image, bankOffset + zoneRecord + Emulator1Constants.RECORD_SAMPLE_START);
+            if (tableAddress < Emulator1Constants.BANK_ADDRESS + Emulator1Constants.RECORD_FIRST_ZONE || tableAddress >= Emulator1Constants.BANK_ADDRESS + Emulator1Constants.HEADER_SIZE || sampleStart < Emulator1Constants.BANK_ADDRESS + Emulator1Constants.RECORD_SIZE || sampleStart >= Emulator1Constants.SAMPLE_MEMORY_END)
                 break;
-            if (sampleStart < Emulator1Constants.BANK_ADDRESS + Emulator1Constants.RECORD_SIZE || sampleStart >= Emulator1Constants.SAMPLE_MEMORY_END)
-                break;
-            records.add (Integer.valueOf (record));
+            records.add (Integer.valueOf (zoneRecord));
         }
         return records;
     }
@@ -229,15 +227,15 @@ public class Emulator1Detector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param image The raw sector image
      * @param bankOffset The position of the bank in the image
-     * @param record The offset of the record relative to the bank
+     * @param zoneRecord The offset of the record relative to the bank
      * @param name The name of the zone
      * @param lowKey The lowest key of the zone
      * @param highKey The highest key of the zone
      * @return The zone or null if the record points at no usable audio
      */
-    private static ISampleZone createZone (final byte [] image, final int bankOffset, final int record, final String name, final int lowKey, final int highKey)
+    private static ISampleZone createZone (final byte [] image, final int bankOffset, final int zoneRecord, final String name, final int lowKey, final int highKey)
     {
-        final int recordOffset = bankOffset + record;
+        final int recordOffset = bankOffset + zoneRecord;
         final int start = readAddress (image, recordOffset + Emulator1Constants.RECORD_SAMPLE_START);
         final int loopStart = readAddress (image, recordOffset + Emulator1Constants.RECORD_LOOP_START_REL) + 1;
         final int loopLength = readAddress (image, recordOffset + Emulator1Constants.RECORD_LOOP_LENGTH) + 1;

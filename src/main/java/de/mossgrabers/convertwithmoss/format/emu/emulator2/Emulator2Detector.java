@@ -328,6 +328,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
     private static class Preset
     {
         String               name         = "";
+        @SuppressWarnings("unused")
         int                  recordLength = 0;
         final List<KeyRange> ranges       = new ArrayList<> ();
     }
@@ -361,9 +362,9 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         /**
          * Read the voice records and the preset records, which share the memory behind the key
          * maps: voice records are allocated in slots of 256 bytes and a chain of preset records
-         * starts with the length of its first record. Usually all voices come first and the
-         * presets follow, but a disk which was saved with an empty preset selected starts with
-         * that preset, and its voices follow in the next slot.
+         * starts with the length of its first record. Usually all voices come first and the presets
+         * follow, but a disk which was saved with an empty preset selected starts with that preset,
+         * and its voices follow in the next slot.
          */
         private void readHeap ()
         {
@@ -420,20 +421,20 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         /**
          * Read one voice record.
          *
-         * @param record The position of the record
+         * @param voiceRecord The position of the record
          */
-        private void readVoice (final int record)
+        private void readVoice (final int voiceRecord)
         {
             final Voice voice = new Voice ();
-            voice.name = readName (this.image, record + Emulator2Constants.VOICE_NAME, Emulator2Constants.VOICE_NAME_LENGTH);
+            voice.name = readName (this.image, voiceRecord + Emulator2Constants.VOICE_NAME, Emulator2Constants.VOICE_NAME_LENGTH);
             if (voice.name.isEmpty ())
                 voice.name = "Voice " + (this.voices.size () + 1);
-            voice.start = readAddress (this.image, record + Emulator2Constants.VOICE_SAMPLE_START);
-            final int end = readAddress (this.image, record + Emulator2Constants.VOICE_SAMPLE_END);
-            final int slot = readAddress (this.image, record + Emulator2Constants.VOICE_SLOT_SIZE);
-            voice.loopLength = readAddress (this.image, record + Emulator2Constants.VOICE_LOOP_LENGTH);
-            voice.loopStart = readAddress (this.image, record + Emulator2Constants.VOICE_LOOP_START) - voice.start;
-            voice.hasLoop = (this.image[record + Emulator2Constants.VOICE_FLAGS] & Emulator2Constants.VOICE_FLAG_LOOP) != 0 && voice.loopLength > 0 && voice.loopStart >= 0;
+            voice.start = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_SAMPLE_START);
+            final int end = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_SAMPLE_END);
+            final int slot = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_SLOT_SIZE);
+            voice.loopLength = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_LOOP_LENGTH);
+            voice.loopStart = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_LOOP_START) - voice.start;
+            voice.hasLoop = (this.image[voiceRecord + Emulator2Constants.VOICE_FLAGS] & Emulator2Constants.VOICE_FLAG_LOOP) != 0 && voice.loopLength > 0 && voice.loopStart >= 0;
 
             // The audio ends where the sample ends or, when the loop reaches beyond it, where the
             // loop ends - the memory slot of the voice reserves the room for that, whether the
@@ -472,7 +473,8 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
             while (length > Emulator2Constants.PRESET_ENTRIES_OFFSET && position + length <= this.bankEnd && this.presets.size () < 100 && this.isPresetRecord (position))
             {
                 this.presets.add (this.readPreset (position, length));
-                // The last two bytes of a record hold the length of the next one, zero ends the list
+                // The last two bytes of a record hold the length of the next one, zero ends the
+                // list
                 final int nextLength = readWord (this.image, position + length - 2);
                 position += length;
                 length = nextLength;
@@ -547,7 +549,8 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                     continue;
                 }
                 // A range runs while the voice stays the same and the transposition keeps rising by
-                // one semitone per key; where it restarts, the voice is mapped again at another root
+                // one semitone per key; where it restarts, the voice is mapped again at another
+                // root
                 int last = key;
                 while (last + 1 < Emulator2Constants.NUM_KEYS && (this.image[this.bankOffset + Emulator2Constants.KEY_MAP_VOICE_ID + last + 1] & 0xFF) == voiceID && this.transpose (last + 1) == this.transpose (last) + 1)
                     last++;
@@ -603,8 +606,8 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
 
 
         /**
-         * Get the audio of a voice, which is expanded once and shared by all presets that play
-         * the voice.
+         * Get the audio of a voice, which is expanded once and shared by all presets that play the
+         * voice.
          *
          * @param voice The voice
          * @return The audio or null if the voice points at no usable audio

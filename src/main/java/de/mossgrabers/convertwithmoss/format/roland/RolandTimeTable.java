@@ -16,8 +16,8 @@ package de.mossgrabers.convertwithmoss.format.roland;
  * The unit of the entries is 1/3000 of a second. The S-760 owner's manual documents the LFO delay,
  * a 0-127 setting like the envelope times, as covering "0.01 - 22 sec": the table runs from 30 to
  * 65535, so 0.01 s / 30 gives 1/3000 s per entry and the last entry is 65535/3000 = 21.8 s, which
- * matches both ends of the documented range within one percent. The resulting law spans 0.0100 s
- * to 21.845 s in a geometric series with a ratio of 1.0624 per step, or 0.01 * 2^(value/11.45).
+ * matches both ends of the documented range within one percent. The resulting law spans 0.0100 s to
+ * 21.845 s in a geometric series with a ratio of 1.0624 per step, or 0.01 * 2^(value/11.45).
  *
  * @author Jürgen Moßgraber
  */

@@ -236,7 +236,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
     /**
      * Creates a metadata description file for a bank (multi) of up to 64 programs.
-     * 
+     *
      * @param bankName The name of the bank
      * @param safeSampleFolderNames The folders where the samples are placed. Must be of the same
      *            size as multisampleSources!
@@ -938,11 +938,11 @@ public abstract class AbstractNKIMetadataFileHandler
         {
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED_LONG", ex.getMessage (), sampleFile.getName ());
         }
-        catch (final NoSuchFileException ex)
+        catch (final NoSuchFileException _)
         {
             this.notifier.logError ("IDS_ERR_SAMPLE_FILE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
         }
-        catch (final IOException ex)
+        catch (final IOException _)
         {
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", sampleFile.getName ());
         }

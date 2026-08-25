@@ -299,7 +299,7 @@ public class EXS24File
 
     /**
      * Add a modulator.
-     * 
+     *
      * @param modulator The modulator to add
      */
     public void addModulator (final EXSModulator modulator)
@@ -310,7 +310,7 @@ public class EXS24File
 
     /**
      * Get a modulator which has the given source and destination.
-     * 
+     *
      * @param source The ID of the source
      * @param destination The ID of the destination
      * @return The modulator if present
@@ -318,10 +318,8 @@ public class EXS24File
     public Optional<EXSModulator> getModulator (final int source, final int destination)
     {
         for (final EXSModulator modulator: this.modulators)
-        {
             if (modulator.source == source && modulator.destination == destination)
                 return Optional.of (modulator);
-        }
         return Optional.empty ();
     }
 

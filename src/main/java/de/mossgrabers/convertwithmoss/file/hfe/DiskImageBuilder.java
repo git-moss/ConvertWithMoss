@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.file.hfe;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -88,8 +89,7 @@ public class DiskImageBuilder
     public static byte [] createEmptyImage (final int imageSize)
     {
         final byte [] image = new byte [imageSize];
-        for (int i = 0; i < image.length; i++)
-            image[i] = (byte) 0xF6;
+        Arrays.fill (image, (byte) 0xF6);
         return image;
     }
 

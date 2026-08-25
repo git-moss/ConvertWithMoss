@@ -272,9 +272,9 @@ public class SxtDetector extends AbstractDetector<MetadataWithSearchHeightSettin
     /**
      * Apply the voice settings of a SXT group to the multi-sample source. NN-XT stores the number
      * of voices as a plain count and 'groupMono' as a switch which limits the group to one voice.
-     * The 'keyMode' switch selects if the envelopes are re-triggered with each new note
-     * (Retrigger) or not (Legato). Note that 'portamento' is intentionally not converted, since
-     * the mapping of its 0..127 range to a time in seconds is unknown.
+     * The 'keyMode' switch selects if the envelopes are re-triggered with each new note (Retrigger)
+     * or not (Legato). Note that 'portamento' is intentionally not converted, since the mapping of
+     * its 0..127 range to a time in seconds is unknown.
      *
      * @param multisampleSource The multi-sample source to fill
      * @param sxtGroup The SXT group from which to read the settings

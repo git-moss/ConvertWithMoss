@@ -21,11 +21,11 @@ import de.mossgrabers.convertwithmoss.format.TagDetector;
  */
 public class DefaultMetadata implements IMetadata
 {
-    private String       description  = "";
-    private String       creator      = "";
-    private Date         creationTime = null;
-    private String       category     = "";
-    private List<String> keywords     = new ArrayList<> ();
+    private String             description  = "";
+    private String             creator      = "";
+    private Date               creationTime = null;
+    private String             category     = "";
+    private final List<String> keywords     = new ArrayList<> ();
 
 
     /** {@inheritDoc} */

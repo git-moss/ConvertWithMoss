@@ -28,13 +28,13 @@ import javafx.scene.layout.Pane;
  */
 public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
 {
-    private static final String QPAT_LIMIT_TO_16_441    = "QPATLimitTo16441";
-    private static final String QPAT_AUTHOR             = "QPATAuthor";
-    private static final String QPAT_BANK               = "QPATBank";
-    private static final String QPAT_NUMBER_PREFIX      = "QPATNumberPrefix";
-    private static final String QPAT_SHORT_FILE_NAMES   = "QPATShortFileNames";
+    private static final String QPAT_LIMIT_TO_16_441     = "QPATLimitTo16441";
+    private static final String QPAT_AUTHOR              = "QPATAuthor";
+    private static final String QPAT_BANK                = "QPATBank";
+    private static final String QPAT_NUMBER_PREFIX       = "QPATNumberPrefix";
+    private static final String QPAT_SHORT_FILE_NAMES    = "QPATShortFileNames";
     private static final String QPAT_NUMBER_PREFIX_START = "QPATNumberPrefixStart";
-    private static final String QPAT_SECOND_LAYER      = "QPATUseSecondLayer";
+    private static final String QPAT_SECOND_LAYER        = "QPATUseSecondLayer";
 
     private CheckBox            limitTo16441CheckBox;
     private TextField           authorField;
@@ -44,10 +44,10 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private CheckBox            shortFileNamesCheckBox;
     private CheckBox            secondLayerCheckBox;
     private boolean             limitTo16441;
-    private String              author                  = "";
-    private String              bank                    = "";
+    private String              author                   = "";
+    private String              bank                     = "";
     private boolean             numberPrefix;
-    private int                 numberPrefixStart       = 0;
+    private int                 numberPrefixStart        = 0;
     private boolean             shortFileNames;
     private boolean             useSecondLayer;
 

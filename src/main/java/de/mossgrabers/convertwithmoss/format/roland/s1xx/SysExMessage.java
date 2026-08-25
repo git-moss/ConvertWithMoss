@@ -72,7 +72,7 @@ public final class SysExMessage
 
     /**
      * Split and read all MIDI system exclusive messages.
-     * 
+     *
      * @param bytes Several raw system exclusive message bytes
      * @return The read system exclusive messages
      * @throws IOException Could not read the messages
@@ -254,7 +254,7 @@ public final class SysExMessage
 
     /**
      * Format the address as 3 hex bytes.
-     * 
+     *
      * @return The formatted string
      */
     public String formatAddress ()

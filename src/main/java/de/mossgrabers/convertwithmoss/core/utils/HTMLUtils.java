@@ -279,7 +279,7 @@ public class HTMLUtils
         }
 
         // Append the rest, if no chars found append complete source
-        return Optional.of (translated.append (source.substring (pos1, source.length ())).toString ());
+        return Optional.of (translated.append (source.substring (pos1)).toString ());
     }
 
 

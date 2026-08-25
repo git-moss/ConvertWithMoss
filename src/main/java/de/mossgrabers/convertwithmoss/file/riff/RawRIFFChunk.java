@@ -310,8 +310,7 @@ public class RawRIFFChunk implements IRiffChunk
 
 
     /**
-     * Convert 2 bytes to a signed integer, LSB is first byte (little-endian as everywhere in
-     * RIFF).
+     * Convert 2 bytes to a signed integer, LSB is first byte (little-endian as everywhere in RIFF).
      *
      * @param offset The offset into the data array
      * @return The integer value
@@ -324,8 +323,7 @@ public class RawRIFFChunk implements IRiffChunk
 
 
     /**
-     * Convert 2 bytes to a signed integer, LSB is first byte (little-endian as everywhere in
-     * RIFF).
+     * Convert 2 bytes to a signed integer, LSB is first byte (little-endian as everywhere in RIFF).
      *
      * @param offset The offset into the data array
      * @return The signed integer value

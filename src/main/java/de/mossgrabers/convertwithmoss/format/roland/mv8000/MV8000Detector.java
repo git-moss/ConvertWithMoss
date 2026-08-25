@@ -224,7 +224,8 @@ public class MV8000Detector extends AbstractDetector<MetadataSettingsUI>
         zone.setVelocityCrossfadeHigh (slot.getVelocityFadeHigh ());
 
         // The hardware plays the points stored in the slot, which the device keeps identical to the
-        // ones of the sample. Files written by ConvertWithMoss before 20.2.0 left the slot points at
+        // ones of the sample. Files written by ConvertWithMoss before 20.2.0 left the slot points
+        // at
         // zero, for those the points of the sample are used
         final boolean hasSlotPoints = slot.getEndPoint () > 0;
         final int startPoint = hasSlotPoints ? slot.getStartPoint () : sample.getStartPoint ();

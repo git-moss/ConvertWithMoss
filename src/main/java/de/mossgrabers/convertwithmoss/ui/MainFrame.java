@@ -647,11 +647,10 @@ public class MainFrame extends AbstractFrame implements INotifier
 
 
     /**
-     * Fit the shown window into the visible area of its screen. The window opens with the
-     * preferred size of its content, which exceeds smaller screens (e.g. 1366x768 pixels), and
-     * its minimum size of 1280x840 pixels prevents that it is resized to fit such a screen. The
-     * minimum size and the size are therefore limited to the screen and the window is moved
-     * onto it.
+     * Fit the shown window into the visible area of its screen. The window opens with the preferred
+     * size of its content, which exceeds smaller screens (e.g. 1366x768 pixels), and its minimum
+     * size of 1280x840 pixels prevents that it is resized to fit such a screen. The minimum size
+     * and the size are therefore limited to the screen and the window is moved onto it.
      *
      * @param stage The shown window
      */
@@ -673,8 +672,8 @@ public class MainFrame extends AbstractFrame implements INotifier
 
 
     /**
-     * Get the visible area of the screen on which the window is shown, the primary screen if it
-     * is on none.
+     * Get the visible area of the screen on which the window is shown, the primary screen if it is
+     * on none.
      *
      * @param stage The shown window
      * @return The visible area of the screen

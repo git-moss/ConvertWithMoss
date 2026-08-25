@@ -17,22 +17,22 @@ import java.io.IOException;
 public class CasioFZBank
 {
     /** The size of the bank parameters in bytes. */
-    public static final int SIZE      = 656;
+    public static final int SIZE         = 656;
 
     /** The maximum number of areas of a bank. */
-    public static final int MAX_AREAS = 64;
+    public static final int MAX_AREAS    = 64;
 
     int                     numberOfAreas;
-    final int []            highKey   = new int [MAX_AREAS];
-    final int []            lowKey    = new int [MAX_AREAS];
+    final int []            highKey      = new int [MAX_AREAS];
+    final int []            lowKey       = new int [MAX_AREAS];
     final int []            highVelocity = new int [MAX_AREAS];
     final int []            lowVelocity  = new int [MAX_AREAS];
-    final int []            centerKey = new int [MAX_AREAS];
-    final int []            midiChannel = new int [MAX_AREAS];
-    final int []            generators = new int [MAX_AREAS];
-    final int []            volume    = new int [MAX_AREAS];
+    final int []            centerKey    = new int [MAX_AREAS];
+    final int []            midiChannel  = new int [MAX_AREAS];
+    final int []            generators   = new int [MAX_AREAS];
+    final int []            volume       = new int [MAX_AREAS];
     final int []            voicePointer = new int [MAX_AREAS];
-    String                  name      = "";
+    String                  name         = "";
 
 
     /**

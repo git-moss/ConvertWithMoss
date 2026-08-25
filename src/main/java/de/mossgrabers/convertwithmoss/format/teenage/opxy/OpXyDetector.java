@@ -55,10 +55,7 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
     protected List<IMultisampleSource> readPresetFile (final File file)
     {
         // Only the description file of a preset is of interest
-        if (!OpXyTag.PATCH_FILE.equalsIgnoreCase (file.getName ()))
-            return Collections.emptyList ();
-
-        if (this.waitForDelivery ())
+        if (!OpXyTag.PATCH_FILE.equalsIgnoreCase (file.getName ()) || this.waitForDelivery ())
             return Collections.emptyList ();
 
         try

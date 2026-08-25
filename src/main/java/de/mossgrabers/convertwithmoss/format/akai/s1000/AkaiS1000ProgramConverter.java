@@ -35,7 +35,7 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 public class AkaiS1000ProgramConverter
 {
     /** The number of voices of an Akai S1000/S3000. */
-    private static final int     MAX_POLYPHONY       = 16;
+    private static final int    MAX_POLYPHONY       = 16;
 
     /**
      * The sampler scales every parameter which it displays in the range of [0..99] - and every
@@ -43,41 +43,221 @@ public class AkaiS1000ProgramConverter
      * hardware with this table, which its operating system applies with a single table look-up.
      * This is what turns a filter or loudness setting into the value the hardware receives.
      */
-    private static final int []  PARAMETER_SCALE     =
+    private static final int [] PARAMETER_SCALE     =
     {
-        0, 3, 5, 8, 10, 13, 15, 18, 20, 23,
-        26, 28, 31, 33, 36, 38, 41, 43, 46, 48,
-        51, 54, 56, 59, 61, 64, 66, 69, 71, 74,
-        76, 79, 82, 84, 87, 89, 92, 94, 97, 99,
-        102, 105, 107, 110, 112, 115, 117, 120, 122, 125,
-        127, 130, 133, 135, 138, 140, 143, 145, 148, 150,
-        153, 156, 158, 161, 163, 166, 168, 171, 173, 176,
-        178, 181, 184, 186, 189, 191, 194, 196, 199, 201,
-        204, 207, 209, 212, 214, 217, 219, 222, 224, 227,
-        229, 232, 235, 237, 240, 242, 245, 247, 250, 252
+        0,
+        3,
+        5,
+        8,
+        10,
+        13,
+        15,
+        18,
+        20,
+        23,
+        26,
+        28,
+        31,
+        33,
+        36,
+        38,
+        41,
+        43,
+        46,
+        48,
+        51,
+        54,
+        56,
+        59,
+        61,
+        64,
+        66,
+        69,
+        71,
+        74,
+        76,
+        79,
+        82,
+        84,
+        87,
+        89,
+        92,
+        94,
+        97,
+        99,
+        102,
+        105,
+        107,
+        110,
+        112,
+        115,
+        117,
+        120,
+        122,
+        125,
+        127,
+        130,
+        133,
+        135,
+        138,
+        140,
+        143,
+        145,
+        148,
+        150,
+        153,
+        156,
+        158,
+        161,
+        163,
+        166,
+        168,
+        171,
+        173,
+        176,
+        178,
+        181,
+        184,
+        186,
+        189,
+        191,
+        194,
+        196,
+        199,
+        201,
+        204,
+        207,
+        209,
+        212,
+        214,
+        217,
+        219,
+        222,
+        224,
+        227,
+        229,
+        232,
+        235,
+        237,
+        240,
+        242,
+        245,
+        247,
+        250,
+        252
     };
 
     /**
      * The cut-off frequency in Hertz which each of the 100 filter settings produces, one entry per
      * setting. The sampler scales the setting with {@link #PARAMETER_SCALE} and looks the
      * coefficient of its low-pass up with the result; the frequencies here are the -3dB points
-     * which those coefficients give for its three one-pole stages in series at 44.1 kHz. The
-     * filter is therefore far from a straight line over its range: it only leaves the audible band
-     * in the upper third, while the middle of the range - where sample libraries place their
-     * evolving layers - sits between 300 Hz and 1 kHz.
+     * which those coefficients give for its three one-pole stages in series at 44.1 kHz. The filter
+     * is therefore far from a straight line over its range: it only leaves the audible band in the
+     * upper third, while the middle of the range - where sample libraries place their evolving
+     * layers - sits between 300 Hz and 1 kHz.
      */
-    private static final int []  FILTER_CUTOFF       =
+    private static final int [] FILTER_CUTOFF       =
     {
-        13, 14, 15, 16, 17, 19, 20, 22, 23, 25,
-        27, 29, 31, 33, 36, 38, 42, 44, 48, 51,
-        56, 61, 64, 70, 74, 81, 86, 94, 99, 108,
-        115, 125, 137, 145, 158, 167, 182, 193, 210, 223,
-        243, 265, 280, 306, 324, 353, 374, 408, 432, 470,
-        498, 543, 592, 627, 683, 723, 788, 834, 909, 962,
-        1048, 1142, 1208, 1316, 1393, 1516, 1605, 1747, 1848, 2011,
-        2127, 2314, 2517, 2661, 2893, 3057, 3321, 3508, 3807, 4019,
-        4356, 4715, 4968, 5364, 5640, 6067, 6359, 6802, 7096, 7530,
-        7808, 8199, 8555, 8774, 9088, 9303, 9696, 10064, 11005, 12275
+        13,
+        14,
+        15,
+        16,
+        17,
+        19,
+        20,
+        22,
+        23,
+        25,
+        27,
+        29,
+        31,
+        33,
+        36,
+        38,
+        42,
+        44,
+        48,
+        51,
+        56,
+        61,
+        64,
+        70,
+        74,
+        81,
+        86,
+        94,
+        99,
+        108,
+        115,
+        125,
+        137,
+        145,
+        158,
+        167,
+        182,
+        193,
+        210,
+        223,
+        243,
+        265,
+        280,
+        306,
+        324,
+        353,
+        374,
+        408,
+        432,
+        470,
+        498,
+        543,
+        592,
+        627,
+        683,
+        723,
+        788,
+        834,
+        909,
+        962,
+        1048,
+        1142,
+        1208,
+        1316,
+        1393,
+        1516,
+        1605,
+        1747,
+        1848,
+        2011,
+        2127,
+        2314,
+        2517,
+        2661,
+        2893,
+        3057,
+        3321,
+        3508,
+        3807,
+        4019,
+        4356,
+        4715,
+        4968,
+        5364,
+        5640,
+        6067,
+        6359,
+        6802,
+        7096,
+        7530,
+        7808,
+        8199,
+        8555,
+        8774,
+        9088,
+        9303,
+        9696,
+        10064,
+        11005,
+        12275
     };
 
     /**
@@ -88,42 +268,132 @@ public class AkaiS1000ProgramConverter
      * of 16384 to 1, which is why the times are anything but a straight line over the range of a
      * setting.
      */
-    private static final int []  ENVELOPE_RATE       =
+    private static final int [] ENVELOPE_RATE       =
     {
-        2, 2, 2, 3, 3, 3, 4, 4, 4, 5,
-        5, 6, 6, 7, 8, 9, 10, 11, 12, 13,
-        14, 16, 17, 19, 21, 23, 26, 28, 31, 34,
-        38, 42, 46, 51, 56, 62, 68, 75, 83, 91,
-        101, 111, 123, 135, 149, 165, 182, 200, 221, 244,
-        269, 297, 327, 361, 398, 439, 484, 534, 589, 650,
-        716, 790, 872, 961, 1060, 1170, 1290, 1423, 1570, 1731,
-        1909, 2106, 2323, 2562, 2826, 3117, 3438, 3792, 4183, 4614,
-        5089, 5613, 6191, 6828, 7532, 8307, 9163, 10106, 11147, 12295,
-        13562, 14958, 16499, 18198, 20072, 22139, 24419, 26934, 29707, 32767
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        5,
+        5,
+        6,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        16,
+        17,
+        19,
+        21,
+        23,
+        26,
+        28,
+        31,
+        34,
+        38,
+        42,
+        46,
+        51,
+        56,
+        62,
+        68,
+        75,
+        83,
+        91,
+        101,
+        111,
+        123,
+        135,
+        149,
+        165,
+        182,
+        200,
+        221,
+        244,
+        269,
+        297,
+        327,
+        361,
+        398,
+        439,
+        484,
+        534,
+        589,
+        650,
+        716,
+        790,
+        872,
+        961,
+        1060,
+        1170,
+        1290,
+        1423,
+        1570,
+        1731,
+        1909,
+        2106,
+        2323,
+        2562,
+        2826,
+        3117,
+        3438,
+        3792,
+        4183,
+        4614,
+        5089,
+        5613,
+        6191,
+        6828,
+        7532,
+        8307,
+        9163,
+        10106,
+        11147,
+        12295,
+        13562,
+        14958,
+        16499,
+        18198,
+        20072,
+        22139,
+        24419,
+        26934,
+        29707,
+        32767
     };
 
     /**
      * The distance which an envelope covers between silence and the full level, in the units in
      * which {@link #ENVELOPE_RATE} advances it. The hardware adds the rate to its envelope
-     * accumulator once per sample at 44.1 kHz; the width of that accumulator is the one part of
-     * the law which the operating system does not state, it is taken from the emulation of the
-     * sound hardware. The ratios between the settings do not depend on it.
+     * accumulator once per sample at 44.1 kHz; the width of that accumulator is the one part of the
+     * law which the operating system does not state, it is taken from the emulation of the sound
+     * hardware. The ratios between the settings do not depend on it.
      */
-    private static final double  ENVELOPE_FULL_SWING = 32767.0 * 128.0;
+    private static final double ENVELOPE_FULL_SWING = 32767.0 * 128.0;
 
     /** The rate at which the sound hardware advances an envelope. */
-    private static final double  ENVELOPE_RATE_HZ    = 44100.0;
+    private static final double ENVELOPE_RATE_HZ    = 44100.0;
 
     /**
      * One step of the scaled parameter range on the loudness scale of the sound hardware, which
      * spans 60.5 dB over its 255 steps.
      */
-    private static final double  DECIBEL_PER_STEP    = 0.2372;
+    private static final double DECIBEL_PER_STEP    = 0.2372;
 
     /** The scaled value which the loudness of the sound hardware plays at its full level. */
-    private static final int     FULL_LEVEL          = 255;
+    private static final int    FULL_LEVEL          = 255;
 
-    private final INotifier      notifier;
+    private final INotifier     notifier;
 
 
     /**
@@ -238,13 +508,10 @@ public class AkaiS1000ProgramConverter
 
                 // Is the layer used?
                 final String sampleName = keygroupSample.getName ();
-                if (sampleName == null || sampleName.isBlank ())
-                    continue;
-
                 // A zone with an upper velocity of 0 can never be triggered since a velocity of 0
                 // is a note-off. CD-ROM manufacturers use such zones to mute the layers which
                 // belong to a partner program of a layered stack and to add their copyright info
-                if (keygroupSample.getHighVelocity () == 0)
+                if (sampleName == null || sampleName.isBlank () || (keygroupSample.getHighVelocity () == 0))
                     continue;
 
                 final Optional<AkaiS1000Sample> sampleOpt = lookupSample (samples, sampleName);

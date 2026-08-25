@@ -529,10 +529,11 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
      * 'choke' stops a previous note of the same sound.
      * <p>
      * The five values are 'mono', 'auto', 'legato', 'choke' and 'poly' as written by
-     * polyphonyModeToString in src/deluge/util/functions.cpp of the Deluge firmware. Its counterpart
-     * stringToPolyphonyMode additionally reads '0' as 'auto' and '2' as 'choke' for files written
-     * before June 2017, but there is no numeric value for a monophonic mode, so those old files
-     * never need to be handled here. An unknown value falls back to polyphonic on the device.
+     * polyphonyModeToString in src/deluge/util/functions.cpp of the Deluge firmware. Its
+     * counterpart stringToPolyphonyMode additionally reads '0' as 'auto' and '2' as 'choke' for
+     * files written before June 2017, but there is no numeric value for a monophonic mode, so those
+     * old files never need to be handled here. An unknown value falls back to polyphonic on the
+     * device.
      *
      * @param soundElement The sound element
      * @param multisampleSource The multi-sample source to fill

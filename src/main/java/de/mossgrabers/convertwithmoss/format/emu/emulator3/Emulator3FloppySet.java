@@ -409,9 +409,9 @@ public class Emulator3FloppySet
             final boolean writeLeft = this.hasLeft || this.isStereo;
             final boolean writeRight = !this.hasLeft || this.isStereo;
             Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_START_LEFT, writeLeft ? headerSize : 0);
-            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_START_RIGHT, getRightDataOffset (headerSize, writeRight));
+            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_START_RIGHT, this.getRightDataOffset (headerSize, writeRight));
             Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_END_LEFT, writeLeft ? (long) headerSize + this.channelSize - 2 : 0);
-            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_END_RIGHT, getRightSampleEnd (headerSize, writeRight));
+            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_END_RIGHT, this.getRightSampleEnd (headerSize, writeRight));
             if (this.hasLoop)
             {
                 // The loop end of a floppy already points behind the last frame of the loop while
@@ -435,7 +435,7 @@ public class Emulator3FloppySet
                 options |= Emulator3Constants.OPTION_LOOP_IN_RELEASE;
             Emulator3Constants.putU16 (bank, offset + Emulator3Constants.SAMPLE_OPTIONS, options);
             Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_DATA_OFFSET_LEFT, writeLeft ? headerSize : 0);
-            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_DATA_OFFSET_RIGHT, getRightDataOffset (headerSize, writeRight));
+            Emulator3Constants.putU32 (bank, offset + Emulator3Constants.SAMPLE_DATA_OFFSET_RIGHT, this.getRightDataOffset (headerSize, writeRight));
 
             // The 16 bit sample values of a floppy are big-endian
             int writeOffset = offset + headerSize;

@@ -182,9 +182,9 @@ public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
 
     private static Optional<File> findSample (final File parentFolder, final String sampleName)
     {
-        for (int i = 0; i < SOUND_FILE_ENDINGS.length; i++)
+        for (final String element: SOUND_FILE_ENDINGS)
         {
-            final File sampleFile = new File (parentFolder, sampleName + SOUND_FILE_ENDINGS[i]);
+            final File sampleFile = new File (parentFolder, sampleName + element);
             if (sampleFile.exists ())
                 return Optional.of (sampleFile);
         }

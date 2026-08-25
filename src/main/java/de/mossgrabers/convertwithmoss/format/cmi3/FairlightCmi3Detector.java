@@ -266,7 +266,6 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
 
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         for (final DiskEntry diskEntry: diskEntries)
-        {
             try
             {
                 this.notifier.log ("IDS_CMI3_READING_VOICE", diskEntry.filename + ".VC");
@@ -284,7 +283,6 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
                 else
                     this.notifier.logError (IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED, ex);
             }
-        }
         return multisampleSources;
     }
 

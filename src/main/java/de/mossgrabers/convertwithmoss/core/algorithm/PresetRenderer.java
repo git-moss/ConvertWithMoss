@@ -197,11 +197,11 @@ public class PresetRenderer
     /**
      * Get the number of frames to hold the key: long enough that the sound reaches its sustained
      * character - through the delay, attack, hold and decay of its amplitude envelope - and then
-     * dwells there, or that the body of its longest sample is heard once (an evolving texture or
-     * a phrase which only loops near its end). A sound which decays to silence is held through
-     * its decay instead, so that nothing of its natural tail is cut off. The result is never
-     * shorter than the default hold and never longer than the maximum hold, which leaves room for
-     * the release within the maximum rendering time.
+     * dwells there, or that the body of its longest sample is heard once (an evolving texture or a
+     * phrase which only loops near its end). A sound which decays to silence is held through its
+     * decay instead, so that nothing of its natural tail is cut off. The result is never shorter
+     * than the default hold and never longer than the maximum hold, which leaves room for the
+     * release within the maximum rendering time.
      *
      * @param zones The zones which the note triggers
      * @return The number of frames to hold the key
@@ -234,8 +234,8 @@ public class PresetRenderer
 
     /**
      * Get the seconds until the audio of a zone has played its body: up to the end of its loop,
-     * which afterwards only repeats, or up to its end when it does not loop. The pitch shift of
-     * the preview key is ignored, since the preview prefers to play at a root key.
+     * which afterwards only repeats, or up to its end when it does not loop. The pitch shift of the
+     * preview key is ignored, since the preview prefers to play at a root key.
      *
      * @param zone The zone
      * @return The seconds

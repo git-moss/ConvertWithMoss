@@ -50,16 +50,14 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
 {
-    /** The Emax plays one channel per voice, so the audio has to be mixed down to mono. */
-    private static final int      NUM_CHANNELS        = 1;
     /** A loop shorter than this does not survive the companding of the audio. */
-    private static final int      MINIMUM_LOOP_LENGTH = 8;
+    private static final int     MINIMUM_LOOP_LENGTH = 8;
 
     /**
      * The preset parameters at offset 0x0C of a preset record, which are not decoded. This is the
      * most frequent setting of the factory sound library.
      */
-    private static final byte []  PRESET_TEMPLATE     =
+    private static final byte [] PRESET_TEMPLATE     =
     {
         0x41,
         0x00,
@@ -91,7 +89,7 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
      * which are decoded - the original key, the sample, the cutoff, the panning and the chorus -
      * are overwritten with the values of the zone.
      */
-    private static final byte []  VOICE_TEMPLATE      =
+    private static final byte [] VOICE_TEMPLATE      =
     {
         0x02,
         0x7C,
@@ -127,7 +125,7 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
         (byte) 0x96
     };
 
-    private static final int []   ALLOWED_BIT_DEPTHS  =
+    private static final int []  ALLOWED_BIT_DEPTHS  =
     {
         16
     };
@@ -356,7 +354,7 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
             return -1;
 
         final Voice voice = new Voice ();
-        fillVoice (voice.record, zone, sampleIndex);
+        fillVoice (voice.voiceRecord, zone, sampleIndex);
 
         final int index = preset.voices.size ();
         preset.voices.add (voice);
@@ -369,52 +367,52 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
      * Fill the 32 bytes of a voice record from a zone. The parameters which are not decoded keep
      * the value of the template.
      *
-     * @param record The voice record to fill
+     * @param voiceRecord The voice record to fill
      * @param zone The zone
      * @param sampleIndex The number of the sample which the voice plays
      */
-    private static void fillVoice (final byte [] record, final ISampleZone zone, final int sampleIndex)
+    private static void fillVoice (final byte [] voiceRecord, final ISampleZone zone, final int sampleIndex)
     {
-        record[EmaxConstants.VOICE_ORIGINAL_KEY] = (byte) Math.clamp (zone.getKeyRoot () - EmaxConstants.KEY_OFFSET, 0, EmaxConstants.NUM_KEYS - 1);
-        record[EmaxConstants.VOICE_SAMPLE] = (byte) sampleIndex;
+        voiceRecord[EmaxConstants.VOICE_ORIGINAL_KEY] = (byte) Math.clamp (zone.getKeyRoot () - (long) EmaxConstants.KEY_OFFSET, 0, EmaxConstants.NUM_KEYS - 1);
+        voiceRecord[EmaxConstants.VOICE_SAMPLE] = (byte) sampleIndex;
 
         // The panning nibble runs the other way round than the model: 1 is fully right and 15 is
         // fully left
         final int panning = EmaxConstants.PANNING_CENTER - (int) Math.round (zone.getPanning () * (EmaxConstants.PANNING_CENTER - 1));
-        EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_PANNING_BITS, 4, Math.clamp (panning, 1, 15));
+        EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_PANNING_BITS, 4, Math.clamp (panning, 1, 15));
 
-        EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_ATTENUATION, 5, Math.clamp ((int) Math.round (-zone.getGain () / EmaxConstants.ATTENUATION_DB_PER_STEP), 0, 31));
-        EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_TUNE, 5, Math.clamp ((int) Math.round (zone.getTuning () * 100.0 / EmaxConstants.TUNE_CENTS_PER_STEP), -16, 15) & 0x1F);
-        EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_NON_TRANSPOSE, 1, zone.getKeyTracking () < 0.5 ? 1 : 0);
+        EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_ATTENUATION, 5, Math.clamp ((int) Math.round (-zone.getGain () / EmaxConstants.ATTENUATION_DB_PER_STEP), 0, 31));
+        EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_TUNE, 5, Math.clamp ((int) Math.round (zone.getTuning () * 100.0 / EmaxConstants.TUNE_CENTS_PER_STEP), -16, 15) & 0x1F);
+        EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_NON_TRANSPOSE, 1, zone.getKeyTracking () < 0.5 ? 1 : 0);
 
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
-        writeEnvelope (record, EmaxConstants.VOICE_AMP_ATTACK, amplitudeEnvelope);
+        writeEnvelope (voiceRecord, EmaxConstants.VOICE_AMP_ATTACK, amplitudeEnvelope);
         if (amplitudeEnvelope.getDelayTime () >= 0)
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_DELAY, 6, Math.clamp (EmaxConstants.getVoiceDelayValue (amplitudeEnvelope.getDelayTime ()), 0, 63));
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_DELAY, 6, Math.clamp (EmaxConstants.getVoiceDelayValue (amplitudeEnvelope.getDelayTime ()), 0, 63));
         final double velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
         if (velocityDepth > 0)
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_VELOCITY_TO_LEVEL, 4, EmaxConstants.getVelocityToLevelValue (velocityDepth * ILfoModulator.MAX_VOLUME_DEPTH));
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_VELOCITY_TO_LEVEL, 4, EmaxConstants.getVelocityToLevelValue (velocityDepth * ILfoModulator.MAX_VOLUME_DEPTH));
 
-        writeLfo (record, zone);
-        writeFilter (record, zone);
+        writeLfo (voiceRecord, zone);
+        writeFilter (voiceRecord, zone);
     }
 
 
     /**
      * Write the five stages of an envelope into the bit stream of a voice record.
      *
-     * @param record The voice record
+     * @param voiceRecord The voice record
      * @param offset The offset of the attack stage in the bit stream
      * @param envelope The envelope
      */
-    private static void writeEnvelope (final byte [] record, final int offset, final IEnvelope envelope)
+    private static void writeEnvelope (final byte [] voiceRecord, final int offset, final IEnvelope envelope)
     {
-        writeStage (record, offset, EnvelopeStage.ATTACK, envelope.getAttackTime ());
-        writeStage (record, offset + 5, EnvelopeStage.HOLD, envelope.getHoldTime ());
-        writeStage (record, offset + 10, EnvelopeStage.DECAY, envelope.getDecayTime ());
+        writeStage (voiceRecord, offset, EnvelopeStage.ATTACK, envelope.getAttackTime ());
+        writeStage (voiceRecord, offset + 5, EnvelopeStage.HOLD, envelope.getHoldTime ());
+        writeStage (voiceRecord, offset + 10, EnvelopeStage.DECAY, envelope.getDecayTime ());
         if (envelope.getSustainLevel () >= 0)
-            EmaxConstants.writeVoiceField (record, offset + 15, 5, EmaxConstants.getEnvelopeSustainValue (envelope.getSustainLevel ()));
-        writeStage (record, offset + 20, EnvelopeStage.DECAY, envelope.getReleaseTime ());
+            EmaxConstants.writeVoiceField (voiceRecord, offset + 15, 5, EmaxConstants.getEnvelopeSustainValue (envelope.getSustainLevel ()));
+        writeStage (voiceRecord, offset + 20, EnvelopeStage.DECAY, envelope.getReleaseTime ());
     }
 
 
@@ -422,15 +420,15 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
      * Write one stage of an envelope, leaving the template value in place when the source does not
      * set the stage.
      *
-     * @param record The voice record
+     * @param voiceRecord The voice record
      * @param offset The offset of the stage in the bit stream
-     * @param table The table of the stage
+     * @param stage The envelope stage
      * @param time The time in seconds, negative if the source does not set it
      */
-    private static void writeStage (final byte [] record, final int offset, final EnvelopeStage stage, final double time)
+    private static void writeStage (final byte [] voiceRecord, final int offset, final EnvelopeStage stage, final double time)
     {
         if (time >= 0)
-            EmaxConstants.writeVoiceField (record, offset, 5, stage.toValue (time));
+            EmaxConstants.writeVoiceField (voiceRecord, offset, 5, stage.toValue (time));
     }
 
 
@@ -464,10 +462,10 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
      * Write the LFO of a voice. The sampler has one LFO which it routes to the pitch and the level
      * at the same time, so the rate and the delay of whichever the source carries are used.
      *
-     * @param record The voice record
+     * @param voiceRecord The voice record
      * @param zone The zone
      */
-    private static void writeLfo (final byte [] record, final ISampleZone zone)
+    private static void writeLfo (final byte [] voiceRecord, final ISampleZone zone)
     {
         final ILfoModulator pitchLfo = zone.getPitchLfoModulator ();
         final ILfoModulator amplitudeLfo = zone.getAmplitudeLfoModulator ();
@@ -476,13 +474,13 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
             return;
 
         if (source.getSource ().getRate () >= 0)
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_LFO_RATE, 7, EmaxConstants.getLfoRateValue (source.getSource ().getRate ()));
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_RATE, 7, EmaxConstants.getLfoRateValue (source.getSource ().getRate ()));
         if (source.getSource ().getDelay () >= 0)
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_LFO_DELAY, 6, Math.clamp (EmaxConstants.getLfoDelayValue (source.getSource ().getDelay ()), 0, 63));
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_DELAY, 6, Math.clamp (EmaxConstants.getLfoDelayValue (source.getSource ().getDelay ()), 0, 63));
         if (pitchLfo.getDepth () > 0)
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_LFO_TO_PITCH, 4, Math.clamp ((int) Math.round (pitchLfo.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / EmaxConstants.LFO_PITCH_CENTS_PER_STEP), 0, 15));
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_PITCH, 4, Math.clamp ((int) Math.round (pitchLfo.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / EmaxConstants.LFO_PITCH_CENTS_PER_STEP), 0, 15));
         if (amplitudeLfo.getDepth () > 0)
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_LFO_TO_VOLUME, 4, Math.clamp ((int) Math.round (amplitudeLfo.getDepth () * ILfoModulator.MAX_VOLUME_DEPTH / EmaxConstants.LFO_VOLUME_DB_PER_STEP), 0, 15));
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_VOLUME, 4, Math.clamp ((int) Math.round (amplitudeLfo.getDepth () * ILfoModulator.MAX_VOLUME_DEPTH / EmaxConstants.LFO_VOLUME_DB_PER_STEP), 0, 15));
     }
 
 
@@ -490,34 +488,34 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
      * Write the low pass filter of a voice with its envelope, its keyboard tracking and its
      * velocity modulation.
      *
-     * @param record The voice record
+     * @param voiceRecord The voice record
      * @param zone The zone
      */
-    private static void writeFilter (final byte [] record, final ISampleZone zone)
+    private static void writeFilter (final byte [] voiceRecord, final ISampleZone zone)
     {
         final IFilter filter = zone.getFilter ().orElse (null);
         if (filter == null)
         {
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_FILTER_CUTOFF_BITS, 7, EmaxConstants.FILTER_CUTOFF_MAX);
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_FILTER_RESONANCE, 7, 0);
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_FILTER_ENV_AMOUNT, 7, 0);
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_FILTER_TRACKING, 4, 0);
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_CUTOFF_BITS, 7, EmaxConstants.FILTER_CUTOFF_MAX);
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_RESONANCE, 7, 0);
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_ENV_AMOUNT, 7, 0);
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_TRACKING, 4, 0);
             return;
         }
 
-        EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_FILTER_CUTOFF_BITS, 7, EmaxConstants.getCutoffValue (filter.getCutoff ()));
-        EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_FILTER_RESONANCE, 7, EmaxConstants.getResonanceValue (filter.getResonance () * IFilter.MAX_RESONANCE));
-        EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_FILTER_TRACKING, 4, Math.clamp ((int) Math.round (filter.getCutoffKeyTracking () * 100.0 / EmaxConstants.FILTER_TRACKING_PER_STEP), 0, 15));
+        EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_CUTOFF_BITS, 7, EmaxConstants.getCutoffValue (filter.getCutoff ()));
+        EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_RESONANCE, 7, EmaxConstants.getResonanceValue (filter.getResonance () * IFilter.MAX_RESONANCE));
+        EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_TRACKING, 4, Math.clamp ((int) Math.round (filter.getCutoffKeyTracking () * 100.0 / EmaxConstants.FILTER_TRACKING_PER_STEP), 0, 15));
 
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final int amount = (int) Math.round (cutoffModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / EmaxConstants.FILTER_ENV_CENTS_PER_STEP);
-        EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_FILTER_ENV_AMOUNT, 7, Math.clamp (amount, -50, 50) & 0x7F);
+        EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_ENV_AMOUNT, 7, Math.clamp (amount, -50, 50) & 0x7F);
         if (amount != 0)
-            writeEnvelope (record, EmaxConstants.VOICE_FILTER_ATTACK, cutoffModulator.getSource ());
+            writeEnvelope (voiceRecord, EmaxConstants.VOICE_FILTER_ATTACK, cutoffModulator.getSource ());
 
         final double velocityDepth = filter.getCutoffVelocityModulator ().getDepth ();
         if (velocityDepth > 0)
-            EmaxConstants.writeVoiceField (record, EmaxConstants.VOICE_VELOCITY_TO_CUTOFF, 4, Math.clamp ((int) Math.round (velocityDepth * 15.0), 0, 15));
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_VELOCITY_TO_CUTOFF, 4, Math.clamp ((int) Math.round (velocityDepth * 15.0), 0, 15));
     }
 
 
@@ -598,7 +596,7 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
      * sample far upwards and how far depends on its rate, so the automatic setting picks the
      * highest rate which still covers the transposition which the zones of the source need.
      *
-     * @param multisampleSource The source
+     * @param sourceRate The source rate
      * @return The sample rate in Hertz
      */
     private int getSampleRate (final int sourceRate)
@@ -763,7 +761,7 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
         for (int index = 0; index < preset.voices.size (); index++)
         {
             final Voice voice = preset.voices.get (index);
-            System.arraycopy (voice.record, 0, bank, voiceBase + index * EmaxConstants.VOICE_SIZE, EmaxConstants.VOICE_SIZE);
+            System.arraycopy (voice.voiceRecord, 0, bank, voiceBase + index * EmaxConstants.VOICE_SIZE, EmaxConstants.VOICE_SIZE);
         }
     }
 
@@ -869,10 +867,10 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
     /** One preset to be written into the bank. */
     private static class Preset
     {
-        String            name;
-        final int []      keyMap    = new int [EmaxConstants.NUM_KEYS];
+        String             name;
+        final int []       keyMap   = new int [EmaxConstants.NUM_KEYS];
         final List<int []> keyAreas = new ArrayList<> ();
-        final List<Voice> voices    = new ArrayList<> ();
+        final List<Voice>  voices   = new ArrayList<> ();
 
 
         /**
@@ -890,6 +888,6 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
     /** One voice of a preset. */
     private static class Voice
     {
-        final byte [] record = VOICE_TEMPLATE.clone ();
+        final byte [] voiceRecord = VOICE_TEMPLATE.clone ();
     }
 }

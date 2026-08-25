@@ -688,7 +688,7 @@ public class AacEncoder
 
         void write (final int value, final int numBits)
         {
-            long bits = numBits == 32 ? value & 0xFFFFFFFFL : value & (1L << numBits) - 1;
+            final long bits = numBits == 32 ? value & 0xFFFFFFFFL : value & (1L << numBits) - 1;
             int remaining = numBits;
             while (remaining > 0)
             {

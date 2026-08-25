@@ -28,7 +28,7 @@ public class WaveParameters
 
     /**
      * The sampling structure.
-     * 
+     *
      * <ul>
      * <li>0 = A
      * <li>1 = B
@@ -246,14 +246,12 @@ public class WaveParameters
     {
         final ByteBuffer buffer = ByteBuffer.allocate (this.waveData.length * 2).order (ByteOrder.LITTLE_ENDIAN);
 
-        for (int i = 0; i < this.waveData.length; i++)
+        for (final int raw: this.waveData)
         {
-            // 0..4095
-            int raw = this.waveData[i];
             // 12-bit two's complement
-            int signed12 = (raw < 2048) ? raw : raw - 4096;
+            final int signed12 = (raw < 2048) ? raw : raw - 4096;
             // Scale to 16-bit
-            int signed16 = signed12 << 4;
+            final int signed16 = signed12 << 4;
             buffer.putShort ((short) signed16);
         }
 

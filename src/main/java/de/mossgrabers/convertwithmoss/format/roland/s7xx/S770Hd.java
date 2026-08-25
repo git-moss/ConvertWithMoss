@@ -29,8 +29,8 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  * The audio area is addressed through the FAT: each FAT index references one segment of 0x2400
  * bytes, index 2 is the first segment of the audio area (index 0 holds the FAT ID, index 1 the
  * number of free segments). The FAT index of the first segment of a sample is stored in its
- * directory entry, the following segments are found by walking the FAT chain. On disks formatted
- * by an S-750/S-770 the audio area therefore normally starts at 0x2B5800 while on S-760 formatted
+ * directory entry, the following segments are found by walking the FAT chain. On disks formatted by
+ * an S-750/S-770 the audio area therefore normally starts at 0x2B5800 while on S-760 formatted
  * disks the first 114 segments hold additional OS data and audio starts at 0x3B6000.
  *
  * @author Jürgen Moßgraber
@@ -122,9 +122,9 @@ public class S770Hd implements IS770Image
     /**
      * Reads the parameter area. All slots are kept even if unused since patches reference partials
      * and partials reference samples by their absolute slot index. On images taken from a used
-     * hard-disk deleted entries may sit between the entries in use, therefore the entry counts
-     * from the header cannot be used as a range. Instead, the matching directory entry marks a
-     * slot as free/deleted.
+     * hard-disk deleted entries may sit between the entries in use, therefore the entry counts from
+     * the header cannot be used as a range. Instead, the matching directory entry marks a slot as
+     * free/deleted.
      *
      * @param input The input stream to read from
      * @throws IOException Could not read the parameters

@@ -19,7 +19,7 @@ public class SampleBlock
 {
     /**
      * S-10 start address.
-     * 
+     *
      * <ul>
      * <li>02 00 00 = Bank A
      * <li>06 00 00 = Bank B
@@ -91,7 +91,7 @@ public class SampleBlock
 
     /**
      * Format the address as 3 hex bytes.
-     * 
+     *
      * @return The formatted string
      */
     public String formatAddress ()

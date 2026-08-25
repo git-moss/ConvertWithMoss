@@ -20,8 +20,9 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 
 /**
  * The data of a Synclavier Regen SFLC sample file. An SFLC file is a FLAC file whose bytes are
- * obfuscated with a key-stream derived from the file's base name (see {@link SynclavierRegenCodec}).
- * The obfuscation is removed and the resulting FLAC stream is then decoded like a normal FLAC file.
+ * obfuscated with a key-stream derived from the file's base name (see
+ * {@link SynclavierRegenCodec}). The obfuscation is removed and the resulting FLAC stream is then
+ * decoded like a normal FLAC file.
  *
  * @author Jürgen Moßgraber
  */

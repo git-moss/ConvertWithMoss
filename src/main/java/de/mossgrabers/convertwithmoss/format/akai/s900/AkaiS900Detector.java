@@ -187,32 +187,7 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
             final AkaiS900DiskImage image = new AkaiS900DiskImage (sourceFile);
             final List<AkaiS900Program> programs = image.getPrograms ();
             final Map<String, AkaiS900Sample> samples = image.getSamples ();
-
-            AkaiS900DirectoryEntry continuationEntry = image.doesRequireContinuationDisk ();
-            try
-            {
-                if (continuationEntry != null)
-                {
-                    this.notifier.log ("IDS_S900_CONTINUATION_DISK", continuationEntry.getName ());
-                    File continuationFile = sourceFile;
-                    while (continuationEntry != null)
-                    {
-                        continuationFile = getContinuationFile (continuationFile);
-                        this.notifier.log ("IDS_S900_CONTINUATION_DISK_FOUND", continuationFile.getName ());
-
-                        final AkaiS900DiskImage continuationImage = new AkaiS900DiskImage (continuationFile);
-                        continuationEntry = continuationImage.doesRequireContinuationDisk ();
-                        programs.addAll (continuationImage.getPrograms ());
-                        samples.putAll (continuationImage.getSamples ());
-                    }
-                }
-            }
-            catch (final IOException ex)
-            {
-                // Only log as normal info since a missing continuation disk might not be an error
-                // when the sample is not used
-                this.notifier.logText (ex.getMessage ());
-            }
+            this.addContinuationDisks (sourceFile, image, programs, samples);
 
             if (programs.isEmpty ())
             {
@@ -248,6 +223,36 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         {
             this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
             return Collections.emptyList ();
+        }
+    }
+
+
+    private void addContinuationDisks (final File sourceFile, final AkaiS900DiskImage image, final List<AkaiS900Program> programs, final Map<String, AkaiS900Sample> samples)
+    {
+        AkaiS900DirectoryEntry continuationEntry = image.doesRequireContinuationDisk ();
+        if (continuationEntry == null)
+            return;
+
+        try
+        {
+            this.notifier.log ("IDS_S900_CONTINUATION_DISK", continuationEntry.getName ());
+            File continuationFile = sourceFile;
+            while (continuationEntry != null)
+            {
+                continuationFile = getContinuationFile (continuationFile);
+                this.notifier.log ("IDS_S900_CONTINUATION_DISK_FOUND", continuationFile.getName ());
+
+                final AkaiS900DiskImage continuationImage = new AkaiS900DiskImage (continuationFile);
+                continuationEntry = continuationImage.doesRequireContinuationDisk ();
+                programs.addAll (continuationImage.getPrograms ());
+                samples.putAll (continuationImage.getSamples ());
+            }
+        }
+        catch (final IOException ex)
+        {
+            // Only log as normal info since a missing continuation disk might not be an error
+            // when the sample is not used
+            this.notifier.logText (ex.getMessage ());
         }
     }
 

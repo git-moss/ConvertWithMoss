@@ -28,14 +28,14 @@ public class S5xxCDSectionHeader
     /** The section identifier for the Map 1 Instrument. */
     public static final String SECTION_INSTRUMENT_MAP       = "map1 Instrument";
 
-    private String             name;
-    private long               offset;
-    private long               size;
+    private final String       name;
+    private final long         offset;
+    private final long         size;
 
 
     /**
      * COnstructor.
-     * 
+     *
      * @param input The input stream to read the section values from
      * @throws IOException Could not read the section header
      */
@@ -51,7 +51,7 @@ public class S5xxCDSectionHeader
 
     /**
      * Get the name of the section.
-     * 
+     *
      * @return The name
      */
     public String getName ()
@@ -62,7 +62,7 @@ public class S5xxCDSectionHeader
 
     /**
      * Get the offset in sectors (multiply by 0x200 for byte offset).
-     * 
+     *
      * @return The offset
      */
     public long getOffset ()
@@ -73,7 +73,7 @@ public class S5xxCDSectionHeader
 
     /**
      * Get the size in sectors.
-     * 
+     *
      * @return The size in sectors
      */
     public long getSize ()

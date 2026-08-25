@@ -44,7 +44,7 @@ public enum S5xxOutputJack
      * @param value The value
      * @param label The label
      */
-    private S5xxOutputJack (final int value, final String label)
+    S5xxOutputJack (final int value, final String label)
     {
         this.value = value;
         this.label = label;

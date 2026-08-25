@@ -66,7 +66,7 @@ public enum Sf2RiffChunkId implements RiffChunkId
      * @param description A descriptive text for the chunk
      * @param asciiID The ASCII representation of the ID
      */
-    private Sf2RiffChunkId (final String description, final String asciiID)
+    Sf2RiffChunkId (final String description, final String asciiID)
     {
         this.description = description;
         this.fourCC = asciiID == null ? -1 : RiffChunkId.toFourCC (asciiID);

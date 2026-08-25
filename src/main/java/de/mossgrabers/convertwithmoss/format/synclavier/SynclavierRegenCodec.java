@@ -74,8 +74,8 @@ public final class SynclavierRegenCodec
 
 
     /**
-     * Removes the extension from a file name to form the key for the {@link #transform(byte[], String)}
-     * method.
+     * Removes the extension from a file name to form the key for the
+     * {@link #transform(byte[], String)} method.
      *
      * @param fileName The file name (must not contain any path)
      * @return The file name without its extension

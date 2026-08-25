@@ -133,7 +133,7 @@ public class EXSModulator
 
     /**
      * Constructor.
-     * 
+     *
      * @param source The ID of the modulation source
      * @param destination The ID of the modulation destination
      */
@@ -170,6 +170,6 @@ public class EXSModulator
     @Override
     public String toString ()
     {
-        return String.format ("%s -> %s %d:%d", getSourceName (), getDestinationName (), Integer.valueOf (this.lowValue), Integer.valueOf (this.highValue));
+        return String.format ("%s -> %s %d:%d", this.getSourceName (), this.getDestinationName (), Integer.valueOf (this.lowValue), Integer.valueOf (this.highValue));
     }
 }

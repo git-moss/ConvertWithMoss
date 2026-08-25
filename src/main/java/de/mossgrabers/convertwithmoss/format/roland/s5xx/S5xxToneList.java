@@ -61,7 +61,7 @@ public class S5xxToneList
 
     /**
      * Is the tone disabled?
-     * 
+     *
      * @return True if disabled
      */
     public boolean isDisabled ()

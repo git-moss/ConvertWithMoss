@@ -214,7 +214,7 @@ public class EnsoniqDisk
             throw new IOException (Functions.getMessage ("IDS_EPS_WRONG_STRUCTURE"));
 
         final String instrumentName = this.description.substring (16, 28).trim ();
-        final String type = this.description.substring (28, this.description.length ()).trim ();
+        final String type = this.description.substring (28).trim ();
 
         this.description = this.description.substring (0, 16).trim ();
         if (this.description.endsWith (":"))

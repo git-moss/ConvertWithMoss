@@ -98,7 +98,7 @@ public interface IMetadata
 
     /**
      * Adds a keyword to the keyword list.
-     * 
+     *
      * @param keyword The keyword to add
      */
     void addKeyword (String keyword);

@@ -147,10 +147,8 @@ public class Kontakt2Monolith
         {
             final Directory directory = e.getValue ();
             for (final DirectoryEntry item: directory.getEntries ())
-            {
                 if (item.getReferenceType () == type)
                     results.add (item);
-            }
         }
         return results;
     }

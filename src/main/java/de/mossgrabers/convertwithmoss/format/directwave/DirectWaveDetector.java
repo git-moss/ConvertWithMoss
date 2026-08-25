@@ -545,9 +545,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
     private static ISampleData createEmbeddedSampleData (final byte [] embeddedAudio, final byte [] audioFormat) throws IOException
     {
         final int offset = DirectWaveTag.EMBEDDED_AUDIO_OFFSET;
-        if (embeddedAudio.length <= offset + DirectWaveTag.FLAC_MAGIC.length)
-            return null;
-        if (!Arrays.equals (embeddedAudio, offset, offset + DirectWaveTag.FLAC_MAGIC.length, DirectWaveTag.FLAC_MAGIC, 0, DirectWaveTag.FLAC_MAGIC.length))
+        if ((embeddedAudio.length <= offset + DirectWaveTag.FLAC_MAGIC.length) || !Arrays.equals (embeddedAudio, offset, offset + DirectWaveTag.FLAC_MAGIC.length, DirectWaveTag.FLAC_MAGIC, 0, DirectWaveTag.FLAC_MAGIC.length))
             return null;
 
         // The stored length must not be trusted blindly, clip it to what is present
@@ -570,8 +568,8 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
      * holds the channels one after the other (planar): each channel plane has the frame count plus
      * the guard block of samples, see {@link DirectWaveTag#TAG_EMBEDDED_PCM}. The planes are
      * interleaved into the usual frame order and the guard frames are cut off, see
-     * {@link #removeGuard}. 16 and 24 bit integer data is taken over as-is, 4 bytes per sample
-     * are the 32-bit float format of DirectWave and are converted to 24 bit.
+     * {@link #removeGuard}. 16 and 24 bit integer data is taken over as-is, 4 bytes per sample are
+     * the 32-bit float format of DirectWave and are converted to 24 bit.
      *
      * @param payload The payload of the uncompressed audio block, may be null
      * @param audioFormat The payload of the audio format block, may be null
@@ -639,8 +637,8 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
      * {@link DirectWaveTag#EMBEDDED_AUDIO_BLOCK} silent guard frames, half of it before the sample
      * and half after it, and its playback and loop points do not count the guard - the sample
      * starts behind the leading half (see the design document). The audio is therefore trimmed to
-     * the frame count of the audio format block starting after the leading half of the guard.
-     * Audio which does not exceed the frame count is returned unchanged.
+     * the frame count of the audio format block starting after the leading half of the guard. Audio
+     * which does not exceed the frame count is returned unchanged.
      *
      * @param audio The interleaved audio data
      * @param frameSize The size of one frame in bytes

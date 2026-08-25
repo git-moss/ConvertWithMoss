@@ -25,26 +25,26 @@ import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 public final class RenoiseValueConverter
 {
     /** The highest playable Renoise note (B-9); Renoise uses a 0..119 keyboard. */
-    public static final int     MAX_NOTE              = 119;
+    public static final int     MAX_NOTE               = 119;
 
     /** The MuteGroupIndex which marks a sample as not being part of any mute group. */
-    public static final int     MUTE_GROUP_NONE       = -1;
+    public static final int     MUTE_GROUP_NONE        = -1;
     /** The number of mute groups a Renoise sample can be assigned to. */
-    public static final int     MUTE_GROUP_COUNT      = 15;
+    public static final int     MUTE_GROUP_COUNT       = 15;
 
     /** Maximum sample volume in Renoise: +12 dB which equals a linear gain factor of 4.0. */
-    private static final double MAX_VOLUME_LINEAR     = 4.0;
+    private static final double MAX_VOLUME_LINEAR      = 4.0;
 
     /** A Finetune value of +/-127 equals +/-1 semitone. */
-    private static final double FINETUNE_PER_SEMITONE = 127.0;
+    private static final double FINETUNE_PER_SEMITONE  = 127.0;
 
     // Envelope time mapping. Renoise stores attack/hold/decay/release as a normalized 0..1 control
     // value that maps exponentially to a time. The maximum (value = 1.0) is roughly 60 seconds.
-    private static final double ENV_MAX_TIME_SECONDS  = 60.0;
-    private static final double ENV_TIME_EXPONENT     = 3.0;
+    private static final double ENV_MAX_TIME_SECONDS   = 60.0;
+    private static final double ENV_TIME_EXPONENT      = 3.0;
 
     /** The maximum value of a mixer modulation parameter (cutoff and resonance are 0..127). */
-    public static final double  MIXER_PARAM_MAX       = 127.0;
+    public static final double  MIXER_PARAM_MAX        = 127.0;
 
     /**
      * The pitch modulation range in semitones written to the mixer device. It scales all pitch
@@ -53,18 +53,18 @@ public final class RenoiseValueConverter
     public static final int     PITCH_MODULATION_RANGE = 12;
 
     // Filter cutoff mapping. The 0..127 cutoff maps exponentially over the audible range.
-    private static final double FILTER_MIN_HERTZ      = 20.0;
-    private static final double FILTER_MAX_HERTZ      = 20000.0;
+    private static final double FILTER_MIN_HERTZ       = 20.0;
+    private static final double FILTER_MAX_HERTZ       = 20000.0;
 
     // LFO mappings, measured by sweeping the modulation LFO device parameters in Renoise 3.5.4 and
     // recording the displayed values: Hertz = min + 20 * (100 ^ value - 1) / 99 with a constant
     // zero-point of about 2 mHz; the onset (delay) time uses the same cubic curve family as the
     // envelope times with a maximum of 8 seconds.
-    private static final double LFO_MIN_HERTZ         = 0.001953125;
-    private static final double LFO_MAX_HERTZ         = 20.0;
-    private static final double LFO_FREQUENCY_BASE    = 100.0;
-    private static final double LFO_MAX_DELAY_SECONDS = 8.0;
-    private static final double LFO_DELAY_EXPONENT    = 3.0;
+    private static final double LFO_MIN_HERTZ          = 0.001953125;
+    private static final double LFO_MAX_HERTZ          = 20.0;
+    private static final double LFO_FREQUENCY_BASE     = 100.0;
+    private static final double LFO_MAX_DELAY_SECONDS  = 8.0;
+    private static final double LFO_DELAY_EXPONENT     = 3.0;
 
 
     /**
@@ -319,8 +319,8 @@ public final class RenoiseValueConverter
 
 
     /**
-     * Convert a modulation depth of the model ([-1..1], 1 = the full envelope depth) to the
-     * Renoise LFO amplitude, which is relative to the pitch modulation range of the mixer device.
+     * Convert a modulation depth of the model ([-1..1], 1 = the full envelope depth) to the Renoise
+     * LFO amplitude, which is relative to the pitch modulation range of the mixer device.
      *
      * @param depth The modulation depth [-1..1]
      * @param pitchModulationRange The pitch modulation range of the mixer device in semitones
@@ -349,8 +349,8 @@ public final class RenoiseValueConverter
 
 
     /**
-     * Convert a Renoise LFO amplitude of a volume LFO to a modulation depth of the model ([0..1],
-     * 1 = the full volume depth in dB). This is the inverse of
+     * Convert a Renoise LFO amplitude of a volume LFO to a modulation depth of the model ([0..1], 1
+     * = the full volume depth in dB). This is the inverse of
      * {@link #volumeLfoDepthToAmplitude(double)}.
      *
      * @param amplitude The LFO amplitude [0..1]

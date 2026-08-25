@@ -19,9 +19,9 @@ import java.util.List;
  * <li>A track header consists of a single byte - the track number - instead of the cylinder, head,
  * sector and size quadruple. There is exactly one sector per track and it is always 3584 bytes
  * long, a size which no IBM size code can express.</li>
- * <li>The CRC uses the polynomial 0x8005 with the initial value 0x0000 instead of the CRC-CCITT,
- * it covers only the payload - the track number respectively the sector data - and it is stored
- * least significant byte first.</li>
+ * <li>The CRC uses the polynomial 0x8005 with the initial value 0x0000 instead of the CRC-CCITT, it
+ * covers only the payload - the track number respectively the sector data - and it is stored least
+ * significant byte first.</li>
  * </ul>
  * A track is built up as: a gap of 0xFF bytes, a sync of 0x00 bytes, the mark, the track number,
  * its CRC, a sync, a gap, a sync, the mark, the 3584 bytes of data, their CRC, a sync and a closing
@@ -31,47 +31,47 @@ import java.util.List;
  * position it was read from, so that a damaged header cannot displace it during image
  * reconstruction.
  * <p>
- * The samplers write the header and the data field of a track as two separate operations, which
- * is why the data field starts at an arbitrary phase relative to the header: on disks written by
- * the machines themselves it is found up to half a bit cell early or a whole cell late, and the
+ * The samplers write the header and the data field of a track as two separate operations, which is
+ * why the data field starts at an arbitrary phase relative to the header: on disks written by the
+ * machines themselves it is found up to half a bit cell early or a whole cell late, and the
  * Emulator II - like the images which the HxC tools generate for it - puts it half a byte earlier
- * than the published track description says. The decoder therefore works on the level of the
- * single flux pulses and synchronizes on each of the two marks separately instead of assuming a
- * fixed byte alignment for the whole track.
+ * than the published track description says. The decoder therefore works on the level of the single
+ * flux pulses and synchronizes on each of the two marks separately instead of assuming a fixed byte
+ * alignment for the whole track.
  * <p>
- * The format was documented by ///Esynthesist in "Disk layout of Emulator I floppy disks" and
- * "Disk layout of Emulator II floppy disks" and the geometry is confirmed by the debug monitor of
- * the Emulator II service manual. The bit level details below were derived from the OS 3.1 disk
- * of the Emulator II, which the EMXP project publishes both as a HFE and as a raw sector image of
- * the very same disk, and verified on 79 factory disks of the Emulator and 90 of the Emulator II.
+ * The format was documented by ///Esynthesist in "Disk layout of Emulator I floppy disks" and "Disk
+ * layout of Emulator II floppy disks" and the geometry is confirmed by the debug monitor of the
+ * Emulator II service manual. The bit level details below were derived from the OS 3.1 disk of the
+ * Emulator II, which the EMXP project publishes both as a HFE and as a raw sector image of the very
+ * same disk, and verified on 79 factory disks of the Emulator and 90 of the Emulator II.
  *
  * @author Jürgen Moßgraber
  */
 public class EmuFmDecoder extends AbstractDecoder
 {
     /** The fixed size of the single sector which the samplers store in each track. */
-    public static final int  SECTOR_SIZE      = 3584;
+    public static final int   SECTOR_SIZE    = 3584;
 
     /** The two bytes which mark both the track header and the sector data. */
-    public static final int  MARK_FIRST       = 0xFA;
+    public static final int   MARK_FIRST     = 0xFA;
     /** The second byte of the mark. */
-    public static final int  MARK_SECOND      = 0x96;
+    public static final int   MARK_SECOND    = 0x96;
 
     /** A FM bit cell occupies this many bits (slots) of the raw HFE bit-stream. */
-    public static final int  SLOTS_PER_CELL   = 4;
+    public static final int   SLOTS_PER_CELL = 4;
     /** The slot of a cell which carries the clock pulse, which is always present. */
-    public static final int  CLOCK_SLOT       = 1;
+    public static final int   CLOCK_SLOT     = 1;
     /** The slot of a cell which carries the data pulse, which is present for a one bit. */
-    public static final int  DATA_SLOT        = 3;
+    public static final int   DATA_SLOT      = 3;
     /** The number of slots of one byte. */
-    public static final int  SLOTS_PER_BYTE   = 8 * SLOTS_PER_CELL;
+    public static final int   SLOTS_PER_BYTE = 8 * SLOTS_PER_CELL;
 
     /** The number of slots the two mark bytes occupy. */
-    private static final int MARK_SLOTS       = 2 * SLOTS_PER_BYTE;
+    private static final int  MARK_SLOTS     = 2 * SLOTS_PER_BYTE;
     /** The pulses of the mark as a bit pattern, the first slot in the most significant bit. */
-    private static final long MARK_PATTERN    = createMarkPattern ();
+    private static final long MARK_PATTERN   = createMarkPattern ();
     /** The header behind the mark: the track number and its CRC. */
-    private static final int HEADER_BYTES     = 3;
+    private static final int  HEADER_BYTES   = 3;
 
 
     /** {@inheritDoc} */
@@ -126,8 +126,8 @@ public class EmuFmDecoder extends AbstractDecoder
 
 
     /**
-     * Unpack the raw HFE bit-stream of one track into its slots. The bits of the stream are
-     * ordered least significant bit first.
+     * Unpack the raw HFE bit-stream of one track into its slots. The bits of the stream are ordered
+     * least significant bit first.
      *
      * @param cellData The raw bit-stream of the track
      * @return One entry per slot, 1 where a flux pulse is present
@@ -145,8 +145,8 @@ public class EmuFmDecoder extends AbstractDecoder
 
     /**
      * Find the next occurrence of the two byte address mark at any phase of the bit-stream. The
-     * mark is searched as the exact pulse pattern of its 16 bit cells, so the search re-synchronizes
-     * to the phase at which the field behind it was written.
+     * mark is searched as the exact pulse pattern of its 16 bit cells, so the search
+     * re-synchronizes to the phase at which the field behind it was written.
      *
      * @param pulses The slots of the track
      * @param fromSlot The slot at which to start the search
@@ -157,7 +157,7 @@ public class EmuFmDecoder extends AbstractDecoder
         long window = 0;
         for (int slot = Math.max (0, fromSlot); slot < pulses.length; slot++)
         {
-            window = window << 1 | pulses[slot];
+            window = window << 1 | (pulses[slot] & 0xFF);
             if (window == MARK_PATTERN && slot + 1 >= fromSlot + MARK_SLOTS)
                 return slot + 1 - MARK_SLOTS;
         }

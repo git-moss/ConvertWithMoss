@@ -13,9 +13,9 @@ package de.mossgrabers.convertwithmoss.core;
 public interface IInstrumentSource extends ISource
 {
     /** Constant for a disabled MIDI channel. */
-    static final int MIDI_CHANNEL_OFF  = -1;
+    int MIDI_CHANNEL_OFF  = -1;
     /** Constant for an OMNI MIDI channel (reacts on all channels). */
-    static final int MIDI_CHANNEL_OMNI = 64;
+    int MIDI_CHANNEL_OMNI = 64;
 
 
     /**

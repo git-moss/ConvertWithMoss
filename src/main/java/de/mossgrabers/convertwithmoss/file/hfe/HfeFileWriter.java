@@ -17,19 +17,19 @@ import java.util.Arrays;
 
 /**
  * Writes the HFE container of the HxC floppy emulators, the counterpart of {@link HfeFile}. The
- * container is a 512 byte header, a 512 byte table with the position and the length of each
- * track, and the tracks: the bit-streams of the two sides of a track are interleaved in blocks of
- * 256 bytes, so each 512 byte block of a track carries 256 bytes of side 0 followed by 256 bytes
- * of side 1, and each track starts at a 512 byte boundary.
+ * container is a 512 byte header, a 512 byte table with the position and the length of each track,
+ * and the tracks: the bit-streams of the two sides of a track are interleaved in blocks of 256
+ * bytes, so each 512 byte block of a track carries 256 bytes of side 0 followed by 256 bytes of
+ * side 1, and each track starts at a 512 byte boundary.
  *
  * @author Jürgen Moßgraber
  */
 public class HfeFileWriter
 {
-    private static final int    BLOCK_SIZE       = 512;
-    private static final int    TRACK_BLOCK_SIZE = 256;
-    private static final int    FIRST_TRACK_BLOCK = 2;
-    private static final byte [] SIGNATURE        = "HXCPICFE".getBytes (StandardCharsets.US_ASCII);
+    private static final int     BLOCK_SIZE        = 512;
+    private static final int     TRACK_BLOCK_SIZE  = 256;
+    private static final int     FIRST_TRACK_BLOCK = 2;
+    private static final byte [] SIGNATURE         = "HXCPICFE".getBytes (StandardCharsets.US_ASCII);
 
 
     /**
@@ -71,8 +71,8 @@ public class HfeFileWriter
      * @param trackLength The length of each interleaved track in bytes
      * @param streams The bit-streams of the sides of each track, indexed by track and side; a side
      *            which is null - the unused side of a single sided disk - is written as zeroes
-     * @param padByte The byte with which the space between the end of a track and the next 512
-     *            byte boundary is filled on a used side
+     * @param padByte The byte with which the space between the end of a track and the next 512 byte
+     *            boundary is filled on a used side
      * @throws IOException Could not write the file
      */
     public static void write (final File file, final int numSides, final int trackEncoding, final int bitrate, final int floppyInterfaceMode, final int trackLength, final byte [] [] [] streams, final byte padByte) throws IOException

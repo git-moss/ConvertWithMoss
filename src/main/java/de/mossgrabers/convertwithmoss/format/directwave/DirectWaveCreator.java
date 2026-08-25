@@ -300,10 +300,10 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Put the audio into the buffer layout of DirectWave: half of a guard block of silence, the
      * audio extended with silence to the given number of frames, and the other half of the guard
-     * block, which is what the plug-in itself writes. DirectWave reads the embedded audio in
-     * blocks - a sample which does not fill its last block crashes the plug-in when the program is
-     * loaded - and plays the sample and addresses its loop points behind the leading guard, see
-     * the design document.
+     * block, which is what the plug-in itself writes. DirectWave reads the embedded audio in blocks
+     * - a sample which does not fill its last block crashes the plug-in when the program is loaded
+     * - and plays the sample and addresses its loop points behind the leading guard, see the design
+     * document.
      *
      * @param sampleData The sample data to extend
      * @param frames The number of frames of the sample without the guard

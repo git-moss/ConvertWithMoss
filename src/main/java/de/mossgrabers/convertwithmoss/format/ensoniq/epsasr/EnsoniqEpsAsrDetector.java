@@ -410,12 +410,20 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 if (loopMode > 0)
                 {
                     final ISampleLoop loop = new DefaultSampleLoop ();
-                    if (loopMode == 1)
-                        loop.setType (LoopType.BACKWARDS);
-                    else if (loopMode == 3)
-                        loop.setType (LoopType.ALTERNATING);
-                    else if (loopMode == 4)
-                        loop.setLoopUntilRelease (true);
+                    switch (loopMode)
+                    {
+                        case 1:
+                            loop.setType (LoopType.BACKWARDS);
+                            break;
+                        case 3:
+                            loop.setType (LoopType.ALTERNATING);
+                            break;
+                        case 4:
+                            loop.setLoopUntilRelease (true);
+                            break;
+                        default:
+                            break;
+                    }
                     loop.setStart (waveSample.getLoopStart ());
                     loop.setEnd (waveSample.getLoopEnd ());
                     sampleZone.getLoops ().add (loop);

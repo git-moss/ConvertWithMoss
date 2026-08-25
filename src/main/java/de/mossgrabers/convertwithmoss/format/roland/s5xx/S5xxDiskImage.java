@@ -88,7 +88,7 @@ public class S5xxDiskImage
 
     /**
      * Combine the full label text and clean it.
-     * 
+     *
      * @param combineCharacter The character to use to combine text rows
      * @return The combined text
      */

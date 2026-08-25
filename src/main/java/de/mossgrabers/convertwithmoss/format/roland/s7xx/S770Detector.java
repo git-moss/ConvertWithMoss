@@ -244,7 +244,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
     private List<IPerformanceSource> readPerformances (final File sourceFile, final IS770Image image)
     {
-        final Map<Integer, IMultisampleSource> patches = readPatches (sourceFile, image);
+        final Map<Integer, IMultisampleSource> patches = this.readPatches (sourceFile, image);
 
         final List<IPerformanceSource> performanceSources = new ArrayList<> ();
 

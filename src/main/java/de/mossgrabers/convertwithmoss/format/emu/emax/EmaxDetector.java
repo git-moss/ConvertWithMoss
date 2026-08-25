@@ -46,12 +46,12 @@ import de.mossgrabers.tools.FileUtils;
  * Which of the two samplers a bank belongs to is read from the bank itself, so both are detected
  * from the same file endings.
  * <p>
- * Every preset of a bank becomes one multi-sample source. A preset maps each of its 88 keys to a key
- * area, which plays a primary voice and optionally a secondary one - the Dual Voice of the sampler -
- * so the primary voices become the first group and the secondary voices the second. A voice names
- * the sample it plays, the key at which that sample is at its recorded pitch, its panning and the
- * cutoff of its filter. The audio is expanded from the companded bytes which the sampler feeds to
- * its AM6072 DAC. See documentation/design/EMAX1_FORMAT.md.
+ * Every preset of a bank becomes one multi-sample source. A preset maps each of its 88 keys to a
+ * key area, which plays a primary voice and optionally a secondary one - the Dual Voice of the
+ * sampler - so the primary voices become the first group and the secondary voices the second. A
+ * voice names the sample it plays, the key at which that sample is at its recorded pitch, its
+ * panning and the cutoff of its filter. The audio is expanded from the companded bytes which the
+ * sampler feeds to its AM6072 DAC. See documentation/design/EMAX1_FORMAT.md.
  *
  * @author Jürgen Moßgraber
  */
@@ -62,15 +62,15 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
      * beyond this is an image of one of the larger E-mu samplers which must not be pulled into
      * memory here.
      */
-    private static final int    MAX_FILE_SIZE    = 320 * 1024 * 1024;
+    private static final int    MAX_FILE_SIZE     = 320 * 1024 * 1024;
     /** The CPU address of the highest entry of the sample directory, which never changes. */
-    private static final int    DIRECTORY_TOP    = EmaxConstants.CPU_END - EmaxConstants.SAMPLE_ENTRY_SIZE;
+    private static final int    DIRECTORY_TOP     = EmaxConstants.CPU_END - EmaxConstants.SAMPLE_ENTRY_SIZE;
     /** The Emax formats its disks with 80 cylinders of 10 sectors on both sides, so 800 KB. */
-    private static final int    CYLINDERS        = 80;
-    private static final int    HEADS            = 2;
+    private static final int    CYLINDERS         = 80;
+    private static final int    HEADS             = 2;
     private static final int    SECTORS_PER_TRACK = 10;
-    private static final int    SECTOR_SIZE      = 512;
-    private static final String ENDING_HFE       = ".hfe";
+    private static final int    SECTOR_SIZE       = 512;
+    private static final String ENDING_HFE        = ".hfe";
 
 
     /**
@@ -88,10 +88,7 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
     @Override
     public List<IMultisampleSource> readPresetFile (final File sourceFile)
     {
-        if (this.waitForDelivery ())
-            return Collections.emptyList ();
-
-        if (sourceFile.length () > MAX_FILE_SIZE)
+        if (this.waitForDelivery () || (sourceFile.length () > MAX_FILE_SIZE))
             return Collections.emptyList ();
 
         try
@@ -322,9 +319,7 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
         if (preset < EmaxConstants.PRESET_HEAP || preset + EmaxConstants.PRESET_VOICE_TABLE > EmaxConstants.PARAMETER_SIZE)
             return false;
         final int numKeyAreas = data[bank + preset + EmaxConstants.PRESET_KEY_AREA_COUNT] & 0xFF;
-        if (numKeyAreas == 0)
-            return false;
-        if (!isPrintable (data[bank + preset]))
+        if ((numKeyAreas == 0) || !isPrintable (data[bank + preset]))
             return false;
 
         for (int key = 0; key < EmaxConstants.NUM_KEYS; key++)
@@ -428,9 +423,9 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setKeyRoot ((data[voice + EmaxConstants.VOICE_ORIGINAL_KEY] & 0xFF) + EmaxConstants.KEY_OFFSET);
         zone.setSampleData (sample.getSampleData ());
 
-        final byte [] record = new byte [EmaxConstants.VOICE_SIZE];
-        System.arraycopy (data, voice, record, 0, EmaxConstants.VOICE_SIZE);
-        applyVoiceParameters (zone, record);
+        final byte [] voiceRecord = new byte [EmaxConstants.VOICE_SIZE];
+        System.arraycopy (data, voice, voiceRecord, 0, EmaxConstants.VOICE_SIZE);
+        applyVoiceParameters (zone, voiceRecord);
 
         if ((sample.flags & EmaxConstants.SAMPLE_FLAG_LOOP) > 0 && sample.loopEnd > sample.loopStart && sample.loopStart >= sample.start && sample.loopEnd <= sample.end)
         {
@@ -448,32 +443,32 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
      * Apply the parameters which the 32 bytes of a voice record carry to a zone.
      *
      * @param zone The zone to fill
-     * @param record The voice record
+     * @param voiceRecord The voice record
      */
-    private static void applyVoiceParameters (final ISampleZone zone, final byte [] record)
+    private static void applyVoiceParameters (final ISampleZone zone, final byte [] voiceRecord)
     {
         // The panning nibble runs from 1 to 15 with 8 in the middle; 1 is fully right and 15 fully
         // left, which the sampler shows as +07 to -07
-        final int panning = EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_PANNING_BITS, 4);
+        final int panning = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_PANNING_BITS, 4);
         if (panning != 0 && panning != EmaxConstants.PANNING_CENTER)
             zone.setPanning (Math.clamp ((EmaxConstants.PANNING_CENTER - panning) / (double) (EmaxConstants.PANNING_CENTER - 1), -1, 1));
 
-        zone.setGain (-EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_ATTENUATION, 5) * EmaxConstants.ATTENUATION_DB_PER_STEP);
-        zone.setTuning (EmaxConstants.readSignedVoiceField (record, EmaxConstants.VOICE_TUNE, 5) * EmaxConstants.TUNE_CENTS_PER_STEP / 100.0);
+        zone.setGain (-EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_ATTENUATION, 5) * EmaxConstants.ATTENUATION_DB_PER_STEP);
+        zone.setTuning (EmaxConstants.readSignedVoiceField (voiceRecord, EmaxConstants.VOICE_TUNE, 5) * EmaxConstants.TUNE_CENTS_PER_STEP / 100.0);
         // A voice which does not transpose plays its sample at the recorded pitch on every key
-        if (EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_NON_TRANSPOSE, 1) != 0)
+        if (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_NON_TRANSPOSE, 1) != 0)
             zone.setKeyTracking (0);
 
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
-        fillEnvelope (amplitudeEnvelope, record, EmaxConstants.VOICE_AMP_ATTACK);
-        amplitudeEnvelope.setDelayTime (EmaxConstants.getVoiceDelayTime (EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_DELAY, 6)));
+        fillEnvelope (amplitudeEnvelope, voiceRecord, EmaxConstants.VOICE_AMP_ATTACK);
+        amplitudeEnvelope.setDelayTime (EmaxConstants.getVoiceDelayTime (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_DELAY, 6)));
         // The sampler makes a note quieter the softer it is played, over the range of this amount
-        final double velocityRange = EmaxConstants.getVelocityToLevel (EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_VELOCITY_TO_LEVEL, 4));
+        final double velocityRange = EmaxConstants.getVelocityToLevel (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_VELOCITY_TO_LEVEL, 4));
         if (velocityRange > 0)
             zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (velocityRange / ILfoModulator.MAX_VOLUME_DEPTH, 0, 1));
 
-        applyLfo (zone, record);
-        applyFilter (zone, record);
+        applyLfo (zone, voiceRecord);
+        applyFilter (zone, voiceRecord);
     }
 
 
@@ -481,16 +476,16 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
      * Fill an envelope from the five stages which follow each other in the bit stream of a voice.
      *
      * @param envelope The envelope to fill
-     * @param record The voice record
+     * @param voiceRecord The voice record
      * @param offset The offset of the attack stage in the bit stream
      */
-    private static void fillEnvelope (final IEnvelope envelope, final byte [] record, final int offset)
+    private static void fillEnvelope (final IEnvelope envelope, final byte [] voiceRecord, final int offset)
     {
-        envelope.setAttackTime (EmaxConstants.getEnvelopeAttackTime (EmaxConstants.readVoiceField (record, offset, 5)));
-        envelope.setHoldTime (EmaxConstants.getEnvelopeHoldTime (EmaxConstants.readVoiceField (record, offset + 5, 5)));
-        envelope.setDecayTime (EmaxConstants.getEnvelopeDecayTime (EmaxConstants.readVoiceField (record, offset + 10, 5)));
-        envelope.setSustainLevel (EmaxConstants.getEnvelopeSustainLevel (EmaxConstants.readVoiceField (record, offset + 15, 5)));
-        envelope.setReleaseTime (EmaxConstants.getEnvelopeDecayTime (EmaxConstants.readVoiceField (record, offset + 20, 5)));
+        envelope.setAttackTime (EmaxConstants.getEnvelopeAttackTime (EmaxConstants.readVoiceField (voiceRecord, offset, 5)));
+        envelope.setHoldTime (EmaxConstants.getEnvelopeHoldTime (EmaxConstants.readVoiceField (voiceRecord, offset + 5, 5)));
+        envelope.setDecayTime (EmaxConstants.getEnvelopeDecayTime (EmaxConstants.readVoiceField (voiceRecord, offset + 10, 5)));
+        envelope.setSustainLevel (EmaxConstants.getEnvelopeSustainLevel (EmaxConstants.readVoiceField (voiceRecord, offset + 15, 5)));
+        envelope.setReleaseTime (EmaxConstants.getEnvelopeDecayTime (EmaxConstants.readVoiceField (voiceRecord, offset + 20, 5)));
     }
 
 
@@ -499,14 +494,14 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
      * the same time; the model carries a vibrato and a tremolo, so only those two are converted.
      *
      * @param zone The zone to fill
-     * @param record The voice record
+     * @param voiceRecord The voice record
      */
-    private static void applyLfo (final ISampleZone zone, final byte [] record)
+    private static void applyLfo (final ISampleZone zone, final byte [] voiceRecord)
     {
-        final double rate = EmaxConstants.getLfoRate (EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_LFO_RATE, 7));
-        final double delay = EmaxConstants.getLfoDelayTime (EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_LFO_DELAY, 6));
+        final double rate = EmaxConstants.getLfoRate (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_RATE, 7));
+        final double delay = EmaxConstants.getLfoDelayTime (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_DELAY, 6));
 
-        final int toPitch = EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_LFO_TO_PITCH, 4);
+        final int toPitch = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_PITCH, 4);
         if (toPitch > 0)
         {
             final ILfoModulator modulator = zone.getPitchLfoModulator ();
@@ -514,7 +509,7 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
             setLfo (modulator.getSource (), rate, delay);
         }
 
-        final int toVolume = EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_LFO_TO_VOLUME, 4);
+        final int toVolume = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_VOLUME, 4);
         if (toVolume > 0)
         {
             final ILfoModulator modulator = zone.getAmplitudeLfoModulator ();
@@ -543,14 +538,14 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
      * velocity modulation.
      *
      * @param zone The zone to fill
-     * @param record The voice record
+     * @param voiceRecord The voice record
      */
-    private static void applyFilter (final ISampleZone zone, final byte [] record)
+    private static void applyFilter (final ISampleZone zone, final byte [] voiceRecord)
     {
-        final int cutoff = EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_FILTER_CUTOFF_BITS, 7);
-        final int envelopeAmount = EmaxConstants.readSignedVoiceField (record, EmaxConstants.VOICE_FILTER_ENV_AMOUNT, 7);
-        final int tracking = EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_FILTER_TRACKING, 4);
-        final int resonance = EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_FILTER_RESONANCE, 7);
+        final int cutoff = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_CUTOFF_BITS, 7);
+        final int envelopeAmount = EmaxConstants.readSignedVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_ENV_AMOUNT, 7);
+        final int tracking = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_TRACKING, 4);
+        final int resonance = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_RESONANCE, 7);
         // A filter which is fully open, does not resonate and is not modulated does nothing
         if (cutoff >= EmaxConstants.FILTER_CUTOFF_MAX && envelopeAmount == 0 && tracking == 0 && resonance == 0)
             return;
@@ -563,10 +558,10 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
         {
             final IEnvelopeModulator modulator = filter.getCutoffEnvelopeModulator ();
             modulator.setDepth (Math.clamp (envelopeAmount * EmaxConstants.FILTER_ENV_CENTS_PER_STEP / IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1));
-            fillEnvelope (modulator.getSource (), record, EmaxConstants.VOICE_FILTER_ATTACK);
+            fillEnvelope (modulator.getSource (), voiceRecord, EmaxConstants.VOICE_FILTER_ATTACK);
         }
 
-        final int velocityToCutoff = EmaxConstants.readVoiceField (record, EmaxConstants.VOICE_VELOCITY_TO_CUTOFF, 4);
+        final int velocityToCutoff = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_VELOCITY_TO_CUTOFF, 4);
         if (velocityToCutoff > 0)
             filter.getCutoffVelocityModulator ().setDepth (Math.clamp (velocityToCutoff / 15.0, 0, 1));
 

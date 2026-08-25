@@ -363,12 +363,12 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Map a FZ cut-off value to a frequency. The value is not what the filter receives: the
-     * sampler adds 32 to it - and the modulation of the filter envelope, the LFO and the key
-     * follow - before it writes the result as an 8 bit quantity to its filter chips. The range of
-     * the value therefore covers exactly the codes 32 to 159 of those chips, and 159 is both the
-     * value the sampler initializes them with and the point at which its own programming
-     * documentation calls the filter fully open.
+     * Map a FZ cut-off value to a frequency. The value is not what the filter receives: the sampler
+     * adds 32 to it - and the modulation of the filter envelope, the LFO and the key follow -
+     * before it writes the result as an 8 bit quantity to its filter chips. The range of the value
+     * therefore covers exactly the codes 32 to 159 of those chips, and 159 is both the value the
+     * sampler initializes them with and the point at which its own programming documentation calls
+     * the filter fully open.
      *
      * The frequencies which those codes produce are not exponential but follow three linear
      * sections: the service manual of the sampler gives 20 Hz for code 0 and 20 kHz for code 159,
