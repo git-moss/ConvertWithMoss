@@ -69,7 +69,7 @@ public abstract class AbstractDecoder implements IDecoder
      * @param data The data over which to calculate the CRC
      * @return The CRC
      */
-    protected static int calculateCrcLsbFirst (final byte [] data)
+    public static int calculateCrcLsbFirst (final byte [] data)
     {
         int crc = 0x0000;
 

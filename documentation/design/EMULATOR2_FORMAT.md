@@ -1,402 +1,256 @@
 # E-mu Emulator II Disk Format
 
-**Status: reading is implemented.** `file/hfe/EmuFmDecoder` reads the disks and
-`format/emu/emulator2/Emulator2Detector` turns their banks into multi-samples. There is no creator. Sections are marked
-*confirmed*, *reported* or *unknown* so later work does not mistake a second-hand figure for a
-verified one.
+**Status: reading and writing are implemented.** `file/hfe/EmuFmDecoder` reads the disks,
+`format/emu/emulator2/Emulator2Detector` turns every preset of a bank into a multi-sample and
+`format/emu/emulator2/Emulator2Creator` writes a bank disk. Sections are marked *confirmed*,
+*reported* or *unknown* so later work does not mistake a second-hand figure for a verified one.
+Written disks have not been tried on a real Emulator II yet.
 
 The Emulator II (1984) is the generation *below* the Emulator III whose bank format is described in
-`EIII_FORMAT.md`. The two are unrelated: the EIII is a 68000 machine with an E-mu filesystem on
-1.44 MB MFM floppies and SCSI media, while the EII is a Z80 machine writing a proprietary FM track
-format that no PC floppy controller can read.
+`EIII_FORMAT.md` and *above* the Emulator whose disks are described in `EMULATOR1_FORMAT.md`. It
+shares the track format and the companding with the Emulator and nothing with the Emulator III,
+which is a 68000 machine with an E-mu filesystem on standard MFM media - the Emulator II is a Z80
+machine writing a proprietary FM track format that no PC floppy controller can read.
 
 ## The machine, as far as conversion is concerned
 
 | Property | Value | Confidence |
 |----------|-------|------------|
-| Sample resolution | 8 bit, **µ-255 companded** (not linear PCM) | reported, consistently |
-| Sample rate | 27,777 Hz, fixed — the EII cannot vary it | reported, consistently |
-| Sampling time | ~17 s per bank | reported (ChickenSys) |
-| Presets per bank | up to 100 | reported (ChickenSys) |
-| Voices (sample objects) per bank | up to 100 | reported (ChickenSys) |
-| Voice parameters | root key, loop, chorus, VCF cutoff, resonance (SSM2045 4-pole LP) | reported |
-| Main RAM | 512 KB, sixteen 32 KB segments (0..F), address space `0 0000`–`7 FFFF` | **confirmed** (service manual) |
-
-The companding matters for the decoder: raw sample bytes are **not** signed or unsigned linear 8-bit.
-They are a µ-law (µ = 255) encoding of a roughly 12-bit signal, so quiet passages retain far more
-resolution than 8 bits would suggest and peaks degrade to true 8-bit grit. Decoding must expand
-through the µ-255 law before writing linear PCM; treating the bytes as linear will produce a
-recognisable but badly distorted result. `mpc2emu/processors/resampler.py` (local clone) models the
-same law in the forward direction and is a usable cross-check.
-
-## Disk types
-
-- **Library disks** — hold individually accessible samples.
-- **Performance disks** — hold a complete sound bank and, optionally, the operating system. There is
-  no FAT or directory of any kind; the disk holds effectively two files (OS, bank), so their extent
-  is positional. This is by far the more common type.
-
-Both use the same physical layout.
+| Sample resolution | 8 bit, AM6072 companded (not linear PCM) | **confirmed** (service manual, audio) |
+| Sample rate | 27,777 Hz, fixed | *reported*, consistent with the loop periods of the factory voices |
+| Sample memory | 512 KB (1 MB on the Emulator II+), of which a floppy holds 494,592 bytes of bank | **confirmed** |
+| Voices per bank | up to 100 | **confirmed** (voice list of 100 entries) |
+| Presets per bank | up to 100 | *reported* |
+| Keyboard | 61 keys, C2 to C7 = MIDI 36 to 96 | **confirmed** (pitch of named factory voices) |
+| Voice settings | filter (SSM2045 4-pole low-pass), VCA and VCF envelopes, LFO, level, chorus | *reported* - the bytes are located, their meaning is not decoded |
 
 ## Physical layout — *confirmed*
 
 From *Disk layout of Emulator II floppy disks* v1.2 by ///Esynthesist (emxp.net), reverse-engineered
-from oscilloscope captures on the Shugart interface and cross-checked against the Software
-Preservation Society's KryoFlux work. The geometry is **independently corroborated by E-mu's own
-service manual** (see below) and by measured file sizes.
+from oscilloscope captures on the Shugart interface, corroborated by E-mu's own service manual (the
+debug monitor's `GETDISK`/`PUTDISK` read whole tracks of `E00` bytes, track numbers `0`-`9F`,
+straight into linear RAM) and by the measured file sizes.
 
-- DSDD soft-sectored 5.25" or 3.5" media, drive spins at 300 RPM
-- **FM** encoding; 310 kbit/s including clock pulses, 155 kbit/s of data
-- 2 sides, **80 tracks per side** → tracks addressed linearly `00`–`9F`
-- **1 sector per track, 3584 bytes (0xE00) per sector**
-- Track sync starts after the falling edge of the negative index pulse
+- DSDD soft-sectored 5.25" or 3.5" media, 300 RPM, **FM**, 2 sides × **80 tracks**, tracks addressed
+  linearly `00`-`9F` as cylinder × 2 + side
+- **1 sector per track, 3584 bytes (0xE00)** - a raw image is `2 × 80 × 3584` = **573,440 bytes**
+- Track: gap `FF`, sync 4 × `00`, mark `FA 96`, track number, CRC, sync, gap, sync, mark `FA 96`,
+  3584 data bytes, CRC, sync 2 × `00`, gap `FF` to the index hole
 
-Track structure:
+Bit level, derived from the OS 3.1 disk which EMXP publishes as both a HFE and a raw sector image of
+the same disk: each FM bit cell occupies **four bits (slots)** of the HFE stream, the clock pulse in
+slot 1 and the data pulse in slot 3, bits and bytes **least significant bit first**, so a track uses
+only the byte values `AA`, `A2`, `2A` and `22`. `FA 96` are two ordinary data bytes - there are no
+missing-clock address marks. The CRC is polynomial `8005` fed least significant bit first (reflected
+form `A001`, initial value `0000`) over the payload only - the track number, or the 3584 data bytes -
+stored least significant byte first.
 
-| Field | Size | Value |
-|-------|------|-------|
-| GAP | 20 bytes | `FF` |
-| SYNC | 4 bytes | `00` |
-| IDAM | 2 bytes | `FA 96` |
-| ID | 1 byte | track number, = cylinder × 2 + side |
-| CRC of ID | 2 bytes | CRC-16, poly `8005`, init `0000`, final XOR `0000`; covers **only the ID byte**, stored **least significant byte first** |
-| SYNC | 1 byte | `00` |
-| GAP | 8 bytes | `FF` |
-| SYNC | 4 bytes | `00` |
-| Mark | 2 bytes | `FA 96` |
-| Data | **3584 bytes** | sector payload |
-| CRC of data | 2 bytes | same CRC-16; covers **only the 3584 data bytes**, least significant byte first |
-| SYNC | 2 bytes | `00` |
-| GAP | 20 bytes | `FF` |
+### The data field sits at its own phase — *confirmed*
 
-A complete raw image is therefore `2 × 80 × 3584` = **573,440 bytes**, which matches every raw image
-obtained (`zm325.emuiifd`, `emuiios.emuiifd`).
+The header and the data field of a track are written separately, which is why the distance from
+the header mark to the data mark is not what the published description says: the Emulator II - and
+the images which the current HxC tools generate for it - puts **one sync byte, seven and a half
+bytes of gap and four bytes of sync** between the header CRC and the data mark, i.e. the data mark
+starts half a byte earlier than a byte-aligned reading expects. The older synthetic corpus of 1,437
+disks has a whole byte there. A decoder which assembles bytes from the start of the track and looks
+for `FA 96` on byte boundaries therefore read the synthetic corpus and **not a single track of the
+90 factory disks**. `EmuFmDecoder` now works on the single flux pulses: it finds the 64-slot pulse
+pattern of the mark at any phase, reads the header behind it, then finds the data mark again at any
+phase behind the header CRC. With that all 160 tracks of every factory disk, the OS 3.1 disk and the
+synthetic corpus decode with valid CRCs; re-encoding the decoded OS 3.1 disk with `EmuFmEncoder`
+reproduces the HxC image **byte for byte**, which pins the field spacing exactly.
 
-The address mark ambiguity is **resolved**: `FA 96` are two consecutive *data* bytes, not the
-data/clock pair that an IBM-style FM mark would be. The Emulator II does not use missing-clock
-address marks at all — every cell carries its clock pulse and the mark is just an unusual byte pair.
-
-### Bit level encoding — *confirmed*
-
-Derived from the OS 3.1 disk, which EMXP publishes as both a HFE and a raw sector image of the same
-disk, and verified against every one of its 160 tracks. Exactly one interpretation reproduces the
-raw image, so none of this is inferred:
-
-- Each FM bit cell occupies **four bits** of the HFE bit-stream. The clock pulse is always present;
-  the data pulse - the **last** of the four bits - is set for a one bit. In the stream a cell is
-  therefore `1010` for a one and `0010` for a zero, and a whole track uses only the four byte values
-  `AA`, `A2`, `2A` and `22`.
-- Both the bits of the HFE stream and the decoded bytes are ordered **least significant bit first**.
-- 80 stream bytes of `AA` are consequently the opening 20-byte `FF` gap, and 16 bytes of `22` are the
-  4-byte `00` sync - which is how the framing was recognised in the first place.
-
-The CRC follows from the same LSB-first transmission order: the specification's "direct CRC-16 with
-polynomial 8005" applied to the bit stream as it is sent is, once bytes have been assembled, the
-reflected form `A001` with initial value `0000`. It covers the payload only - the single ID byte, or
-the 3584 data bytes - and never the marks or gaps.
-
-### Corroboration from the E-mu service manual — *confirmed*
-
-The Emulator II Service Manual (archive.org, OCR text) documents the debug monitor's disk primitives
-and independently confirms the geometry from E-mu's side:
-
-```
-PUTDISK  P [track#] [address] [#tracks]     each track holds E00 bytes
-GETDISK  G [track#] [address] [#tracks]     each track holds E00 bytes
-         track# can be from 0 to 9F
-         address can be from 0 0000 to 7 FFFF
-```
-
-`0xE00` = 3584 bytes per track; `0x9F` = 159, i.e. 160 tracks; the address range is the full 512 KB
-of DRAM. Manual specifications also give "5¼" floppy diskettes, soft sectored, double sided, double
-density, storage capacity approx. 500k bytes per diskette".
-
-Critically, `GETDISK` loads whole tracks **directly into a linear RAM address**. The disk is a flat
-memory image, not a filesystem. This is confirmed by inspection: the memory-test disk `zm325.emuiifd`
-begins with Z80 code (`CD 7B 2A` = `CALL 2A7B`, …) and contains its UI strings inline (`Testing
-Memory`, `Bank=A  Segmnt=1`, `Err BnkA`). It follows that a bank's on-disk structure *is* the OS's
-in-memory data structure, so the logical layout can be recovered by locating tables in the image.
-
-### OS extent — *confirmed*
-
-`EMUIIOS31.E2O` (72,704 bytes) is byte-identical to the **first 72,704 bytes** of the OS disk image
-`emuiios.emuiifd`, at offset 0. So the OS payload occupies `0x00000`–`0x11BFF`, spanning tracks 0–20
-with track 20 only partly used. The bank then starts at the next track boundary but one, 78,848
-(= track 22), which is confirmed below. A secondary source's bank end of 564,734 is not track-aligned
-and does not reconcile with the geometry — treat it as unreliable.
-
-## Image containers — *confirmed*
+### Image containers — *confirmed*
 
 | Extension | Meaning |
 |-----------|---------|
-| `.hfe` | HxC Floppy Emulator container, 2,540,544 bytes for an EII disk |
-| `.emuiifd` | HxC's extension for an EII **raw sector image**, 573,440 bytes |
-| `.img` | same raw bytes as `.emuiifd` |
-| `.EII` | a bank on its own, without the disk wrapper; how libraries circulate |
-| `.E2O` | an OS image on its own (emxp.net publishes 2.1 / 2.3 / 3.0 / 3.1 / 2.6HD / 3.1HD) |
+| `.hfe` | HxC Floppy Emulator container, 2,540,544 bytes for an EII disk: 80 tracks, 2 sides, encoding `0x03` (`HfeFile.ENCODING_EMU_FM`), interface `0x0B` (`FLOPPYMODE_EMU_SHUGART`), 312 kbit/s, track list at block 1, track *i* at block 2 + 62·*i* with 31,250 bytes, padding `AA` |
+| `.emuiifd` | HxC's extension for the **raw sector image**, 573,440 bytes |
+| `.img` | the same raw bytes |
+| `.E2O` | an operating system on its own, 72,704 bytes = the first 72,704 bytes of a disk (emxp.net publishes 2.1 / 2.3 / 3.0 / 3.1 / 2.6HD / 3.1HD) |
 
-The HFE header of an EII disk, read across all 1,437 corpus files without a single exception:
+### OS extent — *confirmed*
 
-| Field | Value |
-|-------|-------|
-| signature | `HXCPICFE` |
-| format revision | 0 |
-| number of tracks | 80 |
-| number of sides | 2 |
-| **track encoding** | **`0x03` = `HfeFile.ENCODING_EMU_FM`** |
-| bit rate | 312 kbit/s |
-| **floppy interface mode** | **`0x0B` = `HfeFile.FLOPPYMODE_EMU_SHUGART`** |
+`EMUIIOS31.E2O` is byte-identical to the first 72,704 bytes of the OS disk, so the OS occupies tracks
+0-20 and the **bank starts at track 22, offset `0x13400`** (78,848); across the synthetic corpus the
+first block that differs between disks is exactly there. The bank region is tracks 22-159 =
+**494,592 bytes**. A disk without an operating system is possible - the machine loads a bank from
+the disk once it has booted from another one - which is what the creator writes when no system file
+is named.
 
-## What the code base already provides
+## Bank layout — *confirmed*
 
-`file/hfe` is a genuine asset: it parses HFE containers and has a bit-stream reader plus FM and MFM
-decoders, already used by the Ensoniq, Fairlight, Akai MPC60/MPC2000 and Casio FZ detectors.
-`HfeFile` even declares the two E-mu constants the corpus turns out to use.
-
-The existing `FmDecoder` however **cannot** read an EII track. It implements IBM System 34 FM
-specifically, and every assumption breaks:
-
-| `FmDecoder` assumption | Emulator II reality |
-|------------------------|---------------------|
-| IDAM bit pattern `0xF57E` (data `FE`, clock `C7`) | mark is `FA 96` |
-| Header is cylinder, head, sector, size-code | header is a single track-number byte |
-| Sector size `128 << sizeCode` | fixed 3584, which is not `128 << n` for any n |
-| CRC-CCITT poly `0x1021`, init `0xFFFF` (`AbstractDecoder.calculateCrc`) | poly `0x8005`, init `0x0000`, non-reflected |
-| Many sectors per track, addressed by sector number | exactly one sector per track |
-
-`HfeFile.decodeSectors()` used to route `ENCODING_EMU_FM` into that decoder, so feeding it an EII HFE
-yielded zero sectors rather than an error. That is now fixed:
-
-- **`file/hfe/EmuFmDecoder`** (new) decodes the cell stream, finds the `FA 96` marks, parses the
-  one-byte header and returns the single 3584-byte sector per track.
-- **`HfeFile.decodeSectors()`** routes `ENCODING_EMU_FM` to it; `ENCODING_ISOIBM_FM` still goes to
-  `FmDecoder`, so the Ensoniq, Fairlight, Akai and Casio paths are untouched.
-- **`AbstractDecoder.calculateCrcLsbFirst()`** (new) implements the E-mu CRC beside the existing
-  CCITT one, which is left alone.
-- **`Sector`** gained `createWithSize()` because 3584 cannot be expressed as `128 << sizeCode`;
-  `getSizeBytes()` now returns a stored size which the existing constructor still fills with
-  `128 << sizeCode`, so IBM-format callers are unaffected.
-
-`DiskImageBuilder.buildImage (sectors, 80, 2, 1, 3584, true)` reassembles a raw image from the
-result, since its LBA of `(cylinder × heads + head) × sectorsPerTrack + sector` reduces to exactly
-the disk's own linear track number.
-
-For the detector to come, `Emulator3Detector` is the template — it registers image extensions
-alongside bank extensions — and `Emulator3FloppySet` shows how raw floppy images are assembled
-before parsing.
-
-## Test corpus — *in hand*
-
-| Material | Location | Purpose |
-|----------|----------|---------|
-| 1,437 EII disk images (`.hfe`) | `EmulatorII-Library/` (untracked, 3.4 GB) | the corpus; foldered by content (strings, brass, drums, mellotron, foley, …) |
-| `emuiios.emuiifd` + `emuiios31.hfe` | scratchpad, from emxp.net | **same disk as raw and HFE** — byte-exact decoder validation |
-| `zm325.emuiifd` | scratchpad, from emxp.net | second raw image (memory-test disk) |
-| `EMUIIOS31.E2O`, `EMUIIOS31HD.E2O` | scratchpad, from emxp.net | Z80 OS binaries — the parser oracle of last resort |
-| 11,604 reference WAVs | archive.org item `EIIwaves` (889 MB, not downloaded) | **decoded ground truth for this exact corpus** |
-
-Every corpus file is exactly 2,540,544 bytes with an identical header profile, so the set is
-homogeneous and no per-file special-casing is expected.
-
-The archive.org `EIIwaves` set is the decoded output of *these* disks: its files are named
-`<disk>_EII_hfe_S<nn>.WAV`, and **1,427 of the 1,429 distinct disk names match the corpus exactly**
-(`X_Men_EII.hfe` ↔ `X_Men_EII_hfe_S01.WAV`). It gives per-disk sample counts and per-sample audio to
-check a bank parse against, without having to trust the reverse engineering.
-
-Sources are public: the corpus is `EII_HXC.zip` from `dblondin.com/samples/`, the OS and memory-test
-disks are from emxp.net, the WAV set is archive.org item `EIIwaves`.
-
-## Bank layout — *partial, reverse engineered here*
-
-Nothing public documents this. The ///Esynthesist specification stops at the track level; EMXP,
-ChickenSys Translator, Awave and Arturia's Emulator II V are all closed source;
-`mattetti/e-mu-soundbanks` handles Emulator X `.ebl` only, `mpc2emu` models the EII's *sound* but
-never parses its disks, and `emu3bm` is EIII-only. What follows was derived from the corpus. Enough
-is known to locate presets, voices and sample audio; the per-voice synthesis parameters are not
-decoded yet.
-
-### Where the bank starts — *confirmed*
-
-**Offset `0x13400` (78,848) = track 22.** Comparing whole disks, tracks 0–21 are byte-identical
-across the corpus (the OS) and the first block that differs anywhere is exactly `0x13400`. This
-confirms the previously unverified second-hand figure. The bank region is therefore tracks 22–159 =
-494,592 bytes.
-
-### The working copy — *confirmed by structure*
-
-The bank opens with the state of the currently selected preset:
+The bank is the memory image of the operating system, so its layout is that of the OS data
+structures. It is loaded at CPU address **`0x9600`** of the parameter memory: every 16-bit pointer
+in the bank is `0x9600 + offset`, which is what identifies the voice records (see below). All
+offsets here are relative to the bank start.
 
 | Offset | Size | Content |
 |--------|------|---------|
-| `bank+0x000` | 12 | name, blank on the disks examined |
-| `bank+0x00C` | 61 | voice index per key - the EII has a **61-note keyboard** |
-| `bank+0x049` | 61 | the same map biased by `0x9A`, i.e. as voice *identifiers* |
-| `bank+0x086` | 61 | a per-key index which ascends within each voice's key span |
-| `bank+0x2AB` | var | a preset record (see below) holding the selected preset |
-
-Voice **identifier = voice index + `0x9A`**, so voice 1 is `0x9B`. A preset's voice list uses these
-identifiers: a one-voice disk lists `9B`, and a twelve-voice disk lists `9B 9C … A6`.
+| `0x000` | 12 | blank (12 spaces on every disk) |
+| `0x00C` | 11 × 61 | the expanded key maps of the selected preset, one byte per key of the 61-key keyboard (see *The selected preset*) |
+| `0x2AB` | 35 | the header, name and parameters of the selected preset |
+| `0x2CE` | 1 | the number of the selected preset |
+| `0x2CF` | 100 | the **voice list**: the identifier of each voice number, `0x9B` + record index, 0 for an unused number |
+| `0x333` | 2 × n | the preset directory: for each preset but the last the CPU address (big-endian) of the length word which ends its record |
+| `0x500` | 256 × n | the **voice records** |
+| behind them | | the **preset records** |
+| further behind | | the **sample memory** |
 
 ### Voice records — *confirmed*
 
-An array of **256-byte records** beginning at **`bank+0x5BA`**, which holds on 198 of 200 disks
-sampled; the voice number stored in the key map indexes it one-based.
+An array of **256-byte records from `0x500`**, each starting with the tag bytes `04 03`. The record
+is the runtime structure of a voice, so most of it is the state of the sampler's playback engine;
+the part which describes the sample is:
 
 | Offset | Size | Content |
 |--------|------|---------|
-| `+0x00` | 12 | name, ASCII, space padded (`12string E  `) |
-| `+0x0D` | 3 | **sample start**, 24-bit little-endian, **relative to the bank start** |
-| `+0x10` | 3 | **slot size** - the fixed stride at which sample slots are allocated; consecutive voices' start addresses differ by exactly this |
-| `+0x13` | 3 | **sample end** |
-| `+0x16` | 3 | **loop length** |
-| `+0x19` | 3 | **loop start**; equals the sample start where no loop is set |
+| `+0x00` | 2 | tag `04 03` |
+| `+0x02` | 3 | sample start − 1, 24-bit little-endian |
+| `+0x06` | 3 | `0x500000` − sample length: the negative count the address counter is loaded with |
+| `+0x0A` | 3 | sample end − 1 |
+| `+0x0E` | 3 | `0x500000` − loop length |
+| `+0x13` | 3 | the same |
+| `+0x22`, `+0x26`, `+0x95`, `+0xA9` | 2-3 | pointers into the record itself: `0x9B00 + 0x100 × index + offset`, so the high byte names the record |
+| `+0xBA` | 12 | name, ASCII, space padded |
+| `+0xC6` | 1 | flags: **bit 1 = loop on**; `0x24` and `0x26` throughout the factory library |
+| `+0xC7` | 3 | **sample start**, relative to the bank |
+| `+0xCA` | 3 | **slot size** = sample length + loop length + 4; the next voice's start on a contiguous bank |
+| `+0xCD` | 3 | **sample end** |
+| `+0xD0` | 3 | **loop length** in frames |
+| `+0xD3` | 3 | **loop start**, relative to the bank |
+| `+0xD6` | 3 | slot size again |
+| `+0x1A`-`+0xB9` | | the settings of the voice: filter, envelopes, LFO, level (*unknown* layout) |
 
-The loop length is confirmed by pitch: for the six voices of `12 STRING GUITAR 1` it is 1342, 1509,
-1700, 1980, 562 and 336 frames against measured pitch periods of 337, 252, 188, 142, 112 and 84 -
-exactly 4, 6, 9, 14, 5 and 4 whole periods. A loop length which lands on an integer number of periods
-for every voice is not a coincidence.
+The slot reserves room for the loop behind the sample end, and the loop may indeed extend past it:
+`Piano D6` of the disk *Grand Piano* has a sample end 4 frames behind its start and a loop of 67,279
+frames whose region holds the whole piano note. The audio of a voice is therefore
+`max (end, loop start + loop length) − start`, limited to the slot. On the factory library the loop
+of 96% of the looped voices starts at the sample start; 274 of 3,624 voice records have the loop
+bit set.
 
-`+0x0C` and the parameter blocks from `+0x46` are not decoded. Two voices may share a start address,
-which is how a 12-string's paired courses reuse one recording with different end points.
+The old table position `0x5BA` of the first description was the name field of this record;
+counting the records from `0x502` put the tag bytes at the end of the previous record, which is why
+the presets seemed to start inside the last voice.
 
-### Key maps and the root key — *confirmed*
+### The heap — *confirmed*
 
-The three 61-byte tables are read together. For key *k*: `bank+0x049` gives the **voice identifier**,
-`bank+0x00C` a voice number for the display and `bank+0x086` a **transposition index** which ascends
-by one per semitone. The value **`0x0E` marks unity**, so
+Voice records and preset records share the memory behind the key maps. Usually all voices come
+first and the presets follow, but a bank saved with an empty preset selected starts with that
+preset's record at `0x502` and continues with the voices in the next 256-byte slot (*Marcato
+Strings*, *Grand Piano #2*, *Conga*). The reader therefore walks the heap: a slot which starts with
+`04 03` is a voice record, otherwise a chain of preset records is expected, and after a chain the
+next voice slot is the next multiple of 256 bytes.
 
-Identifiers start at **`0x9B`** and follow the order of the voice records, so the record of a key is
-simply `identifier - 0x9B`; an identifier below that means the key is silent. The table at
-`bank+0x00C` looks like the same thing biased by a constant and is **not** usable to find a record:
-its base differs from bank to bank - 1 on `12 STRING GUITAR 1`, 6 on `SLEIGH BELLS`, 60 on `DRUMS` -
-while the identifiers of all three start at `0x9B`. Indexing by it happens to work on banks whose
-base is 1 and silently reads sample data as a voice record on the rest.
+### Preset records — *confirmed*
 
+The two bytes in front of the first preset record hold its length, and **every record ends with
+the length of the next one** (0 ends the chain). A record:
+
+| Offset | Size | Content |
+|--------|------|---------|
+| `+0` | 9 | header `01 04 00 00 00 00 02 03 89` on the newer OS versions, `01 00 00 00 00 00 00 00 81` / `00 … 80` on older ones; the top bit of the last byte is always set |
+| `+9` | 12 | name, ASCII, space padded |
+| `+21` | 14 | parameters (*unknown*, `00 0B 00 00 00 00 00 00 00 00 00 00 50 04` is the most frequent) |
+| `+35` | | the **key range entries** |
+| | 4 | end marker `00 3D 00 00` (`0x3D` = 61 = the key behind the keyboard) |
+| | 2 | length of the next record |
+
+A key range entry is 5 bytes: `[mode << 6 | count] [00 or 08] [voice] [transposition] [level]`.
+The count is the number of keys, the ranges follow each other from the lowest key and always sum
+to 61. The mode is 1 for a silent range (voice 0), 2 for one voice and 3 for a range which plays
+**two voices** - the second voice follows as 3 more bytes `[voice] [transposition] [level]`. The
+voice is a 1-based *voice number*, resolved through the voice list at `0x2CF` to a record; a bank
+without a voice list numbers its records in their order. The level is `0x70` on 361 of 375 factory
+ranges. The second byte is 0 or 8 and not decoded.
+
+### Key mapping — *confirmed*
+
+The transposition is stored for the first key of a range and rises by one per key. **Key index 0 is
+MIDI 36 and the value `0x10` plays a voice at its recorded pitch**, so
 
 ```
-root key = k - (transposition[k] - 0x0E)          MIDI note = key index + 26
+MIDI note = 36 + key index
+root key  = MIDI note of the first key + 0x10 − transposition
 ```
 
-A zone is a run of consecutive keys with the same voice whose transposition index increases by one;
-where the index restarts inside a voice's span, the voice is mapped twice with different roots, which
-is what the sampler does.
+This was settled with the factory disk *Grand Piano*: its six voices `piano A2`, `F#3`, `D4`,
+`A#4`, `F#5` and `D6` measure 111.6, 187.7, 295.5, 470.8 and 750.7 Hz - their names in scientific
+pitch - and the rule puts every one of them exactly on the key of its name (45, 54, 62, 70, 78, 86);
+the Rhodes voices of the community disk *CLAVINET* (98 Hz = G2 on key 43, 196 Hz on 55) confirm it.
+The first description used key 26 and the unity value `0x0E`, which is the same mapping shifted by
+an octave: it was derived from a 12-string guitar disk whose preset is transposed down an octave in
+the way guitar music is written, and it put every converted preset an octave too low.
 
-Both halves of the rule are confirmed against measured pitch. On `12 STRING GUITAR 1` the six voices
-resolve to key 14, 19, 24, 29, 33 and 38 - intervals of 5, 5, 5, 4 and 5 semitones, which is exactly
-standard guitar tuning - and with a base of 26 those are MIDI 40, 45, 50, 55, 59 and 64, i.e.
-E2 A2 D3 G3 B3 E4. Voices whose name states their pitch confirm the base independently:
-`CS 816 G2` resolves to MIDI 43, `CLAVINET F2` to 41, `CLAVINET F3` to 53 and `Piano TineG3` to 55,
-each matching both its name and its measured pitch. Measured pitches run about 0.1 semitone sharp of
-the nominal note throughout, which is a property of the instrument, not of the rule.
+### The selected preset
 
-### Preset records — *confirmed signature, variable length*
+The eleven 61-byte tables at `0x00C` are the working copy of the selected preset which the OS keeps
+expanded per key: voice number, voice identifier, transposition, two zero tables, the
+transposition again, level (`0x70`), second level, a zero table, a table which is `0x0F` except at
+the first key of each range, and a zero table. They only describe the selected preset, which is why
+the first reader, which read them, saw one preset per disk - the factory disks hold up to 18.
 
-Each preset begins with the nine byte signature `01 04 00 00 00 00 02 03 89` followed by a 12-byte
-ASCII name. Records are variable length and packed one after another. Across the corpus the counts
-are plausible throughout - 1 to 65 presets per disk, always within the documented limit of 100 - and
-on 1,040 of 1,437 disks every signature is followed by twelve printable characters. 43 disks contain
-no signature at all and may be a different bank revision; that is not yet explained.
+### Sample memory — *confirmed*
 
-### Validation of the model
-
-- **Sample count.** The archive.org `EIIwaves` set is an independent extraction of these very disks.
-  Counting *distinct* sample start addresses per disk - not voices, since voices may share a sample -
-  reproduces its per-disk file count on **110 of 120** disks tested. The residual is traced to the
-  ad-hoc chain-of-names record finder used for the test, not to the record model.
-- **The addresses really are audio.** Reading `bank+start … bank+end` for the six voices of
-  `12 STRING GUITAR 1` and running autocorrelation over each gives 82.4, 110.2, 147.8, 98.2, 248.0
-  and 330.7 Hz at correlation peaks of r = 0.85 to 0.91 - **E2, A2, D3, G2, B3, E4**, standard guitar
-  tuning, matching the voice names, and only correct because the sample rate really is 27,777 Hz.
-  The same bytes read image-relative instead of bank-relative are not signal-like at all.
+The audio follows the records: on 88 of 91 factory disks the first sample starts exactly
+**`0x95FE` bytes behind the end of the preset chain**, and the voices' slots follow each other
+without gaps in the order in which the voices were recorded. A bank may be larger than the
+494,592 bytes a floppy holds (the Emulator II+ has 1 MB): 16 factory disks have voices whose audio
+runs past the end of the disk; they are cut there and reported.
 
 ### The sample encoding — *confirmed*
 
-The service manual settles it: "Each output channel consists of an input latch, (74HCT374) a DAC,
-(6072)". The **AM6072 is a companding DAC**, so the expansion is done in hardware and the stored byte
-is already a µ-255 code - which is what "8-bit companded" means on this machine. The byte is a
-**sign in bit 7, a chord in bits 6 to 4 and a step in bits 3 to 0**, and
+The service manual settles it: "Each output channel consists of an input latch (74HCT374), a DAC
+(6072), a VCF/VCA (SSM2045) and a switched capacitor filter". The **AM6072 is a companding DAC**, so
+the expansion is done in hardware and the stored byte is already the code of the converter: a sign
+in bit 7, a chord in bits 6 to 4 and a step in bits 3 to 0, and
 
 ```
 magnitude = ((step * 2 + 33) << chord) - 33          full scale 8031
 ```
 
-Two independent checks confirm the shape. Decoding a voice and measuring the ratio of harmonic to
-total energy gives 0.82 for the sign-plus-magnitude reading against 0.67 for a plain linear reading
-and 0.54 for G.711 with its inverted bits. And a histogram of the stored magnitudes over four disks
-steps *up* at each multiple of 16 instead of decaying - the signature of a segmented code, where a
-code in the next chord covers twice the amplitude range - with all eight chords in use.
+The same code is confirmed one-to-one on the Emulator, whose EMXP SoundFonts are exactly this
+expansion × 0.7 for all 256 byte values (see `EMULATOR1_FORMAT.md`). `EmuCompanding` holds the
+transfer function in both directions for the Emulator and the Emulator II; the Emax keeps its
+own copy in `EmaxConstants`.
 
-Note that the published `EIIwaves` extraction of these disks is **not** a per-sample decode of the
-stored bytes: tabulating one against the other yields no function, and cross-correlating them over
-±4000 frames finds no alignment at all, only self-similarity at the pitch period. It carries the same
-notes and the same slot length, so it is useful for counting samples, but it cannot calibrate the
-expansion and was not used to.
+## The converter
 
-The absolute polarity of the sign bit is not verified; it is inaudible in a mono sample.
+`Emulator2Detector` reads `.img`, `.emuiifd`, `.eii` and `.hfe`; every preset of a bank becomes one
+multi-sample: a zone per key range with the key range, the root key, the name, the loop and the
+expanded audio of its voice, and the second voices of the ranges as a second group. Over the 90
+factory disks this gives **605 presets** (the first reader gave one per disk with an octave error and
+loops on unlooped voices; 5 disks it could not read at all); 26 disks of the older community corpus
+give 125.
 
-### The detector
-
-`format/emu/emulator2/Emulator2Detector` reads `.img`, `.emuiifd`, `.eii` and `.hfe` and turns one
-disk into one multi-sample: a zone per run of keys which share a voice and a rising transposition,
-with the key range, root key, name and loop of each, and the audio expanded through the AM6072 law.
-
-Measured over the whole corpus of 1,437 disks: **1,414 produce a multi-sample and none produce an
-error**. Of the rest, some are continuation disks of a bank which is larger than one floppy - the
-Emulator II+ holds 1 MB of samples and a floppy holds 494,592 bytes of bank - and those are reported
-rather than silently skipped, because a voice whose audio lies past the end of the disk is a bank
-that continues elsewhere, not a broken file. 251 disks report at least one such voice and still yield
-their complete voices.
-
-Spot check of `12 STRING GUITAR 1` converted to SFZ: six voices at roots 40, 45, 50, 55, 59 and 64 -
-E2 A2 D3 G3 B3 E4 - with the low E additionally mapped an octave down over the bottom keys, which is
-the transposition restart described above, and loops of 1342, 1509, 1700, 1980, 562 and 336 frames.
-The exported audio measures 82.4, 110.7, 147.8, 196, 248.0 and 330.7 Hz at 27,777 Hz.
+`Emulator2Creator` writes a bank disk from one multi-sample or from a library: each multi-sample
+becomes a preset, the zones of its first group the voices of the key ranges, the zones of its second
+group their second voices, identical audio is stored once. The audio is mixed to mono, re-sampled to
+27,777 Hz and companded; the voice records take their settings from the voice `piano A2` of the disk
+*Grand Piano* with the name, the addresses, the loop and the pointers replaced, the preset records
+and the key maps of the first preset are written as described, the sample memory starts `0x95FE`
+behind the records and the operating system is copied from the `.E2O` file or disk image named in
+the settings. The image is written as a HFE with the field spacing of the HxC images or as a raw
+`.emuiifd`. Round trip: the 15 presets of *Grand Piano* converted to SFZ and back to a disk read
+back with identical key ranges, roots, lengths and loops.
 
 ### Still to decode
 
-The sample encoding above; loop enable; per-voice tuning and level; velocity ranges; the envelope,
-filter and chorus settings; and the preset record layout beyond its signature and name. 43 disks
-carry no preset signature at all and may be a different bank revision.
+The voice settings (filter cutoff and Q, VCA and VCF envelopes, LFO, level, chorus), the preset
+parameters and the second byte of a key range entry.
 
-## Plan
+## Test corpus
 
-1. ~~Obtain a corpus.~~ **Done** — see above.
-2. ~~Physical layer.~~ **Done** — `EmuFmDecoder`, verified below.
-3. **Logical layer.** *In progress* — see *Bank layout* above. The bank start, the voice records with
-   their names and sample addresses, and the preset signature are established; the per-voice
-   synthesis parameters are not. The `.E2O` binaries are the oracle of last resort — Z80 disassembly
-   should be a fallback, not the first move.
-4. **Sample decoding.** Expand µ-255 companded bytes to linear PCM at 27,777 Hz.
-5. **Detector.** `format/emu/emulator2/`, registered in the `ConverterBackend` constructor, file
-   endings `.eii`, `.img`, `.emuiifd`, `.hfe`. Read-only first.
-
-### Validation strategy
-
-Each layer has an objective check, so nothing rests on judgement:
-
-- **Physical** — **passed.** Decoding `emuiios31.hfe` and rebuilding the image yields all 160 sectors
-  with zero CRC failures and **573,440 bytes identical to `emuiios.emuiifd`**. Sweeping the whole
-  corpus gives **1,437 of 1,437 files fully decoded, 229,920 sectors, zero CRC failures** (~26 s).
-  The `FA 96` ambiguity was resolved the same way — of the 128 candidate bit interpretations exactly
-  one reproduces the raw image, and it is the one documented above.
-- **Logical** — **partially passed.** Distinct sample start addresses per bank reproduce the
-  `EIIwaves` per-disk file count on 110 of 120 disks tested; autocorrelation of the addressed bytes
-  returns the pitches the voice names promise. Repeat over all 1,427 matched disks once the record
-  finder reads the voice table properly instead of chaining ASCII names.
-- **Sample decode** — compare decoded audio against the corresponding reference WAV. A linear
-  misreading of companded data is obvious both on a spectrum and in a sample-by-sample diff.
-
-A creator is a separate question. Writing EII disks is feasible in principle (HxC supports E-mu
-write), but a 17-second, 8-bit, 100-voice target is a narrow destination, and it would need an FM
-track encoder to pair with the decoder.
+| Material | Location | Purpose |
+|----------|----------|---------|
+| 90 factory disks (`.hfe`) + the OS 3.1 disk | `EmuSounds.zip` → `EII_Factory_HxC.7z` | dumps of real disks, 605 presets |
+| 1,437 community disks (`.hfe`) | `EmulatorII-Library/` (untracked, 3.4 GB) | synthetic HxC images from `dblondin.com/samples/EII_HXC.zip` |
+| `emuiios.emuiifd` + `emuiios31.hfe` | emxp.net | the same disk raw and as HFE - the byte-exact decoder and encoder validation |
 
 ## Sources
 
 - ///Esynthesist, *Disk layout of Emulator II floppy disks* v1.2 — https://emxp.net/Disk_layout_of_EmulatorII_floppy_disks_v4.pdf
-- EMXP additional downloads (OS images, memory-test disk) — https://emxp.net/Additional_downloads.htm and https://emxp.net/HXC.htm
+- EMXP additional downloads (OS images, memory-test disk) — https://emxp.net/Additional_downloads.htm
 - E-mu Emulator II Service Manual — https://archive.org/details/e-mu_Emulator_II_Service_Manual
-- *E-mu Emulator II waveforms* (decoded ground truth) — https://archive.org/details/EIIwaves
-- EII HFE corpus — http://www.dblondin.com/samples/EII_HXC.zip
+- *Emulator II+ Owner's Manual* (OS 3.1), Voice Definition module: loop start and loop length, loop in release
 - ChickenSys Translator, EII floppy image notes — http://www.chickensys.com/translator/documentation/floppyimageinfo/emue2.html
-- Software Preservation Society / KryoFlux announcement — http://www.softpres.org/news:2010-10-10
-- `mpc2emu` µ-255 profile (local clone) — `mpc2emu/processors/resampler.py`

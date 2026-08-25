@@ -61,6 +61,7 @@ The following multi-sample formats are supported:
 * [discoDSP Bliss](#discodsp-bliss)
 * [Downloadable Sounds (DLS)](#downloadable-sounds-dls) - read only
 * [Elektron Tonverk Multisample & Preset](#elektron-tonverk)
+* [E-mu Emulator II](#e-mu-emulator-ii)
 * [E-mu Emulator III/IIIX/ESI](#e-mu-emulator-iiiiiixesi)
 * [E-mu Emulator IV](#e-mu-emulator-iv)
 * [E-mu Emulator X](#e-mu-emulator-x)
@@ -366,6 +367,18 @@ Note: the Tonverk stores envelope times and the filter cut-off frequency as norm
 * Output Engine: Selects which machine to write. *Multi-Sample* and *Drum Kit* force that machine; *Auto (from source)* writes a Drum machine when the source looks like a drum kit (a percussion category or up to eight single-key zones) and a Multi machine otherwise.
 * Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
 
+## E-mu Emulator II
+
+The E-mu Emulator II (1984) stores a *bank* - up to 100 voices, each a sample with its loop and its settings, and up to 100 presets which assign the voices to the 61 keys - on a double-sided floppy disk of 573,440 bytes, of which the first 22 tracks may hold the operating system and the rest the bank. Like the Emulator, it writes a FM track format of its own, so a disk gets onto a computer only as an image of a HxC/Gotek floppy emulator (*.hfe*) or as a raw sector image (*.emuiifd*, *.img*). The track format was described by the EMXP project; the bank layout was reverse-engineered here from the 90 disks of the factory library and 1,437 community disks and is described in *documentation/design/EMULATOR2_FORMAT.md*.
+
+When reading, every preset of a bank becomes one multi-sample. A preset divides the keyboard (MIDI notes 36-96) into ranges which each play a voice at a transposition, and optionally a second voice, so the first voices become the first group of the multi-sample and the second voices the second group. From each voice the name, the loop (when it is switched on) and the audio are read, the latter expanded from the companded bytes which the sampler feeds to its AM6072 DAC; the root key of a range follows from its transposition. The settings of a voice - filter, envelopes, LFO, level - are located in the bank but not decoded yet and are therefore not converted. A bank which is larger than a floppy disk holds - the Emulator II+ has 1 MB of sample memory - is cut at the end of the disk and reported.
+
+When writing, each multi-sample becomes one preset of the bank, several of them as a library on one disk: the zones of the first group become the voices of the key ranges, the zones of a second group their second voices, and identical audio is stored once. The audio is mixed to mono, re-sampled to the fixed 27,777 Hz of the sampler and companded; the settings of the voices are taken from a voice of the factory library (an unfiltered piano), since they are not decoded. The 494,592 bytes of a disk hold about 17 seconds of audio; a voice which does not fit is shortened or skipped with a message. The operating system is not part of this program; it is copied from a system file (*.E2O*, as the EMXP project publishes them) or from any Emulator II disk image named in the settings. Without one the disk holds the bank alone, which the sampler loads once it has booted from another disk. Written disks have not been verified on hardware yet.
+
+### Destination Options
+
+* Output: Write a HxC floppy emulator image (*.hfe*) or a raw disk image (*.emuiifd*). CLI: `EIIOutputFormat=hfe|raw`.
+* Operating system: The file from which the system tracks are taken, optional. CLI: `EIIOperatingSystem=<path>`.
 ## E-mu Emax / Emax II
 
 The E-mu Emax (1986) is the eight voice successor of the Emulator II, the Emax II (1989) its 16-bit successor. Everything they hold - up to 100 presets, their voices and the audio of all samples - lives in one *bank*, a straight dump of the memory of the sampler. Such a bank is what their floppy disks, their hard disks and the *.EM1* and *.EB2* files of the E-mu sound library contain. The format is not documented by E-mu; it was reverse-engineered from 45 Emax factory banks and the 147 banks of the four Emax II "Elements of Sound" library CD-ROMs, from the Emax owner's manual, from the manual of EMXP (the utility which reads and writes these disks) and, for the audio of the Emax II, from SoundFont conversions of the same CD-ROMs which serve as an external reference (see *documentation/design/EMAX_FORMAT.md*).
@@ -549,6 +562,7 @@ Searches for files ending with *.ISO, *.IMG or *.HDA. Currently, the following f
 
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
 * [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [E-mu Emulator II](#e-mu-emulator-ii) (only *.IMG)
 * [E-mu Emulator III](#e-mu-emulator-iiiiiixesi)
 * [E-mu Emulator IV](#e-mu-emulator-iv)
 * [Ensoniq EPS/ASR](#ensoniq-epseps16asr-10) (only *.ISO)
