@@ -3791,6 +3791,152 @@
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
     <table:table-row table:style-name="ro7">
+     <table:table-cell table:style-name="ce2" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>E-mu Emulator</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string"><text:p>Read</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>emufd, img, hfe</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce41" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce43" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>8 bit companded (AM6072)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>27778 Hz, varied per key by the pitch table</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce26" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce43" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string"><text:p>File name</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="Default" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce8" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Pitch table</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Zones of equal width per half (MIDI 36-59 / 60-84)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Pitch table (cents)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Pitch table (fixed pitch)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce8" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Forward</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Loop start</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Loop length</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce78" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce43" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Low-pass</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce63" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>unknown, 2 assumed</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce63" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>3 bit setting (frequencies of EMXP, 800 Hz - 19.3 kHz)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce59" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/><table:table-cell/><table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro3">
+     <table:covered-table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string"><text:p>E-mu Emulator</text:p></table:covered-table-cell>
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string"><text:p>Write</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>hfe, emufd</text:p></table:table-cell>
+     <table:covered-table-cell table:style-name="ce41"/>
+     <table:covered-table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string"><text:p>8 bit companded (AM6072)</text:p></table:covered-table-cell>
+     <table:table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>27778 Hz or the source rate below it</text:p></table:table-cell>
+     <table:covered-table-cell table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce43"/>
+     <table:table-cell table:style-name="ce39"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="Default"/>
+     <table:covered-table-cell table:style-name="ce8"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Pitch table</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Zones of equal width per half (MIDI 36-59 / 60-84)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Pitch table (cents)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Pitch table (fixed pitch)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce8"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Forward</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Loop start</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Loop length</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:covered-table-cell table:style-name="ce39"/>
+     <table:covered-table-cell table:style-name="ce78"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce39"/>
+     <table:covered-table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:style-name="ce43"/>
+     <table:covered-table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Low-pass</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>unknown, 2 assumed</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce63" office:value-type="string" calcext:value-type="string"><text:p>3 bit setting (frequencies of EMXP, 800 Hz - 19.3 kHz)</text:p></table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce19"/>
+     <table:covered-table-cell table:style-name="ce59"/>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/><table:table-cell/><table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro7">
      <table:table-cell table:style-name="ce2" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>E-mu Emulator II</text:p></table:table-cell>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string"><text:p>Read</text:p></table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>img, emuiifd, eii, hfe</text:p></table:table-cell>
