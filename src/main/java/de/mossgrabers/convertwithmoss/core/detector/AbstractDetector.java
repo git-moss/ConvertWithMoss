@@ -951,8 +951,8 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
 
     /**
-     * Create the sample data object for a CAF file. Checks for an audio data format which cannot
-     * be decoded and reports it accordingly. CAF files with linear PCM, IMA4, µLaw, aLaw, Apple
+     * Create the sample data object for a CAF file. Checks for an audio data format which cannot be
+     * decoded and reports it accordingly. CAF files with linear PCM, IMA4, µLaw, aLaw, Apple
      * Lossless or MPEG-4 AAC (low complexity) sound data are supported.
      *
      * @param sampleFile The CAF file
@@ -1100,6 +1100,12 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         if (localFile.exists ())
             return localFile;
 
+        // The optimized method below does not search downwards in the start directory, therefore,
+        // do this first
+        final Optional<File> fileRecursively = findFileRecursively (folder, fileName);
+        if (fileRecursively.isPresent ())
+            return fileRecursively.get ();
+
         for (final File variantFile: getCaseVariants (localFile))
         {
             final File found = findLocalFile (notifier, folder, previousFolder, variantFile.getAbsolutePath (), levels, fileType);
@@ -1121,10 +1127,10 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     /**
      * Look up a file by a name which might differ in the upper/lower case from the one on disk.
-     * Sampler file systems are case-insensitive and their CD-ROMs store the names in all upper
-     * case (e.g. 'STR SEC.6 -L.WAV'), while the preset file references them in lower case - or the
-     * other way round. The host file system might well be case-sensitive, therefore look up the
-     * name again ignoring the case if there is no exact match.
+     * Sampler file systems are case-insensitive and their CD-ROMs store the names in all upper case
+     * (e.g. 'STR SEC.6 -L.WAV'), while the preset file references them in lower case - or the other
+     * way round. The host file system might well be case-sensitive, therefore look up the name
+     * again ignoring the case if there is no exact match.
      *
      * @param folder The folder in which to look for the file
      * @param fileName The name of the file to look for
@@ -1139,8 +1145,8 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
 
     /**
-     * Look up a file by a name which might differ in the upper/lower case from the one on disk.
-     * See {@link #findFileIgnoreCase(File, String)} for the details.
+     * Look up a file by a name which might differ in the upper/lower case from the one on disk. See
+     * {@link #findFileIgnoreCase(File, String)} for the details.
      *
      * @param file The file to look for
      * @return The exact file if it exists, otherwise a case-insensitively matching file from the
