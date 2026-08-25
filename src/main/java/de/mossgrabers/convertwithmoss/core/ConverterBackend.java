@@ -60,6 +60,8 @@ import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiDetector;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetCreator;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetDetector;
 import de.mossgrabers.convertwithmoss.format.emu.emulator2.Emulator2Creator;
+import de.mossgrabers.convertwithmoss.format.emu.emax.EmaxCreator;
+import de.mossgrabers.convertwithmoss.format.emu.emax.EmaxDetector;
 import de.mossgrabers.convertwithmoss.format.emu.emulator2.Emulator2Detector;
 import de.mossgrabers.convertwithmoss.format.emu.emulator3.Emulator3Creator;
 import de.mossgrabers.convertwithmoss.format.emu.emulator3.Emulator3Detector;
@@ -212,6 +214,7 @@ public class ConverterBackend
         this.detectors.add (new TX16WxDetector (notifier));
         this.detectors.add (new DecentSamplerDetector (notifier));
         this.detectors.add (new DlsDetector (notifier));
+        this.detectors.add (new EmaxDetector (notifier));
         this.detectors.add (new Emulator2Detector (notifier));
         this.detectors.add (new Emulator3Detector (notifier));
         this.detectors.add (new Emulator4Detector (notifier));
@@ -265,6 +268,7 @@ public class ConverterBackend
         this.creators.add (new TX16WxCreator (notifier));
         this.creators.add (new DecentSamplerCreator (notifier));
         this.creators.add (new Emulator2Creator (notifier));
+        this.creators.add (new EmaxCreator (notifier));
         this.creators.add (new Emulator3Creator (notifier));
         this.creators.add (new Emulator4Creator (notifier));
         this.creators.add (new EmulatorXCreator (notifier));

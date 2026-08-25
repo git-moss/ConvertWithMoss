@@ -60,18 +60,34 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
         if (midiChannel != null)
             instrumentSource.setMidiChannel ((Integer.parseInt (midiChannel) - 1) % 16);
 
-        final int transpose = Integer.parseInt (programParameters.get ("transpose"));
-        instrumentSource.setTranspose (transpose);
+        final String transposeParameter = programParameters.get ("transpose");
+        if (transposeParameter != null)
+        {
+            final int transpose = Integer.parseInt (transposeParameter);
+            instrumentSource.setTranspose (transpose);
+        }
 
-        final double masterVolume = Double.parseDouble (programParameters.get ("masterVolume"));
-        if (masterVolume != 1)
-            instrumentSource.setGain (20.0d * Math.log10 (masterVolume));
+        final String masterVolumeParameter = programParameters.get ("masterVolume");
+        if (masterVolumeParameter != null)
+        {
+            final double masterVolume = Double.parseDouble (masterVolumeParameter);
+            if (masterVolume != 1)
+                instrumentSource.setGain (20.0d * Math.log10 (masterVolume));
+        }
 
-        final double masterPan = Double.parseDouble (programParameters.get ("masterPan"));
-        instrumentSource.setPanning (masterPan * 2.0 - 1.0);
+        final String masterPanParameter = programParameters.get ("masterPan");
+        if (masterPanParameter != null)
+        {
+            final double masterPan = Double.parseDouble (masterPanParameter);
+            instrumentSource.setPanning (masterPan * 2.0 - 1.0);
+        }
 
-        final double masterTune = Double.parseDouble (programParameters.get ("masterTune"));
-        instrumentSource.setTuning ((int) Math.round (Math.clamp (this.tags.calculateTune (masterTune, 1.0, 1.0) * 100.0, -50, 50)));
+        final String masterTuneParameter = programParameters.get ("masterTune");
+        if (masterTuneParameter != null)
+        {
+            final double masterTune = Double.parseDouble (masterTuneParameter);
+            instrumentSource.setTuning ((int) Math.round (Math.clamp (this.tags.calculateTune (masterTune, 1.0, 1.0) * 100.0, -50, 50)));
+        }
 
         super.readInstrumentParameters (instrumentSource, programParameters);
     }
