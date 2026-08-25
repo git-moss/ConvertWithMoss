@@ -61,6 +61,7 @@ The following multi-sample formats are supported:
 * [discoDSP Bliss](#discodsp-bliss)
 * [Downloadable Sounds (DLS)](#downloadable-sounds-dls) - read only
 * [Elektron Tonverk Multisample & Preset](#elektron-tonverk)
+* [E-mu Emulator](#e-mu-emulator)
 * [E-mu Emulator II](#e-mu-emulator-ii)
 * [E-mu Emulator III/IIIX/ESI](#e-mu-emulator-iiiiiixesi)
 * [E-mu Emulator IV](#e-mu-emulator-iv)
@@ -367,6 +368,19 @@ Note: the Tonverk stores envelope times and the filter cut-off frequency as norm
 * Output Engine: Selects which machine to write. *Multi-Sample* and *Drum Kit* force that machine; *Auto (from source)* writes a Drum machine when the source looks like a drum kit (a percussion category or up to eight single-key zones) and a Multi machine otherwise.
 * Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
 
+## E-mu Emulator
+
+The E-mu Emulator (1981) is the first sampler of the line: a 49 key keyboard whose lower and upper halves each play one *bank* of 8 bit companded samples - about 2 seconds of audio at 27,778 Hz per half - loaded from a single-sided 5.25" floppy disk. The multi-sampling software which followed the initial release divides a half into up to eight zones of equal width which each play one sample, and the disk also carries the operating system of the machine (the Emulator has no ROM), so every sound disk is a boot disk. The disks are written in a FM track format which no PC floppy controller can read, so a disk gets onto a computer as an image of a HxC/Gotek floppy emulator (*.hfe*) or as a raw sector image (*.emufd*, 125,440 bytes, or *.img*). The format is not documented by E-mu; the track format was described by the EMXP project and the bank layout was reverse-engineered here from the factory library and verified against the SoundFonts EMXP made of the *Production Set* disks (see *documentation/design/EMULATOR1_FORMAT.md*).
+
+When reading, one disk becomes one multi-sample: the zones of the lower half (MIDI notes 36-59) and of the upper half (60-84) with their key ranges, and for each zone its root key and fine tuning - the disk stores the sample clock of every key in a pitch table, from which they follow exactly -, its loop, its filter setting (a three step low-pass, whose cutoff frequencies are the ones EMXP assigns) and its audio, which is expanded from the companded bytes the sampler feeds to its AM6072 DAC. A disk which was made before the multi-sampling software existed holds one sample per half, which fills the half. The sequencer memory on the last track is not read.
+
+When writing, one multi-sample becomes one disk. The zones which cover a half of the keyboard are mapped onto the smallest number of zones the sampler offers (1, 2, 3, 4, 6 or 8, of equal width); each zone of the sampler plays the zone of the source which covers most of its keys, but every single key gets the sample clock which the root key and the tuning of its source zone ask for, so no key plays out of tune where the zone borders do not align. The audio is mixed to mono, re-sampled to 27,778 Hz where the source is faster - a slower source keeps its rate, which the pitch table compensates - and companded. A half holds 57,088 bytes of audio; what does not fit is shortened with a message, and a sample longer than a half is shortened to it. Velocity layers are not supported, the loudest layer of a key is used. The disk needs the operating system of the sampler on its first two tracks to boot; the system is copyrighted E-mu code and not part of this program, therefore it is copied from a system file (*.E1O*, as the EMXP project publishes them) or from any Emulator disk image (*.hfe*, *.emufd*) named in the settings. Without one the system tracks stay empty and the sampler cannot boot from the disk. Written disks have not been verified on hardware yet.
+
+### Destination Options
+
+* Output: Write a HxC floppy emulator image (*.hfe*), which is what a Gotek or HxC drive in the sampler reads, or a raw disk image (*.emufd*) for the EMXP and HxC tools. CLI: `EIOutputFormat=hfe|raw`.
+* Operating system: The file from which the two system tracks are taken, optional. CLI: `EIOperatingSystem=<path>`.
+
 ## E-mu Emulator II
 
 The E-mu Emulator II (1984) stores a *bank* - up to 100 voices, each a sample with its loop and its settings, and up to 100 presets which assign the voices to the 61 keys - on a double-sided floppy disk of 573,440 bytes, of which the first 22 tracks may hold the operating system and the rest the bank. Like the Emulator, it writes a FM track format of its own, so a disk gets onto a computer only as an image of a HxC/Gotek floppy emulator (*.hfe*) or as a raw sector image (*.emuiifd*, *.img*). The track format was described by the EMXP project; the bank layout was reverse-engineered here from the 90 disks of the factory library and 1,437 community disks and is described in *documentation/design/EMULATOR2_FORMAT.md*.
@@ -562,6 +576,7 @@ Searches for files ending with *.ISO, *.IMG or *.HDA. Currently, the following f
 
 * [Akai MPC2000/MPC2000XL](#akai-mpc2000mpc2000xlmpc3000)
 * [Akai S1000/3000](#akai-s1000s3000-series-disk-image)
+* [E-mu Emulator](#e-mu-emulator) (only *.IMG)
 * [E-mu Emulator II](#e-mu-emulator-ii) (only *.IMG)
 * [E-mu Emulator III](#e-mu-emulator-iiiiiixesi)
 * [E-mu Emulator IV](#e-mu-emulator-iv)
