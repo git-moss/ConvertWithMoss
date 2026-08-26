@@ -26,6 +26,7 @@
   * Fixed: Negative modulator amounts, e.g. of a velocity to filter cutoff modulator, were read as large positive numbers, and the direction of a velocity modulator was ignored when reading.
 * Synclavier Regen
   * Fixed: Partials which are muted in the editor were converted as layers. The editor keeps the samples of a muted partial in the timbre, so e.g. the switched-off sub-octave pulse of 'Prodigy Pad' (Starsky's Prodigy) became the first layer - and since it has no release time, destinations with one amplitude envelope per preset (e.g. Waldorf Iridium/Quantum) got an instant release instead of the 3.5 seconds of the pad. Only the active partials are converted now - those which carry a volume line, which is also how the device builds the active-partial mask of its timbre index.
+  * Fixed: The contour of the note filter envelope was lost: only its peak level was read, the start level and the end level which the release heads to were ignored, and no sustain level was set - so destinations which default a missing sustain to the full level (e.g. Waldorf Iridium/Quantum) kept the filter at its peak for the whole note; none of the 26 filter envelopes of 'Starsky's Prodigy' ever decayed there. The three levels are octaves relative to the cutoff, which is the sustain level of the contour (Regen manual, 'Filter Envelope'); they are now read and written completely, and a contour which reaches below the cutoff is re-based so that the envelope of the model can carry it.
 
 ## 20.2.0
 

@@ -71,6 +71,9 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
     private static final String    TRAN_PARAM          = "SynclavierPTPITran";
     private static final String    OCTAVE_PARAM        = "SynclavierPTPIOctave";
     private static final double    OCTAVE_REFERENCE_HZ = 440.0;
+    // The octaves which the full depth of the model filter envelope covers
+    private static final double    OCTAVES_FULL_DEPTH  = IEnvelope.MAX_ENVELOPE_DEPTH / 1200.0;
+    private static final Double    ZERO                = Double.valueOf (0);
     private static final String    PARAGRAPH           = "¶";
     private static final String    SAMPLE_ENDING       = ".sflc";
     // The audio extensions to probe, the obfuscated SFLC first
@@ -673,9 +676,14 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 
     /**
      * Builds an {@link IFilter} from the timbre-global note filter parameters. The Synclavier note
-     * filter is a low-pass filter (with a 2- or 4-pole slope) with a cutoff (a fraction), a
-     * resonance (0..1), a filter envelope (attack, decay, release with a peak depth) and keyboard
-     * tracking. A fresh instance is returned on every call so it can be assigned to several zones.
+     * filter is a multi-mode filter (low-, high- or band-pass with a 2- or 4-pole slope) with a
+     * cutoff (a fraction), a resonance (0..1), keyboard tracking and a filter envelope. The contour
+     * of the envelope is stored as three levels in octaves relative to the cutoff: the start level
+     * (StartDelta), the peak level at the end of the attack (PeakDelta) and the end level the
+     * release heads to (DecayDelta - 'decay' is the classic Synclavier name of the final decay).
+     * The decay stage always ends at the cutoff itself, which is the sustain level of the contour
+     * (Regen manual, 'Filter Envelope'). A fresh instance is returned on every call so it can be
+     * assigned to several zones.
      *
      * @param filterParameters The filter parameters (empty if the timbre has no filter)
      * @return The filter or null if the timbre has no note filter
@@ -698,24 +706,63 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             case 3, 6 -> FilterType.BAND_PASS;
             default -> FilterType.LOW_PASS;
         };
-        final double resonance = filterParameters.getOrDefault ("Resonance", Double.valueOf (0)).doubleValue ();
-        final IFilter filter = new DefaultFilter (filterType, poles, MathUtils.denormalizeCutoff (Math.clamp (cutoff.doubleValue (), 0, 1)), Math.clamp (resonance, 0, 1));
+        final double resonance = filterParameters.getOrDefault ("Resonance", ZERO).doubleValue ();
+        final double cutoffHz = MathUtils.denormalizeCutoff (Math.clamp (cutoff.doubleValue (), 0, 1));
 
-        // Filter envelope: the times are in seconds, the depth is approximated from the peak delta
+        // The contour levels in octaves relative to the cutoff, which is the sustain level (0).
+        // With an instant attack the contour jumps to the peak, so the start level has no effect.
+        final double attackTime = filterParameters.getOrDefault ("Attack", ZERO).doubleValue ();
+        final double peak = filterParameters.getOrDefault ("PeakDelta", ZERO).doubleValue ();
+        final double start = attackTime > 0 ? filterParameters.getOrDefault ("StartDelta", ZERO).doubleValue () : peak;
+        final double end = filterParameters.getOrDefault ("DecayDelta", ZERO).doubleValue ();
+
+        // The envelope of the model is unipolar - levels from 0 to 1 scaled by a signed depth -
+        // while the contour may lie on both sides of the cutoff. Therefore the filter cutoff is
+        // moved to the lowest point of the contour and the levels are measured upwards from there.
+        // When the attack sweeps downwards (the peak is the lowest point) the cutoff is moved to
+        // the highest point instead and the depth is negative, so the peak is the full level in
+        // both cases - the level which creators without a peak level assume.
+        final double floor = Math.min (0, Math.min (start, Math.min (peak, end)));
+        final double top = Math.max (0, Math.max (start, Math.max (peak, end)));
+        final double span = top - floor;
+        final boolean downwards = peak == floor && peak < top;
+        final double base = downwards ? top : floor;
+        final IFilter filter = new DefaultFilter (filterType, poles, cutoffHz * Math.pow (2, base), Math.clamp (resonance, 0, 1));
+
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
         setTime (filterParameters, "Attack", filterEnvelope::setAttackTime);
         setTime (filterParameters, "Decay", filterEnvelope::setDecayTime);
         setTime (filterParameters, "Release", filterEnvelope::setReleaseTime);
-        final Double peakDelta = filterParameters.get ("PeakDelta");
-        if (peakDelta != null)
-            cutoffModulator.setDepth (Math.clamp (peakDelta.doubleValue () / 10.0, -1, 1));
+        if (span > 0)
+        {
+            cutoffModulator.setDepth (Math.clamp ((downwards ? -span : span) / OCTAVES_FULL_DEPTH, -1, 1));
+            filterEnvelope.setStartLevel (contourLevel (start, base, span, downwards));
+            filterEnvelope.setHoldLevel (contourLevel (peak, base, span, downwards));
+            filterEnvelope.setSustainLevel (contourLevel (0, base, span, downwards));
+            filterEnvelope.setEndLevel (contourLevel (end, base, span, downwards));
+        }
 
         final Double pitchTrack = filterParameters.get ("PitchTrack");
         if (pitchTrack != null)
             filter.setCutoffKeyTracking (Math.clamp (pitchTrack.doubleValue (), 0, 1));
 
         return Optional.of (filter);
+    }
+
+
+    /**
+     * Converts a level of the note filter contour to a level of the model envelope.
+     *
+     * @param octaves The contour level in octaves relative to the cutoff
+     * @param base The contour level (octaves) the filter cutoff of the model was moved to
+     * @param span The octaves between the lowest and the highest point of the contour
+     * @param downwards True if the depth is negative, i.e. the levels are measured downwards
+     * @return The level in the range of [0..1]
+     */
+    private static double contourLevel (final double octaves, final double base, final double span, final boolean downwards)
+    {
+        return Math.clamp ((downwards ? base - octaves : octaves - base) / span, 0, 1);
     }
 
 
