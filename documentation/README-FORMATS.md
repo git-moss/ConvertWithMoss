@@ -63,6 +63,7 @@ The following multi-sample formats are supported:
 * [Elektron Tonverk Multisample & Preset](#elektron-tonverk)
 * [E-mu Emulator](#e-mu-emulator)
 * [E-mu Emulator II](#e-mu-emulator-ii)
+* [E-mu Emax](#e-mu-emax--emax-ii)
 * [E-mu Emulator III/IIIX/ESI](#e-mu-emulator-iiiiiixesi)
 * [E-mu Emulator IV](#e-mu-emulator-iv)
 * [E-mu Emulator X](#e-mu-emulator-x)
@@ -393,6 +394,7 @@ When writing, each multi-sample becomes one preset of the bank, several of them 
 
 * Output: Write a HxC floppy emulator image (*.hfe*) or a raw disk image (*.emuiifd*). CLI: `EIIOutputFormat=hfe|raw`.
 * Operating system: The file from which the system tracks are taken, optional. CLI: `EIIOperatingSystem=<path>`.
+
 ## E-mu Emax / Emax II
 
 The E-mu Emax (1986) is the eight voice successor of the Emulator II, the Emax II (1989) its 16-bit successor. Everything they hold - up to 100 presets, their voices and the audio of all samples - lives in one *bank*, a straight dump of the memory of the sampler. Such a bank is what their floppy disks, their hard disks and the *.EM1* and *.EB2* files of the E-mu sound library contain. The format is not documented by E-mu; it was reverse-engineered from 45 Emax factory banks and the 147 banks of the four Emax II "Elements of Sound" library CD-ROMs, from the Emax owner's manual, from the manual of EMXP (the utility which reads and writes these disks) and, for the audio of the Emax II, from SoundFont conversions of the same CD-ROMs which serve as an external reference (see *documentation/design/EMAX_FORMAT.md*).
@@ -737,7 +739,7 @@ The following limitations apply:
 
 ## Roland MC-707/MC-101
 
-The Roland MC-707 and MC-101 GROOVEBOX run the ZEN-Core sound engine and keep all of their user content in a single project file (*.mpj*) on the SD card: the tracks with their clips, the project's user tone and drum-kit banks and the user samples with their audio. Both devices use the byte-identical format, so a written project loads on either one. The file format is not documented by Roland; it was reverse-engineered from Roland's own preset projects and the init-project image embedded in the device firmware (see *documentation/design/MC707_FORMAT.md*). Written projects have not been verified on hardware yet - feedback is welcome.
+The Roland MC-707 and MC-101 GROOVEBOX run the ZEN-Core sound engine and keep all of their user content in a single project file (*.mpj*) on the SD card: the tracks with their clips, the project's user tone and drum-kit banks and the user samples with their audio. Both devices use the byte-identical format, so a written project loads on either one. The file format is not documented by Roland; it was reverse-engineered from Roland's own preset projects and the init-project image embedded in the device firmware (see *documentation/design/MC707_FORMAT.md*).
 
 A written project is the device's own init project with the converted sounds placed in its user banks, so everything outside of the converted content is in the exact factory-default state. Copy the file to the `ROLAND/PROJECT` folder of the SD card and load it as a project; the sounds appear as the project's user tones and user drum kits, the samples in the project's sample list. A single-zone source becomes a **user tone** whose first partial plays the sample chromatically, carrying the source's filter (type, cutoff, resonance) and amplitude envelope - the exact record pattern of Roland's own user-sample preset tones. A multi-zone source becomes a **user drum kit** that maps each key of the kit range (A0-C8) to its zone's sample with the key transposition baked into the per-key pitch, the pattern of Roland's own user-sample preset kits. Samples are stored the way the device's sample import stores them: interleaved stereo 16-bit at the native 44.1 kHz (mono sources are duplicated to both channels), with level, original key, start, loop start and end in the project's sample-parameter table. When creating a library, all sources are packed into the user banks of one project file.
 
@@ -796,7 +798,7 @@ Only reading is supported. But it supports both HD/CD-Rom and diskette image fil
 
 The Roland SP-404MKII is a pad-based sampler and effector. A project holds 10 banks (A-J) of 16 pads each (160 pads); every pad plays a single sample with its own start/end, loop, level, pan, pitch and BPM. It is not a keyboard multi-sampler - there are no key-ranges - so, as with the other pad devices, ConvertWithMoss treats each **populated bank as one multi-sample** and each **pad as a single-key zone** (a drum-kit-shaped mapping).
 
-The format is not documented by Roland; it was reverse-engineered and validated against real exported projects and the SP-404MKII v5.52 firmware (see *documentation/design/SP404MK2_FORMAT.md*). A project is a folder (`PROJECT_XX`) holding a `PADCONF.BIN` pad-configuration file and a `SMPL` folder of `BANK<bank>-<pad>.SMP` samples in Roland's own `RFWV` wave container (48 kHz, 16-bit, big-endian PCM). Both the exported (31,488-byte) and the device-internal (52,000-byte) `PADCONF.BIN` forms are read. Point ConvertWithMoss at a project folder (or a folder of projects, e.g. the `EXPORT/PROJECT` folder of an SD card) to read it. Writing produces the same `PROJECT_XX/PADCONF.BIN` + `SMPL/*.SMP` layout; copy it into the `IMPORT` folder of an SD card and load it with the device's *IMPORT PROJECT* function. Written projects have not been verified on hardware yet - feedback is welcome.
+The format is not documented by Roland; it was reverse-engineered and validated against real exported projects and the SP-404MKII v5.52 firmware (see *documentation/design/SP404MK2_FORMAT.md*). A project is a folder (`PROJECT_XX`) holding a `PADCONF.BIN` pad-configuration file and a `SMPL` folder of `BANK<bank>-<pad>.SMP` samples in Roland's own `RFWV` wave container (48 kHz, 16-bit, big-endian PCM). Both the exported (31,488-byte) and the device-internal (52,000-byte) `PADCONF.BIN` forms are read. Point ConvertWithMoss at a project folder (or a folder of projects, e.g. the `EXPORT/PROJECT` folder of an SD card) to read it. Writing produces the same `PROJECT_XX/PADCONF.BIN` + `SMPL/*.SMP` layout; copy it into the `IMPORT` folder of an SD card and load it with the device's *IMPORT PROJECT* function.
 
 Reading extracts each pad's full sample together with its name, level, panning and loop on/off state; a multi-zone source written back becomes one pad per zone. The following limitations apply:
 
