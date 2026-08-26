@@ -40,7 +40,9 @@ import de.mossgrabers.tools.ui.Functions;
  * Detects and reads the sound banks of the E-mu Emulator II. A bank is stored in the second part of
  * a floppy disk, which is read either from a raw sector image (IMG, EMUIIFD) or from a HxC floppy
  * emulator image (HFE) - the Emulator II writes a FM track format which no PC floppy controller can
- * read, so an image is the only way to get such a disk onto a computer.
+ * read, so an image is the only way to get such a disk onto a computer. A bank file (EII) holds the
+ * bank memory alone, as the Sound Designer software of the eighties received it from the sampler
+ * and as EMXP writes it and Arturia's Emulator II V reads it.
  * <p>
  * A bank holds up to 100 voices - a sample with its loop and its settings - and up to 100 presets,
  * each of which assigns a voice, a transposition and optionally a second voice to ranges of the 61
@@ -53,7 +55,14 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String ENDING_HFE = ".hfe";
+    private static final String ENDING_HFE           = ".hfe";
+    private static final String ENDING_BANK          = ".eii";
+    /** A bank file holds at least the key maps and one voice record. */
+    private static final int    MINIMUM_BANK_SIZE    = Emulator2Constants.VOICE_TABLE + Emulator2Constants.VOICE_SIZE;
+    /** How far into a bank file the first voice records are searched for. */
+    private static final int    BANK_SEARCH_LIMIT    = 0x2000;
+    /** The memory page of the first voice record. */
+    private static final int    FIRST_VOICE_PAGE     = Emulator2Constants.BANK_ADDRESS + Emulator2Constants.VOICE_TABLE >> 8;
 
 
     /**
@@ -76,7 +85,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
 
         try
         {
-            final Optional<byte []> image = this.readImage (sourceFile);
+            final Optional<BankImage> image = this.readImage (sourceFile);
             // Images of other formats are silently ignored, they belong to other detectors
             if (image.isEmpty ())
                 return Collections.emptyList ();
@@ -91,39 +100,81 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Get the raw sector image of a disk, decoding a HFE container if necessary.
+     * Get the bank of a file: the raw sector image of a disk, decoded from a HFE container if
+     * necessary, or a bank file, which holds the bank memory alone.
      *
      * @param sourceFile The file to read
-     * @return The image or empty if the file is not an Emulator II disk
+     * @return The image and the position of the bank in it, or empty if the file is not an
+     *         Emulator II disk
      * @throws IOException Could not read the file
      */
-    private Optional<byte []> readImage (final File sourceFile) throws IOException
+    private Optional<BankImage> readImage (final File sourceFile) throws IOException
     {
-        if (sourceFile.getName ().toLowerCase (Locale.US).endsWith (ENDING_HFE))
-            return EmuFmDisk.readImage (this.notifier, sourceFile, Emulator2Constants.CYLINDERS, Emulator2Constants.HEADS);
-
-        // An IMG file of another size belongs to another format
-        if (sourceFile.length () != Emulator2Constants.IMAGE_SIZE)
+        final String name = sourceFile.getName ().toLowerCase (Locale.US);
+        if (name.endsWith (ENDING_HFE))
         {
-            if (sourceFile.getName ().toLowerCase (Locale.US).endsWith (".img"))
-                return Optional.empty ();
-            throw new IOException (Functions.getMessage ("IDS_EMU_UNEXPECTED_IMAGE_SIZE", Integer.toString (Emulator2Constants.IMAGE_SIZE), Long.toString (sourceFile.length ())));
+            final Optional<byte []> image = EmuFmDisk.readImage (this.notifier, sourceFile, Emulator2Constants.CYLINDERS, Emulator2Constants.HEADS);
+            return image.isEmpty () ? Optional.empty () : Optional.of (new BankImage (image.get (), Emulator2Constants.BANK_OFFSET));
         }
 
-        return Optional.of (Files.readAllBytes (sourceFile.toPath ()));
+        final long length = sourceFile.length ();
+        if (length == Emulator2Constants.IMAGE_SIZE)
+            return Optional.of (new BankImage (Files.readAllBytes (sourceFile.toPath ()), Emulator2Constants.BANK_OFFSET));
+
+        // A bank file holds the bank memory without the operating system; the ones which the
+        // Sound Designer software wrote are one byte short of the memory size
+        if (name.endsWith (ENDING_BANK))
+        {
+            if (length < MINIMUM_BANK_SIZE || length > Emulator2Constants.IMAGE_SIZE)
+                throw new IOException (Functions.getMessage ("IDS_EMU_UNEXPECTED_IMAGE_SIZE", Integer.toString (Emulator2Constants.BANK_MEMORY_SIZE), Long.toString (length)));
+            final byte [] image = Files.readAllBytes (sourceFile.toPath ());
+            return Optional.of (new BankImage (image, findBankOffset (image)));
+        }
+
+        // An IMG file of another size belongs to another format
+        if (name.endsWith (".img"))
+            return Optional.empty ();
+        throw new IOException (Functions.getMessage ("IDS_EMU_UNEXPECTED_IMAGE_SIZE", Integer.toString (Emulator2Constants.IMAGE_SIZE), Long.toString (length)));
     }
 
 
     /**
-     * Parse the bank of a disk image into one multi-sample per preset.
+     * Find where the bank starts in a bank file. The voice records point into themselves with
+     * their memory address, whose high byte is the page of the record - 0x9B for the first record,
+     * one more for each further one - so every record which is found tells where the bank begins,
+     * and a file with a header in front of the bank is read all the same.
+     *
+     * @param image The bank file
+     * @return The position of the bank in the file, 0 if no voice record is found
+     */
+    private static int findBankOffset (final byte [] image)
+    {
+        final Map<Integer, Integer> votes = new HashMap<> ();
+        for (int position = 0; position < BANK_SEARCH_LIMIT && position + Emulator2Constants.VOICE_SIZE <= image.length; position++)
+        {
+            if ((image[position] & 0xFF) != Emulator2Constants.VOICE_TAG_1 || (image[position + 1] & 0xFF) != Emulator2Constants.VOICE_TAG_2)
+                continue;
+            final int page = image[position + Emulator2Constants.VOICE_POINTER_PAGE] & 0xFF;
+            if (page < FIRST_VOICE_PAGE || page != (image[position + Emulator2Constants.VOICE_POINTER_PAGE_2] & 0xFF))
+                continue;
+            final int offset = position - (Emulator2Constants.VOICE_TABLE + (page - FIRST_VOICE_PAGE) * Emulator2Constants.VOICE_SIZE);
+            if (offset >= 0)
+                votes.merge (Integer.valueOf (offset), Integer.valueOf (1), Integer::sum);
+        }
+        return votes.entrySet ().stream ().max (Map.Entry.comparingByValue ()).map (Map.Entry::getKey).orElse (Integer.valueOf (0)).intValue ();
+    }
+
+
+    /**
+     * Parse a bank into one multi-sample per preset.
      *
      * @param sourceFile The file the image came from
-     * @param image The raw sector image
+     * @param image The image and the position of the bank in it
      * @return The multi-samples
      */
-    private List<IMultisampleSource> parseBank (final File sourceFile, final byte [] image)
+    private List<IMultisampleSource> parseBank (final File sourceFile, final BankImage image)
     {
-        final Bank bank = new Bank (image);
+        final Bank bank = new Bank (image.image, image.bankOffset);
         if (bank.voices.isEmpty ())
         {
             this.notifier.logError ("IDS_EII_NO_VOICES", sourceFile.getName ());
@@ -150,8 +201,10 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
+        // The sampler saves its bank memory and not the whole of its address space, so a voice
+        // which was sampled into the memory behind it lost that part
         if (bank.truncatedVoices > 0)
-            this.notifier.logError ("IDS_EII_INCOMPLETE_BANK", sourceFile.getName (), Integer.toString (bank.truncatedVoices));
+            this.notifier.log ("IDS_EII_INCOMPLETE_BANK", sourceFile.getName (), Integer.toString (bank.truncatedVoices), Integer.toString (Emulator2Constants.BANK_MEMORY_SIZE));
         if (multisampleSources.isEmpty ())
             this.notifier.logError ("IDS_EII_NO_PRESETS", sourceFile.getName ());
         return multisampleSources;
@@ -302,13 +355,35 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
     private static class Voice
     {
         String  name;
-        /** The start of the audio relative to the bank. */
+        /** The start of the playback relative to the bank. */
         int     start;
-        /** The number of frames of the audio, including the part which only the loop plays. */
+        /** The number of frames the voice plays, up to the end of its loop. */
         int     numFrames;
         boolean hasLoop;
+        /** The start of the loop relative to the playback start. */
         int     loopStart;
         int     loopLength;
+    }
+
+
+    /** An image and the position of the bank in it. */
+    private static class BankImage
+    {
+        final byte [] image;
+        final int     bankOffset;
+
+
+        /**
+         * Constructor.
+         *
+         * @param image The image
+         * @param bankOffset The position of the bank in the image
+         */
+        BankImage (final byte [] image, final int bankOffset)
+        {
+            this.image = image;
+            this.bankOffset = bankOffset;
+        }
     }
 
 
@@ -338,7 +413,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
     private class Bank
     {
         private final byte []                 image;
-        private final int                     bankOffset = Emulator2Constants.BANK_OFFSET;
+        private final int                     bankOffset;
         private final int                     bankEnd;
         final List<Voice>                     voices     = new ArrayList<> ();
         final List<Preset>                    presets    = new ArrayList<> ();
@@ -349,12 +424,14 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         /**
          * Parse the voices and presets of a bank.
          *
-         * @param image The raw sector image
+         * @param image The image
+         * @param bankOffset The position of the bank in the image
          */
-        Bank (final byte [] image)
+        Bank (final byte [] image, final int bankOffset)
         {
             this.image = image;
-            this.bankEnd = Math.min (image.length, this.bankOffset + Emulator2Constants.BANK_SIZE);
+            this.bankOffset = bankOffset;
+            this.bankEnd = Math.min (image.length, bankOffset + Emulator2Constants.BANK_MEMORY_SIZE);
             this.readHeap ();
         }
 
@@ -429,31 +506,48 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
             voice.name = readName (this.image, voiceRecord + Emulator2Constants.VOICE_NAME, Emulator2Constants.VOICE_NAME_LENGTH);
             if (voice.name.isEmpty ())
                 voice.name = "Voice " + (this.voices.size () + 1);
-            voice.start = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_SAMPLE_START);
-            final int end = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_SAMPLE_END);
+            // The memory region of a voice holds the audio in front of the loop, which plays once,
+            // the loop, which repeats when it is switched on and plays once when it is not, and a
+            // few padding bytes. Playback starts at the region start unless the voice was set to
+            // start later, e.g. a copy of a voice which plays only its sustained part
+            final int regionStart = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_REGION_START);
             final int slot = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_SLOT_SIZE);
-            voice.loopLength = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_LOOP_LENGTH);
-            voice.loopStart = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_LOOP_START) - voice.start;
-            voice.hasLoop = (this.image[voiceRecord + Emulator2Constants.VOICE_FLAGS] & Emulator2Constants.VOICE_FLAG_LOOP) != 0 && voice.loopLength > 0 && voice.loopStart >= 0;
+            int playStart = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_PLAY_START);
+            if (playStart < regionStart || playStart >= regionStart + slot)
+                playStart = regionStart;
+            final int loopStart = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_LOOP_START) - playStart;
+            final int loopLength = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_LOOP_LENGTH);
+            final int playLength = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_PLAY_LENGTH);
+            final boolean loopOn = (this.image[voiceRecord + Emulator2Constants.VOICE_FLAGS] & Emulator2Constants.VOICE_FLAG_LOOP) != 0 && loopLength > Emulator2Constants.VOICE_NO_LOOP_LENGTH + 1;
+            final int padding = loopOn ? Emulator2Constants.VOICE_SLOT_PADDING : Emulator2Constants.VOICE_UNLOOPED_PADDING;
 
-            // The audio ends where the sample ends or, when the loop reaches beyond it, where the
-            // loop ends - the memory slot of the voice reserves the room for that, whether the
-            // loop is switched on or not; a voice whose sample end sits right at its start plays
-            // its loop region as a whole
-            voice.numFrames = end - voice.start;
-            if (voice.loopStart >= 0 && voice.loopLength > 0)
-                voice.numFrames = Math.max (voice.numFrames, voice.loopStart + voice.loopLength);
-            if (slot > Emulator2Constants.VOICE_SLOT_PADDING)
-                voice.numFrames = Math.min (voice.numFrames, slot - Emulator2Constants.VOICE_SLOT_PADDING);
-            // A bank can be larger than a floppy disk holds; the audio then stops at its end
-            final int available = this.bankEnd - this.bankOffset - voice.start;
-            if (voice.numFrames > available)
+            // The audio ends at the end of the loop, which the length field of the voice and the
+            // region confirm - or limit, since the loop fields of a voice which was cut out of a
+            // shared recording are stale, and the loop start of some others lies behind the region
+            int numFrames = Integer.MAX_VALUE;
+            if (slot > Emulator2Constants.VOICE_UNLOOPED_PADDING)
+                numFrames = regionStart + slot - Emulator2Constants.VOICE_UNLOOPED_PADDING - playStart;
+            if (playLength > padding)
+                numFrames = Math.min (numFrames, playLength - padding);
+            if (loopOn)
+                numFrames = Math.min (numFrames, loopStart + loopLength);
+            if (numFrames == Integer.MAX_VALUE)
+                numFrames = 0;
+
+            // The sampler saves its bank memory and not the whole of its address space, so the
+            // audio of a voice which was sampled into the memory behind it ends there
+            final int available = this.bankEnd - this.bankOffset - playStart;
+            if (numFrames > available)
             {
-                voice.numFrames = available;
+                numFrames = Math.max (0, available);
                 this.truncatedVoices++;
             }
-            if (voice.hasLoop && voice.loopStart + voice.loopLength > voice.numFrames)
-                voice.hasLoop = false;
+
+            voice.start = playStart;
+            voice.numFrames = numFrames;
+            voice.hasLoop = loopOn && loopStart >= 0 && loopStart + Emulator2Constants.VOICE_NO_LOOP_LENGTH + 1 < numFrames;
+            voice.loopStart = loopStart;
+            voice.loopLength = Math.min (loopLength, numFrames - loopStart);
             this.voices.add (voice);
         }
 
