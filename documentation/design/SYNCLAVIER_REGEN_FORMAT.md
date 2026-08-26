@@ -105,6 +105,13 @@ A timbre has up to twelve partials (layers). Each partial has a synth mode (`Syn
 marked *active* by the presence of a `SynclavierPTPIVolume` line; the `timbrePartials` bit-mask in
 `_TimbreIndex.tsv` is exactly the set of partials that carry a volume line.
 
+The patch list entries of a *muted* partial stay in the file (the editor keeps them, so the partial can
+be switched back on), but the device does not play them. The reader therefore converts only the partials
+with a volume line and skips a timbre without any with a note. The 32 timbres of the *Starsky's Prodigy*
+bank confirm the rule without exception, e.g. *Prodigy Pad* holds entries for three partials but a mask
+of `6`: its first partial, a sub-octave pulse, is muted - and *Elec Piano* has entries for partials 0, 1,
+4 and 5 with a mask of `51`.
+
 ### 3.3 Patch list entry (the sample zones)
 
 Each `SynclavierPTPatchListEntry` maps one sample into one partial. **All zone data must be read from
@@ -167,12 +174,30 @@ a three-level pitch offset, all confirmed from the firmware parameter descriptor
 **Note filter** (timbre-global): `TBPINoteFilterType` is a multi-mode selector encoded as `index / 255`,
 where `index` is `1 = LP12, 2 = HP12, 3 = BP12, 4 = LP24, 5 = HP24, 6 = BP24` — the low three are 2-pole,
 the high three 4-pole, and `1/4` = low-pass, `2/5` = high-pass, `3/6` = band-pass (verified against the
-production 1.18 firmware). `TBPINoteFilterCutoff` (0..1 fraction), `TBPINoteFilterResonance` (0..1), the
-filter envelope `TBPINoteFilterAttack / Decay / Release` (seconds) with the depth from
-`TBPINoteFilterPeakDelta` (octaves; 10 octaves = full model depth), and `TBPINoteFilterPitchTrack`
-(keyboard tracking). Converted as a low-pass, high-pass or band-pass filter (with the matching 2- or
-4-pole slope) with its cutoff envelope. The filter is set both per zone and as the global filter of the
-multi-sample.
+production 1.18 firmware). `TBPINoteFilterCutoff` (0..1 fraction), `TBPINoteFilterResonance` (0..1), `TBPINoteFilterPitchTrack`
+(keyboard tracking, `1` = one octave per octave) and the filter envelope: the times
+`TBPINoteFilterAttack / Decay / Release` (seconds) and the contour levels `TBPINoteFilterStartDelta`,
+`TBPINoteFilterPeakDelta` and `TBPINoteFilterDecayDelta`, all in **octaves relative to the cutoff**. The
+Regen manual ('Filter Envelope') names the four levels of the contour Start, Peak, Sustain and End: a note
+starts at the start level, reaches the peak level at the end of the attack, decays to the sustain level -
+which *is* the Cut Off parameter, i.e. delta `0` - and after the key release heads to the end level within
+the release time ("a note can start ... an octave lower than the Sustain Level ... by setting the Start
+Level to -1"). `DecayDelta` is the end level: 'decay' is the classic Synclavier name of the final decay,
+the release. Untouched levels are `0`.
+
+The model envelope is unipolar (levels 0..1 scaled by a signed depth, 10 octaves = full depth), while a
+contour may lie on both sides of the cutoff - the *Starsky's Prodigy* pads start at `+0.4`, peak at `+2.2`
+and release to `-1.4`. The reader therefore moves the filter cutoff to the lowest point of the contour
+(`cutoff · 2^floor`) and measures the levels from there: for *Prodigy Pad* the cutoff becomes
+`2612 Hz · 2^-1.4 = 990 Hz`, the depth `3.6` octaves, the start level `50 %`, the peak `100 %`, the sustain
+`39 %` and the end level `0 %`, so a destination sustains at 2612 Hz and closes to 990 Hz on release. When
+the attack sweeps downwards (the peak is the lowest point) the cutoff is moved to the highest point
+instead and the depth is negative, so the peak is always the full level. With an instant attack the start
+level has no effect and is replaced by the peak. The writer inverts this: the Regen cutoff is the model
+cutoff moved up by `span · sustain`, and the three deltas are `span · (level - sustain)`.
+
+Converted as a low-pass, high-pass or band-pass filter (with the matching 2- or 4-pole slope) with its
+cutoff envelope. The filter is set both per zone and as the global filter of the multi-sample.
 
 **Velocity layers**: the Synclavier has no per-zone velocity field. Instead each partial has a crossfade
 window `PTPIXFStart / XFIn / XFOut / XFEnd` along a *dynamic axis* whose source is `TBPIDynEnvSrc` (`10` =
@@ -215,7 +240,7 @@ the exact referenced name (plain user samples), then `<base>.sflc`, `<base>.flac
 ## 7. Mapping to the ConvertWithMoss model
 
 * library folder → a set of multi-samples (each timbre is one `IMultisampleSource`);
-* partial → `IGroup` (layer); patch entry → `ISampleZone`;
+* active partial (§3.2) → `IGroup` (layer); patch entry → `ISampleZone`; muted partials are skipped;
 * `lowKey`/`highKey`/`rootKey` → zone key range and root key;
 * `volFrac` → zone gain (dB, via the law above); `tuneFrac` → zone tuning (semitones);
 * per-partial `PTPIVolume` (dB) adds to the zone gain; per-partial `PTPITune` (cents) + `PTPITran`
@@ -225,7 +250,8 @@ the exact referenced name (plain user samples), then `<base>.sflc`, `<base>.flac
   `loopStart`/`loopEnd` fraction × `frames`;
 * per-partial `VEnv*` → the zone amplitude envelope; per-partial `PTPIPan` → the zones' panning
   (`panning = value / 63`); timbre-global `NoteFilter*` → a low-pass, high-pass or band-pass filter with
-  a 2- or 4-pole slope (per zone and as the global filter) with its cutoff envelope (§4);
+  a 2- or 4-pole slope (per zone and as the global filter) with its cutoff envelope, whose contour levels
+  are re-based onto the unipolar model envelope (§4);
 * when `TBPIDynEnvSrc == 10`, each partial's `XF*` window → the zones' velocity range (velocity layers);
   on writing, groups (velocity layers) → partials with `XF*` windows, capped at 12 partials;
 * `#tags` in the comment ↔ category and keywords: on reading, the first tag becomes the category and

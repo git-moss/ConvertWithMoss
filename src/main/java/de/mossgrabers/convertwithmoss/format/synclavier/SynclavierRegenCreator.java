@@ -55,6 +55,8 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
     private static final String              DOUBLE_ZERO            = " 0 0 ";
     private static final String              LINE_FEED              = "\n";
     private static final String              FILTER_PREFIX          = "SynclavierTBPINoteFilter";
+    // The octaves which the full depth of the model filter envelope covers
+    private static final double              OCTAVES_FULL_DEPTH     = IEnvelope.MAX_ENVELOPE_DEPTH / 1200.0;
     private static final String              AMP_ENVELOPE_PREFIX    = "SynclavierPTPIVEnv";
     private static final String              PAN_PARAM              = "SynclavierPTPIPan";
     /** The partial pan is stored as an integer in the range [-63..63], 0 is centered. */
@@ -321,18 +323,51 @@ public class SynclavierRegenCreator extends AbstractCreator<EmptySettingsUI>
             return;
 
         appendGlobal (timbre, "Type", noteFilterTypeIndex (filter) / 255.0);
-        appendGlobal (timbre, "Cutoff", MathUtils.normalizeCutoff (filter.getCutoff ()));
+
+        // The contour of the note filter envelope is stored as levels in octaves relative to the
+        // cutoff, which is its sustain level: the start level, the peak level at the end of the
+        // attack and the end level the release heads to ('DecayDelta'). The model measures its
+        // levels from the filter cutoff instead, so the cutoff is moved to the sustain level first
+        // (the inverse of the mapping in the detector).
+        final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
+        final IEnvelope filterEnvelope = cutoffModulator.getSource ();
+        final double depth = cutoffModulator.getDepth ();
+        final boolean hasContour = !Double.isNaN (depth) && depth != 0;
+        final double span = hasContour ? depth * OCTAVES_FULL_DEPTH : 0;
+        final double sustain = hasContour ? levelOrDefault (filterEnvelope.getSustainLevel (), 0) : 0;
+        appendGlobal (timbre, "Cutoff", MathUtils.normalizeCutoff (filter.getCutoff () * Math.pow (2, span * sustain)));
         appendGlobal (timbre, "Resonance", Math.clamp (filter.getResonance (), 0, 1));
         appendGlobal (timbre, "PitchTrack", filter.getCutoffKeyTracking ());
-
-        final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
-        final double depth = cutoffModulator.getDepth ();
-        if (!Double.isNaN (depth) && depth != 0)
-            appendGlobal (timbre, "PeakDelta", Math.clamp (depth * 10.0, -10, 10));
-        final IEnvelope filterEnvelope = cutoffModulator.getSource ();
+        if (hasContour)
+        {
+            appendGlobalDelta (timbre, "StartDelta", span * (levelOrDefault (filterEnvelope.getStartLevel (), 0) - sustain));
+            appendGlobalDelta (timbre, "PeakDelta", span * (levelOrDefault (filterEnvelope.getHoldLevel (), 1) - sustain));
+            appendGlobalDelta (timbre, "DecayDelta", span * (levelOrDefault (filterEnvelope.getEndLevel (), 0) - sustain));
+        }
         appendGlobalTime (timbre, "Attack", filterEnvelope.getAttackTime ());
         appendGlobalTime (timbre, "Decay", filterEnvelope.getDecayTime ());
         appendGlobalTime (timbre, "Release", filterEnvelope.getReleaseTime ());
+    }
+
+
+    /**
+     * Appends a level of the note filter contour. A level of zero is the cutoff itself and is not
+     * written, like the Regen omits untouched parameters.
+     *
+     * @param timbre The timbre text to append to
+     * @param key The parameter name
+     * @param octaves The level in octaves relative to the cutoff
+     */
+    private static void appendGlobalDelta (final StringBuilder timbre, final String key, final double octaves)
+    {
+        if (Math.abs (octaves) >= 0.00005)
+            appendGlobal (timbre, key, Math.clamp (octaves, -10, 10));
+    }
+
+
+    private static double levelOrDefault (final double level, final double defaultLevel)
+    {
+        return level < 0 ? defaultLevel : level;
     }
 
 
