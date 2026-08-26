@@ -63,6 +63,8 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
      * The range of the coarse tuning generator in semi-tones as defined by the SoundFont 2 spec.
      */
     private static final int MAX_COARSE_TUNE   = 120;
+    /** A coarse sample offset generator counts in units of this many sample frames. */
+    private static final int COARSE_OFFSET_UNIT = 32768;
 
 
     /**
@@ -772,14 +774,11 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             // Set the exclusive group, 0 means that the zone is not assigned to any group
             zone.setExclusiveGroup (Math.clamp (generators.getUnsignedValue (Generator.EXCLUSIVE_CLASS).intValue (), 0, 127));
 
-            // Set play range
+            // Set play range. Every offset has a fine generator in sample frames and a coarse one in
+            // units of 32768 frames, which e.g. EMXP writes for the long loops of the E-mu samplers
             zone.setStart (0);
-            final Integer sampleStartOffset = generators.getSignedValue (Generator.START_ADDRS_OFFSET);
-            final int sampleStartOffsetInt = sampleStartOffset == null ? 0 : sampleStartOffset.intValue ();
-            final long sampleStart = sample.getStart () + sampleStartOffsetInt;
-            final Integer sampleEndOffset = generators.getSignedValue (Generator.END_ADDRS_OFFSET);
-            final int sampleEndOffsetInt = sampleEndOffset == null ? 0 : sampleEndOffset.intValue ();
-            zone.setStop ((int) (sample.getEnd () - sampleStart + sampleEndOffsetInt));
+            final long sampleStart = sample.getStart () + getOffset (generators, Generator.START_ADDRS_OFFSET, Generator.START_COARSE_OFFSET);
+            zone.setStop ((int) (sample.getEnd () - sampleStart + getOffset (generators, Generator.END_ADDRS_OFFSET, Generator.END_COARSE_OFFSET)));
 
             // Set loop, if any
             final int sampleModes = generators.getUnsignedValue (Generator.SAMPLE_MODES).intValue ();
@@ -789,12 +788,8 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 // Sample mode 3 keeps looping while the key is held and then plays the remainder of
                 // the sample on release (sustain loop); mode 1 loops continuously
                 sampleLoop.setLoopUntilRelease ((sampleModes & 2) > 0);
-                final Integer startOffset = generators.getSignedValue (Generator.START_LOOP_ADDRS_OFFSET);
-                final int startOffsetInt = startOffset == null ? 0 : startOffset.intValue ();
-                sampleLoop.setStart ((int) (sample.getLoopStart () - sampleStart + startOffsetInt));
-                final Integer endOffset = generators.getSignedValue (Generator.END_LOOP_ADDRS_OFFSET);
-                final int endOffsetInt = endOffset == null ? 0 : endOffset.intValue ();
-                sampleLoop.setEnd ((int) (sample.getLoopEnd () - sampleStart + endOffsetInt));
+                sampleLoop.setStart ((int) (sample.getLoopStart () - sampleStart + getOffset (generators, Generator.START_LOOP_ADDRS_OFFSET, Generator.START_LOOP_COARSE_OFFSET)));
+                sampleLoop.setEnd ((int) (sample.getLoopEnd () - sampleStart + getOffset (generators, Generator.END_LOOP_ADDRS_OFFSET, Generator.END_LOOP_COARSE_OFFSET)));
                 zone.addLoop (sampleLoop);
             }
 
@@ -903,6 +898,23 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             // Can never happen
             return Optional.empty ();
         }
+    }
+
+
+    /**
+     * Get a sample offset, which is the sum of its fine generator in sample frames and its coarse
+     * generator in units of 32768 frames.
+     *
+     * @param generators The generators of the zone
+     * @param fineGenerator The ID of the fine offset generator
+     * @param coarseGenerator The ID of the coarse offset generator
+     * @return The offset in sample frames
+     */
+    private static long getOffset (final GeneratorHierarchy generators, final int fineGenerator, final int coarseGenerator)
+    {
+        final Integer fine = generators.getSignedValue (fineGenerator);
+        final Integer coarse = generators.getSignedValue (coarseGenerator);
+        return (fine == null ? 0 : fine.longValue ()) + (coarse == null ? 0 : coarse.longValue ()) * COARSE_OFFSET_UNIT;
     }
 
 
