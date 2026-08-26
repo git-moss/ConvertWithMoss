@@ -24,6 +24,8 @@
   * Fixed: Written SoundFonts were silent at full velocity in players which apply modulators (e.g. FL Studio, fluidsynth). The velocity to volume modulator was written with the positive direction, which attenuates by the full 96 dB at velocity 127 and not at all at velocity 0, so only the softest notes were audible - the velocity to filter cutoff modulator was inverted the same way. Both are now written with the negative direction of the default modulators of the SoundFont specification; the volume one thereby also supersedes that default, so a source without velocity sensitivity no longer falls back to the full sensitivity of the default.
   * Fixed: The key range and the velocity range were written behind the panning and tuning generators of a zone. The SoundFont specification requires them to be the first two generators, and players which enforce this (e.g. fluidsynth) discarded them, so every zone played on all keys.
   * Fixed: Negative modulator amounts, e.g. of a velocity to filter cutoff modulator, were read as large positive numbers, and the direction of a velocity modulator was ignored when reading.
+* Synclavier Regen
+  * Fixed: Partials which are muted in the editor were converted as layers. The editor keeps the samples of a muted partial in the timbre, so e.g. the switched-off sub-octave pulse of 'Prodigy Pad' (Starsky's Prodigy) became the first layer - and since it has no release time, destinations with one amplitude envelope per preset (e.g. Waldorf Iridium/Quantum) got an instant release instead of the 3.5 seconds of the pad. Only the active partials are converted now - those which carry a volume line, which is also how the device builds the active-partial mask of its timbre index.
 
 ## 20.2.0
 

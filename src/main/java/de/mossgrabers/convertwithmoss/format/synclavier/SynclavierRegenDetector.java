@@ -147,8 +147,9 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 
 
     /**
-     * Parses a timbre text file and creates a multi-sample from it. Each Synclavier <i>partial</i>
-     * becomes a group (layer), each patch list entry becomes a sample zone.
+     * Parses a timbre text file and creates a multi-sample from it. Each active Synclavier
+     * <i>partial</i> becomes a group (layer), each patch list entry becomes a sample zone. Muted
+     * partials are skipped.
      *
      * @param file The timbre file
      * @param lines All lines of the file
@@ -232,8 +233,18 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         }
 
         final List<IGroup> groups = new ArrayList<> ();
+        boolean hasActivePartial = false;
         for (final Map.Entry<Integer, List<String []>> partialEntry: partials.entrySet ())
         {
+            // Only a partial which carries a volume line is active: the editor writes the line when
+            // the partial is switched on and the device builds the active-partial mask of the
+            // timbre index from it. The patch list entries of a muted partial stay in the file but
+            // are never played, so they must not become a layer.
+            final Double partialVolume = partialVolumes.get (partialEntry.getKey ());
+            if (partialVolume == null)
+                continue;
+            hasActivePartial = true;
+
             final DefaultGroup group = new DefaultGroup ("Partial " + (partialEntry.getKey ().intValue () + 1));
             final Map<String, Double> envelope = partialEnvelopes.get (partialEntry.getKey ());
             // The crossfade window is a velocity split only when the dynamic axis source is
@@ -244,7 +255,6 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             // (cents), Tran (semi-tones) and Octave (a reference frequency) add up to a semi-tone
             // offset on the tuning.
             final Double partialPan = partialPans.get (partialEntry.getKey ());
-            final Double partialVolume = partialVolumes.get (partialEntry.getKey ());
             final double pitchOffset = partialPitchOffset (partialEntry.getKey (), partialTunes, partialTrans, partialOctaves);
 
             // Additionally record the per-partial settings on the group. Note that they are (and
@@ -254,8 +264,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             // attenuation and the pitch offset is already in semi-tones.
             if (partialPan != null)
                 group.setPanning (Math.clamp (partialPan.doubleValue () / PAN_RANGE, -1, 1));
-            if (partialVolume != null)
-                group.setGain (partialVolume.doubleValue ());
+            group.setGain (partialVolume.doubleValue ());
             if (pitchOffset != 0)
                 group.setTuning (pitchOffset);
             for (final String [] tokens: partialEntry.getValue ())
@@ -269,8 +278,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                         applyVelocityWindow (zone, crossfade);
                     if (partialPan != null)
                         zone.setPanning (Math.clamp (partialPan.doubleValue () / PAN_RANGE, -1, 1));
-                    if (partialVolume != null)
-                        zone.setGain (zone.getGain () + partialVolume.doubleValue ());
+                    zone.setGain (zone.getGain () + partialVolume.doubleValue ());
                     if (pitchOffset != 0)
                         zone.setTuning (zone.getTuning () + pitchOffset);
                     final Optional<IFilter> zoneFilter = buildFilter (filterParameters);
@@ -283,6 +291,11 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                 groups.add (group);
         }
 
+        if (!hasActivePartial)
+        {
+            this.notifier.log ("IDS_SYNCLAVIER_ALL_MUTED", title, file.getName ());
+            return Collections.emptyList ();
+        }
         if (groups.isEmpty ())
             return Collections.emptyList ();
 

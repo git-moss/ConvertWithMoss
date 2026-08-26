@@ -105,6 +105,13 @@ A timbre has up to twelve partials (layers). Each partial has a synth mode (`Syn
 marked *active* by the presence of a `SynclavierPTPIVolume` line; the `timbrePartials` bit-mask in
 `_TimbreIndex.tsv` is exactly the set of partials that carry a volume line.
 
+The patch list entries of a *muted* partial stay in the file (the editor keeps them, so the partial can
+be switched back on), but the device does not play them. The reader therefore converts only the partials
+with a volume line and skips a timbre without any with a note. The 32 timbres of the *Starsky's Prodigy*
+bank confirm the rule without exception, e.g. *Prodigy Pad* holds entries for three partials but a mask
+of `6`: its first partial, a sub-octave pulse, is muted - and *Elec Piano* has entries for partials 0, 1,
+4 and 5 with a mask of `51`.
+
 ### 3.3 Patch list entry (the sample zones)
 
 Each `SynclavierPTPatchListEntry` maps one sample into one partial. **All zone data must be read from
@@ -215,7 +222,7 @@ the exact referenced name (plain user samples), then `<base>.sflc`, `<base>.flac
 ## 7. Mapping to the ConvertWithMoss model
 
 * library folder → a set of multi-samples (each timbre is one `IMultisampleSource`);
-* partial → `IGroup` (layer); patch entry → `ISampleZone`;
+* active partial (§3.2) → `IGroup` (layer); patch entry → `ISampleZone`; muted partials are skipped;
 * `lowKey`/`highKey`/`rootKey` → zone key range and root key;
 * `volFrac` → zone gain (dB, via the law above); `tuneFrac` → zone tuning (semitones);
 * per-partial `PTPIVolume` (dB) adds to the zone gain; per-partial `PTPITune` (cents) + `PTPITran`
