@@ -22,10 +22,16 @@ public class Emulator2Constants
     public static final int IMAGE_SIZE             = CYLINDERS * HEADS * TRACK_SIZE;
     /** The bank starts behind the operating system, at track 22. */
     public static final int BANK_OFFSET            = 22 * TRACK_SIZE;
-    /** The size of the bank region of a disk. */
-    public static final int BANK_SIZE              = IMAGE_SIZE - BANK_OFFSET;
     /** The memory address at which the bank is loaded, which the pointers in the bank use. */
     public static final int BANK_ADDRESS           = 0x9600;
+    /** The size of the address space of the sampler: 512 KB. */
+    public static final int MEMORY_SIZE            = 0x80000;
+    /**
+     * The size of the bank memory which the sampler saves: from the bank address to the end of its
+     * address space. This is what the bank region of a disk holds - the rest of it is blank - and
+     * what a bank file (EII) contains, less one byte.
+     */
+    public static final int BANK_MEMORY_SIZE       = MEMORY_SIZE - BANK_ADDRESS;
 
     /** The keyboard of the Emulator II has 61 keys, C2 to C7. */
     public static final int NUM_KEYS               = 61;
@@ -61,28 +67,63 @@ public class Emulator2Constants
     public static final int VOICE_TAG_1            = 0x04;
     /** The second tag byte. */
     public static final int VOICE_TAG_2            = 0x03;
-    /** The start of the audio less one, 24 bit little-endian, which mirrors the sample start. */
+    /**
+     * The counters the sampler loads into a channel which plays the voice, 24 bit little-endian:
+     * the playback start less one.
+     */
     public static final int VOICE_START_MINUS_ONE  = 0x02;
+    /** The negative number of frames in front of the loop, counted from the counter base. */
+    public static final int VOICE_COUNTER_LENGTH   = 0x06;
+    /** The loop start less one. */
+    public static final int VOICE_COUNTER_END      = 0x0A;
+    /** The negative loop length. */
+    public static final int VOICE_COUNTER_LOOP     = 0x0E;
+    /** The negative loop length once more. */
+    public static final int VOICE_COUNTER_LOOP_2   = 0x13;
+    /** The base from which the negative counters count. */
+    public static final int VOICE_COUNTER_BASE     = 0x500000;
+    /**
+     * The high byte of the first of the pointers of a voice record into itself, which is the memory
+     * page of the record: 0x9B for the first record, one more for each further one.
+     */
+    public static final int VOICE_POINTER_PAGE     = 0x23;
+    /** The high byte of the second pointer into the record. */
+    public static final int VOICE_POINTER_PAGE_2   = 0x27;
     /** The flags of the voice. */
     public static final int VOICE_FLAGS            = 0xC6;
     /** The loop of the voice is switched on. */
-    public static final int VOICE_FLAG_LOOP        = 0x02;
+    public static final int VOICE_FLAG_LOOP        = 0x04;
     /** The name of the voice, ASCII, space padded. */
     public static final int VOICE_NAME             = 0xBA;
     /** The length of the name of a voice. */
     public static final int VOICE_NAME_LENGTH      = 12;
-    /** The start of the audio of a voice, relative to the bank, 24 bit little-endian. */
-    public static final int VOICE_SAMPLE_START     = 0xC7;
-    /** The size of the memory slot of the voice, which holds the audio, the loop and 4 bytes. */
+    /**
+     * The start of the memory region of a voice, relative to the bank, 24 bit little-endian. The
+     * region holds the audio in front of the loop, the loop and a few padding bytes.
+     */
+    public static final int VOICE_REGION_START     = 0xC7;
+    /** The size of the memory region of the voice. */
     public static final int VOICE_SLOT_SIZE        = 0xCA;
-    /** The end of the audio of a voice. */
-    public static final int VOICE_SAMPLE_END       = 0xCD;
+    /**
+     * The start of the loop of a voice, relative to the bank. The audio in front of it is played
+     * once; the loop is repeated when it is switched on and played once when it is not.
+     */
+    public static final int VOICE_LOOP_START       = 0xCD;
     /** The length of the loop of a voice in frames. */
     public static final int VOICE_LOOP_LENGTH      = 0xD0;
-    /** The start of the loop of a voice, relative to the bank. */
-    public static final int VOICE_LOOP_START       = 0xD3;
-    /** The bytes of a slot behind the loop. */
+    /**
+     * The start of the playback of a voice, relative to the bank: the start of its region, unless
+     * the voice was set to start later, e.g. a copy of a voice which plays only its sustained part.
+     */
+    public static final int VOICE_PLAY_START       = 0xD3;
+    /** The number of frames the voice plays from its playback start plus the padding of its slot. */
+    public static final int VOICE_PLAY_LENGTH      = 0xD6;
+    /** The bytes of a slot behind the loop of a voice with a loop. */
     public static final int VOICE_SLOT_PADDING     = 4;
+    /** The bytes of a slot behind the audio of a voice without a loop. */
+    public static final int VOICE_UNLOOPED_PADDING = 2;
+    /** The loop length of a voice without a loop; the factory library also holds 2. */
+    public static final int VOICE_NO_LOOP_LENGTH   = 1;
 
     /** A preset record starts with a 9 byte header, whose last byte has its top bit set. */
     public static final int PRESET_HEADER_SIZE     = 9;

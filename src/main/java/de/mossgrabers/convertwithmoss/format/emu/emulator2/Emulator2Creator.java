@@ -67,18 +67,14 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
     private static final int     MINIMUM_FRAMES       = 8;
     /** A loop shorter than this does not survive the companding of the audio. */
     private static final int     MINIMUM_LOOP_LENGTH  = 8;
-    /** The loop length which a voice without a loop carries, which reserves a bit of slot. */
-    private static final int     UNLOOPED_LOOP_LENGTH = 64;
     /** The largest transposition a key range entry can hold. */
     private static final int     MAX_TRANSPOSE        = 0x3F;
     /** The level of a key range, which is what the factory library uses throughout. */
     private static final int     RANGE_LEVEL          = 0x70;
-    /** The flags of a voice record without its loop bit. */
-    private static final int     VOICE_FLAGS_DEFAULT  = 0x24;
+    /** The flags of a voice record without its loop bit, as the factory library sets them. */
+    private static final int     VOICE_FLAGS_DEFAULT  = 0x20;
     /** The sample memory of a bank starts this far behind the end of its records. */
     private static final int     SAMPLE_MEMORY_GAP    = 0x95FE;
-    /** The memory address behind the sample memory, to which the negative counters count. */
-    private static final int     COUNTER_BASE         = 0x500000;
     /** The size of the operating system of the disk: tracks 0 to 21. */
     private static final int     OS_SIZE              = Emulator2Constants.BANK_OFFSET;
     /**
@@ -731,7 +727,8 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
             voice.audio[frame] = (byte) EmuCompanding.compand (sum / numChannels);
         }
 
-        // The audio was re-sampled to the rate of the sampler, so the loop moves with it
+        // The audio was re-sampled to the rate of the sampler, so the loop moves with it. The
+        // sampler plays the loop as the end of a voice, so the audio behind the loop is dropped
         final double rateRatio = Emulator2Constants.SAMPLE_RATE / (double) sourceRate;
         for (final ISampleLoop loop: zone.getLoops ())
             if (loop.getType () == LoopType.FORWARDS || loop.getType () == LoopType.ALTERNATING)
@@ -743,11 +740,10 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
                     voice.hasLoop = true;
                     voice.loopStart = loopStart;
                     voice.loopLength = loopEnd - loopStart;
+                    voice.audio = Arrays.copyOf (voice.audio, loopEnd);
                 }
                 break;
             }
-        if (!voice.hasLoop)
-            voice.loopLength = Math.min (UNLOOPED_LOOP_LENGTH, numFrames);
         return voice;
     }
 
@@ -780,15 +776,17 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         }
         final int chainEnd = position;
 
-        // The audio, one slot per voice which holds the sample, its loop and 4 bytes
+        // The audio, one slot per voice which holds the audio up to the end of its loop and a
+        // few padding bytes; the memory which the sampler saves ends 0x9600 bytes before the end
+        // of its address space
         int address = chainEnd - bank + SAMPLE_MEMORY_GAP;
         for (final Voice voice: voices)
         {
-            final int slot = voice.audio.length + voice.loopLength + Emulator2Constants.VOICE_SLOT_PADDING;
-            final int available = Emulator2Constants.BANK_SIZE - address;
+            final int slot = voice.getSlotSize ();
+            final int available = Emulator2Constants.BANK_MEMORY_SIZE - address;
             if (slot > available)
             {
-                final int frames = available - voice.loopLength - Emulator2Constants.VOICE_SLOT_PADDING;
+                final int frames = available - voice.getPadding ();
                 if (frames < MINIMUM_FRAMES)
                 {
                     this.notifier.logError ("IDS_EII_SAMPLE_MEMORY_FULL", voice.name);
@@ -800,7 +798,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
             }
             voice.start = address;
             System.arraycopy (voice.audio, 0, image, bank + address, voice.audio.length);
-            address += voice.audio.length + voice.loopLength + Emulator2Constants.VOICE_SLOT_PADDING;
+            address += voice.getSlotSize ();
         }
 
         for (int index = 0; index < voices.size (); index++)
@@ -931,20 +929,24 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         final byte [] name = pad (voice.name, Emulator2Constants.VOICE_NAME_LENGTH);
         System.arraycopy (name, 0, image, voiceRecord + Emulator2Constants.VOICE_NAME, Emulator2Constants.VOICE_NAME_LENGTH);
 
-        final int end = voice.start + voice.audio.length;
-        final int slot = voice.audio.length + voice.loopLength + Emulator2Constants.VOICE_SLOT_PADDING;
+        // The audio in front of the loop plays once, the loop repeats; a voice without a loop is
+        // written as the factory library holds it: all of its audio in front of a loop of length 1
+        final int attack = voice.hasLoop ? voice.loopStart : voice.audio.length;
+        final int loopLength = voice.hasLoop ? voice.loopLength : Emulator2Constants.VOICE_NO_LOOP_LENGTH;
+        final int loopStart = voice.start + attack;
+        final int slot = voice.getSlotSize ();
         writeAddress (image, voiceRecord + Emulator2Constants.VOICE_START_MINUS_ONE, voice.start - 1);
-        writeAddress (image, voiceRecord + 0x06, COUNTER_BASE - voice.audio.length);
-        writeAddress (image, voiceRecord + 0x0A, end - 1);
-        writeAddress (image, voiceRecord + 0x0E, COUNTER_BASE - voice.loopLength);
-        writeAddress (image, voiceRecord + 0x13, COUNTER_BASE - voice.loopLength);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_LENGTH, Emulator2Constants.VOICE_COUNTER_BASE - attack);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_END, loopStart - 1);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_LOOP, Emulator2Constants.VOICE_COUNTER_BASE - loopLength);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_LOOP_2, Emulator2Constants.VOICE_COUNTER_BASE - loopLength);
         image[voiceRecord + Emulator2Constants.VOICE_FLAGS] = (byte) (VOICE_FLAGS_DEFAULT | (voice.hasLoop ? Emulator2Constants.VOICE_FLAG_LOOP : 0));
-        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_SAMPLE_START, voice.start);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_REGION_START, voice.start);
         writeAddress (image, voiceRecord + Emulator2Constants.VOICE_SLOT_SIZE, slot);
-        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_SAMPLE_END, end);
-        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_LOOP_LENGTH, voice.loopLength);
-        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_LOOP_START, voice.start + voice.loopStart);
-        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_LOOP_START + 3, slot);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_LOOP_START, loopStart);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_LOOP_LENGTH, loopLength);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_PLAY_START, voice.start);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_PLAY_LENGTH, slot);
     }
 
 
@@ -999,11 +1001,34 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
     private static class Voice
     {
         String  name;
+        /** The audio up to the end of the loop. */
         byte [] audio;
         int     start;
         boolean hasLoop;
         int     loopStart;
         int     loopLength;
+
+
+        /**
+         * Get the bytes which the slot of the voice holds behind its audio.
+         *
+         * @return The number of bytes
+         */
+        int getPadding ()
+        {
+            return this.hasLoop ? Emulator2Constants.VOICE_SLOT_PADDING : Emulator2Constants.VOICE_UNLOOPED_PADDING;
+        }
+
+
+        /**
+         * Get the size of the memory slot of the voice: its audio and the padding.
+         *
+         * @return The size in bytes
+         */
+        int getSlotSize ()
+        {
+            return this.audio.length + this.getPadding ();
+        }
 
 
         /**
@@ -1021,7 +1046,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
                 {
                     this.hasLoop = false;
                     this.loopStart = 0;
-                    this.loopLength = Math.min (UNLOOPED_LOOP_LENGTH, numFrames);
+                    this.loopLength = 0;
                 }
             }
         }
