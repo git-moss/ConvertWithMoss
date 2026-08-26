@@ -18,7 +18,7 @@ machine writing a proprietary FM track format that no PC floppy controller can r
 |----------|-------|------------|
 | Sample resolution | 8 bit, AM6072 companded (not linear PCM) | **confirmed** (service manual, audio) |
 | Sample rate | 27,777 Hz, fixed | *reported*, consistent with the loop periods of the factory voices |
-| Sample memory | 512 KB (1 MB on the Emulator II+), of which a floppy holds 494,592 bytes of bank | **confirmed** |
+| Sample memory | a 512 KB address space (1 MB on the Emulator II+, as two banks), of which the sampler saves **485,888 bytes** of bank: from the bank address `0x9600` to the end of the 512 KB | **confirmed** (the bank region of every factory disk is blank behind that) |
 | Voices per bank | up to 100 | **confirmed** (voice list of 100 entries) |
 | Presets per bank | up to 100 | *reported* |
 | Keyboard | 61 keys, C2 to C7 = MIDI 36 to 96 | **confirmed** (pitch of named factory voices) |
@@ -68,15 +68,19 @@ reproduces the HxC image **byte for byte**, which pins the field spacing exactly
 | `.emuiifd` | HxC's extension for the **raw sector image**, 573,440 bytes |
 | `.img` | the same raw bytes |
 | `.E2O` | an operating system on its own, 72,704 bytes = the first 72,704 bytes of a disk (emxp.net publishes 2.1 / 2.3 / 3.0 / 3.1 / 2.6HD / 3.1HD) |
+| `.eii` | a **bank file**: the bank memory alone, without the operating system, **485,887 bytes** = the 485,888 bytes the sampler saves less one. This is the *Sound Designer for EII* file of Digidesign's 1985 Macintosh software, which received the bank from the sampler over its RS-422 interface; EMXP's CDS3TOOL extracts them from the CDS3 CD-ROMs, EMXP writes them, and Arturia's *Emulator II V* imports them, which is why libraries in this form circulate. The bank starts at the first byte; the reader locates it from the self-pointers of the voice records anyway, so a file with a header in front of the bank is read too |
 
 ### OS extent — *confirmed*
 
 `EMUIIOS31.E2O` is byte-identical to the first 72,704 bytes of the OS disk, so the OS occupies tracks
 0-20 and the **bank starts at track 22, offset `0x13400`** (78,848); across the synthetic corpus the
 first block that differs between disks is exactly there. The bank region is tracks 22-159 =
-**494,592 bytes**. A disk without an operating system is possible - the machine loads a bank from
-the disk once it has booted from another one - which is what the creator writes when no system file
-is named.
+494,592 bytes, but the sampler writes only its **bank memory of `0x76A00` = 485,888 bytes** into
+it - from the bank address `0x9600` to the end of its 512 KB address space - and the last 8,704
+bytes of the region are zero on every one of the 90 factory disks, including those whose last
+voice reaches the end (its audio stops at `0x769FF`). A disk without an operating system is
+possible - the machine loads a bank from the disk once it has booted from another one - which is
+what the creator writes when no system file is named.
 
 ## Bank layout — *confirmed*
 
@@ -106,28 +110,46 @@ the part which describes the sample is:
 | Offset | Size | Content |
 |--------|------|---------|
 | `+0x00` | 2 | tag `04 03` |
-| `+0x02` | 3 | sample start − 1, 24-bit little-endian |
-| `+0x06` | 3 | `0x500000` − sample length: the negative count the address counter is loaded with |
-| `+0x0A` | 3 | sample end − 1 |
-| `+0x0E` | 3 | `0x500000` − loop length |
+| `+0x02` | 3 | the **counter block**: playback start − 1, 24-bit little-endian |
+| `+0x06` | 3 | `0x500000` − the number of frames in front of the loop: the negative count the address counter is loaded with |
+| `+0x0A` | 3 | loop start − 1 |
+| `+0x0E` | 3 | `0x500000` − loop length (`0x600000` − loop length when flag bit 3 is set) |
 | `+0x13` | 3 | the same |
 | `+0x22`, `+0x26`, `+0x95`, `+0xA9` | 2-3 | pointers into the record itself: `0x9B00 + 0x100 × index + offset`, so the high byte names the record |
 | `+0xBA` | 12 | name, ASCII, space padded |
-| `+0xC6` | 1 | flags: **bit 1 = loop on**; `0x24` and `0x26` throughout the factory library |
-| `+0xC7` | 3 | **sample start**, relative to the bank |
-| `+0xCA` | 3 | **slot size** = sample length + loop length + 4; the next voice's start on a contiguous bank |
-| `+0xCD` | 3 | **sample end** |
-| `+0xD0` | 3 | **loop length** in frames |
-| `+0xD3` | 3 | **loop start**, relative to the bank |
-| `+0xD6` | 3 | slot size again |
+| `+0xC6` | 1 | flags: **bit 2 (`0x04`) = loop on**, bit 4 (`0x10`) = the counter block is stale, bit 3 (`0x08`) changes the base of the loop counter; `0x24` (looped) and `0x20` (not looped) are the usual values, bits 1 and 5 are not decoded |
+| `+0xC7` | 3 | **region start**, relative to the bank: the memory of the voice |
+| `+0xCA` | 3 | **slot size** = the audio up to the end of the loop + 4 (+ 2 without a loop); the next voice's start on a contiguous bank |
+| `+0xCD` | 3 | **loop start**, relative to the bank: the audio in front of it plays once |
+| `+0xD0` | 3 | **loop length** in frames; 1 or 2 when the voice has no loop |
+| `+0xD3` | 3 | **playback start**, relative to the bank: the region start on 3,707 of the 3,848 factory voices, later on the others |
+| `+0xD6` | 3 | the number of frames from the playback start to the end of the loop + 4 (+ 2 without a loop) - the slot size for a voice which plays from its region start |
 | `+0x1A`-`+0xB9` | | the settings of the voice: filter, envelopes, LFO, level (*unknown* layout) |
 
-The slot reserves room for the loop behind the sample end, and the loop may indeed extend past it:
-`Piano D6` of the disk *Grand Piano* has a sample end 4 frames behind its start and a loop of 67,279
-frames whose region holds the whole piano note. The audio of a voice is therefore
-`max (end, loop start + loop length) − start`, limited to the slot. On the factory library the loop
-of 96% of the looped voices starts at the sample start; 274 of 3,624 voice records have the loop
-bit set.
+**The loop is the end of a voice.** Its memory region holds the audio in front of the loop, then
+the loop, then the padding; the sampler plays the first part once and then repeats the loop - or
+plays it once when the loop is switched off - and nothing lies behind it. `Piano A 2` of *Grand
+Piano & Strings* shows it in the audio: the level of the 12,295 frames behind its "sample end"
+continues the decay of the 33,657 frames in front of them, with the pitch of the note. The first
+description read `+0xCD` as the sample end and `+0xD3` as the loop start, and it took bit 1 of the
+flags for the loop switch, so it looped the beginning of 274 voices and cut the loop region off
+all others.
+
+The counter block proves the reading: it holds exactly what the channel is loaded with, and on
+3,727 of the 3,768 factory voices whose block is valid the number of frames it plays and its loop
+equal the ones computed from the fields above (the other 41 differ by 4 frames). The block is
+stale on the 80 voices with flag bit 4 - copies whose counters were never computed - which is why
+the fields above and not the counters are what the reader uses; the counters serve as the check.
+
+Two kinds of voices play from elsewhere than their region start. The `*1` copies of the stacked
+strings (*Stacked Strings*, *Grand Piano & Strings*, *High Strings*, ...) start a few frames in
+front of the loop start and are the sustain-only layer of the stack, and the fifteen voices of
+*Mallet Cymbals* are windows into one 17-second recording which they share - their loop fields are
+those of the whole recording and only the playback start and the length field at `+0xD6` describe
+the window. The reader therefore plays from `+0xD3` for the smallest of: the frames up to the end
+of the region, the length field, and the frames up to the end of the loop.
+
+On the factory library 3,311 of the 3,848 voice records have the loop bit set.
 
 The old table position `0x5BA` of the first description was the name field of this record;
 counting the records from `0x502` put the tag bytes at the end of the previous record, which is why
@@ -194,9 +216,16 @@ the first reader, which read them, saw one preset per disk - the factory disks h
 
 The audio follows the records: on 88 of 91 factory disks the first sample starts exactly
 **`0x95FE` bytes behind the end of the preset chain**, and the voices' slots follow each other
-without gaps in the order in which the voices were recorded. A bank may be larger than the
-494,592 bytes a floppy holds (the Emulator II+ has 1 MB): 16 factory disks have voices whose audio
-runs past the end of the disk; they are cut there and reported.
+without gaps in the order in which the voices were recorded.
+
+The sampler lets a voice be recorded into the whole of its address space but saves only the bank
+memory below `0x80000` − `0x9600`, so the audio behind bank offset `0x76A00` is on no disk: 124
+voices on 32 of the 90 factory disks reach beyond it - *Orchestra Tune* by 26,859 frames, *Grand
+Piano* by 121 - and none of the OS 3.1 messages knows a bank on two disks (its "Insert Another
+Disk" prompts belong to the disk copy and format functions). Such a voice is cut at the end of
+the bank memory and noted; the first description took the whole 494,592-byte region for bank
+memory and read the blank last 8,704 bytes as audio, and reported the bank as continued on another
+disk.
 
 ### The sample encoding — *confirmed*
 
@@ -216,28 +245,34 @@ own copy in `EmaxConstants`.
 
 ## The converter
 
-`Emulator2Detector` reads `.img`, `.emuiifd`, `.eii` and `.hfe`; every preset of a bank becomes one
-multi-sample: a zone per key range with the key range, the root key, the name, the loop and the
-expanded audio of its voice, and the second voices of the ranges as a second group. Over the 90
-factory disks this gives **605 presets** (the first reader gave one per disk with an octave error and
-loops on unlooped voices; 5 disks it could not read at all); 26 disks of the older community corpus
-give 125.
+`Emulator2Detector` reads `.img`, `.emuiifd` and `.hfe` disk images and `.eii` bank files; every
+preset of a bank becomes one multi-sample: a zone per key range with the key range, the root key,
+the name, the loop and the expanded audio of its voice - from the playback start to the end of
+the loop -, and the second voices of the ranges as a second group. Over the 90 factory disks this
+gives **605 presets** with 5,214 zones, 4,254 of them looped (the first reader gave one preset per
+disk with an octave error and loops on unlooped voices; 5 disks it could not read at all; the
+second lost the loops of all but 274 voices); 26 disks of the older community corpus give 125. The
+bank files which the tests used were carved out of the factory images; they decode to the same
+zones as the disks, less the one frame their last byte would have held.
 
 `Emulator2Creator` writes a bank disk from one multi-sample or from a library: each multi-sample
 becomes a preset, the zones of its first group the voices of the key ranges, the zones of its second
 group their second voices, identical audio is stored once. The audio is mixed to mono, re-sampled to
-27,777 Hz and companded; the voice records take their settings from the voice `piano A2` of the disk
-*Grand Piano* with the name, the addresses, the loop and the pointers replaced, the preset records
-and the key maps of the first preset are written as described, the sample memory starts `0x95FE`
-behind the records and the operating system is copied from the `.E2O` file or disk image named in
-the settings. The image is written as a HFE with the field spacing of the HxC images or as a raw
-`.emuiifd`. Round trip: the 15 presets of *Grand Piano* converted to SFZ and back to a disk read
-back with identical key ranges, roots, lengths and loops.
+27,777 Hz and companded, and cut at the end of the loop, since the sampler plays the loop as the end
+of a voice; the voice records take their settings from the voice `piano A2` of the disk *Grand
+Piano* with the name, the addresses, the counter block, the loop flag and the pointers replaced,
+the preset records and the key maps of the first preset are written as described, the sample memory
+starts `0x95FE` behind the records and ends at the 485,888 bytes the sampler saves, and the
+operating system is copied from the `.E2O` file or disk image named in the settings. The image is
+written as a HFE with the field spacing of the HxC images or as a raw `.emuiifd`. Round trip: the
+15 presets of *Grand Piano* converted to SFZ and back to a disk read back with identical key
+ranges, roots, lengths and loops.
 
 ### Still to decode
 
-The voice settings (filter cutoff and Q, VCA and VCF envelopes, LFO, level, chorus), the preset
-parameters and the second byte of a key range entry.
+The voice settings (filter cutoff and Q, VCA and VCF envelopes, LFO, level, chorus), bits 1, 3 and
+5 of the voice flags (bit 1 may be *loop in release*), the preset parameters and the second byte of
+a key range entry.
 
 ## Test corpus
 
@@ -246,6 +281,7 @@ parameters and the second byte of a key range entry.
 | 90 factory disks (`.hfe`) + the OS 3.1 disk | `EmuSounds.zip` → `EII_Factory_HxC.7z` | dumps of real disks, 605 presets |
 | 1,437 community disks (`.hfe`) | `EmulatorII-Library/` (untracked, 3.4 GB) | synthetic HxC images from `dblondin.com/samples/EII_HXC.zip` |
 | `emuiios.emuiifd` + `emuiios31.hfe` | emxp.net | the same disk raw and as HFE - the byte-exact decoder and encoder validation |
+| bank files (`.eii`) | Jürgen's test set; carved from the factory images for the tests here | Sound Designer for EII bank files, 485,887 bytes |
 
 ## Sources
 
@@ -254,3 +290,4 @@ parameters and the second byte of a key range entry.
 - E-mu Emulator II Service Manual — https://archive.org/details/e-mu_Emulator_II_Service_Manual
 - *Emulator II+ Owner's Manual* (OS 3.1), Voice Definition module: loop start and loop length, loop in release
 - ChickenSys Translator, EII floppy image notes — http://www.chickensys.com/translator/documentation/floppyimageinfo/emue2.html
+- EMXP CDS3TOOL — https://emxp.net/CDS3.htm ("Sound Designer for EII files (.EII)"), and the *Emulator II V* import of Arturia
