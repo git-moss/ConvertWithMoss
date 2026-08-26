@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.InfoRiffChunkId;
+import de.mossgrabers.convertwithmoss.file.sf2.AbstractZone;
 import de.mossgrabers.convertwithmoss.file.sf2.Generator;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2File;
 import de.mossgrabers.convertwithmoss.file.sf2.Sf2Instrument;
@@ -119,12 +120,14 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             // Create the groups
             final List<IGroup> groups = new ArrayList<> ();
             final Sf2Preset preset = presets.get (i);
+            Sf2PresetZone presetGlobalZone = null;
             for (int presetZoneIndex = 0; presetZoneIndex < preset.getZoneCount (); presetZoneIndex++)
             {
                 final Sf2PresetZone presetZone = preset.getZone (presetZoneIndex);
                 if (presetZone.isGlobal ())
                 {
                     generators.setPresetZoneGlobalGenerators (presetZone.getGenerators ());
+                    presetGlobalZone = presetZone;
                     continue;
                 }
                 generators.setPresetZoneGenerators (presetZone.getGenerators ());
@@ -132,12 +135,17 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 final Sf2Instrument instrument = presetZone.getInstrument ();
                 final IGroup group = new DefaultGroup (instrument.getName ());
 
+                // The modulators of a global zone apply to all zones of the instrument (or preset)
+                // unless a zone carries a modulator with the same source, destination, amount
+                // source and transform
+                Sf2InstrumentZone instrGlobalZone = null;
                 for (int instrumentZoneIndex = 0; instrumentZoneIndex < instrument.getZoneCount (); instrumentZoneIndex++)
                 {
                     final Sf2InstrumentZone instrZone = instrument.getZone (instrumentZoneIndex);
                     if (instrZone.isGlobal ())
                     {
                         generators.setInstrumentZoneGlobalGenerators (instrZone.getGenerators ());
+                        instrGlobalZone = instrZone;
                         continue;
                     }
                     generators.setInstrumentZoneGenerators (instrZone.getGenerators ());
@@ -145,7 +153,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                     if (zoneOpt.isPresent ())
                     {
                         final ISampleZone zone = zoneOpt.get ();
-                        parseModulators (zone, presetZone, instrZone);
+                        parseModulators (zone, mergeModulators (presetZone, presetGlobalZone), mergeModulators (instrZone, instrGlobalZone));
                         group.addSampleZone (zone);
                     }
                 }
@@ -227,9 +235,9 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
     }
 
 
-    private static void parseModulators (final ISampleZone zone, final Sf2PresetZone sf2Zone, final Sf2InstrumentZone instrZone)
+    private static void parseModulators (final ISampleZone zone, final List<Sf2Modulator> presetModulators, final List<Sf2Modulator> instrumentModulators)
     {
-        for (final Sf2Modulator sf2Modulator: getModulators (sf2Zone, instrZone, Sf2Modulator.MODULATOR_PITCH_BEND))
+        for (final Sf2Modulator sf2Modulator: getModulators (presetModulators, instrumentModulators, Sf2Modulator.MODULATOR_PITCH_BEND))
             if (sf2Modulator.getDestinationGenerator () == Generator.FINE_TUNE)
             {
                 final int amount = sf2Modulator.getModulationAmount ();
@@ -246,7 +254,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         int cutoffAmount = 0;
         boolean hasAttenuation = false;
         boolean hasCutoff = false;
-        for (final Sf2Modulator sf2Modulator: getModulators (sf2Zone, instrZone, Sf2Modulator.MODULATOR_VELOCITY))
+        for (final Sf2Modulator sf2Modulator: getModulators (presetModulators, instrumentModulators, Sf2Modulator.MODULATOR_VELOCITY))
         {
             if (sf2Modulator.getAmountSourceOperand () != 0)
                 continue;
@@ -274,10 +282,56 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
     }
 
 
-    private static List<Sf2Modulator> getModulators (final Sf2PresetZone zone, final Sf2InstrumentZone instrZone, final Integer modulatorID)
+    private static List<Sf2Modulator> getModulators (final List<Sf2Modulator> presetModulators, final List<Sf2Modulator> instrumentModulators, final Integer modulatorID)
     {
-        final List<Sf2Modulator> modulators = instrZone.getModulators (modulatorID);
-        return modulators.isEmpty () ? zone.getModulators (modulatorID) : modulators;
+        final List<Sf2Modulator> modulators = filterModulators (instrumentModulators, modulatorID);
+        return modulators.isEmpty () ? filterModulators (presetModulators, modulatorID) : modulators;
+    }
+
+
+    /**
+     * Get the modulators with a specific source.
+     *
+     * @param modulators The modulators to filter
+     * @param modulatorID The ID of the source modulator
+     * @return The matching modulators
+     */
+    private static List<Sf2Modulator> filterModulators (final List<Sf2Modulator> modulators, final Integer modulatorID)
+    {
+        final List<Sf2Modulator> result = new ArrayList<> ();
+        for (final Sf2Modulator modulator: modulators)
+            if (modulator.getControllerSource () == modulatorID.intValue ())
+                result.add (modulator);
+        return result;
+    }
+
+
+    /**
+     * Combine the modulators of a zone with the ones of the global zone of its instrument or
+     * preset: a global modulator applies unless the zone has a modulator with the same source,
+     * destination, amount source and transform.
+     *
+     * @param zone The zone
+     * @param globalZone The global zone, may be null
+     * @return The combined modulators
+     */
+    private static List<Sf2Modulator> mergeModulators (final AbstractZone zone, final AbstractZone globalZone)
+    {
+        final List<Sf2Modulator> result = new ArrayList<> (zone.getModulators ());
+        if (globalZone != null)
+            for (final Sf2Modulator globalModulator: globalZone.getModulators ())
+            {
+                boolean overridden = false;
+                for (final Sf2Modulator modulator: zone.getModulators ())
+                    if (modulator.getSourceOperand () == globalModulator.getSourceOperand () && modulator.getDestinationGenerator () == globalModulator.getDestinationGenerator () && modulator.getAmountSourceOperand () == globalModulator.getAmountSourceOperand () && modulator.getTransformOperand () == globalModulator.getTransformOperand ())
+                    {
+                        overridden = true;
+                        break;
+                    }
+                if (!overridden)
+                    result.add (globalModulator);
+            }
+        return result;
     }
 
 
