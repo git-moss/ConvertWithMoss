@@ -6,9 +6,9 @@ package de.mossgrabers.convertwithmoss.format.emu.emulator2;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -61,8 +61,18 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
     private static final int    MINIMUM_BANK_SIZE    = Emulator2Constants.VOICE_TABLE + Emulator2Constants.VOICE_SIZE;
     /** How far into a bank file the first voice records are searched for. */
     private static final int    BANK_SEARCH_LIMIT    = 0x2000;
+    /**
+     * The bytes in front of the last byte of the header of a preset record are small values: the
+     * factory and community libraries hold 0 to 6 there, e.g. 01 04 00 00 00 00 02 03.
+     */
+    private static final int    PRESET_HEADER_MAX_BYTE = 0x0F;
     /** The memory page of the first voice record. */
     private static final int    FIRST_VOICE_PAGE     = Emulator2Constants.BANK_ADDRESS + Emulator2Constants.VOICE_TABLE >> 8;
+    /**
+     * The characters 0x80 to 0xFF of the names: the Sound Designer software of the Macintosh wrote
+     * them in its Mac Roman encoding, e.g. the copyright sign of the presets which sign a library.
+     */
+    private static final String MAC_ROMAN_UPPER_HALF = "\u00C4\u00C5\u00C7\u00C9\u00D1\u00D6\u00DC\u00E1\u00E0\u00E2\u00E4\u00E3\u00E5\u00E7\u00E9\u00E8\u00EA\u00EB\u00ED\u00EC\u00EE\u00EF\u00F1\u00F3\u00F2\u00F4\u00F6\u00F5\u00FA\u00F9\u00FB\u00FC\u2020\u00B0\u00A2\u00A3\u00A7\u2022\u00B6\u00DF\u00AE\u00A9\u2122\u00B4\u00A8\u2260\u00C6\u00D8\u221E\u00B1\u2264\u2265\u00A5\u00B5\u2202\u2211\u220F\u03C0\u222B\u00AA\u00BA\u03A9\u00E6\u00F8\u00BF\u00A1\u00AC\u221A\u0192\u2248\u2206\u00AB\u00BB\u2026 \u00C0\u00C3\u00D5\u0152\u0153\u2013\u2014\u201C\u201D\u2018\u2019\u00F7\u25CA\u00FF\u0178\u2044\u20AC\u2039\u203A\uFB01\uFB02\u2021\u00B7\u201A\u201E\u2030\u00C2\u00CA\u00C1\u00CB\u00C8\u00CD\u00CE\u00CF\u00CC\u00D3\u00D4 \u00D2\u00DA\u00DB\u00D9\u0131\u02C6\u02DC\u00AF\u02D8\u02D9\u02DA\u00B8\u02DD\u02DB\u02C7";
 
 
     /**
@@ -202,9 +212,11 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         // The sampler saves its bank memory and not the whole of its address space, so a voice
-        // which was sampled into the memory behind it lost that part
-        if (bank.truncatedVoices > 0)
-            this.notifier.log ("IDS_EII_INCOMPLETE_BANK", sourceFile.getName (), Integer.toString (bank.truncatedVoices), Integer.toString (Emulator2Constants.BANK_MEMORY_SIZE));
+        // which was sampled into the memory behind it lost that part - which matters for the
+        // voices the presets play, not for records which no preset refers to any more
+        final long truncatedVoices = bank.voices.stream ().filter (voice -> voice.used && voice.truncated).count ();
+        if (truncatedVoices > 0)
+            this.notifier.log ("IDS_EII_INCOMPLETE_BANK", sourceFile.getName (), Long.toString (truncatedVoices), Integer.toString (Emulator2Constants.BANK_MEMORY_SIZE));
         if (multisampleSources.isEmpty ())
             this.notifier.logError ("IDS_EII_NO_PRESETS", sourceFile.getName ());
         return multisampleSources;
@@ -232,6 +244,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                 final Voice voice = bank.getVoice (voiceNumber);
                 if (voice == null)
                     continue;
+                voice.used = true;
                 final ISampleData sampleData = bank.getSampleData (voice);
                 if (sampleData == null)
                     continue;
@@ -241,6 +254,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                 // voice was recorded at
                 zone.setKeyRoot (Emulator2Constants.LOWEST_KEY + range.firstKey + Emulator2Constants.TRANSPOSE_UNITY - transpose);
                 zone.setSampleData (sampleData);
+                Emulator2VoiceSettings.apply (zone, voice.record);
                 if (voice.hasLoop)
                 {
                     final ISampleLoop loop = new DefaultSampleLoop ();
@@ -314,40 +328,29 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Read one of the fixed length names of the bank.
+     * Read one of the fixed length names of the bank. A name is ASCII, but some names of the
+     * libraries hold the characters of the Macintosh software which wrote them - a copyright sign
+     * - or end with a stray control character, which is dropped.
      *
      * @param image The raw sector image
      * @param offset The position of the name
      * @param length The length of the name
-     * @return The name, empty if there is none or it is not text
+     * @return The name, empty if the field holds no text
      */
     private static String readName (final byte [] image, final int offset, final int length)
     {
-        if (offset < 0 || offset + length > image.length || !isText (image, offset, length))
-            return "";
-        return new String (image, offset, length, StandardCharsets.US_ASCII).trim ();
-    }
-
-
-    /**
-     * Test whether some bytes are printable ASCII.
-     *
-     * @param image The raw sector image
-     * @param offset The position of the bytes
-     * @param length The number of bytes
-     * @return True if all of them are printable
-     */
-    private static boolean isText (final byte [] image, final int offset, final int length)
-    {
         if (offset < 0 || offset + length > image.length)
-            return false;
+            return "";
+        final StringBuilder name = new StringBuilder ();
         for (int i = 0; i < length; i++)
         {
             final int c = image[offset + i] & 0xFF;
-            if (c < 0x20 || c > 0x7E)
-                return false;
+            if (c >= 0x80)
+                name.append (MAC_ROMAN_UPPER_HALF.charAt (c - 0x80));
+            else
+                name.append (c < 0x20 || c == 0x7F ? ' ' : (char) c);
         }
-        return true;
+        return name.toString ().trim ();
     }
 
 
@@ -363,6 +366,12 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         /** The start of the loop relative to the playback start. */
         int     loopStart;
         int     loopLength;
+        /** The audio reaches beyond the bank memory which the sampler saves. */
+        boolean truncated;
+        /** A preset plays the voice. */
+        boolean used;
+        /** The voice record, for its settings. */
+        byte [] record;
     }
 
 
@@ -417,7 +426,6 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         private final int                     bankEnd;
         final List<Voice>                     voices     = new ArrayList<> ();
         final List<Preset>                    presets    = new ArrayList<> ();
-        int                                   truncatedVoices;
         private final Map<Voice, ISampleData> sampleData = new HashMap<> ();
 
 
@@ -459,7 +467,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                 }
 
                 final int length = readWord (this.image, position);
-                if (length <= Emulator2Constants.PRESET_ENTRIES_OFFSET || !this.isPresetRecord (position + 2))
+                if (length <= Emulator2Constants.PRESET_ENTRIES_OFFSET || !this.isPresetRecord (position + 2, length))
                     break;
                 position = this.readPresets (position + 2, length);
                 // The next voice records start at the next slot
@@ -484,14 +492,39 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
 
         /**
          * Test whether a preset record starts at a position: the last byte of its header has the
-         * top bit set and its name is text.
+         * top bit set, the bytes in front of it are small values, and its key ranges have counts
+         * and cover at most the 61 keys - which the leftover records behind a chain never do. The
+         * name is no criterion: the presets with which some libraries sign their banks carry
+         * characters outside ASCII, and the presets behind them would be lost.
          *
          * @param position The position
+         * @param length The length of the record
          * @return True if there is a preset record
          */
-        private boolean isPresetRecord (final int position)
+        private boolean isPresetRecord (final int position, final int length)
         {
-            return position + Emulator2Constants.PRESET_ENTRIES_OFFSET <= this.image.length && (this.image[position + Emulator2Constants.PRESET_HEADER_SIZE - 1] & 0x80) != 0 && isText (this.image, position + Emulator2Constants.PRESET_NAME_OFFSET, Emulator2Constants.PRESET_NAME_LENGTH);
+            if (position + Emulator2Constants.PRESET_ENTRIES_OFFSET > this.image.length || (this.image[position + Emulator2Constants.PRESET_HEADER_SIZE - 1] & 0x80) == 0)
+                return false;
+            for (int i = 0; i < Emulator2Constants.PRESET_HEADER_SIZE - 1; i++)
+                if ((this.image[position + i] & 0xFF) > PRESET_HEADER_MAX_BYTE)
+                    return false;
+
+            int entry = position + Emulator2Constants.PRESET_ENTRIES_OFFSET;
+            final int end = Math.min (position + length, this.image.length);
+            int keys = 0;
+            while (entry + Emulator2Constants.ENTRY_SIZE <= end)
+            {
+                final int first = this.image[entry] & 0xFF;
+                final int mode = first >> Emulator2Constants.ENTRY_MODE_SHIFT;
+                if (mode == Emulator2Constants.ENTRY_MODE_END)
+                    break;
+                final int count = first & Emulator2Constants.ENTRY_COUNT_MASK;
+                keys += count;
+                if (count == 0 || keys > Emulator2Constants.NUM_KEYS)
+                    return false;
+                entry += Emulator2Constants.ENTRY_SIZE + (mode == Emulator2Constants.ENTRY_MODE_DUAL ? Emulator2Constants.ENTRY_SECONDARY_SIZE : 0);
+            }
+            return true;
         }
 
 
@@ -503,6 +536,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         private void readVoice (final int voiceRecord)
         {
             final Voice voice = new Voice ();
+            voice.record = Arrays.copyOfRange (this.image, voiceRecord, voiceRecord + Emulator2Constants.VOICE_SIZE);
             voice.name = readName (this.image, voiceRecord + Emulator2Constants.VOICE_NAME, Emulator2Constants.VOICE_NAME_LENGTH);
             if (voice.name.isEmpty ())
                 voice.name = "Voice " + (this.voices.size () + 1);
@@ -540,7 +574,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
             if (numFrames > available)
             {
                 numFrames = Math.max (0, available);
-                this.truncatedVoices++;
+                voice.truncated = true;
             }
 
             voice.start = playStart;
@@ -564,7 +598,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         {
             int position = start;
             int length = firstLength;
-            while (length > Emulator2Constants.PRESET_ENTRIES_OFFSET && position + length <= this.bankEnd && this.presets.size () < 100 && this.isPresetRecord (position))
+            while (length > Emulator2Constants.PRESET_ENTRIES_OFFSET && position + length <= this.bankEnd && this.presets.size () < 100 && this.isPresetRecord (position, length))
             {
                 this.presets.add (this.readPreset (position, length));
                 // The last two bytes of a record hold the length of the next one, zero ends the

@@ -22,7 +22,7 @@ machine writing a proprietary FM track format that no PC floppy controller can r
 | Voices per bank | up to 100 | **confirmed** (voice list of 100 entries) |
 | Presets per bank | up to 100 | *reported* |
 | Keyboard | 61 keys, C2 to C7 = MIDI 36 to 96 | **confirmed** (pitch of named factory voices) |
-| Voice settings | filter (SSM2045 4-pole low-pass), VCA and VCF envelopes, LFO, level, chorus | *reported* - the bytes are located, their meaning is not decoded |
+| Voice settings | filter (SSM2045 4-pole low-pass) with cutoff, Q, keyboard tracking and envelope, VCA and VCF envelopes, LFO to pitch, filter and level, level, five velocity amounts, fine tuning, chorus | **decoded** except chorus and loop-in-release (see *Voice settings*) |
 
 ## Physical layout — *confirmed*
 
@@ -124,7 +124,7 @@ the part which describes the sample is:
 | `+0xD0` | 3 | **loop length** in frames; 1 or 2 when the voice has no loop |
 | `+0xD3` | 3 | **playback start**, relative to the bank: the region start on 3,707 of the 3,848 factory voices, later on the others |
 | `+0xD6` | 3 | the number of frames from the playback start to the end of the loop + 4 (+ 2 without a loop) - the slot size for a voice which plays from its region start |
-| `+0x1A`-`+0xB9` | | the settings of the voice: filter, envelopes, LFO, level (*unknown* layout) |
+| `+0x1A`-`+0xB9`, `+0xF0`-`+0xFF` | | the settings of the voice: filter, envelopes, LFO, level, velocity (see *Voice settings*) |
 
 **The loop is the end of a voice.** Its memory region holds the audio in front of the loop, then
 the loop, then the padding; the sampler plays the first part once and then repeats the loop - or
@@ -151,6 +151,56 @@ of the region, the length field, and the frames up to the end of the loop.
 
 On the factory library 3,311 of the 3,848 voice records have the loop bit set.
 
+### Voice settings — *confirmed*
+
+The bytes `+0x1A` to `+0xB9` and `+0xF0` to `+0xFF` hold the settings of the voice - filter,
+envelopes, LFO, level, velocity and tuning - in the form the playback engine uses, not as the
+0-99 values the front panel shows: five 16-entry **velocity tables** (one entry per velocity zone,
+entry 0 for the highest velocity), the **counters** of the envelope stages, and **pointers** into
+the depth tables of the LFO. The meaning of the bytes and the laws were established by pairing
+9,563 voice records - 3,121 of the factory library and 6,442 of OMI's *Universe of Sounds Vol. 1*
+- with the zones of the SoundFont conversions which EMXP made of the same banks (archive.org,
+`omi-uos-vol.-1-sf-2.7z`): for every SoundFont generator the byte (or pair of bytes) which is a
+pure function of it, then the law from the paired values. `Emulator2VoiceSettings` implements it.
+
+| Offset | Content | Law |
+|--------|---------|-----|
+| `+0x1A` | fine tuning | signed byte, 1/64 semitone (1.5625 cents) |
+| `+0x1B` | high nibble: velocity to VCA attack | 0-15, EMXP writes 1333 timecents per unit; the model's time velocity tracking = n / 15 |
+| `+0x1C` | LFO delay | (byte − 1) × 10 ms |
+| `+0x1D` | LFO rate | Hz = 0.0669 × 2^(byte / 15.67), e.g. `0x60` = 4.7 Hz (fit to 20 values, median error 0.013 octaves) |
+| `+0x1F` | high nibble: filter keyboard tracking | 8 = one octave per octave (Sound Designer displays "1.0 octave/octave" for the default `0x80`; EMXP writes 750 cents per unit) |
+| `+0x25` (= `+0x93`) | filter envelope amount | a table: `0x14` = 1440 cents, `0x54` = 6000, `0xCC` = 12000 (about (value + 16) × 60 cents up to `0x88`, compressing towards 12000); `0x04` = none |
+| `+0x28`/`+0x2A`/`+0x2C` | LFO to pitch / filter / level | 16-bit pointers into the depth tables: index = (high byte − `0x1C`) × 4 + low byte; pitch 1..8 = 13, 20, 26, 29, 35, 39, 41, 45 cents; filter 1..12 = 340 .. 1496 cents; level 1..9 = 1.6 .. 6 dB |
+| `+0x2E` | filter envelope sustain | 0..`0x1E` = 0 .. 84 % of the amount, `0x1F` and `0x63` = full (EMXP maps both to 0, which contradicts the trend of the values below) |
+| `+0x2F` | flags | bit 7 = filter envelope inverted (98 % of the negative amounts, 0 % of the positive ones); bits 3-5 not decoded |
+| `+0x30`-`+0x3F` | cutoff per velocity zone | `0x0F` = 20 Hz, `0x59` = 310 Hz, `0x81` = 900 Hz, `0xB1` = 4.7 kHz, `0xFB` = 19.2 kHz - a table, about 20 units per octave in the middle; `0xF9` and above is open. Entry 0 − entry 15 = velocity to cutoff, −59.4 cents per unit |
+| `+0x40`-`+0x4F` | level per velocity zone | `0xFF` = 0 dB, `0xF1` = −4 dB, `0xE7` = −7 dB, `0xD8` = −11 dB, `0xAC` = −19 dB; entry 0 − entry 15 = velocity to level: `0x1E` = 4 dB, `0x3C` = 8 dB, `0x78` = 22 dB, `0xA5` = 40 dB |
+| `+0x50`/`+0x60`, `+0x70`/`+0x80` | VCF and VCA attack per velocity zone | counter pairs (passes, increment): time = 2.55 s × passes / increment; entry 0 is the parameter, the other entries the velocity variants |
+| `+0x90`/`+0x92`, `+0x9E`/`+0xA0` | VCF decay, release | counter pairs (passes, negative increment): time = 2.55 s × passes / (256 − low); `255`/`0` = hold |
+| `+0xA5`/`+0xA7`, `+0xB3`/`+0xB5` | VCA decay, release | the same |
+| `+0xA9` | VCA envelope sustain | `0x07` = off (−144 dB), `0xDF` = −20 dB, `0xF7` = −5 dB, `0xFF` = full; a table |
+| `+0xF0`-`+0xFF` | Q per velocity zone | `0x17` = 1 dB, `0x3F` = 8 dB, `0x73` = 20 dB, `0xD5` = 94 dB; below `0x17` none |
+
+The envelopes run on a **10 ms tick**: an attack ramps a 255-step level up by the increment every
+tick, a decay or release ramps it down by 256 − low, and the high byte counts the passes, so the VCA
+times follow from the counters exactly (3,727 of 3,768 valid pairs within a few frames, the rest
+differ by 4 frames). The VCF stages use the same counters but EMXP maps them through a curve
+which is steeper for short times - 0.05 → 0.17 s, 0.51 → 1.45 s, 2.55 → 3.2 s, equal from 5 s on -
+which the filter's exponential response to its envelope explains; the reader takes EMXP's curve as
+the reference, it is not measured on hardware. The counter pair `255`/`0` is a stage which holds
+its level (no decay, a release which never ends), which EMXP writes as 100 s.
+
+Two settings the SoundFonts cannot carry stay undecoded: the chorus (a second, detuned channel)
+and *loop in release*, presumably among bits 1, 3 and 5 of the flags. Cross-check of the reading
+against the SoundFont route through the model - every preset of the 90 factory disks read from
+the disk and from EMXP's SoundFont, 512 presets and 3,543 zones compared attribute by attribute:
+cutoff within 15 % on 97 %, VCA attack / decay / release within 15 % on 98 / 96 / 96 %, VCF stages
+within 30 % on 98 %, sustains and velocity depths exact on 99 / 96 %, tuning and gain exact. The
+remaining differences are EMXP's - it gives the copies of a voice (`*1`) the values of the
+original, and it writes 19.2 kHz as a filter where this reader leaves the filter open - except
+for 68 of the 9,563 zones, whose cutoff table holds a cutoff while EMXP writes none.
+
 The old table position `0x5BA` of the first description was the name field of this record;
 counting the records from `0x502` put the tag bytes at the end of the previous record, which is why
 the presets seemed to start inside the last voice.
@@ -167,20 +217,27 @@ next voice slot is the next multiple of 256 bytes.
 ### Preset records — *confirmed*
 
 The two bytes in front of the first preset record hold its length, and **every record ends with
-the length of the next one** (0 ends the chain). A record:
+the length of the next one** (0 ends the chain). Behind the chain the heap holds leftovers - the
+records of deleted presets, and on some banks memory that never was a preset - into which a stale
+length word can point, so a record is only taken for a preset when its header has the small bytes
+and the top bit and its key ranges have counts and cover at most the 61 keys; the leftovers fail
+that with random bytes. The name is no criterion: the first reader required ASCII and stopped at
+the signature presets of the Northstar and OMI libraries, which lost the presets behind them on
+142 of the 1,481 banks of the community library, 792 presets (*Bamboo Flute Fx*: 2 of 10 survived). A record:
 
 | Offset | Size | Content |
 |--------|------|---------|
-| `+0` | 9 | header `01 04 00 00 00 00 02 03 89` on the newer OS versions, `01 00 00 00 00 00 00 00 81` / `00 … 80` on older ones; the top bit of the last byte is always set |
-| `+9` | 12 | name, ASCII, space padded |
+| `+0` | 9 | header `01 04 00 00 00 00 02 03 89` on the newer OS versions, `01 00 00 00 00 00 00 00 81` / `00 … 80` on older ones; `00 00 00 01 04 00 02 03 89` on the first record of some chains; the top bit of the last byte is always set and the eight bytes in front of it are always small values (0 to 6) |
+| `+9` | 12 | name, space padded; ASCII, except that the Sound Designer software of the Macintosh wrote its Mac Roman characters into it - `p&c© 1986 N*` is the signature preset of the Northstar libraries - and some names end with a stray tab or carriage return |
 | `+21` | 14 | parameters (*unknown*, `00 0B 00 00 00 00 00 00 00 00 00 00 50 04` is the most frequent) |
 | `+35` | | the **key range entries** |
 | | 4 | end marker `00 3D 00 00` (`0x3D` = 61 = the key behind the keyboard) |
 | | 2 | length of the next record |
 
 A key range entry is 5 bytes: `[mode << 6 | count] [00 or 08] [voice] [transposition] [level]`.
-The count is the number of keys, the ranges follow each other from the lowest key and always sum
-to 61. The mode is 1 for a silent range (voice 0), 2 for one voice and 3 for a range which plays
+The count is the number of keys, the ranges follow each other from the lowest key and sum to 61 -
+or to less, when a preset leaves the upper keys unassigned (47 of the 7,800 presets of the
+community library, e.g. `Crowd Noise` with 18 keys). The mode is 1 for a silent range (voice 0), 2 for one voice and 3 for a range which plays
 **two voices** - the second voice follows as 3 more bytes `[voice] [transposition] [level]`. The
 voice is a 1-based *voice number*, resolved through the voice list at `0x2CF` to a record; a bank
 without a voice list numbers its records in their order. The level is `0x70` on 361 of 375 factory
@@ -223,7 +280,7 @@ memory below `0x80000` − `0x9600`, so the audio behind bank offset `0x76A00` i
 voices on 32 of the 90 factory disks reach beyond it - *Orchestra Tune* by 26,859 frames, *Grand
 Piano* by 121 - and none of the OS 3.1 messages knows a bank on two disks (its "Insert Another
 Disk" prompts belong to the disk copy and format functions). Such a voice is cut at the end of
-the bank memory and noted; the first description took the whole 494,592-byte region for bank
+the bank memory and noted when a preset plays it; the first description took the whole 494,592-byte region for bank
 memory and read the blank last 8,704 bytes as audio, and reported the bank as continued on another
 disk.
 
@@ -270,9 +327,8 @@ ranges, roots, lengths and loops.
 
 ### Still to decode
 
-The voice settings (filter cutoff and Q, VCA and VCF envelopes, LFO, level, chorus), bits 1, 3 and
-5 of the voice flags (bit 1 may be *loop in release*), the preset parameters and the second byte of
-a key range entry.
+The chorus and *loop in release* switches of a voice (bits 1, 3 and 5 of the voice flags at
+`+0xC6`, or of `+0x2F`), the preset parameters and the second byte of a key range entry.
 
 ## Test corpus
 
@@ -281,7 +337,8 @@ a key range entry.
 | 90 factory disks (`.hfe`) + the OS 3.1 disk | `EmuSounds.zip` → `EII_Factory_HxC.7z` | dumps of real disks, 605 presets |
 | 1,437 community disks (`.hfe`) | `EmulatorII-Library/` (untracked, 3.4 GB) | synthetic HxC images from `dblondin.com/samples/EII_HXC.zip` |
 | `emuiios.emuiifd` + `emuiios31.hfe` | emxp.net | the same disk raw and as HFE - the byte-exact decoder and encoder validation |
-| bank files (`.eii`) | Jürgen's test set; carved from the factory images for the tests here | Sound Designer for EII bank files, 485,887 bytes |
+| bank files (`.eii`) | archive.org `emu-ii-samples-arturia` (1,481 files) | Sound Designer for EII bank files, 485,887 bytes; 1,325 byte-identical to the disks of the community corpus |
+| EMXP SoundFonts of the factory library and OMI Vol. 1-3 | archive.org `omi-uos-vol.-1-sf-2.7z` | the reference for the voice settings: EMXP decoded them into SoundFont generators |
 
 ## Sources
 
