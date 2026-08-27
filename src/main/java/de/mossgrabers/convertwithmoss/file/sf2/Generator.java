@@ -22,6 +22,14 @@ public class Generator
     public static final int     START_LOOP_ADDRS_OFFSET  = 2;
     /** The ID of the end loop offset. */
     public static final int     END_LOOP_ADDRS_OFFSET    = 3;
+    /** The ID of the coarse start offset, in units of 32768 sample frames. */
+    public static final int     START_COARSE_OFFSET      = 4;
+    /** The ID of the coarse end offset, in units of 32768 sample frames. */
+    public static final int     END_COARSE_OFFSET        = 12;
+    /** The ID of the coarse start loop offset, in units of 32768 sample frames. */
+    public static final int     START_LOOP_COARSE_OFFSET = 45;
+    /** The ID of the coarse end loop offset, in units of 32768 sample frames. */
+    public static final int     END_LOOP_COARSE_OFFSET   = 50;
 
     /** The ID of the vibrato low frequency oscillator to pitch generator. */
     public static final int     VIB_LFO_TO_PITCH         = 6;
