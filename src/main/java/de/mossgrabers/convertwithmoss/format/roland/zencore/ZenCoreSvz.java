@@ -77,26 +77,18 @@ public final class ZenCoreSvz
     // oscillator plays. A mono tone plays one multi-sample on both sides (Wave R = Wave L on
     // Partial 1). A stereo tone uses TWO partials (the factory way, verified in the FANTOM firmware
     // where stereo sounds are separate "... L"/"... R" waves): Partial 1 plays the left
-    // multi-sample
-    // panned hard left, Partial 2 plays the right multi-sample panned hard right - each a mono
-    // loop,
-    // so neither has the loop-wrap click that an interleaved-stereo sample suffers.
-    private static final int     PAT_WAVE_L            = 0xE2;                         // Partial 1
-                                                                                       // wave
-                                                                                       // number
-                                                                                       // (left)
-    private static final int     PAT_WAVE_R            = 0xE4;                         // Partial 1
-                                                                                       // right wave
-                                                                                       // (mono
-                                                                                       // tone)
-    private static final int     PAT_PARTIAL_STRIDE    = 0x7C;                         // OSC/filter
-                                                                                       // block
-                                                                                       // stride
-                                                                                       // per
-                                                                                       // partial
-    private static final int     PAT_P2_WAVE           = 0xE2 + PAT_PARTIAL_STRIDE;    // Partial 2
-                                                                                       // wave
-                                                                                       // number
+    // multi-sample panned hard left, Partial 2 plays the right multi-sample panned hard right -
+    // each a mono loop, so neither has the loop-wrap click that an interleaved-stereo sample
+    // suffers.
+
+    // Partial 1 wave number (left)
+    private static final int     PAT_WAVE_L            = 0xE2;
+    // Partial 1 right wave (mono tone)
+    private static final int     PAT_WAVE_R            = 0xE4;
+    // OSC/filter block stride per partial
+    private static final int     PAT_PARTIAL_STRIDE    = 0x7C;
+    // Partial 2 wave number
+    private static final int     PAT_P2_WAVE           = 0xE2 + PAT_PARTIAL_STRIDE;
 
     // Partial-1 TVF filter + TVA amplitude-envelope offsets - validated against 2048 factory tones.
     // All values are u16 LE, 0-1023. Filter type is a small index times 0x100. The filter block
