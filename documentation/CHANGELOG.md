@@ -29,6 +29,7 @@
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
 * SoundFont 2
   * Fixed: 24-bit samples were missing the padding byte in case that the number of samples were uneven. This made reading the created SF2 file fail in some tools (e.g. Polyphone).
+  * Fixed: The specification version is now set to 2.04 if 24-bit samples are used otherwise it is still 2.01. This prevented 24-bit files to be loaded in Viena.
   * Fixed: Set bank and program number for the closing EOP preset to 0 (was 255) to comply with specification.
   * Fixed: Written SoundFonts were silent at full velocity in players which apply modulators (e.g. FL Studio, fluidsynth). The velocity to volume modulator was written with the positive direction, which attenuates by the full 96 dB at velocity 127 and not at all at velocity 0, so only the softest notes were audible - the velocity to filter cutoff modulator was inverted the same way. Both are now written with the negative direction of the default modulators of the SoundFont specification; the volume one thereby also supersedes that default, so a source without velocity sensitivity no longer falls back to the full sensitivity of the default.
   * Fixed: The key range and the velocity range were written behind the panning and tuning generators of a zone. The SoundFont specification requires them to be the first two generators, and players which enforce this (e.g. fluidsynth) discarded them, so every zone played on all keys.

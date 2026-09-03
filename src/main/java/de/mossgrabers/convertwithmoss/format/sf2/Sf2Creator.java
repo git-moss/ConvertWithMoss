@@ -139,12 +139,11 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final Sf2File sf2File = new Sf2File ();
-        storeMetadata (multisampleSources, sf2File.getInfoChunk (), name);
 
         // Create the preset
         final List<Sf2Preset> presets = sf2File.getPresets ();
-
         final GlobalCounters globalcounters = new GlobalCounters ();
+        boolean contains24Bit = false;
 
         int programIndex = 0;
         for (final IMultisampleSource multisampleSource: multisampleSources)
@@ -152,10 +151,12 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
             if (this.isCancelled ())
                 return;
 
-            final Optional<Sf2Preset> sf2Preset = this.createSf2Preset (programIndex, multisampleSource, globalcounters, globalcounters.instrumentCounts);
-            if (sf2Preset.isPresent ())
+            final Optional<Pair<Sf2Preset, Boolean>> sf2PresetOpt = this.createSf2Preset (programIndex, multisampleSource, globalcounters, globalcounters.instrumentCounts);
+            if (sf2PresetOpt.isPresent ())
             {
-                final Sf2Preset preset = sf2Preset.get ();
+                final Pair<Sf2Preset, Boolean> sf2PresetPair = sf2PresetOpt.get ();
+                final Sf2Preset preset = sf2PresetPair.getKey ();
+                contains24Bit |= sf2PresetPair.getValue ().booleanValue ();
                 preset.setProgramNumber (programIndex % 128);
                 final int bankNumber = programIndex / 128;
                 // No more than 16129 presets
@@ -170,11 +171,12 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
         // Add the final empty preset
         presets.add (new Sf2Preset ("EOP"));
-
         for (final Sf2Preset preset: presets)
             preset.updateCounts (globalcounters.presetCounts);
 
         sf2File.createPresetDataChunks ();
+
+        storeMetadata (multisampleSources, sf2File.getInfoChunk (), name, contains24Bit);
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
@@ -191,8 +193,10 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
      * @param multisampleSources The source which contains the metadata
      * @param infoChunk The info chunk object which handles the different info-sub-chunks
      * @param name The name to set
+     * @param requires24Bit True if the SF2 file contains 24 bit samples which sets the version to
+     *            2.04 (instead of 2.01)
      */
-    private static void storeMetadata (final List<IMultisampleSource> multisampleSources, final InfoChunk infoChunk, final String name)
+    private static void storeMetadata (final List<IMultisampleSource> multisampleSources, final InfoChunk infoChunk, final String name, final boolean requires24Bit)
     {
         final Set<String> creators = new HashSet<> ();
         final Set<String> descriptions = new HashSet<> ();
@@ -212,7 +216,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         {
             2,
             0,
-            1,
+            (byte) (requires24Bit ? 4 : 1),
             0
         });
 
@@ -242,7 +246,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
      * @return The created SF2 preset
      * @throws IOException Could not create the preset
      */
-    private Optional<Sf2Preset> createSf2Preset (final int programIndex, final IMultisampleSource multisampleSource, final GlobalCounters globalcounters, final Pair<Integer, Integer> counts) throws IOException
+    private Optional<Pair<Sf2Preset, Boolean>> createSf2Preset (final int programIndex, final IMultisampleSource multisampleSource, final GlobalCounters globalcounters, final Pair<Integer, Integer> counts) throws IOException
     {
         final String name = multisampleSource.getName ();
         final String message = Functions.getMessage ("IDS_NOTIFY_ADDING", programIndex / 128 + ":" + programIndex % 128 + " " + name);
@@ -252,6 +256,8 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         // Note: If multiple sources might be combined into one SF2 in the future, the program
         // number needs to be set here as well as the first preset zone index
         final Sf2Preset preset = new Sf2Preset (name);
+
+        boolean contains24Bit = false;
 
         // Create a SF2 instrument for each group
         for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
@@ -304,6 +310,9 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                 final boolean isStereo = formatChunk.getNumberOfChannels () == 2;
                 final boolean shouldDownsample = is24Bit && this.settingsConfiguration.isDownsampleTo16Bit ();
 
+                if (is24Bit && !shouldDownsample)
+                    contains24Bit = true;
+
                 final List<byte []> sampleDataList = convertData (data, numSamples, is24Bit, isStereo, shouldDownsample);
                 if (isStereo)
                 {
@@ -334,7 +343,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
         this.notifier.log ("IDS_NOTIFY_LINE_FEED");
 
-        return Optional.of (preset);
+        return Optional.of (new Pair<> (preset, Boolean.valueOf (contains24Bit)));
     }
 
 
