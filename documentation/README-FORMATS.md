@@ -445,6 +445,8 @@ Note: written banks have not been verified on hardware yet. They round-trip thro
 
 The E-mu Emulator IV series (Emulator 4, E4X, E4XT, E4K, e-Synth, e-6400 and the other EOS samplers, 1994-2002) stores its banks in single *.e4b* files which contain all presets, their parameters and the sample data. A preset layers several voices; each voice maps a set of zones (a key/velocity range referencing a sample) and carries the tuning, volume, filter, envelope and modulation settings for them. The format is not documented by E-mu, the layout was reverse-engineered by the mpc2emu project from hardware-saved E4XT banks and commercial EOS CD-ROMs (see *documentation/design/E4B_FORMAT.md*).
 
+### Reading
+
 Banks can be read from single *.e4b* files and also directly from CD-ROM and hard disk images of the EOS samplers (*.iso*, *.img*, *.hda* - e.g. images for SCSI emulators like the ZuluSCSI or dumps of commercial E-mu CD-ROMs), which use the proprietary E-mu disk filesystem. All banks of an image are read; files of the older EIII samplers, which use the same filesystem for their banks, are skipped.
 
 When reading, every preset of a bank becomes one multi-sample and every voice becomes a group. Names, key and velocity ranges, root keys, tuning, volume, panning, loops, the amplitude envelope with its velocity modulation, the filter (type, cutoff, resonance, key tracking and envelope with its depth) and the 16-bit sample data are read. The per-zone offsets for fine tuning, volume and panning are applied on top of the settings of their voice, and the pitch offset of a sample is applied as a fine tuning as far as it detunes the sample beyond compensating its sample rate. The EOS effect filter types (phasers, flangers, vocal formants, EQ morphs) have no model equivalent, such voices are converted without a filter.
@@ -455,11 +457,13 @@ The presets of the commercial EOS libraries are named after the articulation or 
 
 A written bank does not repeat this in its preset names, since the file itself is that bank and its preset names hold only 16 characters - which the bank alone would fill. The file name of the bank keeps the full name.
 
+### Writing
+
+When writing, each multi-sample becomes one preset; a library collects all multi-samples into a single bank (up to 1000 presets and 1000 samples). Every zone is written as its own voice, which keeps all per-zone settings; the panning, which only exists per zone, is written into the zone entry. Samples are stored as 16-bit mono PCM with their original sample rate (rates above 48kHz, the EOS maximum, are down-sampled); stereo samples are mixed down to mono. Identical samples mapped to multiple zones are stored only once. Since EOS only has a sample-level forward loop, alternating loops are written as forward loops and only the first loop of a zone is kept. Written banks validate against the reference parser of the mpc2emu project but have not been verified on real hardware yet.
+
 #### Source Options
 
 * Prepend the bank name to the preset name: Enabled by default, see above. Disable it to keep the preset names exactly as they are in the bank - the bank is then only carried in the description, and the written file names are the bare preset names.
-
-When writing, each multi-sample becomes one preset; a library collects all multi-samples into a single bank (up to 1000 presets and 1000 samples). Every zone is written as its own voice, which keeps all per-zone settings; the panning, which only exists per zone, is written into the zone entry. Samples are stored as 16-bit mono PCM with their original sample rate (rates above 48kHz, the EOS maximum, are down-sampled); stereo samples are mixed down to mono. Identical samples mapped to multiple zones are stored only once. Since EOS only has a sample-level forward loop, alternating loops are written as forward loops and only the first loop of a zone is kept. Written banks validate against the reference parser of the mpc2emu project but have not been verified on real hardware yet.
 
 #### Destination Options
 

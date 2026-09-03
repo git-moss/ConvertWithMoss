@@ -228,6 +228,16 @@ public class SfzOpcode
     public static final String FIL_SUSTAIN           = "fil_sustain";
     /** Cakewalk alias. The EG release time. */
     public static final String FIL_RELEASE           = "fil_release";
+
+    /** SFZ v1. The filter cutoff LFO frequency in Hertz. */
+    public static final String FILLFO_FREQ           = "fillfo_freq";
+    /** SFZ v1. The filter cutoff LFO depth in cent. */
+    public static final String FILLFO_DEPTH          = "fillfo_depth";
+    /** SFZ v1. The filter cutoff LFO delay time in seconds. */
+    public static final String FILLFO_DELAY          = "fillfo_delay";
+    /** SFZ v1. The filter cutoff LFO fade-in time in seconds. */
+    public static final String FILLFO_FADE           = "fillfo_fade";
+
     /** Filter cutoff velocity tracking. */
     public static final String FIL_VELOCITY_TRACK    = "fil_veltrack";
     /** Filter cutoff key tracking. */

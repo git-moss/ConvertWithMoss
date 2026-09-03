@@ -249,7 +249,8 @@ public class WavFileSampleData extends AbstractFileSampleData
             }
             final int start = sampleLoop.getStart ();
             final int end = sampleLoop.getEnd ();
-            if (start < 0 || end <= 0 || start > end)
+            // Ignore broken loops and very short ones
+            if (start < 0 || end <= 0 || start > end || end - start < 3)
                 continue;
             loop.setStart (start);
             loop.setEnd (end);

@@ -42,6 +42,8 @@ public class Generator
     /** The ID of the initial filter resonance generator. */
     public static final int     INITIAL_FILTER_RESONANCE = 9;
 
+    /** The ID of the modulation low frequency oscillator to filter cutoff generator (in TODO). */
+    public static final int     MOD_LFO_TO_FILTER_CUTOFF = 10;
     /** The ID of the modulation envelope to filter cutoff generator. */
     public static final int     MOD_ENV_TO_FILTER_CUTOFF = 11;
 

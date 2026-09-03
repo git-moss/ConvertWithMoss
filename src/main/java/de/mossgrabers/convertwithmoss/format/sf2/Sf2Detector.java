@@ -59,11 +59,11 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
      * The maximum absolute 16 bit value which still counts as silence (about -60dBFS), which covers
      * dithered 'digital silence'.
      */
-    private static final int SILENCE_THRESHOLD = 32;
+    private static final int SILENCE_THRESHOLD  = 32;
     /**
      * The range of the coarse tuning generator in semi-tones as defined by the SoundFont 2 spec.
      */
-    private static final int MAX_COARSE_TUNE   = 120;
+    private static final int MAX_COARSE_TUNE    = 120;
     /** A coarse sample offset generator counts in units of this many sample frames. */
     private static final int COARSE_OFFSET_UNIT = 32768;
 
@@ -828,7 +828,8 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             // Set the exclusive group, 0 means that the zone is not assigned to any group
             zone.setExclusiveGroup (Math.clamp (generators.getUnsignedValue (Generator.EXCLUSIVE_CLASS).intValue (), 0, 127));
 
-            // Set play range. Every offset has a fine generator in sample frames and a coarse one in
+            // Set play range. Every offset has a fine generator in sample frames and a coarse one
+            // in
             // units of 32768 frames, which e.g. EMXP writes for the long loops of the E-mu samplers
             zone.setStart (0);
             final long sampleStart = sample.getStart () + getOffset (generators, Generator.START_ADDRS_OFFSET, Generator.START_COARSE_OFFSET);
@@ -898,6 +899,21 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                         filterEnvelope.setReleaseTime (convertEnvelopeTime (generators.getSignedValue (Generator.MOD_ENV_RELEASE)));
                         filterEnvelope.setSustainLevel (convertEnvelopeVolume (generators.getSignedValue (Generator.MOD_ENV_SUSTAIN)));
                         filterEnvelope.setTimeKeyTracking (convertEnvelopeKeyTracking (generators.getSignedValue (Generator.KEYNUM_TO_MOD_ENV_DECAY), generators.getSignedValue (Generator.KEYNUM_TO_MOD_ENV_HOLD)));
+                    }
+
+                    // Filter cutoff frequency is always modified logarithmically, that is the
+                    // deviation is in cents, semitones, and octaves rather than in Hz. For example,
+                    // a value of 1200 indicates that the cutoff frequency will first rise 1 octave,
+                    // then fall one octave.
+                    final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+                    final int modLfoToCutoff = generators.getSignedValue (Generator.MOD_LFO_TO_FILTER_CUTOFF).intValue ();
+                    cutoffLfoModulator.setDepth (modLfoToCutoff / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
+                    if (modLfoToCutoff != 0)
+                    {
+                        final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
+                        // The frequency is stored in absolute cents, see the filter cutoff above
+                        cutoffLfo.setRate (8.176 * Math.pow (2, generators.getSignedValue (Generator.FREQ_MOD_LFO).doubleValue () / 1200.0));
+                        cutoffLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_MOD_LFO)));
                     }
 
                     zone.setFilter (filter);
