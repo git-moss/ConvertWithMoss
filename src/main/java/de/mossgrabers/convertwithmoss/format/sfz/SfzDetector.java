@@ -510,7 +510,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (lfoDepth != 0)
         {
             final ILfoModulator pitchLfoModulator = sampleMetadata.getPitchLfoModulator ();
-            pitchLfoModulator.setDepth (lfoDepth / IEnvelope.MAX_ENVELOPE_DEPTH);
+            pitchLfoModulator.setDepth (lfoDepth / 1200);
 
             final ILfo pitchLfo = pitchLfoModulator.getSource ();
             pitchLfo.setRate (this.getDoubleValue (SfzOpcode.PITCHLFO_FREQ, -1));
@@ -589,6 +589,19 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         filterEnvelope.setAttackSlope (this.getDoubleValue (SfzOpcode.FILEG_ATTACK_SHAPE, 0) / 10.0);
         filterEnvelope.setDecaySlope (this.getDoubleValue (SfzOpcode.FILEG_DECAY_SHAPE, 0) / 10.0);
         filterEnvelope.setReleaseSlope (this.getDoubleValue (SfzOpcode.FILEG_RELEASE_SHAPE, 0) / 10.0);
+
+        // Filter cutoff LFO modulation
+        final double lfoDepth = this.getDoubleValue (SfzOpcode.FILLFO_DEPTH, 0);
+        if (lfoDepth != 0)
+        {
+            final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+            cutoffLfoModulator.setDepth (lfoDepth / 1200);
+
+            final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
+            cutoffLfo.setRate (this.getDoubleValue (SfzOpcode.FILLFO_FREQ, -1));
+            cutoffLfo.setDelay (this.getDoubleValue (SfzOpcode.FILLFO_DELAY, -1));
+            cutoffLfo.setFadeIn (this.getDoubleValue (SfzOpcode.FILLFO_FADE, -1));
+        }
 
         // Filter velocity modulation
         final int filterVelocity = this.getIntegerValue (SfzOpcode.FIL_VELOCITY_TRACK, 0);

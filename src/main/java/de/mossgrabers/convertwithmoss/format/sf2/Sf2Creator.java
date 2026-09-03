@@ -101,8 +101,8 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
-        this.storeMultisample (Collections.singletonList (multisampleSource), destinationFolder, sampleName);
+        final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        this.storeMultisample (Collections.singletonList (multisampleSource), destinationFolder, multiSampleName);
     }
 
 
@@ -169,10 +169,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         }
 
         // Add the final empty preset
-        final Sf2Preset finalPreset = new Sf2Preset ("EOP");
-        finalPreset.setBankNumber (0xFF);
-        finalPreset.setProgramNumber (0xFF);
-        presets.add (finalPreset);
+        presets.add (new Sf2Preset ("EOP"));
 
         for (final Sf2Preset preset: presets)
             preset.updateCounts (globalcounters.presetCounts);
@@ -506,6 +503,26 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                 // Velocity to cutoff: the linear modulator of the SoundFont default, which lowers
                 // the cutoff by up to 2400 cent at velocity 0 and leaves it alone at velocity 127
                 addVelocityModulator (instrumentZone, Generator.INITIAL_FILTER_CUTOFF, Sf2Modulator.SOURCE_TYPE_LINEAR, filter.getCutoffVelocityModulator ().getDepth (), -2400);
+
+                // Note: this will overwrite the pitch LFO if it is different!
+                final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+                final double cutoffLfoDepth = cutoffLfoModulator.getDepth ();
+                if (cutoffLfoDepth != 0)
+                {
+                    instrumentZone.addSignedGenerator (Generator.MOD_LFO_TO_FILTER_CUTOFF, (int) Math.round (cutoffLfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
+                    final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
+                    final double rate = cutoffLfo.getRate ();
+                    if (rate > 0)
+                    {
+                        // The frequency is stored in absolute cents, see the filter cutoff below
+                        final double frequencyCents = Math.log (rate / 8.176) * 1200.0 / Math.log (2);
+                        instrumentZone.addSignedGenerator (Generator.FREQ_VIB_LFO, (int) Math.round (frequencyCents));
+                    }
+                    final double delay = cutoffLfo.getDelay ();
+                    if (delay >= 0)
+                        instrumentZone.addSignedGenerator (Generator.DELAY_VIB_LFO, convertEnvelopeTime (delay));
+                }
+
             }
         }
 
@@ -554,11 +571,25 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
      */
     private static List<byte []> convertData (final byte [] data, final int numSamples, final boolean is24Bit, final boolean isStereo, final boolean shouldDownsample)
     {
-        final int numPaddedSamples = numSamples + PADDING;
-        final byte [] sampleLeftData = new byte [numPaddedSamples * 2];
-        final byte [] sampleLeft24Data = new byte [is24Bit && !shouldDownsample ? numPaddedSamples : 0];
-        final byte [] sampleRightData = new byte [numPaddedSamples * 2];
-        final byte [] sampleRight24Data = new byte [is24Bit && !shouldDownsample ? numPaddedSamples : 0];
+        // Each sample is followed by a minimum of forty-six zero valued sample data points. These
+        // zero valued data points are necessary to guarantee that any reasonable upward pitch shift
+        // using any reasonable interpolator can loop on zero data at the end of the sound.
+        int numPaddedSamples = numSamples + PADDING;
+
+        // The sm24 sub-chunk, if present, is exactly ½ the size of the smpl sub-chunk, plus 1 byte
+        // if necessary to meet the RIFF 16-bit alignment specification
+        if (numPaddedSamples % 2 != 0)
+            numPaddedSamples++;
+
+        final int size16 = numPaddedSamples * 2;
+        // For every two bytes in the [smpl] sub-chunk there is a 1-byte counterpart in [sm24]
+        // sub-chunk.
+        final int size8 = is24Bit && !shouldDownsample ? numPaddedSamples : 0;
+
+        final byte [] sampleLeftData = new byte [size16];
+        final byte [] sampleLeft24Data = new byte [size8];
+        final byte [] sampleRightData = new byte [isStereo ? size16 : 0];
+        final byte [] sampleRight24Data = new byte [isStereo ? size8 : 0];
 
         int pos = -1;
         for (int i = 0; i < numSamples; i++)

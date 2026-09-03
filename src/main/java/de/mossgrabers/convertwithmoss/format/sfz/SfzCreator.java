@@ -639,6 +639,22 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             if (!envelopeStr.isEmpty ())
                 buffer.append (envelopeStr).append (LINE_FEED);
         }
+
+        // LFO Modulation
+        final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+        final double lfoDepth = cutoffLfoModulator.getDepth ();
+        if (lfoDepth != 0)
+        {
+            final StringBuilder lfoStr = new StringBuilder ();
+            lfoStr.append (SfzOpcode.FILLFO_DEPTH).append ('=').append ((int) Math.round (lfoDepth * 1200));
+
+            final ILfo pitchLfo = cutoffLfoModulator.getSource ();
+            addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_FREQ, pitchLfo.getRate ());
+            addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_DELAY, pitchLfo.getDelay ());
+            addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_FADE, pitchLfo.getFadeIn ());
+
+            buffer.append (lfoStr).append (LINE_FEED);
+        }
     }
 
 
