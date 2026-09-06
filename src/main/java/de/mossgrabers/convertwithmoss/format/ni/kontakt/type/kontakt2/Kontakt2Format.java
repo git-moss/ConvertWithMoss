@@ -343,11 +343,9 @@ public class Kontakt2Format extends AbstractKontaktFormat
         if (!keywords.isEmpty ())
             this.metadata.setKeywords (keywords.toArray (new String [keywords.size ()]));
 
-        String additionalInfo = "";
         final String website = header.getWebsite ();
         if (!website.isBlank ())
-            additionalInfo += "\nWebsite: " + website;
-        this.metadata.setDescription (additionalInfo);
+            this.metadata.setDescription ("Website : " + website);
     }
 
 
@@ -394,15 +392,19 @@ public class Kontakt2Format extends AbstractKontaktFormat
             metadata.setKeywords (TagDetector.detectKeywords (soundCategories.toArray (new String [soundCategories.size ()])));
 
             // Update the description
-            final StringBuilder sb = new StringBuilder (metadata.getDescription ());
             final String description = headerMetadata.getDescription ();
             if (description != null && !description.isBlank ())
             {
-                if (!sb.isEmpty ())
-                    sb.append ('\n');
-                sb.append (description);
+                final String desc = metadata.getDescription ();
+                if (!desc.contains (description))
+                {
+                    final StringBuilder sb = new StringBuilder (desc);
+                    if (!sb.isEmpty ())
+                        sb.append ('\n');
+                    sb.append (description);
+                    metadata.setDescription (sb.toString ().trim ());
+                }
             }
-            metadata.setDescription (sb.toString ().trim ());
         }
     }
 

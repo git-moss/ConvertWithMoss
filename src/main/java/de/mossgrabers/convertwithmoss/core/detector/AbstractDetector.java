@@ -63,6 +63,7 @@ import de.mossgrabers.convertwithmoss.file.caf.CafAudioDescriptionChunk;
 import de.mossgrabers.convertwithmoss.file.caf.CafFile;
 import de.mossgrabers.convertwithmoss.file.caf.CafFileSampleData;
 import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -792,13 +793,27 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         if (metadataDescription != null && !metadataDescription.isBlank ())
             metadata.setDescription (metadataDescription);
 
-        final List<String> tokens = new ArrayList<> ();
+        final Set<String> tokens = new HashSet<> ();
         tokens.addAll (Arrays.asList (parts));
         tokens.add (multisampleSourceName);
         final String [] descriptionTokens = metadata.getDescription ().split ("\\W");
         tokens.addAll (Arrays.asList (descriptionTokens));
 
         createMetadata (configuration, metadata, getFirstSample (groups), tokens.toArray (new String [tokens.size ()]));
+
+        if (TagDetector.CATEGORY_UNKNOWN.equals (metadata.getCategory ()))
+        {
+            tokens.clear ();
+            for (final IGroup group: groups)
+            {
+                tokens.addAll (Arrays.asList (group.getName ().split ("\\W")));
+                for (final ISampleZone zone: group.getSampleZones ())
+                    tokens.addAll (Arrays.asList (zone.getName ().split ("\\W")));
+            }
+
+            metadata.detectMetadata (configuration, tokens.toArray (new String [tokens.size ()]), null);
+        }
+
         updateCreationDateTime (metadata, sourceFile);
 
         return multisampleSource;

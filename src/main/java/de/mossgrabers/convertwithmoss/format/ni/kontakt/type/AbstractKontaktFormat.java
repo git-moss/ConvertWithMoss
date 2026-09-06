@@ -235,7 +235,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             metadata.setCreator (instrumentAuthor);
         final String instrumentURL = program.getInstrumentURL ();
         if (instrumentURL != null && !instrumentURL.isBlank ())
-            metadata.setDescription (instrumentURL);
+            metadata.setDescription ("Website : " + instrumentURL);
 
         final String instrumentIconName = program.getInstrumentIconName ();
         if (instrumentIconName == null || instrumentIconName.isBlank () || "New".equals (instrumentIconName))
