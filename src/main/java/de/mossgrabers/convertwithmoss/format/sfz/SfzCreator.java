@@ -9,19 +9,22 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.ParameterLevel;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -39,6 +42,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.tools.Pair;
 
 
 /**
@@ -160,9 +164,72 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
      *
      * @param safeSampleFolderName The safe sample folder name (removed illegal characters)
      * @param multisampleSource The multi-sample
-     * @return The XML structure
+     * @return The SFZ structure
      */
     private Optional<String> createPresetDocument (final String safeSampleFolderName, final IMultisampleSource multisampleSource)
+    {
+        final StringBuilder documentBuffer = createHeader (multisampleSource);
+
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
+        if (groups.isEmpty ())
+        {
+            this.notifier.logError ("IDS_ERR_NO_GROUPS_IN_SOURCE");
+            return Optional.empty ();
+        }
+
+        // Add all groups with all sample zones (regions)
+        final Map<IGroup, Integer> roundRobinGroups = multisampleSource.getRoundRobinGroups ();
+        final List<Pair<String, List<Pair<String, List<String>>>>> groupContent = new ArrayList<> ();
+        for (final IGroup group: groups)
+        {
+            final List<ISampleZone> zones = group.getSampleZones ();
+            if (zones.isEmpty ())
+                continue;
+
+            int maxSequence = -1;
+            final boolean isNotRoundRobinGroup = !roundRobinGroups.containsKey (group);
+            if (isNotRoundRobinGroup)
+                // Check for any sample which does not always play. SFZ cannot express a random
+                // selection, therefore such zones are cycled like round-robin ones
+                for (final ISampleZone zone: zones)
+                    if (zone.getPlayLogic () != PlayLogic.ALWAYS)
+                        maxSequence = Math.max (maxSequence, zone.getSequencePosition ());
+
+            final StringBuilder groupBuffer = new StringBuilder ();
+            groupBuffer.append (LINE_FEED).append ('<').append (SfzHeader.GROUP).append (">").append (LINE_FEED);
+            final String groupName = group.getName ();
+            if (groupName != null && !groupName.isBlank ())
+                groupBuffer.append (addAttribute (SfzOpcode.GROUP_LABEL, groupName, true));
+            if (isNotRoundRobinGroup)
+            {
+                if (maxSequence > 0)
+                    groupBuffer.append (addIntegerAttribute (SfzOpcode.SEQ_LENGTH, maxSequence, true));
+            }
+            else
+            {
+                groupBuffer.append (addIntegerAttribute (SfzOpcode.SEQ_LENGTH, roundRobinGroups.size (), true));
+                final Integer sequencePosition = roundRobinGroups.get (group);
+                if (sequencePosition != null && sequencePosition.intValue () > 0)
+                    groupBuffer.append (addIntegerAttribute (SfzOpcode.SEQ_POSITION, sequencePosition.intValue (), true));
+            }
+
+            final TriggerType trigger = group.getTrigger ();
+            if (trigger != null && trigger != TriggerType.ATTACK)
+                groupBuffer.append (addAttribute (SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true));
+
+            final List<Pair<String, List<String>>> zonesContent = new ArrayList<> ();
+            for (final ISampleZone zone: zones)
+                zonesContent.add (this.createSample (safeSampleFolderName, zone, isNotRoundRobinGroup));
+
+            groupContent.add (new Pair<> (groupBuffer.toString (), zonesContent));
+        }
+
+        promoteCommonParameters (documentBuffer, groupContent);
+        return Optional.of (documentBuffer.toString ());
+    }
+
+
+    private static StringBuilder createHeader (final IMultisampleSource multisampleSource)
     {
         final StringBuilder sb = new StringBuilder (SFZ_HEADER);
 
@@ -185,7 +252,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         final String name = multisampleSource.getName ();
         sb.append ('<').append (SfzHeader.GLOBAL).append (">").append (LINE_FEED);
         if (name != null && !name.isBlank ())
-            addAttribute (sb, SfzOpcode.GLOBAL_LABEL, name, true);
+            sb.append (addAttribute (SfzOpcode.GLOBAL_LABEL, name, true));
 
         // The polyphony is a plain number of voices. Note: SFZ does not have an opcode for the
         // portamento time or for playing monophonic with legato, therefore a monophonic instrument
@@ -194,65 +261,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (multisampleSource.isMonophonicLegato ())
             polyphony = 1;
         if (polyphony > 0)
-            addIntegerAttribute (sb, SfzOpcode.POLYPHONY, polyphony, true);
-
-        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
-        if (groups.isEmpty ())
-        {
-            this.notifier.logError ("IDS_ERR_NO_GROUPS_IN_SOURCE");
-            return Optional.empty ();
-        }
-
-        final ParameterLevel ampEnvParamLevel = getAmpEnvelopeParamLevel (multisampleSource);
-        if (ampEnvParamLevel == ParameterLevel.INSTRUMENT)
-            createVolumeEnvelope (sb, groups.get (0).getSampleZones ().get (0));
-
-        // Add all groups with all sample zones (regions)
-        final Map<IGroup, Integer> roundRobinGroups = multisampleSource.getRoundRobinGroups ();
-        for (final IGroup group: groups)
-        {
-            final List<ISampleZone> zones = group.getSampleZones ();
-            if (zones.isEmpty ())
-                continue;
-
-            int maxSequence = -1;
-            final boolean isNotRoundRobinGroup = !roundRobinGroups.containsKey (group);
-            if (isNotRoundRobinGroup)
-                // Check for any sample which does not always play. SFZ cannot express a random
-                // selection, therefore such zones are cycled like round-robin ones
-                for (final ISampleZone zone: zones)
-                    if (zone.getPlayLogic () != PlayLogic.ALWAYS)
-                        maxSequence = Math.max (maxSequence, zone.getSequencePosition ());
-
-            sb.append (LINE_FEED).append ('<').append (SfzHeader.GROUP).append (">").append (LINE_FEED);
-            final String groupName = group.getName ();
-            if (groupName != null && !groupName.isBlank ())
-                addAttribute (sb, SfzOpcode.GROUP_LABEL, groupName, true);
-            if (isNotRoundRobinGroup)
-            {
-                if (maxSequence > 0)
-                    addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, maxSequence, true);
-            }
-            else
-            {
-                addIntegerAttribute (sb, SfzOpcode.SEQ_LENGTH, roundRobinGroups.size (), true);
-                final Integer sequencePosition = roundRobinGroups.get (group);
-                if (sequencePosition != null && sequencePosition.intValue () > 0)
-                    addIntegerAttribute (sb, SfzOpcode.SEQ_POSITION, sequencePosition.intValue (), true);
-            }
-
-            final TriggerType trigger = group.getTrigger ();
-            if (trigger != null && trigger != TriggerType.ATTACK)
-                addAttribute (sb, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
-
-            if (ampEnvParamLevel == ParameterLevel.GROUP)
-                createVolumeEnvelope (sb, zones.get (0));
-
-            for (final ISampleZone zone: zones)
-                this.createSample (safeSampleFolderName, sb, zone, isNotRoundRobinGroup, ampEnvParamLevel);
-        }
-
-        return Optional.of (sb.toString ());
+            sb.append (addIntegerAttribute (SfzOpcode.POLYPHONY, polyphony, true));
+        return sb;
     }
 
 
@@ -260,29 +270,31 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
      * Creates the metadata for one sample.
      *
      * @param safeSampleFolderName The safe sample folder name
-     * @param buffer Where to add the XML code
      * @param zone The sample zone
      * @param isNotRoundRobinGroup If the sample zone does not belong to a round robin group
-     * @param ampEnvParameterLevel The level to which to apply the amplitude envelope parameters
+     * @return The region opcode as the key and all parameter opcodes as the values
      */
-    private void createSample (final String safeSampleFolderName, final StringBuilder buffer, final ISampleZone zone, final boolean isNotRoundRobinGroup, final ParameterLevel ampEnvParameterLevel)
+    private Pair<String, List<String>> createSample (final String safeSampleFolderName, final ISampleZone zone, final boolean isNotRoundRobinGroup)
     {
         final String ending = this.settingsConfiguration.convertToFlac () ? ".flac" : ".wav";
 
-        buffer.append ("\n<").append (SfzHeader.REGION).append (">\n");
-        addAttribute (buffer, SfzOpcode.SAMPLE, AbstractCreator.formatFileName (safeSampleFolderName, zone.getName () + ending), true);
+        final StringBuilder regionBuffer = new StringBuilder ();
+        regionBuffer.append ("\n<").append (SfzHeader.REGION).append (">\n");
+        regionBuffer.append (addAttribute (SfzOpcode.SAMPLE, AbstractCreator.formatFileName (safeSampleFolderName, zone.getName () + ending), true));
+
+        final List<String> opcodes = new ArrayList<> ();
 
         // Default is 'attack' and does not need to be added
         final TriggerType trigger = zone.getTrigger ();
         if (trigger != TriggerType.ATTACK)
-            addAttribute (buffer, SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true);
+            regionBuffer.append (addAttribute (SfzOpcode.TRIGGER, trigger.name ().toLowerCase (Locale.ENGLISH), true));
 
         if (zone.isReversed ())
-            addAttribute (buffer, SfzOpcode.DIRECTION, "reverse", true);
+            regionBuffer.append (addAttribute (SfzOpcode.DIRECTION, "reverse", true));
         // SFZ cannot express a random selection, therefore such zones are cycled like round-robin
         // ones instead of falling back to playing all of them at once
         if (zone.getPlayLogic () != PlayLogic.ALWAYS && isNotRoundRobinGroup)
-            addIntegerAttribute (buffer, SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.SEQ_POSITION, Math.max (1, zone.getSequencePosition ()), true));
 
         // -----------------------------------------------------------
         // Key range
@@ -294,14 +306,14 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         {
             // Pitch and range are the same, use single key attribute
             if (keyRoot >= 0)
-                addIntegerAttribute (buffer, SfzOpcode.KEY, keyRoot, true);
+                regionBuffer.append (addIntegerAttribute (SfzOpcode.KEY, keyRoot, true));
         }
         else
         {
             if (keyRoot >= 0)
-                addIntegerAttribute (buffer, SfzOpcode.PITCH_KEY_CENTER, keyRoot, true);
-            addIntegerAttribute (buffer, SfzOpcode.LO_KEY, limitToDefault (keyLow, 0), false);
-            addIntegerAttribute (buffer, SfzOpcode.HI_KEY, limitToDefault (keyHigh, 127), true);
+                regionBuffer.append (addIntegerAttribute (SfzOpcode.PITCH_KEY_CENTER, keyRoot, true));
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.LO_KEY, limitToDefault (keyLow, 0), false));
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.HI_KEY, limitToDefault (keyHigh, 127), true));
         }
 
         // The fade ranges lie inside of the zone's range - anchoring them outside would both
@@ -310,14 +322,14 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         final int crossfadeLow = zone.getNoteCrossfadeLow ();
         if (crossfadeLow > 0)
         {
-            addIntegerAttribute (buffer, SfzOpcode.XF_IN_LO_KEY, keyLow, false);
-            addIntegerAttribute (buffer, SfzOpcode.XF_IN_HI_KEY, Math.min (127, keyLow + crossfadeLow), true);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.XF_IN_LO_KEY, keyLow, false));
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.XF_IN_HI_KEY, Math.min (127, keyLow + crossfadeLow), true));
         }
         final int crossfadeHigh = zone.getNoteCrossfadeHigh ();
         if (crossfadeHigh > 0)
         {
-            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_LO_KEY, Math.max (0, keyHigh - crossfadeHigh), false);
-            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_KEY, keyHigh, true);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.XF_OUT_LO_KEY, Math.max (0, keyHigh - crossfadeHigh), false));
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.XF_OUT_HI_KEY, keyHigh, true));
         }
 
         // -----------------------------------------------------------
@@ -326,23 +338,23 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         final int velocityLow = zone.getVelocityLow ();
         final int velocityHigh = zone.getVelocityHigh ();
         if (velocityLow > 1)
-            addIntegerAttribute (buffer, SfzOpcode.LO_VEL, limitToDefault (velocityLow, 1), velocityHigh == 127);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.LO_VEL, limitToDefault (velocityLow, 1), velocityHigh == 127));
         if (velocityHigh > 0 && velocityHigh < 127)
-            addIntegerAttribute (buffer, SfzOpcode.HI_VEL, limitToDefault (velocityHigh, 127), true);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.HI_VEL, limitToDefault (velocityHigh, 127), true));
 
         // See the key crossfade above: the fade ranges lie inside of the zone's range
         final int crossfadeVelocityLow = zone.getVelocityCrossfadeLow ();
         if (crossfadeVelocityLow > 0)
         {
-            addIntegerAttribute (buffer, SfzOpcode.XF_IN_LO_VEL, Math.max (0, velocityLow), false);
-            addIntegerAttribute (buffer, SfzOpcode.XF_IN_HI_VEL, Math.min (127, velocityLow + crossfadeVelocityLow), true);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.XF_IN_LO_VEL, Math.max (0, velocityLow), false));
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.XF_IN_HI_VEL, Math.min (127, velocityLow + crossfadeVelocityLow), true));
         }
 
         final int crossfadeVelocityHigh = zone.getVelocityCrossfadeHigh ();
         if (crossfadeVelocityHigh > 0)
         {
-            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_LO_VEL, Math.max (0, velocityHigh - crossfadeVelocityHigh), false);
-            addIntegerAttribute (buffer, SfzOpcode.XF_OUT_HI_VEL, velocityHigh, true);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.XF_OUT_LO_VEL, Math.max (0, velocityHigh - crossfadeVelocityHigh), false));
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.XF_OUT_HI_VEL, velocityHigh, true));
         }
 
         // -----------------------------------------------------------
@@ -350,40 +362,41 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         final int start = zone.getStart ();
         if (start >= 0)
-            addIntegerAttribute (buffer, SfzOpcode.OFFSET, start, false);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.OFFSET, start, false));
         final int end = zone.getStop ();
         if (end >= 0)
-            addIntegerAttribute (buffer, SfzOpcode.END, end, true);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.END, end, true));
 
         final double tune = zone.getTuning ();
         if (tune != 0)
-            addIntegerAttribute (buffer, SfzOpcode.TUNE, (int) Math.round (tune * 100), true);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.TUNE, (int) Math.round (tune * 100), true));
 
         final int keyTracking = (int) Math.round (zone.getKeyTracking () * 100.0);
         if (keyTracking != 100)
-            addIntegerAttribute (buffer, SfzOpcode.PITCH_KEYTRACK, keyTracking, true);
+            regionBuffer.append (addIntegerAttribute (SfzOpcode.PITCH_KEYTRACK, keyTracking, true));
 
-        createVolume (buffer, zone, ampEnvParameterLevel);
+        opcodes.add (createVolume (zone));
 
         // -----------------------------------------------------------
         // Pitch Bend / Envelope
 
+        final StringBuilder bendBuffer = new StringBuilder ();
         final int bendUp = zone.getBendUp ();
         if (bendUp != 0)
-            addIntegerAttribute (buffer, SfzOpcode.BEND_UP, bendUp, true);
+            bendBuffer.append (addIntegerAttribute (SfzOpcode.BEND_UP, bendUp, true));
         final int bendDown = zone.getBendDown ();
         if (bendDown != 0)
-            addIntegerAttribute (buffer, SfzOpcode.BEND_DOWN, bendDown, true);
-
-        final StringBuilder envelopeStr = new StringBuilder ();
+            bendBuffer.append (addIntegerAttribute (SfzOpcode.BEND_DOWN, bendDown, true));
+        if (!bendBuffer.isEmpty ())
+            opcodes.add (bendBuffer.toString ());
 
         final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
         final double envelopeDepth = pitchModulator.getDepth ();
         if (envelopeDepth != 0)
         {
-            buffer.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) Math.round (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
-
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
+
+            final StringBuilder envelopeStr = new StringBuilder ();
 
             addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.PITCHEG_DELAY, pitchEnvelope.getDelayTime ());
             addEnvelopeTimeAttribute (envelopeStr, SfzOpcode.PITCHEG_ATTACK, pitchEnvelope.getAttackTime ());
@@ -399,7 +412,13 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addSlopeAttribute (envelopeStr, SfzOpcode.PITCHEG_RELEASE_SHAPE, pitchEnvelope.getReleaseSlope ());
 
             if (!envelopeStr.isEmpty ())
-                buffer.append (envelopeStr).append (LINE_FEED);
+            {
+                envelopeStr.append (LINE_FEED);
+                final StringBuilder pitchBuffer = new StringBuilder ();
+                pitchBuffer.append (SfzOpcode.PITCHEG_DEPTH).append ('=').append ((int) Math.round (envelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH)).append (LINE_FEED);
+                pitchBuffer.append (envelopeStr.toString ());
+                opcodes.add (pitchBuffer.toString ());
+            }
         }
 
         // -----------------------------------------------------------
@@ -416,44 +435,49 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FREQ, pitchLfo.getRate ());
             addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_DELAY, pitchLfo.getDelay ());
             addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FADE, pitchLfo.getFadeIn ());
+            lfoStr.append (LINE_FEED);
 
-            buffer.append (lfoStr).append (LINE_FEED);
+            opcodes.add (lfoStr.toString ());
         }
 
         // -----------------------------------------------------------
         // Sample Loop
 
-        this.createLoops (buffer, zone);
+        opcodes.add (this.createLoops (zone));
 
         // -----------------------------------------------------------
         // Filter
 
-        createFilter (buffer, zone);
+        opcodes.add (createFilter (zone));
+
+        return new Pair<> (regionBuffer.toString (), opcodes);
     }
 
 
     /**
      * Create the loop info.
      *
-     * @param buffer Where to add the XML code
      * @param zone The sample zone
+     * @return The loop opcodes
      */
-    private void createLoops (final StringBuilder buffer, final ISampleZone zone)
+    private String createLoops (final ISampleZone zone)
     {
+        final StringBuilder buffer = new StringBuilder ();
+
         final List<ISampleLoop> loops = zone.getLoops ();
         // A one-shot ignores a note-off and always plays the sample to its end. SFZ supports this
         // only for samples which are not looped
         if (loops.isEmpty ())
-            addAttribute (buffer, SfzOpcode.LOOP_MODE, zone.isOneShot () ? "one_shot" : "no_loop", false);
+            buffer.append (addAttribute (SfzOpcode.LOOP_MODE, zone.isOneShot () ? "one_shot" : "no_loop", false));
         else
         {
             final ISampleLoop sampleLoop = loops.get (0);
-            addAttribute (buffer, SfzOpcode.LOOP_MODE, sampleLoop.isLoopUntilRelease () ? "loop_sustain" : "loop_continuous", false);
+            buffer.append (addAttribute (SfzOpcode.LOOP_MODE, sampleLoop.isLoopUntilRelease () ? "loop_sustain" : "loop_continuous", false));
             final String type = LOOP_TYPE_MAP.get (sampleLoop.getType ());
             // No need to write the default value
             if (!"forward".equals (type))
-                addAttribute (buffer, SfzOpcode.LOOP_TYPE, type, false);
-            addIntegerAttribute (buffer, SfzOpcode.LOOP_START, sampleLoop.getStart (), false);
+                buffer.append (addAttribute (SfzOpcode.LOOP_TYPE, type, false));
+            buffer.append (addIntegerAttribute (SfzOpcode.LOOP_START, sampleLoop.getStart (), false));
             buffer.append (SfzOpcode.LOOP_END).append ('=').append (sampleLoop.getEnd ());
 
             // Calculate the cross-fade in seconds from a percentage of the loop length
@@ -485,24 +509,26 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
                 buffer.append (' ').append (SfzOpcode.LOOP_TUNE).append ('=').append (formatAsFloat (Math.round (tuning * 100.0)));
         }
         buffer.append (LINE_FEED);
+        return buffer.toString ();
     }
 
 
     /**
      * Create the volume and amplitude envelope parameters.
      *
-     * @param buffer Where to add the created text
      * @param zone The sample zone
-     * @param ampEnvParameterLevel The level to which to apply the amplitude envelope parameters
+     * @return The created volume opcodes
      */
-    private static void createVolume (final StringBuilder buffer, final ISampleZone zone, final ParameterLevel ampEnvParameterLevel)
+    private static String createVolume (final ISampleZone zone)
     {
+        final StringBuilder buffer = new StringBuilder ();
+
         final double volume = zone.getGain ();
         final double velAmpDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
         if (volume != 0)
-            addAttribute (buffer, SfzOpcode.VOLUME, formatDouble (volume, 2), velAmpDepth == 1);
+            buffer.append (addAttribute (SfzOpcode.VOLUME, formatDouble (volume, 2), velAmpDepth == 1));
         if (velAmpDepth < 1)
-            addAttribute (buffer, SfzOpcode.AMP_VELOCITY_TRACK, formatDouble (velAmpDepth * 100.0, 2), true);
+            buffer.append (addAttribute (SfzOpcode.AMP_VELOCITY_TRACK, formatDouble (velAmpDepth * 100.0, 2), true));
 
         // The curve of the velocity modulation describes the response of the amplitude to the
         // velocity as the power law x^(3^curve) on the normalized velocity: +1 is x^3 (the law of
@@ -515,7 +541,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             for (int i = 0; i < VELOCITY_CURVE_POINTS.length; i++)
             {
                 final int velocity = VELOCITY_CURVE_POINTS[i];
-                addAttribute (buffer, SfzOpcode.AMP_VELOCITY_CURVE + velocity, formatDouble (Math.pow (velocity / 127.0, power), 4), i % 6 == 5 || i == VELOCITY_CURVE_POINTS.length - 1);
+                buffer.append (addAttribute (SfzOpcode.AMP_VELOCITY_CURVE + velocity, formatDouble (Math.pow (velocity / 127.0, power), 4), i % 6 == 5 || i == VELOCITY_CURVE_POINTS.length - 1));
             }
         }
 
@@ -524,16 +550,15 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         final double ampKeyTracking = zone.getAmplitudeKeyTracking ();
         if (ampKeyTracking != 0)
         {
-            addAttribute (buffer, SfzOpcode.AMP_KEY_TRACK, formatDouble (Math.clamp (ampKeyTracking, -1, 1), 3), false);
-            addIntegerAttribute (buffer, SfzOpcode.AMP_KEY_CENTER, limitToDefault (zone.getKeyRoot (), 60), true);
+            buffer.append (addAttribute (SfzOpcode.AMP_KEY_TRACK, formatDouble (Math.clamp (ampKeyTracking, -1, 1), 3), false));
+            buffer.append (addIntegerAttribute (SfzOpcode.AMP_KEY_CENTER, limitToDefault (zone.getKeyRoot (), 60), true));
         }
 
         final double pan = zone.getPanning ();
         if (pan != 0)
-            addAttribute (buffer, SfzOpcode.PANNING, Integer.toString ((int) Math.round (pan * 100)), true);
+            buffer.append (addAttribute (SfzOpcode.PANNING, Integer.toString ((int) Math.round (pan * 100)), true));
 
-        if (ampEnvParameterLevel == ParameterLevel.ZONE)
-            createVolumeEnvelope (buffer, zone);
+        createVolumeEnvelope (buffer, zone);
 
         // Amplitude LFO (tremolo)
 
@@ -551,6 +576,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
             buffer.append (lfoStr).append (LINE_FEED);
         }
+
+        return buffer.toString ();
     }
 
 
@@ -581,35 +608,37 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     /**
      * Create the filter info.
      *
-     * @param buffer Where to add the XML code
      * @param zone The sample zone
+     * @return The created filter opcodes
      */
-    private static void createFilter (final StringBuilder buffer, final ISampleZone zone)
+    private static String createFilter (final ISampleZone zone)
     {
         final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isEmpty ())
-            return;
+            return "";
 
         final IFilter filter = optFilter.get ();
         final String type = FILTER_TYPE_MAP.get (filter.getType ());
         final Set<Integer> allowedPoles = FILTER_POLES.get (type);
         if (allowedPoles == null)
-            return;
+            return "";
 
         int numPoles = filter.getPoles ();
         if (!allowedPoles.contains (Integer.valueOf (numPoles)))
             numPoles = 2;
-        addAttribute (buffer, SfzOpcode.FILTER_TYPE, type + "_" + numPoles + "p", false);
-        addAttribute (buffer, SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false);
+
+        final StringBuilder buffer = new StringBuilder ();
+        buffer.append (addAttribute (SfzOpcode.FILTER_TYPE, type + "_" + numPoles + "p", false));
+        buffer.append (addAttribute (SfzOpcode.CUTOFF, formatDouble (filter.getCutoff (), 2), false));
 
         final double velFilterDepth = filter.getCutoffVelocityModulator ().getDepth ();
         if (velFilterDepth != 0)
-            addAttribute (buffer, SfzOpcode.FIL_VELOCITY_TRACK, Integer.toString ((int) Math.round (velFilterDepth * 9600.0)), false);
+            buffer.append (addAttribute (SfzOpcode.FIL_VELOCITY_TRACK, Integer.toString ((int) Math.round (velFilterDepth * 9600.0)), false));
 
         final double filterKeyTracking = filter.getCutoffKeyTracking ();
-        addAttribute (buffer, SfzOpcode.RESONANCE, formatDouble (filter.getResonance () * IFilter.MAX_RESONANCE, 2), filterKeyTracking <= 0);
+        buffer.append (addAttribute (SfzOpcode.RESONANCE, formatDouble (filter.getResonance () * IFilter.MAX_RESONANCE, 2), filterKeyTracking <= 0));
         if (filterKeyTracking > 0)
-            addAttribute (buffer, SfzOpcode.FIL_KEY_TRACK, Integer.toString ((int) Math.round (filter.getCutoffKeyTracking () * 1200.0)), true);
+            buffer.append (addAttribute (SfzOpcode.FIL_KEY_TRACK, Integer.toString ((int) Math.round (filter.getCutoffKeyTracking () * 1200.0)), true));
 
         // Envelope modulation
 
@@ -655,18 +684,20 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
             buffer.append (lfoStr).append (LINE_FEED);
         }
+
+        return buffer.toString ();
     }
 
 
-    private static void addAttribute (final StringBuilder sb, final String opcode, final String value, final boolean addLineFeed)
+    private static String addAttribute (final String opcode, final String value, final boolean addLineFeed)
     {
-        sb.append (opcode).append ('=').append (value).append (addLineFeed ? LINE_FEED : ' ');
+        return new StringBuilder ().append (opcode).append ('=').append (value).append (addLineFeed ? LINE_FEED : ' ').toString ();
     }
 
 
-    private static void addIntegerAttribute (final StringBuilder sb, final String opcode, final int value, final boolean addLineFeed)
+    private static String addIntegerAttribute (final String opcode, final int value, final boolean addLineFeed)
     {
-        addAttribute (sb, opcode, Integer.toString (value), addLineFeed);
+        return addAttribute (opcode, Integer.toString (value), addLineFeed);
     }
 
 
@@ -738,5 +769,88 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     private static String formatAsFloat (final double value)
     {
         return new BigDecimal (Float.toString ((float) value)).stripTrailingZeros ().toPlainString ();
+    }
+
+
+    /**
+     * Compares the parameters of the zones within each group. Parameters that are identical across
+     * all zones of a group are removed from the zones and appended to the group key. Parameters
+     * that are then identical across all groups are further promoted and appended to
+     * documentBuffer. All remaining parameters stay unchanged at zone level.
+     *
+     * @param documentBuffer The top document buffer
+     * @param groupContent The groups with the zones and their parameters
+     */
+    private static void promoteCommonParameters (final StringBuilder documentBuffer, final List<Pair<String, List<Pair<String, List<String>>>>> groupContent)
+    {
+        if (groupContent.isEmpty ())
+            return;
+
+        final List<Set<String>> groupCommonParams = new ArrayList<> ();
+
+        // Step 1: promote parameters that are identical across all zones of a group
+        for (int g = 0; g < groupContent.size (); g++)
+        {
+            final Pair<String, List<Pair<String, List<String>>>> group = groupContent.get (g);
+            final List<Pair<String, List<String>>> zones = group.getValue ();
+
+            final Set<String> common = zones.isEmpty () ? Collections.emptySet () : SfzCreator.intersectAll (zones.stream ().map (Pair::getValue).collect (Collectors.toList ()));
+
+            // Remove from zones (only non-common parameters remain)
+            for (final Pair<String, List<String>> zone: zones)
+                zone.getValue ().removeAll (common);
+
+            groupCommonParams.add (common);
+        }
+
+        // Step 2: find parameters that are common across ALL groups
+        final List<List<String>> asLists = groupCommonParams.stream ().map (ArrayList::new).collect (Collectors.toList ());
+        final Set<String> documentCommon = SfzCreator.intersectAll (asLists);
+
+        // Step 3: update group keys (excluding document-wide parameters)
+        for (int g = 0; g < groupContent.size (); g++)
+        {
+            final Pair<String, List<Pair<String, List<String>>>> group = groupContent.get (g);
+            final Set<String> groupOnly = new LinkedHashSet<> (groupCommonParams.get (g));
+            groupOnly.removeAll (documentCommon);
+
+            if (!groupOnly.isEmpty ())
+            {
+                final String updatedKey = SfzCreator.appendParameters (group.getKey (), groupOnly);
+                groupContent.set (g, new Pair<> (updatedKey, group.getValue ()));
+            }
+        }
+
+        // Step 4: append document-wide parameters to documentBuffer
+        if (!documentCommon.isEmpty ())
+            documentBuffer.append (String.join ("", documentCommon));
+
+        // Step 5: write group keys and zone keys into documentBuffer
+        for (int g = 0; g < groupContent.size (); g++)
+        {
+            final Pair<String, List<Pair<String, List<String>>>> group = groupContent.get (g);
+            documentBuffer.append (group.getKey ());
+            for (final Pair<String, List<String>> zone: group.getValue ())
+                documentBuffer.append (appendParameters (zone.getKey (), zone.getValue ()));
+        }
+    }
+
+
+    private static Set<String> intersectAll (final List<List<String>> lists)
+    {
+        if (lists.isEmpty ())
+            return Collections.emptySet ();
+        final Set<String> result = new LinkedHashSet<> (lists.get (0));
+        for (final List<String> list: lists)
+            result.retainAll (list);
+        return result;
+    }
+
+
+    private static String appendParameters (final String key, final Collection<String> params)
+    {
+        if (params.isEmpty ())
+            return key;
+        return key + String.join ("", params);
     }
 }
