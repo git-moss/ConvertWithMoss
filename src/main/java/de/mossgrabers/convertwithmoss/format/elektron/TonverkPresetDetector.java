@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -74,6 +76,9 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         FilterType.BAND_REJECTION
     };
 
+    /** The samples of the preset being read which were already reported as missing. */
+    private final Set<String>          reportedMissingSamples  = new HashSet<> ();
+
 
     /**
      * Constructor.
@@ -111,6 +116,8 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
 
     private Optional<IMultisampleSource> convertPreset (final File sourceFile, final TonverkPresetFile preset) throws IOException
     {
+        this.reportedMissingSamples.clear ();
+
         final List<IGroup> groups;
         switch (preset.machine)
         {
@@ -130,7 +137,10 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         if (groups.isEmpty ())
+        {
+            this.notifier.logError ("IDS_TONVERK_NO_SAMPLES", sourceFile.getName ());
             return Optional.empty ();
+        }
 
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile), groups);
 
@@ -211,7 +221,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         final Optional<File> sampleFile = resolveSample (sourceFile, preset.param (prefix + "_sample_slot"));
         if (sampleFile.isEmpty ())
         {
-            this.notifier.logError ("IDS_TONVERK_SAMPLE_NOT_FOUND", preset.param (prefix + "_sample_slot"));
+            this.reportMissingSample (preset.param (prefix + "_sample_slot"));
             return Collections.emptyList ();
         }
 
@@ -323,7 +333,7 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         final Optional<File> sampleFile = resolveSample (sourceFile, slot.sample);
         if (sampleFile.isEmpty ())
         {
-            this.notifier.logError ("IDS_TONVERK_SAMPLE_NOT_FOUND", slot.sample);
+            this.reportMissingSample (slot.sample);
             return Optional.empty ();
         }
 
@@ -452,6 +462,20 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setGain (volume <= 0 ? Double.NEGATIVE_INFINITY : 20.0 * Math.log10 (volume));
         final double panning = preset.paramDouble (prefix + "_pan", 0.5);
         zone.setPanning (Math.clamp ((panning - 0.5) * 2.0, -1.0, 1.0));
+    }
+
+
+    /**
+     * Report a sample which could not be found. A Multi or Drum preset references the same file
+     * from every key-zone which is cut out of it; a missing sample is therefore reported only once
+     * per preset. An empty slot references no sample and is not reported.
+     *
+     * @param devicePath The absolute device path of the sample
+     */
+    private void reportMissingSample (final String devicePath)
+    {
+        if (devicePath != null && !devicePath.isBlank () && this.reportedMissingSamples.add (devicePath))
+            this.notifier.logError ("IDS_TONVERK_SAMPLE_NOT_FOUND", devicePath);
     }
 
 
