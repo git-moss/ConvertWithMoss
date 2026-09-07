@@ -206,9 +206,6 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             return Collections.emptyList ();
         }
 
-        if (this.settingsConfiguration.logUnsupportedOpcodes ())
-            this.printUnsupportedOpcodes (this.diffOpcodes ());
-
         final List<IGroup> groups = this.parseGroups (sourceFile.getParentFile (), result);
         if (groups.isEmpty ())
         {
@@ -223,6 +220,9 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         final int polyphony = this.getIntegerValue (SfzOpcode.POLYPHONY);
         if (polyphony > 0)
             multisampleSource.setPolyphony (polyphony);
+
+        if (this.settingsConfiguration.logUnsupportedOpcodes ())
+            this.printUnsupportedOpcodes (this.diffOpcodes ());
 
         return Collections.singletonList (multisampleSource);
     }

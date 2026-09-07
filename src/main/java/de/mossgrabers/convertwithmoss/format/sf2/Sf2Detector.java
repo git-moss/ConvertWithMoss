@@ -944,7 +944,8 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             {
                 final ILfo pitchLfo = pitchLfoModulator.getSource ();
                 // The frequency is stored in absolute cents, see the filter cutoff above
-                pitchLfo.setRate (8.176 * Math.pow (2, generators.getSignedValue (Generator.FREQ_VIB_LFO).doubleValue () / 1200.0));
+                final double frequencyCents = generators.getSignedValue (Generator.FREQ_VIB_LFO).doubleValue ();
+                pitchLfo.setRate (8.176 * Math.pow (2, frequencyCents / 1200.0));
                 pitchLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_VIB_LFO)));
             }
 

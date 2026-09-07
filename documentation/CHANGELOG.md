@@ -25,16 +25,15 @@
   * Fixed: Written disks laid the loop out the same wrong way and flagged voices without a loop as looped. The audio of a voice is now written up to the end of its loop and the records match the factory library; still not verified on hardware.
 * E-mu Emulator III
   * New: The 'Reverse Playback' flag of a sample is now read and applied to its zones.
+  * Fixed: Forward/backward ('fwd/bkwd') loops of Emulator III banks were lost. The loop type of a sample is a 2 bit field - 0: off, 1: forward, 2: forward/backward - and only the forward bit was tested, so a forward/backward sample was converted as not looped at all. Such loops are now read as alternating loops, which destinations that support them play as intended (e.g. TAL Sampler as a ping-pong loop). The field layout was verified against the sampler's OS 2.42 firmware; only the original Emulator III knows this loop type, the Emulator IIIX and ESI have dropped it.
 * Elektron Tonverk Preset
   * Fixed: A sample which could not be found was reported once for every key-zone which is cut out of it - a Multi preset which spreads one WAV file across the keyboard gave a dozen identical lines. A missing sample is now reported once per preset, and a preset none of whose samples could be found is reported as skipped.
-=======
-  * Fixed: Forward/backward ('fwd/bkwd') loops of Emulator III banks were lost. The loop type of a sample is a 2 bit field - 0: off, 1: forward, 2: forward/backward - and only the forward bit was tested, so a forward/backward sample was converted as not looped at all. Such loops are now read as alternating loops, which destinations that support them play as intended (e.g. TAL Sampler as a ping-pong loop). The field layout was verified against the sampler's OS 2.42 firmware; only the original Emulator III knows this loop type, the Emulator IIIX and ESI have dropped it.
-* Fixed: Forward/backward ('fwd/bkwd') loops of Emulator III banks were lost. The loop type of a sample is a 2 bit field - 0: off, 1: forward, 2: forward/backward - and only the forward bit was tested, so a forward/backward sample was converted as not looped at all. Such loops are now read as alternating loops, which destinations that support them play as intended (e.g. TAL Sampler as a ping-pong loop). The field layout was verified against the sampler's OS 2.42 firmware; only the original Emulator III knows this loop type, the Emulator IIIX and ESI have dropped it.
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
+  * Fixed: Unused opcodes were not logged.
 * SoundFont 2
   * Fixed: 24-bit samples were missing the padding byte in case that the number of samples were uneven. This made reading the created SF2 file fail in some tools (e.g. Polyphone).
   * Fixed: The specification version is now set to 2.04 if 24-bit samples are used otherwise it is still 2.01. This prevented 24-bit files to be loaded in Viena.

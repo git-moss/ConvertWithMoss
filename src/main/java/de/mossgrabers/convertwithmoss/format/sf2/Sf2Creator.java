@@ -446,7 +446,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
             if (rate > 0)
             {
                 // The frequency is stored in absolute cents, see the filter cutoff below
-                final double frequencyCents = Math.log (rate / 8.176) * 1200.0 / Math.log (2);
+                final double frequencyCents = 1200.0 * (Math.log (rate / 8.176) / Math.log (2));
                 instrumentZone.addSignedGenerator (Generator.FREQ_VIB_LFO, (int) Math.round (frequencyCents));
             }
             final double delay = pitchLfo.getDelay ();
