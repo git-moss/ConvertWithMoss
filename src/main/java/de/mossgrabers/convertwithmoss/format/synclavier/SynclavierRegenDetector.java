@@ -71,6 +71,10 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
     private static final String    TRAN_PARAM          = "SynclavierPTPITran";
     private static final String    OCTAVE_PARAM        = "SynclavierPTPIOctave";
     private static final double    OCTAVE_REFERENCE_HZ = 440.0;
+    // The volume (a dB attenuation) and the pan (-63..63) of the whole timbre, on top of the
+    // settings of the partials
+    private static final String    TIMBRE_VOLUME_PARAM = "SynclavierTBPIVolume";
+    private static final String    TIMBRE_PAN_PARAM    = "SynclavierTBPIPan";
     // The octaves which the full depth of the model filter envelope covers
     private static final double    OCTAVES_FULL_DEPTH  = IEnvelope.MAX_ENVELOPE_DEPTH / 1200.0;
     private static final Double    ZERO                = Double.valueOf (0);
@@ -191,6 +195,8 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         final Map<Integer, Double> partialOctaves = new TreeMap<> ();
         final Map<String, Double> filterParameters = new HashMap<> ();
         int dynamicSource = -1;
+        double timbreVolume = 0;
+        double timbrePan = 0;
         for (int i = magicIndex + 1; i < lines.size (); i++)
         {
             final String line = lines.get (i).trim ();
@@ -220,6 +226,10 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                 collectPartialScalar (partialTrans, line);
             else if (line.startsWith (OCTAVE_PARAM))
                 collectPartialScalar (partialOctaves, line);
+            else if (isKeyword (line, TIMBRE_VOLUME_PARAM))
+                timbreVolume = parseTrailingValue (line);
+            else if (isKeyword (line, TIMBRE_PAN_PARAM))
+                timbrePan = parseTrailingValue (line);
             else if (line.startsWith (DYN_ENV_SOURCE))
             {
                 final String [] tokens = line.split ("\\s+");
@@ -265,9 +275,12 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
             // either the group or the zone value but never both. The pan is normalized from the
             // Regen range of [-63..63] to the model range of [-1..1], the volume is already a dB
             // attenuation and the pitch offset is already in semi-tones.
-            if (partialPan != null)
-                group.setPanning (Math.clamp (partialPan.doubleValue () / PAN_RANGE, -1, 1));
-            group.setGain (partialVolume.doubleValue ());
+            // The volume and the pan of the whole timbre add on top of the ones of the partial
+            final double gainOffset = partialVolume.doubleValue () + timbreVolume;
+            final double panningOffset = Math.clamp (((partialPan == null ? 0 : partialPan.doubleValue ()) + timbrePan) / PAN_RANGE, -1, 1);
+            if (panningOffset != 0)
+                group.setPanning (panningOffset);
+            group.setGain (gainOffset);
             if (pitchOffset != 0)
                 group.setTuning (pitchOffset);
             for (final String [] tokens: partialEntry.getValue ())
@@ -279,9 +292,9 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                     applyAmplitudeEnvelope (zone, envelope);
                     if (crossfade != null)
                         applyVelocityWindow (zone, crossfade);
-                    if (partialPan != null)
-                        zone.setPanning (Math.clamp (partialPan.doubleValue () / PAN_RANGE, -1, 1));
-                    zone.setGain (zone.getGain () + partialVolume.doubleValue ());
+                    if (panningOffset != 0)
+                        zone.setPanning (panningOffset);
+                    zone.setGain (zone.getGain () + gainOffset);
                     if (pitchOffset != 0)
                         zone.setTuning (zone.getTuning () + pitchOffset);
                     final Optional<IFilter> zoneFilter = buildFilter (filterParameters);
@@ -644,6 +657,33 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
         if (tokens.length < 5)
             return;
         map.put (tokens[0].substring (prefix.length ()), Double.valueOf (parseDouble (tokens[tokens.length - 1], 0)));
+    }
+
+
+    /**
+     * Test whether a line holds exactly the given keyword, and not one which merely starts with
+     * it.
+     *
+     * @param line The line
+     * @param keyword The keyword
+     * @return True if the line starts with the keyword followed by white space or its end
+     */
+    private static boolean isKeyword (final String line, final String keyword)
+    {
+        return line.equals (keyword) || line.startsWith (keyword + " ") || line.startsWith (keyword + "\t");
+    }
+
+
+    /**
+     * Parse the value at the end of a line, e.g. the -16.0 of 'SynclavierTBPIVolume 0 0 0 -16.0'.
+     *
+     * @param line The line
+     * @return The value, 0 if the line holds none
+     */
+    private static double parseTrailingValue (final String line)
+    {
+        final String [] tokens = line.split ("\\s+");
+        return tokens.length < 2 ? 0 : parseDouble (tokens[tokens.length - 1], 0);
     }
 
 
