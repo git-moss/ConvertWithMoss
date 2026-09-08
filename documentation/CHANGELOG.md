@@ -31,6 +31,10 @@
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
+* Roland MC-707/MC-101
+  * New: The pitch key follow of a partial (100 = chromatic, 0 = the same pitch on every key) is read and written, and the keys of a written drum kit which play a zone without key tracking all get the pitch of its root key.
+* Roland ZEN-Core
+  * New: The pitch key follow of a partial is read and written - the same field as on the MC-707, 100 = chromatic in all templates. A drum zone was converted as chromatic and written to follow the keyboard.
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
   * Fixed: Unused opcodes were not logged.
