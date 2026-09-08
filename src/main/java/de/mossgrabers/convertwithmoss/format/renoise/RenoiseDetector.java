@@ -254,6 +254,11 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
             if (RenoiseTag.LAYER_NOTE_OFF.equals (XMLUtils.getChildElementContent (mapping, RenoiseTag.LAYER)))
                 zone.setTrigger (TriggerType.RELEASE);
+
+            // A sample whose mapping does not change its pitch plays at its root pitch on every
+            // key, e.g. the drums of a kit
+            if ("false".equalsIgnoreCase (XMLUtils.getChildElementContent (mapping, RenoiseTag.MAP_KEY_TO_PITCH)))
+                zone.setKeyTracking (0);
         }
 
         // Loop
