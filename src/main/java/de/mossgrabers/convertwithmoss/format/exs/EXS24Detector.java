@@ -154,6 +154,8 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             zone.setReversed (exs24Zone.reverse);
             zone.setOneShot (exs24Zone.oneshot);
             zone.setGain (exs24Zone.volumeAdjust);
+            // A zone whose 'Pitch' switch is off plays its sample at the same pitch on every key
+            zone.setKeyTracking (exs24Zone.pitch ? 1 : 0);
 
             if (exs24Zone.pitch && (exs24Zone.coarseTuning != 0 || exs24Zone.fineTuning != 0))
                 zone.setTuning (exs24Zone.coarseTuning + exs24Zone.fineTuning / 100.0);
@@ -281,11 +283,14 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         if (monoLegato != null && monoLegato.intValue () > 0)
             multisampleSource.setMonophonicLegato (true);
 
+        // The transposition of the instrument in semitones adds to its coarse and fine tuning
+        final Integer globalTranspose = parameters.get (EXS24Parameters.TRANSPOSE);
+        final int transpose = globalTranspose == null ? 0 : globalTranspose.intValue ();
         final Integer globalCoarseTune = parameters.get (EXS24Parameters.COARSE_TUNE);
         final int coarseTune = globalCoarseTune == null ? 0 : globalCoarseTune.intValue ();
         final Integer globalFineTune = parameters.get (EXS24Parameters.FINE_TUNE);
         final int fineTune = globalFineTune == null ? 0 : globalFineTune.intValue ();
-        final double tuneOffset = coarseTune + fineTune / 100.0;
+        final double tuneOffset = transpose + coarseTune + fineTune / 100.0;
 
         final IEnvelope globalAmplitudeEnvelope = createEnvelope (parameters, 1);
         final Integer env1Velocity = parameters.get (EXS24Parameters.ENV1_VEL_SENS);
