@@ -389,6 +389,8 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
             voice[Emulator4Constants.VOICE_MOD_OFFSET + Emulator4Constants.MOD_FILTER_ENVELOPE_AMOUNT] = (byte) Math.clamp (Math.round (filterEnvelopeDepth * 127), -127, 127);
         if (filter != null && filter.getCutoffKeyTracking () != 0)
             voice[Emulator4Constants.VOICE_MOD_OFFSET + Emulator4Constants.MOD_KEY_TRACKING_AMOUNT] = (byte) Math.clamp (Math.round (filter.getCutoffKeyTracking () / Emulator4Constants.FULL_KEY_TRACKING * 127), -127, 127);
+        if (filter != null && filter.getCutoffVelocityModulator ().getDepth () != 0)
+            voice[Emulator4Constants.VOICE_MOD_OFFSET + Emulator4Constants.MOD_VELOCITY_CUTOFF_AMOUNT] = (byte) Math.clamp (Math.round (filter.getCutoffVelocityModulator ().getDepth () * 127), -127, 127);
 
         // The zone entry
         final int entryOffset = Emulator4Constants.VOICE_SIZE;

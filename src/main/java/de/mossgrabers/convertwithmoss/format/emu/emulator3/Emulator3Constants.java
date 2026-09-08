@@ -144,6 +144,21 @@ public class Emulator3Constants
     /** The offset of the LFO to pitch (vibrato) amount. */
     public static final int            ZONE_LFO_TO_PITCH              = 36;
 
+    /** The offset of the LFO to amplifier (tremolo) amount. */
+    public static final int            ZONE_LFO_TO_AMPLIFIER          = 37;
+
+    /** The offset of the LFO to filter cutoff amount. */
+    public static final int            ZONE_LFO_TO_CUTOFF             = 38;
+
+    /**
+     * The tremolo depth in decibels of the full LFO to amplifier amount. The depths of the Emulator
+     * III are not documented; they are scaled like the ones of the Emax, whose steps are known.
+     */
+    public static final double         LFO_AMPLIFIER_FULL_DEPTH_DB    = 24.0;
+
+    /** The cutoff modulation in cents of the full LFO to cutoff amount, scaled like the Emax. */
+    public static final double         LFO_CUTOFF_FULL_DEPTH_CENTS    = 5100.0;
+
     /** The offset of the filter type and the LFO shape. */
     public static final int            ZONE_VCF_TYPE_LFO_SHAPE        = 45;
     /** The offset of the flags which enable the real-time controls. */
@@ -1546,6 +1561,49 @@ public class Emulator3Constants
     public static double getLfoDelay (final int value)
     {
         return TIME_21_69[Math.clamp (value, 0, TIME_21_69.length - 1)];
+    }
+
+
+    /**
+     * Convert a rate in Hertz into the value of the LFO rate parameter.
+     *
+     * @param rate The rate in Hertz
+     * @return The value
+     */
+    public static int getLfoRateValue (final double rate)
+    {
+        return findClosest (LFO_RATE, rate);
+    }
+
+
+    /**
+     * Convert a delay in seconds into the value of the LFO delay parameter.
+     *
+     * @param seconds The delay in seconds
+     * @return The value
+     */
+    public static int getLfoDelayValue (final double seconds)
+    {
+        return findClosest (TIME_21_69, seconds);
+    }
+
+
+    /**
+     * Get the value of the LFO shape, which is stored in the lower 2 bits of the filter type
+     * parameter (see getLfoWaveform).
+     *
+     * @param waveform The waveform
+     * @return The value
+     */
+    public static int getLfoShapeValue (final LfoWaveform waveform)
+    {
+        return switch (waveform)
+        {
+            case SINE -> 1;
+            case SAWTOOTH_UP, SAWTOOTH_DOWN -> 2;
+            case SQUARE -> 3;
+            default -> 0;
+        };
     }
 
 

@@ -583,6 +583,7 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
     {
         final float velocityAmount = (float) (Math.clamp (zone.getAmplitudeVelocityModulator ().getDepth (), 0, 1) * EmulatorXConstants.FULL_CORD_AMOUNT);
         final float cutoffAmount = (float) (getFilterEnvelopeDepth (zone) * EmulatorXConstants.FULL_CORD_AMOUNT);
+        final float cutoffVelocityAmount = (float) (getCutoffVelocityDepth (zone) * EmulatorXConstants.FULL_CORD_AMOUNT);
         final List<byte []> cords = new ArrayList<> ();
         for (int i = 0; i < EmulatorXConstants.VOICE_NUM_CORDS; i++)
         {
@@ -597,6 +598,8 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
                     amount = velocityAmount;
                 else if (cord.source () == EmulatorXConstants.CORD_SOURCE_FILTER_ENV2 && cord.destination () == EmulatorXConstants.CORD_DEST_CUTOFF)
                     amount = cutoffAmount;
+                else if (cord.source () == EmulatorXConstants.CORD_SOURCE_VELOCITY && cord.destination () == EmulatorXConstants.CORD_DEST_CUTOFF)
+                    amount = cutoffVelocityAmount;
                 EmulatorXConstants.putFloatBE (data, 6, amount);
             }
             cords.add (EmulatorXChunk.create (EmulatorXConstants.CORD_TAG, data));
@@ -631,6 +634,19 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
             return 0;
         final IEnvelopeModulator modulator = filter.getCutoffEnvelopeModulator ();
         return modulator.getSource () == null ? 0 : Math.clamp (modulator.getDepth (), -1, 1);
+    }
+
+
+    /**
+     * Get the depth of the velocity to filter cutoff modulation of a zone.
+     *
+     * @param zone The zone
+     * @return The depth in the range of -1..1, 0 if the zone has no filter
+     */
+    private static double getCutoffVelocityDepth (final ISampleZone zone)
+    {
+        final IFilter filter = zone.getFilter ().orElse (null);
+        return filter == null ? 0 : Math.clamp (filter.getCutoffVelocityModulator ().getDepth (), -1, 1);
     }
 
 

@@ -575,6 +575,24 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Read the depth of the modulation cord which routes the velocity to the filter cutoff.
+     *
+     * @param voice The voice chunk
+     * @return The depth in the range of -1..1
+     */
+    private static double readCutoffVelocityDepth (final EmulatorXChunk voice)
+    {
+        final EmulatorXChunk cordList = voice.getList (EmulatorXConstants.CORD_LIST_TYPE);
+        if (cordList == null)
+            return 0;
+        for (final EmulatorXChunk cord: cordList.getChildren ())
+            if (cord.is (EmulatorXConstants.CORD_TAG) && cord.getByte (4) == EmulatorXConstants.CORD_SOURCE_VELOCITY && cord.getByte (5) == EmulatorXConstants.CORD_DEST_CUTOFF)
+                return Math.clamp (cord.getFloat (6) / EmulatorXConstants.FULL_CORD_AMOUNT, -1, 1);
+        return 0;
+    }
+
+
+    /**
      * Read the depth of the modulation cord which routes the filter envelope to the filter cutoff.
      *
      * @param voice The voice chunk
@@ -750,6 +768,9 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
                 cutoffModulator.setDepth (envelopeDepth);
             }
         }
+        final double velocityDepth = readCutoffVelocityDepth (voice);
+        if (velocityDepth != 0)
+            filter.getCutoffVelocityModulator ().setDepth (velocityDepth);
         return filter;
     }
 }
