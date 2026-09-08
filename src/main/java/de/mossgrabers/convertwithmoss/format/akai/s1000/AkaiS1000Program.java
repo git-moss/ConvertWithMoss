@@ -42,9 +42,8 @@ public class AkaiS1000Program
     // 0..7, 255=OFF
     @SuppressWarnings("unused")
     private byte                 auxOutputSelect;
-    // 0..99
-    @SuppressWarnings("unused")
-    private byte                 mixOutputSelect;
+    // 0..99, the level of the program in the stereo mix (STEREO in the Akai documentation)
+    private byte                 stereoLevel;
     // -50..50
     private byte                 mixPan;
     // 0..99
@@ -218,7 +217,7 @@ public class AkaiS1000Program
         this.highKey = image.readInt8 ();
         this.octaveShift = image.readInt8 ();
         this.auxOutputSelect = image.readInt8 ();
-        this.mixOutputSelect = image.readInt8 ();
+        this.stereoLevel = image.readInt8 ();
         this.mixPan = image.readInt8 ();
         this.volume = image.readInt8 ();
         this.velocityToVolume = image.readInt8 ();
@@ -352,6 +351,17 @@ public class AkaiS1000Program
     public byte getMixPan ()
     {
         return this.mixPan;
+    }
+
+
+    /**
+     * Get the level of the program in the stereo mix output, 0-99 with 99 being the full level.
+     *
+     * @return The stereo level
+     */
+    public byte getStereoLevel ()
+    {
+        return this.stereoLevel;
     }
 
 

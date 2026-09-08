@@ -10,6 +10,8 @@
 * Fixed: 32-bit float samples (e.g. the WAV files which DirectWave writes) were always converted to 16 bit, even though the log announced the 24 bit of the destination format. A float sample is now converted to the highest resolution the destination supports - 24 bit for e.g. SoundFont 2, Bliss, Tonverk, DirectWave and FLAC, 32 bit for ALAC - and keeps its float format for destinations without a restriction, e.g. when only the chunks of a WAV file are updated.
 * Fixed: Sample search did only search upwards but not downwards from the current directory.
 * Fixed: Ignore very short loops (1-2 samples) stored in WAV sample chunks.
+* Akai S-1000/S-3000
+  * New: The octave shift, the stereo level and the stereo pan of a program are converted (also for MESA S3P files). A program which is shifted by one or two octaves was converted at its unshifted pitch; the level (0-99) and the pan (-50..50) of the program in the stereo mix are applied on top of the levels and pans of its key-groups.
 * E-mu Emulator II
   * New: Writing of Emulator II disks (HFE, EMUIIFD): each multi-sample becomes a preset of the bank, several of them as a library on one disk, with the voices of the key ranges, second voices, loops and the companded audio at 27,777 Hz. The settings of the voices are not decoded and are taken from a voice of the factory library; the operating system is copied from a system file or a disk image named in the settings. Not yet verified on hardware.
   * New: Bank files (EII) are read: the bank memory alone, without the operating system, as the Sound Designer software of 1985 received it from the sampler, as the EMXP tools extract and write it and as Arturia's Emulator II V imports it.
