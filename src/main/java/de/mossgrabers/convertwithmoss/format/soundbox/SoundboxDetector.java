@@ -365,18 +365,26 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
             zone.setReversed (sound.reverse);
 
             sampleData.addZoneData (zone, false, false);
-            final int numFrames = zone.getStop ();
-            zone.setStart ((int) Math.round (sound.sampleStart * numFrames));
-            zone.setStop ((int) Math.round (sound.sampleEnd * numFrames));
 
-            if (sound.loopActive && sound.loopEnd > sound.loopStart)
+            // All positions of a sound are fractions of the length of its sample, so the number of
+            // frames is needed to turn them into positions. It must come from the audio itself:
+            // addZoneData fills the stop of the zone in only for WAV samples, but packs written by
+            // newer plug-in versions hold FLAC
+            final int numFrames = sampleData.getAudioMetadata ().getNumberOfSamples ();
+            if (numFrames > 0)
             {
-                final ISampleLoop loop = new DefaultSampleLoop ();
-                loop.setType (sound.pingPong ? LoopType.ALTERNATING : LoopType.FORWARDS);
-                loop.setStart ((int) Math.round (sound.loopStart * numFrames));
-                loop.setEnd ((int) Math.round (sound.loopEnd * numFrames));
-                loop.setCrossfade (sound.loopCrossfade);
-                zone.addLoop (loop);
+                zone.setStart ((int) Math.round (sound.sampleStart * numFrames));
+                zone.setStop ((int) Math.round (sound.sampleEnd * numFrames));
+
+                if (sound.loopActive && sound.loopEnd > sound.loopStart)
+                {
+                    final ISampleLoop loop = new DefaultSampleLoop ();
+                    loop.setType (sound.pingPong ? LoopType.ALTERNATING : LoopType.FORWARDS);
+                    loop.setStart ((int) Math.round (sound.loopStart * numFrames));
+                    loop.setEnd ((int) Math.round (sound.loopEnd * numFrames));
+                    loop.setCrossfade (sound.loopCrossfade);
+                    zone.addLoop (loop);
+                }
             }
 
             // Fold the layer volume (0.75 = unity gain) and the sound volume percent into the
