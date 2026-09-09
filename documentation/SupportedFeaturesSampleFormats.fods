@@ -2594,7 +2594,7 @@
       <text:p>ISO</text:p>
      </table:table-cell>
      <table:covered-table-cell table:style-name="ce26"/>
-     <table:table-cell table:number-columns-repeated="2" table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="2">
       <text:p>All (WAV)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
@@ -2637,17 +2637,17 @@
       <text:p>End</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
-      <text:p>semitone-tune / fine tune</text:p>
+      <text:p>semitone-tune / fine tune / Octave shift</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>Keytracking</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
-      <text:p>(relative) gain</text:p>
+      <text:p>(relative) gain / Stereo level</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
-      <text:p>panning</text:p>
+      <text:p>panning / Stereo pan</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce25"/>
