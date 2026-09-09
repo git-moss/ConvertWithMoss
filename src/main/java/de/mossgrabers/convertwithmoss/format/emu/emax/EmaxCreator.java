@@ -469,7 +469,10 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
     {
         final ILfoModulator pitchLfo = zone.getPitchLfoModulator ();
         final ILfoModulator amplitudeLfo = zone.getAmplitudeLfoModulator ();
-        final ILfoModulator source = pitchLfo.getDepth () > 0 ? pitchLfo : amplitudeLfo;
+        final ILfoModulator cutoffLfo = zone.getFilter ().map (IFilter::getCutoffLfoModulator).orElse (null);
+        ILfoModulator source = pitchLfo.getDepth () > 0 ? pitchLfo : amplitudeLfo;
+        if (source.getDepth () <= 0 && cutoffLfo != null)
+            source = cutoffLfo;
         if (source.getDepth () <= 0)
             return;
 
@@ -516,6 +519,11 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
         final double velocityDepth = filter.getCutoffVelocityModulator ().getDepth ();
         if (velocityDepth > 0)
             EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_VELOCITY_TO_CUTOFF, 4, Math.clamp ((int) Math.round (velocityDepth * 15.0), 0, 15));
+
+        // The LFO of the voice modulates the cutoff with its own depth (rate and delay: see writeLfo)
+        final double lfoDepth = filter.getCutoffLfoModulator ().getDepth ();
+        if (lfoDepth > 0)
+            EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_CUTOFF, 4, Math.clamp ((int) Math.round (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH / EmaxConstants.LFO_CUTOFF_CENTS_PER_STEP), 0, 15));
     }
 
 

@@ -499,6 +499,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         double velocityToAmplitude = 0;
         double filterEnvelopeDepth = 0;
         double filterKeyTracking = 0;
+        double filterVelocity = 0;
         for (int slot = 0; slot < Emulator4Constants.NUM_MOD_CORDS; slot++)
         {
             final int cordOffset = modOffset + slot * Emulator4Constants.MOD_CORD_SIZE;
@@ -514,12 +515,16 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
                 filterEnvelopeDepth = Math.clamp (amount / 127.0, -1, 1);
             else if (destination == Emulator4Constants.MOD_DEST_CUTOFF && source == Emulator4Constants.MOD_SOURCE_KEY)
                 filterKeyTracking = Math.clamp (amount / 127.0 * Emulator4Constants.FULL_KEY_TRACKING, 0, 1);
+            // The velocity opens the filter with a positive amount, like the velocity cord of the
+            // amplifier makes a note louder
+            else if (destination == Emulator4Constants.MOD_DEST_CUTOFF && source >= Emulator4Constants.MOD_SOURCE_VELOCITY_FIRST && source <= Emulator4Constants.MOD_SOURCE_VELOCITY_LAST)
+                filterVelocity = Math.clamp (amount / 127.0, -1, 1);
         }
 
         final int pztOffset = offset + Emulator4Constants.VOICE_PZT_OFFSET;
         final IEnvelope amplitudeEnvelope = parseEnvelope (body, pztOffset + Emulator4Constants.PZT_AMPLITUDE_ENVELOPE);
 
-        final IFilter filter = createFilter (body, offset, pztOffset, filterEnvelopeDepth, filterKeyTracking);
+        final IFilter filter = createFilter (body, offset, pztOffset, filterEnvelopeDepth, filterKeyTracking, filterVelocity);
 
         for (int zoneIndex = 0; zoneIndex < numZones; zoneIndex++)
         {
@@ -602,9 +607,10 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
      * @param pztOffset The offset of the primary zone table of the voice
      * @param filterEnvelopeDepth The depth of the filter envelope to cutoff modulation (-1..1)
      * @param filterKeyTracking The key tracking of the filter cutoff (0..1)
+     * @param filterVelocity The depth of the velocity to cutoff modulation (-1..1)
      * @return The filter or null if the voice does not use one
      */
-    private static IFilter createFilter (final byte [] body, final int offset, final int pztOffset, final double filterEnvelopeDepth, final double filterKeyTracking)
+    private static IFilter createFilter (final byte [] body, final int offset, final int pztOffset, final double filterEnvelopeDepth, final double filterKeyTracking, final double filterVelocity)
     {
         final int filterType = body[offset + 58] & 0xFF;
         final int cutoff = body[offset + 60] & 0xFF;
@@ -652,7 +658,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         // A fully open low-pass without any modulation is the bypass state
-        if (filterType == 0x00 && cutoff == 255 && resonance == 0 && filterEnvelopeDepth == 0 && filterKeyTracking == 0)
+        if (filterType == 0x00 && cutoff == 255 && resonance == 0 && filterEnvelopeDepth == 0 && filterKeyTracking == 0 && filterVelocity == 0)
             return null;
 
         final double cutoffHertz = Emulator4Constants.cutoffToHertz (cutoff);
@@ -664,6 +670,8 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
         final IFilter filter = new DefaultFilter (type, poles, cutoffHertz, Math.clamp (resonance / 127.0, 0, 1));
         filter.setCutoffKeyTracking (filterKeyTracking);
+        if (filterVelocity != 0)
+            filter.getCutoffVelocityModulator ().setDepth (filterVelocity);
 
         if (filterEnvelopeDepth != 0)
         {
