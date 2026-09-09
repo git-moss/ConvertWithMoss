@@ -4201,13 +4201,9 @@
       <text:p>Key ranges of the preset (MIDI 36-96)</text:p>
      </table:covered-table-cell>
      <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="5"/>
-     <table:covered-table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO not decoded</text:p>
-     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string"/>
      <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
-     <table:covered-table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO not decoded</text:p>
-     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string"/>
      <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="5"/>
      <table:table-cell table:style-name="ce23"/>
      <table:covered-table-cell table:style-name="ce8"/>
