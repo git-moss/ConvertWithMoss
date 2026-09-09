@@ -102,6 +102,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final double                                DECLICK_SECONDS        = 0.07;
     /** The share of the peak level at which a step in the audio becomes audible as a click. */
     private static final double                                AUDIBLE_STEP_RATIO     = 0.02;
+    /** The lowest cutoff frequency of the filter of the device, the value 0 of Filter1CutOff. */
+    private static final double                                MIN_CUTOFF_FREQUENCY   = 8.1758;
+    /** The highest cutoff frequency of the filter of the device, the value 1 of Filter1CutOff. */
+    private static final double                                MAX_CUTOFF_FREQUENCY   = 19912.2;
 
     /**
      * The modulation matrix slot which routes the low frequency oscillator of the vibrato. The
@@ -1084,8 +1088,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         parameters.add (new WaldorfQpatParameter ("Filter12Type", (is24 ? "24" : "12") + filterName, pos));
 
         // Filter1CutOff: [0.00] "8.1758 Hz" ... [1.00] "19912.2 Hz"
-        final double cutoff = Math.log (filter.getCutoff () / 8.1758) / (Math.log (2) * 11.25);
-        parameters.add (new WaldorfQpatParameter ("Filter1CutOff", StringUtils.formatDouble (cutoff, 4, " Hz"), (float) cutoff));
+        final double cutoffFrequency = Math.clamp (filter.getCutoff (), MIN_CUTOFF_FREQUENCY, MAX_CUTOFF_FREQUENCY);
+        final double cutoff = Math.log (cutoffFrequency / MIN_CUTOFF_FREQUENCY) / (Math.log (2) * 11.25);
+        parameters.add (new WaldorfQpatParameter ("Filter1CutOff", StringUtils.formatDouble (cutoffFrequency, 4, " Hz"), (float) cutoff));
 
         // Filter1Reso: [0.00] "0.00 %" ... [1.00] "100.00 %"
         final double resonance = filter.getResonance ();
