@@ -28,6 +28,8 @@
   * Fixed: Forward/backward ('fwd/bkwd') loops of Emulator III banks were lost. The loop type of a sample is a 2 bit field - 0: off, 1: forward, 2: forward/backward - and only the forward bit was tested, so a forward/backward sample was converted as not looped at all. Such loops are now read as alternating loops, which destinations that support them play as intended (e.g. TAL Sampler as a ping-pong loop). The field layout was verified against the sampler's OS 2.42 firmware; only the original Emulator III knows this loop type, the Emulator IIIX and ESI have dropped it.
 * Elektron Tonverk Preset
   * Fixed: A sample which could not be found was reported once for every key-zone which is cut out of it - a Multi preset which spreads one WAV file across the keyboard gave a dozen identical lines. A missing sample is now reported once per preset, and a preset none of whose samples could be found is reported as skipped.
+* Logic EXS24
+  * New: The 'Pitch' switch of a zone is read and written: a zone with the switch off plays its sample at the same pitch on every key (e.g. a drum) and was converted as a chromatic instrument - 644 of the 66,392 zones of the DSF E-mu Proteus library have it off - and every written zone had it on. The transposition of the instrument is read as well.
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
