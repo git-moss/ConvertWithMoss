@@ -369,7 +369,16 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         final double tune = zone.getTuning ();
         if (tune != 0)
-            regionBuffer.append (addIntegerAttribute (SfzOpcode.TUNE, (int) Math.round (tune * 100), true));
+        {
+            // The whole semitones go into the transposition and the rest into the fine tuning,
+            // whose range is one semitone in the specification
+            final int transpose = (int) tune;
+            if (transpose != 0)
+                regionBuffer.append (addIntegerAttribute (SfzOpcode.TRANSPOSE, transpose, true));
+            final int cents = (int) Math.round ((tune - transpose) * 100);
+            if (cents != 0)
+                regionBuffer.append (addIntegerAttribute (SfzOpcode.TUNE, cents, true));
+        }
 
         final int keyTracking = (int) Math.round (zone.getKeyTracking () * 100.0);
         if (keyTracking != 100)

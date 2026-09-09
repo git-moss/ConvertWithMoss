@@ -34,6 +34,7 @@
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
   * Fixed: Unused opcodes were not logged.
+  * New: The 'transpose' opcode is read; it was ignored, so a region which is transposed by whole semitones played at the wrong pitch (75 of the 1,787 SFZ files on the test machine use it). When writing, whole semitones go into 'transpose' and only the remainder into 'tune', whose range the specification limits to one semitone.
 * SoundFont 2
   * Fixed: 24-bit samples were missing the padding byte in case that the number of samples were uneven. This made reading the created SF2 file fail in some tools (e.g. Polyphone).
   * Fixed: The specification version is now set to 2.04 if 24-bit samples are used otherwise it is still 2.01. This prevented 24-bit files to be loaded in Viena.

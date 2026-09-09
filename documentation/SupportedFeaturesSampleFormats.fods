@@ -9339,7 +9339,7 @@
       <text:p>sfz</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce41" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:number-columns-repeated="2" table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="2">
       <text:p>All (WAV)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
@@ -9399,7 +9399,7 @@
       <text:p>end</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>tune</text:p>
+      <text:p>tune / transpose</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>pitch_keytrack</text:p>

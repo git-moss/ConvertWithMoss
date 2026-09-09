@@ -472,6 +472,8 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         double tune = this.getDoubleValue (SfzOpcode.TUNE, 0);
         if (tune == 0)
             tune = this.getDoubleValue (SfzOpcode.PITCH, 0);
+        // The transposition in whole semitones adds to the fine tuning in cents
+        tune += this.getIntegerValue (SfzOpcode.TRANSPOSE, 0) * 100.0;
         sampleMetadata.setTuning (Math.clamp (tune, -3600, 3600) / 100.0);
 
         final double pitchKeytrack = this.getDoubleValue (SfzOpcode.PITCH_KEYTRACK, 100);
