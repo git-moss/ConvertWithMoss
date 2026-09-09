@@ -4069,7 +4069,8 @@
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>TODO Implement (<text:span text:style-name="T4">Voice Tuning -50..48 cents</text:span>)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Fine tuning (+0x1A)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>TODO Implement (nontranspose)</text:p>
@@ -4077,8 +4078,8 @@
      <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>TODO Implement (Backwards Mode)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement (Voice Attenuation 0..-48dB)</text:p>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Level table (+0x40)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -4101,17 +4102,19 @@
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce39" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement (ADSR)</text:p>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>VCA envelope counters</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement (Vel VCA Level 0..15)</text:p>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Level table entry 0 - 15</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (LFO → VCA)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Velocity to VCA / VCF attack (+0x1B)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to level (+0x2C)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce48" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce39" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -4122,34 +4125,34 @@
       <text:p>Fixed to 3 semitones</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (Vibrato Depth 0..15)</text:p>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to pitch (+0x28)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce35" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce14"/>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement Low-pass</text:p>
+     <table:table-cell table:style-name="ce8" office:value-type="string" calcext:value-type="string">
+      <text:p>Low-pass (SSM2045)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement 4 Pole</text:p>
+     <table:table-cell table:style-name="ce8" office:value-type="string" calcext:value-type="string">
+      <text:p>4</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement (Frequency 0-120)</text:p>
+     <table:table-cell table:style-name="ce8" office:value-type="string" calcext:value-type="string">
+      <text:p>Cutoff table (+0x30)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement (Q 0-99)</text:p>
+     <table:table-cell table:style-name="ce8" office:value-type="string" calcext:value-type="string">
+      <text:p>Q table (+0xF0)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement (ADSR + amount (-50..50))</text:p>
+     <table:table-cell table:style-name="ce8" office:value-type="string" calcext:value-type="string">
+      <text:p>VCF envelope counters, amount (+0x25)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement (Vel → VCF Freq)</text:p>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Cutoff table entry 0 - 15</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Implement (Keyboard Tracking, Default 1, 0..1.87)</text:p>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Keyboard tracking (+0x1F)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to filter (+0x2A)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
      <table:table-cell/>
@@ -4180,13 +4183,13 @@
       <text:p>Preset name (12 characters)</text:p>
      </table:covered-table-cell>
      <table:table-cell table:style-name="ce39"/>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce23"/>
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>First / second voice of a key range</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:covered-table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce23"/>
@@ -4197,15 +4200,15 @@
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>Key ranges of the preset (MIDI 36-96)</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="5" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="5"/>
      <table:covered-table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
       <text:p>TODO not decoded</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:covered-table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO not decoded</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="5" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="5"/>
      <table:table-cell table:style-name="ce23"/>
      <table:covered-table-cell table:style-name="ce8"/>
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
@@ -4218,12 +4221,18 @@
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>Loop length</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:covered-table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO not decoded</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="5" table:style-name="ce25"/>
+     <table:table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO template voice</text:p>
+     </table:table-cell>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO template voice</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Implement (LFO → VCA)</text:p>
      </table:table-cell>
@@ -4231,13 +4240,33 @@
      <table:covered-table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO not decoded</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Implement</text:p>
      </table:table-cell>
      <table:covered-table-cell table:style-name="ce35"/>
      <table:table-cell table:style-name="ce14"/>
-     <table:covered-table-cell table:number-columns-repeated="7" table:style-name="ce25"/>
+     <table:table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO template voice</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO template voice</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO template voice</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO template voice</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO template voice</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO template voice</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO template voice</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Implement</text:p>
      </table:table-cell>
@@ -4466,8 +4495,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to VCA (zone 37)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce16" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -4480,8 +4509,8 @@
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Auxiliary envelope with pitch destination</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to pitch (zone 36)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce16" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -4506,8 +4535,8 @@
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Filter tracking</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to cutoff (zone 38)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
      <table:table-cell/>
@@ -4538,7 +4567,7 @@
       <text:p>Preset name (16 characters)</text:p>
      </table:covered-table-cell>
      <table:table-cell table:style-name="ce39"/>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
@@ -4559,7 +4588,7 @@
      <table:covered-table-cell table:style-name="ce30" office:value-type="string" calcext:value-type="string">
       <text:p>Velocity range of the layer (per group)</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>Zone tuning (+/-100 cents)</text:p>
      </table:covered-table-cell>
@@ -4590,7 +4619,7 @@
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>Loop end</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:covered-table-cell table:style-name="ce16"/>
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
@@ -4600,9 +4629,9 @@
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>Velocity to amplifier level</text:p>
      </table:covered-table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to VCA (zone 37)</text:p>
      </table:table-cell>
      <table:covered-table-cell table:style-name="Default"/>
      <table:covered-table-cell table:style-name="ce16"/>
@@ -4615,8 +4644,8 @@
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>Auxiliary envelope with pitch destination</text:p>
      </table:covered-table-cell>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to pitch (zone 36)</text:p>
      </table:table-cell>
      <table:covered-table-cell table:style-name="Default"/>
      <table:covered-table-cell table:style-name="ce16"/>
@@ -4641,8 +4670,8 @@
      <table:covered-table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
       <text:p>Filter tracking</text:p>
      </table:covered-table-cell>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO to cutoff (zone 38)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
      <table:table-cell/>
@@ -4751,7 +4780,7 @@
      </table:table-cell>
      <table:table-cell table:style-name="Default"/>
      <table:table-cell table:style-name="ce16" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:number-columns-repeated="4" table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="4">
       <text:p>TODO Implement (Cords)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default"/>
@@ -4769,8 +4798,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>6-stage envelope +</text:p><text:p>Cord 5 depth</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Check for support</text:p>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Velocity to filter frequency cord (slot 4)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Key to Cutoff cord</text:p>
@@ -4787,7 +4816,7 @@
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
       <text:p>16</text:p>
      </table:table-cell>
@@ -4798,7 +4827,7 @@
      <table:table-cell table:style-name="ce43"/>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39"/>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce23"/>
@@ -4810,15 +4839,15 @@
      <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
-     <table:covered-table-cell table:number-columns-repeated="4" table:style-name="ce26"/>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="4"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>Coarse + fine tune</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string"><text:p>Non-transpose flag</text:p><text:p>(on / off)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce25"/>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce25" table:number-columns-repeated="4"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
@@ -4826,20 +4855,20 @@
      <table:table-cell table:style-name="ce25" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Implement (Loop in release)</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="2"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce14"/>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce25"/>
      <table:covered-table-cell table:style-name="ce26"/>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Implement (Cords)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default"/>
      <table:covered-table-cell table:style-name="ce16"/>
-     <table:table-cell table:number-columns-repeated="4" table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="4">
       <text:p>TODO Implement (Cords)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default"/>
@@ -4849,7 +4878,9 @@
      <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
       <text:p>Nearest of 2 / 4 / 6</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:number-columns-repeated="5" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="3"/>
+     <table:covered-table-cell table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Implement (Cords)</text:p>
      </table:table-cell>
@@ -4971,7 +5002,7 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce16" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:number-columns-repeated="4" table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="4">
       <text:p>TODO Implement (Cords)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
@@ -4989,7 +5020,10 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>6-stage envelope +</text:p><text:p>cord depth</text:p>
      </table:table-cell>
-     <table:table-cell table:number-columns-repeated="3" table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Velocity to cutoff cord (0x0C to 0x38)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="2">
       <text:p>TODO Implement (Cords)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
@@ -5019,7 +5053,7 @@
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>Phdr category</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
@@ -5044,7 +5078,7 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>ETW velocity fades</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>E5Oc coarse, fine</text:p>
      </table:table-cell>
@@ -5076,7 +5110,7 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>EBL loop end</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce14"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
@@ -5086,13 +5120,13 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>velocity to volume cord</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Implement (Cords)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:covered-table-cell table:style-name="ce16"/>
-     <table:table-cell table:number-columns-repeated="4" table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="4">
       <text:p>TODO Implement (Cords)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
@@ -5110,7 +5144,10 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>6-stage envelope +</text:p><text:p>cord depth</text:p>
      </table:table-cell>
-     <table:table-cell table:number-columns-repeated="3" table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Velocity to cutoff cord (0x0C to 0x38)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="2">
       <text:p>TODO Implement (Cords)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
