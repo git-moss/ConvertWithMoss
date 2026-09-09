@@ -9556,7 +9556,7 @@
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>NN-Entry.txt (timbre),</text:p><text:p>samples as .sflc</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce25"/>
-     <table:table-cell table:number-columns-repeated="2" table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="2">
       <text:p>All (FLAC, WAV, AIF)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
@@ -9609,10 +9609,11 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Entry volume (-12..+24 dB) +</text:p><text:p>partial Volume</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Entry volume (-12..+24 dB) + / partial Volume / TBPIVolume</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
-      <text:p>Partial Pan (per partial)</text:p>
+      <text:p>Partial Pan (per partial) / TBPIPan</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
