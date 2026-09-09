@@ -10601,7 +10601,7 @@
       <text:p>qpat</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce41" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:number-columns-repeated="2" table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="2">
       <text:p>All (WAV)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
@@ -10630,7 +10630,9 @@
       <text:p>Osc volume / pan / tune</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce39"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>PolyMonoMode (mono)</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce8" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Sample-Map</text:p>
@@ -10639,7 +10641,7 @@
       <text:p>Sample-Map: Pitch</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>Sample-Map: FromNote / ToNote</text:p>
+      <text:p>Sample-Map: FromNote / ToNote / Osc{i}MinNote / MaxNote window</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -10667,7 +10669,10 @@
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Sample-Map: Pan</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Overlapping map entries alternate (round robin)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -10752,11 +10757,11 @@
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce14" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce43"/>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce43"/>
      <table:covered-table-cell table:style-name="ce26"/>
@@ -10767,30 +10772,35 @@
       <text:p>Osc volume / pan / tune</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce39"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>PolyMonoMode (mono)</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce25"/>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce25"/>
-     <table:covered-table-cell table:number-columns-repeated="7" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="7"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Overlapping map entries alternate (round robin)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce39"/>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce35"/>
      <table:table-cell table:style-name="ce43"/>
-     <table:covered-table-cell table:number-columns-repeated="4" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="4"/>
      <table:table-cell table:style-name="ce35"/>
-     <table:covered-table-cell table:number-columns-repeated="8" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="8"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Implement</text:p>
      </table:table-cell>
