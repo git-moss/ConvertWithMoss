@@ -5535,7 +5535,7 @@
       <text:p>exs</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39"/>
-     <table:table-cell table:number-columns-repeated="2" table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="2">
       <text:p>All (AIFF)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
@@ -5591,10 +5591,10 @@
       <text:p>sampleEnd</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
-      <text:p>coarseTuning / fineTuning</text:p>
+      <text:p>coarseTuning / fineTuning / TRANSPOSE (read)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
-      <text:p>pitch / oneshot</text:p>
+      <text:p>Zone pitch switch</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>reverse</text:p>
@@ -5676,7 +5676,7 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>PARAM_FILTER1_TYPE</text:p>
      </table:table-cell>
-     <table:table-cell table:number-columns-repeated="2" table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string" table:number-columns-repeated="2">
       <text:p>PARAM_FILTER1_CUTOFF</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
