@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -66,13 +67,11 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
         if (this.waitForDelivery ())
             return;
 
-        final List<IMultisampleSource> multisample = this.readPresetFile (folder);
-        if (multisample.isEmpty ())
-            return;
-
-        // Check for task cancellation
-        if (!this.isCancelled ())
-            this.multisampleSourceConsumer.accept (multisample.get (0));
+        // A folder can contain sample files of several of the configured types, each of which
+        // becomes a multi-sample of its own
+        for (final IMultisampleSource multisampleSource: this.readPresetFile (folder))
+            if (!this.isCancelled ())
+                this.multisampleSourceConsumer.accept (multisampleSource);
     }
 
 
@@ -112,16 +111,31 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
     @Override
     protected List<IMultisampleSource> readPresetFile (final File folderWithSamples)
     {
+        final List<SampleFileType> sampleFileTypes = this.settingsConfiguration.getSampleFileTypes ();
+
+        // Note that listing the files descends into all sub-folders as well, therefore it must be
+        // called exactly once. Calling it for each of the configured sample file types processed
+        // every sub-folder - and reported every multi-sample it contains - once for each of them.
+        final Set<String> endings = new TreeSet<> ();
+        for (final SampleFileType sampleFileType: sampleFileTypes)
+            Collections.addAll (endings, sampleFileType.getFileEndings ());
+        final Optional<List<File>> filesOpt = this.listFiles (folderWithSamples, endings.toArray (new String [endings.size ()]));
+        if (filesOpt.isEmpty ())
+            return Collections.emptyList ();
+        final List<File> allFiles = filesOpt.get ();
+
         final List<IMultisampleSource> sources = new ArrayList<> ();
-        for (final SampleFileType sampleFileType: this.settingsConfiguration.getSampleFileTypes ())
+        for (final SampleFileType sampleFileType: sampleFileTypes)
         {
             this.fileEndings = sampleFileType.getFileEndings ();
 
-            final Optional<List<File>> filesOpt = this.listFiles (folderWithSamples, this.fileEndings);
-            if (filesOpt.isEmpty ())
+            final List<File> files = new ArrayList<> ();
+            for (final File file: allFiles)
+                if (this.matchesFileEnding (file))
+                    files.add (file);
+            if (files.isEmpty ())
                 continue;
 
-            final List<File> files = filesOpt.get ();
             this.notifier.log ("IDS_NOTIFY_FOUND_RAW_FILES", Integer.toString (files.size ()), sampleFileType.getName ());
             sources.addAll (this.readSampleFiles (sampleFileType, folderWithSamples, files));
         }

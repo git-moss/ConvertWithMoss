@@ -35,6 +35,9 @@
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
+* Sample Files
+  * Fixed: Sub-folders were scanned once for each of the configured sample file types and every scan converted the multi-samples it found again - with all six types enabled, a folder one level below the source folder gave six copies of its multi-sample and a folder two levels below 36. The folders are now listed once and the files are sorted into their types afterwards, which also stops the report of a type of which a folder holds no file at all ('Detected 0 CAF (*.caf) files.').
+  * Fixed: Only the first multi-sample of a folder was converted, so a folder which holds sample files of several of the configured types - e.g. both WAV and AIFF files - lost all but the first of them.
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
   * Fixed: Unused opcodes were not logged.
