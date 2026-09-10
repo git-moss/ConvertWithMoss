@@ -870,11 +870,6 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 final int initialCutoff = initialCutoffValue.intValue ();
                 if (initialCutoff >= 1500 && initialCutoff < 13500)
                 {
-                    // Convert cents to Hertz: f2 is the minimum supported frequency, cents is
-                    // always a relation of two frequencies, 1200 cents are one octave:
-                    // cents = 1200 * log2 (f1 / f2), f2 = 8.176 => f1 = f2 * 2^(cents / 1200)
-                    final double frequency = 8.176 * Math.pow (2, initialCutoff / 1200.0);
-
                     double resonance = 0;
                     final Integer initialResonanceValue = generators.getSignedValue (Generator.INITIAL_FILTER_RESONANCE);
                     if (initialResonanceValue != null)
@@ -885,6 +880,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                             resonance = initialResonance / 10.0;
                     }
 
+                    final double frequency = Generator.centsToFrequency (initialCutoff);
                     final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, frequency, resonance / IFilter.MAX_RESONANCE);
                     final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                     final int cutoffModDepth = generators.getSignedValue (Generator.MOD_ENV_TO_FILTER_CUTOFF).intValue ();
@@ -911,8 +907,7 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                     if (modLfoToCutoff != 0)
                     {
                         final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
-                        // The frequency is stored in absolute cents, see the filter cutoff above
-                        cutoffLfo.setRate (8.176 * Math.pow (2, generators.getSignedValue (Generator.FREQ_MOD_LFO).doubleValue () / 1200.0));
+                        cutoffLfo.setRate (Generator.centsToFrequency (generators.getSignedValue (Generator.FREQ_MOD_LFO).intValue ()));
                         cutoffLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_MOD_LFO)));
                     }
 
@@ -939,26 +934,24 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             // always a triangle and the depth is given in cent, like the pitch envelope.
             final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
             final int vibLfoDepth = generators.getSignedValue (Generator.VIB_LFO_TO_PITCH).intValue ();
-            pitchLfoModulator.setDepth (vibLfoDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
+            pitchLfoModulator.setDepth (vibLfoDepth / (double) 1200);
             if (vibLfoDepth != 0)
             {
                 final ILfo pitchLfo = pitchLfoModulator.getSource ();
-                // The frequency is stored in absolute cents, see the filter cutoff above
-                final double frequencyCents = generators.getSignedValue (Generator.FREQ_VIB_LFO).doubleValue ();
-                pitchLfo.setRate (8.176 * Math.pow (2, frequencyCents / 1200.0));
+                pitchLfo.setRate (Generator.centsToFrequency (generators.getSignedValue (Generator.FREQ_VIB_LFO).intValue ()));
                 pitchLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_VIB_LFO)));
             }
 
             // The modulation low frequency oscillator to volume maps to the amplitude modulation
-            // (tremolo). Its waveform is always a triangle and the depth is given in centibels.
+            // (tremolo). Its waveform is always a triangle and the depth is given in centi-bels.
             final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
             final int modLfoToVolume = generators.getSignedValue (Generator.MOD_LFO_TO_VOLUME).intValue ();
-            amplitudeLfoModulator.setDepth (modLfoToVolume / 10.0 / ILfoModulator.MAX_VOLUME_DEPTH);
+            // Input is in deci-bels
+            amplitudeLfoModulator.setDepth (modLfoToVolume / (double) ILfoModulator.MAX_VOLUME_DEPTH / 10.0);
             if (modLfoToVolume != 0)
             {
                 final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
-                // The frequency is stored in absolute cents, see the filter cutoff above
-                amplitudeLfo.setRate (8.176 * Math.pow (2, generators.getSignedValue (Generator.FREQ_MOD_LFO).doubleValue () / 1200.0));
+                amplitudeLfo.setRate (Generator.centsToFrequency (generators.getSignedValue (Generator.FREQ_MOD_LFO).intValue ()));
                 amplitudeLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_MOD_LFO)));
             }
 

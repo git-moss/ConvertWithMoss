@@ -258,6 +258,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         final Sf2Preset preset = new Sf2Preset (name);
 
         boolean contains24Bit = false;
+        boolean modulationLfoCollision = false;
 
         // Create a SF2 instrument for each group
         for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
@@ -322,15 +323,15 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                     globalcounters.sampleStartPosition += numSamples + PADDING;
                     leftDesc.setLinkedSample (globalcounters.sampleIndex + 1);
                     rightDesc.setLinkedSample (globalcounters.sampleIndex);
-                    createInstrumentZone (instrument, leftDesc, sampleZone);
-                    createInstrumentZone (instrument, rightDesc, sampleZone);
+                    modulationLfoCollision |= createInstrumentZone (instrument, leftDesc, sampleZone);
+                    modulationLfoCollision |= createInstrumentZone (instrument, rightDesc, sampleZone);
                     globalcounters.sampleIndex += 2;
                 }
                 else
                 {
                     final Sf2SampleDescriptor desc = createSf2SampleDescriptor (Sf2SampleDescriptor.MONO, globalcounters.sampleIndex, globalcounters.sampleStartPosition, sampleZone, formatChunk, numSamples, sampleDataList.get (0), sampleDataList.get (1));
                     globalcounters.sampleStartPosition += numSamples + PADDING;
-                    createInstrumentZone (instrument, desc, sampleZone);
+                    modulationLfoCollision |= createInstrumentZone (instrument, desc, sampleZone);
                     globalcounters.sampleIndex++;
                 }
             }
@@ -342,6 +343,8 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         }
 
         this.notifier.log ("IDS_NOTIFY_LINE_FEED");
+        if (modulationLfoCollision)
+            this.notifier.logError ("IDS_SF2_DOUBLE_USE_OF_MOD_LFO");
 
         return Optional.of (new Pair<> (preset, Boolean.valueOf (contains24Bit)));
     }
@@ -353,8 +356,9 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
      * @param instrument The SF2 instrument to which to add the zone
      * @param sampleDescriptor The SF2 sample descriptor
      * @param sampleZone The sample zone
+     * @return True if there is a modulation LFO collision for amplitude/filter cutoff
      */
-    private static void createInstrumentZone (final Sf2Instrument instrument, final Sf2SampleDescriptor sampleDescriptor, final ISampleZone sampleZone)
+    private static boolean createInstrumentZone (final Sf2Instrument instrument, final Sf2SampleDescriptor sampleDescriptor, final ISampleZone sampleZone)
     {
         final Sf2InstrumentZone instrumentZone = new Sf2InstrumentZone ();
         instrumentZone.setSample (sampleDescriptor);
@@ -440,15 +444,11 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         final double vibLfoDepth = pitchLfoModulator.getDepth ();
         if (vibLfoDepth != 0)
         {
-            instrumentZone.addSignedGenerator (Generator.VIB_LFO_TO_PITCH, (int) Math.round (vibLfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
+            instrumentZone.addSignedGenerator (Generator.VIB_LFO_TO_PITCH, (int) Math.round (vibLfoDepth * 1200));
             final ILfo pitchLfo = pitchLfoModulator.getSource ();
             final double rate = pitchLfo.getRate ();
             if (rate > 0)
-            {
-                // The frequency is stored in absolute cents, see the filter cutoff below
-                final double frequencyCents = 1200.0 * (Math.log (rate / 8.176) / Math.log (2));
-                instrumentZone.addSignedGenerator (Generator.FREQ_VIB_LFO, (int) Math.round (frequencyCents));
-            }
+                instrumentZone.addSignedGenerator (Generator.FREQ_VIB_LFO, Generator.frequencyToCents (rate));
             final double delay = pitchLfo.getDelay ();
             if (delay >= 0)
                 instrumentZone.addSignedGenerator (Generator.DELAY_VIB_LFO, convertEnvelopeTime (delay));
@@ -461,19 +461,18 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         final double modLfoDepth = amplitudeLfoModulator.getDepth ();
         if (modLfoDepth != 0)
         {
-            instrumentZone.addSignedGenerator (Generator.MOD_LFO_TO_VOLUME, (int) Math.round (modLfoDepth * ILfoModulator.MAX_VOLUME_DEPTH * 10.0));
+            final int val = (int) Math.round (modLfoDepth * ILfoModulator.MAX_VOLUME_DEPTH * 10.0);
+            instrumentZone.addSignedGenerator (Generator.MOD_LFO_TO_VOLUME, val);
             final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
             final double rate = amplitudeLfo.getRate ();
             if (rate > 0)
-            {
-                // The frequency is stored in absolute cents, see the filter cutoff below
-                final double frequencyCents = Math.log (rate / 8.176) * 1200.0 / Math.log (2);
-                instrumentZone.addSignedGenerator (Generator.FREQ_MOD_LFO, (int) Math.round (frequencyCents));
-            }
+                instrumentZone.addSignedGenerator (Generator.FREQ_MOD_LFO, Generator.frequencyToCents (rate));
             final double delay = amplitudeLfo.getDelay ();
             if (delay >= 0)
                 instrumentZone.addSignedGenerator (Generator.DELAY_MOD_LFO, convertEnvelopeTime (delay));
         }
+
+        boolean modulationLfoCollision = false;
 
         // Filter settings
         final Optional<IFilter> filterOpt = sampleZone.getFilter ();
@@ -485,11 +484,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                 final double frequency = filter.getCutoff ();
                 final double resonance = filter.getResonance () * IFilter.MAX_RESONANCE;
 
-                // Convert cents to Hertz: f2 is the minimum supported frequency, cents is
-                // always a relation of two frequencies, 1200 cents are one octave:
-                // cents = 1200 * log2 (f1 / f2), f2 = 8.176 => f1 = f2 * 2^(cents / 1200)
-                final double initialCutoff = Math.log (frequency / 8.176) * 1200.0 / Math.log (2);
-                instrumentZone.addGenerator (Generator.INITIAL_FILTER_CUTOFF, (int) Math.clamp (initialCutoff, 1500, 13500));
+                instrumentZone.addGenerator (Generator.INITIAL_FILTER_CUTOFF, Generator.frequencyToCents (Math.clamp (frequency, 1500, 13500)));
                 // The resonance is stored in centi-bel (dB * 10) in the range of [0..960]
                 instrumentZone.addSignedGenerator (Generator.INITIAL_FILTER_RESONANCE, Math.clamp (Math.round (resonance * 10.0), 0, 960));
 
@@ -518,18 +513,16 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                 final double cutoffLfoDepth = cutoffLfoModulator.getDepth ();
                 if (cutoffLfoDepth != 0)
                 {
+                    modulationLfoCollision = modLfoDepth != 0;
+
                     instrumentZone.addSignedGenerator (Generator.MOD_LFO_TO_FILTER_CUTOFF, (int) Math.round (cutoffLfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
                     final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
                     final double rate = cutoffLfo.getRate ();
                     if (rate > 0)
-                    {
-                        // The frequency is stored in absolute cents, see the filter cutoff below
-                        final double frequencyCents = Math.log (rate / 8.176) * 1200.0 / Math.log (2);
-                        instrumentZone.addSignedGenerator (Generator.FREQ_VIB_LFO, (int) Math.round (frequencyCents));
-                    }
+                        instrumentZone.addSignedGenerator (Generator.FREQ_MOD_LFO, Generator.frequencyToCents (rate));
                     final double delay = cutoffLfo.getDelay ();
                     if (delay >= 0)
-                        instrumentZone.addSignedGenerator (Generator.DELAY_VIB_LFO, convertEnvelopeTime (delay));
+                        instrumentZone.addSignedGenerator (Generator.DELAY_MOD_LFO, convertEnvelopeTime (delay));
                 }
 
             }
@@ -537,6 +530,8 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
 
         // Sample reference needs to be last
         instrumentZone.addGenerator (Generator.SAMPLE_ID, sampleDescriptor.getSampleIndex ());
+
+        return modulationLfoCollision;
     }
 
 
