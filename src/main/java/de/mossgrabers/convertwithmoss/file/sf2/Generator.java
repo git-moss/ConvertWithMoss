@@ -42,7 +42,7 @@ public class Generator
     /** The ID of the initial filter resonance generator. */
     public static final int     INITIAL_FILTER_RESONANCE = 9;
 
-    /** The ID of the modulation low frequency oscillator to filter cutoff generator (in TODO). */
+    /** The ID of the modulation low frequency oscillator to filter cutoff generator (in cents). */
     public static final int     MOD_LFO_TO_FILTER_CUTOFF = 10;
     /** The ID of the modulation envelope to filter cutoff generator. */
     public static final int     MOD_ENV_TO_FILTER_CUTOFF = 11;
@@ -98,6 +98,12 @@ public class Generator
     public static final int     KEYNUM_TO_VOL_ENV_HOLD   = 39;
     /** The ID of the key number to volume envelope decay generator. */
     public static final int     KEYNUM_TO_VOL_ENV_DECAY  = 40;
+
+    /*
+     * Lowest note frequency. This corresponds to C-1 in MIDI nomenclature: (440 * pow(2.0, (N - 69)
+     * / 12)).
+     */
+    private static final double LOWEST_NOTE_FREQUENCY    = 8.176;
 
     /**
      * The maximum absolute value of the key number to envelope hold and decay generators. The
@@ -229,5 +235,32 @@ public class Generator
     public static Integer getDefaultValue (final Integer generatorID)
     {
         return Integer.valueOf (DEFAULT_VALUES[generatorID.intValue ()]);
+    }
+
+
+    /**
+     * Convert to the frequency in Hertz. Input is the frequency, in absolute cents, of the Vibrato
+     * LFO’s triangular period. A value of zero indicates a frequency of 8.176 Hz. A negative value
+     * indicates a frequency less than 8.176 Hz; a positive value a frequency greater than 8.176 Hz.
+     * For example, a frequency of 10 mHz would be 1200log2(.01/8.176) = -11610".
+     * 
+     * @param cents The cents to convert
+     * @return The frequency in Hertz
+     */
+    public static double centsToFrequency (final int cents)
+    {
+        return LOWEST_NOTE_FREQUENCY * Math.pow (2, cents / 1200.0);
+    }
+
+
+    /**
+     * Inversion of centsToFrequency.
+     * 
+     * @param frequency The frequency in Hertz to convert
+     * @return The cents
+     */
+    public static int frequencyToCents (final double frequency)
+    {
+        return (int) Math.round (1200.0 * (Math.log (frequency / LOWEST_NOTE_FREQUENCY) / Math.log (2)));
     }
 }
