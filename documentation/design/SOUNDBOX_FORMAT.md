@@ -198,7 +198,11 @@ constant default as found in Cosmo (see `SoundboxCreator`).
   `IGroup`; layer volume (relative to the 0.75 default), pan, fine tune/transpose/octave and ADSR
   are folded into the zones of that group.
 - Key high and velocity ranges: key high is stored exclusive, velocity is inclusive.
-- Loop/sample positions are fractions of the sample frame count.
+- Loop/sample positions are fractions of the sample frame count, so a sound cannot be read
+  without the length of its sample. The frame count has to come from the audio metadata:
+  the packs of the original corpus hold WAV, but packs written by newer plug-in versions
+  hold FLAC (the *Wired* pack does), and `ISampleData.addZoneData` fills the stop of a zone
+  in only for WAV.
 - Writing always produces the Cosmo-era layout: `gv="1" pv="1.0.0b19"`, 75 byte sound blobs,
   numeric `f` attributes, WAV samples. One group per preset (all zones with their velocity
   ranges), assigned to layer 1.
