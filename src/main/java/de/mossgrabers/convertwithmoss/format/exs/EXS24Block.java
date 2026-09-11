@@ -33,6 +33,12 @@ class EXS24Block
     public static final int          TYPE_SAMPLE                = 0x03;
     /** A parameters block. */
     public static final int          TYPE_PARAMS                = 0x04;
+    /**
+     * A block which holds one or more tagged records of float values (the first one is tagged
+     * 'GAMETSPP'). It is written after the parameters block and contains nothing which belongs to
+     * the multi-sample.
+     */
+    public static final int          TYPE_TAGGED_RECORDS        = 0x05;
     /** An unknown block. */
     public static final int          TYPE_UNKNOWN               = 0x08;
     /** A BPLIST with the layout configuration of Sampler. */
@@ -100,9 +106,18 @@ class EXS24Block
         if (version1 != 1 && version2 != 0)
             throw new IOException (Functions.getMessage ("IDS_EXS_UNKNOWN_VERSION", Integer.toString (version1), Integer.toString (version2)));
 
-        // There are variants which have a 0x40 added...
-        this.type = in.read () & 0x0F;
-        final int size = (int) StreamUtils.readUnsigned32 (in, this.isBigEndian);
+        // There are variants which have a 0x40 or a 0x80 added...
+        final int typeAndFlags = in.read ();
+        this.type = typeAndFlags & 0x0F;
+
+        int size = (int) StreamUtils.readUnsigned32 (in, this.isBigEndian);
+        // The big-endian variant of the format - which flags its type byte with 0x80 - additionally
+        // sets bit 15 of the block size. Blocks of that variant are a few hundred bytes at most, so
+        // the remaining bits always hold the real length. Without masking the flag out the first
+        // block swallows all of the following ones and no such file can be read at all.
+        if ((typeAndFlags & 0x80) != 0)
+            size &= 0x7FFF;
+
         this.index = (int) StreamUtils.readUnsigned32 (in, this.isBigEndian);
 
         // Flags -> Found: 03 (on a group), 64 (instrument), 2, 3, 2147483650 (zone), 2 (sample)

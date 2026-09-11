@@ -25,6 +25,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -35,6 +36,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataWithSearchHeightSettingsUI;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
@@ -133,12 +135,13 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
         File previousFolder = null;
         final List<EXS24Sample> exs24Samples = exs24File.getSamples ();
         final Map<Integer, EXS24Group> exs24Groups = exs24File.getGroups ();
+        final Map<Integer, Pair<ISampleData, File>> loadedSamples = new HashMap<> ();
         for (final EXS24Zone exs24Zone: exs24File.getZones ())
         {
             if (this.waitForDelivery ())
                 return Optional.empty ();
 
-            final Optional<Pair<ISampleZone, File>> zonePair = this.createAndCheckSampleZone (parentFile, previousFolder, exs24Zone, exs24Samples);
+            final Optional<Pair<ISampleZone, File>> zonePair = this.createAndCheckSampleZone (parentFile, previousFolder, exs24Zone, exs24Samples, loadedSamples);
             if (zonePair.isEmpty ())
                 continue;
             previousFolder = zonePair.get ().getValue ();
@@ -223,7 +226,20 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
     }
 
 
-    private Optional<Pair<ISampleZone, File>> createAndCheckSampleZone (final File parentFile, final File previousFolder, final EXS24Zone exs24Zone, final List<EXS24Sample> exs24Samples) throws IOException
+    /**
+     * Create the zone for one EXS24 zone and look up the sample file it plays.
+     *
+     * @param parentFile The folder which contains the EXS24 file
+     * @param previousFolder The folder in which the previous sample was found, might be null
+     * @param exs24Zone The EXS24 zone to convert
+     * @param exs24Samples All samples of the EXS24 file
+     * @param loadedSamples The samples which were already looked up, indexed by their EXS24 sample
+     *            index; a null value marks a sample which could not be found
+     * @return The created zone and the folder in which its sample was found, empty if the sample is
+     *         not available
+     * @throws IOException Could not read the sample file
+     */
+    private Optional<Pair<ISampleZone, File>> createAndCheckSampleZone (final File parentFile, final File previousFolder, final EXS24Zone exs24Zone, final List<EXS24Sample> exs24Samples, final Map<Integer, Pair<ISampleData, File>> loadedSamples) throws IOException
     {
         // If sample index is not set, use the zone id (index)
         int sampleIndex = exs24Zone.sampleIndex;
@@ -246,14 +262,41 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             return Optional.empty ();
         }
 
+        // Several zones regularly play the same sample - an instrument with consolidated samples
+        // maps all of its zones into one audio file - therefore search and open each sample only
+        // once. Otherwise the file is searched for, parsed and, if it is compressed, decoded again
+        // for every single zone, which never finishes for an instrument with thousands of zones.
+        final Integer sampleKey = Integer.valueOf (sampleIndex);
+        if (!loadedSamples.containsKey (sampleKey))
+            loadedSamples.put (sampleKey, this.loadSample (parentFile, previousFolder, exs24Sample));
+        final Pair<ISampleData, File> loadedSample = loadedSamples.get (sampleKey);
+        if (loadedSample == null)
+            return Optional.empty ();
+
+        final File sampleFile = loadedSample.getValue ();
+        final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), loadedSample.getKey ());
+        return Optional.of (new Pair<> (zone, sampleFile.getParentFile ()));
+    }
+
+
+    /**
+     * Search for the sample file which belongs to an EXS24 sample and open it.
+     *
+     * @param parentFile The folder which contains the EXS24 file
+     * @param previousFolder The folder in which the previous sample was found, might be null
+     * @param exs24Sample The EXS24 sample to look up
+     * @return The sample data and the file it was read from, null if the file does not exist
+     * @throws IOException Could not read the sample file
+     */
+    private Pair<ISampleData, File> loadSample (final File parentFile, final File previousFolder, final EXS24Sample exs24Sample) throws IOException
+    {
         final int height = this.settingsConfiguration.getDirectorySearchHeight ();
         final File sampleFile = findSampleFile (this.notifier, parentFile, previousFolder, exs24Sample.fileName, height);
-        if (!sampleFile.exists ())
-        {
-            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
-            return Optional.empty ();
-        }
-        return Optional.of (new Pair<> (this.createSampleZone (sampleFile), sampleFile.getParentFile ()));
+        if (sampleFile.exists ())
+            return new Pair<> (createSampleData (sampleFile, this.notifier), sampleFile);
+
+        this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
+        return null;
     }
 
 

@@ -651,6 +651,8 @@ The Logic EXS24 format is a proprietary sample format used by Logic Pro, a digit
 
 The format only stores absolute paths to the sample files. Therefore, the easiest way to make the converter find the sample files is to place them in the same folder as the EXS file. If it cannot be found in this folder the sample file is searched recursively starting from a number of levels up from the source folder of the EXS. *The number of folders can be configured*.
 
+Logic can store all samples of an instrument in one consolidated audio file in which every zone plays its own section of the recording. Such an instrument is converted the way it is authored - the one sample file with the play range of each zone - so the result contains that single large sample and not one file per zone.
+
 ## Native Instruments Kontakt
 
 Kontakt is a sampler from Native Instruments which uses a plethora of file formats which all are sadly proprietary and therefore no documentation is publicly available. Nevertheless, several people analyzed the format and by now sufficient information is available to provide the support as the source.

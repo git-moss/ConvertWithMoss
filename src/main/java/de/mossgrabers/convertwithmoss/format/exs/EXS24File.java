@@ -131,6 +131,10 @@ public class EXS24File
                     this.setParameters (block);
                     break;
 
+                case EXS24Block.TYPE_TAGGED_RECORDS:
+                    // Tagged records of float values which do not belong to the multi-sample
+                    break;
+
                 case EXS24Block.TYPE_UNKNOWN:
                     // No idea what that is but it is 4 bytes long and they are always 0
                     break;
