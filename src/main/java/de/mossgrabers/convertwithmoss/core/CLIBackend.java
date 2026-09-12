@@ -211,6 +211,11 @@ public class CLIBackend implements INotifier
             detectSettings.transposeSemitones = transpose.intValue ();
         }
 
+        // The destination may need to adjust or reject the processing options, e.g. because it
+        // writes a fixed sample rate. The graphical interface asks it here as well (see MainFrame).
+        if (detectSettings.enableProcessing && !creator.checkProcessingCompatibility (detectSettings))
+            return 0;
+
         // Renaming option & folder check
         try
         {

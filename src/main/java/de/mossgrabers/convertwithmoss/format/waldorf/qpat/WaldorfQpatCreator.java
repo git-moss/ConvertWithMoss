@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
@@ -63,6 +64,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final String                                SLOPE_EXP              = "Exp";
     private static final String                                SLOPE_EXP_ALT          = "Exp alt";
 
+    /** The sample rate which the device plays and to which this creator re-samples. */
+    private static final int                                   DESTINATION_SAMPLE_RATE = 44100;
     private static final int                                   PRESET_VERSION         = 14;
 
     /** The size of the header of a patch, which every layer of a patch has as well. */
@@ -206,6 +209,25 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         super.clearCancelled ();
 
         this.nextImportNumber = this.settingsConfiguration.getNumberPrefixStart ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
+    {
+        // Snapping a loop boundary to a zero-crossing only holds if the audio which is written is
+        // the audio which was snapped. The snapping happens in the processing stage, while this
+        // creator re-samples to 44.1 kHz when its option is set - which moves every boundary off
+        // the zero-crossing it was snapped to and brings the loop click back. So the up-sampling
+        // has to happen before the snapping, which is what the 'always re-sample' option does.
+        // Nothing is logged here: this runs before the conversion, where the graphical interface
+        // shows a message as a modal dialog. The processing stage announces the up-sampling with
+        // its "Always re-sample" line anyway, and if the sample rate does not match, the creator
+        // reports the re-sampling it has to do for every zone.
+        if (detectSettings.snapLoopsToZero && this.settingsConfiguration.limitTo16441 () && detectSettings.reduceFrequency == DESTINATION_SAMPLE_RATE)
+            detectSettings.alwaysResample = true;
+        return super.checkProcessingCompatibility (detectSettings);
     }
 
 
