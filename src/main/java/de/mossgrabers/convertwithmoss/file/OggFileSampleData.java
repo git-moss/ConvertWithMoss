@@ -143,7 +143,13 @@ public class OggFileSampleData extends AbstractFileSampleData
     @Override
     public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
-        // No info available in OGG
+        // OGG stores no root key and no loops, but the length of the audio is the play range of
+        // the zone as long as the source format did not set one - like every other sample format.
+        // createAudioMetadata already resolves the frame count which the Vorbis header lacks
+        if (zone.getStart () < 0)
+            zone.setStart (0);
+        if (zone.getStop () <= 0)
+            zone.setStop (this.getAudioMetadata ().getNumberOfSamples ());
     }
 
 
