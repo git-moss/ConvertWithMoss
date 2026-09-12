@@ -33,10 +33,10 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.format.music1010.AbstractMusic1010Creator;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -119,7 +119,7 @@ public class BentoCreator extends AbstractMusic1010Creator
     @Override
     public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
     {
-        final String performanceFolderName = FileUtils.createSafeFilename (performanceSource.getName ());
+        final String performanceFolderName = SafeFileNames.create (performanceSource.getName ());
         final File performanceFolder = this.createUniqueFilename (new File (destinationFolder, "Projects"), performanceFolderName, "");
         if (!performanceFolder.exists () && !performanceFolder.mkdirs ())
         {
@@ -162,7 +162,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         final List<String> presetFolderNames = new ArrayList<> ();
         for (final IInstrumentSource instrumentSource: instrumentSources)
         {
-            final String multisampleName = FileUtils.createSafeFilename (instrumentSource.getMultisampleSource ().getName ());
+            final String multisampleName = SafeFileNames.create (instrumentSource.getMultisampleSource ().getName ());
             final File fullPresetFolder = this.createUniqueFilename (presetFolder, multisampleName, "");
             if (!fullPresetFolder.mkdirs ())
                 this.notifier.logError (IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED, fullPresetFolder.getAbsolutePath ());
@@ -210,7 +210,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         final boolean resample = this.settingsConfiguration.resampleTo2448 ();
         final boolean trim = this.settingsConfiguration.trimStartToEnd ();
 
-        final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String multisampleName = SafeFileNames.create (multisampleSource.getName ());
         final File presetFolder = this.createUniqueFilename (destinationFolder, multisampleName, "");
         if (!presetFolder.mkdir ())
         {

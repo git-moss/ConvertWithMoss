@@ -60,6 +60,7 @@ import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -585,7 +586,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
     private static ISampleZone createSampleZone (final String name, final YamahaYsfcKeybank keybank)
     {
         final int rootNote = keybank.getRootNote ();
-        final String sampleName = String.format ("%s_%d_%s", FileUtils.createSafeFilename (name), Integer.valueOf (rootNote), NoteParser.formatNoteSharps (rootNote));
+        final String sampleName = String.format ("%s_%d_%s", SafeFileNames.create (name), Integer.valueOf (rootNote), NoteParser.formatNoteSharps (rootNote));
 
         final ISampleZone zone = new DefaultSampleZone (sampleName, null);
         zone.setKeyRoot (rootNote);

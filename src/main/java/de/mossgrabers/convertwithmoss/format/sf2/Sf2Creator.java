@@ -50,6 +50,7 @@ import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -101,7 +102,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String multiSampleName = SafeFileNames.create (multisampleSource.getName ());
         this.storeMultisample (Collections.singletonList (multisampleSource), destinationFolder, multiSampleName);
     }
 

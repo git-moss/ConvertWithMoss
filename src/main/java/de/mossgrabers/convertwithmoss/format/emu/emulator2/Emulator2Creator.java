@@ -35,6 +35,7 @@ import de.mossgrabers.convertwithmoss.format.emu.EmuCompanding;
 import de.mossgrabers.convertwithmoss.format.emu.EmuDiskCreatorUI;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -449,7 +450,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
     private void writeDisk (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name) throws IOException
     {
         final boolean writeRaw = this.settingsConfiguration.isWriteRawImage ();
-        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (name), writeRaw ? ENDING_RAW : ENDING_HFE);
+        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (name), writeRaw ? ENDING_RAW : ENDING_HFE);
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 
         final BankBuilder builder = new BankBuilder ();

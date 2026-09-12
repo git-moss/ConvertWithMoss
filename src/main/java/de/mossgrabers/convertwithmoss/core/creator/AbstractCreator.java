@@ -38,6 +38,7 @@ import org.w3c.dom.Document;
 import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.ParameterLevel;
@@ -441,7 +442,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected String createSampleFilename (final ISampleZone zone, final int zoneIndex, final String fileEnding)
     {
-        return FileUtils.createSafeFilename (zone.getName ()) + fileEnding;
+        return SafeFileNames.create (zone.getName ()) + fileEnding;
     }
 
 
@@ -583,7 +584,9 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     protected File createUniqueFilename (final File destinationFolder, final String sampleName, final String extension)
     {
         final String ext = extension.isBlank () ? "" : "." + extension;
-        final String name = withoutExtensionTail (sampleName, extension);
+        // The callers pass a name which they made safe with FileUtils, which leaves the characters
+        // a shell expands in place - see SafeFileNames
+        final String name = SafeFileNames.create (withoutExtensionTail (sampleName, extension));
         File multiFile = new File (destinationFolder, name + ext);
         int counter = 1;
         while (multiFile.exists ())

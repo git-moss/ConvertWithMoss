@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -226,7 +227,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
         final byte [] fileData = assembleSeries3File (subVoices, mapping, isStereo);
 
-        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "vc");
+        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (multisampleSource.getName ()), "vc");
         this.notifier.log (IDS_NOTIFY_STORING, outputFile.getAbsolutePath ());
         try (final OutputStream out = new FileOutputStream (outputFile))
         {
@@ -651,13 +652,13 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
                 // The control parameters (loop, envelope, level) are read from a control (CO)
                 // file which the voice references by an 8 character name
-                controlName = createUniqueDOSFileName (destinationFolder, FileUtils.createSafeFilename (name).replaceAll ("\\W", "_"), ".CO", controlFileNames, false);
+                controlName = createUniqueDOSFileName (destinationFolder, SafeFileNames.create (name).replaceAll ("\\W", "_"), ".CO", controlFileNames, false);
                 for (int c = 0; c < 8; c++)
                     fileData[IIX_CO_NAME_OFFSET + c] = (byte) (c < controlName.length () ? controlName.charAt (c) : ' ');
                 controlFileData = createIIxControlFileData (zone, fileData);
             }
 
-            final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (name), "vc");
+            final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (name), "vc");
             this.notifier.log (IDS_NOTIFY_STORING, outputFile.getAbsolutePath ());
             try (final OutputStream out = new FileOutputStream (outputFile))
             {

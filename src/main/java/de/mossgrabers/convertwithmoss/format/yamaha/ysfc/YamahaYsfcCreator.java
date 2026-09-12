@@ -57,6 +57,7 @@ import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -183,7 +184,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        this.createPresetLibrary (destinationFolder, Collections.singletonList (multisampleSource), FileUtils.createSafeFilename (multisampleSource.getName ()));
+        this.createPresetLibrary (destinationFolder, Collections.singletonList (multisampleSource), SafeFileNames.create (multisampleSource.getName ()));
     }
 
 
@@ -217,7 +218,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final Integer selectedOutputFormat = Integer.valueOf (this.settingsConfiguration.selectedOutputFormat ());
         final YamahaYsfcFileFormat format = FILE_FORMAT_MAP.get (selectedOutputFormat);
         final boolean isUser = LIBRARY_FORMAT_MAP.get (selectedOutputFormat).booleanValue ();
-        final String libraryName = FileUtils.createSafeFilename (performanceSource.getName ());
+        final String libraryName = SafeFileNames.create (performanceSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, format.getEnding (isUser));
         this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
