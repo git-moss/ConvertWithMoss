@@ -35,6 +35,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emu3DiskImage;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -162,7 +163,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
     {
         final Emulator3BankFormat bankFormat = this.settingsConfiguration.getTargetFormat ();
         final boolean writeCdImage = this.settingsConfiguration.writeCdImage ();
-        final String safeName = FileUtils.createSafeFilename (name);
+        final String safeName = SafeFileNames.create (name);
         final File outputFile = this.createUniqueFilename (destinationFolder, safeName, writeCdImage ? "iso" : bankFormat.getFileEnding ().substring (1));
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 

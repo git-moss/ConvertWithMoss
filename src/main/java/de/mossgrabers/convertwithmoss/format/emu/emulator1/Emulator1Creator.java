@@ -35,6 +35,7 @@ import de.mossgrabers.convertwithmoss.format.emu.EmuCompanding;
 import de.mossgrabers.convertwithmoss.format.emu.EmuDiskCreatorUI;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -94,7 +95,7 @@ public class Emulator1Creator extends AbstractCreator<EmuDiskCreatorUI>
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final boolean writeRaw = this.settingsConfiguration.isWriteRawImage ();
-        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), writeRaw ? ENDING_RAW : ENDING_HFE);
+        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (multisampleSource.getName ()), writeRaw ? ENDING_RAW : ENDING_HFE);
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 
         final byte [] image = new byte [Emulator1Constants.IMAGE_SIZE];

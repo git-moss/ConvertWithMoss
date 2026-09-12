@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.iff.IffFile;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -47,7 +48,7 @@ public class SxtCreator extends AbstractWavCreator<WavChunkSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String sampleName = SafeFileNames.create (multisampleSource.getName ());
 
         final File outputFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         safeCreateDirectory (outputFolder);
@@ -71,7 +72,7 @@ public class SxtCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final ByteArrayOutputStream zoneSampleReferenceOutputStream = new ByteArrayOutputStream ();
         final List<ByteArrayOutputStream> sampleReferenceOutputStreams = new ArrayList<> ();
 
-        final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String multiSampleName = SafeFileNames.create (multisampleSource.getName ());
 
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
         writeVersion (groupsOutputStream, SxtChunkConstants.VERSION_2_0_0);

@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -102,7 +103,7 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
             return;
         }
 
-        final File file = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "pti");
+        final File file = this.createUniqueFilename (destinationFolder, SafeFileNames.create (multisampleSource.getName ()), "pti");
         this.notifier.log ("IDS_NOTIFY_STORING", file.getAbsolutePath ());
 
         final byte [] output = createInstrument (multisampleSource.getName (), zone, sampleData.get (), pcm, channels, frames);
@@ -137,7 +138,7 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
 
         buffer.put (PolyendTrackerConstants.OFF_IS_ACTIVE, (byte) 1);
         buffer.put (PolyendTrackerConstants.OFF_SAMPLE_TYPE, (byte) PolyendTrackerConstants.SAMPLE_WAVE);
-        writeString (buffer, PolyendTrackerConstants.OFF_SAMPLE_NAME, PolyendTrackerConstants.SAMPLE_NAME_LENGTH, FileUtils.createSafeFilename (name));
+        writeString (buffer, PolyendTrackerConstants.OFF_SAMPLE_NAME, PolyendTrackerConstants.SAMPLE_NAME_LENGTH, SafeFileNames.create (name));
         buffer.putInt (PolyendTrackerConstants.OFF_SAMPLE_LENGTH, frames);
         buffer.putShort (PolyendTrackerConstants.OFF_WT_WINDOW_SIZE, (short) 2048);
         buffer.putInt (PolyendTrackerConstants.OFF_WT_WINDOW_COUNT, 0);

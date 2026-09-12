@@ -43,9 +43,9 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -141,7 +141,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (multisampleSources.isEmpty ())
             return;
 
-        final String fileName = StringUtils.consolidateWhitespace (FileUtils.createSafeFilename (libraryName).replace ('_', ' '), "");
+        final String fileName = StringUtils.consolidateWhitespace (SafeFileNames.create (libraryName).replace ('_', ' '), "");
 
         final File packFile = this.createUniqueFilename (destinationFolder, fileName, "sbpack");
         this.notifier.log ("IDS_NOTIFY_STORING", packFile.getAbsolutePath ());
@@ -195,7 +195,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             {
                 // The import in Soundbox creates files named after the preset and its groups,
                 // therefore the names must not contain characters which are illegal in file names
-                final String presetName = createUniqueName (StringUtils.consolidateWhitespace (FileUtils.createSafeFilename (multisampleSource.getName ()).replace ('_', ' '), "Preset"), usedPresetNames);
+                final String presetName = createUniqueName (StringUtils.consolidateWhitespace (SafeFileNames.create (multisampleSource.getName ()).replace ('_', ' '), "Preset"), usedPresetNames);
                 final Element presetNameElement = XMLUtils.addElement (packDocument, presetsElement, SoundboxTag.PRESET_NAME);
                 presetNameElement.setAttribute (SoundboxTag.ATTR_NAME, presetName);
 
@@ -514,7 +514,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             samplePool.numberOfSamples++;
             AbstractCreator.storeDataFile (samplePool.zipOutputStream, SoundboxTag.SAMPLES_FOLDER + "s" + sampleIndex, content, samplePool.dateTime);
 
-            final String sampleName = createUniqueName (FileUtils.createSafeFilename (zone.getName ()), samplePool.usedSampleNames);
+            final String sampleName = createUniqueName (SafeFileNames.create (zone.getName ()), samplePool.usedSampleNames);
             XMLUtils.addTextElement (packDocument, soundsElement, SoundboxTag.SOUND, sampleName + ".wav");
 
             if (contentHash != null)

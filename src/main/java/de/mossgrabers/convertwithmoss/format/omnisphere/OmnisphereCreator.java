@@ -45,6 +45,7 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -92,7 +93,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String multiSampleName = SafeFileNames.create (multisampleSource.getName ());
         final File destFolder = new File (destinationFolder, multiSampleName).getAbsoluteFile ();
         if (!destFolder.exists () && !destFolder.mkdirs ())
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", destFolder.getAbsolutePath ()));
@@ -277,7 +278,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             final Element soundGroupElement = XMLUtils.addElement (document, zoneElement, "SoundGroupWithNames");
             soundGroupElement.setAttribute ("UnderKitSession", "0");
             soundGroupElement.setAttribute ("LibraryName", ".");
-            soundGroupElement.setAttribute ("SampledInstrumentName", FileUtils.createSafeFilename (sampleZone.getName ()));
+            soundGroupElement.setAttribute ("SampledInstrumentName", SafeFileNames.create (sampleZone.getName ()));
         }
 
         return Optional.of (OmnisphereXmlUtil.documentToXmlString (document, false, null));
