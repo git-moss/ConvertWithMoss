@@ -95,6 +95,49 @@ public enum ZoneChannels
 
 
     /**
+     * Checks if hard panned mono zones really are the left and right channel of one recording. A
+     * wide sound is often created by layering the same mono samples hard panned left and right and
+     * detuning the two layers against each other. Such zones look like split stereo but combining
+     * them creates a dual mono file and discards the tuning of one of the layers, so they have to
+     * be kept as the separate layers they are.
+     *
+     * @param groups The groups to check, must have been detected as {@link #SPLIT_STEREO}
+     * @return True if the zones really are split stereo and may be combined
+     */
+    public static boolean isSplitStereo (final List<IGroup> groups)
+    {
+        final List<ISampleZone> leftSampleZones = new ArrayList<> ();
+        final List<ISampleZone> rightSampleZones = new ArrayList<> ();
+        ZoneChannels.getSplitStereo (groups, leftSampleZones, rightSampleZones);
+
+        // Zones which do not pair up are left to the combination itself, which fails there as
+        // before
+        final int size = leftSampleZones.size ();
+        if (size == 0 || size != rightSampleZones.size ())
+            return true;
+
+        // Sort both arrays so that the matching pairs are at the same index, the same way the
+        // combination does it
+        Collections.sort (leftSampleZones, SAMPLE_ZONE_COMPARATOR);
+        Collections.sort (rightSampleZones, SAMPLE_ZONE_COMPARATOR);
+
+        for (int i = 0; i < size; i++)
+        {
+            final ISampleZone leftSampleZone = leftSampleZones.get (i);
+            final ISampleZone rightSampleZone = rightSampleZones.get (i);
+            // The two channels of one recording are two different samples...
+            if (leftSampleZone.getName ().equals (rightSampleZone.getName ()))
+                return false;
+            // ...and they share their tuning
+            if (Math.abs (leftSampleZone.getTuning () - rightSampleZone.getTuning ()) > 0.0001)
+                return false;
+        }
+
+        return true;
+    }
+
+
+    /**
      * Creates stereo sample zones (with stereo sample files) from split stereo sample zones.
      * Important: the input must have been checked to be split stereo with the
      * detectChannelConfiguration method.
