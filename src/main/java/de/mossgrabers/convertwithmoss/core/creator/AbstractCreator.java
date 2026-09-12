@@ -419,6 +419,14 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
         if (ZoneChannels.detectChannelConfiguration (groups) != ZoneChannels.SPLIT_STEREO)
             return groups;
 
+        // Hard panned zones which are not the two channels of one recording are layers and must
+        // stay separate
+        if (!ZoneChannels.isSplitStereo (groups))
+        {
+            this.notifier.log ("IDS_NOTIFY_PANNED_LAYERS_NOT_COMBINED");
+            return groups;
+        }
+
         final Optional<IGroup> stereoGroup = ZoneChannels.combineSplitStereo (groups);
         if (stereoGroup.isPresent ())
         {
