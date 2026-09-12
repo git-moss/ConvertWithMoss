@@ -243,7 +243,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.BASE_NOTE, Integer.toString (RenoiseValueConverter.clampNote (zone.getKeyRoot ())));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.NOTE_START, Integer.toString (RenoiseValueConverter.clampNote (zone.getKeyLow ())));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.NOTE_END, Integer.toString (RenoiseValueConverter.clampNote (limitToDefault (zone.getKeyHigh (), RenoiseValueConverter.MAX_NOTE))));
-        XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_KEY_TO_PITCH, TRUE);
+        // A zone without key tracking, e.g. a drum, plays at its root pitch on every key
+        XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_KEY_TO_PITCH, zone.getKeyTracking () == 0 ? FALSE : TRUE);
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.VELOCITY_START, Integer.toString (Math.clamp (zone.getVelocityLow (), 0, 127)));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.VELOCITY_END, Integer.toString (Math.clamp (limitToDefault (zone.getVelocityHigh (), 127), 0, 127)));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_VELOCITY_TO_VOLUME, TRUE);

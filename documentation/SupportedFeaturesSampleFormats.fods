@@ -7971,7 +7971,10 @@
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Transpose / Finetune</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>MapKeyToPitch</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Volume</text:p>
      </table:table-cell>
@@ -8044,8 +8047,8 @@
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce16"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="2"/>
+     <table:covered-table-cell table:style-name="ce16" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce43"/>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
@@ -8062,13 +8065,16 @@
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="3"/>
      <table:table-cell table:style-name="ce25"/>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
      <table:covered-table-cell table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
-     <table:covered-table-cell table:number-columns-repeated="4" table:style-name="ce26"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>MapKeyToPitch</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="4"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>OneShotTrigger</text:p>
      </table:table-cell>
@@ -8089,7 +8095,7 @@
      <table:table-cell table:style-name="ce38" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce5" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce26"/>
-     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
+     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="2"/>
      <table:covered-table-cell table:style-name="ce8"/>
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:style-name="ce26"/>
