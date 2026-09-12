@@ -8148,7 +8148,11 @@
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>End point</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
+     <table:table-cell table:style-name="ce25"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Partial key follow (+0x22)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>Level</text:p>
      </table:table-cell>
@@ -8220,7 +8224,11 @@
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>End point</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
+     <table:table-cell table:style-name="ce25"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Partial key follow (+0x22)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>Level</text:p>
      </table:table-cell>
@@ -8951,7 +8959,10 @@
      <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
       <text:p>Fine tune</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce25" table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Partial key follow (0xEA)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>Level</text:p>
      </table:table-cell>
@@ -9059,7 +9070,11 @@
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>End point</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce25" table:number-columns-repeated="3"/>
+     <table:table-cell table:style-name="ce25"/>
+     <table:table-cell table:style-name="ce16" office:value-type="string" calcext:value-type="string">
+      <text:p>Partial key follow (0xEA)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce25"/>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>Level</text:p>
      </table:table-cell>
