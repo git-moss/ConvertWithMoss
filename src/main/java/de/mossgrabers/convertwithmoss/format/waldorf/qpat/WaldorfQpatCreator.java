@@ -658,6 +658,41 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
+     * Checks if the zones are one key map which is played across the keyboard rather than a stack of
+     * layers. Sources sometimes give the zones of a key map ranges which overlap slightly - the E-mu
+     * Xtreme Lead 1 'Air Age' maps its lowest sample up to key 54 while the next one starts at 43 -
+     * and splitting those into separate oscillators leaves each of them with a hole: 'Air Age' ended
+     * up with an oscillator which is silent from key 55 to 71, which is where the instrument is
+     * played.
+     *
+     * A key map is recognized by both its root notes and its lower key limits rising from zone to
+     * zone: the zones follow each other up the keyboard, so however their ranges overlap they are
+     * meant to be one map. A stack does not look like that - its layers sound on the same notes, so
+     * they share a lower key limit, and usually a root note as well.
+     *
+     * @param zones The zones of a group
+     * @return True if the zones are one key map
+     */
+    private static boolean isAscendingKeyMap (final List<ISampleZone> zones)
+    {
+        if (zones.size () < 2)
+            return false;
+        final List<ISampleZone> sorted = new ArrayList<> (zones);
+        sorted.sort (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyLow (), 0)));
+        for (int i = 1; i < sorted.size (); i++)
+        {
+            final ISampleZone previous = sorted.get (i - 1);
+            final ISampleZone zone = sorted.get (i);
+            if (limitToDefault (previous.getKeyLow (), 0) >= limitToDefault (zone.getKeyLow (), 0))
+                return false;
+            if (previous.getKeyRoot () >= zone.getKeyRoot ())
+                return false;
+        }
+        return true;
+    }
+
+
+    /**
      * Split each group whose zones stack (overlap in both key and velocity) into separate layers,
      * so a layered preset maps to several oscillators instead of collapsing into one. Groups
      * without an internal overlap are kept unchanged. The largest layer is placed first so it
@@ -706,6 +741,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static List<List<ISampleZone>> partitionLayers (final List<ISampleZone> zones)
     {
+        // A key map whose ranges overlap is not a stack, see isAscendingKeyMap
+        if (isAscendingKeyMap (zones))
+        {
+            final List<List<ISampleZone>> single = new ArrayList<> ();
+            single.add (new ArrayList<> (zones));
+            return single;
+        }
+
         final List<ISampleZone> sorted = new ArrayList<> (zones);
         // Place the widest zones first so a full-range layer does not scatter narrow zones.
         sorted.sort (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyLow (), 0)).thenComparing (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyHigh (), 127)).reversed ()));
