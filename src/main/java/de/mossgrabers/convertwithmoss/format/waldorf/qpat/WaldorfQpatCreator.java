@@ -11,10 +11,12 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
@@ -233,7 +235,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         final String relativeSamplePath = "samples/" + sampleName;
 
-        final List<List<IGroup>> layers = distributeToLayers (splitLayers (this.combineSplitStereo (multisampleSource)), this.settingsConfiguration.getMaximumLayers ());
+        final List<IGroup> splitGroups = splitLayers (this.combineSplitStereo (multisampleSource));
+        int maximumLayers = this.settingsConfiguration.getMaximumLayers ();
+        if (maximumLayers > 1 && !canLayersPlay (splitGroups, Math.clamp (maximumLayers, 1, MAX_LAYERS)))
+        {
+            this.notifier.log ("IDS_QPAT_NOTIFY_ONE_LAYER_SAMPLES");
+            maximumLayers = 1;
+        }
+        final List<List<IGroup>> layers = distributeToLayers (splitGroups, maximumLayers);
         final List<IGroup> groups = new ArrayList<> ();
         for (final List<IGroup> layerGroups: layers)
             groups.addAll (layerGroups);
@@ -452,6 +461,41 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // Write resource(s)
         for (final byte [] sampleMap: sampleMaps)
             out.write (sampleMap);
+    }
+
+
+    /**
+     * Checks if the layers beyond the first can play at all. The device does not load a sample which
+     * is only referenced by a layer beyond the first: it reports "loading
+     * samples/&lt;patch&gt;/&lt;file&gt;.wav failed" for each such sample and that layer stays
+     * silent (tested on an Iridium MK2, firmware 4.0.6, from a power-on state so the volatile
+     * sample pool is not involved). A patch whose second layer brings samples of its own therefore
+     * does not play, while one whose second layer only re-uses the samples of the first does - the
+     * first layer has already loaded them. Writing a single layer instead keeps every zone: the
+     * groups which do not fit into the three oscillators are merged (see {@link #reduceGroups}),
+     * which costs the panning of a group but no sample and no zone.
+     *
+     * @param groups The groups, in the order in which they are distributed to the layers
+     * @param layers The number of layers the groups would be distributed to
+     * @return True if the layers beyond the first only reference samples of the first layer
+     */
+    private static boolean canLayersPlay (final List<IGroup> groups, final int layers)
+    {
+        final Set<String> firstLayerSamples = new HashSet<> ();
+        final Set<String> otherLayerSamples = new HashSet<> ();
+        final int maximumGroups = layers * MAX_OSCILLATORS;
+        for (int i = 0; i < groups.size (); i++)
+        {
+            // Everything which does not fit is merged into the last group which does, so those
+            // zones end up in the layer of that group
+            final int groupIndex = Math.min (i, maximumGroups - 1);
+            final Set<String> layerSamples = groupIndex < MAX_OSCILLATORS ? firstLayerSamples : otherLayerSamples;
+            for (final ISampleZone zone: groups.get (i).getSampleZones ())
+                // The zone name is what the sample map references, sanitized exactly as the sample
+                // file is written
+                layerSamples.add (FileUtils.createSafeFilename (zone.getName ()));
+        }
+        return firstLayerSamples.containsAll (otherLayerSamples);
     }
 
 
