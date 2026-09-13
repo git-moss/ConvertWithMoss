@@ -251,6 +251,8 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 loop.setType (LoopType.ALTERNATING);
             loop.setStart (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_START, -1));
             loop.setEnd (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LOOP_END, -1));
+            // TAL-Sampler plays the loop with this cross-fade, the loops are authored for it
+            loop.setCrossfade (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.FADE_IN_SAMPLES, 0));
             zone.addLoop (loop);
         }
 
