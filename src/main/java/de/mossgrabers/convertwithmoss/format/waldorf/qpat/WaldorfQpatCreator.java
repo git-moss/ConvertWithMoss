@@ -618,6 +618,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 sb.append (zone.getKeyTracking () == 0 ? "0" : "1");
             }
 
+            // End the last line with a line feed and a NUL, which count as part of the resource,
+            // like every map the device writes. The device does not stop reading at the length of
+            // the resource: behind an unterminated map it appended the digits which followed in
+            // its memory to the TrackPitch flag of the last entry ('1' became e.g. '10', '19' or
+            // '1000000'), and such an entry plays every key with the same pitch
+            if (!sb.isEmpty ())
+                sb.append ("\n\0");
             sampleMaps.add (sb.toString ());
         }
 
