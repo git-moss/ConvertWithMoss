@@ -79,7 +79,7 @@ public class KMPCreator extends AbstractCreator<KMPCreatorUI>
 
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            AbstractCreator.recalculateAllSamplePositions (multisampleSource, 48000, true);
+            this.recalculateAllSamplePositions (multisampleSource, 48000, true);
 
             final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
             // The DOS file names and the sub-folder keep the full name; only the 24 character
