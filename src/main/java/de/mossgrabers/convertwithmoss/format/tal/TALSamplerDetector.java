@@ -234,10 +234,12 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PITCH_KEY_TRACK, 1));
 
         zone.setKeyRoot (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, -1));
-        zone.setKeyLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, -1));
-        zone.setKeyHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, -1));
-        zone.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, -1));
-        zone.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, -1));
+        // A preset does not necessarily contain the ranges (often there is no velocity range at
+        // all), a missing range keeps the full range of the zone
+        zone.setKeyLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_NOTE, zone.getKeyLow ()));
+        zone.setKeyHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, zone.getKeyHigh ()));
+        zone.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, zone.getVelocityLow ()));
+        zone.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, zone.getVelocityHigh ()));
 
         // The mute group is the exclusive group, 0 means that the sample is not assigned to one
         zone.setExclusiveGroup (Math.max (0, XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.MUTE_GROUP, 0)));

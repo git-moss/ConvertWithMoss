@@ -653,15 +653,20 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // note is lower!
                 sb.append (formatMapDouble (zone.getKeyRoot () - zone.getTuning ())).append ('\t');
 
-                // FromNote / ToNote
-                sb.append (zone.getKeyLow ()).append ('\t').append (zone.getKeyHigh ()).append ('\t');
+                // FromNote / ToNote - a negative range was not set by the source, it covers the
+                // full range like in the layer distribution (see zonesOverlap) instead of being
+                // written as -1, which the device takes over as the range of the entry
+                sb.append (limitToDefault (zone.getKeyLow (), 0)).append ('\t').append (limitToDefault (zone.getKeyHigh (), 127)).append ('\t');
 
                 // Gain
                 final double v = Math.clamp (zone.getGain () - gainOffset, Double.NEGATIVE_INFINITY, 20);
                 sb.append (formatMapDouble (Math.pow (10, v / 20) * gainFactor)).append ('\t');
 
-                // FromVelo / ToVelo
-                sb.append (zone.getVelocityLow ()).append ('\t').append (zone.getVelocityHigh ()).append ('\t');
+                // FromVelo / ToVelo - same as the note range. The lowest velocity is written as 0,
+                // which is how the patches of the device cover all velocities: the device plays a
+                // very soft note with the velocity 0, which an entry from 1 on does not play
+                final int velocityLow = zone.getVelocityLow ();
+                sb.append (velocityLow <= 1 ? 0 : velocityLow).append ('\t').append (limitToDefault (zone.getVelocityHigh (), 127)).append ('\t');
 
                 // Pan - CURRENTLY IGNORED
                 sb.append (formatMapDouble (Math.clamp ((zone.getPanning () - panningOffset + 1.0) / 2.0, 0, 1))).append ('\t');
