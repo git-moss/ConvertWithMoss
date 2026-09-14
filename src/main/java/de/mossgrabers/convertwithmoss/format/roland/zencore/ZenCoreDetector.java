@@ -178,6 +178,7 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
             final ISampleZone zone = zones.get (i);
             if (panning != 0)
                 zone.setPanning (Math.clamp (zone.getPanning () + panning, -1, 1));
+            zone.setKeyTracking (Math.clamp (partial.keyFollow / 100.0, 0, 1));
             if (hasVelocityWindow)
             {
                 zone.setVelocityLow (partial.velLow);
