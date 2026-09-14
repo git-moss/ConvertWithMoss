@@ -31,6 +31,7 @@
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
+  * Fixed: Every loop was read one frame too long and written one frame too short. Kontakt stores a loop as its start and its length - the number of frames of the loop - but the start plus the length was taken as the last frame. Reading the Kontakt, Logic EXS24 and TAL-Sampler editions of the BlueWave library, which use the same samples, gave loop ends one frame behind the other two editions for 3557 of the 3634 zones of the 'Raw_Osc' instruments; now all three agree, and the curvature across the loop seams is smallest at the end which is read.
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
   * Fixed: Unused opcodes were not logged.
