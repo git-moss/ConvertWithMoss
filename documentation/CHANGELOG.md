@@ -10,6 +10,8 @@
 * Fixed: 32-bit float samples (e.g. the WAV files which DirectWave writes) were always converted to 16 bit, even though the log announced the 24 bit of the destination format. A float sample is now converted to the highest resolution the destination supports - 24 bit for e.g. SoundFont 2, Bliss, Tonverk, DirectWave and FLAC, 32 bit for ALAC - and keeps its float format for destinations without a restriction, e.g. when only the chunks of a WAV file are updated.
 * Fixed: Sample search did only search upwards but not downwards from the current directory.
 * Fixed: Ignore very short loops (1-2 samples) stored in WAV sample chunks.
+* Audiomodern Soundbox
+  * Fixed: The band-pass and the high-pass of a filter effect were swapped, which silenced converted presets. The plug-in stores the filter type as a juce::dsp::StateVariableTPTFilterType (0 = low-pass, 1 = band-pass, 2 = high-pass) and not in the assumed low-pass/high-pass/band-pass order, so e.g. the high-pass at 62 Hz which the 'Wired' pack puts on many of its pads - a plain rumble filter - became a band-pass at 62 Hz, which removes practically the whole sound. The three types the plug-in has are now read and written with their own indices; a band-rejection, which the plug-in cannot store, is written as its low-pass default.
 * E-mu Emax
   * New: The LFO modulation of the filter cutoff is read and written (the LFO to cutoff amount, 340 cents per step); before, only the vibrato and the tremolo of the LFO were converted.
 * Akai S-1000/S-3000
