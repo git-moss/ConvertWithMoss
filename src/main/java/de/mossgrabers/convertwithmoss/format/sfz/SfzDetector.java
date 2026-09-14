@@ -735,6 +735,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (lfoDepth != 0)
         {
             final ILfoModulator amplitudeLfoModulator = sampleZone.getAmplitudeLfoModulator ();
+            // Input is in the range of [-10..10] dB
             amplitudeLfoModulator.setDepth (lfoDepth / ILfoModulator.MAX_VOLUME_DEPTH);
 
             final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();

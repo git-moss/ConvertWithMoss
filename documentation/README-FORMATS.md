@@ -574,7 +574,7 @@ As a source, each pad (track) of the kit becomes one zone. The pads are mapped t
 
 As a destination, one kit folder is written per multi-sample: the kit file named after the folder and one WAV file per zone (up to the 32 pads of the device, additional zones are ignored). The samples are written in the device native 48 kHz / 16-bit format - a sample above 48 kHz is down-sampled, a sample at 44.1 kHz is kept since the device supports it - and their loop is stored in the *smpl* chunk so that the device picks it up.
 
-The kit file format was reverse-engineered from the official S2400 Kit Builder web application, since the device firmware is encrypted. The read and written kits have not yet been verified on real hardware.
+The kit file format was reverse-engineered from the official S2400 Kit Builder web application, since the device firmware is encrypted.
 
 ## ISO/IMG Files
 
