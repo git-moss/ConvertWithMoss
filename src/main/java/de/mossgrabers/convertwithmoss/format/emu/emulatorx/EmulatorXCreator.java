@@ -229,7 +229,7 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
             if (loop.getType () == LoopType.FORWARDS || loop.getType () == LoopType.ALTERNATING)
             {
                 loopStart = Math.clamp (loop.getStart (), 0, numFrames - 1);
-                loopEnd = Math.clamp (loop.getEnd (), loopStart + 1, numFrames);
+                loopEnd = Math.min (Math.max (loop.getEnd (), loopStart + 1), numFrames - 1);
                 break;
             }
 

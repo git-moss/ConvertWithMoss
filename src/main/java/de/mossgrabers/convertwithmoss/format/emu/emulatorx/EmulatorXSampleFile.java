@@ -86,13 +86,13 @@ public class EmulatorXSampleFile
         if (EmulatorXConstants.getU16LE (fileData, payload + EmulatorXConstants.SAMPLE_LOOP_FLAG) > 0)
         {
             final int start = ((int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_START) - leftStart) / EmulatorXConstants.BYTES_PER_FRAME;
-            // The stored loop end addresses the last frame of the loop, the model the one behind it
-            final int end = ((int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_END) - leftStart) / EmulatorXConstants.BYTES_PER_FRAME + 1;
+            // The stored loop end addresses the last frame of the loop, like the end of the model
+            final int end = ((int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_END) - leftStart) / EmulatorXConstants.BYTES_PER_FRAME;
             if (start >= 0 && end > start && start < sample.numFrames)
             {
                 sample.hasLoop = true;
                 sample.loopStart = start;
-                sample.loopEnd = Math.min (end, sample.numFrames);
+                sample.loopEnd = Math.min (end, sample.numFrames - 1);
             }
         }
 
@@ -151,7 +151,7 @@ public class EmulatorXSampleFile
 
         // Without a loop the end is put in front of the start, which is what the factory banks do
         final int loopStartOffset = this.hasLoop ? this.loopStart * EmulatorXConstants.BYTES_PER_FRAME : 0;
-        final int loopEndOffset = this.hasLoop ? (this.loopEnd - 1) * EmulatorXConstants.BYTES_PER_FRAME : -EmulatorXConstants.BYTES_PER_FRAME;
+        final int loopEndOffset = this.hasLoop ? this.loopEnd * EmulatorXConstants.BYTES_PER_FRAME : -EmulatorXConstants.BYTES_PER_FRAME;
         EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_START, leftStart + (long) loopStartOffset);
         EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_RIGHT_LOOP_START, rightStart + (long) loopStartOffset);
         EmulatorXConstants.putU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_END, leftStart + (long) loopEndOffset);
@@ -183,7 +183,8 @@ public class EmulatorXSampleFile
             System.arraycopy (EmulatorXConstants.SAMPLE_MARKER_TAG.getBytes (), 0, fileData, position, 4);
             EmulatorXConstants.putU32LE (fileData, position + 4, 8);
             EmulatorXConstants.putU32LE (fileData, position + 8, this.loopStart);
-            EmulatorXConstants.putU32LE (fileData, position + 12, this.loopEnd);
+            // Unlike the header, the marker holds the frame behind the loop
+            EmulatorXConstants.putU32LE (fileData, position + 12, this.loopEnd + 1L);
         }
 
         return fileData;
@@ -386,7 +387,7 @@ public class EmulatorXSampleFile
     /**
      * Get the end of the loop.
      *
-     * @return The sample frame behind the loop
+     * @return The last sample frame of the loop
      */
     public int getLoopEnd ()
     {
@@ -398,7 +399,7 @@ public class EmulatorXSampleFile
      * Set the loop of the sample.
      *
      * @param start The first sample frame of the loop
-     * @param end The sample frame behind the loop
+     * @param end The last sample frame of the loop
      */
     public void setLoop (final int start, final int end)
     {
