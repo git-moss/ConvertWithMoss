@@ -50,6 +50,7 @@ import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -101,7 +102,7 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String multiSampleName = SafeFileNames.create (multisampleSource.getName ());
         this.storeMultisample (Collections.singletonList (multisampleSource), destinationFolder, multiSampleName);
     }
 
@@ -728,7 +729,9 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         {
             final ISampleLoop sampleLoop = loops.get (0);
             loopStart += sampleLoop.getStart ();
-            loopEnd += sampleLoop.getEnd ();
+            // The loop end of the model is the last frame of the loop, the one of a SoundFont is
+            // the first frame behind the loop
+            loopEnd += sampleLoop.getEnd () + 1L;
         }
         sampleDescriptor.setLoopStart (loopStart);
         sampleDescriptor.setLoopEnd (loopEnd);

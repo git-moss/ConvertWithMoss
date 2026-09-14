@@ -108,7 +108,12 @@ public class SynclavierRegenSampleData extends AbstractFileSampleData
     @Override
     public void addZoneData (final ISampleZone zone, final boolean addRootKey, final boolean addLoops) throws IOException
     {
-        // No info available in FLAC
+        // The de-obfuscated FLAC stores no root key and no loops, but the length of the audio is
+        // the play range of the zone as long as the source format did not set one
+        if (zone.getStart () < 0)
+            zone.setStart (0);
+        if (zone.getStop () <= 0)
+            zone.setStop (this.getAudioMetadata ().getNumberOfSamples ());
     }
 
 
