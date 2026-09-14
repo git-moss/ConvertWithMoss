@@ -291,7 +291,9 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
             final ISampleLoop loop = new DefaultSampleLoop ();
             loop.setType (LoopType.FORWARDS);
             loop.setStart (sample.getLoopStart ());
-            loop.setEnd (sample.getEndPoint ());
+            // The engine loops from the loop start up to the frame before the end point, the end
+            // of the model is the last frame of the loop
+            loop.setEnd (sample.getEndPoint () - 1);
             zone.getLoops ().add (loop);
         }
         return zone;
