@@ -139,8 +139,8 @@ offset  size  content
 ### 2.4 Resource data
 
 Follows the last parameter record without padding. Each resource occupies the byte range given by
-its table entry. A sample map is plain ASCII text (section 4); nothing terminates it other than its
-length in the table.
+its table entry. A sample map is plain ASCII text (section 4) which ends with `\n` and a NUL byte,
+both counted in its length: the device does not stop reading a map at that length (4.4) **(hw)**.
 
 ### 2.5 Format versions (corpus)
 
@@ -231,7 +231,7 @@ write them (section 7.5).
 ## 3. Worked example: a minimal two-sample patch
 
 A patch with two short mono samples, 16-bit / 44.1 kHz, as ConvertWithMoss writes it from plain WAV
-files. The whole file is 2003 bytes: 512 (header) + 18 x 68 (parameters) + 267 (one sample map).
+files. The whole file is 2005 bytes: 512 (header) + 18 x 68 (parameters) + 269 (one sample map).
 
 ```
 Example Piano.qpat
@@ -247,7 +247,7 @@ Annotated header (only non-zero lines; the rest of the 512 bytes is zero):
                                                             author @40 and bank @72 are empty
 00000060  00 00 00 00 00 00 00 00  50 69 61 6e 6f 00 00 00  attribute 1 @104 = "Piano"
 000000e0  00 00 00 00 00 00 00 00  12 00 00 00 04 00 00 00  @232 count = 18, pad; @236 type 4
-000000f0  00 00 00 00 0b 01 00 00  00 00 00 00 00 00 00 00  offset 0, length 267; entry 2 unused
+000000f0  00 00 00 00 0d 01 00 00  00 00 00 00 00 00 00 00  offset 0, length 269; entry 2 unused
                                                             @428 layer code 0, mode 0, offsets 0, synth 0
 00000200  00 00 00 40 4f 73 63 31  54 79 70 65 00 00 00 00  @512 record 1: value 2.0f, "Osc1Type"
 00000220  00 00 00 00 50 61 72 74  69 63 6c 65 00 00 00 00  @548 hint "Particle"
@@ -277,7 +277,8 @@ The 18 parameter records, in file order:
 | `AmpEnvReleaseCurve` | 2 | Lin | |
 | `AmpVeloAmount` | 1 | 100.00 % | velocity fully controls the level |
 
-The sample map (267 bytes at file offset 1736; TABs shown as `<TAB>`, one entry per line):
+The sample map (269 bytes at file offset 1736; TABs shown as `<TAB>`, one entry per line, each line
+ended by `\n` and the last one followed by a NUL byte):
 
 ```
 "samples/Example Piano/Example Piano A3.wav"<TAB>69.00000000<TAB>0<TAB>70<TAB>1.00000000<TAB>0<TAB>127<TAB>0.50000000<TAB>0.00000000<TAB>1.00000000<TAB>0<TAB>0<TAB>1.00000000<TAB>0<TAB>0<TAB>1
@@ -293,8 +294,8 @@ what the hardware tests referenced in this document were run with.
 
 ### 4.1 Columns
 
-A sample map is a **TAB separated text table**, one line per map entry, lines separated by `\n`, no
-header line. A line has 16 columns:
+A sample map is a **TAB separated text table**, one line per map entry, every line ended by `\n`,
+no header line, and a NUL byte after the last line (4.4). A line has 16 columns:
 
 | # | column | content | encoding |
 |--:|--------|---------|----------|
@@ -366,8 +367,21 @@ its samples into that pool - which looks exactly like a broken file until the fr
 
 ### 4.4 Maps written by the device
 
-Maps written by the device are **NUL terminated**; if a reader splits the text at `\n` it must trim
-a trailing NUL (and any other control characters) from the last line. Device exports can also be
+Maps written by the device end with `\n` and a **NUL byte**, both counted in the length of the
+resource - all 563 maps of the MK2 factory sets (versions 8-11) and all 28 of the patches an
+Iridium MK2 saved to a card (version 15) **(corpus)**. If a reader splits the text at `\n` it must
+trim that NUL (and any other control characters) from the last line.
+
+A writer has to end its maps the same way **(hw)**. The device does not stop reading a map at the
+length in the resource table: ConvertWithMoss wrote its maps without the two bytes, so the last
+map ended the file, and patches of that kind which an Iridium MK2 saved again carry TrackPitch
+values of 10, 15, 19, 1000000 and 15839416 - the `1` which was written, followed by whatever digits
+came next in the device's memory. 7 of 346 entries of those saved patches have such a value, each
+one the last entry of the last map; every other entry kept its 0 or 1. An entry with such a value
+plays every key with the same pitch: 6 of 12 converted single-sample patches of one pack did not
+track the keyboard, while their parameters and maps differed from the other 6 in nothing that
+concerns the pitch.
+Which patches are hit depends on the memory of the device, not on the file. Device exports can also be
 incomplete - samples referenced by the map but never written to the card, or written under a
 slightly different name (a `#` dropped) - so a missing sample is not necessarily the reader's fault.
 The device writes the end position of a whole-file entry as `(N - 1) / N` where ConvertWithMoss
@@ -579,6 +593,9 @@ All of these were found by loading written patches on an Iridium **(hw)**:
   *Export -> With Samples* doubles a drive prefix.
 * **Map values** outside `0..1` -> *Locate Samples*. Clamp positions; compute them from the real
   frame count of the written WAV (after any re-sampling).
+* **End every map with `\n` and a NUL** and count both in its length (4.4). Without them the device
+  reads beyond the map, and the TrackPitch flag of the last entry picks up digits from its memory,
+  so the entry plays at a fixed pitch - in some patches and not in others.
 * **Full sample memory** on the device shows the same screens as a broken file; check it first when
   a file that looks correct will not load.
 * **`Osc{i}ParticleSampleMode = 2`** or single samples do not track the keyboard.

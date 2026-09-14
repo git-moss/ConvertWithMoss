@@ -751,15 +751,22 @@ public class ConverterBackend
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
             if ((hasMaximumNumberOfSamples || this.detectionSettings.enableMakeMono) && ZoneChannels.detectChannelConfiguration (groups) == ZoneChannels.SPLIT_STEREO)
             {
-                this.notifier.log ("IDS_PROCESSING_COMBINE_TO_STEREO");
-                final Optional<IGroup> stereoGroup = ZoneChannels.combineSplitStereo (groups);
-                if (stereoGroup.isPresent ())
+                // Hard panned zones which are not the two channels of one recording are layers
+                // and must stay separate
+                if (ZoneChannels.isSplitStereo (groups))
                 {
-                    groups.clear ();
-                    groups.add (stereoGroup.get ());
+                    this.notifier.log ("IDS_PROCESSING_COMBINE_TO_STEREO");
+                    final Optional<IGroup> stereoGroup = ZoneChannels.combineSplitStereo (groups);
+                    if (stereoGroup.isPresent ())
+                    {
+                        groups.clear ();
+                        groups.add (stereoGroup.get ());
+                    }
+                    else
+                        this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
                 }
                 else
-                    this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
+                    this.notifier.log ("IDS_NOTIFY_PANNED_LAYERS_NOT_COMBINED");
             }
 
             // -----------------------------------------------------------
@@ -817,7 +824,10 @@ public class ConverterBackend
 
 
     /**
-     * Remove critical characters from all zone names.
+     * Remove critical characters from all zone names. This is the one place where the name of a
+     * zone becomes a name which is safe as a file name, so the sample file which a creator writes
+     * and the reference to it which it puts into the preset are derived from the same string and
+     * cannot drift apart.
      *
      * @param multisampleSource The multi-sample source
      */
@@ -825,7 +835,7 @@ public class ConverterBackend
     {
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
-                zone.setName (FileUtils.createSafeFilename (zone.getName ()));
+                zone.setName (SafeFileNames.create (zone.getName ()));
     }
 
 
@@ -882,13 +892,13 @@ public class ConverterBackend
     private String getPresetLibraryName (final List<IMultisampleSource> multisampleSources, final String libraryName)
     {
         final String name = this.detectionSettings.wantsMultipleFiles && !libraryName.isEmpty () ? libraryName : multisampleSources.get (0).getName ();
-        return FileUtils.createSafeFilename (name);
+        return SafeFileNames.create (name);
     }
 
 
     private String getPerformanceLibraryName (final List<IPerformanceSource> performanceSources, final String libraryName)
     {
         final String name = this.detectionSettings.wantsMultipleFiles && !libraryName.isEmpty () ? libraryName : performanceSources.get (0).getName ();
-        return FileUtils.createSafeFilename (name);
+        return SafeFileNames.create (name);
     }
 }

@@ -59,6 +59,8 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
     private static final int OSC_COARSE_TUNE = 0x02;
     private static final int OSC_FINE_TUNE   = 0x03;
     private static final int OSC_PAN         = 0x06;
+    // s16, 100 = chromatic, 0 = the same pitch on every key
+    private static final int OSC_KEY_FOLLOW  = 0x22;
     private static final int OSC_WAVE_GROUP  = 0x17;
     private static final int OSC_WAVE_NUMBER = 0x1A;
     private static final int OSC_FILTER_TYPE = 0x24;
@@ -281,9 +283,11 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
         final int coarseTune = data[partialOffset + OSC_COARSE_TUNE];
         final int fineTune = data[partialOffset + OSC_FINE_TUNE];
         final int panning = data[partialOffset + OSC_PAN];
+        // The pitch key follow of the partial: 100 = chromatic, 0 = the same pitch on every key
+        final int keyFollow = (short) ZenCoreUtil.readUnsigned16 (data, partialOffset + OSC_KEY_FOLLOW, false);
         // The partial level scales the level of the sample slot, both are linear 0-127 volumes.
         final double gain = MathUtils.valueToDb (Math.max (level, 1) / 127.0);
-        signature.append ("/P").append (level).append (':').append (coarseTune).append (':').append (fineTune).append (':').append (panning);
+        signature.append ("/P").append (level).append (':').append (coarseTune).append (':').append (fineTune).append (':').append (panning).append (':').append (keyFollow);
 
         final int tvaOffset = offset + TONE_TVA + partial * TONE_TVA_STRIDE;
         final IEnvelope amplitudeEnvelope = new DefaultEnvelope ();
@@ -315,6 +319,7 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
             zone.setGain (zone.getGain () + gain);
             zone.setTuning (coarseTune + fineTune / 100.0);
             zone.setPanning (Math.clamp (panning / 64.0, -1, 1));
+            zone.setKeyTracking (Math.clamp (keyFollow / 100.0, 0, 1));
             zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
             if (type != null)
                 zone.setFilter (new DefaultFilter (type, 4, MathUtils.denormalizeCutoff (cutoff / 1023.0), resonance / 1023.0));

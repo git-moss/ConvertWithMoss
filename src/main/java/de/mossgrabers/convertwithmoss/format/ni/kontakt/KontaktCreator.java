@@ -21,8 +21,8 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.IKontaktFormat;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt1.Kontakt1Format;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Kontakt5Format;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -72,7 +72,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
         final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Format (this.notifier, false) : new Kontakt5Format (this.notifier);
 
-        final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String multisampleName = SafeFileNames.create (multisampleSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, multisampleName, "nki");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
@@ -121,7 +121,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
         if (instruments.isEmpty ())
             return;
 
-        final String libraryName = FileUtils.createSafeFilename (performanceSource.getName ());
+        final String libraryName = SafeFileNames.create (performanceSource.getName ());
         final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
         final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Format (this.notifier, false) : new Kontakt5Format (this.notifier);
         this.createNKM (destinationFolder, instruments, libraryName, kontaktType);
@@ -158,7 +158,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
 
             // First, store all samples
-            final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+            final String multisampleName = SafeFileNames.create (multisampleSource.getName ());
             final String safeSampleFolderName = multisampleName + FOLDER_POSTFIX;
             sampleFilePaths.add (safeSampleFolderName);
             final File sampleFolder = new File (destinationFolder, safeSampleFolderName);

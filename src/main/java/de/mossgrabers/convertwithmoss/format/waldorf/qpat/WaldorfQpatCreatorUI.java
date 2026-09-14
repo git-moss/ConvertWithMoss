@@ -13,11 +13,14 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
+import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Pane;
 
 
@@ -72,7 +75,9 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         panel.createSeparator ("@IDS_QPAT_SEPARATOR");
         this.limitTo16441CheckBox = panel.createCheckBox ("@IDS_QPAT_RESAMPLE_TO_16_441");
         this.authorField = panel.createField ("@IDS_QPAT_AUTHOR");
+        limitToPatchInfo (this.authorField);
         this.bankField = panel.createField ("@IDS_QPAT_BANK");
+        limitToPatchInfo (this.bankField);
         this.numberPrefixCheckBox = panel.createCheckBox ("@IDS_QPAT_NUMBER_PREFIX");
         this.numberPrefixStartField = panel.createPositiveIntegerField ("@IDS_QPAT_NUMBER_PREFIX_START");
         this.numberPrefixStartField.disableProperty ().bind (this.numberPrefixCheckBox.selectedProperty ().not ());
@@ -149,6 +154,8 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.author = authorValue == null ? "" : authorValue;
         final String bankValue = parameters.remove (QPAT_BANK);
         this.bank = bankValue == null ? "" : bankValue;
+        if (!checkFitsIntoPatchInfo (notifier, QPAT_AUTHOR, this.author) || !checkFitsIntoPatchInfo (notifier, QPAT_BANK, this.bank))
+            return false;
 
         this.numberPrefix = "1".equals (parameters.remove (QPAT_NUMBER_PREFIX));
         final String startValue = parameters.remove (QPAT_NUMBER_PREFIX_START);
@@ -198,6 +205,58 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     public int getMaximumLayers ()
     {
         return this.useSecondLayer ? 2 : 1;
+    }
+
+
+    /**
+     * Limit a field to the text which the device shows completely in the patch information of its
+     * 'Load Patch' page. Of a longer text, e.g. a pasted one, only the part which fits is taken.
+     *
+     * @param field The field to limit
+     */
+    private static void limitToPatchInfo (final TextField field)
+    {
+        field.setTooltip (new Tooltip (Functions.getText ("@IDS_QPAT_PATCH_INFO_TOOLTIP")));
+        field.setTextFormatter (new TextFormatter<String> (change -> {
+
+            // Removing characters never makes a text wider
+            final String addedText = change.getText ();
+            if (addedText.isEmpty () || WaldorfQpatDisplay.fitsIntoPatchInfo (change.getControlNewText ()))
+                return change;
+
+            final String controlText = change.getControlText ();
+            final String head = controlText.substring (0, change.getRangeStart ());
+            final String tail = controlText.substring (change.getRangeEnd ());
+            int length = addedText.length ();
+            while (length > 0 && !WaldorfQpatDisplay.fitsIntoPatchInfo (head + addedText.substring (0, length) + tail))
+                length--;
+            if (length == 0)
+                return null;
+
+            change.setText (addedText.substring (0, length));
+            final int caret = change.getRangeStart () + length;
+            change.selectRange (caret, caret);
+            return change;
+
+        }));
+    }
+
+
+    /**
+     * Check if the value of a parameter is shown completely in the patch information of the 'Load
+     * Patch' page of the device.
+     *
+     * @param notifier Where to report an error
+     * @param parameterName The name of the parameter
+     * @param value The value of the parameter
+     * @return True if it fits
+     */
+    private static boolean checkFitsIntoPatchInfo (final INotifier notifier, final String parameterName, final String value)
+    {
+        if (WaldorfQpatDisplay.fitsIntoPatchInfo (value))
+            return true;
+        notifier.logError ("IDS_QPAT_TEXT_DOES_NOT_FIT", parameterName, WaldorfQpatDisplay.getVisiblePart (value));
+        return false;
     }
 
 

@@ -32,6 +32,7 @@ import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSa
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -88,7 +89,7 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
     {
         final boolean resample = this.settingsConfiguration.resampleTo2448 ();
 
-        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String sampleName = SafeFileNames.create (multisampleSource.getName ());
         final File presetFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
         if (!presetFolder.mkdir ())
         {
@@ -234,7 +235,7 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
                     velocityLayer.sampleSlots.add (sampleSlot);
 
                     // Must be identical to the file name created in writeSamples!
-                    sampleSlot.sample = FileUtils.createSafeFilename (sampleZone.getName ()) + ".wav";
+                    sampleSlot.sample = SafeFileNames.create (sampleZone.getName ()) + ".wav";
 
                     // Note: 'trim-start'/'trim-end' must not be set! They are only supported for
                     // single-file multi-samples. The WAV files are physically trimmed instead.

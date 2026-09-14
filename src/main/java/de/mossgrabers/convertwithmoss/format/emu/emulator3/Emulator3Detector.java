@@ -581,12 +581,12 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         {
             sample.alternatingLoop = loopType >= Emulator3Constants.OPTION_LOOP_ALTERNATING;
             sample.loopStart = (int) ((Emulator3Constants.getU32 (data, offset + loopStartField) - start) / 2);
-            // The stored position is the frame before the last one of the loop while the model
-            // counts the end as inclusive. Measuring the step at the loop seam of 2798 looped
-            // samples of the library CD-ROMs shows a clear optimum at this one frame: the median
-            // step falls from 4.6% to 0.2% of the peak amplitude and the share of seams which
-            // step by more than a third of it from 13% to 2%.
-            sample.loopEnd = (int) ((Emulator3Constants.getU32 (data, offset + loopEndField) - start) / 2) + 1;
+            // The stored position is the last frame of the loop, which the model counts as
+            // inclusive as well. A seamless loop repeats its first frame behind its last one, so
+            // the step from the loop end to the loop start is smallest one frame too late - the
+            // curvature across the seam is not: on the 'Analog Odyssey' CD-ROM its median is 3.0
+            // at the stored frame, 6.7 at the frame behind it and 9.2 at the frame before it
+            sample.loopEnd = (int) ((Emulator3Constants.getU32 (data, offset + loopEndField) - start) / 2);
             sample.hasLoop = sample.loopStart >= 0 && sample.loopEnd > sample.loopStart && sample.loopStart < numFrames;
             sample.loopEnd = Math.min (sample.loopEnd, numFrames - 1);
             // Without this flag the loop stops as soon as the key is released
@@ -874,20 +874,30 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         if (filter != null)
             zone.setFilter (filter);
 
-        // The LFO of the zone: rate, delay and shape are shared by all of its routings, of which
-        // only the vibrato (LFO->Pitch) has a counterpart in the model. The depth of a full
-        // amount is not documented anywhere; it is treated as one semitone
+        // The LFO of the zone: rate, delay and shape are shared by its three routings. The depth
+        // of a full amount is not documented anywhere; the vibrato is treated as one semitone, the
+        // tremolo and the cutoff modulation are scaled like the ones of the Emax, whose steps are
+        // known
         final int lfoToPitch = data[offset + Emulator3Constants.ZONE_LFO_TO_PITCH];
         if (lfoToPitch != 0)
         {
             final ILfoModulator lfoModulator = zone.getPitchLfoModulator ();
-            final ILfo lfo = lfoModulator.getSource ();
-            lfo.setWaveform (Emulator3Constants.getLfoWaveform (data[offset + Emulator3Constants.ZONE_VCF_TYPE_LFO_SHAPE] & 0xFF));
-            lfo.setRate (Emulator3Constants.getLfoRate (data[offset + Emulator3Constants.ZONE_LFO_RATE] & 0xFF));
-            final double lfoDelay = Emulator3Constants.getLfoDelay (data[offset + Emulator3Constants.ZONE_LFO_DELAY] & 0xFF);
-            if (lfoDelay > 0)
-                lfo.setDelay (lfoDelay);
+            readLfo (lfoModulator.getSource (), data, offset);
             lfoModulator.setDepth (Math.clamp (lfoToPitch / 127.0, -1, 1) * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
+        }
+        final int lfoToAmplifier = data[offset + Emulator3Constants.ZONE_LFO_TO_AMPLIFIER];
+        if (lfoToAmplifier != 0)
+        {
+            final ILfoModulator lfoModulator = zone.getAmplitudeLfoModulator ();
+            readLfo (lfoModulator.getSource (), data, offset);
+            lfoModulator.setDepth (Math.clamp (lfoToAmplifier / 127.0, -1, 1) * Emulator3Constants.LFO_AMPLIFIER_FULL_DEPTH_DB / ILfoModulator.MAX_VOLUME_DEPTH);
+        }
+        final int lfoToCutoff = data[offset + Emulator3Constants.ZONE_LFO_TO_CUTOFF];
+        if (lfoToCutoff != 0 && filter != null)
+        {
+            final ILfoModulator lfoModulator = filter.getCutoffLfoModulator ();
+            readLfo (lfoModulator.getSource (), data, offset);
+            lfoModulator.setDepth (Math.clamp (lfoToCutoff / 127.0, -1, 1) * Emulator3Constants.LFO_CUTOFF_FULL_DEPTH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
         }
 
         // The pitch bend range belongs to the preset and applies to all of its zones
@@ -898,6 +908,23 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
             zone.setBendDown (-pitchBendRange * 100);
         }
         return zone;
+    }
+
+
+    /**
+     * Read the shape, the rate and the delay of the LFO of a zone, which all of its routings share.
+     *
+     * @param lfo The LFO to fill
+     * @param data The bank data
+     * @param offset The offset of the zone
+     */
+    private static void readLfo (final ILfo lfo, final byte [] data, final int offset)
+    {
+        lfo.setWaveform (Emulator3Constants.getLfoWaveform (data[offset + Emulator3Constants.ZONE_VCF_TYPE_LFO_SHAPE] & 0xFF));
+        lfo.setRate (Emulator3Constants.getLfoRate (data[offset + Emulator3Constants.ZONE_LFO_RATE] & 0xFF));
+        final double lfoDelay = Emulator3Constants.getLfoDelay (data[offset + Emulator3Constants.ZONE_LFO_DELAY] & 0xFF);
+        if (lfoDelay > 0)
+            lfo.setDelay (lfoDelay);
     }
 
 
