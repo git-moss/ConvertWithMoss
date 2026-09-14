@@ -742,14 +742,15 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         for (final ISampleLoop loop: zone.getLoops ())
             if (loop.getType () == LoopType.FORWARDS || loop.getType () == LoopType.ALTERNATING)
             {
-                final int loopEnd = Math.clamp ((int) Math.round (loop.getEnd () * rateRatio), 0, numFrames);
-                final int loopStart = Math.clamp ((int) Math.round (loop.getStart () * rateRatio), 0, Math.max (0, loopEnd - MINIMUM_LOOP_LENGTH));
-                if (loopEnd - loopStart >= MINIMUM_LOOP_LENGTH)
+                // The loop end is the last frame of the loop, the length counts its frames
+                final int loopEnd = Math.clamp ((int) Math.round (loop.getEnd () * rateRatio), 0, numFrames - 1);
+                final int loopStart = Math.clamp ((int) Math.round (loop.getStart () * rateRatio), 0, Math.max (0, loopEnd + 1 - MINIMUM_LOOP_LENGTH));
+                if (loopEnd + 1 - loopStart >= MINIMUM_LOOP_LENGTH)
                 {
                     voice.hasLoop = true;
                     voice.loopStart = loopStart;
-                    voice.loopLength = loopEnd - loopStart;
-                    voice.audio = Arrays.copyOf (voice.audio, loopEnd);
+                    voice.loopLength = loopEnd + 1 - loopStart;
+                    voice.audio = Arrays.copyOf (voice.audio, loopEnd + 1);
                 }
                 break;
             }
