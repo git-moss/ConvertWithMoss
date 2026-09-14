@@ -31,6 +31,8 @@
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
+* Roland SP-404MK2
+  * Fixed: The loop of a pad which loops the whole sample ended one frame behind the sample, e.g. 0..144000 for a sample of 144000 frames. It ends at the last frame of the sample now.
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
   * Fixed: Unused opcodes were not logged.
