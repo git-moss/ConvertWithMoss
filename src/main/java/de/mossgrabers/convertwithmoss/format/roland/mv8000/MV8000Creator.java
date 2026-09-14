@@ -36,6 +36,7 @@ import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.roland.RolandTimeTable;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -110,7 +111,7 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String name = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String name = SafeFileNames.create (multisampleSource.getName ());
         final File outputFile = this.createUniqueFilename (destinationFolder, name, "MV0");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 

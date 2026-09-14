@@ -41,6 +41,7 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzInstru
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzPartial;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -138,7 +139,7 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
             return;
         ensureLoadableSamplePool (pool, byContent, usedNames);
 
-        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "svz");
+        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (multisampleSource.getName ()), "svz");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
         writeFile (outputFile, ZenCoreSvz.buildSvz (pool, List.of (instrument.get ())));
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
@@ -199,7 +200,7 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
         }
         ensureLoadableSamplePool (pool, byContent, usedNames);
 
-        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (name), "svz");
+        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (name), "svz");
         this.notifier.log ("IDS_ZENCORE_WRITING_BANK", name, Integer.toString (instruments.size ()));
         writeFile (outputFile, ZenCoreSvz.buildSvz (pool, instruments));
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
@@ -530,6 +531,9 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
 
     private static void applyToneParameters (final SvzInstrument instrument, final ISampleZone zone, final double minOnsetEdge)
     {
+        // A zone without key tracking, e.g. a drum, plays at its root pitch on every key
+        instrument.keyFollow = (int) Math.round (Math.clamp (zone.getKeyTracking (), 0, 1) * 100.0);
+
         final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isPresent ())
         {
@@ -716,8 +720,9 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
         {
             final ISampleLoop loop = loops.get (0);
             loopStart = Math.clamp (loop.getStart (), 0, frames - 1);
+            // The end point is the frame behind the loop, the end of the model its last frame
             if (loop.getEnd () > loopStart)
-                end = Math.min (loop.getEnd (), frames);
+                end = Math.min (loop.getEnd () + 1, frames);
             // A loop starting at the very first frames - a whole-file loop, or a loop start the
             // zero-crossing snap processing option moved there - has no lead-in, which the seam
             // machinery below measures against (the waveform's own step into the loop start at

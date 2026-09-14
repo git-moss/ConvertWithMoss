@@ -29,8 +29,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -56,7 +56,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String sampleName = SafeFileNames.create (multisampleSource.getName ());
         final String relativeFolderName = sampleName + FOLDER_POSTFIX;
 
         final Optional<String> metadata = this.createMetadata (relativeFolderName, multisampleSource);
@@ -222,7 +222,10 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final List<ISampleLoop> loops = zone.getLoops ();
         if (loops.isEmpty ())
+        {
             XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ENABLED, 0);
+            XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.FADE_IN_SAMPLES, 0, 1);
+        }
         else
         {
             final ISampleLoop sampleLoop = loops.get (0);
@@ -230,7 +233,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
             XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_START, limitToDefault (sampleLoop.getStart (), 0));
             XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_END, limitToDefault (sampleLoop.getEnd (), stop));
 
-            // No loop cross-fade
+            XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.FADE_IN_SAMPLES, sampleLoop.getCrossfade (), 4);
 
             final LoopType type = sampleLoop.getType ();
             XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.LOOP_ALTERNATE, type == LoopType.ALTERNATING ? 1 : 0);
@@ -239,7 +242,6 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         // -----------------------------------------------------------
         // Static not relevant attributes
 
-        XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.FADE_IN_SAMPLES, 0, 1);
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.IS_ROM_SAMPLE, 0);
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.SLICE, 0);
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.PHASE_INVERSE, 0);
