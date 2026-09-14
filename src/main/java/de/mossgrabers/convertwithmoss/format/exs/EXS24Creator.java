@@ -30,8 +30,8 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -64,7 +64,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String sampleName = SafeFileNames.create (multisampleSource.getName ());
 
         // Create a sub-folder to have the EXS file together with the samples
         final File subFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
@@ -137,7 +137,8 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 exs24Zone.reverse = zone.isReversed ();
                 exs24Zone.oneshot = zone.isOneShot ();
                 exs24Zone.volumeAdjust = (int) Math.round (zone.getGain ());
-                exs24Zone.pitch = true;
+                // The 'Pitch' switch: off plays the sample at the same pitch on every key
+                exs24Zone.pitch = zone.getKeyTracking () != 0;
                 final double tune = zone.getTuning ();
                 exs24Zone.coarseTuning = (int) Math.round (tune);
                 exs24Zone.fineTuning = (int) Math.round ((tune - exs24Zone.coarseTuning) * 100);

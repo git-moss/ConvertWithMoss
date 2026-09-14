@@ -17,14 +17,20 @@ import de.mossgrabers.tools.XMLUtils;
  * loaded effect type of each of its 4 slots in the attributes s0fx..s3fx (4 = the filter), a
  * bypassed slot is marked with s0..s3 = 1 and the S child elements hold the parameters of a slot
  * which differ from the defaults: FREQUENCY (in Hertz, up to 15001 = fully open), RESONANCE
- * (quality factor, up to about 3.14) and TYPE (0 = low-pass; the other indices are assumed to
- * follow the usual order high-pass, band-pass, band-rejection - only 0 has been observed).
+ * (quality factor, up to about 3.14) and TYPE. The plug-in stores the filter type as a
+ * juce::dsp::StateVariableTPTFilterType, whose order is low-pass, band-pass, high-pass - the
+ * plug-in binary holds the parameter as 'AMParameterEnum' of that type. There is no
+ * band-rejection.
  *
  * @author Jürgen Moßgraber
  */
 public class SoundboxFilterEffect
 {
     private static final int    FILTER_TYPE_ID    = 4;
+    /** The indices of the juce::dsp::StateVariableTPTFilterType enumeration. */
+    private static final int    TYPE_LOW_PASS     = 0;
+    private static final int    TYPE_BAND_PASS    = 1;
+    private static final int    TYPE_HIGH_PASS    = 2;
     private static final double DEFAULT_FREQUENCY = 15001;
     private static final double MAX_FREQUENCY     = 15001;
     private static final double MIN_FREQUENCY     = 20;
@@ -72,8 +78,7 @@ public class SoundboxFilterEffect
                     break;
                 }
 
-            final FilterType [] filterTypes = FilterType.values ();
-            final FilterType filterType = typeIndex >= 0 && typeIndex < filterTypes.length ? filterTypes[typeIndex] : FilterType.LOW_PASS;
+            final FilterType filterType = toFilterType (typeIndex);
             // Map the quality factor to the normalized resonance (1 = 40 dB)
             final double resonance = Math.clamp (20.0 * Math.log10 (Math.max (0.001, quality)) / IFilter.MAX_RESONANCE, 0, 1);
             return new DefaultFilter (filterType, 2, Math.min (frequency, IFilter.MAX_FREQUENCY), resonance);
@@ -102,7 +107,53 @@ public class SoundboxFilterEffect
             final double quality = Math.pow (10, filter.getResonance () * IFilter.MAX_RESONANCE / 20.0);
             XMLUtils.setDoubleAttribute (slotElement, "RESONANCE", Math.clamp (quality, MIN_QUALITY, MAX_QUALITY), 4);
         }
-        if (filter.getType () != FilterType.LOW_PASS)
-            XMLUtils.setDoubleAttribute (slotElement, "TYPE", filter.getType ().ordinal (), 1);
+        final int typeIndex = toTypeIndex (filter.getType ());
+        if (typeIndex != TYPE_LOW_PASS)
+            XMLUtils.setDoubleAttribute (slotElement, "TYPE", typeIndex, 1);
+    }
+
+
+    /**
+     * Convert a Soundbox filter type index into the filter type of the model.
+     *
+     * @param typeIndex The index as stored in the TYPE attribute
+     * @return The filter type, low-pass for an index the plug-in does not know
+     */
+    private static FilterType toFilterType (final int typeIndex)
+    {
+        switch (typeIndex)
+        {
+            case TYPE_BAND_PASS:
+                return FilterType.BAND_PASS;
+            case TYPE_HIGH_PASS:
+                return FilterType.HIGH_PASS;
+            case TYPE_LOW_PASS:
+            default:
+                return FilterType.LOW_PASS;
+        }
+    }
+
+
+    /**
+     * Convert a filter type of the model into a Soundbox filter type index. The plug-in has no
+     * band-rejection, therefore such a filter is written as the low-pass which is the default of
+     * the effect.
+     *
+     * @param filterType The filter type
+     * @return The index for the TYPE attribute
+     */
+    private static int toTypeIndex (final FilterType filterType)
+    {
+        switch (filterType)
+        {
+            case BAND_PASS:
+                return TYPE_BAND_PASS;
+            case HIGH_PASS:
+                return TYPE_HIGH_PASS;
+            case LOW_PASS:
+            case BAND_REJECTION:
+            default:
+                return TYPE_LOW_PASS;
+        }
     }
 }

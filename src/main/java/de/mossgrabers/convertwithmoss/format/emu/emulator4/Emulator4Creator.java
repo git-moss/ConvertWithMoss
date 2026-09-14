@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -118,7 +119,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
     private void writeBank (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name) throws IOException
     {
         final boolean writeCdImage = this.settingsConfiguration.writeCdImage ();
-        final String safeName = FileUtils.createSafeFilename (name);
+        final String safeName = SafeFileNames.create (name);
         final File outputFile = this.createUniqueFilename (destinationFolder, safeName, writeCdImage ? "iso" : "e4b");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 
@@ -389,6 +390,8 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
             voice[Emulator4Constants.VOICE_MOD_OFFSET + Emulator4Constants.MOD_FILTER_ENVELOPE_AMOUNT] = (byte) Math.clamp (Math.round (filterEnvelopeDepth * 127), -127, 127);
         if (filter != null && filter.getCutoffKeyTracking () != 0)
             voice[Emulator4Constants.VOICE_MOD_OFFSET + Emulator4Constants.MOD_KEY_TRACKING_AMOUNT] = (byte) Math.clamp (Math.round (filter.getCutoffKeyTracking () / Emulator4Constants.FULL_KEY_TRACKING * 127), -127, 127);
+        if (filter != null && filter.getCutoffVelocityModulator ().getDepth () != 0)
+            voice[Emulator4Constants.VOICE_MOD_OFFSET + Emulator4Constants.MOD_VELOCITY_CUTOFF_AMOUNT] = (byte) Math.clamp (Math.round (filter.getCutoffVelocityModulator ().getDepth () * 127), -127, 127);
 
         // The zone entry
         final int entryOffset = Emulator4Constants.VOICE_SIZE;

@@ -36,6 +36,7 @@ import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVe
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkPresetFile.Machine;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -112,7 +113,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
             return;
         }
 
-        final File presetFile = this.createUniqueFilename (presetsFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "tvpst");
+        final File presetFile = this.createUniqueFilename (presetsFolder, SafeFileNames.create (multisampleSource.getName ()), "tvpst");
         final String presetFileName = presetFile.getName ();
         final String presetName = presetFileName.substring (0, presetFileName.length () - ".tvpst".length ());
 
@@ -284,7 +285,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         keyZone.velocityLayers.add (velocityLayer);
 
         final TonverkSampleSlot sampleSlot = new TonverkSampleSlot ();
-        sampleSlot.sample = FileUtils.createSafeFilename (zone.getName ()) + ".wav";
+        sampleSlot.sample = SafeFileNames.create (zone.getName ()) + ".wav";
         // A one-shot ignores a note-off and always plays the sample to its end which is the loop
         // mode 'Off'. It has priority over a loop since the Tonverk can only store one of both.
         if (TonverkMultiCreator.hasLoop (zone) && !zone.isOneShot ())

@@ -32,8 +32,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 class Emulator2VoiceSettings
 {
     /** Fine tuning, a signed byte in 1/64 semi-tone. */
-    private static final int      FINE_TUNE           = 0x1A;
-    /** Velocity to VCA attack in the high nibble. */
+    static final int              FINE_TUNE           = 0x1A;
+    /** Velocity to VCA attack in the high nibble, velocity to VCF attack in the low nibble. */
     private static final int      VELOCITY_TO_ATTACK  = 0x1B;
     /** LFO delay in 10 ms, less one. */
     private static final int      LFO_DELAY           = 0x1C;
@@ -54,7 +54,7 @@ class Emulator2VoiceSettings
     private static final int      FLAG_NEGATIVE_ENVELOPE = 0x80;
     /** The 16 entry velocity tables, entry 0 for the highest velocity. */
     private static final int      CUTOFF_TABLE        = 0x30;
-    private static final int      LEVEL_TABLE         = 0x40;
+    static final int              LEVEL_TABLE         = 0x40;
     private static final int      VCF_ATTACK_HIGH     = 0x50;
     private static final int      VCF_ATTACK_LOW      = 0x60;
     private static final int      VCA_ATTACK_HIGH     = 0x70;
@@ -86,7 +86,7 @@ class Emulator2VoiceSettings
     /** A Q table value below this holds no resonance. */
     private static final int      Q_NONE              = 0x17;
     /** The largest velocity to level attenuation in dB, the reference of the depth of the model. */
-    private static final double   MAX_LEVEL_DEPTH_DB  = 96;
+    static final double           MAX_LEVEL_DEPTH_DB  = 96;
     /** The velocity to cutoff range of the model, 2 octaves (see the SoundFont 2 reader). */
     private static final double   VELOCITY_CUTOFF_REFERENCE_CENTS = -2400;
     /** One unit of the cutoff table is this many cents of velocity to cutoff. */
@@ -236,6 +236,10 @@ class Emulator2VoiceSettings
             filterEnvelope.setDecayTime (vcfTime (decayTime (record[VCF_DECAY_HIGH] & 0xFF, record[VCF_DECAY_LOW] & 0xFF)));
             filterEnvelope.setSustainLevel (lookup (VCF_SUSTAIN_LEVEL, Math.min (record[VCF_SUSTAIN] & 0xFF, 0x1F)));
             filterEnvelope.setReleaseTime (vcfTime (decayTime (record[VCF_RELEASE_HIGH] & 0xFF, record[VCF_RELEASE_LOW] & 0xFF)));
+            // The low nibble holds the velocity to VCF attack amount, as the high one the amount
+            // on the VCA attack: on all 199 factory voices whose VCF attack table varies with the
+            // velocity it is set, on the 3,646 others it is 0
+            filterEnvelope.setTimeVelocityTracking ((record[VELOCITY_TO_ATTACK] & 0x0F) / 15.0);
         }
         if (lfoToFilter > 0)
         {
@@ -365,5 +369,53 @@ class Emulator2VoiceSettings
                 return table[i - 1][1] + t * (table[i][1] - table[i - 1][1]);
             }
         return table[table.length - 1][1];
+    }
+
+
+    /**
+     * Get the level table value of an attenuation, the inverse of the lookup which apply uses.
+     *
+     * @param attenuationDb The attenuation in decibels, 0 or more
+     * @return The value of the level table
+     */
+    static int attenuationValue (final double attenuationDb)
+    {
+        return inverseLookup (ATTENUATION_DB, attenuationDb);
+    }
+
+
+    /**
+     * Get the difference between the first and the last level table entry which stands for a
+     * velocity range, the inverse of the lookup which apply uses.
+     *
+     * @param rangeDb The velocity range in decibels, 0 or more
+     * @return The difference of the table entries
+     */
+    static int velocityLevelRange (final double rangeDb)
+    {
+        return inverseLookup (VELOCITY_LEVEL_DB, rangeDb);
+    }
+
+
+    /**
+     * Look up the key of a value in a table of (key, value) pairs whose values change monotonically
+     * with the keys, interpolating between the values and clamping to the ends.
+     *
+     * @param table The table
+     * @param value The value
+     * @return The key, rounded to an integer
+     */
+    private static int inverseLookup (final double [][] table, final double value)
+    {
+        final boolean ascending = table[table.length - 1][1] >= table[0][1];
+        if (ascending ? value <= table[0][1] : value >= table[0][1])
+            return (int) Math.round (table[0][0]);
+        for (int i = 1; i < table.length; i++)
+            if (ascending ? value <= table[i][1] : value >= table[i][1])
+            {
+                final double t = (value - table[i - 1][1]) / (table[i][1] - table[i - 1][1]);
+                return (int) Math.round (table[i - 1][0] + t * (table[i][0] - table[i - 1][0]));
+            }
+        return (int) Math.round (table[table.length - 1][0]);
     }
 }
