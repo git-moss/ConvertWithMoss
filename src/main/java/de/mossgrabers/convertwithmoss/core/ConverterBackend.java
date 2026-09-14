@@ -751,15 +751,22 @@ public class ConverterBackend
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
             if ((hasMaximumNumberOfSamples || this.detectionSettings.enableMakeMono) && ZoneChannels.detectChannelConfiguration (groups) == ZoneChannels.SPLIT_STEREO)
             {
-                this.notifier.log ("IDS_PROCESSING_COMBINE_TO_STEREO");
-                final Optional<IGroup> stereoGroup = ZoneChannels.combineSplitStereo (groups);
-                if (stereoGroup.isPresent ())
+                // Hard panned zones which are not the two channels of one recording are layers
+                // and must stay separate
+                if (ZoneChannels.isSplitStereo (groups))
                 {
-                    groups.clear ();
-                    groups.add (stereoGroup.get ());
+                    this.notifier.log ("IDS_PROCESSING_COMBINE_TO_STEREO");
+                    final Optional<IGroup> stereoGroup = ZoneChannels.combineSplitStereo (groups);
+                    if (stereoGroup.isPresent ())
+                    {
+                        groups.clear ();
+                        groups.add (stereoGroup.get ());
+                    }
+                    else
+                        this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
                 }
                 else
-                    this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
+                    this.notifier.log ("IDS_NOTIFY_PANNED_LAYERS_NOT_COMBINED");
             }
 
             // -----------------------------------------------------------

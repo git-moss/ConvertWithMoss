@@ -83,6 +83,9 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
             return;
         }
 
+        final File kitFile = new File (kitFolder, kitFolder.getName () + S2400Constants.ENDING_KIT);
+        this.notifier.log ("IDS_NOTIFY_STORING", kitFile.getAbsolutePath ());
+
         // Down-sample only the (rare) samples above the native rate, so the loop points in the WAV
         // 'smpl' chunk match the written audio. Samples at 44.1kHz or 48kHz are kept unchanged.
         recalculateAllSamplePositions (multisampleSource, NATIVE_SAMPLE_RATE, true);
@@ -93,8 +96,6 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
         this.writeSamples (kitFolder, multisampleSource, kitZones, DESTINATION_AUDIO_FORMAT);
 
         final byte [] kit = createKit (kitZones);
-        final File kitFile = new File (kitFolder, kitFolder.getName () + S2400Constants.ENDING_KIT);
-        this.notifier.log ("IDS_NOTIFY_STORING", kitFile.getAbsolutePath ());
         Files.write (kitFile.toPath (), kit);
 
         this.progress.notifyDone ();
