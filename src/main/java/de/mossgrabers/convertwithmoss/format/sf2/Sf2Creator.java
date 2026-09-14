@@ -729,7 +729,9 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         {
             final ISampleLoop sampleLoop = loops.get (0);
             loopStart += sampleLoop.getStart ();
-            loopEnd += sampleLoop.getEnd ();
+            // The loop end of the model is the last frame of the loop, the one of a SoundFont is
+            // the first frame behind the loop
+            loopEnd += sampleLoop.getEnd () + 1L;
         }
         sampleDescriptor.setLoopStart (loopStart);
         sampleDescriptor.setLoopEnd (loopEnd);
