@@ -23,9 +23,12 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
 import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
+import de.mossgrabers.convertwithmoss.core.algorithm.SincResampler;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -277,15 +280,15 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         if (layers.size () > 1)
             this.notifier.log ("IDS_QPAT_NOTIFY_LAYERS", Integer.toString (layers.size ()), Integer.toString (groups.size ()));
 
-        this.storeMultisample (multisampleSource, multiFile, layers, relativeSamplePath, deviceName);
+        final boolean doLimit = this.settingsConfiguration.limitTo16441 ();
+        this.storeMultisample (multisampleSource, multiFile, layers, relativeSamplePath, deviceName, doLimit ? OPTIMIZED_AUDIO_FORMAT.getMaxSampleRate () : -1);
 
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeSamplePath);
         safeCreateDirectory (sampleFolder);
 
-        final boolean doLimit = this.settingsConfiguration.limitTo16441 ();
         if (doLimit)
-            recalculateSamplePositions (multisampleSource, 44100);
+            this.recalculateSamplePositions (multisampleSource, OPTIMIZED_AUDIO_FORMAT.getMaxSampleRate ());
         this.writeSamples (sampleFolder, multisampleSource, doLimit ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT);
 
         this.progress.notifyDone ();
@@ -362,9 +365,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param layers The layers
      * @param relativeSamplePath The relative sample path
      * @param deviceName The name to write into the name field, which the device displays
+     * @param targetSampleRate The sample rate to which the samples are converted when they are
+     *            written, -1 if they keep their sample rate
      * @throws IOException Could not store the file
      */
-    private void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<List<IGroup>> layers, final String relativeSamplePath, final String deviceName) throws IOException
+    private void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<List<IGroup>> layers, final String relativeSamplePath, final String deviceName, final int targetSampleRate) throws IOException
     {
         final IMetadata metadata = multisampleSource.getMetadata ();
         final String author = this.settingsConfiguration.getAuthor ();
@@ -402,7 +407,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             final double ampGainFold = computeFlatAmpEnvelopeLevel (groups);
             final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0, numLayers > 1, multisampleSource.isMonophonicLegato ());
             final List<byte []> sampleMaps = new ArrayList<> ();
-            for (final String sampleMap: createSampleMaps (groups, relativeSamplePath, ampGainFold))
+            for (final String sampleMap: createSampleMaps (groups, relativeSamplePath, ampGainFold, targetSampleRate))
                 sampleMaps.add (sampleMap.getBytes ());
             layerParameters.add (parameters);
             layerSampleMaps.add (sampleMaps);
@@ -595,10 +600,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param relativeSamplePath The relative path to the samples
      * @param gainFactor A linear gain factor applied to every zone (used to fold a flattened
      *            amplitude envelope's sustain level into the gain)
+     * @param targetSampleRate The sample rate to which the samples are converted when they are
+     *            written, -1 if they keep their sample rate
      * @return The sample maps
      * @throws IOException Could not read the necessary audio metadata of a sample
      */
-    private static List<String> createSampleMaps (final List<IGroup> groups, final String relativeSamplePath, final double gainFactor) throws IOException
+    private static List<String> createSampleMaps (final List<IGroup> groups, final String relativeSamplePath, final double gainFactor, final int targetSampleRate) throws IOException
     {
         final List<String> sampleMaps = new ArrayList<> ();
 
@@ -625,7 +632,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 final Optional<ISampleData> sampleData = zone.getSampleData ();
                 if (sampleData.isEmpty ())
                     throw new IOException ("Empty sample data in zone: " + zone.getName ());
-                final double numSampleFrames = sampleData.get ().getAudioMetadata ().getNumberOfSamples ();
+                final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+                final double numSampleFrames = audioMetadata.getNumberOfSamples ();
 
                 // Sample path, written relative to the preset (no leading drive number). The device
                 // resolves it against the folder the preset itself was loaded from, so it locates
@@ -674,8 +682,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 {
                     final ISampleLoop loop = loops.get (0);
                     sb.append (loop.getType () == LoopType.ALTERNATING ? 2 : 1).append ('\t');
-                    sb.append (formatMapPosition (loop.getStart (), numSampleFrames)).append ('\t');
-                    sb.append (formatMapPosition (loop.getEnd (), numSampleFrames)).append ('\t');
+                    final double [] loopPositions = getLoopPositions (zone, loop, audioMetadata, targetSampleRate);
+                    sb.append (formatMapDouble (Math.clamp (loopPositions[0], 0, 1))).append ('\t');
+                    sb.append (formatMapDouble (Math.clamp (loopPositions[1], 0, 1))).append ('\t');
                 }
 
                 // Direction
@@ -1598,6 +1607,46 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param numSampleFrames The number of frames of the sample
      * @return The formatted position
      */
+    /**
+     * Get the start and end of a loop relative to the length of the sample which is written. The
+     * sample map is created before the samples are converted to the target sample rate. A loop
+     * which is kept intact by the conversion is not simply scaled, its position and the length of
+     * the converted sample are calculated like the conversion does, see
+     * AbstractCreator#recalculateSamplePositions.
+     *
+     * @param zone The zone which plays the loop
+     * @param loop The loop
+     * @param audioMetadata The metadata of the sample before its conversion
+     * @param targetSampleRate The sample rate to which the sample is converted, -1 if it keeps its
+     *            sample rate
+     * @return The start and the end of the loop relative to the length of the written sample
+     */
+    private static double [] getLoopPositions (final ISampleZone zone, final ISampleLoop loop, final IAudioMetadata audioMetadata, final int targetSampleRate)
+    {
+        final int numberOfSamples = audioMetadata.getNumberOfSamples ();
+        final int sampleRate = audioMetadata.getSampleRate ();
+        if (targetSampleRate > 0 && sampleRate != targetSampleRate)
+        {
+            final Optional<ISampleLoop> resampledLoop = AudioSampleReducer.getResampledLoop (zone.getLoops (), numberOfSamples);
+            if (resampledLoop.isPresent () && resampledLoop.get () == loop)
+            {
+                final int [] positions = SincResampler.mapLoop (loop.getStart (), loop.getEnd (), sampleRate, targetSampleRate);
+                final double length = SincResampler.getLength (numberOfSamples, loop.getStart (), loop.getEnd (), sampleRate, targetSampleRate);
+                return new double []
+                {
+                    positions[0] / length,
+                    positions[1] / length
+                };
+            }
+        }
+        return new double []
+        {
+            loop.getStart () / (double) numberOfSamples,
+            loop.getEnd () / (double) numberOfSamples
+        };
+    }
+
+
     private static String formatMapPosition (final double frames, final double numSampleFrames)
     {
         return formatMapDouble (Math.clamp (frames / numSampleFrames, 0, 1));

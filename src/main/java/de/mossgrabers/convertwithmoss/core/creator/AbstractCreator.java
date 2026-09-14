@@ -4,6 +4,7 @@
 
 package de.mossgrabers.convertwithmoss.core.creator;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -18,11 +19,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
@@ -30,6 +35,7 @@ import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
@@ -43,6 +49,8 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.ParameterLevel;
 import de.mossgrabers.convertwithmoss.core.ZoneChannels;
+import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
+import de.mossgrabers.convertwithmoss.core.algorithm.SincResampler;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -54,6 +62,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.ProgressLogger;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
@@ -83,6 +92,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
     private final boolean [] []                   layerCheckMatrix                   = new boolean [128] [128];
     private final Set<String>                     loggedResamplings                  = new HashSet<> ();
+    /** The audio format of the zones whose audio was converted already, see recalculation. */
+    private final Map<ISampleZone, IAudioMetadata> convertedZones                    = new WeakHashMap<> ();
 
 
     /**
@@ -171,6 +182,7 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     {
         this.isCancelled.set (false);
         this.loggedResamplings.clear ();
+        this.convertedZones.clear ();
     }
 
 
@@ -495,54 +507,103 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
     /**
      * Re-calculates the sample start, stop and loop start, stop positions for the given new sample
-     * rate of all samples/zones in the given multi-sample.
+     * rate of all samples/zones in the given multi-sample. The audio of a zone with a loop is
+     * converted to the new sample rate right away, since its loop only stays intact when the audio
+     * and the loop positions are converted together, see
+     * {@link SincResampler#resampleLoop(double[], int, int, int, int)}.
      *
      * @param multisampleSource The multi-sample source
      * @param newSampleRate The new sample rate
-     * @throws IOException Could not retrieve the current sample rate
+     * @throws IOException Could not retrieve the current sample rate or convert the audio
      */
-    protected static void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate) throws IOException
+    protected void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate) throws IOException
     {
-        recalculateAllSamplePositions (multisampleSource, newSampleRate, false);
+        this.recalculateAllSamplePositions (multisampleSource, newSampleRate, false);
     }
 
 
     /**
      * Re-calculates the sample start, stop and loop start, stop positions for the given new sample
-     * rate of all samples/zones in the given multi-sample.
+     * rate of all samples/zones in the given multi-sample. The audio of a zone with a loop is
+     * converted to the new sample rate right away, see
+     * {@link #recalculateSamplePositions(IMultisampleSource, int)}.
      *
      * @param multisampleSource The multi-sample source
      * @param newSampleRate The new sample rate
      * @param onlyIfLarger If true, the values are only re-calculated if the sample frequency is
      *            larger than the new sample rate
-     * @throws IOException Could not retrieve the current sample rate
+     * @throws IOException Could not retrieve the current sample rate or convert the audio
      */
-    protected static void recalculateAllSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate, final boolean onlyIfLarger) throws IOException
+    protected void recalculateAllSamplePositions (final IMultisampleSource multisampleSource, final int newSampleRate, final boolean onlyIfLarger) throws IOException
     {
+        // Zones often share a sample, e.g. all zones of a consolidated sample, convert it only once
+        // for each loop
+        final Map<ISampleData, Map<Long, WavFileSampleData>> conversions = new IdentityHashMap<> ();
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone sampleZone: group.getSampleZones ())
-                recalculateSamplePositions (sampleZone, newSampleRate, onlyIfLarger);
+                this.recalculateSamplePositions (sampleZone, newSampleRate, onlyIfLarger, conversions);
     }
 
 
-    private static void recalculateSamplePositions (final ISampleZone sampleZone, final int newSampleRate, final boolean onlyIfLarger) throws IOException
+    private void recalculateSamplePositions (final ISampleZone sampleZone, final int newSampleRate, final boolean onlyIfLarger, final Map<ISampleData, Map<Long, WavFileSampleData>> conversions) throws IOException
     {
         final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
         if (sampleData.isEmpty ())
             return;
-        final int sampleRate = sampleData.get ().getAudioMetadata ().getSampleRate ();
-        if (onlyIfLarger && sampleRate <= newSampleRate)
+        final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+        final int sampleRate = audioMetadata.getSampleRate ();
+        if (onlyIfLarger && sampleRate <= newSampleRate || sampleRate == newSampleRate)
             return;
+
+        // Converting the audio later on would move the loop, which then clicks at every repeat
+        final Optional<ISampleLoop> resampledLoop = AudioSampleReducer.getResampledLoop (sampleZone.getLoops (), audioMetadata.getNumberOfSamples ());
+        int numberOfSamples = -1;
+        if (resampledLoop.isPresent ())
+        {
+            final ISampleLoop loop = resampledLoop.get ();
+            final Map<Long, WavFileSampleData> sampleConversions = conversions.computeIfAbsent (sampleData.get (), _ -> new HashMap<> ());
+            final Long loopKey = Long.valueOf ((long) loop.getStart () << 32 | loop.getEnd () & 0xFFFFFFFFL);
+            WavFileSampleData convertedData = sampleConversions.get (loopKey);
+            if (convertedData == null)
+            {
+                final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+                sampleData.get ().writeSample (out);
+                try
+                {
+                    convertedData = new WavFileSampleData (new ByteArrayInputStream (AudioSampleReducer.resampleFrequency (out.toByteArray (), newSampleRate, true, loop)));
+                }
+                catch (final UnsupportedAudioFileException ex)
+                {
+                    throw new IOException (ex);
+                }
+                sampleConversions.put (loopKey, convertedData);
+            }
+            sampleZone.setSampleData (convertedData);
+            this.convertedZones.put (sampleZone, audioMetadata);
+            numberOfSamples = convertedData.getAudioMetadata ().getNumberOfSamples ();
+        }
+
         final double sampleRateRatio = newSampleRate / (double) sampleRate;
         final int start = sampleZone.getStart ();
         if (start > 0)
             sampleZone.setStart ((int) Math.round (start * sampleRateRatio));
         final int stop = sampleZone.getStop ();
         if (stop > 0)
-            sampleZone.setStop ((int) Math.round (stop * sampleRateRatio));
+        {
+            final int newStop = (int) Math.round (stop * sampleRateRatio);
+            sampleZone.setStop (numberOfSamples < 0 ? newStop : Math.min (newStop, numberOfSamples));
+        }
 
         for (final ISampleLoop loop: sampleZone.getLoops ())
         {
+            if (resampledLoop.isPresent () && loop == resampledLoop.get ())
+            {
+                final int [] positions = SincResampler.mapLoop (loop.getStart (), loop.getEnd (), sampleRate, newSampleRate);
+                loop.setStart (positions[0]);
+                loop.setEnd (positions[1]);
+                continue;
+            }
+
             final int loopStart = loop.getStart ();
             if (loopStart > 0)
                 loop.setStart ((int) Math.round (loopStart * sampleRateRatio));
@@ -1036,7 +1097,9 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
         try
         {
-            final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+            // The audio of a zone with a loop might have been converted to the new sample rate
+            // already, see recalculateSamplePositions
+            final IAudioMetadata audioMetadata = this.convertedZones.containsKey (zone) ? this.convertedZones.get (zone) : sampleData.get ().getAudioMetadata ();
             final Optional<int []> resamplingOpt = AudioFileUtils.getRequiredResampling (audioMetadata, destinationFormat);
             if (resamplingOpt.isEmpty ())
                 return;

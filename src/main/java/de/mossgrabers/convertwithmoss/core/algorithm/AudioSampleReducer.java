@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 
 
@@ -66,6 +67,7 @@ public class AudioSampleReducer
 
         final int size = sampleCache.size ();
         final int [] sourceSampleRates = new int [size];
+        final ISampleLoop [] resampledLoops = new ISampleLoop [size];
 
         final List<byte []> newSampleCache = new ArrayList<> ();
         for (int i = 0; i < size; i++)
@@ -88,7 +90,10 @@ public class AudioSampleReducer
 
             // Reduce bit depth & sample rate if needed
             if (reduceBitDepth > 0 || reduceFrequency > 0)
-                data = resample (data, reduceBitDepth, reduceFrequency, alwaysResample);
+            {
+                resampledLoops[i] = getResampledLoop (sampleZone.getLoops (), data).orElse (null);
+                data = resample (data, reduceBitDepth, reduceFrequency, alwaysResample, resampledLoops[i]);
+            }
 
             newSampleCache.add (data);
         }
@@ -96,11 +101,41 @@ public class AudioSampleReducer
         if (enableNormalize)
             normalizeSample (newSampleCache);
 
-        adjustPositions (sampleZones, sourceSampleRates, newSampleCache);
+        adjustPositions (sampleZones, sourceSampleRates, resampledLoops, newSampleCache);
     }
 
 
-    private static void adjustPositions (final List<ISampleZone> sampleZones, final int [] sourceSampleRates, final List<byte []> newSampleCache) throws IOException
+    /**
+     * Get the loop which is kept intact when the sample rate of a sample is converted, see
+     * {@link SincResampler#resampleLoop(double[], int, int, int, int)}: the first forward or
+     * backward loop which lies inside of the audio. An alternating loop does not repeat, therefore
+     * it is converted like the rest of the audio.
+     *
+     * @param loops The loops of the zone
+     * @param numberOfFrames The number of frames of the sample
+     * @return The loop, if any
+     */
+    public static Optional<ISampleLoop> getResampledLoop (final List<ISampleLoop> loops, final long numberOfFrames)
+    {
+        for (final ISampleLoop loop: loops)
+            if (loop.getType () != LoopType.ALTERNATING && loop.getStart () >= 0 && loop.getEnd () > loop.getStart () && loop.getEnd () < numberOfFrames)
+                return Optional.of (loop);
+        return Optional.empty ();
+    }
+
+
+    private static Optional<ISampleLoop> getResampledLoop (final List<ISampleLoop> loops, final byte [] wavData) throws IOException, UnsupportedAudioFileException
+    {
+        if (loops.isEmpty ())
+            return Optional.empty ();
+        try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
+        {
+            return getResampledLoop (loops, ais.getFrameLength ());
+        }
+    }
+
+
+    private static void adjustPositions (final List<ISampleZone> sampleZones, final int [] sourceSampleRates, final ISampleLoop [] resampledLoops, final List<byte []> newSampleCache) throws IOException
     {
         for (int i = 0; i < newSampleCache.size (); i++)
         {
@@ -120,10 +155,20 @@ public class AudioSampleReducer
                 sampleZone.setStart ((int) Math.round (start * sampleRateRatio));
             final int stop = sampleZone.getStop ();
             if (stop > 0)
-                sampleZone.setStop ((int) Math.round (stop * sampleRateRatio));
+                sampleZone.setStop (Math.min ((int) Math.round (stop * sampleRateRatio), sampleData.getAudioMetadata ().getNumberOfSamples ()));
 
             for (final ISampleLoop loop: sampleZone.getLoops ())
             {
+                // The loop which was converted as a loop has to be placed exactly where the
+                // conversion put it, its length is not simply the scaled length
+                if (loop == resampledLoops[i])
+                {
+                    final int [] positions = SincResampler.mapLoop (loop.getStart (), loop.getEnd (), sourceSampleRates[i], newSampleRate);
+                    loop.setStart (positions[0]);
+                    loop.setEnd (positions[1]);
+                    continue;
+                }
+
                 final int loopStart = loop.getStart ();
                 if (loopStart > 0)
                     loop.setStart ((int) Math.round (loopStart * sampleRateRatio));
@@ -149,7 +194,7 @@ public class AudioSampleReducer
     }
 
 
-    private static byte [] resample (final byte [] wavData, final int reduceBitDepth, final int reduceFrequency, final boolean alwaysResample) throws IOException, UnsupportedAudioFileException
+    private static byte [] resample (final byte [] wavData, final int reduceBitDepth, final int reduceFrequency, final boolean alwaysResample, final ISampleLoop loop) throws IOException, UnsupportedAudioFileException
     {
         final boolean shouldResampleBitDepth = reduceBitDepth > 0;
         final boolean shouldResampleFrequency = reduceFrequency > 0;
@@ -168,7 +213,7 @@ public class AudioSampleReducer
         if (needsBitDepthResampling)
             data = reduceBitDepth (data, reduceBitDepth, alwaysResample);
         if (needsFrequencyResampling)
-            data = resampleFrequency (data, reduceFrequency, alwaysResample);
+            data = resampleFrequency (data, reduceFrequency, alwaysResample, loop);
         return data;
     }
 
@@ -187,8 +232,9 @@ public class AudioSampleReducer
                 if (loopEnd > 0 && loopEnd < end && loopEnd > maxLoopEnd)
                     maxLoopEnd = loopEnd;
             }
+            // The loop end is inclusive, the end of the trimmed audio is not
             if (maxLoopEnd > 0)
-                end = maxLoopEnd;
+                end = maxLoopEnd + 1;
         }
         sampleZone.setStart (0);
 
@@ -373,6 +419,26 @@ public class AudioSampleReducer
      */
     public static byte [] resampleFrequency (final byte [] wavData, final int targetRate, final boolean alwaysResample) throws IOException, UnsupportedAudioFileException
     {
+        return resampleFrequency (wavData, targetRate, alwaysResample, null);
+    }
+
+
+    /**
+     * Re-sample frequency with a band-limited interpolation and keep a loop intact, see
+     * {@link SincResampler#resampleLoop(double[], int, int, int, int)}.
+     *
+     * @param wavData The WAV data structure
+     * @param targetRate The maximum sample rate
+     * @param alwaysResample If true, do up-sample as well
+     * @param loop The loop to keep intact, it has to lie inside of the audio; null to convert all
+     *            of the audio in the same way. The positions of the loop in the result are given
+     *            by {@link SincResampler#mapLoop(int, int, int, int)}
+     * @return The updated sample as a WAV audio structure
+     * @throws IOException Could not read the sample
+     * @throws UnsupportedAudioFileException Could not parse the WAV file
+     */
+    public static byte [] resampleFrequency (final byte [] wavData, final int targetRate, final boolean alwaysResample, final ISampleLoop loop) throws IOException, UnsupportedAudioFileException
+    {
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {
             final AudioFormat sourceFormat = ais.getFormat ();
@@ -397,7 +463,7 @@ public class AudioSampleReducer
                 final double [] channelData = new double [sourceFrames];
                 for (int frame = 0; frame < sourceFrames; frame++)
                     channelData[frame] = readSample (sourceData, frame * frameSize + channel * bytesPerSample, sampleSizeInBits, bigEndian, encoding);
-                converted[channel] = SincResampler.resample (channelData, (int) sourceRate, targetRate);
+                converted[channel] = loop == null ? SincResampler.resample (channelData, (int) sourceRate, targetRate) : SincResampler.resampleLoop (channelData, (int) sourceRate, targetRate, loop.getStart (), loop.getEnd ());
             }
 
             final int convertedFrames = converted[0].length;
