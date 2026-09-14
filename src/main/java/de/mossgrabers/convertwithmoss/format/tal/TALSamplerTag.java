@@ -86,7 +86,10 @@ public class TALSamplerTag
 
     /** The sample reverse attribute. */
     public static final String REVERSE                 = "reverse";
-    /** Fade in samples attribute. */
+    /**
+     * The loop cross-fade attribute, relative to the length of the loop. Despite its name it is not
+     * a fade-in: the cross-fade ends at the loop end.
+     */
     public static final String FADE_IN_SAMPLES         = "fadeinsamples";
 
     /** TAL-Sampler has a few ROM Samples with base waveforms included, always zero. */

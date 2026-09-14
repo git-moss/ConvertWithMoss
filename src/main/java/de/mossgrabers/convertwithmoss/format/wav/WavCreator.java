@@ -36,6 +36,7 @@ import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -79,7 +80,7 @@ public class WavCreator extends AbstractWavCreator<WavCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String sampleName = SafeFileNames.create (multisampleSource.getName ());
         final String safeSampleFolderName = sampleName + FOLDER_POSTFIX;
 
         this.notifier.log ("IDS_NOTIFY_STORING", safeSampleFolderName);
