@@ -81,6 +81,8 @@
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
+* Roland SP-404MK2
+  * Fixed: The loop of a pad which loops the whole sample ended one frame behind the sample, e.g. 0..144000 for a sample of 144000 frames. It ends at the last frame of the sample now.
 * Roland MC-707/MC-101
   * New: The pitch key follow of a partial (100 = chromatic, 0 = the same pitch on every key) is read and written, and the keys of a written drum kit which play a zone without key tracking all get the pitch of its root key.
 * Roland ZEN-Core
