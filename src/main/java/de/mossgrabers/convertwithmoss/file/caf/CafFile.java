@@ -11,6 +11,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.SoftReference;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -181,6 +182,7 @@ public class CafFile
     private boolean                   alacDecoderFailed       = false;
     private AacDecoder                aacDecoder              = null;
     private boolean                   aacDecoderFailed        = false;
+    private SoftReference<byte []>    decodedAudioData        = null;
 
 
     /**
@@ -638,6 +640,27 @@ public class CafFile
      * @throws IOException The format of the audio data is not supported
      */
     public byte [] decodeAudioData () throws IOException
+    {
+        // Decoding a compressed file takes seconds and its audio is read again for every zone which
+        // plays it, so keep the result. A soft reference lets the garbage collector drop it again
+        // when memory gets tight, which then only costs the decoding time of the next read.
+        final byte [] cachedData = this.decodedAudioData == null ? null : this.decodedAudioData.get ();
+        if (cachedData != null)
+            return cachedData;
+
+        final byte [] data = this.decode ();
+        this.decodedAudioData = new SoftReference<> (data);
+        return data;
+    }
+
+
+    /**
+     * Decode the audio data to interleaved little-endian PCM data.
+     *
+     * @return The decoded data
+     * @throws IOException The format of the audio data is not supported
+     */
+    private byte [] decode () throws IOException
     {
         switch (this.audioDescriptionChunk.getFormatID ())
         {
