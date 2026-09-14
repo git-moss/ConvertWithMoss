@@ -36,6 +36,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
@@ -364,7 +365,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // instantly drops to the sustain level. Such an envelope is meant to be flat, so write
             // a full sustain and fold the sustain level into the zone gain instead.
             final double ampGainFold = computeFlatAmpEnvelopeLevel (groups);
-            final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0, numLayers > 1);
+            final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0, numLayers > 1, multisampleSource.isMonophonicLegato ());
             final List<byte []> sampleMaps = new ArrayList<> ();
             for (final String sampleMap: createSampleMaps (groups, relativeSamplePath, ampGainFold))
                 sampleMaps.add (sampleMap.getBytes ());
@@ -542,7 +543,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             final double gainOffset = getGroupGainOffset (group);
             final double panningOffset = getGroupPanningOffset (group);
 
-            for (final ISampleZone zone: group.getSampleZones ())
+            // Entries which overlap alternate in the order of the map, so the zones of a round
+            // robin are written in the order of their sequence positions
+            final List<ISampleZone> zones = new ArrayList<> (group.getSampleZones ());
+            zones.sort (Comparator.comparingInt ((final ISampleZone zone) -> zone.getPlayLogic () == PlayLogic.ALWAYS ? 0 : Math.max (0, zone.getSequencePosition ())));
+            for (final ISampleZone zone: zones)
             {
                 if (!sb.isEmpty ())
                     sb.append ('\n');
@@ -750,15 +755,24 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static boolean zonesOverlap (final ISampleZone a, final ISampleZone b)
     {
+        // Entries which overlap inside one sample map alternate on successive notes (a round
+        // robin, confirmed on the device), so zones which are meant to alternate never sound at
+        // the same time and stay together in one map
+        if (a.getPlayLogic () != PlayLogic.ALWAYS && b.getPlayLogic () != PlayLogic.ALWAYS)
+            return false;
         final boolean keyOverlap = limitToDefault (a.getKeyLow (), 0) <= limitToDefault (b.getKeyHigh (), 127) && limitToDefault (b.getKeyLow (), 0) <= limitToDefault (a.getKeyHigh (), 127);
         final boolean velocityOverlap = limitToDefault (a.getVelocityLow (), 1) <= limitToDefault (b.getVelocityHigh (), 127) && limitToDefault (b.getVelocityLow (), 1) <= limitToDefault (a.getVelocityHigh (), 127);
         return keyOverlap && velocityOverlap;
     }
 
 
-    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope, final boolean isMultiLayer)
+    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope, final boolean isMultiLayer, final boolean isMonophonic)
     {
         final List<WaldorfQpatParameter> parameters = new ArrayList<> ();
+
+        // PolyMonoMode: [0] "Poly", [1] "Mono" - a monophonic source plays one voice at a time
+        if (isMonophonic)
+            parameters.add (new WaldorfQpatParameter ("PolyMonoMode", "Mono", 1.0f));
 
         if (isMultiLayer)
         {
