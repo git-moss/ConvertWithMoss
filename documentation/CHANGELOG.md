@@ -36,6 +36,7 @@
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
   * Fixed: Unused opcodes were not logged.
+  * New: The 'transpose' opcode is read; it was ignored, so a region which is transposed by whole semitones played at the wrong pitch (75 of the 1,787 SFZ files on the test machine use it). When writing, whole semitones go into 'transpose' and only the remainder into 'tune', whose range the specification limits to one semitone.
 * SoundFont 2
   * Fixed: 24-bit samples were missing the padding byte in case that the number of samples were uneven. This made reading the created SF2 file fail in some tools (e.g. Polyphone).
   * Fixed: The specification version is now set to 2.04 if 24-bit samples are used otherwise it is still 2.01. This prevented 24-bit files to be loaded in Viena.
@@ -48,6 +49,10 @@
 * Synclavier Regen
   * Fixed: Partials which are muted in the editor were converted as layers. The editor keeps the samples of a muted partial in the timbre, so e.g. the switched-off sub-octave pulse of 'Prodigy Pad' (Starsky's Prodigy) became the first layer - and since it has no release time, destinations with one amplitude envelope per preset (e.g. Waldorf Iridium/Quantum) got an instant release instead of the 3.5 seconds of the pad. Only the active partials are converted now - those which carry a volume line, which is also how the device builds the active-partial mask of its timbre index.
   * Fixed: The contour of the note filter envelope was lost: only its peak level was read, the start level and the end level which the release heads to were ignored, and no sustain level was set - so destinations which default a missing sustain to the full level (e.g. Waldorf Iridium/Quantum) kept the filter at its peak for the whole note; none of the 26 filter envelopes of 'Starsky's Prodigy' ever decayed there. The three levels are octaves relative to the cutoff, which is the sustain level of the contour (Regen manual, 'Filter Envelope'); they are now read and written completely, and a contour which reaches below the cutoff is re-based so that the envelope of the model can carry it.
+* Waldorf Quantum/Iridium
+  * New: Round robins are written into one sample map. Entries of a map which overlap in key and velocity alternate on successive notes on the device, which is exactly a round robin; the zones of a round robin were spread over separate oscillators as if they were stacked layers, so all of them sounded at once on every note. When reading, overlapping entries of a map become a round robin. The device has no random selection, so random zones alternate as well.
+  * New: A monophonic source is written with the mono mode of the patch (PolyMonoMode), which is read back as well.
+  * New: The key window of an oscillator (Osc{i}MinNote/MaxNote) is applied when reading: a zone outside of it is silent on the device and is dropped, a zone across its edge is cut at it.
 
 ## 20.2.0
 
