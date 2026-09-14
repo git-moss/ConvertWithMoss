@@ -31,6 +31,8 @@
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
+* Roland ZEN-Core
+  * Fixed: Loops were read one frame too long, and written one frame too short unless the seam search moved their end. The engine loops from the loop start up to the frame before the end point (measured on the hardware), while the end of a loop in this application is its last frame. On the loops of samples exported by a FANTOM-0 the curvature across the loop seam was smallest one frame before the end which was read and is smallest at it now; a loop ending at frame 29999 is written with the end point 30000 instead of 29999.
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
   * Fixed: Unused opcodes were not logged.
