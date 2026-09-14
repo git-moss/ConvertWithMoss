@@ -41,8 +41,8 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -132,7 +132,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String multiSampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String multiSampleName = SafeFileNames.create (multisampleSource.getName ());
         final String safeSampleFolderName = multiSampleName + FOLDER_POSTFIX;
         final Optional<String> metadata = this.createPresetDocument (safeSampleFolderName, multisampleSource);
         if (metadata.isEmpty ())
@@ -369,7 +369,16 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         final double tune = zone.getTuning ();
         if (tune != 0)
-            regionBuffer.append (addIntegerAttribute (SfzOpcode.TUNE, (int) Math.round (tune * 100), true));
+        {
+            // The whole semitones go into the transposition and the rest into the fine tuning,
+            // whose range is one semitone in the specification
+            final int transpose = (int) tune;
+            if (transpose != 0)
+                regionBuffer.append (addIntegerAttribute (SfzOpcode.TRANSPOSE, transpose, true));
+            final int cents = (int) Math.round ((tune - transpose) * 100);
+            if (cents != 0)
+                regionBuffer.append (addIntegerAttribute (SfzOpcode.TUNE, cents, true));
+        }
 
         final int keyTracking = (int) Math.round (zone.getKeyTracking () * 100.0);
         if (keyTracking != 100)
