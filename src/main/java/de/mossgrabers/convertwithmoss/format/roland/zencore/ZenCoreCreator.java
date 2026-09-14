@@ -41,6 +41,7 @@ import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzInstru
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzPartial;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -138,7 +139,7 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
             return;
         ensureLoadableSamplePool (pool, byContent, usedNames);
 
-        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "svz");
+        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (multisampleSource.getName ()), "svz");
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
         writeFile (outputFile, ZenCoreSvz.buildSvz (pool, List.of (instrument.get ())));
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
@@ -199,7 +200,7 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
         }
         ensureLoadableSamplePool (pool, byContent, usedNames);
 
-        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (name), "svz");
+        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (name), "svz");
         this.notifier.log ("IDS_ZENCORE_WRITING_BANK", name, Integer.toString (instruments.size ()));
         writeFile (outputFile, ZenCoreSvz.buildSvz (pool, instruments));
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");

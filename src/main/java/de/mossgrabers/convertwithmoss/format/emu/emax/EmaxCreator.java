@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -189,7 +190,7 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
     private void writeBank (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name) throws IOException
     {
         final EmaxModel model = this.settingsConfiguration.getTargetModel ();
-        final File outputFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (name), model.getFileEnding ());
+        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (name), model.getFileEnding ());
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 
         final Optional<byte []> bank = this.createBankData (multisampleSources, model);

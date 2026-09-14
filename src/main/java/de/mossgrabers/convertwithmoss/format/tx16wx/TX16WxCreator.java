@@ -41,8 +41,8 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -288,7 +288,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             return;
 
         final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
-        performanceSource.setName (FileUtils.createSafeFilename (libraryName));
+        performanceSource.setName (SafeFileNames.create (libraryName));
         for (final IMultisampleSource multisampleSource: multisampleSources)
             performanceSource.addInstrument (new DefaultInstrumentSource (multisampleSource, IInstrumentSource.MIDI_CHANNEL_OMNI));
 
@@ -328,7 +328,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     private PerformanceCreationResults createPerformanceWithResults (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
     {
-        final String libraryName = FileUtils.createSafeFilename (performanceSource.getName ());
+        final String libraryName = SafeFileNames.create (performanceSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "txperf");
         this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
@@ -366,7 +366,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     private Optional<File> createPreset (final File destinationFolder, final IInstrumentSource instrumentSource) throws IOException
     {
         final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
-        final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String multisampleName = SafeFileNames.create (multisampleSource.getName ());
         final String relativeFolderName = multisampleName + FOLDER_POSTFIX;
 
         final Optional<String> metadata = this.createPresetDocument (relativeFolderName, instrumentSource);
@@ -435,7 +435,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         for (final IInstrumentSource element: instrumentSources)
         {
             final IMultisampleSource multisampleSource = element.getMultisampleSource ();
-            final String multisampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+            final String multisampleName = SafeFileNames.create (multisampleSource.getName ());
             final String relativeFolderName = multisampleName + FOLDER_POSTFIX;
             for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
                 for (final ISampleZone zone: group.getSampleZones ())
