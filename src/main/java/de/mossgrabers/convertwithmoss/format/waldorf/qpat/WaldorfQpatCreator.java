@@ -11,13 +11,16 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
@@ -39,11 +42,12 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -66,6 +70,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final String                                SLOPE_EXP              = "Exp";
     private static final String                                SLOPE_EXP_ALT          = "Exp alt";
 
+    /** The sample rate which the device plays and to which this creator re-samples. */
+    private static final int                                   DESTINATION_SAMPLE_RATE = 44100;
     private static final int                                   PRESET_VERSION         = 14;
 
     /** The size of the header of a patch, which every layer of a patch has as well. */
@@ -105,6 +111,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final double                                DECLICK_SECONDS        = 0.07;
     /** The share of the peak level at which a step in the audio becomes audible as a click. */
     private static final double                                AUDIBLE_STEP_RATIO     = 0.02;
+    /** The lowest cutoff frequency of the filter of the device, the value 0 of Filter1CutOff. */
+    private static final double                                MIN_CUTOFF_FREQUENCY   = 8.1758;
+    /** The highest cutoff frequency of the filter of the device, the value 1 of Filter1CutOff. */
+    private static final double                                MAX_CUTOFF_FREQUENCY   = 19912.2;
 
     /**
      * The modulation matrix slot which routes the low frequency oscillator of the vibrato. The
@@ -214,13 +224,32 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     /** {@inheritDoc} */
     @Override
+    public boolean checkProcessingCompatibility (final DetectSettings detectSettings)
+    {
+        // Snapping a loop boundary to a zero-crossing only holds if the audio which is written is
+        // the audio which was snapped. The snapping happens in the processing stage, while this
+        // creator re-samples to 44.1 kHz when its option is set - which moves every boundary off
+        // the zero-crossing it was snapped to and brings the loop click back. So the up-sampling
+        // has to happen before the snapping, which is what the 'always re-sample' option does.
+        // Nothing is logged here: this runs before the conversion, where the graphical interface
+        // shows a message as a modal dialog. The processing stage announces the up-sampling with
+        // its "Always re-sample" line anyway, and if the sample rate does not match, the creator
+        // reports the re-sampling it has to do for every zone.
+        if (detectSettings.snapLoopsToZero && this.settingsConfiguration.limitTo16441 () && detectSettings.reduceFrequency == DESTINATION_SAMPLE_RATE)
+            detectSettings.alwaysResample = true;
+        return super.checkProcessingCompatibility (detectSettings);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         // The name which the device displays. The file name normally keeps the full name of the
         // source instead, which tells the presets of different banks apart on the computer, but is
         // longer than what the import screen of the device can show
         final String deviceName = this.createDeviceName (multisampleSource);
-        final String sampleName = FileUtils.createSafeFilename (this.settingsConfiguration.useShortFileNames () ? this.limitToFileNameBudget (deviceName) : multisampleSource.getName ());
+        final String sampleName = SafeFileNames.create (this.settingsConfiguration.useShortFileNames () ? this.limitToFileNameBudget (deviceName) : multisampleSource.getName ());
         final String fileName;
         if (this.settingsConfiguration.addNumberPrefix ())
         {
@@ -236,7 +265,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         final String relativeSamplePath = "samples/" + sampleName;
 
-        final List<List<IGroup>> layers = distributeToLayers (splitLayers (this.combineSplitStereo (multisampleSource)), this.settingsConfiguration.getMaximumLayers ());
+        final List<IGroup> splitGroups = splitLayers (this.combineSplitStereo (multisampleSource));
+        int maximumLayers = this.settingsConfiguration.getMaximumLayers ();
+        if (maximumLayers > 1 && !canLayersPlay (splitGroups, Math.clamp (maximumLayers, 1, MAX_LAYERS)))
+        {
+            this.notifier.log ("IDS_QPAT_NOTIFY_ONE_LAYER_SAMPLES");
+            maximumLayers = 1;
+        }
+        final List<List<IGroup>> layers = distributeToLayers (splitGroups, maximumLayers);
         final List<IGroup> groups = new ArrayList<> ();
         for (final List<IGroup> layerGroups: layers)
             groups.addAll (layerGroups);
@@ -369,7 +405,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // instantly drops to the sustain level. Such an envelope is meant to be flat, so write
             // a full sustain and fold the sustain level into the zone gain instead.
             final double ampGainFold = computeFlatAmpEnvelopeLevel (groups);
-            final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0, numLayers > 1);
+            final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0, numLayers > 1, multisampleSource.isMonophonicLegato ());
             final List<byte []> sampleMaps = new ArrayList<> ();
             for (final String sampleMap: createSampleMaps (groups, relativeSamplePath, ampGainFold, targetSampleRate))
                 sampleMaps.add (sampleMap.getBytes ());
@@ -457,6 +493,41 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // Write resource(s)
         for (final byte [] sampleMap: sampleMaps)
             out.write (sampleMap);
+    }
+
+
+    /**
+     * Checks if the layers beyond the first can play at all. The device does not load a sample which
+     * is only referenced by a layer beyond the first: it reports "loading
+     * samples/&lt;patch&gt;/&lt;file&gt;.wav failed" for each such sample and that layer stays
+     * silent (tested on an Iridium MK2, firmware 4.0.6, from a power-on state so the volatile
+     * sample pool is not involved). A patch whose second layer brings samples of its own therefore
+     * does not play, while one whose second layer only re-uses the samples of the first does - the
+     * first layer has already loaded them. Writing a single layer instead keeps every zone: the
+     * groups which do not fit into the three oscillators are merged (see {@link #reduceGroups}),
+     * which costs the panning of a group but no sample and no zone.
+     *
+     * @param groups The groups, in the order in which they are distributed to the layers
+     * @param layers The number of layers the groups would be distributed to
+     * @return True if the layers beyond the first only reference samples of the first layer
+     */
+    private static boolean canLayersPlay (final List<IGroup> groups, final int layers)
+    {
+        final Set<String> firstLayerSamples = new HashSet<> ();
+        final Set<String> otherLayerSamples = new HashSet<> ();
+        final int maximumGroups = layers * MAX_OSCILLATORS;
+        for (int i = 0; i < groups.size (); i++)
+        {
+            // Everything which does not fit is merged into the last group which does, so those
+            // zones end up in the layer of that group
+            final int groupIndex = Math.min (i, maximumGroups - 1);
+            final Set<String> layerSamples = groupIndex < MAX_OSCILLATORS ? firstLayerSamples : otherLayerSamples;
+            for (final ISampleZone zone: groups.get (i).getSampleZones ())
+                // The zone name is what the sample map references, sanitized exactly as the sample
+                // file is written
+                layerSamples.add (FileUtils.createSafeFilename (zone.getName ()));
+        }
+        return firstLayerSamples.containsAll (otherLayerSamples);
     }
 
 
@@ -549,7 +620,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             final double gainOffset = getGroupGainOffset (group);
             final double panningOffset = getGroupPanningOffset (group);
 
-            for (final ISampleZone zone: group.getSampleZones ())
+            // Entries which overlap alternate in the order of the map, so the zones of a round
+            // robin are written in the order of their sequence positions
+            final List<ISampleZone> zones = new ArrayList<> (group.getSampleZones ());
+            zones.sort (Comparator.comparingInt ((final ISampleZone zone) -> zone.getPlayLogic () == PlayLogic.ALWAYS ? 0 : Math.max (0, zone.getSequencePosition ())));
+            for (final ISampleZone zone: zones)
             {
                 if (!sb.isEmpty ())
                     sb.append ('\n');
@@ -572,7 +647,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // zone (see AbstractCreator.createSampleFilename), otherwise the device cannot
                 // resolve the sample and shows the "Find Sample Map" screen. The folder part of the
                 // path is created with the same method as well.
-                sb.append ('"').append (relativeSamplePath).append ('/').append (FileUtils.createSafeFilename (zone.getName ())).append (".wav\"\t");
+                sb.append ('"').append (relativeSamplePath).append ('/').append (SafeFileNames.create (zone.getName ())).append (".wav\"\t");
 
                 // Pitch - tuning needs to be subtracted since the sample plays high if the root
                 // note is lower!
@@ -667,6 +742,41 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
+     * Checks if the zones are one key map which is played across the keyboard rather than a stack of
+     * layers. Sources sometimes give the zones of a key map ranges which overlap slightly - the E-mu
+     * Xtreme Lead 1 'Air Age' maps its lowest sample up to key 54 while the next one starts at 43 -
+     * and splitting those into separate oscillators leaves each of them with a hole: 'Air Age' ended
+     * up with an oscillator which is silent from key 55 to 71, which is where the instrument is
+     * played.
+     *
+     * A key map is recognized by both its root notes and its lower key limits rising from zone to
+     * zone: the zones follow each other up the keyboard, so however their ranges overlap they are
+     * meant to be one map. A stack does not look like that - its layers sound on the same notes, so
+     * they share a lower key limit, and usually a root note as well.
+     *
+     * @param zones The zones of a group
+     * @return True if the zones are one key map
+     */
+    private static boolean isAscendingKeyMap (final List<ISampleZone> zones)
+    {
+        if (zones.size () < 2)
+            return false;
+        final List<ISampleZone> sorted = new ArrayList<> (zones);
+        sorted.sort (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyLow (), 0)));
+        for (int i = 1; i < sorted.size (); i++)
+        {
+            final ISampleZone previous = sorted.get (i - 1);
+            final ISampleZone zone = sorted.get (i);
+            if (limitToDefault (previous.getKeyLow (), 0) >= limitToDefault (zone.getKeyLow (), 0))
+                return false;
+            if (previous.getKeyRoot () >= zone.getKeyRoot ())
+                return false;
+        }
+        return true;
+    }
+
+
+    /**
      * Split each group whose zones stack (overlap in both key and velocity) into separate layers,
      * so a layered preset maps to several oscillators instead of collapsing into one. Groups
      * without an internal overlap are kept unchanged. The largest layer is placed first so it
@@ -715,6 +825,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static List<List<ISampleZone>> partitionLayers (final List<ISampleZone> zones)
     {
+        // A key map whose ranges overlap is not a stack, see isAscendingKeyMap
+        if (isAscendingKeyMap (zones))
+        {
+            final List<List<ISampleZone>> single = new ArrayList<> ();
+            single.add (new ArrayList<> (zones));
+            return single;
+        }
+
         final List<ISampleZone> sorted = new ArrayList<> (zones);
         // Place the widest zones first so a full-range layer does not scatter narrow zones.
         sorted.sort (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyLow (), 0)).thenComparing (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyHigh (), 127)).reversed ()));
@@ -759,15 +877,24 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static boolean zonesOverlap (final ISampleZone a, final ISampleZone b)
     {
+        // Entries which overlap inside one sample map alternate on successive notes (a round
+        // robin, confirmed on the device), so zones which are meant to alternate never sound at
+        // the same time and stay together in one map
+        if (a.getPlayLogic () != PlayLogic.ALWAYS && b.getPlayLogic () != PlayLogic.ALWAYS)
+            return false;
         final boolean keyOverlap = limitToDefault (a.getKeyLow (), 0) <= limitToDefault (b.getKeyHigh (), 127) && limitToDefault (b.getKeyLow (), 0) <= limitToDefault (a.getKeyHigh (), 127);
         final boolean velocityOverlap = limitToDefault (a.getVelocityLow (), 1) <= limitToDefault (b.getVelocityHigh (), 127) && limitToDefault (b.getVelocityLow (), 1) <= limitToDefault (a.getVelocityHigh (), 127);
         return keyOverlap && velocityOverlap;
     }
 
 
-    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope, final boolean isMultiLayer)
+    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope, final boolean isMultiLayer, final boolean isMonophonic)
     {
         final List<WaldorfQpatParameter> parameters = new ArrayList<> ();
+
+        // PolyMonoMode: [0] "Poly", [1] "Mono" - a monophonic source plays one voice at a time
+        if (isMonophonic)
+            parameters.add (new WaldorfQpatParameter ("PolyMonoMode", "Mono", 1.0f));
 
         if (isMultiLayer)
         {
@@ -1093,8 +1220,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         parameters.add (new WaldorfQpatParameter ("Filter12Type", (is24 ? "24" : "12") + filterName, pos));
 
         // Filter1CutOff: [0.00] "8.1758 Hz" ... [1.00] "19912.2 Hz"
-        final double cutoff = Math.log (filter.getCutoff () / 8.1758) / (Math.log (2) * 11.25);
-        parameters.add (new WaldorfQpatParameter ("Filter1CutOff", StringUtils.formatDouble (cutoff, 4, " Hz"), (float) cutoff));
+        final double cutoffFrequency = Math.clamp (filter.getCutoff (), MIN_CUTOFF_FREQUENCY, MAX_CUTOFF_FREQUENCY);
+        final double cutoff = Math.log (cutoffFrequency / MIN_CUTOFF_FREQUENCY) / (Math.log (2) * 11.25);
+        parameters.add (new WaldorfQpatParameter ("Filter1CutOff", StringUtils.formatDouble (cutoffFrequency, 4, " Hz"), (float) cutoff));
 
         // Filter1Reso: [0.00] "0.00 %" ... [1.00] "100.00 %"
         final double resonance = filter.getResonance ();

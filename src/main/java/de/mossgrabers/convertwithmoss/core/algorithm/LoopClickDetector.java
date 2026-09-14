@@ -4,8 +4,11 @@
 
 package de.mossgrabers.convertwithmoss.core.algorithm;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -78,8 +81,8 @@ public final class LoopClickDetector
 
     /**
      * Check all forward loops of the given groups for an audible step at their wrap-around point.
-     * The audio is read once per zone; zones whose audio cannot be read are skipped, the check
-     * never fails.
+     * The audio is read once per distinct sample; zones whose audio cannot be read are skipped, the
+     * check never fails.
      *
      * @param groups The groups whose zones to check
      * @return The result, empty if no checked loop clicks
@@ -91,30 +94,31 @@ public final class LoopClickDetector
         String worstZoneName = "";
         double worstStepPercent = 0;
 
-        for (final IGroup group: groups)
-            for (final ISampleZone zone: group.getSampleZones ())
-            {
-                int [] signal = null;
-                int sampleRate = (int) REFERENCE_SAMPLE_RATE;
+        for (final Map.Entry<ISampleData, List<ISampleZone>> entry: groupZonesBySampleData (groups).entrySet ())
+        {
+            final List<ISampleZone> zones = entry.getValue ();
+            // Reading the audio means decoding the whole sample, therefore only touch it if there
+            // is a loop to measure at all
+            if (!hasLoopToCheck (zones))
+                continue;
 
+            final int [] signal;
+            final int sampleRate;
+            try
+            {
+                signal = LoopZeroSnapper.readMonoSignal (zones.get (0));
+                sampleRate = entry.getKey ().getAudioMetadata ().getSampleRate ();
+            }
+            catch (final Exception _)
+            {
+                continue;
+            }
+
+            for (final ISampleZone zone: zones)
                 for (final ISampleLoop loop: zone.getLoops ())
                 {
                     if (loop.getType () != LoopType.FORWARDS || loop.getCrossfade () >= CROSSFADE_THRESHOLD)
                         continue;
-
-                    if (signal == null)
-                        try
-                        {
-                            signal = LoopZeroSnapper.readMonoSignal (zone);
-                            final Optional<ISampleData> sampleData = zone.getSampleData ();
-                            if (sampleData.isEmpty ())
-                                continue;
-                            sampleRate = sampleData.get ().getAudioMetadata ().getSampleRate ();
-                        }
-                        catch (final Exception _)
-                        {
-                            break;
-                        }
 
                     final double stepPercent = measure (signal, loop, sampleRate);
                     if (stepPercent < 0)
@@ -130,11 +134,51 @@ public final class LoopClickDetector
                         }
                     }
                 }
-            }
+        }
 
         if (clickingLoops == 0)
             return Optional.empty ();
         return Optional.of (new Result (clickingLoops, checkedLoops, worstZoneName, worstStepPercent));
+    }
+
+
+    /**
+     * Collect the zones of all groups by the sample data they play. Zones regularly share one
+     * sample - a Logic instrument with consolidated samples maps thousands of zones into a single
+     * audio file - and decoding a compressed sample takes seconds, so the audio must not be read
+     * once per zone. Sample data objects are compared by identity, which is what the model uses to
+     * express 'this is the same audio'.
+     *
+     * @param groups The groups whose zones to collect
+     * @return The zones of each sample data object, both in the order in which they appear
+     */
+    private static Map<ISampleData, List<ISampleZone>> groupZonesBySampleData (final List<IGroup> groups)
+    {
+        final Map<ISampleData, List<ISampleZone>> zonesBySampleData = new LinkedHashMap<> ();
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final Optional<ISampleData> sampleData = zone.getSampleData ();
+                if (sampleData.isPresent ())
+                    zonesBySampleData.computeIfAbsent (sampleData.get (), _ -> new ArrayList<> ()).add (zone);
+            }
+        return zonesBySampleData;
+    }
+
+
+    /**
+     * Check if any of the given zones has a loop which needs to be measured.
+     *
+     * @param zones The zones to check
+     * @return True if there is a forward loop without a cross-fade
+     */
+    private static boolean hasLoopToCheck (final List<ISampleZone> zones)
+    {
+        for (final ISampleZone zone: zones)
+            for (final ISampleLoop loop: zone.getLoops ())
+                if (loop.getType () == LoopType.FORWARDS && loop.getCrossfade () < CROSSFADE_THRESHOLD)
+                    return true;
+        return false;
     }
 
 

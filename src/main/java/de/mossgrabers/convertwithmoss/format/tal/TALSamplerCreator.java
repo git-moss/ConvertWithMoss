@@ -29,8 +29,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -56,7 +56,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String sampleName = SafeFileNames.create (multisampleSource.getName ());
         final String relativeFolderName = sampleName + FOLDER_POSTFIX;
 
         final Optional<String> metadata = this.createMetadata (relativeFolderName, multisampleSource);

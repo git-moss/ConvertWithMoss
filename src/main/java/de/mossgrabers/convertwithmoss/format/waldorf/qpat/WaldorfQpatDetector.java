@@ -36,6 +36,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -368,6 +369,11 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             return false;
         multisampleSource.setGroups (groups);
 
+        // PolyMonoMode: [0] "Poly", [1] "Mono"
+        final WaldorfQpatParameter polyMonoMode = parameters.get ("PolyMonoMode");
+        if (polyMonoMode != null && polyMonoMode.value >= 0.5)
+            multisampleSource.setMonophonicLegato (true);
+
         this.applyParameters (groupsArray, parameters);
         return true;
     }
@@ -466,8 +472,18 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             if (panningParameter != null)
                 panning = panningParameter.value * 2.0 - 1.0;
 
-            // Osc1MinNote - C-2 - 0.0 -> Only relevant for splits!
-            // Osc1MaxNote - G8 - 127.0 -> Only relevant for splits!
+            // Osc1MinNote / Osc1MaxNote: [0..127] - the key window of the oscillator, which is used
+            // for splits: a zone outside of the window is silent and one across its edge is cut at it
+            int minNote = 0;
+            final WaldorfQpatParameter minNoteParameter = parameters.get ("Osc" + groupIndex + "MinNote");
+            if (minNoteParameter != null)
+                minNote = Math.clamp (Math.round (minNoteParameter.value), 0, 127);
+            int maxNote = 127;
+            final WaldorfQpatParameter maxNoteParameter = parameters.get ("Osc" + groupIndex + "MaxNote");
+            if (maxNoteParameter != null)
+                maxNote = Math.clamp (Math.round (maxNoteParameter.value), 0, 127);
+            if (minNote > 0 || maxNote < 127)
+                clipKeyWindow (group, minNote, maxNote);
 
             final Optional<IFilter> filter = parseFilter (parameters);
 
@@ -720,7 +736,83 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 this.createSampleZone (parentFolder, group, params, samplePath);
         }
 
+        // Entries which overlap in key and velocity alternate on successive notes (confirmed on
+        // the device), which is how a round robin is expressed in a map: such zones get the round
+        // robin play logic and their position in the order of the map
+        final List<ISampleZone> zones = group.getSampleZones ();
+        for (int i = 0; i < zones.size (); i++)
+        {
+            final ISampleZone zone = zones.get (i);
+            int overlapping = 0;
+            int earlier = 0;
+            for (int j = 0; j < zones.size (); j++)
+                if (j != i && zonesOverlap (zone, zones.get (j)))
+                {
+                    overlapping++;
+                    if (j < i)
+                        earlier++;
+                }
+            if (overlapping > 0)
+            {
+                zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                zone.setSequencePosition (earlier + 1);
+            }
+        }
+
         return group;
+    }
+
+
+    /**
+     * Test if two zones overlap in both their key and their velocity range.
+     *
+     * @param a The first zone
+     * @param b The second zone
+     * @return True if they overlap
+     */
+    private static boolean zonesOverlap (final ISampleZone a, final ISampleZone b)
+    {
+        final boolean keyOverlap = range (a.getKeyLow (), 0) <= range (b.getKeyHigh (), 127) && range (b.getKeyLow (), 0) <= range (a.getKeyHigh (), 127);
+        final boolean velocityOverlap = range (a.getVelocityLow (), 1) <= range (b.getVelocityHigh (), 127) && range (b.getVelocityLow (), 1) <= range (a.getVelocityHigh (), 127);
+        return keyOverlap && velocityOverlap;
+    }
+
+
+    /**
+     * Get a range value, which is the given default if it was never set.
+     *
+     * @param value The value
+     * @param defaultValue The default
+     * @return The value or the default if the value is negative
+     */
+    private static int range (final int value, final int defaultValue)
+    {
+        return value < 0 ? defaultValue : value;
+    }
+
+
+    /**
+     * Cut the zones of a group to the key window of its oscillator. A zone which lies outside of
+     * the window is removed, since the device does not play it.
+     *
+     * @param group The group
+     * @param minNote The lowest key of the window
+     * @param maxNote The highest key of the window
+     */
+    private static void clipKeyWindow (final IGroup group, final int minNote, final int maxNote)
+    {
+        final List<ISampleZone> kept = new ArrayList<> ();
+        for (final ISampleZone zone: group.getSampleZones ())
+        {
+            final int keyLow = Math.max (range (zone.getKeyLow (), 0), minNote);
+            final int keyHigh = Math.min (range (zone.getKeyHigh (), 127), maxNote);
+            if (keyLow > keyHigh)
+                continue;
+            zone.setKeyLow (keyLow);
+            zone.setKeyHigh (keyHigh);
+            kept.add (zone);
+        }
+        group.setSampleZones (kept);
     }
 
 
