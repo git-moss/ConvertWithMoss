@@ -260,7 +260,8 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                     final ISampleLoop loop = new DefaultSampleLoop ();
                     loop.setType (LoopType.FORWARDS);
                     loop.setStart (voice.loopStart);
-                    loop.setEnd (voice.loopStart + voice.loopLength);
+                    // The length counts the frames of the loop, the end of the model is its last one
+                    loop.setEnd (voice.loopStart + voice.loopLength - 1);
                     zone.addLoop (loop);
                 }
                 group.addSampleZone (zone);

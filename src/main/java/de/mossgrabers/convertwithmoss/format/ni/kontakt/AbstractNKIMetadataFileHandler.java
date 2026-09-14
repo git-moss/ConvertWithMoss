@@ -438,7 +438,8 @@ public abstract class AbstractNKIMetadataFileHandler
         String loopContent = loopTemplate.replace ("%LOOP_INDEX%", Integer.toString (loopIndex));
 
         loopContent = loopContent.replace ("%LOOP_START%", Integer.toString (loop.getStart ()));
-        loopContent = loopContent.replace ("%LOOP_LENGTH%", Integer.toString (loop.getLength ()));
+        // Kontakt counts the frames of the loop while the model stores the inclusive end
+        loopContent = loopContent.replace ("%LOOP_LENGTH%", Integer.toString (loop.getLength () + 1));
         loopContent = loopContent.replace ("%LOOP_MODE%", loop.isLoopUntilRelease () ? this.tags.untilReleaseValue () : this.tags.untilEndValue ());
         loopContent = loopContent.replace ("%LOOP_ALTERNATING%", loop.getType () == LoopType.ALTERNATING ? "yes" : "no");
         loopContent = loopContent.replace ("%LOOP_TUNING%", Float.toString ((float) Math.pow (2.0, loop.getTuning () / 12.0)));
@@ -1191,7 +1192,8 @@ public abstract class AbstractNKIMetadataFileHandler
 
             final ISampleLoop loop = new DefaultSampleLoop ();
             loop.setStart (loopStart);
-            loop.setEnd (loopLength + loopStart);
+            // The length is the number of frames of the loop, the end of the model is inclusive
+            loop.setEnd (loopStart + loopLength - 1);
             loop.setTuning (12.0 * (Math.log (loopTuning) / Math.log (2.0)));
             loop.setCrossfadeInSamples (xFadeLength);
             loop.setType (loopType);

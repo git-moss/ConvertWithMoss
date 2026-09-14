@@ -491,7 +491,8 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Apply the LFO of a voice, which the sampler routes to the pitch, the level and the filter at
-     * the same time; the model carries a vibrato and a tremolo, so only those two are converted.
+     * the same time: the vibrato and the tremolo are converted here, the routing to the cutoff
+     * together with the filter (see applyFilter).
      *
      * @param zone The zone to fill
      * @param voiceRecord The voice record
@@ -546,8 +547,9 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
         final int envelopeAmount = EmaxConstants.readSignedVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_ENV_AMOUNT, 7);
         final int tracking = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_TRACKING, 4);
         final int resonance = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_RESONANCE, 7);
+        final int lfoToCutoff = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_CUTOFF, 4);
         // A filter which is fully open, does not resonate and is not modulated does nothing
-        if (cutoff >= EmaxConstants.FILTER_CUTOFF_MAX && envelopeAmount == 0 && tracking == 0 && resonance == 0)
+        if (cutoff >= EmaxConstants.FILTER_CUTOFF_MAX && envelopeAmount == 0 && tracking == 0 && resonance == 0 && lfoToCutoff == 0)
             return;
 
         // The model carries the resonance as 0 to 1 where 1 is 40 dB
@@ -564,6 +566,17 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
         final int velocityToCutoff = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_VELOCITY_TO_CUTOFF, 4);
         if (velocityToCutoff > 0)
             filter.getCutoffVelocityModulator ().setDepth (Math.clamp (velocityToCutoff / 15.0, 0, 1));
+
+        // The LFO of the voice modulates the cutoff as well; it shares its rate and its delay with
+        // the vibrato and the tremolo
+        if (lfoToCutoff > 0)
+        {
+            final ILfoModulator modulator = filter.getCutoffLfoModulator ();
+            modulator.setDepth (Math.clamp (lfoToCutoff * EmaxConstants.LFO_CUTOFF_CENTS_PER_STEP / IEnvelope.MAX_ENVELOPE_DEPTH, 0, 1));
+            final double rate = EmaxConstants.getLfoRate (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_RATE, 7));
+            final double delay = EmaxConstants.getLfoDelayTime (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_DELAY, 6));
+            setLfo (modulator.getSource (), rate, delay);
+        }
 
         zone.setFilter (filter);
     }

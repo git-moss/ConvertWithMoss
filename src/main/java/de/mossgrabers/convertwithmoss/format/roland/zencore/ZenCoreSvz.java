@@ -129,6 +129,11 @@ public final class ZenCoreSvz
     private static final int     PAT_WAVE_GROUP        = 0xDF;
     /** Partial pan: signed byte, -64 = hard left, 0 = centre, +63 = hard right. OSC stride. */
     private static final int     PAT_PAN               = 0xCE;
+    /**
+     * Partial pitch key follow: s16, 100 = chromatic, 0 = the same pitch on every key (the
+     * templates hold 100). OSC stride. Corpus-verified on the MC-707, which shares the record.
+     */
+    private static final int     PAT_KEY_FOLLOW        = 0xEA;
     /** Velocity range lower (1-127). Keyboard-table stride. */
     private static final int     PAT_VEL_LOW           = 0xA0;
     /** Velocity range upper (1-127). Keyboard-table stride. */
@@ -241,6 +246,8 @@ public final class ZenCoreSvz
         public int waveRight;
         /** Pan -64 (hard left) .. 0 (centre) .. +63 (hard right). */
         public int pan;
+        /** Pitch key follow, 100 = chromatic, 0 = the same pitch on every key. */
+        public int keyFollow = 100;
         /** Velocity range lower 1-127. */
         public int velLow  = 1;
         /** Velocity range upper 1-127. */
@@ -289,6 +296,8 @@ public final class ZenCoreSvz
         // ----------------------------------------------------------------------------------------
         // Optional Partial-1 tone parameters taken from the source; -1 keeps the template default
 
+        /** Pitch key follow: 100 = chromatic, 0 = the same pitch on every key (-1 = keep template). */
+        public int                        keyFollow        = -1;
         /** Filter type: 1=LPF, 2=BPF, 3=HPF (-1 = keep template). */
         public int                        filterType       = -1;
         /** Filter cutoff 0-1023. */
@@ -546,6 +555,8 @@ public final class ZenCoreSvz
     private static void writePartialShaping (final byte [] aRecord, final int p, final SvzInstrument instrument)
     {
         final int filterBase = p * PAT_PARTIAL_STRIDE;
+        if (instrument.keyFollow >= 0)
+            putU16LE (aRecord, PAT_KEY_FOLLOW + filterBase, instrument.keyFollow);
         if (instrument.filterType >= 1)
         {
             putU16LE (aRecord, PAT_FILTER_TYPE + filterBase, instrument.filterType * 0x100);
@@ -869,6 +880,7 @@ public final class ZenCoreSvz
             partial.waveLeft = ZenCoreUtil.readUnsigned16 (file, r + PAT_WAVE_L + oscBase, false);
             partial.waveRight = ZenCoreUtil.readUnsigned16 (file, r + PAT_WAVE_R + oscBase, false);
             partial.pan = file[r + PAT_PAN + oscBase];
+            partial.keyFollow = (short) ZenCoreUtil.readUnsigned16 (file, r + PAT_KEY_FOLLOW + oscBase, false);
 
             final int kbdBase = p * PAT_KBD_STRIDE;
             final int velLow = file[r + PAT_VEL_LOW + kbdBase] & 0xFF;

@@ -47,6 +47,7 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -104,7 +105,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         if (metadata.isEmpty ())
             return;
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "xrni");
+        final File multiFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (multisampleSource.getName ()), "xrni");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         try (final ZipOutputStream zos = new ZipOutputStream (new FileOutputStream (multiFile)))
@@ -243,7 +244,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.BASE_NOTE, Integer.toString (RenoiseValueConverter.clampNote (zone.getKeyRoot ())));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.NOTE_START, Integer.toString (RenoiseValueConverter.clampNote (zone.getKeyLow ())));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.NOTE_END, Integer.toString (RenoiseValueConverter.clampNote (limitToDefault (zone.getKeyHigh (), RenoiseValueConverter.MAX_NOTE))));
-        XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_KEY_TO_PITCH, TRUE);
+        // A zone without key tracking, e.g. a drum, plays at its root pitch on every key
+        XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_KEY_TO_PITCH, zone.getKeyTracking () == 0 ? FALSE : TRUE);
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.VELOCITY_START, Integer.toString (Math.clamp (zone.getVelocityLow (), 0, 127)));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.VELOCITY_END, Integer.toString (Math.clamp (limitToDefault (zone.getVelocityHigh (), 127), 0, 127)));
         XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAP_VELOCITY_TO_VOLUME, TRUE);
@@ -713,7 +715,7 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
      */
     private String sampleBaseName (final int zoneIndex, final ISampleZone zone)
     {
-        return String.format (Locale.US, "Sample%0" + this.padWidth + "d (%s)", Integer.valueOf (zoneIndex), FileUtils.createSafeFilename (zone.getName ()));
+        return String.format (Locale.US, "Sample%0" + this.padWidth + "d (%s)", Integer.valueOf (zoneIndex), SafeFileNames.create (zone.getName ()));
     }
 
 
