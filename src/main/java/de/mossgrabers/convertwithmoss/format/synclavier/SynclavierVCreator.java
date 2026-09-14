@@ -31,8 +31,8 @@ import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -107,7 +107,7 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
      */
     private void storeSynxFile (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
-        final String safeLibraryName = FileUtils.createSafeFilename (libraryName);
+        final String safeLibraryName = SafeFileNames.create (libraryName);
         final File synxFile = this.createUniqueFilename (destinationFolder, safeLibraryName, SYNX_ENDING);
         this.notifier.log ("IDS_NOTIFY_STORING", synxFile.getAbsolutePath ());
 
@@ -116,10 +116,10 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
         final MinimalZipWriter zipWriter = new MinimalZipWriter ();
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
-            String presetName = FileUtils.createSafeFilename (multisampleSource.getName ());
+            String presetName = SafeFileNames.create (multisampleSource.getName ());
             int counter = 2;
             while (!usedPresetNames.add (presetName))
-                presetName = FileUtils.createSafeFilename (multisampleSource.getName ()) + " " + counter++;
+                presetName = SafeFileNames.create (multisampleSource.getName ()) + " " + counter++;
 
             this.storePreset (destinationFolder, zipWriter, libraryFolder, safeLibraryName, presetName, multisampleSource);
         }
@@ -190,10 +190,10 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
             final ISampleZone zone = zones.get (index);
 
             // Ensure a unique sample file name
-            String sampleName = FileUtils.createSafeFilename (zone.getName ());
+            String sampleName = SafeFileNames.create (zone.getName ());
             int counter = 2;
             while (!usedSampleNames.add (sampleName.toLowerCase ()))
-                sampleName = FileUtils.createSafeFilename (zone.getName ()) + " " + counter++;
+                sampleName = SafeFileNames.create (zone.getName ()) + " " + counter++;
             zone.setName (sampleName);
 
             final String samplePath = sampleFolder + "/" + sampleName + ".wav";

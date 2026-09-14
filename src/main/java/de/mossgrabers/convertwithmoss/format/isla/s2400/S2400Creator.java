@@ -25,7 +25,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.FileUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -75,13 +75,16 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
             kitZones = zones.subList (0, S2400Constants.MAX_TRACKS);
         }
 
-        final String kitName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String kitName = SafeFileNames.create (multisampleSource.getName ());
         final File kitFolder = this.createUniqueFilename (destinationFolder, kitName, "");
         if (!kitFolder.exists () && !kitFolder.mkdirs ())
         {
             this.notifier.logError ("IDS_NOTIFY_FOLDER_COULD_NOT_BE_CREATED", kitFolder.getAbsolutePath ());
             return;
         }
+
+        final File kitFile = new File (kitFolder, kitFolder.getName () + S2400Constants.ENDING_KIT);
+        this.notifier.log ("IDS_NOTIFY_STORING", kitFile.getAbsolutePath ());
 
         // Down-sample only the (rare) samples above the native rate, so the loop points in the WAV
         // 'smpl' chunk match the written audio. Samples at 44.1kHz or 48kHz are kept unchanged.
@@ -93,8 +96,6 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
         this.writeSamples (kitFolder, multisampleSource, kitZones, DESTINATION_AUDIO_FORMAT);
 
         final byte [] kit = createKit (kitZones);
-        final File kitFile = new File (kitFolder, kitFolder.getName () + S2400Constants.ENDING_KIT);
-        this.notifier.log ("IDS_NOTIFY_STORING", kitFile.getAbsolutePath ());
         Files.write (kitFile.toPath (), kit);
 
         this.progress.notifyDone ();
@@ -181,7 +182,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
         final int secondChannel = stereo ? 1 : 0;
 
         writeU32Record (out, S2400Constants.FIELD_TRACK_INDEX, padIndex);
-        writeStringRecord (out, S2400Constants.FIELD_TRACK_NAME, FileUtils.createSafeFilename (zone.getName ()));
+        writeStringRecord (out, S2400Constants.FIELD_TRACK_NAME, SafeFileNames.create (zone.getName ()));
         writeU32Record (out, S2400Constants.FIELD_COLOR, S2400Constants.DEFAULT_COLOR);
         writeI32Record (out, S2400Constants.FIELD_RESERVED_53, 0);
         writeU32Record (out, S2400Constants.FIELD_RESERVED_36, 2);
