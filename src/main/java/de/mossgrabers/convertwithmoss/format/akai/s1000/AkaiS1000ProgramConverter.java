@@ -422,6 +422,15 @@ public class AkaiS1000ProgramConverter
         // Set global values
         final int pitchBendRange = program.getBendToPitch () & 0xFF;
         final double gain = scaledLoudnessToDecibel (program.getVolume () & 0xFF) - FULL_LEVEL * DECIBEL_PER_STEP;
+        // The program sits in the stereo mix at its stereo level (0-99, 99 is the full level, on
+        // the loudness scale like the program level) and at its stereo pan (-50..50), both on top
+        // of the level and the pan of the key-group samples
+        final double stereoLevel = scaledLoudnessToDecibel (program.getStereoLevel () & 0xFF) - FULL_LEVEL * DECIBEL_PER_STEP;
+        final double stereoPan = Math.clamp (program.getMixPan (), -50, 50) / 50.0;
+        // The octave shift transposes the whole program by up to two octaves: a key plays what is
+        // mapped an octave below or above it, so the key ranges move against the shift and the
+        // tuning moves with it
+        final int octaveShift = Math.clamp (program.getOctaveShift (), -2, 2) * 12;
         final double velocityToVolume = Math.clamp (program.getVelocityToVolume () / 50.0, -1.0, 1.0);
         // The native range of the key to volume intensity is [-50..50] which maps to the model
         // range of [-1..1]
@@ -430,7 +439,15 @@ public class AkaiS1000ProgramConverter
         {
             zone.setBendUp (pitchBendRange * 100);
             zone.setBendDown (-pitchBendRange * 100);
-            zone.setGain (zone.getGain () + gain);
+            zone.setGain (zone.getGain () + gain + stereoLevel);
+            if (stereoPan != 0)
+                zone.setPanning (Math.clamp (zone.getPanning () + stereoPan, -1, 1));
+            if (octaveShift != 0)
+            {
+                zone.setKeyLow (Math.max (0, zone.getKeyLow () - octaveShift));
+                zone.setKeyHigh (Math.min (127, zone.getKeyHigh () - octaveShift));
+                zone.setTuning (zone.getTuning () + octaveShift);
+            }
             zone.getAmplitudeVelocityModulator ().setDepth (velocityToVolume);
             zone.setAmplitudeKeyTracking (keyToVolume);
         }
