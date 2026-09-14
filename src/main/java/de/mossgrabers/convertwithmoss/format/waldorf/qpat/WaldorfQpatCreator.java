@@ -676,20 +676,21 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // shows a sample start/end of -1). Treat an unset start/stop as the full sample.
                 final double startFrame = zone.getStart () < 0 ? 0 : zone.getStart ();
                 final double stopFrame = zone.getStop () <= 0 ? numSampleFrames : zone.getStop ();
+                // The stop of a zone is the frame behind its last one, the device stores the last one
                 sb.append (formatMapPosition (startFrame, numSampleFrames)).append ('\t');
-                sb.append (formatMapPosition (stopFrame, numSampleFrames)).append ('\t');
+                sb.append (formatMapPosition (stopFrame - 1, numSampleFrames)).append ('\t');
 
                 // Loop mode, start, stop
                 final List<ISampleLoop> loops = zone.getLoops ();
                 if (loops.isEmpty ())
-                    sb.append ("0\t0\t").append (formatMapPosition (stopFrame, numSampleFrames)).append ('\t');
+                    sb.append ("0\t0\t").append (formatMapPosition (stopFrame - 1, numSampleFrames)).append ('\t');
                 else
                 {
                     final ISampleLoop loop = loops.get (0);
                     sb.append (loop.getType () == LoopType.ALTERNATING ? 2 : 1).append ('\t');
-                    final double [] loopPositions = getLoopPositions (zone, loop, audioMetadata, targetSampleRate);
-                    sb.append (formatMapDouble (Math.clamp (loopPositions[0], 0, 1))).append ('\t');
-                    sb.append (formatMapDouble (Math.clamp (loopPositions[1], 0, 1))).append ('\t');
+                    final String [] loopPositions = getLoopPositions (zone, loop, audioMetadata, targetSampleRate);
+                    sb.append (loopPositions[0]).append ('\t');
+                    sb.append (loopPositions[1]).append ('\t');
                 }
 
                 // Direction
@@ -1609,21 +1610,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Formats a sample position as a fraction of the number of frames of the sample. The device
-     * expects positions in the range [0..1], so the fraction is clamped: source formats may
-     * reference positions beyond the length of the audio data, e.g. loop points authored for the
-     * original sample but stored with a lossy-compressed file which decodes to a slightly shorter
-     * length.
-     *
-     * @param frames The position in sample frames
-     * @param numSampleFrames The number of frames of the sample
-     * @return The formatted position
-     */
-    /**
-     * Get the start and end of a loop relative to the length of the sample which is written. The
-     * sample map is created before the samples are converted to the target sample rate. A loop
-     * which is kept intact by the conversion is not simply scaled, its position and the length of
-     * the converted sample are calculated like the conversion does, see
+     * Get the start and end of a loop as the positions of the sample which is written. The sample
+     * map is created before the samples are converted to the target sample rate. A loop which is
+     * kept intact by the conversion is not simply scaled, its position and the length of the
+     * converted sample are calculated like the conversion does, see
      * AbstractCreator#recalculateSamplePositions.
      *
      * @param zone The zone which plays the loop
@@ -1631,9 +1621,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param audioMetadata The metadata of the sample before its conversion
      * @param targetSampleRate The sample rate to which the sample is converted, -1 if it keeps its
      *            sample rate
-     * @return The start and the end of the loop relative to the length of the written sample
+     * @return The formatted start and end of the loop, see formatMapPosition
      */
-    private static double [] getLoopPositions (final ISampleZone zone, final ISampleLoop loop, final IAudioMetadata audioMetadata, final int targetSampleRate)
+    private static String [] getLoopPositions (final ISampleZone zone, final ISampleLoop loop, final IAudioMetadata audioMetadata, final int targetSampleRate)
     {
         final int numberOfSamples = audioMetadata.getNumberOfSamples ();
         final int sampleRate = audioMetadata.getSampleRate ();
@@ -1644,24 +1634,42 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             {
                 final int [] positions = SincResampler.mapLoop (loop.getStart (), loop.getEnd (), sampleRate, targetSampleRate);
                 final double length = SincResampler.getLength (numberOfSamples, loop.getStart (), loop.getEnd (), sampleRate, targetSampleRate);
-                return new double []
+                return new String []
                 {
-                    positions[0] / length,
-                    positions[1] / length
+                    formatMapPosition (positions[0], length),
+                    formatMapPosition (positions[1], length)
                 };
             }
         }
-        return new double []
+        return new String []
         {
-            loop.getStart () / (double) numberOfSamples,
-            loop.getEnd () / (double) numberOfSamples
+            formatMapPosition (loop.getStart (), numberOfSamples),
+            formatMapPosition (loop.getEnd (), numberOfSamples)
         };
     }
 
 
-    private static String formatMapPosition (final double frames, final double numSampleFrames)
+    /**
+     * Format a frame position as the fraction of the sample which the device plays as exactly this
+     * frame. The firmware (Iridium MK2 4.0.5) converts a fraction into a frame in single precision:
+     * (int) (0.001f + (float) (frames - 1) x fraction), so 1.0 is the last frame, and it writes the
+     * fraction of an imported sample loop as frame / (frames - 1). Dividing by the number of frames
+     * instead places nearly every position one frame early on the device, and even
+     * frame / (frames - 1) lands one frame early when the single precision product falls marginally
+     * below the frame. The fraction therefore points to the middle of the frame, which the
+     * conversion hits exactly for every sample shorter than about 7.5 million frames.
+     *
+     * @param frame The index of the frame
+     * @param numSampleFrames The number of frames of the sample
+     * @return The formatted fraction
+     */
+    private static String formatMapPosition (final double frame, final double numSampleFrames)
     {
-        return formatMapDouble (Math.clamp (frames / numSampleFrames, 0, 1));
+        if (numSampleFrames <= 1 || frame <= 0)
+            return formatMapDouble (0);
+        if (frame >= numSampleFrames - 1)
+            return formatMapDouble (1);
+        return formatMapDouble ((frame + 0.5) / (numSampleFrames - 1));
     }
 
 
