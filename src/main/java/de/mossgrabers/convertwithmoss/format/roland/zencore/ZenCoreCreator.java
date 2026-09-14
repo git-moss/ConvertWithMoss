@@ -720,8 +720,9 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
         {
             final ISampleLoop loop = loops.get (0);
             loopStart = Math.clamp (loop.getStart (), 0, frames - 1);
+            // The end point is the frame behind the loop, the end of the model its last frame
             if (loop.getEnd () > loopStart)
-                end = Math.min (loop.getEnd (), frames);
+                end = Math.min (loop.getEnd () + 1, frames);
             // A loop starting at the very first frames - a whole-file loop, or a loop start the
             // zero-crossing snap processing option moved there - has no lead-in, which the seam
             // machinery below measures against (the waveform's own step into the loop start at
