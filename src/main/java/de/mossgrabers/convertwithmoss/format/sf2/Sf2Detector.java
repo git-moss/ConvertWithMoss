@@ -844,7 +844,9 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                 // the sample on release (sustain loop); mode 1 loops continuously
                 sampleLoop.setLoopUntilRelease ((sampleModes & 2) > 0);
                 sampleLoop.setStart ((int) (sample.getLoopStart () - sampleStart + getOffset (generators, Generator.START_LOOP_ADDRS_OFFSET, Generator.START_LOOP_COARSE_OFFSET)));
-                sampleLoop.setEnd ((int) (sample.getLoopEnd () - sampleStart + getOffset (generators, Generator.END_LOOP_ADDRS_OFFSET, Generator.END_LOOP_COARSE_OFFSET)));
+                // The loop end of a SoundFont is the first frame behind the loop, the one of the
+                // model is the last frame of the loop
+                sampleLoop.setEnd ((int) (sample.getLoopEnd () - sampleStart + getOffset (generators, Generator.END_LOOP_ADDRS_OFFSET, Generator.END_LOOP_COARSE_OFFSET)) - 1);
                 zone.addLoop (sampleLoop);
             }
 
