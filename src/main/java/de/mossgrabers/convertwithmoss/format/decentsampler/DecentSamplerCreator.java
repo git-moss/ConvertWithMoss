@@ -49,6 +49,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -122,7 +123,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         if (this.settingsConfiguration.createBundle ())
         {
             // Note: method is called for each multi-source individually!
-            final File multiFile = this.createUniqueFilename (destinationFolder, FileUtils.createSafeFilename (multisampleSource.getName ()), "dsbundle");
+            final File multiFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (multisampleSource.getName ()), "dsbundle");
             this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
 
             this.storeBundle (multiFile, Collections.singletonList (results.get (0)));
@@ -179,7 +180,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
 
             // Make sure the file name is unique among either the files in the destination folder or
             // inside of the library
-            String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+            String sampleName = SafeFileNames.create (multisampleSource.getName ());
             presetResult.dsPresetFile = isLibrary ? this.createUniqueFilename (destinationFolder, sampleName, ".dspreset", otherOutputFiles) : this.createUniqueFilename (destinationFolder, sampleName, "dspreset");
             sampleName = FileUtils.getNameWithoutType (presetResult.dsPresetFile);
             presetResult.sampleFolder = sampleName + FOLDER_POSTFIX;

@@ -30,8 +30,8 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -64,7 +64,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        final String sampleName = FileUtils.createSafeFilename (multisampleSource.getName ());
+        final String sampleName = SafeFileNames.create (multisampleSource.getName ());
 
         // Create a sub-folder to have the EXS file together with the samples
         final File subFolder = this.createUniqueFilename (destinationFolder, sampleName, "");
