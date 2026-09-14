@@ -336,11 +336,10 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         if ((options & Emulator4Constants.OPTION_LOOP) > 0)
         {
             sample.loopStart = (int) (loopStartOffset - Emulator4Constants.SAMPLE_STRUCT_SIZE) / 2;
-            // The stored position is the frame before the last one of the loop while the model
-            // counts the end as inclusive. Measuring the step at the loop seam shows a clear
-            // optimum at this one frame: the share of seams which step by more than a third of
-            // the peak amplitude falls to zero and the share of clean ones rises from 78% to 95%.
-            sample.loopEnd = Math.min ((int) (loopEndOffset - Emulator4Constants.SAMPLE_STRUCT_SIZE) / 2 + 1, numFrames - 1);
+            // The stored position is the last frame of the loop, which the model counts as
+            // inclusive as well - the curvature across the seam is smallest at exactly this frame
+            // for 261 of 300 loops of the 'Analogia' CD-ROM (see the Emulator III detector)
+            sample.loopEnd = Math.min ((int) (loopEndOffset - Emulator4Constants.SAMPLE_STRUCT_SIZE) / 2, numFrames - 1);
             sample.hasLoop = sample.loopStart >= 0 && sample.loopStart < numFrames && sample.loopEnd > sample.loopStart;
         }
 

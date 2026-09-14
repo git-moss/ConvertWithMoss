@@ -581,12 +581,12 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         {
             sample.alternatingLoop = loopType >= Emulator3Constants.OPTION_LOOP_ALTERNATING;
             sample.loopStart = (int) ((Emulator3Constants.getU32 (data, offset + loopStartField) - start) / 2);
-            // The stored position is the frame before the last one of the loop while the model
-            // counts the end as inclusive. Measuring the step at the loop seam of 2798 looped
-            // samples of the library CD-ROMs shows a clear optimum at this one frame: the median
-            // step falls from 4.6% to 0.2% of the peak amplitude and the share of seams which
-            // step by more than a third of it from 13% to 2%.
-            sample.loopEnd = (int) ((Emulator3Constants.getU32 (data, offset + loopEndField) - start) / 2) + 1;
+            // The stored position is the last frame of the loop, which the model counts as
+            // inclusive as well. A seamless loop repeats its first frame behind its last one, so
+            // the step from the loop end to the loop start is smallest one frame too late - the
+            // curvature across the seam is not: on the 'Analog Odyssey' CD-ROM its median is 3.0
+            // at the stored frame, 6.7 at the frame behind it and 9.2 at the frame before it
+            sample.loopEnd = (int) ((Emulator3Constants.getU32 (data, offset + loopEndField) - start) / 2);
             sample.hasLoop = sample.loopStart >= 0 && sample.loopEnd > sample.loopStart && sample.loopStart < numFrames;
             sample.loopEnd = Math.min (sample.loopEnd, numFrames - 1);
             // Without this flag the loop stops as soon as the key is released
