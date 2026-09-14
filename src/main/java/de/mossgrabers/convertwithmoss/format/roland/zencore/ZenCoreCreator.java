@@ -530,6 +530,9 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
 
     private static void applyToneParameters (final SvzInstrument instrument, final ISampleZone zone, final double minOnsetEdge)
     {
+        // A zone without key tracking, e.g. a drum, plays at its root pitch on every key
+        instrument.keyFollow = (int) Math.round (Math.clamp (zone.getKeyTracking (), 0, 1) * 100.0);
+
         final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isPresent ())
         {
