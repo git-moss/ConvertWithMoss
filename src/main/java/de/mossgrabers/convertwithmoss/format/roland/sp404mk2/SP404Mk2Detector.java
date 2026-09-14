@@ -223,7 +223,8 @@ public class SP404Mk2Detector extends AbstractDetector<MetadataSettingsUI>
             final ISampleLoop loop = new DefaultSampleLoop ();
             loop.setType (LoopType.FORWARDS);
             loop.setStart (0);
-            loop.setEnd (frames);
+            // The whole sample loops, the end of the model is its last frame
+            loop.setEnd (frames - 1);
             zone.addLoop (loop);
         }
 
