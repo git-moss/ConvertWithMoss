@@ -95,6 +95,8 @@ public class SfzOpcode
     public static final String PITCH                 = "pitch";
     /** SFZ v1. Defines how much the pitch changes with every note. */
     public static final String PITCH_KEYTRACK        = "pitch_keytrack";
+    /** SFZ v1. The transposition of the sample in semitones. */
+    public static final String TRANSPOSE             = "transpose";
 
     /** SFZ v1. The pitch bend up in cents (-9600 to 9600). */
     public static final String BEND_UP               = "bend_up";
