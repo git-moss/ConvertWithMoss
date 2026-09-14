@@ -31,6 +31,8 @@
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
+* Renoise
+  * New: The 'Map key to pitch' switch of a sample is read and written. A drum kit whose samples do not follow the key was converted as a chromatic instrument, and the switch was always written as on.
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
   * Fixed: Unused opcodes were not logged.
