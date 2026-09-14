@@ -27,6 +27,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -499,6 +501,46 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         if (zone.getLoops ().isEmpty ())
             flags |= Emulator3Constants.ZONE_FLAG_DISABLE_LOOP;
         data[offset + Emulator3Constants.ZONE_FLAGS] = (byte) flags;
+
+        writeLfo (data, offset, zone);
+    }
+
+
+    /**
+     * Write the LFO of a zone: its shape, rate and delay, which its three routings share, and the
+     * amounts of the vibrato, the tremolo and the cutoff modulation. The depths use the scales of
+     * the reader: one semitone for a full vibrato amount, the steps of the Emax for the other two.
+     *
+     * @param data The bank data
+     * @param offset The offset of the zone
+     * @param zone The zone
+     */
+    private static void writeLfo (final byte [] data, final int offset, final ISampleZone zone)
+    {
+        final ILfoModulator pitchLfo = zone.getPitchLfoModulator ();
+        final ILfoModulator amplitudeLfo = zone.getAmplitudeLfoModulator ();
+        final ILfoModulator cutoffLfo = zone.getFilter ().map (IFilter::getCutoffLfoModulator).orElse (null);
+        ILfoModulator source = null;
+        if (pitchLfo.getDepth () != 0)
+            source = pitchLfo;
+        else if (amplitudeLfo.getDepth () != 0)
+            source = amplitudeLfo;
+        else if (cutoffLfo != null && cutoffLfo.getDepth () != 0)
+            source = cutoffLfo;
+        if (source == null)
+            return;
+
+        final ILfo lfo = source.getSource ();
+        if (lfo.getRate () >= 0)
+            data[offset + Emulator3Constants.ZONE_LFO_RATE] = (byte) Emulator3Constants.getLfoRateValue (lfo.getRate ());
+        if (lfo.getDelay () > 0)
+            data[offset + Emulator3Constants.ZONE_LFO_DELAY] = (byte) Emulator3Constants.getLfoDelayValue (lfo.getDelay ());
+        data[offset + Emulator3Constants.ZONE_VCF_TYPE_LFO_SHAPE] |= (byte) Emulator3Constants.getLfoShapeValue (lfo.getWaveform ());
+
+        data[offset + Emulator3Constants.ZONE_LFO_TO_PITCH] = (byte) Math.clamp (Math.round (pitchLfo.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0 * 127), -127, 127);
+        data[offset + Emulator3Constants.ZONE_LFO_TO_AMPLIFIER] = (byte) Math.clamp (Math.round (amplitudeLfo.getDepth () * ILfoModulator.MAX_VOLUME_DEPTH / Emulator3Constants.LFO_AMPLIFIER_FULL_DEPTH_DB * 127), -127, 127);
+        if (cutoffLfo != null)
+            data[offset + Emulator3Constants.ZONE_LFO_TO_CUTOFF] = (byte) Math.clamp (Math.round (cutoffLfo.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / Emulator3Constants.LFO_CUTOFF_FULL_DEPTH_CENTS * 127), -127, 127);
     }
 
 
