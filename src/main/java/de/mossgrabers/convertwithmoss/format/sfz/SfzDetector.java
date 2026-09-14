@@ -472,6 +472,8 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         double tune = this.getDoubleValue (SfzOpcode.TUNE, 0);
         if (tune == 0)
             tune = this.getDoubleValue (SfzOpcode.PITCH, 0);
+        // The transposition in whole semitones adds to the fine tuning in cents
+        tune += this.getIntegerValue (SfzOpcode.TRANSPOSE, 0) * 100.0;
         sampleMetadata.setTuning (Math.clamp (tune, -3600, 3600) / 100.0);
 
         final double pitchKeytrack = this.getDoubleValue (SfzOpcode.PITCH_KEYTRACK, 100);
@@ -735,6 +737,7 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         if (lfoDepth != 0)
         {
             final ILfoModulator amplitudeLfoModulator = sampleZone.getAmplitudeLfoModulator ();
+            // Input is in the range of [-10..10] dB
             amplitudeLfoModulator.setDepth (lfoDepth / ILfoModulator.MAX_VOLUME_DEPTH);
 
             final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();

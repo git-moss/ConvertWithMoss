@@ -181,11 +181,19 @@ menu: 1 = Reverb, 2 = Delay, 3 = EQ, 4 = Filter, 5 = Distortion, 6 = Chorus, 7 =
 
 Only the **filter** (type 4) maps to the multi-sample model: `FREQUENCY` is the cutoff in Hertz
 (15001 = fully open, the default), `RESONANCE` is the quality factor (default 0.707, up to about
-3.145) and `TYPE` is the filter type (0 = low-pass; only 0 has been observed, the other indices
-are assumed to follow the usual high-pass/band-pass/band-rejection order). ConvertWithMoss reads
-the first active filter slot of a layer - or of the master, if the layer has none - as the filter
-of the layer's zones and writes a common zone filter back into the first slot. All other effects
-are not converted.
+3.145) and `TYPE` is the filter type: **0 = low-pass, 1 = band-pass, 2 = high-pass**, the order of
+`juce::dsp::StateVariableTPTFilterType`. The plug-in binary holds the parameter as
+`AMParameterEnum<juce::dsp::StateVariableTPTFilterType>` (mangled symbol
+`15AMParameterEnumIN4juce3dsp26StateVariableTPTFilterTypeEE` in Soundbox 1.2.x), so the enumeration
+is JUCE's and there is **no band-rejection**. The frequencies of the *Wired* pack confirm it: its
+44 type 0 slots have a median cutoff of 5.4 kHz (low-pass), the 23 type 2 slots a median of 106 Hz
+with a minimum of 50 Hz (high-pass, i.e. rumble filters) and the 10 type 1 slots a median of 543 Hz
+(band-pass). *Cosmo*, *Kromium*, *Voxmotive*, *Starlit* and *Mechania* use type 0 only. A filter
+type which is not one of the three is read as a low-pass; a band-rejection of the model is written
+as the low-pass default, since the plug-in cannot store one. ConvertWithMoss reads the first active
+filter slot of a layer - or of the master, if the layer has none - as the filter of the layer's
+zones and writes a common zone filter back into the first slot. All other effects are not
+converted.
 
 The engine `state` (13 bytes) and `sequence` (128 bytes) blobs belong to the 4 LFO engines of
 the Modulation tab (the 128 byte sequence holds the 32 steps of the LFO sequencer shape); they
@@ -198,7 +206,11 @@ constant default as found in Cosmo (see `SoundboxCreator`).
   `IGroup`; layer volume (relative to the 0.75 default), pan, fine tune/transpose/octave and ADSR
   are folded into the zones of that group.
 - Key high and velocity ranges: key high is stored exclusive, velocity is inclusive.
-- Loop/sample positions are fractions of the sample frame count.
+- Loop/sample positions are fractions of the sample frame count, so a sound cannot be read
+  without the length of its sample. The frame count has to come from the audio metadata:
+  the packs of the original corpus hold WAV, but packs written by newer plug-in versions
+  hold FLAC (the *Wired* pack does), and `ISampleData.addZoneData` fills the stop of a zone
+  in only for WAV.
 - Writing always produces the Cosmo-era layout: `gv="1" pv="1.0.0b19"`, 75 byte sound blobs,
   numeric `f` attributes, WAV samples. One group per preset (all zones with their velocity
   ranges), assigned to layer 1.
