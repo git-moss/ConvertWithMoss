@@ -46,9 +46,9 @@ import de.mossgrabers.tools.ui.Functions;
  * group of its zones the voices of the key ranges and the second group their second voices, so a
  * library of multi-samples becomes one disk. See documentation/design/EMULATOR2_FORMAT.md.
  * <p>
- * The settings of a voice - filter, envelopes, LFO, level - are not decoded; they are taken from a
- * voice of the factory library, an unfiltered piano, so that a written voice plays with sensible
- * defaults. The disk is written as an image for the HxC floppy emulators (HFE) or as a raw sector
+ * The fine tuning, the level and the velocity to level amount of a zone are written into its
+ * voice; the other settings of a voice - filter, envelopes, LFO - are taken from a voice of the
+ * factory library, an unfiltered piano, so that a written voice plays with sensible defaults. The disk is written as an image for the HxC floppy emulators (HFE) or as a raw sector
  * image (EMUIIFD). The operating system, which lives on the first 22 tracks, is not part of this
  * program: it is copied from a system file or a disk image which the user names; without one the
  * disk holds the bank alone, which the sampler loads once it has booted from another disk.
@@ -628,7 +628,10 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
 
     /**
-     * Get the root key of a zone, which is the centre of its key range when the zone has none.
+     * Get the root key of a zone, which is the centre of its key range when the zone has none. The
+     * fine tuning of a voice covers two semitones only, so the whole semitones of the tuning of the
+     * zone move the root key instead: a zone which plays a semitone higher is a voice which was
+     * recorded a semitone lower.
      *
      * @param zone The zone
      * @return The root key
@@ -636,7 +639,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
     private static int getRootKey (final ISampleZone zone)
     {
         final int root = zone.getKeyRoot ();
-        return root < 0 ? (zone.getKeyLow () + zone.getKeyHigh ()) / 2 : root;
+        return (root < 0 ? (zone.getKeyLow () + zone.getKeyHigh ()) / 2 : root) - (int) zone.getTuning ();
     }
 
 
@@ -668,9 +671,9 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
             return 0;
         }
 
-        // Re-use a voice with identical audio and loop, e.g. when the same sample is mapped to
-        // several key ranges or is played by several presets of the library
-        final Object contentKey = List.of (ByteBuffer.wrap (voice.audio), Boolean.valueOf (voice.hasLoop), Integer.valueOf (voice.loopStart), Integer.valueOf (voice.loopLength));
+        // Re-use a voice with identical audio, loop and settings, e.g. when the same sample is
+        // mapped to several key ranges or is played by several presets of the library
+        final Object contentKey = List.of (ByteBuffer.wrap (voice.audio), Boolean.valueOf (voice.hasLoop), Integer.valueOf (voice.loopStart), Integer.valueOf (voice.loopLength), Double.valueOf (voice.tuning), Double.valueOf (voice.gain), Double.valueOf (voice.velocityDepth));
         final Integer existingNumber = builder.voiceNumbersByContent.get (contentKey);
         if (existingNumber != null)
         {
@@ -715,6 +718,11 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
         final Voice voice = new Voice ();
         voice.name = zone.getName ();
+        // The whole semitones of the tuning move the root key of the zone (see getRootKey), the
+        // fine tuning of the voice holds the rest
+        voice.tuning = zone.getTuning () - (int) zone.getTuning ();
+        voice.gain = zone.getGain ();
+        voice.velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
         voice.audio = new byte [numFrames];
         for (int frame = 0; frame < numFrames; frame++)
         {
@@ -929,6 +937,16 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         final byte [] name = pad (voice.name, Emulator2Constants.VOICE_NAME_LENGTH);
         System.arraycopy (name, 0, image, voiceRecord + Emulator2Constants.VOICE_NAME, Emulator2Constants.VOICE_NAME_LENGTH);
 
+        // The fine tuning and the level table: its 16 entries run from the level at the highest
+        // velocity down to the level at the lowest one - linearly, which is how the sampler fills
+        // them (2,935 of 2,935 factory voices with a velocity range). A gain above 0 dB cannot be
+        // stored, nor a voice which gets louder the softer it is played
+        image[voiceRecord + Emulator2VoiceSettings.FINE_TUNE] = (byte) Math.clamp (Math.round (voice.tuning * 64), -128, 127);
+        final int level = Emulator2VoiceSettings.attenuationValue (Math.max (0, -voice.gain));
+        final int lowestLevel = Math.clamp (level - Emulator2VoiceSettings.velocityLevelRange (Math.max (0, voice.velocityDepth) * Emulator2VoiceSettings.MAX_LEVEL_DEPTH_DB), 0, 255);
+        for (int i = 0; i < 16; i++)
+            image[voiceRecord + Emulator2VoiceSettings.LEVEL_TABLE + i] = (byte) Math.round (level + (lowestLevel - level) * i / 15.0);
+
         // The audio in front of the loop plays once, the loop repeats; a voice without a loop is
         // written as the factory library holds it: all of its audio in front of a loop of length 1
         final int attack = voice.hasLoop ? voice.loopStart : voice.audio.length;
@@ -1007,6 +1025,12 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         boolean hasLoop;
         int     loopStart;
         int     loopLength;
+        /** The fine tuning in semitones. */
+        double  tuning;
+        /** The level in decibels. */
+        double  gain;
+        /** The depth of the velocity to level modulation, 0 to 1. */
+        double  velocityDepth;
 
 
         /**

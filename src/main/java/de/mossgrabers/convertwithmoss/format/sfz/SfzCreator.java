@@ -369,7 +369,16 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         final double tune = zone.getTuning ();
         if (tune != 0)
-            regionBuffer.append (addIntegerAttribute (SfzOpcode.TUNE, (int) Math.round (tune * 100), true));
+        {
+            // The whole semitones go into the transposition and the rest into the fine tuning,
+            // whose range is one semitone in the specification
+            final int transpose = (int) tune;
+            if (transpose != 0)
+                regionBuffer.append (addIntegerAttribute (SfzOpcode.TRANSPOSE, transpose, true));
+            final int cents = (int) Math.round ((tune - transpose) * 100);
+            if (cents != 0)
+                regionBuffer.append (addIntegerAttribute (SfzOpcode.TUNE, cents, true));
+        }
 
         final int keyTracking = (int) Math.round (zone.getKeyTracking () * 100.0);
         if (keyTracking != 100)
@@ -429,10 +438,10 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (lfoDepth != 0)
         {
             final StringBuilder lfoStr = new StringBuilder ();
-            lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append ((int) Math.round (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
+            lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append ((int) Math.round (lfoDepth * 1200));
 
             final ILfo pitchLfo = pitchLfoModulator.getSource ();
-            addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FREQ, pitchLfo.getRate ());
+            addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FREQ, Math.clamp (pitchLfo.getRate (), 0, 20));
             addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_DELAY, pitchLfo.getDelay ());
             addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FADE, pitchLfo.getFadeIn ());
             lfoStr.append (LINE_FEED);
@@ -567,10 +576,11 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (lfoDepth != 0)
         {
             final StringBuilder lfoStr = new StringBuilder ();
-            lfoStr.append (SfzOpcode.AMPLFO_DEPTH).append ('=').append (formatDouble (lfoDepth * ILfoModulator.MAX_VOLUME_DEPTH, 2));
+            final double value = Math.clamp (lfoDepth * ILfoModulator.MAX_VOLUME_DEPTH, -10.0, 10.0);
+            lfoStr.append (SfzOpcode.AMPLFO_DEPTH).append ('=').append (formatDouble (value, 2));
 
             final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
-            addLfoTimeAttribute (lfoStr, SfzOpcode.AMPLFO_FREQ, amplitudeLfo.getRate ());
+            addLfoTimeAttribute (lfoStr, SfzOpcode.AMPLFO_FREQ, Math.clamp (amplitudeLfo.getRate (), 0, 20));
             addLfoTimeAttribute (lfoStr, SfzOpcode.AMPLFO_DELAY, amplitudeLfo.getDelay ());
             addLfoTimeAttribute (lfoStr, SfzOpcode.AMPLFO_FADE, amplitudeLfo.getFadeIn ());
 
@@ -678,7 +688,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             lfoStr.append (SfzOpcode.FILLFO_DEPTH).append ('=').append ((int) Math.round (lfoDepth * 1200));
 
             final ILfo pitchLfo = cutoffLfoModulator.getSource ();
-            addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_FREQ, pitchLfo.getRate ());
+            addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_FREQ, Math.clamp (pitchLfo.getRate (), 0, 20));
             addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_DELAY, pitchLfo.getDelay ());
             addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_FADE, pitchLfo.getFadeIn ());
 

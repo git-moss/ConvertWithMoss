@@ -83,6 +83,8 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
     private static final int                    OSC_FINE_TUNE        = 0x03;
     // signed, -64 = hard left, 0 = centre, +63 = hard right
     private static final int                    OSC_PAN              = 0x06;
+    // s16, -200 to +200, 100 = chromatic, 0 = the same pitch on every key
+    private static final int                    OSC_KEY_FOLLOW       = 0x22;
     // 0 = ROM, 2 = user sample
     private static final int                    OSC_WAVE_GROUP       = 0x17;
     // 0x08 for ROM waves, 0 for user samples
@@ -275,7 +277,7 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
 
         writeToneFilter (toneRecord, zone);
         writeToneEnvelope (toneRecord, zone);
-        writeToneLevelPitchAndPan (toneRecord, zone.getTuning (), zone.getPanning ());
+        writeToneLevelPitchAndPan (toneRecord, zone.getTuning (), zone.getPanning (), zone.getKeyTracking ());
 
         System.arraycopy (toneRecord, 0, project.getData (), project.getUserToneOffset (slot), MC707Project.TONE_SIZE);
         return true;
@@ -357,9 +359,9 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         final ISampleZone representative = zones.get (0);
         writeToneFilter (toneRecord, representative);
         writeToneEnvelope (toneRecord, representative);
-        // The partial plays the whole map, so only tuning and panning shared by all zones can be
-        // applied to it.
-        writeToneLevelPitchAndPan (toneRecord, multisampleSource.getGlobalTuning ().orElse (Double.valueOf (0)).doubleValue (), multisampleSource.getGlobalPanning ().orElse (Double.valueOf (0)).doubleValue ());
+        // The partial plays the whole map, so only tuning, panning and key tracking shared by all
+        // zones can be applied to it.
+        writeToneLevelPitchAndPan (toneRecord, multisampleSource.getGlobalTuning ().orElse (Double.valueOf (0)).doubleValue (), multisampleSource.getGlobalPanning ().orElse (Double.valueOf (0)).doubleValue (), getSharedKeyTracking (zones));
 
         System.arraycopy (toneRecord, 0, project.getData (), project.getUserToneOffset (slot), MC707Project.TONE_SIZE);
         return true;
@@ -426,7 +428,8 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
             final int keyOffset = project.getUserKitKeyOffset (slot, keyIndex);
             System.arraycopy (ZenCoreUtil.padName (pool.get (sampleSlot.intValue ()).name, MC707Project.NAME_LENGTH), 0, data, keyOffset, MC707Project.NAME_LENGTH);
             data[keyOffset + KEY_LEVEL] = (byte) levelFromGain (best.getGain ());
-            data[keyOffset + KEY_PITCH] = (byte) Math.clamp (0x3CL + key - rootKey, 0, 127);
+            // A zone without key tracking, e.g. a drum, plays at its root pitch on every key
+            data[keyOffset + KEY_PITCH] = (byte) (best.getKeyTracking () == 0 ? 0x3C : Math.clamp (0x3CL + key - rootKey, 0, 127));
             System.arraycopy (KEY_MODE_USER_SAMPLE, 0, data, keyOffset + KEY_MODE, KEY_MODE_USER_SAMPLE.length);
             ZenCoreUtil.writeUnsigned32 (data, keyOffset + KEY_WAVE_NUMBER, sampleSlot.intValue () + 1L, false);
             hasKeys = true;
@@ -638,14 +641,33 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
      * @param toneRecord The tone record
      * @param tuning The tuning in semi-tones
      * @param panning The panning in the range of [-1..1]
+     * @param keyTracking The pitch key tracking in the range of [0..1], 0 plays the same pitch on
+     *            every key
      */
-    private static void writeToneLevelPitchAndPan (final byte [] toneRecord, final double tuning, final double panning)
+    private static void writeToneLevelPitchAndPan (final byte [] toneRecord, final double tuning, final double panning, final double keyTracking)
     {
         putU16 (toneRecord, PARTIAL_BLOCK + OSC_LEVEL, 127);
         final int coarseTune = Math.clamp ((long) tuning, -48, 48);
         toneRecord[PARTIAL_BLOCK + OSC_COARSE_TUNE] = (byte) coarseTune;
         toneRecord[PARTIAL_BLOCK + OSC_FINE_TUNE] = (byte) Math.clamp (Math.round ((tuning - coarseTune) * 100.0), -50, 50);
         toneRecord[PARTIAL_BLOCK + OSC_PAN] = (byte) Math.clamp (Math.round (panning * 64.0), -64, 63);
+        putU16 (toneRecord, PARTIAL_BLOCK + OSC_KEY_FOLLOW, (int) Math.round (Math.clamp (keyTracking, 0, 1) * 100.0));
+    }
+
+
+    /**
+     * Get the pitch key tracking which all zones share: 0 if none of them tracks the key (e.g. the
+     * pads of a drum kit), otherwise the full chromatic tracking.
+     *
+     * @param zones The zones
+     * @return The key tracking in the range of [0..1]
+     */
+    private static double getSharedKeyTracking (final List<ISampleZone> zones)
+    {
+        for (final ISampleZone zone: zones)
+            if (zone.getKeyTracking () != 0)
+                return 1;
+        return zones.isEmpty () ? 1 : 0;
     }
 
 
