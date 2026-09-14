@@ -312,6 +312,8 @@ public class Emulator4Constants
     public static final int        MOD_FILTER_ENVELOPE_AMOUNT = 22;
     /** The amount byte offset of the key-to-cutoff (filter key tracking) cord in the cord table. */
     public static final int        MOD_KEY_TRACKING_AMOUNT    = 26;
+    /** The amount byte offset of the velocity-to-cutoff cord in the cord table. */
+    public static final int        MOD_VELOCITY_CUTOFF_AMOUNT = 18;
 
     /** The repeating 12 byte entry of the default E4Ma multimap (all presets on all channels). */
     protected static final byte [] E4MA_ENTRY                 =

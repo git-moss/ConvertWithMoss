@@ -12,6 +12,10 @@
 * Fixed: Ignore very short loops (1-2 samples) stored in WAV sample chunks.
 * Audiomodern Soundbox
   * Fixed: The band-pass and the high-pass of a filter effect were swapped, which silenced converted presets. The plug-in stores the filter type as a juce::dsp::StateVariableTPTFilterType (0 = low-pass, 1 = band-pass, 2 = high-pass) and not in the assumed low-pass/high-pass/band-pass order, so e.g. the high-pass at 62 Hz which the 'Wired' pack puts on many of its pads - a plain rumble filter - became a band-pass at 62 Hz, which removes practically the whole sound. The three types the plug-in has are now read and written with their own indices; a band-rejection, which the plug-in cannot store, is written as its low-pass default.
+* E-mu Emax
+  * New: The LFO modulation of the filter cutoff is read and written (the LFO to cutoff amount, 340 cents per step); before, only the vibrato and the tremolo of the LFO were converted.
+* Akai S-1000/S-3000
+  * New: The octave shift, the stereo level and the stereo pan of a program are converted (also for MESA S3P files). A program which is shifted by one or two octaves was converted at its unshifted pitch; the level (0-99) and the pan (-50..50) of the program in the stereo mix are applied on top of the levels and pans of its key-groups.
 * E-mu Emulator II
   * New: Writing of Emulator II disks (HFE, EMUIIFD): each multi-sample becomes a preset of the bank, several of them as a library on one disk, with the voices of the key ranges, second voices, loops and the companded audio at 27,777 Hz. The settings of the voices are not decoded and are taken from a voice of the factory library; the operating system is copied from a system file or a disk image named in the settings. Not yet verified on hardware.
   * New: Bank files (EII) are read: the bank memory alone, without the operating system, as the Sound Designer software of 1985 received it from the sampler, as the EMXP tools extract and write it and as Arturia's Emulator II V imports it.
@@ -25,17 +29,33 @@
   * Fixed: A bank was reported to continue on another disk when a voice reached beyond the disk. The sampler saves 485,888 bytes of bank memory, from its address 0x9600 to the end of its 512 KB, and the last 8,704 bytes of the bank region of a disk are always blank - they were read as audio. A voice which was sampled into the memory behind that - 124 voices on 32 of the 90 factory disks - is cut there and noted; the rest of its audio is on no disk, a bank on two disks does not exist.
   * Fixed: The presets behind a preset whose name holds characters outside ASCII were lost - the copyright presets with which the Northstar and OMI libraries sign their banks ('p&c© 1986 N*') stopped the reading of the preset chain, which cost 142 of the 1,481 banks of the community library 792 presets ('Bamboo Flute Fx': 2 of 10). A preset record is now recognised by its structure (header and key ranges) and the names are decoded with the Mac Roman characters which the Sound Designer software wrote; a stray control character at the end of a name no longer turns a voice into 'Voice n'. Voices which no preset plays are no longer counted in the note about the bank memory.
   * Fixed: Written disks laid the loop out the same wrong way and flagged voices without a loop as looped. The audio of a voice is now written up to the end of its loop and the records match the factory library; still not verified on hardware.
+  * New: The velocity to VCF attack amount of a voice is read: the low nibble of the byte whose high nibble holds the velocity to VCA attack amount, set on exactly the 199 factory voices whose VCF attack table varies with the velocity.
+  * New: A written voice carries the fine tuning, the level and the velocity to level amount of its zone instead of the ones of the template voice, which played every voice about 6 dB down and without velocity sensitivity. The 16 entries of the level table run linearly from the level at the highest velocity to the one at the lowest, as the sampler fills them on all 2,935 factory voices with a velocity range. The other settings of a voice are still taken from the template.
 * E-mu Emulator III
   * New: The 'Reverse Playback' flag of a sample is now read and applied to its zones.
   * Fixed: Forward/backward ('fwd/bkwd') loops of Emulator III banks were lost. The loop type of a sample is a 2 bit field - 0: off, 1: forward, 2: forward/backward - and only the forward bit was tested, so a forward/backward sample was converted as not looped at all. Such loops are now read as alternating loops, which destinations that support them play as intended (e.g. TAL Sampler as a ping-pong loop). The field layout was verified against the sampler's OS 2.42 firmware; only the original Emulator III knows this loop type, the Emulator IIIX and ESI have dropped it.
+  * New: The tremolo (LFO to VCA) and the LFO modulation of the filter cutoff are read; the Emulator III documentation gives no depth for a full amount, so they are scaled like the LFO depths of the Emax, whose steps are known. The vibrato was read but never written: the shape, the rate, the delay and the three amounts of the LFO are now written as well, so a conversion between Emulator III banks keeps them.
+* E-mu Emulator IV
+  * New: The velocity to filter cutoff modulation (the velocity to filter frequency cord, slot 4 of the EOS default cord set) is read and written.
+* E-mu Emulator X
+  * New: The velocity to filter cutoff modulation cord is read and written.
 * Elektron Tonverk Preset
   * Fixed: A sample which could not be found was reported once for every key-zone which is cut out of it - a Multi preset which spreads one WAV file across the keyboard gave a dozen identical lines. A missing sample is now reported once per preset, and a preset none of whose samples could be found is reported as skipped.
+* Logic EXS24
+  * New: The 'Pitch' switch of a zone is read and written: a zone with the switch off plays its sample at the same pitch on every key (e.g. a drum) and was converted as a chromatic instrument - 644 of the 66,392 zones of the DSF E-mu Proteus library have it off - and every written zone had it on. The transposition of the instrument is read as well.
 * NI Kontakt
   * Fixed: Fixed a null pointer exception reading Kontakt 1 NKIs which was introduced in 20.2.
   * Fixed: Prevent adding duplicated website info to metadata description (reading Kontakt 2 - 4.2).
+* Roland MC-707/MC-101
+  * New: The pitch key follow of a partial (100 = chromatic, 0 = the same pitch on every key) is read and written, and the keys of a written drum kit which play a zone without key tracking all get the pitch of its root key.
+* Roland ZEN-Core
+  * New: The pitch key follow of a partial is read and written - the same field as on the MC-707, 100 = chromatic in all templates. A drum zone was converted as chromatic and written to follow the keyboard.
+* Renoise
+  * New: The 'Map key to pitch' switch of a sample is read and written. A drum kit whose samples do not follow the key was converted as a chromatic instrument, and the switch was always written as on.
 * SFZ
   * New: Opcode groups are now aggregated to group and global level.
   * Fixed: Unused opcodes were not logged.
+  * New: The 'transpose' opcode is read; it was ignored, so a region which is transposed by whole semitones played at the wrong pitch (75 of the 1,787 SFZ files on the test machine use it). When writing, whole semitones go into 'transpose' and only the remainder into 'tune', whose range the specification limits to one semitone.
 * SoundFont 2
   * Fixed: 24-bit samples were missing the padding byte in case that the number of samples were uneven. This made reading the created SF2 file fail in some tools (e.g. Polyphone).
   * Fixed: The specification version is now set to 2.04 if 24-bit samples are used otherwise it is still 2.01. This prevented 24-bit files to be loaded in Viena.
@@ -48,6 +68,11 @@
 * Synclavier Regen
   * Fixed: Partials which are muted in the editor were converted as layers. The editor keeps the samples of a muted partial in the timbre, so e.g. the switched-off sub-octave pulse of 'Prodigy Pad' (Starsky's Prodigy) became the first layer - and since it has no release time, destinations with one amplitude envelope per preset (e.g. Waldorf Iridium/Quantum) got an instant release instead of the 3.5 seconds of the pad. Only the active partials are converted now - those which carry a volume line, which is also how the device builds the active-partial mask of its timbre index.
   * Fixed: The contour of the note filter envelope was lost: only its peak level was read, the start level and the end level which the release heads to were ignored, and no sustain level was set - so destinations which default a missing sustain to the full level (e.g. Waldorf Iridium/Quantum) kept the filter at its peak for the whole note; none of the 26 filter envelopes of 'Starsky's Prodigy' ever decayed there. The three levels are octaves relative to the cutoff, which is the sustain level of the contour (Regen manual, 'Filter Envelope'); they are now read and written completely, and a contour which reaches below the cutoff is re-based so that the envelope of the model can carry it.
+  * New: The volume and the pan of the whole timbre (TBPIVolume, an attenuation in dB, and TBPIPan, -63..63) are read and applied on top of the settings of the partials; a timbre which the editor turned down - by up to 16 dB in the Studio G Dallas library - was converted at full level.
+* Waldorf Quantum/Iridium
+  * New: Round robins are written into one sample map. Entries of a map which overlap in key and velocity alternate on successive notes on the device, which is exactly a round robin; the zones of a round robin were spread over separate oscillators as if they were stacked layers, so all of them sounded at once on every note. When reading, overlapping entries of a map become a round robin. The device has no random selection, so random zones alternate as well.
+  * New: A monophonic source is written with the mono mode of the patch (PolyMonoMode), which is read back as well.
+  * New: The key window of an oscillator (Osc{i}MinNote/MaxNote) is applied when reading: a zone outside of it is silent on the device and is dropped, a zone across its edge is cut at it.
 
 ## 20.2.0
 
