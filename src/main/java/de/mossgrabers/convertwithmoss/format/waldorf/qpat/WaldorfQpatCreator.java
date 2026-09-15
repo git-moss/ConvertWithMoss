@@ -137,8 +137,19 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /** The length of the import number prefix, e.g. '05002-'. */
     private static final int                                   NUMBER_PREFIX_LENGTH   = 6;
     private static final WaldorfQpatResourceHeader             EMPTY_RESOURCE_HEADER  = new WaldorfQpatResourceHeader ();
-    /** The shortest amplitude attack/release which the device renders without a click. */
-    private static final double                                DECLICK_SECONDS        = 0.07;
+    /**
+     * The shortest amplitude attack/release which the device renders without a click. The hardware
+     * test which established it wrote 0.07 seconds with the display law of the envelope times,
+     * which the sound engine plays as 0.01 seconds, see {@link #convertFromTime(double)}.
+     */
+    private static final double                                DECLICK_SECONDS        = 0.01;
+    /**
+     * The time which the sound engine subtracts from the curve of the envelope times, so that the
+     * value 0 of a stage is instant, see {@link #convertFromTime(double)}.
+     */
+    private static final double                                ENVELOPE_TIME_OFFSET   = 0.06;
+    /** The longest envelope stage of the device in seconds, the value 1 of a stage. */
+    private static final double                                MAX_ENVELOPE_TIME      = 59.94;
     /** The share of the peak level at which a step in the audio becomes audible as a click. */
     private static final double                                AUDIBLE_STEP_RATIO     = 0.02;
     /** The lowest cutoff frequency of the filter of the device, the value 0 of Filter1CutOff. */
@@ -149,23 +160,21 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /**
      * The modulation matrix slot which routes the low frequency oscillator of the vibrato. The
      * slots 1-3 are already used for the pitch envelopes of the 3 oscillators, see
-     * {@link #createPitchEnvelopeModulator(List, IEnvelopeModulator, int)}.
+     * {@link #createPitchEnvelopeModulator(List, IEnvelopeModulator, int, int)}.
      */
     private static final int                                   MATRIX_SLOT_VIBRATO    = 4;
     /** The modulation matrix slot which routes the low frequency oscillator of the tremolo. */
     private static final int                                   MATRIX_SLOT_TREMOLO    = 5;
+    /** The modulation matrix slot which routes the low frequency oscillator of the filter cutoff. */
+    private static final int                                   MATRIX_SLOT_CUTOFF_LFO = 6;
     /** The low frequency oscillator which plays the vibrato. */
     private static final int                                   LFO_VIBRATO            = 1;
     /** The low frequency oscillator which plays the tremolo. */
     private static final int                                   LFO_TREMOLO            = 2;
-    /** MatrixSrc: [7] "LFO 1" [8] "LFO 2" [9] "LFO 3" [10] "LFO 4" [11] "LFO 5" [12] "LFO 6". */
-    private static final int                                   MATRIX_SRC_FIRST_LFO   = 7;
-    /** MatrixDst: [1] "Pitch" - the pitch of all three oscillators at once. */
-    private static final int                                   MATRIX_DST_PITCH       = 1;
-    /** MatrixDst: [117] "VCA" - the amplifier of the voice. */
-    private static final int                                   MATRIX_DST_VCA         = 117;
-    /** The pitch which one modulation matrix slot can reach, in semi-tones. */
-    private static final double                                MATRIX_PITCH_RANGE     = 24.0;
+    /** The low frequency oscillator which modulates the cutoff of the filter. */
+    private static final int                                   LFO_CUTOFF             = 3;
+    /** GlideRate: [0..1] ~ [0..2] seconds, the longest glide of the device. */
+    private static final double                                GLIDE_MAXIMUM_TIME     = 2.0;
     /**
      * The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds.
      */
@@ -452,7 +461,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // instantly drops to the sustain level. Such an envelope is meant to be flat, so write
             // a full sustain and fold the sustain level into the zone gain instead.
             final double ampGainFold = computeFlatAmpEnvelopeLevel (groups);
-            final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0, numLayers > 1, multisampleSource.isMonophonicLegato ());
+            final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0, numLayers > 1, multisampleSource, version);
             // The samples of the later layers are referenced from the first layer as well
             final List<String> layerShadowSamples = i == 0 ? shadowSamples : Collections.emptyList ();
             final List<byte []> sampleMaps = new ArrayList<> ();
@@ -614,8 +623,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         if (envelope == null)
             return 1.0;
 
-        // The minimum representable envelope time is 0.06 seconds; anything at or below that is
-        // written as an instant stage (see convertFromTime).
+        // An attack and a decay which are over within a few hundredths of a second leave the
+        // envelope at its sustain level from the start of the note, which is how such an envelope
+        // is meant.
         final double attackTime = envelope.getAttackTime ();
         final double decayTime = Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ());
         double sustainLevel = envelope.getSustainLevel ();
@@ -1037,13 +1047,29 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     }
 
 
-    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope, final boolean isMultiLayer, final boolean isMonophonic)
+    /**
+     * Create the parameters of one layer.
+     *
+     * @param groups The groups of the layer, one for each oscillator
+     * @param flattenAmpEnvelope True to write the amplitude envelope with a full sustain, see
+     *            {@link #computeFlatAmpEnvelopeLevel(List)}
+     * @param isMultiLayer True if the patch has more than one layer
+     * @param multisampleSource The multi-sample source
+     * @param version The format version of the patch
+     * @return The parameters
+     */
+    private static List<WaldorfQpatParameter> createParameters (final List<IGroup> groups, final boolean flattenAmpEnvelope, final boolean isMultiLayer, final IMultisampleSource multisampleSource, final int version)
     {
         final List<WaldorfQpatParameter> parameters = new ArrayList<> ();
 
-        // PolyMonoMode: [0] "Poly", [1] "Mono" - a monophonic source plays one voice at a time
-        if (isMonophonic)
+        // PolyMonoMode: [0] "Poly", [1] "Mono" - a monophonic source plays one voice at a time. The
+        // device has no other limit for the voices of a patch - LayerVoices is only used in the
+        // split mode, which divides the voices of the device among its layers
+        final boolean isMonophonicLegato = multisampleSource.isMonophonicLegato ();
+        if (isMonophonicLegato || multisampleSource.getPolyphony () == 1)
             parameters.add (new WaldorfQpatParameter ("PolyMonoMode", "Mono", 1.0f));
+
+        createGlideParameters (parameters, multisampleSource.getPortamentoTime (), isMonophonicLegato);
 
         if (isMultiLayer)
         {
@@ -1073,12 +1099,15 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "CoarsePitch", "+0 semi", 24.0f));
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "FinePitch", "+0.0 cents", 0.5f));
 
-            // Osc1PitchBendRange: [0..48] ~ [-24..24]
+            // Osc1PitchBendRange: [0..48] ~ [-24..24], the options are named like '+2' and '-2'
             final int pitchbend = Math.clamp (Math.round (firstZone.getBendUp () / 100.0), -24, 24);
-            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "-" : "+") + pitchbend, pitchbend + 24.0f));
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "PitchBendRange", (pitchbend < 0 ? "" : "+") + pitchbend, pitchbend + 24.0f));
 
-            // Osc1Keytrack: [0..1] ~ [-200..200] - already set in the sample maps
-            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Keytrack", "+100.0", 0.75f));
+            // Osc1Keytrack: [0..1] ~ [-200..200] %, 0.75 is +100 %. It scales the tracking of the
+            // entries of the sample map which follow the keyboard; an entry with a fixed pitch is
+            // marked in the map (TrackPitch)
+            final double keyTracking = getOscillatorKeyTracking (sampleZones);
+            parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Keytrack", String.format (Locale.US, "%+.1f", Double.valueOf (keyTracking * 100.0)), (float) (0.5 + keyTracking / 4.0)));
 
             // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB]. The oscillator is the group, so the group's
             // gain offset is stored here and the remainder per zone in the sample map. A source
@@ -1093,7 +1122,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             final String panningStr = panningOffset == 0 ? "Center" : StringUtils.formatPercent (panningOffset, 2);
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Pan", panningStr, (float) ((panningOffset + 1.0) / 2.0)));
 
-            createPitchEnvelopeModulator (parameters, firstZone.getPitchEnvelopeModulator (), i + 1);
+            createPitchEnvelopeModulator (parameters, firstZone.getPitchEnvelopeModulator (), i + 1, version);
 
             if (i == 0)
             {
@@ -1110,7 +1139,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 final double ampVeloAmount = firstZone.getAmplitudeVelocityModulator ().getDepth ();
                 parameters.add (new WaldorfQpatParameter ("AmpVeloAmount", StringUtils.formatPercent (ampVeloAmount, 2), (float) ((ampVeloAmount + 1.0) / 2.0)));
 
-                createLfoModulators (parameters, firstZone);
+                createLfoModulators (parameters, firstZone, version);
             }
         }
 
@@ -1118,7 +1147,69 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     }
 
 
-    private static void createPitchEnvelopeModulator (final List<WaldorfQpatParameter> parameters, final IEnvelopeModulator pitchEnvelopeModulator, final int oscIndex)
+    /**
+     * Create the parameters of the glide. The device glides from the pitch of the previous note to
+     * the pitch of the new one in the time of GlideRate, whatever the interval: the time is 2 x
+     * rate^2 seconds (Iridium MK2 firmware 4.0.6, the step of the glide is the interval x 128 /
+     * (88200 x rate^2) per block of 128 samples, the same law as the display). Without a portamento
+     * nothing is written, which leaves the glide off.
+     *
+     * @param parameters Where to add the parameters
+     * @param portamentoTime The portamento time in seconds, 0 if there is none
+     * @param isMonophonicLegato True if the source glides only to notes which are played legato
+     */
+    private static void createGlideParameters (final List<WaldorfQpatParameter> parameters, final double portamentoTime, final boolean isMonophonicLegato)
+    {
+        if (portamentoTime <= 0)
+            return;
+
+        // GlideOnOff: [0] "Off" [1] "On"
+        parameters.add (new WaldorfQpatParameter ("GlideOnOff", "On", 1.0f));
+        // GlideRate: [0..1] ~ [0..2] seconds
+        final double glideTime = Math.min (portamentoTime, GLIDE_MAXIMUM_TIME);
+        parameters.add (new WaldorfQpatParameter ("GlideRate", formatSeconds (glideTime), (float) Math.sqrt (glideTime / GLIDE_MAXIMUM_TIME)));
+        // GlideType: [0] "Onset" glides to every new note, [1] "Legato" only to a note which is
+        // played while another one is still held
+        parameters.add (new WaldorfQpatParameter ("GlideType", isMonophonicLegato ? "Legato" : "Onset", isMonophonicLegato ? 1.0f : 0.0f));
+    }
+
+
+    /**
+     * Get the key tracking to write into the oscillator of a group. The oscillator holds one key
+     * tracking for all entries of its sample map which follow the keyboard, therefore a tracking
+     * other than 100 % can only be written if all such zones share it.
+     *
+     * @param zones The zones of the group
+     * @return The key tracking in the range of [0..2], 1 is the tracking of the keyboard
+     */
+    private static double getOscillatorKeyTracking (final List<ISampleZone> zones)
+    {
+        double keyTracking = -1;
+        for (final ISampleZone zone: zones)
+        {
+            // A zone without key tracking is written as an entry with a fixed pitch
+            final double zoneKeyTracking = zone.getKeyTracking ();
+            if (zoneKeyTracking <= 0)
+                continue;
+            if (keyTracking < 0)
+                keyTracking = zoneKeyTracking;
+            else if (Math.abs (zoneKeyTracking - keyTracking) > 0.0001)
+                return 1;
+        }
+        return keyTracking < 0 ? 1 : Math.clamp (keyTracking, 0, 2);
+    }
+
+
+    /**
+     * Create the pitch envelope of an oscillator: its free envelope, routed through the matrix slot
+     * of the same index.
+     *
+     * @param parameters Where to add the parameters
+     * @param pitchEnvelopeModulator The pitch envelope modulator of the group
+     * @param oscIndex The index of the oscillator [1..3]
+     * @param version The format version of the patch, which decides the index of a destination
+     */
+    private static void createPitchEnvelopeModulator (final List<WaldorfQpatParameter> parameters, final IEnvelopeModulator pitchEnvelopeModulator, final int oscIndex, final int version)
     {
         // Use the matrix slots 1-3 and free envelopes 1-3 for the respective oscillator 1-3
         // modulation
@@ -1133,7 +1224,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         parameters.add (new WaldorfQpatParameter ("MatrixSrc" + oscIndex, "Free Env" + oscIndex, oscIndex + 3.0f));
 
         // MatrixDstX: [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
-        parameters.add (new WaldorfQpatParameter ("MatrixDst" + oscIndex, "Osc" + oscIndex + " Pitch", oscIndex + 1.0f));
+        final String destination = WaldorfQpatModulationMatrix.getOscillatorPitchDestination (oscIndex);
+        parameters.add (new WaldorfQpatParameter ("MatrixDst" + oscIndex, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version)));
 
         // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
         final double amount = convertFromPitchDepth (depth);
@@ -1147,9 +1239,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /**
      * Create the parameters of the vibrato and of the tremolo. The device has 6 low frequency
      * oscillators and 40 modulation matrix slots, of which this application only ever writes the
-     * slots 1-5: the slots 1-3 carry the pitch envelope of the respective oscillator, therefore the
-     * vibrato takes the slot 4 and the tremolo the slot 5. Nothing has to give way for them and the
-     * slots 6-40 as well as the LFOs 3-6 stay free for the user.
+     * slots 1-6: the slots 1-3 carry the pitch envelope of the respective oscillator, therefore the
+     * vibrato takes the slot 4, the tremolo the slot 5 and the modulation of the filter cutoff the
+     * slot 6. Nothing has to give way for them and the slots 7-40 as well as the LFOs 4-6 stay free
+     * for the user.
      * <p>
      * The vibrato modulates the destination "Pitch", which is the pitch of all three oscillators at
      * once. This costs one slot instead of one slot per oscillator and matches a vibrato of a
@@ -1157,8 +1250,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      *
      * @param parameters Where to add the parameters
      * @param zone The zone which carries the modulators
+     * @param version The format version of the patch, which decides the index of a destination
      */
-    private static void createLfoModulators (final List<WaldorfQpatParameter> parameters, final ISampleZone zone)
+    private static void createLfoModulators (final List<WaldorfQpatParameter> parameters, final ISampleZone zone, final int version)
     {
         // Vibrato - the pitch swings around the played note, therefore the LFO stays bipolar
         final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
@@ -1166,11 +1260,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final double pitchDepth = pitchLfoModulator.getDepth ();
         if (pitchDepth != 0 && pitchLfo.isSet ())
         {
-            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, one matrix slot
-            // reaches MATRIX_PITCH_RANGE semi-tones
-            final double semitones = pitchDepth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
-            final double amount = Math.clamp (semitones / MATRIX_PITCH_RANGE, -1.0, 1.0);
-            createModulationMatrixEntry (parameters, MATRIX_SLOT_VIBRATO, LFO_VIBRATO, "Pitch", MATRIX_DST_PITCH, amount);
+            final String destination = WaldorfQpatModulationMatrix.DESTINATION_PITCH;
+            createModulationMatrixEntry (parameters, MATRIX_SLOT_VIBRATO, LFO_VIBRATO, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), convertFromPitchDepth (pitchDepth));
             createLfo (parameters, pitchLfo, LFO_VIBRATO, false);
         }
 
@@ -1187,8 +1278,30 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // own, therefore only its magnitude is written
             final double decibels = Math.abs (amplitudeDepth) * ILfoModulator.MAX_VOLUME_DEPTH;
             final double amount = convertFromDecibels (-decibels) - 1.0;
-            createModulationMatrixEntry (parameters, MATRIX_SLOT_TREMOLO, LFO_TREMOLO, "VCA", MATRIX_DST_VCA, amount);
+            final String destination = WaldorfQpatModulationMatrix.DESTINATION_VCA;
+            createModulationMatrixEntry (parameters, MATRIX_SLOT_TREMOLO, LFO_TREMOLO, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), amount);
             createLfo (parameters, amplitudeLfo, LFO_TREMOLO, true);
+        }
+
+        // Filter cutoff - the cutoff swings around its value, therefore the LFO stays bipolar. The
+        // device adds the modulation to the cutoff in the units of Filter1CutOff, whose range covers
+        // WaldorfQpatModulationMatrix#CUTOFF_RANGE semi-tones, and does not square its amount. The
+        // modulation is only written with a filter which is written as active, see
+        // createFilterParameters
+        final Optional<IFilter> optFilter = zone.getFilter ();
+        if (optFilter.isEmpty () || optFilter.get ().getType () == FilterType.BAND_REJECTION)
+            return;
+        final ILfoModulator cutoffLfoModulator = optFilter.get ().getCutoffLfoModulator ();
+        final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
+        final double cutoffDepth = cutoffLfoModulator.getDepth ();
+        if (cutoffDepth != 0 && cutoffLfo.isSet ())
+        {
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent
+            final double semitones = cutoffDepth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
+            final double amount = Math.clamp (semitones / WaldorfQpatModulationMatrix.CUTOFF_RANGE, -1.0, 1.0);
+            final String destination = WaldorfQpatModulationMatrix.DESTINATION_FILTER1_CUTOFF;
+            createModulationMatrixEntry (parameters, MATRIX_SLOT_CUTOFF_LFO, LFO_CUTOFF, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), amount);
+            createLfo (parameters, cutoffLfo, LFO_CUTOFF, false);
         }
     }
 
@@ -1209,9 +1322,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         parameters.add (new WaldorfQpatParameter ("MatrixOnOff" + slot, TAG_ACTIVE, 1.0f));
 
         // MatrixSrcX: [7] "LFO 1" ... [12] "LFO 6"
-        parameters.add (new WaldorfQpatParameter ("MatrixSrc" + slot, "LFO " + lfoIndex, (MATRIX_SRC_FIRST_LFO + lfoIndex - 1)));
+        parameters.add (new WaldorfQpatParameter ("MatrixSrc" + slot, "LFO " + lfoIndex, (WaldorfQpatModulationMatrix.SOURCE_FIRST_LFO + lfoIndex - 1)));
 
-        // MatrixDstX: [1] "Pitch" ... [117] "VCA"
+        // MatrixDstX: the device resolves the destination by its name, the index is the one of the
+        // format version, see WaldorfQpatModulationMatrix
         parameters.add (new WaldorfQpatParameter ("MatrixDst" + slot, destinationName, destination));
 
         // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
@@ -1402,15 +1516,19 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // Only the amplitude envelope gates the VCA, so only it can click when a stage is instant;
         // a short filter or pitch envelope stage is left unchanged.
         final boolean isAmplitude = AMP_ENV.equals (prefix);
+        // A pitch envelope which starts at a level of its own falls from it to the sustain level
+        // during its attack time. The start level -1 means that the source does not set one, such
+        // an envelope rises from zero through its attack and decay like every other one
+        final boolean startsAtLevel = isPitch && envelope.getStartLevel () > 0;
 
-        if (isPitch && envelope.getStartLevel () != 0)
+        if (startsAtLevel)
         {
             // xxxEnvDelay
             parameters.add (new WaldorfQpatParameter (prefix + TAG_DELAY, formatSeconds (0), 0));
             // xxxEnvAttack
             parameters.add (new WaldorfQpatParameter (prefix + TAG_ATTACK, formatSeconds (0), 0));
             // xxxEnvDecay
-            final double decayTime = Math.clamp (envelope.getAttackTime (), 0, 60);
+            final double decayTime = Math.clamp (envelope.getAttackTime (), 0, MAX_ENVELOPE_TIME);
             parameters.add (new WaldorfQpatParameter (prefix + TAG_DECAY, formatSeconds (decayTime), (float) convertFromTime (decayTime)));
         }
         else
@@ -1419,15 +1537,15 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             final double delayTime = Math.clamp (envelope.getDelayTime (), 0, 2);
             parameters.add (new WaldorfQpatParameter (prefix + TAG_DELAY, formatSeconds (delayTime), (float) convertFromDelayTime (delayTime)));
             // xxxEnvAttack
-            final double attackTime = declickAmpTime (isAmplitude && !allowInstantAttack, Math.clamp (envelope.getAttackTime (), 0, 60));
+            final double attackTime = declickAmpTime (isAmplitude && !allowInstantAttack, Math.clamp (envelope.getAttackTime (), 0, MAX_ENVELOPE_TIME));
             parameters.add (new WaldorfQpatParameter (prefix + TAG_ATTACK, formatSeconds (attackTime), (float) convertFromTime (attackTime)));
             // xxxEnvDecay
-            final double decayTime = Math.clamp (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()), 0, 60);
+            final double decayTime = Math.clamp (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()), 0, MAX_ENVELOPE_TIME);
             parameters.add (new WaldorfQpatParameter (prefix + TAG_DECAY, formatSeconds (decayTime), (float) convertFromTime (decayTime)));
         }
 
         // xxxEnvRelease
-        final double releaseTime = declickAmpRelease (isAmplitude, Math.clamp (envelope.getReleaseTime (), 0, 60));
+        final double releaseTime = declickAmpRelease (isAmplitude, Math.clamp (envelope.getReleaseTime (), 0, MAX_ENVELOPE_TIME));
         parameters.add (new WaldorfQpatParameter (prefix + "Release", formatSeconds (releaseTime), (float) convertFromTime (releaseTime)));
 
         // xxxEnvSustain - a flattened amplitude envelope sustains at full level; its level is
@@ -1439,7 +1557,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             sustainLevel = 1;
         parameters.add (new WaldorfQpatParameter (prefix + "Sustain", StringUtils.formatPercent (sustainLevel, 2), (float) sustainLevel));
 
-        if (isPitch && envelope.getStartLevel () != 0)
+        if (startsAtLevel)
         {
             // xxxDecayCurve: [0] "Exp" [1] "Exp alt" [2] "Lin"
             final double decaySlope = envelope.getAttackSlope ();
@@ -1622,17 +1740,17 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     /**
      * Convert the depth of a pitch modulation of the model into the amount of a modulation matrix
-     * slot. The depth of the model covers {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent, while one slot
-     * of the matrix reaches {@link #MATRIX_PITCH_RANGE} semi-tones - a modulation which asks for
-     * more than the device can pitch is written at the end of its range.
+     * slot. The depth of the model covers {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent, while the
+     * device squares the amount of a pitch destination, see
+     * {@link WaldorfQpatModulationMatrix#PITCH_RANGE} - a modulation which asks for more than the
+     * device can pitch is written at the end of its range.
      *
      * @param depth The modulation depth in the range of [-1..1]
      * @return The amount in the range of [-1..1]
      */
     private static double convertFromPitchDepth (final double depth)
     {
-        final double semitones = depth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
-        return Math.clamp (semitones / MATRIX_PITCH_RANGE, -1.0, 1.0);
+        return WaldorfQpatModulationMatrix.convertSemitonesToPitchAmount (depth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0);
     }
 
 
@@ -1651,11 +1769,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * The device plays an envelope stage with parameter value 0 as instant. For the amplitude
-     * envelope a non-zero attack or release shorter than the ~0.06 second minimum would otherwise
-     * collapse to instant and click on note-on/off for a sample that does not start or end at a
-     * zero crossing. Clamp such a time up to the shortest audible length (0.07 seconds, verified on
-     * Iridium hardware); a genuine zero stays instant. Only the amplitude envelope gates the VCA,
+     * A very short attack or release of the amplitude envelope opens or closes the VCA so fast that
+     * it clicks on note-on/off for a sample which does not start or end at a zero crossing. Such a
+     * time is lifted to the shortest length which renders without a click (0.01 seconds, verified
+     * on Iridium hardware); a genuine zero stays instant. Only the amplitude envelope gates the VCA,
      * so a short filter or pitch envelope stage is left unchanged.
      *
      * @param declick True to lift the stage to the shortest audible length
@@ -1728,15 +1845,23 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     }
 
 
-    private static double convertFromTime (final double y)
+    /**
+     * Convert the time of an envelope stage into the value of its parameter. The sound engine plays
+     * the value x of an attack, a decay or a release as 60 x 10^(3 (x - 1)) - 0.06 seconds: 0 is
+     * instant and 1 is 59.94 seconds. The display of the device shows the same curve minus 0.001
+     * seconds instead, which is 59 ms longer than what is played. Measured on an Iridium MK2 with OS
+     * 4.0.6 with linear pitch envelopes: stages written for 0.07, 0.1, 0.25, 0.5, 1 and 2 seconds
+     * with the display law took 0.011, 0.041, 0.190, 0.441, 0.940 and 1.940 seconds, alike for the
+     * attack, the decay and the release.
+     *
+     * @param seconds The time in seconds
+     * @return The parameter value in the range of [0..1]
+     */
+    private static double convertFromTime (final double seconds)
     {
-        // The minimum representable time is 0.06 seconds (parameter value 0). Anything at or below
-        // that - including a zero attack/decay/release - maps to 0. Without this guard the
-        // logarithm returns negative values, and exactly 0 yields negative infinity, which would be
-        // written as a corrupt float and produce e.g. a click at the start of every note.
-        if (y <= 0.06)
+        if (seconds <= 0)
             return 0;
-        return Math.clamp (Math.log (y / 0.06) / Math.log (1000), 0, 1);
+        return Math.clamp (Math.log (1.0 + seconds / ENVELOPE_TIME_OFFSET) / Math.log (1000), 0, 1);
     }
 
 

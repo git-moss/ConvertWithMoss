@@ -283,7 +283,7 @@ The 18 parameter records, in file order:
 | `AmpEnvDelay` | 0 | 0.00 secs | |
 | `AmpEnvAttack` | 0 | 0.00 secs | instant |
 | `AmpEnvDecay` | 0 | 0.00 secs | instant |
-| `AmpEnvRelease` | 0.407283 | 1.00 secs | `0.06 * 1000^0.407283` = 1.0 s |
+| `AmpEnvRelease` | 0.415718 | 1.00 secs | `0.06 * 1000^0.415718 - 0.06` = 1.0 s |
 | `AmpEnvSustain` | 1 | 100.00 % | |
 | `AmpEnvAttackCurve` | 2 | Lin | |
 | `AmpEnvDecayCurve` | 2 | Lin | |
@@ -507,19 +507,23 @@ All envelopes share one layout and the same laws:
 | stage | law (x = stored value) | range |
 |-------|------------------------|-------|
 | Delay | `t = 2 x^2` s | 0 .. 2 s |
-| Attack, Decay, Release | `t = 0.06 x 1000^x` s; **x = 0 is played as an instant stage** | instant, then 0.06 s .. 60 s |
+| Attack, Decay, Release | `t = 0.06 x 1000^x - 0.06` s; **x = 0 is instant** (hw) | 0 .. 59.94 s |
 | Sustain | level `x` | 0..1 = 0..100 % |
 | AttackCurve | enum 0 = *Exp*, 1 = *RC*, 2 = *Lin* | |
 | DecayCurve, ReleaseCurve | enum 0 = *Exp*, 1 = *Exp alt*, 2 = *Lin* | |
 
-Inverse for a writer: `x = log(t / 0.06) / log(1000)` for `t > 0.06`, and `x = 0` (instant) for
-anything at or below 0.06 s. The firmware's display formatter computes the time as
-`60 x 10^(3 (x - 1)) - 0.001` s **(fw)**, the same curve shifted by one millisecond.
+Inverse for a writer: `x = log(1 + t / 0.06) / log(1000)`. The display of the device shows
+`60 x 10^(3 (x - 1)) - 0.001` s **(fw)**, which is 59 ms more than the sound engine plays - an
+earlier version of this document and of ConvertWithMoss used the display law, which made every stage
+60 ms too short and wrote everything below 0.06 s as instant. Measured on an Iridium MK2 with OS 4.0.6
+with linear pitch envelopes and `EnvelopeVar` at 0: values written for 0.07, 0.1, 0.25, 0.5, 1 and
+2 s with the display law played 0.011, 0.041, 0.190, 0.441, 0.940 and 1.940 s, for the attack, the
+decay and the release alike and within 2 ms on repeated notes **(hw)**.
 
-There is **nothing between instant and ~0.06 s**. For the amplitude envelope this matters: an
-instant stage opens or closes the amplifier within one sample, which clicks unless the audio is at
-zero at that moment. Measured on the device, **0.07 s is the shortest stage which renders without a
-click** **(hw)**. See section 7.2 for how to choose between 0 and 0.07 s.
+The curve runs continuously from instant upwards. For the amplitude envelope a very short stage
+opens or closes the amplifier so fast that it clicks unless the audio is at zero at that moment.
+Measured on the device, **a stage of 10 ms renders without a click** **(hw)** - the test wrote it as
+0.07 s with the display law. See section 7.2 for how to choose between 0 and 10 ms.
 
 Curve types: *Exp* and *RC* (attack) / *Exp alt* (decay, release) are the two curved variants, *Lin*
 is linear. Write the option index. The device rounds the value of an enumeration to the nearest
@@ -541,25 +545,59 @@ Each of the 40 slots has four parameters:
 | parameter | encoding / meaning |
 |-----------|--------------------|
 | `MatrixOnOff{k}` | 0 = *Disabled*, 1 = *Active* |
-| `MatrixSrc{k}` | source index: 4-6 = *Free Env 1-3*, 7-12 = *LFO 1-6* (fw). Other sources exist and are not covered |
-| `MatrixDst{k}` | destination index: 1 = *Pitch* (all three oscillators at once), 2-4 = *Osc1-3 Pitch*, 117 = *VCA* (fw). Other destinations exist and are not covered |
+| `MatrixSrc{k}` | source index: 4-6 = *Free Env 1-3*, 7-12 = *LFO 1-6*, the same in every format version (fw, corpus). Other sources exist and are not covered |
+| `MatrixDst{k}` | destination index, **which depends on the format version** (table below): 1 = *Pitch* (all three oscillators at once) and 2-4 = *Osc1-3 Pitch* in every version |
 | `MatrixAmount{k}` | bipolar, `2x - 1` = -100..+100 % |
 
-The matrix adds `sourcexamount` to the destination in the destination's own units and clamps the
-result to the destination's range **(fw)**.
+**The device resolves an enumeration by its name.** When it loads a patch it looks the hint of every
+enumeration up among the option names of the parameter and takes the index of the option it finds;
+only an empty hint, or one which names no option, leaves the stored value in place **(fw:
+`PatchLib::migrateIOAreaToStagingArea` calls `Param::DiscreteNameToIndex`)**. The hint therefore wins
+over the value - a writer which changes the value of an enumeration must change or clear its hint as
+well. This is what keeps old patches working while the list of destinations grew:
 
-* **Pitch destinations: +/-100 % = +/-24 semitones.** An amount of +12.5 % with a unipolar source at
-  full level raises the pitch by 3 semitones; a full-scale bipolar LFO at +12.5 % sweeps +/-3
-  semitones. A pitch envelope is therefore a free envelope into *Osc{i} Pitch* with an amount of
-  `semitones / 24`.
-* **VCA destination (117).** The amplifier already plays at full level, so a positive modulation is
+| destination | version 9 | versions 10-13 | version 14 | version 15 |
+|-------------|-----------|----------------|------------|------------|
+| *Filter1 Cutoff* | 99 | 99 | 100 | 109 |
+| *VCA* | 105 | 107 | 108 | 117 |
+
+The indices of versions 9-14 come from the hints of device-written patches (corpus), those of
+version 15 from the list of the firmware 4.0.6 (fw): version 14 added *DF Tilt* in front of the
+filter destinations and version 15 the nine *SD1-3 Position/Detune/Spread* destinations of the Seeds
+oscillators. A reader matches the hint first and falls back to the index of the file's version; a
+writer writes the name and the index of the version it writes.
+
+The matrix adds `source x amount` to a sum per destination, clamps the sum to +/-100 and the voice
+applies it in the destination's own units **(fw: `ModMatrix::calc`)**. A destination can be
+registered to **square the amount**, keeping its sign, before it is applied.
+
+* **Pitch destinations: the amount is squared, +/-100 % = +/-24 semitones.** *Pitch* and
+  *Osc1-3 Pitch* carry the squaring flag and the voice multiplies their sum with 24 semitones
+  **(fw)**. An amount of +50 % with a source at full level raises the pitch by `0.5^2 x 24` = 6
+  semitones; +14.4 % gives half a semitone. A pitch envelope is therefore a free envelope into
+  *Osc{i} Pitch* with an amount of `sign x sqrt(|semitones| / 24)`. The factory patches agree: their
+  vibratos on the modulation wheel use control amounts of 11-20 %, which is 29-96 cents squared and
+  would be 2.6-4.8 semitones linear (corpus). Measured on an Iridium MK2 with OS 4.0.6: a free envelope
+  held at full level into *Osc2 Pitch* at +50 % plays the second oscillator 6.00 semitones above the
+  first, at two different keys, and a converted vibrato of 50 cents at 5 Hz swings +/-49.97 cents at
+  4.999 Hz, where the linear amount of earlier versions swings +/-1.04 cents, and a converted pitch
+  envelope of 12 semitones starts every note 12.02 semitones high **(hw)**. Earlier versions of this document and of ConvertWithMoss
+  used `semitones / 24`, which writes every pitch modulation below 24 semitones too shallow: a
+  50 cent vibrato became one of about 1 cent.
+* **Filter cutoff (*Filter1 Cutoff*): linear, +/-100 % = +/-135 semitones.** The voice adds the sum
+  to the cutoff in the units of `Filter1CutOff`, whose range of 0..1 covers 11.25 octaves; the key
+  tracking of the filter is scaled into the same units with 1/135 per semitone **(fw)**. +8.9 % with a
+  source at full level raises the cutoff by an octave. Measured on an Iridium MK2: a unipolar square
+  LFO at +8.89 % switches a resonant 24 dB low-pass at 1000 Hz between 1000 Hz and 11.75 +/- 0.5
+  semitones above it; a law of 120 semitones would give 10.7 **(hw)**.
+* **VCA destination.** The amplifier already plays at full level, so a positive modulation is
   clamped and only a *negative* excursion is audible. The attenuation reached at the end of the
   swing follows the level law of `Osc{i}Vol`: `dB = 40 log10(1 - |amount|)`; silence (96 dB down) is
   an amount of -99.6 %, i.e. the end of the range. A tremolo is an LFO set to **unipolar** with a
   **negative** amount, so it only attenuates downwards from the full level; a bipolar LFO would
   press the first half of every cycle against the upper end of the amplifier and leave the rectified
-  half of the waveform. (The dB scale of this destination is derived from the level law, not
-  measured.)
+  half of the waveform. The destination is not squared (fw); its dB scale is derived from the level
+  law and not measured.
 
 ### 5.8 Low frequency oscillators
 
@@ -579,7 +617,7 @@ result to the destination's range **(fw)**.
 
 | quantity | stored value x -> unit | inverse |
 |----------|------------------------|---------|
-| envelope stage time | `0.06 x 1000^x` s, 0 = instant | `log(t / 0.06) / log(1000)`; `t <= 0.06` -> 0 |
+| envelope stage time | `0.06 x 1000^x - 0.06` s, 0 = instant | `log(1 + t / 0.06) / log(1000)` |
 | envelope delay | `2 x^2` s | `sqrt(t / 2)` |
 | level (`Osc{i}Vol`) | `40 log10(x)` dB | `10^(dB / 40)` |
 | filter cut-off | `8.1758 x 2^(11.25 x)` Hz | `log2(f / 8.1758) / 11.25` |
@@ -592,6 +630,30 @@ result to the destination's range **(fw)**.
 | LFO delay / attack / decay | `20 x^2` / `10 x^2` / `10 x^2` s | `sqrt(t / max)` |
 | map gain | linear factor, `20 log10(g)` dB | `10^(dB / 20)` |
 | map positions | fraction of the frame count | `frames / count` |
+| matrix amount on a pitch destination | `sign(a) x a^2 x 24` semitones | `sign x sqrt(|semitones| / 24)` |
+| matrix amount on *Filter1 Cutoff* | `a x 135` semitones | `semitones / 135` |
+| glide time (`GlideRate`) | `2 x^2` s | `sqrt(t / 2)` |
+
+### 5.10 Voices and glide
+
+| parameter | encoding / meaning |
+|-----------|--------------------|
+| `PolyMonoMode` | 0 = *Poly*, 1 = *Mono* |
+| `LayerVoices` | the voices of a layer, option index + 1 (3 = 4 voices, the default). Only used in the split mode, which shares the 16 voices of the instrument among its layers (manual) - it does not limit the polyphony of a patch in the other modes |
+| `GlideOnOff` | 0 = *Off*, 1 = *On* |
+| `GlideRate` | `t = 2 x^2` s, 0..2 s; the default 0.15 is 45 ms. The glide takes this time for every interval: the step per block of 128 samples is `interval x 128 / (88200 x x^2)` (fw). Measured: 0.7071 glides for 1.000 s over 200 and over 400 cents, on a straight line of pitch (hw) |
+| `GlideType` | 0 = *Onset*, glides to every new note; 1 = *Legato*, only to a note played while another one is held (manual) |
+| `PitchVariation` | analog drift: every oscillator of every voice gets a random detune, scaled by this value; default 0.17 (manual) |
+| `EnvelopeVariation` | the attack and decay of every note deviate randomly from their values, scaled by this value; default 0.35 (manual) |
+
+Waldorf keeps `PitchVariation` and `EnvelopeVariation` at their defaults in 234 of the 242 sample-based
+factory patches (corpus); a patch which does not store them gets the defaults (2.3).
+
+In the *Mono* mode every new note retriggers the amplitude envelope - its level follows the velocity of
+each note - unless `AmpEnvSingleTrig` is on (manual, hw), and a note which does not overlap the previous
+one restarts the sample: the sounding waveform is cut within 2-3 samples and the sample starts again
+from its first frame. With an instant attack and a sustained sample this is an audible click, while an
+overlapping note glides on without one (hw).
 
 ## 6. Metadata: name, author, bank, attributes
 
@@ -631,10 +693,11 @@ no filter, or 0 plus the `Filter1*` parameters), the eight `AmpEnv*` parameters 
 Add `Matrix*`, `FreeEnv*` and `Lfo*` parameters only for the modulations you actually use - and then
 all parameters of the LFO or envelope you use.
 
-ConvertWithMoss never writes more than five matrix slots: slots 1-3 carry the pitch envelopes of
+ConvertWithMoss never writes more than six matrix slots: slots 1-3 carry the pitch envelopes of
 oscillators 1-3 (*Free Env 1-3* into *Osc1-3 Pitch*), slot 4 a vibrato (*LFO 1* into *Pitch*, one
-slot for all three oscillators) and slot 5 a tremolo (*LFO 2* into *VCA*, unipolar, negative
-amount). Slots 6-40 and LFOs 3-6 are left untouched for the user.
+slot for all three oscillators), slot 5 a tremolo (*LFO 2* into *VCA*, unipolar, negative amount)
+and slot 6 a modulation of the filter cutoff (*LFO 3* into *Filter1 Cutoff*, bipolar). Slots 7-40 and
+LFOs 4-6 are left untouched for the user.
 
 ### 7.2 Pitfalls seen on the device
 
@@ -654,15 +717,15 @@ All of these were found by loading written patches on an Iridium **(hw)**:
 * **`Osc{i}ParticleSampleMode = 2`** or single samples do not track the keyboard.
 * **Key tracking is 0.75 for 1:1**, not 1.0 - for the oscillator and for `Filter1Keytrack` alike.
   1.0 is +200 % and opens the filter twice as far per octave.
-* **Envelope stages shorter than ~0.06 s do not exist**; 0 is instant and clicks unless the audio is
-  at zero at that moment:
-  - *Release*: write at least 0.07 s. A note-off lands at an arbitrary point of the waveform (for a
+* **Very short envelope stages click**; 0 is instant and clicks unless the audio is at zero at that
+  moment:
+  - *Release*: write at least 10 ms. A note-off lands at an arbitrary point of the waveform (for a
     looped entry at full level), so an instant release always clicks.
   - *Attack*: an instant attack is fine - and is what the device itself uses for percussive sounds
     (35 % of 141 patches written by an Iridium set it to 0) - **when the sample starts near zero**.
-    Lifting every short attack to 0.07 s erases the strike of a percussive recording (a 3 ms attack
-    became 70 ms, 23 times longer). ConvertWithMoss lifts an attack only when the first frame at the
-    entry's start is above 2 % of the sample's peak level; otherwise it writes 0.
+    Lifting every short attack erases the strike of a percussive recording. ConvertWithMoss lifts an
+    attack below 10 ms to 10 ms only when the first frame at the entry's start is above 2 % of the
+    sample's peak level; otherwise it writes the attack of the source.
   - *Attack 0 + Decay 0 + Sustain below 100 %* pops: the device snaps to the 100 % attack peak and
     drops instantly to the sustain level. Write such an envelope with sustain 1.0 and apply the
     sustain level to the map gains instead.
@@ -784,7 +847,9 @@ fourth layer plays its three.
   can be reduced to their plain type.
 * Scan the 40 matrix slots: an active slot with a free envelope source and an oscillator's pitch as
   destination is that oscillator's pitch envelope; an LFO into *Pitch* or an oscillator's pitch is a
-  vibrato, an LFO into *VCA* a tremolo (convert the amount with the laws of 5.7). Skip an LFO with
+  vibrato, an LFO into *VCA* a tremolo and an LFO into *Filter1 Cutoff* a filter modulation (convert
+  the amount with the laws of 5.7 - the pitch amount is squared). Match a destination by its hint
+  and only without one by the index of the file's version (5.7). Skip an LFO with
   `Lfo{n}Sync = 1` unless you know the tempo, and read a phase at or above 0.9986 as free running.
 * Accept non-integral enumeration values (section 5.5).
 * **Layers** (section 2.6): read the u16 at 428. 1 = one more layer at the offset in 432; 2 = up to
@@ -806,17 +871,15 @@ fourth layer plays its three.
 * **`Expalt` curve value.** The enumeration index of *Exp alt* is 1; ConvertWithMoss writes 0.5 and
   the device accepts the file, but how it rounds a non-integral enumeration value has not been
   checked. Writing 1.0 matches the index.
-* **VCA destination scale.** The dB per percent of matrix destination 117 is derived from the level
-  law and not measured on the device.
+* **VCA destination scale.** The dB per percent of the matrix destination *VCA* is derived from the
+  level law and not measured on the device.
 * **Loop cross-fade unit.** Column 14 is a fraction and the device plays it (hw); whether it
   relates to the loop length or to the sample length is not verified. Device-written maps fit a
   loop-relative reading (521 looped entries with a cross-fade on one card: 517 fit in front of the
   loop start relative to the loop length, 61 relative to the sample length).
-* **Envelope time law.** The firmware's display formatter differs from the law above by a constant 1
-  ms; whether the audio engine uses the display law or a neighbouring variant which subtracts in the
-  normalized domain (59 ms different at the fast end) is inferred, not measured. The firmware also
-  has an `EnvelopeVar` parameter (default 0.35) which randomizes attack and decay per note; zero it
-  before measuring envelope times on the device.
+* **Envelope delay.** The law of the delay stages (`2 x^2` s) is read from the display formatter and
+  not measured; `EnvelopeVar` (default 0.35) randomizes attack and decay per note, so zero it before
+  measuring envelope times on the device.
 * **Layers.** Three-layer files and layer count codes other than 1 and 2 have not been observed;
   whether an MK2 can write code 1, and whether a first-generation instrument accepts code 2, is
   unknown. The loader accepts the codes 1, 2 and 3 as "more than one layer" and loads the layers 3
@@ -841,7 +904,7 @@ fourth layer plays its three.
   types, the granular sample modes (`Osc{i}ParticleSampleMode` 0 *Granular* and 1 *Live Granular*),
   the selection rule for overlapping entries (`Osc{i}ParticleSelectionRule`: *Round Robin*,
   *Reverse Robin*, *Ping Pong*, *Random Robin*, *Random*, *None*), filter 2 and the saturated/dirty
-  filter variants, the other matrix sources and destinations, split key windows
+  filter variants, the matrix sources and destinations other than those of 5.7, split key windows
   (`Osc{i}MinNote`/`MaxNote`), the *Global* and *Single Trig* LFO modes, tempo-synchronized LFOs.
 
 ## Appendix: how ConvertWithMoss maps the format
@@ -857,8 +920,11 @@ For readers who want to compare an implementation against ConvertWithMoss (`Wald
   1/2/3*; filter, amplifier envelope, velocity amount, vibrato and tremolo of the layer are applied
   to every zone. An entry whose velocity window ends at 0 is skipped. The four attributes
   are fed through its keyword detector to derive a category and keywords; author -> creator, bank ->
-  description. Matrix pitch amounts are scaled to its model's depth of 12000 cents
-  (`depth = amount x 24 x 100 / 12000`), the VCA amount to its 96 dB volume depth.
+  description. Matrix destinations are matched by their hint, then by the index of the version. Matrix
+  pitch amounts are squared and scaled to its model's depth of 12000 cents
+  (`depth = sign x amount^2 x 24 x 100 / 12000`), a cutoff amount with 135 semitones
+  (`depth = amount x 135 x 100 / 12000`), the VCA amount to its 96 dB volume depth. *Mono* becomes a
+  polyphony of 1 played legato, an active glide the portamento time (`2 x GlideRate^2` s).
 * **Writing**: split-stereo groups are combined into stereo files; a group whose zones stack
   (overlap in key *and* velocity) is partitioned into layers of non-overlapping zones, largest
   first. The resulting groups fill the three oscillators of a layer and then, when the option allows
@@ -868,11 +934,14 @@ For readers who want to compare an implementation against ConvertWithMoss (`Wald
   instead (section 4.1). Everything beyond the first layer is written in the Multi/Layered mode. The
   common gain and panning of a group go to `Osc{i}Vol` / `Osc{i}Pan`, the remainder into the map.
   Filter, amplifier envelope, velocity and LFOs are taken from the first zone of the first group;
-  the pitch envelope from the first zone of each group. The samples of the later layers are named
+  the pitch envelope from the first zone of each group. A polyphony of 1 or a legato source is
+  written with *Mono*, a portamento as the glide (*Legato* for a legato source, *Onset* otherwise), a
+  key tracking which all key-tracked zones of a group share as `Osc{i}Keytrack`. Matrix destinations
+  are written with their name and the index of the written version (5.7). The samples of the later layers are named
   in the last map of the first layer in entries which never play (7.5).
 * **Policies**: the de-click and flat-envelope rules of section 7.2; hold + decay are added into the
-  Decay stage; a pitch envelope which starts at a level is written as attack 0 and a decay of the
-  source's attack time; the preset name drops a leading bank because the bank field holds it (unless
+  Decay stage; a pitch envelope which starts at a level above 0 is written as attack 0 and a decay of
+  the source's attack time (an unset start level is written as a normal envelope); the preset name drops a leading bank because the bank field holds it (unless
   an explicit bank option replaces the source's bank, in which case the name keeps it as long as it
   fits 32 characters); categories are translated into the factory spelling (*Keyboard -> Keys, Bell
   -> Bells, Percussion/Hi-Hat/Kick/Snare/Clap -> Percussive, Loops -> Loop, Acoustic Drum -> Drum,
