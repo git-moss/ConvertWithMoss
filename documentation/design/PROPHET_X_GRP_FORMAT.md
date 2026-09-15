@@ -10,9 +10,13 @@ sits in `CSampleOsc::PlayNote`. Sequential does not document the format; the off
 Series Mapping Utility" (8Dio) is the only public writer and states 16 bit / 48 kHz WAV, at most 128
 files and 1.5 GB per instrument.
 
-No factory content was available, so everything below comes from the code paths which read and
-import the files. Statements about what the device *does* with a value are taken from the code;
-the written output of ConvertWithMoss has **not** been verified on hardware yet.
+No factory content was available, so the format below comes from the code paths which read and
+import the files; statements about what the device *does* with a value are taken from the code.
+Two other writers served as the reference for what actually plays: the free **PXToolkit** 1.3.2
+(ThinkerSnacks, an Electron app whose writer `ProphetWriter.js` is plain JavaScript) and the free
+third-party pack *Goldbaby GBPX Free1* (six instruments in the USB layout, made with PXToolkit),
+which ConvertWithMoss reads. The written output of ConvertWithMoss follows their conventions but
+has **not** been verified on hardware yet.
 
 ## What kind of instrument this is
 
@@ -165,6 +169,36 @@ the model (depth 1, linear), so that an unspecified source keeps the built-in ta
 * 16-bit PCM only (`Only support 16-bit mono or stereo sample files`), one or two channels.
 * Any sample rate is accepted but ignored, see above: use 48 kHz.
 * The frame count is `data size / 2 / channels`.
+
+## What the other writers do
+
+PXToolkit (`ProphetWriter.js`) and the Goldbaby pack show the conventions which are known to work:
+
+* The group file has only ten columns - `File Path`, `Low Midi Note`, `High Midi Note`,
+  `Low Velocity`, `High Velocity`, `Loop Start`, `Loop End`, `Round Robin Number`,
+  `Pitch in Hertz`, `Mono Collapse` - with LF line ends; the other five columns of the firmware are
+  never written. Every row carries a round robin number (1 for a single sample), the lowest
+  velocity is 1 and the pitch is written with full double precision.
+* Keys which no zone covers are mapped to `silence.wav`, a 44-byte WAV with a `data` chunk of
+  zero bytes, so that the device plays nothing on them instead of the nearest zone. The zones of
+  the Goldbaby pack are instead stretched to 0 and 127.
+* Loop points come from the `smpl` chunk of the source file and are passed on unchanged: the
+  looped instruments of the Goldbaby pack have `Loop End` equal to their frame count, i.e. one
+  frame beyond the file, which the device tolerates (it plays up to and including the frame at
+  `Loop End`). ConvertWithMoss clamps a loop end to the last frame when it writes.
+* The WAV files are stripped to the `fmt ` and `data` chunks, 16 bit, and their header always
+  claims 48 kHz even when the audio is not converted: a file at another rate keeps its samples and
+  gets `Pitch in Hertz * 48000 / rate` instead, so the engine plays it slower and in tune.
+  ConvertWithMoss converts the audio to 48 kHz instead, which keeps the durations.
+* An instrument name is `NN. First|Second`: a two-digit index which orders the instruments on the
+  device (`firstnum_strcmp`), then the two lines of the display name separated by `|`. The tool
+  rejects characters outside printable ASCII and `/ ? < > \ : * "`. Since `|` is not allowed in
+  a file name on Windows, the archive itself may be named with `_` in its place; macOS stores a
+  `|` on a FAT32 drive as U+F027, which the importer (`CorrectPipeInString`) maps back to `|`.
+* The pack's guide states the import path on the device: Global menu, *34. Update Library* set to
+  *User*, then *Update Now*; the folder `u07` fills the user bank 8, so `u00` is bank 1. It also
+  warns that firmware before 2.1.0.0.0 can brick the device when samples are installed.
+* The tool limits an instrument to 1.5 GB of samples and reads 16 or 24 bit WAV or AIFF.
 
 ## What the instrument cannot carry: modulation
 

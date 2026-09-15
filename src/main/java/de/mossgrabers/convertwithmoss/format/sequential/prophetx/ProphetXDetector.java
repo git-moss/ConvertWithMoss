@@ -235,6 +235,7 @@ public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
         // which is played in turn; the samples without a number form the first group
         final Map<Integer, IGroup> groups = new TreeMap<> ();
         int columnCategory = -1;
+        int emptySamples = 0;
         String instrumentName = null;
         for (final Map<String, String> row: rows)
         {
@@ -251,10 +252,26 @@ public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
             if (instrumentName == null)
                 instrumentName = row.get (ProphetXTag.COLUMN_INSTRUMENT);
 
-            final ISampleData sampleData = folder.loadSample (filePath);
-            if (sampleData == null)
+            final ISampleZone zone;
+            try
+            {
+                final ISampleData sampleData = folder.loadSample (filePath);
+                if (sampleData == null)
+                    continue;
+                // PXToolkit maps the keys which no zone covers to a sample without a single frame,
+                // so that the device plays nothing on them
+                if (sampleData.getAudioMetadata ().getNumberOfSamples () == 0)
+                {
+                    emptySamples++;
+                    continue;
+                }
+                zone = createZone (filePath, sampleData, row);
+            }
+            catch (final IOException ex)
+            {
+                this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
                 continue;
-            final ISampleZone zone = createZone (filePath, sampleData, row);
+            }
 
             // The firmware reads 0 as the first number of a set
             int roundRobin = getInt (row, ProphetXTag.COLUMN_ROUND_ROBIN, ProphetXTag.NOT_SET);
@@ -269,6 +286,8 @@ public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
             groups.computeIfAbsent (groupNumber, number -> new DefaultGroup (number.intValue () == 0 ? "Group 1" : "Round Robin " + number)).addSampleZone (zone);
         }
 
+        if (emptySamples > 0)
+            this.notifier.log ("IDS_PROPHETX_EMPTY_SAMPLES", Integer.toString (emptySamples));
         if (groups.isEmpty ())
         {
             this.notifier.logError ("IDS_PROPHETX_NO_SAMPLES", sourceFile.getAbsolutePath ());

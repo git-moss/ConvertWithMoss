@@ -32,6 +32,8 @@ public class ProphetXTag
     public static final int                   NUM_USER_BANKS        = 32;
     /** The optional file next to the group file with one gain factor per velocity. */
     public static final String                VOLUME_FILE           = "Volume.txt";
+    /** The name of the empty sample which keeps the keys silent that no zone covers. */
+    public static final String                SILENCE_NAME          = "silence";
 
     /** The sample rate of the audio engine. The device ignores the sample rate of a WAV file. */
     public static final int                   SAMPLE_RATE           = 48000;
