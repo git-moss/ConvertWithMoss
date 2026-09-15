@@ -62,18 +62,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final String                               TAG_MATRIX_DST       = "MatrixDst";
 
-    /** The number of slots of the modulation matrix of the device. */
-    private static final int                                  MAX_MATRIX_SLOTS     = 40;
-    /** The number of low frequency oscillators of the device. */
-    private static final int                                  NUM_LFOS             = 6;
-    /** MatrixSrc: [7] "LFO 1" [8] "LFO 2" [9] "LFO 3" [10] "LFO 4" [11] "LFO 5" [12] "LFO 6". */
-    private static final int                                  MATRIX_SRC_FIRST_LFO = 7;
-    /** MatrixDst: [1] "Pitch" - the pitch of all three oscillators at once. */
-    private static final int                                  MATRIX_DST_PITCH     = 1;
-    /** MatrixDst: [117] "VCA" - the amplifier of the voice. */
-    private static final int                                  MATRIX_DST_VCA       = 117;
-    /** The pitch which one modulation matrix slot can reach, in semi-tones. */
-    private static final double                               MATRIX_PITCH_RANGE   = 24.0;
+    /** GlideRate: the value which the device uses when a patch does not store it. */
+    private static final double                               GLIDE_RATE_DEFAULT   = 0.15;
     /**
      * The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds.
      */
@@ -294,7 +284,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             return null;
         }
 
-        if (!this.readSampleMaps (in, file, multisampleSource, resources, parameters))
+        if (!this.readSampleMaps (in, file, multisampleSource, resources, parameters, version))
         {
             // Only a layer which plays no samples at all is skipped; a patch without any such
             // layer is reported by the caller
@@ -347,10 +337,11 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
      * @param multisampleSource Where to store the groups
      * @param resources The resource headers of the sample maps
      * @param parameters The parameters of the layer
+     * @param version The format version of the patch
      * @return True if the layer contains at least one sample map
      * @throws IOException Could not read the sample maps
      */
-    private boolean readSampleMaps (final InputStream in, final File file, final IMultisampleSource multisampleSource, final WaldorfQpatResourceHeader [] resources, final Map<String, WaldorfQpatParameter> parameters) throws IOException
+    private boolean readSampleMaps (final InputStream in, final File file, final IMultisampleSource multisampleSource, final WaldorfQpatResourceHeader [] resources, final Map<String, WaldorfQpatParameter> parameters, final long version) throws IOException
     {
         // Read all sample maps (max. 3, one for each oscillator)
         final byte [] resourcesData = in.readAllBytes ();
@@ -374,9 +365,22 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         // PolyMonoMode: [0] "Poly", [1] "Mono"
         final WaldorfQpatParameter polyMonoMode = parameters.get ("PolyMonoMode");
         if (polyMonoMode != null && polyMonoMode.value >= 0.5)
+        {
+            multisampleSource.setPolyphony (1);
             multisampleSource.setMonophonicLegato (true);
+        }
 
-        this.applyParameters (groupsArray, parameters);
+        // GlideOnOff: [0] "Off" [1] "On", GlideRate: [0..1] ~ [0..2] seconds. The device glides
+        // from the pitch of the previous note to the pitch of the new one in this time, whatever
+        // the interval (Iridium MK2 firmware 4.0.6)
+        final WaldorfQpatParameter glideOnOff = parameters.get ("GlideOnOff");
+        if (glideOnOff != null && glideOnOff.value >= 0.5)
+        {
+            final WaldorfQpatParameter glideRate = parameters.get ("GlideRate");
+            multisampleSource.setPortamentoTime (convertGlideTime (glideRate == null ? GLIDE_RATE_DEFAULT : glideRate.value));
+        }
+
+        this.applyParameters (groupsArray, parameters, version);
         return true;
     }
 
@@ -424,8 +428,9 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param groups The 3 groups, might contain null entries!
      * @param parameters The parameters to apply
+     * @param version The format version of the patch
      */
-    private void applyParameters (final IGroup [] groups, final Map<String, WaldorfQpatParameter> parameters)
+    private void applyParameters (final IGroup [] groups, final Map<String, WaldorfQpatParameter> parameters, final long version)
     {
         // The volume, gain and panning of the layer sit on top of the oscillators. LayerVolume:
         // [0..1] ~ [-inf dB..0 dB] with the law of the oscillator volume, LayerGain: [0..1] ~
@@ -507,7 +512,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             if (minNote > 0 || maxNote < 127)
                 clipKeyWindow (group, minNote, maxNote);
 
-            final Optional<IFilter> filter = parseFilter (parameters);
+            final Optional<IFilter> filter = parseFilter (parameters, version);
 
             final IEnvelope ampEnvelope = parseEnvelope (parameters, "AmpEnv", "AmpEnv");
             // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
@@ -516,9 +521,9 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             if (ampVeloAmountParameter != null)
                 ampVeloAmount = ampVeloAmountParameter.value * 2.0 - 1.0;
 
-            final Optional<IEnvelopeModulator> modulator = findPitchEnvelopeModMatrixEntry (parameters, i + 1);
-            final Optional<ILfoModulator> pitchLfoModulator = findPitchLfoModMatrixEntry (parameters, i + 1);
-            final Optional<ILfoModulator> amplitudeLfoModulator = findAmplitudeLfoModMatrixEntry (parameters);
+            final Optional<IEnvelopeModulator> modulator = findPitchEnvelopeModMatrixEntry (parameters, i + 1, version);
+            final Optional<ILfoModulator> pitchLfoModulator = findPitchLfoModMatrixEntry (parameters, i + 1, version);
+            final Optional<ILfoModulator> amplitudeLfoModulator = findAmplitudeLfoModMatrixEntry (parameters, version);
 
             // The oscillator volume, panning and tuning belong to the whole oscillator, which is
             // one group. Record them as the group offsets - the values are additionally flattened
@@ -572,9 +577,10 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
      * Parse all filter parameters.
      *
      * @param parameters The parameters
+     * @param version The format version of the patch
      * @return The parsed filter
      */
-    private static Optional<IFilter> parseFilter (final Map<String, WaldorfQpatParameter> parameters)
+    private static Optional<IFilter> parseFilter (final Map<String, WaldorfQpatParameter> parameters, final long version)
     {
         // FilterState: [0] "Active" [1] "Bypass" [2] "Off"
         final WaldorfQpatParameter filterStateParameter = parameters.get ("FilterState");
@@ -635,6 +641,14 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             cutoffEnvelopeModulator.setDepth (filterEnvAmountParameter.value * 2.0 - 1.0);
 
         cutoffEnvelopeModulator.setSource (parseEnvelope (parameters, "Filter1Env", "Filter1"));
+
+        final Optional<ILfoModulator> cutoffLfoModulator = findCutoffLfoModMatrixEntry (parameters, version);
+        if (cutoffLfoModulator.isPresent ())
+        {
+            final ILfoModulator lfoModulator = filter.getCutoffLfoModulator ();
+            lfoModulator.setDepth (cutoffLfoModulator.get ().getDepth ());
+            lfoModulator.setSource (cutoffLfoModulator.get ().getSource ());
+        }
 
         return Optional.of (filter);
     }
@@ -990,9 +1004,17 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static Optional<IEnvelopeModulator> findPitchEnvelopeModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters, final int oscIndex)
+    /**
+     * Find a modulation matrix slot which routes a free envelope to the pitch of an oscillator.
+     *
+     * @param parameters The parameters of the preset
+     * @param oscIndex The index of the oscillator [1..3]
+     * @param version The format version of the patch
+     * @return The pitch envelope, if there is one
+     */
+    private static Optional<IEnvelopeModulator> findPitchEnvelopeModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters, final int oscIndex, final long version)
     {
-        for (int i = 1; i <= MAX_MATRIX_SLOTS; i++)
+        for (int i = 1; i <= WaldorfQpatModulationMatrix.NUM_SLOTS; i++)
         {
             // MatrixOnOffX: [0] "Disabled" [1] "Active"
             final WaldorfQpatParameter isActiveParam = parameters.get ("MatrixOnOff" + i);
@@ -1001,23 +1023,25 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
             // MatrixSrcX: [4] "Free Env1" [5] "Free Env2" [6] "Free Env3"
             final WaldorfQpatParameter sourceParam = parameters.get ("MatrixSrc" + i);
-            if (sourceParam.value == 4.0 || sourceParam.value == 5.0 || sourceParam.value == 6.0)
+            if (sourceParam == null)
+                continue;
+            final int envelopeIndex = WaldorfQpatModulationMatrix.getSourceIndex (sourceParam) - WaldorfQpatModulationMatrix.SOURCE_FIRST_FREE_ENVELOPE + 1;
+            if (envelopeIndex < 1 || envelopeIndex > WaldorfQpatModulationMatrix.NUM_FREE_ENVELOPES)
+                continue;
+
+            // MatrixDstX: [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
+            if (!WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.getOscillatorPitchDestination (oscIndex), version))
+                continue;
+
+            // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
+            final double amount = getMatrixAmount (parameters, i);
+            if (amount != 0)
             {
-                // MatrixDstX: [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
-                final WaldorfQpatParameter destParam = parameters.get (TAG_MATRIX_DST + i);
-                if (destParam != null && destParam.value == oscIndex + 1.0)
-                {
-                    // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
-                    final double amount = getMatrixAmount (parameters, i);
-                    if (amount != 0)
-                    {
-                        final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (convertToPitchDepth (amount));
-                        final String prefix = "FreeEnv" + (int) (sourceParam.value - 3.0);
-                        final IEnvelope envelope = parseEnvelope (parameters, prefix, prefix);
-                        modulator.setSource (envelope);
-                        return Optional.of (modulator);
-                    }
-                }
+                final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (convertToPitchDepth (amount));
+                final String prefix = "FreeEnv" + envelopeIndex;
+                final IEnvelope envelope = parseEnvelope (parameters, prefix, prefix);
+                modulator.setSource (envelope);
+                return Optional.of (modulator);
             }
         }
 
@@ -1031,11 +1055,12 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param parameters The parameters of the preset
      * @param oscIndex The index of the oscillator [1..3]
+     * @param version The format version of the patch
      * @return The vibrato, if there is one
      */
-    private static Optional<ILfoModulator> findPitchLfoModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters, final int oscIndex)
+    private static Optional<ILfoModulator> findPitchLfoModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters, final int oscIndex, final long version)
     {
-        for (int i = 1; i <= MAX_MATRIX_SLOTS; i++)
+        for (int i = 1; i <= WaldorfQpatModulationMatrix.NUM_SLOTS; i++)
         {
             final int lfoIndex = getActiveLfoSource (parameters, i);
             if (lfoIndex < 0)
@@ -1043,17 +1068,14 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
             // MatrixDstX: [1] "Pitch" [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
             final WaldorfQpatParameter destParam = parameters.get (TAG_MATRIX_DST + i);
-            if (destParam == null || (destParam.value != MATRIX_DST_PITCH && destParam.value != oscIndex + 1.0))
+            if (!WaldorfQpatModulationMatrix.isDestination (destParam, WaldorfQpatModulationMatrix.DESTINATION_PITCH, version) && !WaldorfQpatModulationMatrix.isDestination (destParam, WaldorfQpatModulationMatrix.getOscillatorPitchDestination (oscIndex), version))
                 continue;
 
             final double amount = getMatrixAmount (parameters, i);
             if (amount == 0)
                 continue;
 
-            // One matrix slot reaches MATRIX_PITCH_RANGE semi-tones, the depth of the model covers
-            // IEnvelope#MAX_ENVELOPE_DEPTH cent
-            final double depth = amount * MATRIX_PITCH_RANGE * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
-            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, depth);
+            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, convertToPitchDepth (amount));
             if (modulator.isPresent ())
                 return modulator;
         }
@@ -1067,19 +1089,19 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
      * voice.
      *
      * @param parameters The parameters of the preset
+     * @param version The format version of the patch
      * @return The tremolo, if there is one
      */
-    private static Optional<ILfoModulator> findAmplitudeLfoModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters)
+    private static Optional<ILfoModulator> findAmplitudeLfoModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters, final long version)
     {
-        for (int i = 1; i <= MAX_MATRIX_SLOTS; i++)
+        for (int i = 1; i <= WaldorfQpatModulationMatrix.NUM_SLOTS; i++)
         {
             final int lfoIndex = getActiveLfoSource (parameters, i);
             if (lfoIndex < 0)
                 continue;
 
-            // MatrixDstX: [117] "VCA"
-            final WaldorfQpatParameter destParam = parameters.get (TAG_MATRIX_DST + i);
-            if (destParam == null || destParam.value != MATRIX_DST_VCA)
+            // MatrixDstX: "VCA"
+            if (!WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.DESTINATION_VCA, version))
                 continue;
 
             final double amount = getMatrixAmount (parameters, i);
@@ -1093,6 +1115,42 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             final double decibels = swing == 1.0 ? ILfoModulator.MAX_VOLUME_DEPTH : -convertToDecibels (1.0 - swing);
             final double depth = Math.clamp (decibels / ILfoModulator.MAX_VOLUME_DEPTH, 0, 1);
             final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, depth);
+            if (modulator.isPresent ())
+                return modulator;
+        }
+
+        return Optional.empty ();
+    }
+
+
+    /**
+     * Find a modulation matrix slot which routes a low frequency oscillator to the cutoff of the
+     * filter. The device adds the modulation to the cutoff in the units of Filter1CutOff, whose range
+     * covers {@link WaldorfQpatModulationMatrix#CUTOFF_RANGE} semi-tones.
+     *
+     * @param parameters The parameters of the preset
+     * @param version The format version of the patch
+     * @return The modulation of the cutoff, if there is one
+     */
+    private static Optional<ILfoModulator> findCutoffLfoModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters, final long version)
+    {
+        for (int i = 1; i <= WaldorfQpatModulationMatrix.NUM_SLOTS; i++)
+        {
+            final int lfoIndex = getActiveLfoSource (parameters, i);
+            if (lfoIndex < 0)
+                continue;
+
+            // MatrixDstX: "Filter1 Cutoff"
+            if (!WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.DESTINATION_FILTER1_CUTOFF, version))
+                continue;
+
+            final double amount = getMatrixAmount (parameters, i);
+            if (amount == 0)
+                continue;
+
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent
+            final double depth = amount * WaldorfQpatModulationMatrix.CUTOFF_RANGE * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, Math.clamp (depth, -1.0, 1.0));
             if (modulator.isPresent ())
                 return modulator;
         }
@@ -1118,9 +1176,10 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
         // MatrixSrcX: [7] "LFO 1" ... [12] "LFO 6"
         final WaldorfQpatParameter sourceParam = parameters.get ("MatrixSrc" + slot);
-        if (sourceParam == null || sourceParam.value < MATRIX_SRC_FIRST_LFO || sourceParam.value > MATRIX_SRC_FIRST_LFO + NUM_LFOS - 1)
+        if (sourceParam == null)
             return -1;
-        return (int) sourceParam.value - MATRIX_SRC_FIRST_LFO + 1;
+        final int lfoIndex = WaldorfQpatModulationMatrix.getSourceIndex (sourceParam) - WaldorfQpatModulationMatrix.SOURCE_FIRST_LFO + 1;
+        return lfoIndex < 1 || lfoIndex > WaldorfQpatModulationMatrix.NUM_LFOS ? -1 : lfoIndex;
     }
 
 
@@ -1234,15 +1293,28 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Convert the amount of a modulation matrix slot into the depth of a pitch modulation of the
-     * model. One slot of the matrix reaches {@link #MATRIX_PITCH_RANGE} semi-tones, while the depth
-     * of the model covers {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent.
+     * model. The device squares the amount of a pitch destination, see
+     * {@link WaldorfQpatModulationMatrix#PITCH_RANGE}, while the depth of the model covers
+     * {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent.
      *
      * @param amount The amount in the range of [-1..1]
      * @return The modulation depth in the range of [-1..1]
      */
     private static double convertToPitchDepth (final double amount)
     {
-        return amount * MATRIX_PITCH_RANGE * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+        return WaldorfQpatModulationMatrix.convertPitchAmountToSemitones (amount) * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+    }
+
+
+    /**
+     * Convert the glide rate into the time of the glide. The device glides for 2 x rate^2 seconds.
+     *
+     * @param rate The value of GlideRate in the range of [0..1]
+     * @return The time in seconds
+     */
+    private static double convertGlideTime (final double rate)
+    {
+        return 2.0 * rate * rate;
     }
 
 
@@ -1261,9 +1333,16 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
+    /**
+     * Convert the value of an attack, a decay or a release into its time. The sound engine plays the
+     * value x as 60 x 10^(3 (x - 1)) - 0.06 seconds, so 0 is instant (measured on an Iridium MK2
+     * with OS 4.0.6; the display of the device shows 59 ms more).
+     *
+     * @param x The parameter value in the range of [0..1]
+     * @return The time in seconds in the range of [0..59.94]
+     */
     private static double convertTime (final double x)
     {
-        // Converts [0..1] to [0..60] seconds
-        return 0.06 * Math.pow (1000, x);
+        return 0.06 * Math.pow (1000, x) - 0.06;
     }
 }
