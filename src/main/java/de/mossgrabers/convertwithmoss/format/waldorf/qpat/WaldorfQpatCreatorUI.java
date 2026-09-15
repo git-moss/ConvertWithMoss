@@ -18,6 +18,7 @@ import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.Tooltip;
@@ -37,7 +38,17 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private static final String QPAT_NUMBER_PREFIX       = "QPATNumberPrefix";
     private static final String QPAT_SHORT_FILE_NAMES    = "QPATShortFileNames";
     private static final String QPAT_NUMBER_PREFIX_START = "QPATNumberPrefixStart";
+    private static final String QPAT_LAYERS              = "QPATLayers";
+    /** The option which the layers option replaced, still read so that its setting is taken over. */
     private static final String QPAT_SECOND_LAYER        = "QPATUseSecondLayer";
+    /** The choices of the layers option: the maximum number of layers of a patch. */
+    private static final int [] LAYER_OPTIONS            =
+    {
+        1,
+        2,
+        3,
+        4
+    };
 
     private CheckBox            limitTo16441CheckBox;
     private TextField           authorField;
@@ -45,14 +56,14 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private CheckBox            numberPrefixCheckBox;
     private TextField           numberPrefixStartField;
     private CheckBox            shortFileNamesCheckBox;
-    private CheckBox            secondLayerCheckBox;
+    private ComboBox<String>    layersBox;
     private boolean             limitTo16441;
     private String              author                   = "";
     private String              bank                     = "";
     private boolean             numberPrefix;
     private int                 numberPrefixStart        = 0;
     private boolean             shortFileNames;
-    private boolean             useSecondLayer;
+    private int                 maximumLayers            = 1;
 
 
     /**
@@ -82,7 +93,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.numberPrefixStartField = panel.createPositiveIntegerField ("@IDS_QPAT_NUMBER_PREFIX_START");
         this.numberPrefixStartField.disableProperty ().bind (this.numberPrefixCheckBox.selectedProperty ().not ());
         this.shortFileNamesCheckBox = panel.createCheckBox ("@IDS_QPAT_SHORT_FILE_NAMES");
-        this.secondLayerCheckBox = panel.createCheckBox ("@IDS_QPAT_SECOND_LAYER");
+        this.layersBox = panel.createComboBox ("@IDS_QPAT_LAYERS", List.of (Functions.getText ("@IDS_QPAT_LAYERS_ONE"), Functions.getText ("@IDS_QPAT_LAYERS_TWO"), Functions.getText ("@IDS_QPAT_LAYERS_THREE"), Functions.getText ("@IDS_QPAT_LAYERS_FOUR")));
 
         final TitledSeparator separator = this.addWavChunkOptions (panel);
         separator.getStyleClass ().add ("titled-separator-pane");
@@ -100,7 +111,9 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.numberPrefixCheckBox.setSelected (config.getBoolean (QPAT_NUMBER_PREFIX, false));
         this.numberPrefixStartField.setText (Integer.toString (config.getInteger (QPAT_NUMBER_PREFIX_START, 0)));
         this.shortFileNamesCheckBox.setSelected (config.getBoolean (QPAT_SHORT_FILE_NAMES, false));
-        this.secondLayerCheckBox.setSelected (config.getBoolean (QPAT_SECOND_LAYER, false));
+        // The setting of the option which this one replaced is taken over
+        final int layers = config.getInteger (QPAT_LAYERS, config.getBoolean (QPAT_SECOND_LAYER, false) ? 2 : 1);
+        this.layersBox.getSelectionModel ().select (layersToIndex (layers));
 
         super.loadSettings (config);
     }
@@ -116,7 +129,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         config.setBoolean (QPAT_NUMBER_PREFIX, this.numberPrefixCheckBox.isSelected ());
         config.setInteger (QPAT_NUMBER_PREFIX_START, this.parseNumberPrefixStart ());
         config.setBoolean (QPAT_SHORT_FILE_NAMES, this.shortFileNamesCheckBox.isSelected ());
-        config.setBoolean (QPAT_SECOND_LAYER, this.secondLayerCheckBox.isSelected ());
+        config.setInteger (QPAT_LAYERS, LAYER_OPTIONS[selectedLayerIndex (this.layersBox)]);
 
         super.saveSettings (config);
     }
@@ -135,7 +148,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.numberPrefix = this.numberPrefixCheckBox.isSelected ();
         this.numberPrefixStart = this.parseNumberPrefixStart ();
         this.shortFileNames = this.shortFileNamesCheckBox.isSelected ();
-        this.useSecondLayer = this.secondLayerCheckBox.isSelected ();
+        this.maximumLayers = LAYER_OPTIONS[selectedLayerIndex (this.layersBox)];
         return true;
     }
 
@@ -174,7 +187,19 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
 
         this.shortFileNames = "1".equals (parameters.remove (QPAT_SHORT_FILE_NAMES));
 
-        this.useSecondLayer = "1".equals (parameters.remove (QPAT_SECOND_LAYER));
+        final String layersValue = parameters.remove (QPAT_LAYERS);
+        final String secondLayerValue = parameters.remove (QPAT_SECOND_LAYER);
+        if (layersValue == null || layersValue.isBlank ())
+            this.maximumLayers = "1".equals (secondLayerValue) ? 2 : 1;
+        else
+        {
+            this.maximumLayers = parseLayers (layersValue);
+            if (this.maximumLayers < 0)
+            {
+                notifier.logError ("IDS_QPAT_CLI_LAYERS", QPAT_LAYERS);
+                return false;
+            }
+        }
 
         return true;
     }
@@ -191,6 +216,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         parameterNames.add (QPAT_NUMBER_PREFIX);
         parameterNames.add (QPAT_NUMBER_PREFIX_START);
         parameterNames.add (QPAT_SHORT_FILE_NAMES);
+        parameterNames.add (QPAT_LAYERS);
         parameterNames.add (QPAT_SECOND_LAYER);
         return parameterNames.toArray (new String [parameterNames.size ()]);
     }
@@ -198,13 +224,13 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
 
     /**
      * Get the maximum number of layers to write into one patch. Each layer plays up to 3 sample
-     * maps, so one layer holds 3 groups of the source and two hold 6.
+     * maps, so one layer holds 3 groups of the source, two hold 6, three hold 9 and four hold 12.
      *
-     * @return The maximum number of layers: 1 or 2
+     * @return The maximum number of layers: 1 to 4
      */
     public int getMaximumLayers ()
     {
-        return this.useSecondLayer ? 2 : 1;
+        return this.maximumLayers;
     }
 
 
@@ -343,5 +369,51 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     public int getNumberPrefixStart ()
     {
         return this.numberPrefixStart;
+    }
+
+    /**
+     * Get the index of the selected layer option.
+     *
+     * @param box The combo box
+     * @return The index into LAYER_OPTIONS
+     */
+    private static int selectedLayerIndex (final ComboBox<String> box)
+    {
+        return Math.clamp (box.getSelectionModel ().getSelectedIndex (), 0, LAYER_OPTIONS.length - 1);
+    }
+
+
+    /**
+     * Get the index of the option which holds the given number of layers.
+     *
+     * @param layers The number of layers
+     * @return The index into LAYER_OPTIONS, the first one if the number is not an option
+     */
+    private static int layersToIndex (final int layers)
+    {
+        for (int i = 0; i < LAYER_OPTIONS.length; i++)
+            if (LAYER_OPTIONS[i] == layers)
+                return i;
+        return 0;
+    }
+
+
+    /**
+     * Parse the value of the layers parameter.
+     *
+     * @param value The value
+     * @return The number of layers or -1 if the value is not one of the options
+     */
+    private static int parseLayers (final String value)
+    {
+        try
+        {
+            final int layers = Integer.parseInt (value.trim ());
+            return LAYER_OPTIONS[layersToIndex (layers)] == layers ? layers : -1;
+        }
+        catch (final NumberFormatException _)
+        {
+            return -1;
+        }
     }
 }
