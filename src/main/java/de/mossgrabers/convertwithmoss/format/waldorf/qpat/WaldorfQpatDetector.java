@@ -86,6 +86,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
     private static final double                               LFO_MAXIMUM_ATTACK   = 10.0;
     /** From this phase on the device runs the low frequency oscillator freely. */
     private static final double                               LFO_FREE_PHASE       = 0.9986;
+    /** LayerGain: [0..1] ~ [0..24 dB], the additional gain of a layer (Iridium MK2 firmware). */
+    private static final double                               LAYER_GAIN_RANGE     = 24.0;
     /** The size of the header of a patch, which every layer of a patch has as well. */
     private static final int                                  HEADER_SIZE          = 512;
     /** The offset of the number of layers in the header. */
@@ -425,6 +427,25 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private void applyParameters (final IGroup [] groups, final Map<String, WaldorfQpatParameter> parameters)
     {
+        // The volume, gain and panning of the layer sit on top of the oscillators. LayerVolume:
+        // [0..1] ~ [-inf dB..0 dB] with the law of the oscillator volume, LayerGain: [0..1] ~
+        // [0..24 dB], LayerPan: [0..1] ~ [L..R]
+        double layerVolume = 0;
+        final WaldorfQpatParameter layerVolumeParameter = parameters.get ("LayerVolume");
+        if (layerVolumeParameter != null)
+        {
+            layerVolume = convertToDecibels (layerVolumeParameter.value);
+            if (layerVolume == Double.NEGATIVE_INFINITY)
+                this.notifier.logError ("IDS_QPAT_LAYER_SILENCED");
+        }
+        final WaldorfQpatParameter layerGainParameter = parameters.get ("LayerGain");
+        if (layerGainParameter != null)
+            layerVolume += layerGainParameter.value * LAYER_GAIN_RANGE;
+        double layerPanning = 0;
+        final WaldorfQpatParameter layerPanningParameter = parameters.get ("LayerPan");
+        if (layerPanningParameter != null)
+            layerPanning = layerPanningParameter.value * 2.0 - 1.0;
+
         for (int i = 0; i < groups.length; i++)
         {
             final IGroup group = groups[i];
@@ -450,27 +471,28 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             if (pitchbendParameter != null)
                 pitchbend = Math.round ((pitchbendParameter.value - 24) * 100);
 
-            // Osc1Keytrack: [0..1] ~ [-200..200]
-            double keyTracking = 100;
+            // Osc1Keytrack: [0..1] ~ [-200..200], 0.75 = +100 % is the default of the device
+            double keyTracking = 1;
             final WaldorfQpatParameter keyTrackingParameter = parameters.get ("Osc" + groupIndex + "Keytrack");
             if (keyTrackingParameter != null)
                 keyTracking = Math.clamp (keyTrackingParameter.value * 400.0 - 200.0, 0, 100) / 100.0;
 
             // Osc1Vol: [0..1] ~ [-inf dB..0.000 dB]
-            double volume = 0;
+            double volume = layerVolume;
             final WaldorfQpatParameter volumeParameter = parameters.get ("Osc" + groupIndex + "Vol");
             if (volumeParameter != null)
             {
-                volume = convertToDecibels (volumeParameter.value);
-                if (volume == Double.NEGATIVE_INFINITY)
+                final double oscillatorVolume = convertToDecibels (volumeParameter.value);
+                if (oscillatorVolume == Double.NEGATIVE_INFINITY)
                     this.notifier.logError ("IDS_QPAT_OSC_SILENCED", Integer.toString (groupIndex));
+                volume += oscillatorVolume;
             }
 
             // Osc1Pan: [0..1] ~ [L..R], 0.5 is the center which is 0 in the model
-            double panning = 0;
+            double panning = layerPanning;
             final WaldorfQpatParameter panningParameter = parameters.get ("Osc" + groupIndex + "Pan");
             if (panningParameter != null)
-                panning = panningParameter.value * 2.0 - 1.0;
+                panning = Math.clamp (panning + panningParameter.value * 2.0 - 1.0, -1.0, 1.0);
 
             // Osc1MinNote / Osc1MaxNote: [0..127] - the key window of the oscillator, which is used
             // for splits: a zone outside of the window is silent and one across its edge is cut at it
@@ -508,7 +530,11 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             for (final ISampleZone zone: group.getSampleZones ())
             {
                 zone.setTuning (zone.getTuning () + tune);
-                zone.setKeyTracking (keyTracking);
+                // The tracking of the oscillator only applies to an entry which follows the
+                // keyboard (its TrackPitch flag); an entry which the device plays at a fixed pitch
+                // stays at a fixed pitch
+                if (zone.getKeyTracking () != 0)
+                    zone.setKeyTracking (keyTracking);
                 zone.setBendUp (pitchbend);
                 zone.setBendDown (-pitchbend);
                 // The oscillator volume and panning are offsets on top of the gain and panning of
@@ -837,6 +863,16 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
     private void createSampleZone (final File parentFolder, final IGroup group, final String [] params, final String samplePath) throws IOException
     {
+        // An entry whose velocity window ends at 0 never plays: the device compares the velocity
+        // of a note as an integer from 0 to 127 against both ends of the window, and a note-on with
+        // the velocity 0 is a note-off. Such an entry only names a sample - this application writes
+        // them so that the importer of the device, which collects the samples to copy from the
+        // maps of the first layer only, copies the samples of the later layers as well
+        final int velocityLow = params.length > 5 ? parseVelocity (params[5]) : 0;
+        final int velocityHigh = params.length > 6 ? parseVelocity (params[6]) : 127;
+        if (velocityHigh <= 0 || velocityHigh < velocityLow)
+            return;
+
         final File sampleFile = new File (parentFolder, samplePath);
         final ISampleData sampleData = createSampleData (sampleFile, this.notifier);
 
@@ -872,15 +908,16 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         final double gain = Double.parseDouble (params[4]);
         zone.setGain (Math.floor (20.0 * Math.log10 (gain) * 100.0 + 0.5) * 0.01);
 
-        // FromVelo
+        // FromVelo - the device plays the softest note with the velocity 1, so a window from 0
+        // covers the same notes as one from 1
         if (params.length <= 5)
             return;
-        zone.setVelocityLow (Math.clamp (Integer.parseInt (params[5]), 1, 127));
+        zone.setVelocityLow (Math.clamp (velocityLow, 1, 127));
 
         // ToVelo
         if (params.length <= 6)
             return;
-        zone.setVelocityHigh (Math.clamp (Integer.parseInt (params[6]), 1, 127));
+        zone.setVelocityHigh (Math.clamp (velocityHigh, 1, 127));
 
         // Pan
         if (params.length <= 7)
@@ -928,9 +965,28 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         if (Integer.parseInt (params[13]) == 1)
             zone.setReversed (true);
 
-        // TrackPitch
+        // TrackPitch: [1] follows the keyboard, [0] plays the sample at its own pitch, [2] plays
+        // it at the pitch of the pitch column whatever the key. Every other value - the digits
+        // which the device appended to the last entry of a map without a terminator - plays at a
+        // fixed pitch too, so only the 1 tracks the keyboard
         if (params.length > 15)
-            zone.setKeyTracking (Double.parseDouble (params[15]));
+            zone.setKeyTracking (Double.parseDouble (params[15]) == 1 ? 1 : 0);
+    }
+
+
+    /**
+     * Parse a velocity of a sample map entry. The device accepts an integer from 0 to 127 and a
+     * fraction of the range, which it recognizes by its decimal point: 0.5 is the velocity 63.
+     *
+     * @param value The value of the column
+     * @return The velocity in the range of 0 to 127
+     */
+    private static int parseVelocity (final String value)
+    {
+        if (value.indexOf ('.') < 0)
+            return Integer.parseInt (value);
+        final double fraction = Math.clamp (Double.parseDouble (value), 0, 1);
+        return (int) (fraction * 127.0 + 0.0001);
     }
 
 
