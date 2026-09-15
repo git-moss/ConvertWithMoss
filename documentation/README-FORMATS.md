@@ -91,6 +91,7 @@ The following multi-sample formats are supported:
 * [Roland SP-404MK2](#roland-sp-404mk2)
 * [Roland ZEN-Core](#roland-zen-core)
 * [Sample files (AIFF, CAF, FLAC, NCW, OGG, WAV)](#sample-files-aiff-caf-flac-ncw-ogg-wav)
+* [Sequential Prophet X](#sequential-prophet-x)
 * [SFZ](#sfz)
 * [SoundFont 2](#soundfont-2)
 * [Spectrasonics Omnisphere 3](#spectrasonics-omnisphere-3)
@@ -863,6 +864,20 @@ WAV file can contain different sample formats. This converter supports (split) s
 ### Destination Options
 
 * Audio file format: The format of the written sample files: WAV, AIFF, CAF, CAF-ALAC (CAF compressed with Apple Lossless), CAF-AAC (lossy) or FLAC.
+
+## Sequential Prophet X
+
+The Prophet X and Prophet XL are hybrid synthesizers from Sequential whose sample engine plays multi-sampled instruments. An instrument is a folder which contains its samples as WAV files and a *group file* (ending *.grp*): a tab-separated table with a header line and one line per sample - the file name, the key and velocity range, the loop, the number in a round robin set, the frequency at which the sample sounds and whether it tracks the keyboard. An optional *Volume.txt* next to it holds one gain factor per velocity. The device imports such instruments from a USB drive as ZIP archives which lie in the folder *px/&lt;user bank&gt;/&lt;category&gt;/*, e.g. *px/u00/15 Synth/Rhodes.zip*, which is the layout that the official mapping utility of 8Dio creates. Sequential does not document the format; it was reverse-engineered from the OS 2.2.2 firmware, see *documentation/design/PROPHET_X_GRP_FORMAT.md*.
+
+Reading takes both plain instrument folders (via their group file) and the import archives. Each line becomes a zone with its key range, velocity range, loop, root key and fine tuning (both from the frequency), key tracking (a *Mono Pitch* sample plays untransposed on every key) and its round robin number, which puts the samples of a set into groups that play in turn. The category comes from the category folder in which the instrument lies, or from the *Category* column if it lies in none, and the name from the *Instrument Name* column. The velocity volumes of *Volume.txt* are fitted to the amplitude velocity modulation (depth and curve); without the file the device uses its built-in curve, which is left to the defaults.
+
+Writing creates, by default, the import archive in the USB layout: copy the *px* folder onto a USB drive which was formatted by the device, insert it into the sample import port and import the user bank from the Global menu of the device. The category is the closest one of the 17 categories of the device to the category of the source, unless one is selected. The samples are written as 16 bit / 48 kHz WAV files: the device ignores the sample rate of a file and plays everything at 48 kHz, so any other rate would sound transposed. A zone with a play range is cut to it, since the format has no play range. Only the first loop of a zone is written and always as a forward loop; a backwards or alternating loop and reversed playback are reported. Round robin and random zones get their number in their set and the device picks one of them at random; zones which trigger on release are skipped. The velocity response is written to *Volume.txt* if all zones share one which differs from the default of full, linear velocity. The mapping utility of the device allows at most 128 samples per instrument, more are reported but written. The programs of the device address an instrument by a UUID, which is derived from the bank, the category and the name, so a source which is converted again gives the same instrument. When a Prophet X instrument is converted to a Prophet X instrument again, enable the flat output, otherwise the *px* folder of the source is recreated below the destination folder and the new *px* folder lands inside it. Written instruments are not yet verified on hardware.
+
+### Destination Options
+
+* Category: The category of the device in which to store the instrument. *From the source* takes the closest one to the category of the source.
+* User bank: The user bank (u00 to u31) of the device in which to store the instrument.
+* Write the import archive: If enabled, the instrument is written as *px/&lt;bank&gt;/&lt;category&gt;/&lt;name&gt;.zip*, ready to be imported from a USB drive. If disabled, a plain folder with the group file and the samples is written instead.
 
 ## SFZ
 

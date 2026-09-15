@@ -5,6 +5,7 @@
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * New: Added support for the E-mu Emulator (1981), the first Emulator (HFE, EMUFD, IMG). Written disks are not yet verified on hardware.
 * New: Added support for the E-mu Emax and Emax II (EM1, EB1, EM2, EB2, EM1FD, EM2FD, EZ1, EZ2, IMG, ISO, HFE). Written banks are not yet verified on hardware.
+* New: Added support for the sample instruments of the Sequential Prophet X / XL (GRP, ZIP): the instrument folders with their group file and the ZIP archives which the device imports from a USB drive. Written instruments are not yet verified on hardware.
 * New: If no category could be detected, another attempt is made by using all group and zone names.
 * Fixed: The main window had a minimum size of 1280x840 pixels and therefore did not fit onto smaller screens like the 1366x768 pixels of many laptops - it opened larger than the screen and could not be made smaller. The minimum and the initial size of the window are now limited to the visible area of the screen.
 * Fixed: 32-bit float samples (e.g. the WAV files which DirectWave writes) were always converted to 16 bit, even though the log announced the 24 bit of the destination format. A float sample is now converted to the highest resolution the destination supports - 24 bit for e.g. SoundFont 2, Bliss, Tonverk, DirectWave and FLAC, 32 bit for ALAC - and keeps its float format for destinations without a restriction, e.g. when only the chunks of a WAV file are updated.

@@ -110,6 +110,8 @@ import de.mossgrabers.convertwithmoss.format.roland.sp404mk2.SP404Mk2Detector;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreCreator;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreDetector;
 import de.mossgrabers.convertwithmoss.format.samplefile.SampleFileDetector;
+import de.mossgrabers.convertwithmoss.format.sequential.prophetx.ProphetXCreator;
+import de.mossgrabers.convertwithmoss.format.sequential.prophetx.ProphetXDetector;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Creator;
 import de.mossgrabers.convertwithmoss.format.sf2.Sf2Detector;
 import de.mossgrabers.convertwithmoss.format.sfz.SfzCreator;
@@ -248,6 +250,7 @@ public class ConverterBackend
         this.detectors.add (new ZenCoreDetector (notifier));
         this.detectors.add (new SxtDetector (notifier));
         this.detectors.add (new SampleFileDetector (notifier));
+        this.detectors.add (new ProphetXDetector (notifier));
         this.detectors.add (new SfzDetector (notifier));
         this.detectors.add (new Sf2Detector (notifier));
         this.detectors.add (new OmnisphereDetector (notifier));
@@ -296,6 +299,7 @@ public class ConverterBackend
         this.creators.add (new ZenCoreCreator (notifier));
         this.creators.add (new SxtCreator (notifier));
         this.creators.add (new WavCreator (notifier));
+        this.creators.add (new ProphetXCreator (notifier));
         this.creators.add (new SfzCreator (notifier));
         this.creators.add (new Sf2Creator (notifier));
         this.creators.add (new OmnisphereCreator (notifier));
