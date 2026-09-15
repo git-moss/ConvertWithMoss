@@ -798,6 +798,9 @@ A written two-layer patch loads and its second layer carries its own filter and 
 * **Enumeration values between two options.** The display and the hint text round to the nearest
   option (fw); what the sound engine makes of a value such as the 0.5 which earlier versions of
   ConvertWithMoss wrote for *Exp alt* has not been checked. Writing the index avoids the question.
+* **`Expalt` curve value.** The enumeration index of *Exp alt* is 1; ConvertWithMoss writes 0.5 and
+  the device accepts the file, but how it rounds a non-integral enumeration value has not been
+  checked. Writing 1.0 matches the index.
 * **VCA destination scale.** The dB per percent of matrix destination 117 is derived from the level
   law and not measured on the device.
 * **Loop cross-fade unit.** Column 14 is a fraction and the device plays it (hw); whether it
