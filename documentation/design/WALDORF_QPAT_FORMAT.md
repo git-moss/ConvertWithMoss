@@ -332,11 +332,36 @@ entry therefore cannot be interpreted without the WAV it points to: a reader has
 (or at least its header) to turn the fractions back into frames, and a writer needs the frame count
 to produce them.
 
-A fraction with 8 decimals can land marginally *below* the frame it means: frame 3977 of 5469 is
-written as 0.72718961, and 0.72718961 x 5469 = 3976.99998. **Round to the nearest frame** when
-reading; truncating loses one frame on such positions. The device's own exports write fractions
-which land below the frame in exactly the same way (0.64510852 x 116785 = 75338.9985 for loop start
-75339), so the device rounds as well **(hw)**.
+**The scale is the last frame, not the frame count (fw).** The firmware (Iridium MK2 4.0.5) parses
+a fraction as a float and turns it into a frame in single precision - the voice start,
+`SampleMap::addSample` and the dozens of other places which use a position share one expression:
+
+```
+frame = (int) (0.001f + (float) (N - 1) * fraction)          N = frames of the sample
+```
+
+So 1.0 is the last frame, 0.5 of a 1001-frame sample is frame 500, and the value is truncated. The
+device's own conversion is the inverse: a sample loop imported from a WAV `smpl` chunk (or AIFF
+markers) is stored as `frame / (N - 1)`. The Iridium MK2 factory sets agree: 496 whole-file entries
+end at exactly `1.0`, and 48 of 56 loops which the device took over from `smpl` chunks read back
+as exactly those frames (the other 8 as the start one frame early - the single-precision product
+lands marginally below the frame, which is what the device plays).
+
+**Loops include their end frame (fw).** The looping renderer wraps once the position passes the
+loop end and wraps by `end - start + 1` frames; the sample end is the last frame played, too.
+
+Consequences for a writer and a reader:
+
+* A writer which divides by `N` places nearly every position **one frame early** on the device
+  (`(N - 1) * frame / N` truncates to `frame - 1` beyond the first 0.1 % of the sample), and a loop
+  which starts at the very beginning of a sample becomes one frame shorter.
+* Even `frame / (N - 1)` lands one frame early for some positions (7.5 % in a test over sample
+  lengths up to 8 million frames), because of the single precision. Write `(frame + 0.5) / (N - 1)` - the middle of the frame - with 8 decimals,
+  `0.0` for the first frame and `1.0` for the last: the formula above then gives exactly `frame` for
+  every sample shorter than about 7.5 million frames.
+* A reader should use the formula above, including the single precision, to get the frames the
+  device plays. The fractions of a patch saved by the device are the float values it parsed, so an
+  exported patch keeps whatever convention its original writer used.
 
 Keep every fraction inside `0..1`. Source data can point beyond the audio (loop points authored for
 a longer original, or a lossy file which decodes shorter than its loop points assume); written
@@ -384,8 +409,7 @@ concerns the pitch.
 Which patches are hit depends on the memory of the device, not on the file. Device exports can also be
 incomplete - samples referenced by the map but never written to the card, or written under a
 slightly different name (a `#` dropped) - so a missing sample is not necessarily the reader's fault.
-The device writes the end position of a whole-file entry as `(N - 1) / N` where ConvertWithMoss
-writes `1.0` (see "Open questions").
+The positions follow the scale of section 4.2 (the last frame is `1.0`).
 
 ## 5. Parameters
 
@@ -683,7 +707,8 @@ device-written), writing them has not.
   stop at the first empty line, split at TAB. Do not insist on all 16 columns - treat missing
   trailing columns as their defaults (no loop, forward, key-tracked).
 * Strip a drive prefix from the path, resolve it against the patch's folder, and use the WAV's frame
-  count to turn the fractions into frames - **rounded**, not truncated.
+  count to turn the fractions into frames like the firmware does (section 4.2):
+  `(int) (0.001f + (float) (N - 1) * fraction)`.
 * A patch without any type 4-6 resource is not sample based (wavetable, virtual analog, ...).
 * Apply `Osc{i}CoarsePitch`/`FinePitch`, `Osc{i}Vol` and `Osc{i}Pan` as offsets on top of every
   entry of the oscillator's map. An oscillator with `Osc{i}Vol` 0 is silent, whatever its map says.
@@ -710,9 +735,6 @@ device-written), writing them has not.
 * **`Expalt` curve value.** The enumeration index of *Exp alt* is 1; ConvertWithMoss writes 0.5 and
   the device accepts the file, but how it rounds a non-integral enumeration value has not been
   checked. Writing 1.0 matches the index.
-* **Sample end convention.** The device's own exports write the end of a whole-file entry as
-  `(N - 1) / N` (the last frame, inclusive) where ConvertWithMoss writes `1.0`; both load. Whether
-  the device treats the end as inclusive or exclusive has not been settled.
 * **VCA destination scale.** The dB per percent of matrix destination 117 is derived from the level
   law and not measured on the device.
 * **Loop cross-fade unit.** Column 14 is a fraction; whether the device relates it to the loop

@@ -707,6 +707,25 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Convert a position of a sample map into the frame which the device plays. The firmware
+     * (Iridium MK2 4.0.5) parses the fraction as a float and converts it in single precision:
+     * (int) (0.001f + (float) (frames - 1) x fraction). 1.0 is the last frame, and a loop plays its
+     * end frame - its length is end - start + 1.
+     *
+     * @param value The fraction as stored in the map
+     * @param numSampleFrames The number of frames of the sample
+     * @return The frame
+     */
+    private static int toFrame (final String value, final int numSampleFrames)
+    {
+        if (numSampleFrames <= 1)
+            return 0;
+        final float fraction = Math.clamp (Float.parseFloat (value), 0f, 1f);
+        return Math.clamp ((int) (0.001f + (numSampleFrames - 1) * fraction), 0, numSampleFrames - 1);
+    }
+
+
+    /**
      * Parses the sample map.
      *
      * @param sampleMap The sample map to parse
@@ -868,20 +887,17 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             return;
         zone.setPanning (Math.clamp (Double.parseDouble (params[7]) * 2.0 - 1.0, -1.0, 1.0));
 
-        // Start. The positions are stored as a fraction of the sample length with 8 decimal
-        // places, which can land just below the exact frame boundary (e.g. frame 3977 of 5469 is
-        // written as 0.72718961 and 0.72718961 * 5469 = 3976.9999787). The fraction must therefore
-        // be rounded to the nearest frame - truncating loses one frame for such positions. The
-        // device itself writes fractions which land marginally below the frame the same way, so
-        // rounding is also what the device does when it reads them back.
+        // Start. The positions are fractions of the sample, which the device converts into frames
+        // in single precision, see toFrame
         if (params.length <= 8)
             return;
-        zone.setStart ((int) Math.round (Double.parseDouble (params[8]) * numSampleFrames));
+        zone.setStart (toFrame (params[8], numSampleFrames));
 
         // End
         if (params.length <= 9)
             return;
-        zone.setStop ((int) Math.round (Double.parseDouble (params[9]) * numSampleFrames));
+        // The device plays the end frame, the stop of a zone is the frame behind it
+        zone.setStop (Math.min (toFrame (params[9], numSampleFrames) + 1, numSampleFrames));
 
         // LoopMode
         if (params.length <= 10)
@@ -895,11 +911,11 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
             // LoopStart
             if (params.length > 11)
-                loop.setStart ((int) Math.round (Double.parseDouble (params[11]) * numSampleFrames));
+                loop.setStart (toFrame (params[11], numSampleFrames));
 
             // LoopEnd
             if (params.length > 12)
-                loop.setEnd ((int) Math.round (Double.parseDouble (params[12]) * numSampleFrames));
+                loop.setEnd (toFrame (params[12], numSampleFrames));
 
             // CrossFade
             if (params.length > 14)
