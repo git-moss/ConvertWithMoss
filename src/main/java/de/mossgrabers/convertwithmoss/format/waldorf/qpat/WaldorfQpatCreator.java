@@ -9,9 +9,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -69,6 +71,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final String                                SLOPE_LINEAR           = "Lin";
     private static final String                                SLOPE_EXP              = "Exp";
     private static final String                                SLOPE_EXP_ALT          = "Exp alt";
+    /**
+     * The index of the option 'Exp alt' of the decay and release curves. The device turns the
+     * value of an enumeration into its option with rounding when it shows the option name; the
+     * index itself is unambiguous, whatever the sound engine does with a value in between.
+     */
+    private static final int                                   SLOPE_EXP_ALT_INDEX    = 1;
 
     /** The sample rate which the device plays and to which this creator re-samples. */
     private static final int                                   DESTINATION_SAMPLE_RATE = 44100;
@@ -80,6 +88,16 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final int                                   PARAMETER_SIZE         = 4 + 2 * WaldorfQpatConstants.MAX_STRING_LENGTH;
     /** The number of oscillators of one layer, each of which can play one sample map. */
     private static final int                                   MAX_OSCILLATORS        = 3;
+    /**
+     * The line feed and the NUL byte which end every sample map, like the maps the device writes;
+     * the device does not stop reading a map at its length.
+     */
+    private static final String                                MAP_TERMINATOR         = "\n\0";
+    /**
+     * The number of entries which a sample map of the device holds at most; every further entry is
+     * dropped (Iridium MK2 firmware 4.0.6, SampleMap::addSample).
+     */
+    private static final int                                   MAX_MAP_ENTRIES        = 1024;
     /**
      * The maximum number of layers which is written. The MK2 generation of the instruments stores
      * four layers, but that layer count has only ever been observed in files of the format version
@@ -265,14 +283,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         final String relativeSamplePath = "samples/" + sampleName;
 
-        final List<IGroup> splitGroups = splitLayers (this.combineSplitStereo (multisampleSource));
-        int maximumLayers = this.settingsConfiguration.getMaximumLayers ();
-        if (maximumLayers > 1 && !canLayersPlay (splitGroups, Math.clamp (maximumLayers, 1, MAX_LAYERS)))
-        {
-            this.notifier.log ("IDS_QPAT_NOTIFY_ONE_LAYER_SAMPLES");
-            maximumLayers = 1;
-        }
-        final List<List<IGroup>> layers = distributeToLayers (splitGroups, maximumLayers);
+        final List<List<IGroup>> layers = distributeToLayers (splitLayers (this.combineSplitStereo (multisampleSource)), this.settingsConfiguration.getMaximumLayers ());
         final List<IGroup> groups = new ArrayList<> ();
         for (final List<IGroup> layerGroups: layers)
             groups.addAll (layerGroups);
@@ -280,8 +291,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         if (layers.size () > 1)
             this.notifier.log ("IDS_QPAT_NOTIFY_LAYERS", Integer.toString (layers.size ()), Integer.toString (groups.size ()));
 
+        final List<String> shadowSamples = collectShadowSamples (layers);
+        if (!shadowSamples.isEmpty ())
+            this.notifier.log ("IDS_QPAT_NOTIFY_SHADOW_SAMPLES", Integer.toString (shadowSamples.size ()));
+
         final boolean doLimit = this.settingsConfiguration.limitTo16441 ();
-        this.storeMultisample (multisampleSource, multiFile, layers, relativeSamplePath, deviceName, doLimit ? OPTIMIZED_AUDIO_FORMAT.getMaxSampleRate () : -1);
+        this.storeMultisample (multisampleSource, multiFile, layers, shadowSamples, relativeSamplePath, deviceName, doLimit ? OPTIMIZED_AUDIO_FORMAT.getMaxSampleRate () : -1);
 
         // Store all samples
         final File sampleFolder = new File (destinationFolder, relativeSamplePath);
@@ -363,13 +378,15 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param multisampleSource The multi-sample source
      * @param multiFile The file in which to store
      * @param layers The layers
+     * @param shadowSamples The names of the samples which only the layers beyond the first
+     *            reference, see {@link #collectShadowSamples(List)}
      * @param relativeSamplePath The relative sample path
      * @param deviceName The name to write into the name field, which the device displays
      * @param targetSampleRate The sample rate to which the samples are converted when they are
      *            written, -1 if they keep their sample rate
      * @throws IOException Could not store the file
      */
-    private void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<List<IGroup>> layers, final String relativeSamplePath, final String deviceName, final int targetSampleRate) throws IOException
+    private void storeMultisample (final IMultisampleSource multisampleSource, final File multiFile, final List<List<IGroup>> layers, final List<String> shadowSamples, final String relativeSamplePath, final String deviceName, final int targetSampleRate) throws IOException
     {
         final IMetadata metadata = multisampleSource.getMetadata ();
         final String author = this.settingsConfiguration.getAuthor ();
@@ -406,11 +423,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // a full sustain and fold the sustain level into the zone gain instead.
             final double ampGainFold = computeFlatAmpEnvelopeLevel (groups);
             final List<WaldorfQpatParameter> parameters = createParameters (groups, ampGainFold < 1.0, numLayers > 1, multisampleSource.isMonophonicLegato ());
+            // The samples of the later layers are referenced from the first layer as well
+            final List<String> layerShadowSamples = i == 0 ? shadowSamples : Collections.emptyList ();
             final List<byte []> sampleMaps = new ArrayList<> ();
-            for (final String sampleMap: createSampleMaps (groups, relativeSamplePath, ampGainFold, targetSampleRate))
+            for (final String sampleMap: createSampleMaps (groups, relativeSamplePath, ampGainFold, targetSampleRate, layerShadowSamples))
                 sampleMaps.add (sampleMap.getBytes ());
             layerParameters.add (parameters);
             layerSampleMaps.add (sampleMaps);
+            this.checkMapSizes (groups, layerShadowSamples.size ());
 
             int size = HEADER_SIZE + parameters.size () * PARAMETER_SIZE;
             for (final byte [] sampleMap: sampleMaps)
@@ -497,41 +517,6 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Checks if the layers beyond the first can play at all. The device does not load a sample which
-     * is only referenced by a layer beyond the first: it reports "loading
-     * samples/&lt;patch&gt;/&lt;file&gt;.wav failed" for each such sample and that layer stays
-     * silent (tested on an Iridium MK2, firmware 4.0.6, from a power-on state so the volatile
-     * sample pool is not involved). A patch whose second layer brings samples of its own therefore
-     * does not play, while one whose second layer only re-uses the samples of the first does - the
-     * first layer has already loaded them. Writing a single layer instead keeps every zone: the
-     * groups which do not fit into the three oscillators are merged (see {@link #reduceGroups}),
-     * which costs the panning of a group but no sample and no zone.
-     *
-     * @param groups The groups, in the order in which they are distributed to the layers
-     * @param layers The number of layers the groups would be distributed to
-     * @return True if the layers beyond the first only reference samples of the first layer
-     */
-    private static boolean canLayersPlay (final List<IGroup> groups, final int layers)
-    {
-        final Set<String> firstLayerSamples = new HashSet<> ();
-        final Set<String> otherLayerSamples = new HashSet<> ();
-        final int maximumGroups = layers * MAX_OSCILLATORS;
-        for (int i = 0; i < groups.size (); i++)
-        {
-            // Everything which does not fit is merged into the last group which does, so those
-            // zones end up in the layer of that group
-            final int groupIndex = Math.min (i, maximumGroups - 1);
-            final Set<String> layerSamples = groupIndex < MAX_OSCILLATORS ? firstLayerSamples : otherLayerSamples;
-            for (final ISampleZone zone: groups.get (i).getSampleZones ())
-                // The zone name is what the sample map references, sanitized exactly as the sample
-                // file is written
-                layerSamples.add (FileUtils.createSafeFilename (zone.getName ()));
-        }
-        return firstLayerSamples.containsAll (otherLayerSamples);
-    }
-
-
-    /**
      * Distribute the groups across the layers of the patch. Each layer plays up to 3 groups, one on
      * each of its oscillators, so a patch reaches 3 groups with one layer and 6 with two. Groups
      * which do not fit into the available layers are added to the last group, as they are when only
@@ -602,10 +587,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      *            amplitude envelope's sustain level into the gain)
      * @param targetSampleRate The sample rate to which the samples are converted when they are
      *            written, -1 if they keep their sample rate
+     * @param shadowSamples The names of the samples which are added to the last map as entries
+     *            which never play, see {@link #collectShadowSamples(List)}
      * @return The sample maps
      * @throws IOException Could not read the necessary audio metadata of a sample
      */
-    private static List<String> createSampleMaps (final List<IGroup> groups, final String relativeSamplePath, final double gainFactor, final int targetSampleRate) throws IOException
+    private static List<String> createSampleMaps (final List<IGroup> groups, final String relativeSamplePath, final double gainFactor, final int targetSampleRate, final List<String> shadowSamples) throws IOException
     {
         final List<String> sampleMaps = new ArrayList<> ();
 
@@ -714,11 +701,110 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             // its memory to the TrackPitch flag of the last entry ('1' became e.g. '10', '19' or
             // '1000000'), and such an entry plays every key with the same pitch
             if (!sb.isEmpty ())
-                sb.append ("\n\0");
+                sb.append (MAP_TERMINATOR);
+            sampleMaps.add (sb.toString ());
+        }
+
+        if (!sampleMaps.isEmpty () && !shadowSamples.isEmpty ())
+        {
+            // The entries go in front of the line feed and the NUL which end the map
+            String lastMap = sampleMaps.removeLast ();
+            if (lastMap.endsWith (MAP_TERMINATOR))
+                lastMap = lastMap.substring (0, lastMap.length () - MAP_TERMINATOR.length ());
+            final StringBuilder sb = new StringBuilder (lastMap);
+            for (final String shadowSample: shadowSamples)
+            {
+                if (!sb.isEmpty ())
+                    sb.append ('\n');
+                appendShadowEntry (sb, relativeSamplePath, shadowSample);
+            }
+            sb.append (MAP_TERMINATOR);
             sampleMaps.add (sb.toString ());
         }
 
         return sampleMaps;
+    }
+
+
+    /**
+     * Collect the samples which only the layers beyond the first reference. When the device
+     * imports a patch, it copies the samples into its internal memory - but it collects them from
+     * the sample maps of the first layer only: the importer reads the resource table of the first
+     * header of the file, walks its maps and copies each file they name (Iridium MK2 firmware
+     * 4.0.6, PatchLib::importPatch). A sample which only a later layer names is never copied, and
+     * when the patch is loaded that layer reports 'loading samples/&lt;patch&gt;/&lt;file&gt;.wav
+     * failed' and stays silent - which is exactly what an Iridium MK2 showed for every two-layer
+     * patch whose second layer brought samples of its own, while a second layer which re-uses the
+     * samples of the first plays. The first layer therefore names every such sample in an entry
+     * which never plays, see {@link #appendShadowEntry(StringBuilder, String, String)}. Verified on
+     * an Iridium MK2 (4.0.6): with the entry a second layer plays its own sample after the import,
+     * without it the same patch fails to load that sample.
+     *
+     * @param layers The groups of each layer
+     * @return The names of the samples of the later layers which the first layer does not
+     *         reference, without the file ending, in the order of their first use
+     */
+    private static List<String> collectShadowSamples (final List<List<IGroup>> layers)
+    {
+        final Set<String> firstLayerSamples = new HashSet<> ();
+        final Set<String> shadowSamples = new LinkedHashSet<> ();
+        for (int i = 0; i < layers.size (); i++)
+            for (final IGroup group: layers.get (i))
+                for (final ISampleZone zone: group.getSampleZones ())
+                {
+                    // The zone name is what the sample map references, sanitized exactly as the
+                    // sample file is written
+                    final String name = SafeFileNames.create (zone.getName ());
+                    if (i == 0)
+                        firstLayerSamples.add (name);
+                    else if (!firstLayerSamples.contains (name))
+                        shadowSamples.add (name);
+                }
+        return new ArrayList<> (shadowSamples);
+    }
+
+
+    /**
+     * Append a sample map entry which names a sample but never plays. The importer of the device
+     * only needs the name of the file to copy it. The entry is made unplayable three times over:
+     * its velocity window is 0 to 0, which no note-on reaches - the device compares the velocity
+     * of a note as an integer from 0 to 127 against both ends of the window, and a note-on with
+     * the velocity 0 is a note-off - its gain is 0 and it covers only the key 0. The velocity
+     * window keeps the entry out of the lookup which picks the entries for a note, so it costs no
+     * voice and does not take part in the alternation of overlapping entries; the single key keeps
+     * it out of the per-key entry lists of the other keys, which hold at most 128 entries each.
+     *
+     * @param sb Where to append the entry
+     * @param relativeSamplePath The relative path to the samples
+     * @param sampleName The name of the sample without the file ending
+     */
+    private static void appendShadowEntry (final StringBuilder sb, final String relativeSamplePath, final String sampleName)
+    {
+        sb.append ('"').append (relativeSamplePath).append ('/').append (sampleName).append (".wav\"\t");
+        // Pitch, FromNote, ToNote, Gain, FromVelo, ToVelo, Pan
+        sb.append (formatMapDouble (60)).append ("\t0\t0\t").append (formatMapDouble (0)).append ("\t0\t0\t").append (formatMapDouble (0.5)).append ('\t');
+        // Start, End, LoopMode, LoopStart, LoopEnd, Direction, CrossFade, TrackPitch
+        sb.append (formatMapDouble (0)).append ('\t').append (formatMapDouble (1)).append ("\t0\t").append (formatMapDouble (0)).append ('\t').append (formatMapDouble (1)).append ("\t0\t").append (formatMapDouble (0)).append ("\t0");
+    }
+
+
+    /**
+     * Log a note for every sample map which holds more entries than the device accepts. The device
+     * stores at most {@link #MAX_MAP_ENTRIES} entries per map and drops every further one with the
+     * error 'Number of entries in sample map exceeded' (Iridium MK2 firmware 4.0.6,
+     * SampleMap::addSample).
+     *
+     * @param groups The groups of a layer, one sample map each
+     * @param shadowEntries The number of entries which are added to the last map
+     */
+    private void checkMapSizes (final List<IGroup> groups, final int shadowEntries)
+    {
+        for (int i = 0; i < groups.size (); i++)
+        {
+            final int entries = groups.get (i).getSampleZones ().size () + (i == groups.size () - 1 ? shadowEntries : 0);
+            if (entries > MAX_MAP_ENTRIES)
+                this.notifier.logError ("IDS_QPAT_NOTIFY_TOO_MANY_ENTRIES", Integer.toString (i + 1), Integer.toString (entries), Integer.toString (MAX_MAP_ENTRIES));
+        }
     }
 
 
@@ -1317,7 +1403,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             else if (decaySlope < 0)
             {
                 decaySlopeStr = SLOPE_EXP_ALT;
-                decaySlopeValue = 0.5;
+                decaySlopeValue = SLOPE_EXP_ALT_INDEX;
             }
             parameters.add (new WaldorfQpatParameter (slopePrefix + "DecayCurve", decaySlopeStr, (float) decaySlopeValue));
         }
@@ -1351,7 +1437,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             else if (decaySlope < 0)
             {
                 decaySlopeStr = SLOPE_EXP_ALT;
-                decaySlopeValue = 0.5;
+                decaySlopeValue = SLOPE_EXP_ALT_INDEX;
             }
             parameters.add (new WaldorfQpatParameter (slopePrefix + "DecayCurve", decaySlopeStr, (float) decaySlopeValue));
 
@@ -1367,7 +1453,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             else if (releaseSlope < 0)
             {
                 releaseSlopeStr = SLOPE_EXP_ALT;
-                releaseSlopeValue = 0.5;
+                releaseSlopeValue = SLOPE_EXP_ALT_INDEX;
             }
             parameters.add (new WaldorfQpatParameter (slopePrefix + "ReleaseCurve", releaseSlopeStr, (float) releaseSlopeValue));
         }

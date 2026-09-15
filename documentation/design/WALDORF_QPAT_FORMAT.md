@@ -110,6 +110,13 @@ lengths of maps 1 .. k-1". Because the offsets are relative to the end of the pa
 parameter record can be inserted or removed (and the count at 232 adjusted) without touching the
 table - the resource data only moves as a whole.
 
+The loader reads the resources **sequentially in the order of the table** (fw): for every entry
+with a type it reads `length` bytes from the current file position into its area at `offset`, so
+the data of the entries has to follow the parameter block in table order without gaps, which the
+accumulated offsets give. An offset or an end beyond 20 MB (0x1400000, the size of the resource
+area) is reported as "strange resource offset" and the entry is dropped. A file holds at most 4011
+parameter records; more are skipped with a note.
+
 ### 2.3 Parameter records (offset 512)
 
 ```
@@ -159,6 +166,12 @@ The parameter block, the resource table and the resource data have the same layo
 (`512 + 68 x count + resources` ends exactly at the next layer or at the end of the file in all
 6,357 files). What differs is which parameters exist and the meaning of some enumeration indices
 (section 5.2), plus the garbage in the header fields named above.
+
+The loader itself gates the header fields by the version (fw): up to version 4 it clears the
+resource table, up to version 6 the layer fields at 428-435, up to version 8 the instrument byte
+at 436 and up to version 14 the offsets of the layers 3 and 4 at 440 and 444 - which is why those
+fields hold garbage in old files without harm, and why a file of version 14 can carry two layers
+but never four.
 
 ### 2.6 Multi-layer patches
 
@@ -213,12 +226,12 @@ Per-layer parameters, stored inside each layer's own parameter block:
 |-----------|---------|
 | `TimbreMode` | the mode above; the same value in every layer |
 | `LayerActive` | version 15: 0 *Off*, 1 *Active*. Only meaningful in Split and Multi mode (manual). Earlier versions have no such parameter: every layer of a multi-layer patch sounds |
-| `LayerVolume` | 0..1, 1.0 = full level (law not verified) |
-| `LayerPan` | 0..1, 0.5 = center |
-| `LayerGain` | 0..1, 0 = none; an additional gain (law not verified) |
+| `LayerVolume` | 0..1, 1.0 = full level; `dB = 40 log10(x)`, the law of `Osc{i}Vol` (fw) |
+| `LayerPan` | 0..1, 0.5 = center (fw) |
+| `LayerGain` | 0..1; an additional gain of `24 x` dB, 0 = none (fw) |
 | `LayerVoices` | `value + 1` = the voices reserved for the layer (3 = *4*). The manual documents it for **Split mode** and warns that the sum over all active layers must not exceed the 16 voices of the instrument; in the corpus the sums are 14+2, 5+11 and 4x4 |
 | `LayerMinNote`, `LayerMaxNote` | version 15: the *Min Key* / *Max Key* of the manual, MIDI notes 0..127 (*C-2* .. *G8*), used in Split mode |
-| `LayerSplitMinKey`, `LayerSplitMaxKey` | the older key window, 0..60 with the hints *C1* .. *C6* - five octaves rather than the full range. Which MIDI note the 0 stands for is **not** verified, so a reader should prefer `LayerMinNote`/`LayerMaxNote` where they exist |
+| `LayerSplitMinKey`, `LayerSplitMaxKey` | the older key window, 0..60 with the hints *C1* .. *C6* - five octaves rather than the full range. The device names the MIDI note 60 *C3* (`LayerMinNote` 0 is *C-2*), so the 0 stands for C1 = **MIDI 36** and a value `v` is the note `36 + v` (fw). Prefer `LayerMinNote`/`LayerMaxNote` where they exist |
 | `MultiAllocMode` | version 15: 0 = *Layered*, and the *Round Robin* / *Random Robin* cycling next to it (manual) |
 | `MultiArpMode` | version 15: 0 = *Individual Layer*, or the arpeggiator of one layer driving all of them |
 
@@ -295,7 +308,9 @@ what the hardware tests referenced in this document were run with.
 ### 4.1 Columns
 
 A sample map is a **TAB separated text table**, one line per map entry, every line ended by `\n`,
-no header line, and a NUL byte after the last line (4.4). A line has 16 columns:
+no header line, and a NUL byte after the last line (4.4). A line has 16 columns (the device parses
+them with `sscanf` and the format `"%[^"]" %f %d %d %f %s %s %f %f %f %d %f %f %d %f %d`, so any
+white space separates the columns and an unquoted path may not contain a space) (fw):
 
 | # | column | content | encoding |
 |--:|--------|---------|----------|
@@ -304,8 +319,8 @@ no header line, and a NUL byte after the last line (4.4). A line has 16 columns:
 | 2 | FromNote | lowest key | integer 0-127 |
 | 3 | ToNote | highest key | integer 0-127, inclusive |
 | 4 | Gain | level | **linear amplitude factor**: 1.0 = 0 dB, `10^(dB/20)` |
-| 5 | FromVelo | lowest velocity | integer 0-127 |
-| 6 | ToVelo | highest velocity | integer 0-127, inclusive |
+| 5 | FromVelo | lowest velocity | integer 0-127, or a fraction with a decimal point: `0.5` is read as `(int) (0.5 x 127 + 0.0001)` = 63 (fw) |
+| 6 | ToVelo | highest velocity | integer 0-127, inclusive; a fraction as above. The velocity of a note is compared as an integer against both ends, so a window `0 0` never plays: a note-on with the velocity 0 is a note-off (fw) |
 | 7 | Pan | panning | 0.0 = left, 0.5 = center, 1.0 = right; **the device ignores this column** (hw) - pan with `Osc{i}Pan` instead |
 | 8 | Start | sample start | fraction 0..1 of the file length (4.2) |
 | 9 | End | sample end | fraction 0..1 |
@@ -313,10 +328,16 @@ no header line, and a NUL byte after the last line (4.4). A line has 16 columns:
 | 11 | LoopStart | loop start | fraction 0..1 |
 | 12 | LoopEnd | loop end | fraction 0..1 |
 | 13 | Direction | 0 = forward, 1 = reverse | integer |
-| 14 | CrossFade | loop cross-fade | 0..1; what length the fraction refers to is not verified (see "Open questions") |
-| 15 | TrackPitch | 1 = the entry follows the keyboard, 0 = fixed pitch | integer |
+| 14 | CrossFade | loop cross-fade | 0..1; played by the device **(hw)**: a loop whose wrap jumps a quarter of a sine period clicks without it and does not click with 0.5 - but the blend is not constant-power, the level dips once per loop cycle (the same loop with an equal-power cross-fade rendered into the audio plays at a steady level). What length the fraction refers to is not verified; device-written maps fit a loop-relative reading (see "Open questions") |
+| 15 | TrackPitch | 1 = the entry follows the keyboard, 0 = fixed pitch, 2 = plays at the pitch of the pitch column whatever the key is; any other value plays at a fixed pitch (fw) | integer |
 
-Floating point columns are written with 8 decimal places (`%.8f`), integers plain.
+Floating point columns are written with 8 decimal places (`%.8f`), integers plain. A line may be
+up to 2000 bytes long and a path up to 1023 characters; a map holds at most **1024 entries** and a
+key at most 128 of them, everything beyond is dropped with the error "Number of entries in sample
+map exceeded" (fw). Missing trailing columns take the defaults pitch 60, keys 0-127, gain 1,
+velocities 0-127, pan 0.5, start 0, end 1, no direction and cross-fade, key tracking on - and a
+missing loop mode (fewer than 11 columns) makes the device take the loop of the `smpl` chunk of the
+WAV (fw). A pitch of -1000 stands for the root note of the WAV.
 
 **Entries which overlap alternate; they do not stack (hw).** Two entries of the *same* map whose key
 *and* velocity ranges overlap are played one after the other on successive notes - a round robin -
@@ -366,6 +387,12 @@ Consequences for a writer and a reader:
 Keep every fraction inside `0..1`. Source data can point beyond the audio (loop points authored for
 a longer original, or a lossy file which decodes shorter than its loop points assume); written
 unclamped, a negative or huge value makes the device show its *Locate Samples* screen **(hw)**.
+
+**A loop plays where the map states it, whatever the start of the entry (hw).** An entry which
+starts 22,050 frames into its sample and loops the audio behind that point plays exactly that
+loop on an Iridium MK2. A reading of the voice set-up in the firmware, which seemed to subtract
+the start frame twice from the loop points, predicted the loop to be pulled forward by the start
+and was wrong: the device compensates it somewhere else in the render path.
 
 ### 4.3 Sample paths and drives
 
@@ -495,8 +522,10 @@ zero at that moment. Measured on the device, **0.07 s is the shortest stage whic
 click** **(hw)**. See section 7.2 for how to choose between 0 and 0.07 s.
 
 Curve types: *Exp* and *RC* (attack) / *Exp alt* (decay, release) are the two curved variants, *Lin*
-is linear. Files written by ConvertWithMoss carry **0.5** instead of 1 for *Exp alt*; a reader
-should accept any value other than 0 and 2 as *Exp alt* (see "Open questions").
+is linear. Write the option index. The device rounds the value of an enumeration to the nearest
+index when it shows the option name and when it saves the hint text (fw); earlier versions of
+ConvertWithMoss wrote **0.5** for *Exp alt*, so a reader should accept any value other than 0 and 2
+as *Exp alt*.
 
 ### 5.6 Free envelopes
 
@@ -642,6 +671,20 @@ All of these were found by loading written patches on an Iridium **(hw)**:
 * **Pan with `Osc{i}Pan`**; the map's pan column does nothing.
 * **Filter**: `FilterState` must be 0 for the `Filter1*` parameters to matter.
 
+And these were read from the firmware of the Iridium MK2 (4.0.6) **(fw)**:
+
+* **The importer copies the samples of the first layer only** (7.5, confirmed on the device). Name
+  every sample of a later layer in a map of the first layer as well.
+* **A cross-fade of 50 % pumps** when the two ends of the loop do not match (4.1): the blend of
+  the device is not constant-power. Keep cross-fades short, or render an equal-power cross-fade
+  into the audio and write 0.
+* **At most 1024 entries per map** (4.1); a larger multi-sample has to be split over the
+  oscillators or the layers.
+* **A missing parameter is set to its default**, not left at the value of the previously loaded
+  patch: the loader fills every parameter which the file does not name with its default value
+  before the patch is applied. Writing every parameter of a feature is still the safe rule, since
+  the defaults are the ones of the firmware version which loads the file.
+
 ### 7.3 Sample files
 
 Standard WAV files. Every hardware test used **16-bit PCM at 44.1 kHz**; the device also plays
@@ -691,8 +734,23 @@ The mechanics:
 4. Write `TimbreMode` (2 for Multi), `MultiAllocMode` = 0 and `LayerActive` = 1 into every sounding
    layer.
 
-None of this has been confirmed on hardware yet - reading multi-layer patches has (the corpus is
-device-written), writing them has not.
+When the device **imports** a patch it copies the patch into its patch memory and the samples into
+its sample memory - but it collects the samples from the sample maps of the **first layer only**:
+the importer reads the resource table of the first header of the file, walks its maps and copies
+each file they name (fw, `PatchLib::importPatch`). A sample which only a later layer names is never
+copied, and when the patch is loaded that layer reports *loading samples/<patch>/<file>.wav failed*
+and stays silent, while a later layer which only re-uses the samples of the first plays **(hw)**.
+So name every sample of the later layers in a map of the first layer as well, in an entry which
+never plays: ConvertWithMoss appends such entries to the last map of the first layer with the
+velocity window `0 0` (a note-on with the velocity 0 is a note-off, and the device compares the
+velocity as an integer against both ends, so the entry is never picked for a note and costs no
+voice), a gain of 0 and the key range `0 0`, which keeps it out of the entry lists of the other
+keys. Verified on an Iridium MK2 with OS 4.0.6 **(hw)**: a two-layer test patch whose second layer
+brings a sample of its own plays both layers after the import, while the same patch without the
+entry fails with *loading samples/.../L2_saw_octave.wav failed*.
+
+A written two-layer patch loads and its second layer carries its own filter and amplitude envelope
+**(hw)**; the samples of the second layer were the open problem described above.
 
 ## 8. Reading a patch
 
@@ -709,9 +767,14 @@ device-written), writing them has not.
 * Strip a drive prefix from the path, resolve it against the patch's folder, and use the WAV's frame
   count to turn the fractions into frames like the firmware does (section 4.2):
   `(int) (0.001f + (float) (N - 1) * fraction)`.
+* Read a velocity with a decimal point as a fraction of the range (4.1), skip an entry whose
+  velocity window ends at 0 (it only names a sample for the importer), and read only a TrackPitch
+  of 1 as key tracking - a 2 and the garbage values behind an unterminated map play at a fixed
+  pitch.
 * A patch without any type 4-6 resource is not sample based (wavetable, virtual analog, ...).
 * Apply `Osc{i}CoarsePitch`/`FinePitch`, `Osc{i}Vol` and `Osc{i}Pan` as offsets on top of every
-  entry of the oscillator's map. An oscillator with `Osc{i}Vol` 0 is silent, whatever its map says.
+  entry of the oscillator's map, and `LayerVolume`, `LayerGain` and `LayerPan` on top of the
+  oscillators (2.6). An oscillator with `Osc{i}Vol` 0 is silent, whatever its map says.
 * Take the filter only when `FilterState` is 0; the saturated and dirty variants of `Filter12Type`
   can be reduced to their plain type.
 * Scan the 40 matrix slots: an active slot with a free envelope source and an oscillator's pitch as
@@ -724,21 +787,26 @@ device-written), writing them has not.
   points at a magic, then parse that layer exactly like the first (its resource offsets are relative
   to its own parameter block). In version-15 files drop the layers whose `LayerActive` is 0. In
   split mode (`TimbreMode` 1) the key window of a layer is `LayerMinNote`/`LayerMaxNote`, which are
-  MIDI notes; the older `LayerSplitMinKey`/`MaxKey` run 0..60 over five octaves and their base note
-  is not verified. Ignore the layer fields in the headers of the later layers.
+  MIDI notes; the older `LayerSplitMinKey`/`MaxKey` run 0..60 over five octaves from MIDI 36 (C1).
+  Ignore the layer fields in the headers of the later layers.
 * Read the layer mode at 430 only when 428 is non-zero, the instrument byte at 436 only from version
   9 on, and the bytes 437-511 only as the two offsets of a code-2 file: older files hold garbage in
   all of them (section 2.5).
 
 ## 9. Open questions
 
+* **Enumeration values between two options.** The display and the hint text round to the nearest
+  option (fw); what the sound engine makes of a value such as the 0.5 which earlier versions of
+  ConvertWithMoss wrote for *Exp alt* has not been checked. Writing the index avoids the question.
 * **`Expalt` curve value.** The enumeration index of *Exp alt* is 1; ConvertWithMoss writes 0.5 and
   the device accepts the file, but how it rounds a non-integral enumeration value has not been
   checked. Writing 1.0 matches the index.
 * **VCA destination scale.** The dB per percent of matrix destination 117 is derived from the level
   law and not measured on the device.
-* **Loop cross-fade unit.** Column 14 is a fraction; whether the device relates it to the loop
-  length or to the sample length is not verified.
+* **Loop cross-fade unit.** Column 14 is a fraction and the device plays it (hw); whether it
+  relates to the loop length or to the sample length is not verified. Device-written maps fit a
+  loop-relative reading (521 looped entries with a cross-fade on one card: 517 fit in front of the
+  loop start relative to the loop length, 61 relative to the sample length).
 * **Envelope time law.** The firmware's display formatter differs from the law above by a constant 1
   ms; whether the audio engine uses the display law or a neighbouring variant which subtracts in the
   normalized domain (59 ms different at the fast end) is inferred, not measured. The firmware also
@@ -746,27 +814,25 @@ device-written), writing them has not.
   before measuring envelope times on the device.
 * **Layers.** Three-layer files and layer count codes other than 1 and 2 have not been observed;
   whether an MK2 can write code 1, and whether a first-generation instrument accepts code 2, is
-  unknown. The laws of `LayerVolume` and `LayerGain` are not verified, and the base note of
-  `LayerSplitMinKey`/`MaxKey` (0..60) is not pinned down. Writing a multi-layer patch has not been
-  tried on hardware.
+  unknown. The loader accepts the codes 1, 2 and 3 as "more than one layer" and loads the layers 3
+  and 4 for the codes 2 and 3 (fw). A written two-layer patch loads and, with the entries of
+  section 7.5, plays its own samples in the second layer (hw).
 * **Oscillator type indices.** *Off* is 5 in versions 9-11 and 6 in version 15; how an instrument
   interprets the index of a file of another version (e.g. a version-14 file with `Osc2Type` = 5 on
   an MK2) is untested - hence the advice to write nothing for unused oscillators.
 * **Resource type 7.** Seen only in MK2 patches which use the Param Sequence; the content (9 byte
   records of u8, u32, f32 - by their values a step, a parameter id and a value) is not decoded.
-* **Absent parameters.** Whether the device resets a parameter which a file does not contain, or
-  keeps the value of the previously loaded patch, is only partly answered: a second layer which
-  writes no `Osc2Type`/`Osc3Type` shows both oscillators as *Off* on the device rather than whatever
-  the previous patch had (hw, Iridium MK2, 2026-08-22), so at least those are reset to their
-  default. Whether that holds for every parameter has not been tested.
-* **Velocity column range.** ConvertWithMoss writes 0 for an open lower bound and the device loads
-  it; whether the device distinguishes 0 from 1 is unknown.
+* **Where the start of an entry is compensated.** The voice set-up of the Normal mode subtracts
+  the start frame twice from the loop points (4.2), yet the loop plays in place; the part of the
+  render path which puts it back has not been found.
 * **Header padding** (the u16 at 234, the 3 bytes at 437 and the 64 bytes at 448) is unknown; write
   zeros.
 * **Not covered by this document**: wavetable resources (types 1-3) and the non-Particle oscillator
-  types, filter 2 and the saturated/dirty filter variants, the other matrix sources and
-  destinations, split key windows (`Osc{i}MinNote`/`MaxNote`), the *Global* and *Single Trig* LFO
-  modes, tempo-synchronized LFOs, writing multi-layer files.
+  types, the granular sample modes (`Osc{i}ParticleSampleMode` 0 *Granular* and 1 *Live Granular*),
+  the selection rule for overlapping entries (`Osc{i}ParticleSelectionRule`: *Round Robin*,
+  *Reverse Robin*, *Ping Pong*, *Random Robin*, *Random*, *None*), filter 2 and the saturated/dirty
+  filter variants, the other matrix sources and destinations, split key windows
+  (`Osc{i}MinNote`/`MaxNote`), the *Global* and *Single Trig* LFO modes, tempo-synchronized LFOs.
 
 ## Appendix: how ConvertWithMoss maps the format
 
@@ -776,9 +842,10 @@ For readers who want to compare an implementation against ConvertWithMoss (`Wald
 * **Reading**: one layer -> one multi-sample, the layers after the first named `<name> 2`,
   `<name> 3`, `<name> 4`. Both layer counts are followed, a layer whose `LayerActive` is 0 is
   skipped, an unknown resource type is skipped and a layer without a sample map no longer discards
-  the layers which have one. The remaining `Layer*` parameters (volume, pan, gain, key windows) are
-  not applied yet. One sample map -> one group named *Sample Map 1/2/3*; filter, amplifier envelope,
-  velocity amount, vibrato and tremolo of the layer are applied to every zone. The four attributes
+  the layers which have one. `LayerVolume`, `LayerGain` and `LayerPan` are applied to the zones of
+  the layer, the key windows of a layer are not. One sample map -> one group named *Sample Map
+  1/2/3*; filter, amplifier envelope, velocity amount, vibrato and tremolo of the layer are applied
+  to every zone. An entry whose velocity window ends at 0 is skipped. The four attributes
   are fed through its keyword detector to derive a category and keywords; author -> creator, bank ->
   description. Matrix pitch amounts are scaled to its model's depth of 12000 cents
   (`depth = amount x 24 x 100 / 12000`), the VCA amount to its 96 dB volume depth.
@@ -791,7 +858,8 @@ For readers who want to compare an implementation against ConvertWithMoss (`Wald
   instead (section 4.1). Everything beyond the first layer is written in the Multi/Layered mode. The
   common gain and panning of a group go to `Osc{i}Vol` / `Osc{i}Pan`, the remainder into the map.
   Filter, amplifier envelope, velocity and LFOs are taken from the first zone of the first group;
-  the pitch envelope from the first zone of each group.
+  the pitch envelope from the first zone of each group. The samples of the later layers are named
+  in the last map of the first layer in entries which never play (7.5).
 * **Policies**: the de-click and flat-envelope rules of section 7.2; hold + decay are added into the
   Decay stage; a pitch envelope which starts at a level is written as attack 0 and a decay of the
   source's attack time; the preset name drops a leading bank because the bank field holds it (unless
