@@ -296,9 +296,9 @@ public class ProphetXCreator extends AbstractWavCreator<ProphetXCreatorUI>
     private String createGroupFile (final List<ISampleZone> zones, final String name, final int category, final String bank) throws IOException
     {
         final String categoryName = ProphetXTag.CATEGORY_NAMES[category];
-        // The programs of the device address an instrument by its UUID and fall back to its name,
-        // therefore the UUID is derived from the name and the location of the instrument: a source
-        // which is converted again gives the same instrument
+        // The device identifies an instrument by its UUID and falls back to its name, therefore
+        // the UUID is derived from the name and the location of the instrument: a source which is
+        // converted again gives an instrument with the same identity
         final String uuid = UUID.nameUUIDFromBytes ((bank + "/" + categoryName + "/" + name).getBytes (StandardCharsets.UTF_8)).toString ().replace ("-", "");
 
         final List<String []> rows = new ArrayList<> ();

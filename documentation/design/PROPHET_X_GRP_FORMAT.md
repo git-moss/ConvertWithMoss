@@ -52,10 +52,11 @@ Instruments live on the internal drive:
 * `/hd/<group>/GroupInfo.txt` only caches the size of the group (`Group Size: <bytes>`); it is not
   part of an instrument.
 
-The instrument dictionary (`CInstrumentDictionary::Find`) looks an instrument up by its 16-byte
-UUID first and falls back to its name, which is how programs reference the instruments they play.
-ConvertWithMoss therefore writes a UUID which is derived (version 3, name-based) from the user
-bank, the category and the name, so converting a source again yields the same instrument.
+The instrument dictionary (`CInstrumentDictionary::Find`) identifies an instrument either by its
+group, category and index or by its 16-byte UUID with a fallback to its name (the programs
+themselves store category and index, see the end of this document). ConvertWithMoss writes a UUID
+which is derived (version 3, name-based) from the user bank, the category and the name, so
+converting a source again yields an instrument with the same identity.
 
 ## Import from USB
 
@@ -164,3 +165,32 @@ the model (depth 1, linear), so that an unspecified source keeps the built-in ta
 * 16-bit PCM only (`Only support 16-bit mono or stereo sample files`), one or two channels.
 * Any sample rate is accepted but ignored, see above: use 48 kHz.
 * The frame count is `data size / 2 / channels`.
+
+## What the instrument cannot carry: modulation
+
+Envelopes, the filter, the LFOs, the modulation matrix, glide, unison, pitch bend and the loop
+playback modes are parameters of the *program* which plays an instrument, so a converted
+multi-sample loses them unless a program is written as well. What is known about programs, from
+the User's Guide 1.2 (Appendix E) and the factory bank `PX_Programs_v2.0.syx`:
+
+* A program is transmitted as `F0 01 30 02 <bank 0-9> <program 0-99> <data> F7` (edit buffer:
+  `F0 01 30 03 <data> F7`), the data being 4096 bytes in the DSI "packed MS bit" format (8 MIDI
+  bytes per 7 data bytes, 4683 MIDI bytes).
+* The NRPN number of a parameter is its byte offset in the data: layer A at 0-2047, layer B at
+  2048-4095, parameters with a range above 255 (`Inst1Start` 0-999 etc.) take two bytes, little
+  endian. The program name is 20 characters at offset 418 (2466 for layer B).
+* A program references its two instruments per layer by `InstNCategory` (0-16) and `InstNSelect`
+  (0-99), i.e. by the index of the instrument inside its category folder - which is the alphabetical
+  position among whatever the user has installed there. No UUID or name is stored in the program;
+  the group (user bank) of a user instrument is an OS 2.x addition whose offset the 1.2 manual does
+  not list (all factory programs reference group `f00`).
+* The programs are stored and imported by the panel processor; the OS image analysed here only
+  forwards `PxPrograms.prg` from the USB drive to it and reports `.syx` files found in
+  `px/<group>/`. Loading a program file therefore goes through a SysEx librarian (or that folder),
+  not through the instrument import.
+
+Writing such a program per converted instrument is possible (amplitude envelope, filter, two LFOs
+as vibrato and tremolo, velocity to amplifier, bend range, glide, mono mode, program name), but
+the value laws (envelope times, LFO rates, cutoff) still need calibration and the instrument index
+only holds as long as nothing else is installed in front of it in that category. It is not
+implemented.
