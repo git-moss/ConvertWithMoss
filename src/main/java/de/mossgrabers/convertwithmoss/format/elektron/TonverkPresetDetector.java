@@ -28,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
@@ -188,9 +189,16 @@ public class TonverkPresetDetector extends AbstractDetector<MetadataSettingsUI>
                 }
                 if (zones.isEmpty ())
                     continue;
+                // Several samples in one velocity layer alternate on successive notes: a round
+                // robin. Only the play logic tells the creators that these zones never sound at
+                // the same time, the sequence position alone does not.
                 if (zones.size () > 1)
                     for (int i = 0; i < zones.size (); i++)
-                        zones.get (i).setSequencePosition (1 + i);
+                    {
+                        final ISampleZone zone = zones.get (i);
+                        zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                        zone.setSequencePosition (1 + i);
+                    }
                 final int velocity = (int) Math.clamp (velocityLayer.velocity * 127.0, 0, 127.0);
                 velocityMap.put (Integer.valueOf (velocity), zones);
             }
