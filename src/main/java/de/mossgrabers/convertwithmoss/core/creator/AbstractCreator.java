@@ -44,10 +44,10 @@ import org.w3c.dom.Document;
 import de.mossgrabers.convertwithmoss.core.AbstractCoreTask;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.ParameterLevel;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.ZoneChannels;
 import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
 import de.mossgrabers.convertwithmoss.core.algorithm.SincResampler;
@@ -64,7 +64,6 @@ import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.ui.ProgressLogger;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -79,21 +78,21 @@ import de.mossgrabers.tools.ui.Functions;
 public abstract class AbstractCreator<T extends ICoreTaskSettings> extends AbstractCoreTask<T> implements ICreator<T>
 {
     /** The post-fix to use for the samples folder. */
-    protected static final String                 FOLDER_POSTFIX                     = " Samples";
+    protected static final String                  FOLDER_POSTFIX                     = " Samples";
 
-    protected static final DestinationAudioFormat DESTINATION_FORMAT                 = new DestinationAudioFormat ();
-    protected static final String                 IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA = "IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA";
-    protected static final String                 FORWARD_SLASH                      = "/";
+    protected static final DestinationAudioFormat  DESTINATION_FORMAT                 = new DestinationAudioFormat ();
+    protected static final String                  IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA = "IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA";
+    protected static final String                  FORWARD_SLASH                      = "/";
 
     /** The separators between the segments of a qualified name. */
-    private static final Pattern                  NAME_SEPARATOR                     = Pattern.compile ("\\s+[-/:|]\\s+");
+    private static final Pattern                   NAME_SEPARATOR                     = Pattern.compile ("\\s+[-/:|]\\s+");
 
-    protected final ProgressLogger                progress;
-    private final AtomicBoolean                   isCancelled                        = new AtomicBoolean (false);
-    private final boolean [] []                   layerCheckMatrix                   = new boolean [128] [128];
-    private final Set<String>                     loggedResamplings                  = new HashSet<> ();
+    protected final ProgressLogger                 progress;
+    private final AtomicBoolean                    isCancelled                        = new AtomicBoolean (false);
+    private final boolean [] []                    layerCheckMatrix                   = new boolean [128] [128];
+    private final Set<String>                      loggedResamplings                  = new HashSet<> ();
     /** The audio format of the zones whose audio was converted already, see recalculation. */
-    private final Map<ISampleZone, IAudioMetadata> convertedZones                    = new WeakHashMap<> ();
+    private final Map<ISampleZone, IAudioMetadata> convertedZones                     = new WeakHashMap<> ();
 
 
     /**
@@ -670,8 +669,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     /**
      * Get the counter suffix which createUniqueFilename appended to a file name, e.g. " (2)". A
      * sample folder which belongs to the preset file needs to carry the same suffix, otherwise two
-     * presets of the same name in one destination folder write their samples into one folder,
-     * where samples of the same name overwrite each other.
+     * presets of the same name in one destination folder write their samples into one folder, where
+     * samples of the same name overwrite each other.
      *
      * @param uniqueFile The file which createUniqueFilename returned
      * @param sampleName The name which was passed to createUniqueFilename

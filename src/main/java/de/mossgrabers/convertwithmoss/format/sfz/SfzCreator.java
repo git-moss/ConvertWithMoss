@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -42,7 +43,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.Pair;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -804,7 +804,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             final Pair<String, List<Pair<String, List<String>>>> group = groupContent.get (g);
             final List<Pair<String, List<String>>> zones = group.getValue ();
 
-            final Set<String> common = zones.isEmpty () ? Collections.emptySet () : SfzCreator.intersectAll (zones.stream ().map (Pair::getValue).collect (Collectors.toList ()));
+            final Set<String> common = zones.isEmpty () ? Collections.emptySet () : SfzCreator.intersectAll (zones.stream ().map (Pair::getValue).toList ());
 
             // Remove from zones (only non-common parameters remain)
             for (final Pair<String, List<String>> zone: zones)
@@ -836,9 +836,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             documentBuffer.append (String.join ("", documentCommon));
 
         // Step 5: write group keys and zone keys into documentBuffer
-        for (int g = 0; g < groupContent.size (); g++)
+        for (final Pair<String, List<Pair<String, List<String>>>> group: groupContent)
         {
-            final Pair<String, List<Pair<String, List<String>>>> group = groupContent.get (g);
             documentBuffer.append (group.getKey ());
             for (final Pair<String, List<String>> zone: group.getValue ())
                 documentBuffer.append (appendParameters (zone.getKey (), zone.getValue ()));

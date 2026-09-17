@@ -242,8 +242,8 @@ public final class LoopZeroSnapper
 
 
     /**
-     * Compare the audio in front of the loop end (including it) with the audio in front of the
-     * loop start.
+     * Compare the audio in front of the loop end (including it) with the audio in front of the loop
+     * start.
      *
      * @param channels The audio of all channels
      * @param start The loop start frame, at least MATCH_FRAMES

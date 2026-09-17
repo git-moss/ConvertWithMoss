@@ -25,6 +25,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
 import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.algorithm.SincResampler;
@@ -49,7 +50,6 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -59,52 +59,56 @@ import de.mossgrabers.convertwithmoss.core.SafeFileNames;
  */
 public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 {
-    private static final String                                TAG_ACTIVE             = "Active";
-    private static final String                                TAG_DELAY              = "Delay";
-    private static final String                                TAG_ATTACK             = "Attack";
-    private static final String                                TAG_DECAY              = "Decay";
-    private static final String                                TAG_PERCUSSIVE         = "Percussive";
+    private static final String TAG_LAYERED = "Layered";
+    private static final String                                TAG_ACTIVE              = "Active";
+    private static final String                                TAG_DELAY               = "Delay";
+    private static final String                                TAG_ATTACK              = "Attack";
+    private static final String                                TAG_DECAY               = "Decay";
+    private static final String                                TAG_PERCUSSIVE          = "Percussive";
 
-    private static final String                                AMP_ENV                = "AmpEnv";
+    private static final String                                AMP_ENV                 = "AmpEnv";
 
-    private static final String                                SLOPE_RC               = "RC";
-    private static final String                                SLOPE_LINEAR           = "Lin";
-    private static final String                                SLOPE_EXP              = "Exp";
-    private static final String                                SLOPE_EXP_ALT          = "Exp alt";
+    private static final String                                SLOPE_RC                = "RC";
+    private static final String                                SLOPE_LINEAR            = "Lin";
+    private static final String                                SLOPE_EXP               = "Exp";
+    private static final String                                SLOPE_EXP_ALT           = "Exp alt";
     /**
-     * The index of the option 'Exp alt' of the decay and release curves. The device turns the
-     * value of an enumeration into its option with rounding when it shows the option name; the
-     * index itself is unambiguous, whatever the sound engine does with a value in between.
+     * The index of the option 'Exp alt' of the decay and release curves. The device turns the value
+     * of an enumeration into its option with rounding when it shows the option name; the index
+     * itself is unambiguous, whatever the sound engine does with a value in between.
      */
-    private static final int                                   SLOPE_EXP_ALT_INDEX    = 1;
+    private static final int                                   SLOPE_EXP_ALT_INDEX     = 1;
 
     /** The sample rate which the device plays and to which this creator re-samples. */
     private static final int                                   DESTINATION_SAMPLE_RATE = 44100;
-    /** The format version of a patch with one or two layers, which every instrument of the family loads. */
-    private static final int                                   PRESET_VERSION         = 14;
+    /**
+     * The format version of a patch with one or two layers, which every instrument of the family
+     * loads.
+     */
+    private static final int                                   PRESET_VERSION          = 14;
     /**
      * The format version of a patch with the four-layer layout. The loader clears the file offsets
      * of the layers 3 and 4 in files up to the version 14, so four layers need the version of the
      * MK2 generation.
      */
-    private static final int                                   PRESET_VERSION_FOUR    = 15;
+    private static final int                                   PRESET_VERSION_FOUR     = 15;
 
     /** The size of the header of a patch, which every layer of a patch has as well. */
-    private static final int                                   HEADER_SIZE            = 512;
+    private static final int                                   HEADER_SIZE             = 512;
     /** The size of one parameter record: the value plus the name and the hint. */
-    private static final int                                   PARAMETER_SIZE         = 4 + 2 * WaldorfQpatConstants.MAX_STRING_LENGTH;
+    private static final int                                   PARAMETER_SIZE          = 4 + 2 * WaldorfQpatConstants.MAX_STRING_LENGTH;
     /** The number of oscillators of one layer, each of which can play one sample map. */
-    private static final int                                   MAX_OSCILLATORS        = 3;
+    private static final int                                   MAX_OSCILLATORS         = 3;
     /**
      * The line feed and the NUL byte which end every sample map, like the maps the device writes;
      * the device does not stop reading a map at its length.
      */
-    private static final String                                MAP_TERMINATOR         = "\n\0";
+    private static final String                                MAP_TERMINATOR          = "\n\0";
     /**
      * The number of entries which a sample map of the device holds at most; every further entry is
      * dropped (Iridium MK2 firmware 4.0.6, SampleMap::addSample).
      */
-    private static final int                                   MAX_MAP_ENTRIES        = 1024;
+    private static final int                                   MAX_MAP_ENTRIES         = 1024;
     /**
      * The maximum number of layers which is written. Two layers are stored the same way from the
      * format version 8 on, so a patch with two layers plays on every instrument of the family. Four
@@ -112,15 +116,18 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * instruments upgraded to the MK2 hardware): the layer count 2, the format version 15 and
      * always four stored layers, of which the unused ones are switched off.
      */
-    private static final int                                   MAX_LAYERS             = 4;
+    private static final int                                   MAX_LAYERS              = 4;
     /** The number of layers which a patch with three or four layers stores. */
-    private static final int                                   MAX_LAYERS_TWO         = 2;
+    private static final int                                   MAX_LAYERS_TWO          = 2;
     /** Layer count: two layers, the file offset of the 2nd one is stored at 432. */
-    private static final int                                   LAYER_COUNT_TWO        = 1;
-    /** Layer count: four layers, the file offsets of the layers 2, 3 and 4 are stored at 432, 440 and 444. */
-    private static final int                                   LAYER_COUNT_FOUR       = 2;
+    private static final int                                   LAYER_COUNT_TWO         = 1;
+    /**
+     * Layer count: four layers, the file offsets of the layers 2, 3 and 4 are stored at 432, 440
+     * and 444.
+     */
+    private static final int                                   LAYER_COUNT_FOUR        = 2;
     /** The header holds the file offsets of the layers 2, 3 and 4. */
-    private static final int                                   NUM_LAYER_OFFSETS      = 3;
+    private static final int                                   NUM_LAYER_OFFSETS       = 3;
     /**
      * TimbreMode: [2] - all active layers sound simultaneously over the whole keyboard range. The
      * parameter of the device is labelled "Layered"; the manual of the MK2 calls the page which
@@ -128,67 +135,69 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * has no velocity range for a layer, therefore this is the only mode in which all the layers of
      * a converted multi-sample can be heard.
      */
-    private static final float                                 TIMBRE_MODE_MULTI      = 2.0f;
+    private static final float                                 TIMBRE_MODE_MULTI       = 2.0f;
 
     /** What the import screen of an Iridium MK2 can show of a file name, minus a small margin. */
-    private static final int                                   FILE_NAME_BUDGET       = 40;
+    private static final int                                   FILE_NAME_BUDGET        = 40;
     /** The length of the '.qpat' file ending. */
-    private static final int                                   FILE_ENDING_LENGTH     = 5;
+    private static final int                                   FILE_ENDING_LENGTH      = 5;
     /** The length of the import number prefix, e.g. '05002-'. */
-    private static final int                                   NUMBER_PREFIX_LENGTH   = 6;
-    private static final WaldorfQpatResourceHeader             EMPTY_RESOURCE_HEADER  = new WaldorfQpatResourceHeader ();
+    private static final int                                   NUMBER_PREFIX_LENGTH    = 6;
+    private static final WaldorfQpatResourceHeader             EMPTY_RESOURCE_HEADER   = new WaldorfQpatResourceHeader ();
     /**
      * The shortest amplitude attack/release which the device renders without a click. The hardware
      * test which established it wrote 0.07 seconds with the display law of the envelope times,
      * which the sound engine plays as 0.01 seconds, see {@link #convertFromTime(double)}.
      */
-    private static final double                                DECLICK_SECONDS        = 0.01;
+    private static final double                                DECLICK_SECONDS         = 0.01;
     /**
      * The time which the sound engine subtracts from the curve of the envelope times, so that the
      * value 0 of a stage is instant, see {@link #convertFromTime(double)}.
      */
-    private static final double                                ENVELOPE_TIME_OFFSET   = 0.06;
+    private static final double                                ENVELOPE_TIME_OFFSET    = 0.06;
     /** The longest envelope stage of the device in seconds, the value 1 of a stage. */
-    private static final double                                MAX_ENVELOPE_TIME      = 59.94;
+    private static final double                                MAX_ENVELOPE_TIME       = 59.94;
     /** The share of the peak level at which a step in the audio becomes audible as a click. */
-    private static final double                                AUDIBLE_STEP_RATIO     = 0.02;
+    private static final double                                AUDIBLE_STEP_RATIO      = 0.02;
     /** The lowest cutoff frequency of the filter of the device, the value 0 of Filter1CutOff. */
-    private static final double                                MIN_CUTOFF_FREQUENCY   = 8.1758;
+    private static final double                                MIN_CUTOFF_FREQUENCY    = 8.1758;
     /** The highest cutoff frequency of the filter of the device, the value 1 of Filter1CutOff. */
-    private static final double                                MAX_CUTOFF_FREQUENCY   = 19912.2;
+    private static final double                                MAX_CUTOFF_FREQUENCY    = 19912.2;
 
     /**
      * The modulation matrix slot which routes the low frequency oscillator of the vibrato. The
      * slots 1-3 are already used for the pitch envelopes of the 3 oscillators, see
      * {@link #createPitchEnvelopeModulator(List, IEnvelopeModulator, int, int)}.
      */
-    private static final int                                   MATRIX_SLOT_VIBRATO    = 4;
+    private static final int                                   MATRIX_SLOT_VIBRATO     = 4;
     /** The modulation matrix slot which routes the low frequency oscillator of the tremolo. */
-    private static final int                                   MATRIX_SLOT_TREMOLO    = 5;
-    /** The modulation matrix slot which routes the low frequency oscillator of the filter cutoff. */
-    private static final int                                   MATRIX_SLOT_CUTOFF_LFO = 6;
+    private static final int                                   MATRIX_SLOT_TREMOLO     = 5;
+    /**
+     * The modulation matrix slot which routes the low frequency oscillator of the filter cutoff.
+     */
+    private static final int                                   MATRIX_SLOT_CUTOFF_LFO  = 6;
     /** The low frequency oscillator which plays the vibrato. */
-    private static final int                                   LFO_VIBRATO            = 1;
+    private static final int                                   LFO_VIBRATO             = 1;
     /** The low frequency oscillator which plays the tremolo. */
-    private static final int                                   LFO_TREMOLO            = 2;
+    private static final int                                   LFO_TREMOLO             = 2;
     /** The low frequency oscillator which modulates the cutoff of the filter. */
-    private static final int                                   LFO_CUTOFF             = 3;
+    private static final int                                   LFO_CUTOFF              = 3;
     /** GlideRate: [0..1] ~ [0..2] seconds, the longest glide of the device. */
-    private static final double                                GLIDE_MAXIMUM_TIME     = 2.0;
+    private static final double                                GLIDE_MAXIMUM_TIME      = 2.0;
     /**
      * The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds.
      */
-    private static final double                                LFO_MINIMUM_RATE       = 1.0 / 240.0;
+    private static final double                                LFO_MINIMUM_RATE        = 1.0 / 240.0;
     /** The highest rate of a low frequency oscillator in Hertz. */
-    private static final double                                LFO_MAXIMUM_RATE       = 100.0;
+    private static final double                                LFO_MAXIMUM_RATE        = 100.0;
     /** The longest delay of a low frequency oscillator in seconds. */
-    private static final double                                LFO_MAXIMUM_DELAY      = 20.0;
+    private static final double                                LFO_MAXIMUM_DELAY       = 20.0;
     /** The longest attack (fade-in) of a low frequency oscillator in seconds. */
-    private static final double                                LFO_MAXIMUM_ATTACK     = 10.0;
+    private static final double                                LFO_MAXIMUM_ATTACK      = 10.0;
     /** From this phase on the device runs the low frequency oscillator freely. */
-    private static final double                                LFO_FREE_PHASE         = 0.9986;
+    private static final double                                LFO_FREE_PHASE          = 0.9986;
     /** LfoXShape: the waveforms of a low frequency oscillator in the order of the device. */
-    private static final String []                             LFO_SHAPES             = new String []
+    private static final String []                             LFO_SHAPES              = new String []
     {
         "Sine",
         "Triangle",
@@ -198,13 +207,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         "S&H"
     };
 
-    private static final DestinationAudioFormat                OPTIMIZED_AUDIO_FORMAT = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat                OPTIMIZED_AUDIO_FORMAT  = new DestinationAudioFormat (new int []
     {
         16
     }, 44100, true);
-    private static final DestinationAudioFormat                DEFAULT_AUDIO_FORMAT   = new DestinationAudioFormat ();
+    private static final DestinationAudioFormat                DEFAULT_AUDIO_FORMAT    = new DestinationAudioFormat ();
 
-    private static final Map<Integer, WaldorfQpatResourceType> TYPE_LOOKUP            = HashMap.newHashMap (3);
+    private static final Map<Integer, WaldorfQpatResourceType> TYPE_LOOKUP             = HashMap.newHashMap (3);
     static
     {
         TYPE_LOOKUP.put (Integer.valueOf (0), WaldorfQpatResourceType.USER_SAMPLE_MAP1);
@@ -504,8 +513,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static List<WaldorfQpatParameter> createInactiveLayerParameters ()
     {
         final List<WaldorfQpatParameter> parameters = new ArrayList<> ();
-        parameters.add (new WaldorfQpatParameter ("TimbreMode", "Layered", TIMBRE_MODE_MULTI));
-        parameters.add (new WaldorfQpatParameter ("MultiAllocMode", "Layered", 0));
+        parameters.add (new WaldorfQpatParameter ("TimbreMode", TAG_LAYERED, TIMBRE_MODE_MULTI));
+        parameters.add (new WaldorfQpatParameter ("MultiAllocMode", TAG_LAYERED, 0));
         parameters.add (new WaldorfQpatParameter ("LayerActive", "Off", 0));
         return parameters;
     }
@@ -726,7 +735,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 // shows a sample start/end of -1). Treat an unset start/stop as the full sample.
                 final double startFrame = zone.getStart () < 0 ? 0 : zone.getStart ();
                 final double stopFrame = zone.getStop () <= 0 ? numSampleFrames : zone.getStop ();
-                // The stop of a zone is the frame behind its last one, the device stores the last one
+                // The stop of a zone is the frame behind its last one, the device stores the last
+                // one
                 sb.append (formatMapPosition (startFrame, numSampleFrames)).append ('\t');
                 sb.append (formatMapPosition (stopFrame - 1, numSampleFrames)).append ('\t');
 
@@ -790,9 +800,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Collect the samples which only the layers beyond the first reference. When the device
-     * imports a patch, it copies the samples into its internal memory - but it collects them from
-     * the sample maps of the first layer only: the importer reads the resource table of the first
+     * Collect the samples which only the layers beyond the first reference. When the device imports
+     * a patch, it copies the samples into its internal memory - but it collects them from the
+     * sample maps of the first layer only: the importer reads the resource table of the first
      * header of the file, walks its maps and copies each file they name (Iridium MK2 firmware
      * 4.0.6, PatchLib::importPatch). A sample which only a later layer names is never copied, and
      * when the patch is loaded that layer reports 'loading samples/&lt;patch&gt;/&lt;file&gt;.wav
@@ -830,12 +840,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /**
      * Append a sample map entry which names a sample but never plays. The importer of the device
      * only needs the name of the file to copy it. The entry is made unplayable three times over:
-     * its velocity window is 0 to 0, which no note-on reaches - the device compares the velocity
-     * of a note as an integer from 0 to 127 against both ends of the window, and a note-on with
-     * the velocity 0 is a note-off - its gain is 0 and it covers only the key 0. The velocity
-     * window keeps the entry out of the lookup which picks the entries for a note, so it costs no
-     * voice and does not take part in the alternation of overlapping entries; the single key keeps
-     * it out of the per-key entry lists of the other keys, which hold at most 128 entries each.
+     * its velocity window is 0 to 0, which no note-on reaches - the device compares the velocity of
+     * a note as an integer from 0 to 127 against both ends of the window, and a note-on with the
+     * velocity 0 is a note-off - its gain is 0 and it covers only the key 0. The velocity window
+     * keeps the entry out of the lookup which picks the entries for a note, so it costs no voice
+     * and does not take part in the alternation of overlapping entries; the single key keeps it out
+     * of the per-key entry lists of the other keys, which hold at most 128 entries each.
      *
      * @param sb Where to append the entry
      * @param relativeSamplePath The relative path to the samples
@@ -904,12 +914,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Checks if the zones are one key map which is played across the keyboard rather than a stack of
-     * layers. Sources sometimes give the zones of a key map ranges which overlap slightly - the E-mu
-     * Xtreme Lead 1 'Air Age' maps its lowest sample up to key 54 while the next one starts at 43 -
-     * and splitting those into separate oscillators leaves each of them with a hole: 'Air Age' ended
-     * up with an oscillator which is silent from key 55 to 71, which is where the instrument is
-     * played.
+     * Checks if the zones are one key map which is played across the keyboard rather than a stack
+     * of layers. Sources sometimes give the zones of a key map ranges which overlap slightly - the
+     * E-mu Xtreme Lead 1 'Air Age' maps its lowest sample up to key 54 while the next one starts at
+     * 43 - and splitting those into separate oscillators leaves each of them with a hole: 'Air Age'
+     * ended up with an oscillator which is silent from key 55 to 71, which is where the instrument
+     * is played.
      *
      * A key map is recognized by both its root notes and its lower key limits rising from zone to
      * zone: the zones follow each other up the keyboard, so however their ranges overlap they are
@@ -929,9 +939,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         {
             final ISampleZone previous = sorted.get (i - 1);
             final ISampleZone zone = sorted.get (i);
-            if (limitToDefault (previous.getKeyLow (), 0) >= limitToDefault (zone.getKeyLow (), 0))
-                return false;
-            if (previous.getKeyRoot () >= zone.getKeyRoot ())
+            if ((limitToDefault (previous.getKeyLow (), 0) >= limitToDefault (zone.getKeyLow (), 0)) || (previous.getKeyRoot () >= zone.getKeyRoot ()))
                 return false;
         }
         return true;
@@ -1077,8 +1085,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         if (isMultiLayer)
         {
             // All layers sound simultaneously over the whole keyboard range
-            parameters.add (new WaldorfQpatParameter ("TimbreMode", "Layered", TIMBRE_MODE_MULTI));
-            parameters.add (new WaldorfQpatParameter ("MultiAllocMode", "Layered", 0));
+            parameters.add (new WaldorfQpatParameter ("TimbreMode", TAG_LAYERED, TIMBRE_MODE_MULTI));
+            parameters.add (new WaldorfQpatParameter ("MultiAllocMode", TAG_LAYERED, 0));
             parameters.add (new WaldorfQpatParameter ("LayerActive", TAG_ACTIVE, 1));
         }
 
@@ -1287,7 +1295,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         }
 
         // Filter cutoff - the cutoff swings around its value, therefore the LFO stays bipolar. The
-        // device adds the modulation to the cutoff in the units of Filter1CutOff, whose range covers
+        // device adds the modulation to the cutoff in the units of Filter1CutOff, whose range
+        // covers
         // WaldorfQpatModulationMatrix#CUTOFF_RANGE semi-tones, and does not square its amount. The
         // modulation is only written with a filter which is written as active, see
         // createFilterParameters
@@ -1775,8 +1784,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * A very short attack or release of the amplitude envelope opens or closes the VCA so fast that
      * it clicks on note-on/off for a sample which does not start or end at a zero crossing. Such a
      * time is lifted to the shortest length which renders without a click (0.01 seconds, verified
-     * on Iridium hardware); a genuine zero stays instant. Only the amplitude envelope gates the VCA,
-     * so a short filter or pitch envelope stage is left unchanged.
+     * on Iridium hardware); a genuine zero stays instant. Only the amplitude envelope gates the
+     * VCA, so a short filter or pitch envelope stage is left unchanged.
      *
      * @param declick True to lift the stage to the shortest audible length
      * @param seconds The envelope stage time in seconds
@@ -1852,10 +1861,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * Convert the time of an envelope stage into the value of its parameter. The sound engine plays
      * the value x of an attack, a decay or a release as 60 x 10^(3 (x - 1)) - 0.06 seconds: 0 is
      * instant and 1 is 59.94 seconds. The display of the device shows the same curve minus 0.001
-     * seconds instead, which is 59 ms longer than what is played. Measured on an Iridium MK2 with OS
-     * 4.0.6 with linear pitch envelopes: stages written for 0.07, 0.1, 0.25, 0.5, 1 and 2 seconds
-     * with the display law took 0.011, 0.041, 0.190, 0.441, 0.940 and 1.940 seconds, alike for the
-     * attack, the decay and the release.
+     * seconds instead, which is 59 ms longer than what is played. Measured on an Iridium MK2 with
+     * OS 4.0.6 with linear pitch envelopes: stages written for 0.07, 0.1, 0.25, 0.5, 1 and 2
+     * seconds with the display law took 0.011, 0.041, 0.190, 0.441, 0.940 and 1.940 seconds, alike
+     * for the attack, the decay and the release.
      *
      * @param seconds The time in seconds
      * @return The parameter value in the range of [0..1]
@@ -1919,10 +1928,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * frame. The firmware (Iridium MK2 4.0.5) converts a fraction into a frame in single precision:
      * (int) (0.001f + (float) (frames - 1) x fraction), so 1.0 is the last frame, and it writes the
      * fraction of an imported sample loop as frame / (frames - 1). Dividing by the number of frames
-     * instead places nearly every position one frame early on the device, and even
-     * frame / (frames - 1) lands one frame early when the single precision product falls marginally
-     * below the frame. The fraction therefore points to the middle of the frame, which the
-     * conversion hits exactly for every sample shorter than about 7.5 million frames.
+     * instead places nearly every position one frame early on the device, and even frame / (frames
+     * - 1) lands one frame early when the single precision product falls marginally below the
+     * frame. The fraction therefore points to the middle of the frame, which the conversion hits
+     * exactly for every sample shorter than about 7.5 million frames.
      *
      * @param frame The index of the frame
      * @param numSampleFrames The number of frames of the sample

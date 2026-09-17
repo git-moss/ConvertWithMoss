@@ -19,8 +19,7 @@ import de.mossgrabers.tools.XMLUtils;
  * which differ from the defaults: FREQUENCY (in Hertz, up to 15001 = fully open), RESONANCE
  * (quality factor, up to about 3.14) and TYPE. The plug-in stores the filter type as a
  * juce::dsp::StateVariableTPTFilterType, whose order is low-pass, band-pass, high-pass - the
- * plug-in binary holds the parameter as 'AMParameterEnum' of that type. There is no
- * band-rejection.
+ * plug-in binary holds the parameter as 'AMParameterEnum' of that type. There is no band-rejection.
  *
  * @author Jürgen Moßgraber
  */

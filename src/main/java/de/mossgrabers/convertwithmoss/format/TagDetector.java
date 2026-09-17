@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 
 /**
@@ -27,6 +28,8 @@ import java.util.TreeMap;
 @SuppressWarnings("javadoc")
 public class TagDetector
 {
+    private static final Pattern                DELIMITER_PATTERN             = Pattern.compile ("[ _-]+");
+
     private static final Map<String, String []> CATEGORIES                    = new HashMap<> ();
     private static final Map<String, String>    CATEGORY_LOOKUP               = new TreeMap<> (new StringLengthComparator ());
     private static final Map<String, String>    CATEGORY_PREFIX_LOOKUP        = new HashMap<> ();
@@ -802,7 +805,7 @@ public class TagDetector
     {
         for (final String text: texts)
         {
-            final String [] tokens = text.trim ().toUpperCase (Locale.US).split ("[ _-]+");
+            final String [] tokens = DELIMITER_PATTERN.split (text.trim ().toUpperCase (Locale.US));
             if (tokens.length > 1)
             {
                 final String category = CATEGORY_PREFIX_LOOKUP.get (tokens[0]);

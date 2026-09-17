@@ -131,7 +131,7 @@ public class ImdFile
                 final Integer [] order = new Integer [numSectors];
                 for (int i = 0; i < numSectors; i++)
                     order[i] = Integer.valueOf (i);
-                Arrays.sort (order, (a, c) -> sectorNumMap[a.intValue ()] - sectorNumMap[c.intValue ()]);
+                Arrays.sort (order, (a, c) -> Integer.compare (sectorNumMap[a.intValue ()], sectorNumMap[c.intValue ()]));
 
                 final ByteArrayOutputStream trackBuf = new ByteArrayOutputStream ();
                 for (final Integer idx: order)
