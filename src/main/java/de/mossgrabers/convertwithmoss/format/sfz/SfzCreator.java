@@ -648,7 +648,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         final double filterKeyTracking = filter.getCutoffKeyTracking ();
         buffer.append (addAttribute (SfzOpcode.RESONANCE, formatDouble (filter.getResonance () * IFilter.MAX_RESONANCE, 2), filterKeyTracking <= 0));
         if (filterKeyTracking > 0)
-            buffer.append (addAttribute (SfzOpcode.FIL_KEY_TRACK, Integer.toString ((int) Math.round (filter.getCutoffKeyTracking () * 1200.0)), true));
+            // In cent per key, 100 is the cutoff following the keyboard one to one
+            buffer.append (addAttribute (SfzOpcode.FIL_KEY_TRACK, Integer.toString ((int) Math.round (filter.getCutoffKeyTracking () * 100.0)), true));
 
         // Envelope modulation
 
