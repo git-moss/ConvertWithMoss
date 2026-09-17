@@ -84,7 +84,7 @@ public class ProphetXCreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        this.categoryBox.getSelectionModel ().select (Math.clamp (config.getInteger (this.prefix + CATEGORY, -1) + 1, 0, ProphetXTag.CATEGORY_FOLDERS.length));
+        this.categoryBox.getSelectionModel ().select (Math.clamp (config.getInteger (this.prefix + CATEGORY, -1) + 1L, 0, ProphetXTag.CATEGORY_FOLDERS.length));
         this.bankBox.getSelectionModel ().select (Math.clamp (config.getInteger (this.prefix + BANK, 0), 0, ProphetXTag.NUM_USER_BANKS - 1));
         this.writeArchiveBox.setSelected (config.getBoolean (this.prefix + WRITE_ARCHIVE, true));
 
@@ -171,8 +171,7 @@ public class ProphetXCreatorUI extends WavChunkSettingsUI
     /**
      * Get the selected category of the device.
      *
-     * @return The index of the category or -1 to take the closest one to the category of the
-     *         source
+     * @return The index of the category or -1 to take the closest one to the category of the source
      */
     public int getCategoryIndex ()
     {
@@ -192,8 +191,8 @@ public class ProphetXCreatorUI extends WavChunkSettingsUI
 
 
     /**
-     * Should the instrument be written as the import archive in the folder layout of the USB
-     * drive instead of a plain folder?
+     * Should the instrument be written as the import archive in the folder layout of the USB drive
+     * instead of a plain folder?
      *
      * @return True to write the archive
      */

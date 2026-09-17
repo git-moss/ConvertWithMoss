@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 import de.mossgrabers.tools.ui.Functions;
 
@@ -30,6 +31,7 @@ import de.mossgrabers.tools.ui.Functions;
 public final class RolandS10SysEx
 {
     private static final String    IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS = "IDS_S1X_SYSEX_UNSOUND_NUMBER_OF_WAVE_PARAM_BLOCKS";
+    private static final Pattern   HEX_PAIR_PATTERN                                  = Pattern.compile ("[0-9A-Fa-f]{2}");
 
     /** The length of the full transport array performance parameter block. */
     public static final int        PERFORMANCE_PARAMETER_BYTES                       = 40;
@@ -457,7 +459,7 @@ public final class RolandS10SysEx
 
         for (int i = 0; i < tokens.length; i++)
         {
-            if (!tokens[i].matches ("[0-9A-Fa-f]{2}"))
+            if (!HEX_PAIR_PATTERN.matcher (tokens[i]).matches ())
                 throw new IllegalArgumentException ("Invalid hexadecimal byte: " + tokens[i]);
 
             result[i] = (byte) Integer.parseInt (tokens[i], 16);

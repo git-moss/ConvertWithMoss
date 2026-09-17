@@ -20,6 +20,7 @@ import java.util.Optional;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -33,8 +34,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -521,7 +520,8 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
         if (velocityDepth > 0)
             EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_VELOCITY_TO_CUTOFF, 4, Math.clamp ((int) Math.round (velocityDepth * 15.0), 0, 15));
 
-        // The LFO of the voice modulates the cutoff with its own depth (rate and delay: see writeLfo)
+        // The LFO of the voice modulates the cutoff with its own depth (rate and delay: see
+        // writeLfo)
         final double lfoDepth = filter.getCutoffLfoModulator ().getDepth ();
         if (lfoDepth > 0)
             EmaxConstants.writeVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_CUTOFF, 4, Math.clamp ((int) Math.round (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH / EmaxConstants.LFO_CUTOFF_CENTS_PER_STEP), 0, 15));

@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -36,7 +37,6 @@ import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -195,7 +195,7 @@ public class BentoCreator extends AbstractMusic1010Creator
 
             // Store all samples
             if (resample)
-                recalculateSamplePositions (multisampleSource, 48000);
+                this.recalculateSamplePositions (multisampleSource, 48000);
             this.writeSamples (fullPresetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT, trim);
         }
 
@@ -229,7 +229,7 @@ public class BentoCreator extends AbstractMusic1010Creator
 
         // Store all samples
         if (resample)
-            recalculateSamplePositions (multisampleSource, 48000);
+            this.recalculateSamplePositions (multisampleSource, 48000);
         final List<File> samplesFiles = this.writeSamples (presetFolder, multisampleSource, resample ? OPTIMIZED_AUDIO_FORMAT : DEFAULT_AUDIO_FORMAT, trim);
         // Store one of the samples as the preview sample
         if (!samplesFiles.isEmpty ())

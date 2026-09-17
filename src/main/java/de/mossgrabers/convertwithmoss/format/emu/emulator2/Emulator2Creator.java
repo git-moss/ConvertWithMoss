@@ -20,6 +20,7 @@ import java.util.Optional;
 import de.mossgrabers.convertwithmoss.core.DetectSettings;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -33,9 +34,7 @@ import de.mossgrabers.convertwithmoss.file.hfe.EmuFmEncoder;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.emu.EmuCompanding;
 import de.mossgrabers.convertwithmoss.format.emu.EmuDiskCreatorUI;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -47,12 +46,13 @@ import de.mossgrabers.convertwithmoss.core.SafeFileNames;
  * group of its zones the voices of the key ranges and the second group their second voices, so a
  * library of multi-samples becomes one disk. See documentation/design/EMULATOR2_FORMAT.md.
  * <p>
- * The fine tuning, the level and the velocity to level amount of a zone are written into its
- * voice; the other settings of a voice - filter, envelopes, LFO - are taken from a voice of the
- * factory library, an unfiltered piano, so that a written voice plays with sensible defaults. The disk is written as an image for the HxC floppy emulators (HFE) or as a raw sector
- * image (EMUIIFD). The operating system, which lives on the first 22 tracks, is not part of this
- * program: it is copied from a system file or a disk image which the user names; without one the
- * disk holds the bank alone, which the sampler loads once it has booted from another disk.
+ * The fine tuning, the level and the velocity to level amount of a zone are written into its voice;
+ * the other settings of a voice - filter, envelopes, LFO - are taken from a voice of the factory
+ * library, an unfiltered piano, so that a written voice plays with sensible defaults. The disk is
+ * written as an image for the HxC floppy emulators (HFE) or as a raw sector image (EMUIIFD). The
+ * operating system, which lives on the first 22 tracks, is not part of this program: it is copied
+ * from a system file or a disk image which the user names; without one the disk holds the bank
+ * alone, which the sampler loads once it has booted from another disk.
  *
  * @author Jürgen Moßgraber
  */
@@ -945,7 +945,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         // stored, nor a voice which gets louder the softer it is played
         image[voiceRecord + Emulator2VoiceSettings.FINE_TUNE] = (byte) Math.clamp (Math.round (voice.tuning * 64), -128, 127);
         final int level = Emulator2VoiceSettings.attenuationValue (Math.max (0, -voice.gain));
-        final int lowestLevel = Math.clamp (level - Emulator2VoiceSettings.velocityLevelRange (Math.max (0, voice.velocityDepth) * Emulator2VoiceSettings.MAX_LEVEL_DEPTH_DB), 0, 255);
+        final int lowestLevel = Math.clamp (level - (long) Emulator2VoiceSettings.velocityLevelRange (Math.max (0, voice.velocityDepth) * Emulator2VoiceSettings.MAX_LEVEL_DEPTH_DB), 0, 255);
         for (int i = 0; i < 16; i++)
             image[voiceRecord + Emulator2VoiceSettings.LEVEL_TABLE + i] = (byte) Math.round (level + (lowestLevel - level) * i / 15.0);
 

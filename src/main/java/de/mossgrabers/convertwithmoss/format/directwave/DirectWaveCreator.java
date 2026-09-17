@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
@@ -43,7 +44,6 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**

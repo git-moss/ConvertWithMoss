@@ -254,7 +254,14 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
     private static void applyPerformanceParameters (final IMultisampleSource multisampleSource, final PerformanceParameters performance)
     {
         if (performance == null)
+        {
+            // Without the performance parameters there is no vibrato: remove the markers of the
+            // layers which are enabled for it, see createSampleZoneFromWave
+            for (final ISampleZone zone: multisampleSource.getAllSampleZones (false))
+                if (zone.getPitchLfoModulator ().getDepth () >= 1.0)
+                    zone.getPitchLfoModulator ().setDepth (0);
             return;
+        }
 
         // Set the LFO for pitch
 
@@ -262,8 +269,9 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
         lfoSource.setWaveform (LfoWaveform.SINE);
         lfoSource.setDelay (lfoDelayToSeconds (performance.delayTimeVibratoDelay / 255.0));
         lfoSource.setRate (lfoRateToHertz (performance.vibratoRate / 255.0));
-        // Depth of 1.0 is 2 octaves, reduce it to 1 semi-tones
-        final double depth = performance.delayVibratoDepth / 255.0 / 24.0;
+        // The full depth is taken as 1 semi-tone, the depth of the model covers
+        // IEnvelope#MAX_ENVELOPE_DEPTH cent
+        final double depth = performance.delayVibratoDepth / 255.0 * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
 
         for (final ISampleZone zone: multisampleSource.getAllSampleZones (false))
         {

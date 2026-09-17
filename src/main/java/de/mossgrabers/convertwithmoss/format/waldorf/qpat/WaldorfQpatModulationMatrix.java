@@ -123,9 +123,9 @@ public class WaldorfQpatModulationMatrix
 
 
     /**
-     * Get the index of the source of a slot. The indices of the free envelopes and the low frequency
-     * oscillators are the same in all format versions; like the device, the name in the hint is used
-     * if the patch has one.
+     * Get the index of the source of a slot. The indices of the free envelopes and the low
+     * frequency oscillators are the same in all format versions; like the device, the name in the
+     * hint is used if the patch has one.
      *
      * @param parameter The source parameter of the slot
      * @return The index of the source
@@ -157,8 +157,8 @@ public class WaldorfQpatModulationMatrix
 
 
     /**
-     * Convert a pitch in semi-tones into the amount of a slot which modulates a pitch destination. A
-     * pitch beyond the range of a slot is written at the end of the range.
+     * Convert a pitch in semi-tones into the amount of a slot which modulates a pitch destination.
+     * A pitch beyond the range of a slot is written at the end of the range.
      *
      * @param semitones The pitch in semi-tones which the full level of the source is to reach
      * @return The amount in the range of [-1..1]
