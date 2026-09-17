@@ -9,8 +9,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -19,7 +17,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -78,18 +76,7 @@ public class AkaiMPC2000SampleData extends AbstractFileSampleData
     {
         if (this.sndFile == null)
             throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND", this.sampleFile.getAbsolutePath ()));
-
-        final WaveFile wavFile = new WaveFile (this.sndFile.getChannels (), this.sndFile.getSampleRate (), 16, this.sndFile.getDurationInSamples ());
-        final DataChunk dataChunk = wavFile.getDataChunk ();
-
-        final short [] sampleData = this.sndFile.getSampleData ();
-        final ByteBuffer buffer = ByteBuffer.allocate (sampleData.length * 2);
-        buffer.order (ByteOrder.LITTLE_ENDIAN);
-        for (final short sample: sampleData)
-            buffer.putShort (sample);
-
-        dataChunk.setData (buffer.array ());
-        wavFile.write (outputStream);
+        new WaveFile (this.sndFile.getChannels (), this.sndFile.getSampleRate (), 16, AudioFileUtils.convertToByteArray (this.sndFile.getSampleData ())).write (outputStream);
     }
 
 

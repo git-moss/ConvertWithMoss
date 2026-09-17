@@ -249,9 +249,9 @@ public final class ZenCoreSvz
         /** Pitch key follow, 100 = chromatic, 0 = the same pitch on every key. */
         public int keyFollow = 100;
         /** Velocity range lower 1-127. */
-        public int velLow  = 1;
+        public int velLow    = 1;
         /** Velocity range upper 1-127. */
-        public int velHigh = 127;
+        public int velHigh   = 127;
     }
 
 
@@ -296,7 +296,9 @@ public final class ZenCoreSvz
         // ----------------------------------------------------------------------------------------
         // Optional Partial-1 tone parameters taken from the source; -1 keeps the template default
 
-        /** Pitch key follow: 100 = chromatic, 0 = the same pitch on every key (-1 = keep template). */
+        /**
+         * Pitch key follow: 100 = chromatic, 0 = the same pitch on every key (-1 = keep template).
+         */
         public int                        keyFollow        = -1;
         /** Filter type: 1=LPF, 2=BPF, 3=HPF (-1 = keep template). */
         public int                        filterType       = -1;

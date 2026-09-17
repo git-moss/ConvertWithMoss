@@ -848,7 +848,7 @@ public class AacDecoder
                 System.arraycopy (temp, 0, buffer, window * 256, 256);
                 // Each short transform is windowed on both sides with the short window; the
                 // shape of the previous frame only matters for the very first one
-                final float [] windowLeft = window == 0 ? this.getWindow (channel.previousWindowShape, 128) : this.getWindow (channel.windowShape, 128);
+                final float [] windowLeft = this.getWindow (window == 0 ? channel.previousWindowShape : channel.windowShape, 128);
                 final float [] windowRight = this.getWindow (channel.windowShape, 128);
                 for (int i = 0; i < 128; i++)
                 {

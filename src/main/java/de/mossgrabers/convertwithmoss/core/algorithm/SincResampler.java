@@ -188,15 +188,15 @@ public final class SincResampler
      */
     private static final class Lattice
     {
-        private final int         step;
-        private final int         period;
-        private final double      cutoff;
-        private final int         first;
-        private final int         taps;
+        private final int          step;
+        private final int          period;
+        private final double       cutoff;
+        private final int          first;
+        private final int          taps;
         private final double [] [] weights;
-        private final double []   weightSums;
+        private final double []    weightSums;
         private double [] []       loopWeights;
-        private double []         loopWeightSums;
+        private double []          loopWeightSums;
 
 
         /**
@@ -235,7 +235,7 @@ public final class SincResampler
         double interpolate (final double [] input, final long position)
         {
             final int base = (int) Math.floorDiv (position, this.period);
-            final int phase = (int) Math.floorMod (position, this.period);
+            final int phase = Math.floorMod (position, this.period);
             final double [] phaseWeights = this.weights[phase];
 
             final int length = input.length;
@@ -304,6 +304,23 @@ public final class SincResampler
             }
             return sum;
         }
+
+
+        /**
+         * Look the kernel up at the given distance from its center.
+         *
+         * @param distance The distance in zero crossings
+         * @return The interpolated kernel value
+         */
+        private static double kernelValue (final double distance)
+        {
+            final double position = Math.abs (distance) * STEPS_PER_CROSSING;
+            final int index = (int) position;
+            if (index >= KERNEL.length - 1)
+                return 0;
+            return KERNEL[index] + (KERNEL[index + 1] - KERNEL[index]) * (position - index);
+        }
+
     }
 
 
@@ -317,22 +334,6 @@ public final class SincResampler
     private static int gcd (final int a, final int b)
     {
         return b == 0 ? a : gcd (b, a % b);
-    }
-
-
-    /**
-     * Look the kernel up at the given distance from its center.
-     *
-     * @param distance The distance in zero crossings
-     * @return The interpolated kernel value
-     */
-    private static double kernelValue (final double distance)
-    {
-        final double position = Math.abs (distance) * STEPS_PER_CROSSING;
-        final int index = (int) position;
-        if (index >= KERNEL.length - 1)
-            return 0;
-        return KERNEL[index] + (KERNEL[index + 1] - KERNEL[index]) * (position - index);
     }
 
 
