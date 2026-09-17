@@ -96,11 +96,20 @@ SMPd (0x30 header + data):
            imports carry different values here) — written as 0, evidently not validated
   0x2C  4  0
   0x30 64  zero pre-pad
-  0x70 ..  PCM, 16-bit LE (interleaved when stereo), zero-padded to dataSize
+  0x70 ..  PCM, 16-bit LE, zero-padded to dataSize; a stereo sample stores ALL frames of the left
+           channel (channelBytes) followed by ALL frames of the right channel - not interleaved
 ```
 
 The frame count is `channelBytes / 2` for mono and stereo alike, which is what makes the preset
 durations come out round (`pb_resoLoop2` = exactly 4.000 s, `Daedelus_Chord_2` = exactly 3.000 s).
+
+**Channel layout.** A stereo sample is stored channel by channel, not as interleaved frames.
+Read as interleaved frames, every stereo sample of the VHS Soundpack project sounds twice in a row
+at double speed and an octave up (the left channel, then the right one): the decoded "left" and
+"right" correlate at 0.997 (adjacent samples of one channel) and the second half of the audio is an
+envelope copy of the first, while the channel-by-channel reading gives one strike per sample, the
+expected pitch and two channels which correlate at 0.36 to 0.57 like a real stereo recording. The
+tone `VHS 4LAY PIANO1` was the first sample anybody listened to.
 
 **Channel count.** Bit 15 of the tag at `0x20` selects mono or stereo; the total audio is
 `channels * channelBytes`. Roland's factory projects store stereo throughout, while the device's
