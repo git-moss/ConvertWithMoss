@@ -807,11 +807,13 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         if (TagDetector.CATEGORY_UNKNOWN.equals (metadata.getCategory ()))
         {
             tokens.clear ();
+            // Groups and zones do not always carry a name, e.g. a group which only collects
+            // the round robins of one key is created without one
             for (final IGroup group: groups)
             {
-                tokens.addAll (Arrays.asList (NON_WORD_PATTERN.split (group.getName ())));
+                addNameTokens (tokens, group.getName ());
                 for (final ISampleZone zone: group.getSampleZones ())
-                    tokens.addAll (Arrays.asList (NON_WORD_PATTERN.split (zone.getName ())));
+                    addNameTokens (tokens, zone.getName ());
             }
 
             metadata.detectMetadata (configuration, tokens.toArray (new String [tokens.size ()]), null);
@@ -820,6 +822,19 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         updateCreationDateTime (metadata, sourceFile);
 
         return multisampleSource;
+    }
+
+
+    /**
+     * Add the words of a name to the tokens which are used to detect the metadata.
+     *
+     * @param tokens The tokens to add to
+     * @param name The name, may be null
+     */
+    private static void addNameTokens (final Set<String> tokens, final String name)
+    {
+        if (name != null)
+            tokens.addAll (Arrays.asList (NON_WORD_PATTERN.split (name)));
     }
 
 
