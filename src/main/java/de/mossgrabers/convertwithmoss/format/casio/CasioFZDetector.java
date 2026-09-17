@@ -299,7 +299,7 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
         // The amplitude envelope
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         zone.getAmplitudeEnvelopeModulator ().setDepth (1);
-        convertEnvelope (amplitudeEnvelope, voice.ampRate, voice.ampStop, voice.ampSustainPoint, voice.ampEndPoint);
+        convertEnvelope (amplitudeEnvelope, voice.ampRate, voice.ampStop, voice.ampSustainPoint, voice.ampEndPoint, 255);
 
         // The filter with its envelope; a cutoff of 127 means the filter is open
         if (voice.cutoff < 127)
@@ -314,8 +314,10 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
                 maxStop = Math.max (maxStop, voice.filterStop[i]);
             if (maxStop > 0)
             {
+                // The depth of the modulator is the peak of the envelope, therefore its levels are
+                // relative to that peak
                 filter.getCutoffEnvelopeModulator ().setDepth (maxStop / 255.0);
-                convertEnvelope (filter.getCutoffEnvelopeModulator ().getSource (), voice.filterRate, voice.filterStop, voice.filterSustainPoint, voice.filterEndPoint);
+                convertEnvelope (filter.getCutoffEnvelopeModulator ().getSource (), voice.filterRate, voice.filterStop, voice.filterSustainPoint, voice.filterEndPoint, maxStop);
             }
         }
 
@@ -332,8 +334,9 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
      * @param stops The stop levels of the 8 stages
      * @param sustainPoint The index of the stage at which the envelope sustains
      * @param endPoint The index of the last stage
+     * @param fullLevel The stop level which is the full level (1.0) of the envelope
      */
-    private static void convertEnvelope (final IEnvelope envelope, final int [] rates, final int [] stops, final int sustainPoint, final int endPoint)
+    private static void convertEnvelope (final IEnvelope envelope, final int [] rates, final int [] stops, final int sustainPoint, final int endPoint, final int fullLevel)
     {
         final int sustainIndex = Math.clamp (sustainPoint, 0, CasioFZVoice.NUM_ENVELOPE_STAGES - 1);
         final int endIndex = Math.clamp (endPoint, sustainIndex, CasioFZVoice.NUM_ENVELOPE_STAGES - 1);
@@ -348,7 +351,7 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
             previousStop = stops[i];
         }
         envelope.setDecayTime (decayTime);
-        envelope.setSustainLevel (stops[sustainIndex] / 255.0);
+        envelope.setSustainLevel (stops[sustainIndex] / (double) fullLevel);
 
         double releaseTime = 0;
         previousStop = stops[sustainIndex];
