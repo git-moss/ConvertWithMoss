@@ -438,7 +438,9 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (lfoDepth != 0)
         {
             final StringBuilder lfoStr = new StringBuilder ();
-            lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append ((int) Math.round (lfoDepth * 1200));
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is limited
+            // to +-1200 cent
+            lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append ((int) Math.round (Math.clamp (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH, -1200, 1200)));
 
             final ILfo pitchLfo = pitchLfoModulator.getSource ();
             addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FREQ, Math.clamp (pitchLfo.getRate (), 0, 20));
@@ -685,7 +687,9 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (lfoDepth != 0)
         {
             final StringBuilder lfoStr = new StringBuilder ();
-            lfoStr.append (SfzOpcode.FILLFO_DEPTH).append ('=').append ((int) Math.round (lfoDepth * 1200));
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is limited
+            // to +-1200 cent
+            lfoStr.append (SfzOpcode.FILLFO_DEPTH).append ('=').append ((int) Math.round (Math.clamp (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH, -1200, 1200)));
 
             final ILfo pitchLfo = cutoffLfoModulator.getSource ();
             addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_FREQ, Math.clamp (pitchLfo.getRate (), 0, 20));

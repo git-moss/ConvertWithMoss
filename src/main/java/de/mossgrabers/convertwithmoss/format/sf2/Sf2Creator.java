@@ -440,12 +440,13 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         }
 
         // Set the vibrato low frequency oscillator from the pitch modulation. The depth is given in
-        // cent like the pitch envelope, the fade-in and the waveform have no equivalent in Sf2.
+        // cent like the pitch envelope, whose range the depth of the model covers as well; the
+        // fade-in and the waveform have no equivalent in Sf2.
         final ILfoModulator pitchLfoModulator = sampleZone.getPitchLfoModulator ();
         final double vibLfoDepth = pitchLfoModulator.getDepth ();
         if (vibLfoDepth != 0)
         {
-            instrumentZone.addSignedGenerator (Generator.VIB_LFO_TO_PITCH, (int) Math.round (vibLfoDepth * 1200));
+            instrumentZone.addSignedGenerator (Generator.VIB_LFO_TO_PITCH, (int) Math.round (vibLfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
             final ILfo pitchLfo = pitchLfoModulator.getSource ();
             final double rate = pitchLfo.getRate ();
             if (rate > 0)
