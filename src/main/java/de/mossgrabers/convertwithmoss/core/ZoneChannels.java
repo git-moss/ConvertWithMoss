@@ -137,9 +137,9 @@ public enum ZoneChannels
 
     /**
      * Test if two zones are mapped alike, which the two channels of one recording are. The pairs
-     * are matched by their position in the sorted lists, which pairs zones of different ranges
-     * when the left and the right zones are not the same set - e.g. two velocity layers, one
-     * panned hard left and one hard right - and those must not be combined into stereo samples.
+     * are matched by their position in the sorted lists, which pairs zones of different ranges when
+     * the left and the right zones are not the same set - e.g. two velocity layers, one panned hard
+     * left and one hard right - and those must not be combined into stereo samples.
      *
      * @param leftSampleZone The zone panned hard left
      * @param rightSampleZone The zone panned hard right
@@ -149,9 +149,7 @@ public enum ZoneChannels
     {
         if (leftSampleZone.getKeyRoot () != rightSampleZone.getKeyRoot () || leftSampleZone.getKeyLow () != rightSampleZone.getKeyLow () || leftSampleZone.getKeyHigh () != rightSampleZone.getKeyHigh ())
             return false;
-        if (leftSampleZone.getVelocityLow () != rightSampleZone.getVelocityLow () || leftSampleZone.getVelocityHigh () != rightSampleZone.getVelocityHigh ())
-            return false;
-        if (leftSampleZone.getStart () != rightSampleZone.getStart () || leftSampleZone.getStop () != rightSampleZone.getStop ())
+        if (leftSampleZone.getVelocityLow () != rightSampleZone.getVelocityLow () || leftSampleZone.getVelocityHigh () != rightSampleZone.getVelocityHigh () || leftSampleZone.getStart () != rightSampleZone.getStart () || leftSampleZone.getStop () != rightSampleZone.getStop ())
             return false;
         return Math.abs (leftSampleZone.getTuning () - rightSampleZone.getTuning ()) <= 0.0001;
     }
@@ -237,10 +235,10 @@ public enum ZoneChannels
 
 
     /**
-     * Create the name of a stereo zone from the names of its two channels: the part they share.
-     * The channel is usually marked at the end of the name ('Piano C3 L', 'Piano C3 R'), sometimes
-     * at its start ('L Piano C3'); a name which is not shared at all is kept as the left one,
-     * since an empty name would make all combined zones write the same sample file.
+     * Create the name of a stereo zone from the names of its two channels: the part they share. The
+     * channel is usually marked at the end of the name ('Piano C3 L', 'Piano C3 R'), sometimes at
+     * its start ('L Piano C3'); a name which is not shared at all is kept as the left one, since an
+     * empty name would make all combined zones write the same sample file.
      *
      * @param leftName The name of the left channel
      * @param rightName The name of the right channel

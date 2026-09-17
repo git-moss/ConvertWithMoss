@@ -330,7 +330,8 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                         break;
                     }
 
-                // The plug-in adds wheel x amount to the normalized cutoff, whose range of 0 to 1 is
+                // The plug-in adds wheel x amount to the normalized cutoff, whose range of 0 to 1
+                // is
                 // the whole range of the filter - the unit of the depth of the model as well
                 for (final TALSamplerModulator modulator: modulators)
                     if (modulator.isDestination (TALSamplerModulator.DEST_ID_CUTOFF) && modulator.isSource (TALSamplerModulator.SOURCE_ID_MOD_WHEEL))

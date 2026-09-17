@@ -899,7 +899,11 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         int position = Emulator2Constants.PRESET_ENTRIES_OFFSET;
         for (final KeyRange range: preset.ranges)
         {
-            final int mode = range.voice == 0 ? 1 : range.secondVoice > 0 ? Emulator2Constants.ENTRY_MODE_DUAL : 2;
+            final int mode;
+            if (range.voice == 0)
+                mode = 1;
+            else
+                mode = range.secondVoice > 0 ? Emulator2Constants.ENTRY_MODE_DUAL : 2;
             presetRecord[position] = (byte) (mode << Emulator2Constants.ENTRY_MODE_SHIFT | range.numKeys);
             presetRecord[position + 1] = 0x08;
             presetRecord[position + Emulator2Constants.ENTRY_VOICE] = (byte) range.voice;

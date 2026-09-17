@@ -512,7 +512,8 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 final Element releaseSlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_SLOPE);
 
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
-                // The amount is in semitones (+-72), the depth of the model covers MAX_ENVELOPE_DEPTH cent
+                // The amount is in semitones (+-72), the depth of the model covers
+                // MAX_ENVELOPE_DEPTH cent
                 cutoffModulator.setDepth (getDoubleValueAttribute (amountElement, AbletonTag.TAG_MANUAL, 0) * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
 
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();

@@ -60,7 +60,8 @@ import de.mossgrabers.tools.StringUtils;
  */
 public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 {
-    private static final String TAG_LAYERED = "Layered";
+    private static final String                                TAG_SEQUENCED           = "Sequenced";
+    private static final String                                TAG_LAYERED             = "Layered";
     private static final String                                TAG_ACTIVE              = "Active";
     private static final String                                TAG_DELAY               = "Delay";
     private static final String                                TAG_ATTACK              = "Attack";
@@ -244,7 +245,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         "Arp",
         "Noise",
         "Strings",
-        "Sequenced",
+        TAG_SEQUENCED,
         "Granular",
         "Vocal",
         "FM",
@@ -275,11 +276,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     /**
      * The spelling of the factory sound sets for every word which this application, the analysis or
-     * a source pack spells differently: the categories of the analysis (e.g. 'Keyboard' and 'Bell'),
-     * the tags of source packs ('DRUMS', 'ATMOSPHERIC') and the keywords of the analysis ('seq').
-     * The upper case word is the key. Everything else - Bass, Pad, Organ, Piano, Strings, Synth,
-     * Vocal, Lead, Drum, FX, Pipe, Winds, Pluck, Brass, Drone, World, Chromatic Percussion - is
-     * spelled identically and only gets its case corrected.
+     * a source pack spells differently: the categories of the analysis (e.g. 'Keyboard' and
+     * 'Bell'), the tags of source packs ('DRUMS', 'ATMOSPHERIC') and the keywords of the analysis
+     * ('seq'). The upper case word is the key. Everything else - Bass, Pad, Organ, Piano, Strings,
+     * Synth, Vocal, Lead, Drum, FX, Pipe, Winds, Pluck, Brass, Drone, World, Chromatic Percussion -
+     * is spelled identically and only gets its case corrected.
      */
     private static final Map<String, String> ATTRIBUTE_LOOKUP   = HashMap.newHashMap (80);
     static
@@ -321,9 +322,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         ATTRIBUTE_LOOKUP.put ("ARPEGGIO", "Arp");
         ATTRIBUTE_LOOKUP.put ("ARPEGGIATED", "Arp");
         ATTRIBUTE_LOOKUP.put ("ARPEGGIATOR", "Arp");
-        ATTRIBUTE_LOOKUP.put ("SEQ", "Sequenced");
-        ATTRIBUTE_LOOKUP.put ("SEQUENCE", "Sequenced");
-        ATTRIBUTE_LOOKUP.put ("SEQUENCER", "Sequenced");
+        ATTRIBUTE_LOOKUP.put ("SEQ", TAG_SEQUENCED);
+        ATTRIBUTE_LOOKUP.put ("SEQUENCE", TAG_SEQUENCED);
+        ATTRIBUTE_LOOKUP.put ("SEQUENCER", TAG_SEQUENCED);
         ATTRIBUTE_LOOKUP.put ("ATMOSPHERE", "Atmo");
         ATTRIBUTE_LOOKUP.put ("ATMOSPHERIC", "Atmo");
         ATTRIBUTE_LOOKUP.put ("MONOPHONIC", "Mono");
@@ -702,9 +703,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Remove the zones which only sound on note-off. The device has no release trigger for a
-     * sample map, so such a zone would sound on note-on, stacked on the attack samples of the same
-     * key. A group which holds nothing else is dropped.
+     * Remove the zones which only sound on note-off. The device has no release trigger for a sample
+     * map, so such a zone would sound on note-on, stacked on the attack samples of the same key. A
+     * group which holds nothing else is dropped.
      *
      * @param groups The groups
      * @return The groups without release-triggered zones
@@ -738,19 +739,19 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Merge the groups which never sound at the same time, so that they share one oscillator.
-     * To the device they are one sample map: it selects the entry by key and velocity and
-     * alternates the entries which overlap. The velocity layers of an instrument, the round
-     * robins which a source keeps in separate groups (an SFZ file often holds one group per
-     * sequence position) and key ranges which follow each other therefore all fit into one map.
-     * Only a stack of layers - zones which sound together on the same note - needs an oscillator
-     * per layer, and the oscillators are scarce: three per layer of the patch. Without this,
-     * an SFZ file with one group per round-robin position played its first two positions on
-     * every note and cycled only the rest.
+     * Merge the groups which never sound at the same time, so that they share one oscillator. To
+     * the device they are one sample map: it selects the entry by key and velocity and alternates
+     * the entries which overlap. The velocity layers of an instrument, the round robins which a
+     * source keeps in separate groups (an SFZ file often holds one group per sequence position) and
+     * key ranges which follow each other therefore all fit into one map. Only a stack of layers -
+     * zones which sound together on the same note - needs an oscillator per layer, and the
+     * oscillators are scarce: three per layer of the patch. Without this, an SFZ file with one
+     * group per round-robin position played its first two positions on every note and cycled only
+     * the rest.
      * <p>
-     * Groups can only share an oscillator if the settings which the oscillator takes from its
-     * group agree: the key tracking and the panning, which the device does not read from the
-     * entries of a sample map.
+     * Groups can only share an oscillator if the settings which the oscillator takes from its group
+     * agree: the key tracking and the panning, which the device does not read from the entries of a
+     * sample map.
      *
      * @param groups The groups, each free of internal stacks (see {@link #splitLayers(List)})
      * @return The merged groups, in the order of the first group of each
@@ -777,9 +778,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Test if two groups can share one sample map: no zone of one sounds at the same time as a
-     * zone of the other, the oscillator settings agree and the map stays within the entry limit
-     * of the device.
+     * Test if two groups can share one sample map: no zone of one sounds at the same time as a zone
+     * of the other, the oscillator settings agree and the map stays within the entry limit of the
+     * device.
      *
      * @param a The first group
      * @param b The second group
@@ -789,11 +790,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     {
         final List<ISampleZone> zonesA = a.getSampleZones ();
         final List<ISampleZone> zonesB = b.getSampleZones ();
-        if (zonesA.size () + zonesB.size () > MAX_MAP_ENTRIES)
-            return false;
-        if (Math.abs (getOscillatorKeyTracking (zonesA) - getOscillatorKeyTracking (zonesB)) > 0.0001)
-            return false;
-        if (Math.abs (getGroupPanningOffset (a) - getGroupPanningOffset (b)) > 0.0001)
+        if ((zonesA.size () + zonesB.size () > MAX_MAP_ENTRIES) || (Math.abs (getOscillatorKeyTracking (zonesA) - getOscillatorKeyTracking (zonesB)) > 0.0001) || (Math.abs (getGroupPanningOffset (a) - getGroupPanningOffset (b)) > 0.0001))
             return false;
         for (final ISampleZone zoneA: zonesA)
             for (final ISampleZone zoneB: zonesB)
@@ -1936,8 +1933,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     /**
      * Write the four attributes of a patch: the category first, then the keywords. The device lists
-     * them next to the name and filters the patches by them, therefore every attribute is written in
-     * the spelling which the factory sound sets use, see {@link #toDeviceAttribute(String)} -
+     * them next to the name and filters the patches by them, therefore every attribute is written
+     * in the spelling which the factory sound sets use, see {@link #toDeviceAttribute(String)} -
      * otherwise e.g. 'Keyboard' or 'KEYS' ends up in the filter list next to the 'Keys' of every
      * other patch and each only finds a part of the sounds. A category which was not detected is
      * left out instead of filling the filter list with the word 'Unknown'.
@@ -2000,7 +1997,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         {
             if (c == '_' || c == ' ')
             {
-                if (sb.length () > 0 && sb.charAt (sb.length () - 1) != ' ')
+                if (!sb.isEmpty () && sb.charAt (sb.length () - 1) != ' ')
                     sb.append (' ');
                 isWordStart = true;
                 continue;

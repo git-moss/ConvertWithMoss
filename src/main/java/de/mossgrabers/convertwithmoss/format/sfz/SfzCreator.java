@@ -438,7 +438,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (lfoDepth != 0)
         {
             final StringBuilder lfoStr = new StringBuilder ();
-            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is limited
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is
+            // limited
             // to +-1200 cent
             lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append ((int) Math.round (Math.clamp (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH, -1200, 1200)));
 
@@ -694,7 +695,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (lfoDepth != 0)
         {
             final StringBuilder lfoStr = new StringBuilder ();
-            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is limited
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is
+            // limited
             // to +-1200 cent
             lfoStr.append (SfzOpcode.FILLFO_DEPTH).append ('=').append ((int) Math.round (Math.clamp (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH, -1200, 1200)));
 

@@ -17,7 +17,9 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class TALSamplerModulator
 {
-    /** Parameter ID for Cutoff. The parameter IDs are the indices of the parameters of the plug-in. */
+    /**
+     * Parameter ID for Cutoff. The parameter IDs are the indices of the parameters of the plug-in.
+     */
     public static final int DEST_ID_CUTOFF        = 7;
     /** Parameter ID for Volume of Layer A. */
     public static final int DEST_ID_VOLUME_A      = 62;
@@ -30,7 +32,10 @@ public class TALSamplerModulator
     public static final int SOURCE_ID_ENV3        = 2;
     /** Source ID for Velocity. */
     public static final int SOURCE_ID_VELOCITY    = 6;
-    /** Source ID for the pitch wheel, which the plug-in routes to the master tune for the pitch bend. */
+    /**
+     * Source ID for the pitch wheel, which the plug-in routes to the master tune for the pitch
+     * bend.
+     */
     public static final int SOURCE_ID_PITCH_WHEEL = 7;
     /** Source ID for the modulation wheel. */
     public static final int SOURCE_ID_MOD_WHEEL   = 8;

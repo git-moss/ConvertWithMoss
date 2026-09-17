@@ -450,9 +450,8 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
 
     /**
      * Convert a zone's audio to the project's sample pool, re-using an already-added identical
-     * sample. The audio is stored the way the device's own import stores it: stereo 16-bit at
-     * 44.1 kHz with the two channels one after the other (mono sources are duplicated to both
-     * channels).
+     * sample. The audio is stored the way the device's own import stores it: stereo 16-bit at 44.1
+     * kHz with the two channels one after the other (mono sources are duplicated to both channels).
      *
      * @param zone The zone to add
      * @param rootKey The original key to store in the sample parameters
