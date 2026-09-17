@@ -616,6 +616,14 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         final int filterKeyTracking = this.getIntegerValue (SfzOpcode.FIL_KEY_TRACK, 0);
         if (filterKeyTracking != 0)
             filter.setCutoffKeyTracking (Math.clamp (filterKeyTracking / 100.0, 0, 1));
+
+        // Filter cutoff modulation by the modulation wheel in cent - the depth of the model covers
+        // IEnvelope#MAX_ENVELOPE_DEPTH cent
+        double cutoffWheel = this.getDoubleValue (SfzOpcode.CUTOFF_ONCC1, 0);
+        if (cutoffWheel == 0)
+            cutoffWheel = this.getDoubleValue (SfzOpcode.CUTOFF_CC1, 0);
+        if (cutoffWheel != 0)
+            filter.getCutoffModWheelModulator ().setDepth (cutoffWheel / IEnvelope.MAX_ENVELOPE_DEPTH);
     }
 
 

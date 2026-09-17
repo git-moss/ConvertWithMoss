@@ -27,6 +27,7 @@ public class DefaultFilter implements IFilter
     protected IEnvelopeModulator cutoffEnvelopeModulator = new DefaultEnvelopeModulator (0);
     protected ILfoModulator      cutoffLfoModulator      = new DefaultLfoModulator (0);
     protected IModulator         cutoffVelocityModulator = new DefaultModulator (0);
+    protected IModulator         cutoffModWheelModulator = new DefaultModulator (0);
 
 
     /**
@@ -104,6 +105,14 @@ public class DefaultFilter implements IFilter
 
     /** {@inheritDoc} */
     @Override
+    public IModulator getCutoffModWheelModulator ()
+    {
+        return this.cutoffModWheelModulator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public double getCutoffKeyTracking ()
     {
         return this.cutoffKeyTracking;
@@ -129,6 +138,7 @@ public class DefaultFilter implements IFilter
         result = prime * result + (int) (temp ^ temp >>> 32);
         result = prime * result + (this.cutoffVelocityModulator == null ? 0 : this.cutoffVelocityModulator.hashCode ());
         result = prime * result + (this.cutoffEnvelopeModulator == null ? 0 : this.cutoffEnvelopeModulator.hashCode ());
+        result = prime * result + (this.cutoffModWheelModulator == null ? 0 : this.cutoffModWheelModulator.hashCode ());
         result = prime * result + this.envelopeDepth;
         temp = Double.doubleToLongBits (this.cutoffKeyTracking);
         result = prime * result + (int) (temp ^ temp >>> 32);
@@ -164,6 +174,13 @@ public class DefaultFilter implements IFilter
                 return false;
         }
         else if (!this.cutoffEnvelopeModulator.equals (other.cutoffEnvelopeModulator))
+            return false;
+        if (this.cutoffModWheelModulator == null)
+        {
+            if (other.cutoffModWheelModulator != null)
+                return false;
+        }
+        else if (!this.cutoffModWheelModulator.equals (other.cutoffModWheelModulator))
             return false;
         if (this.envelopeDepth != other.envelopeDepth || this.poles != other.poles || Double.doubleToLongBits (this.resonance) != Double.doubleToLongBits (other.resonance) || (Double.doubleToLongBits (this.cutoffKeyTracking) != Double.doubleToLongBits (other.cutoffKeyTracking)))
             return false;

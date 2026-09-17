@@ -317,6 +317,12 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
             final double cutoffModDepth = filter.getCutoffVelocityModulator ().getDepth ();
             if (cutoffModDepth != 0)
                 modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_VELOCITY, TALSamplerModulator.DEST_ID_CUTOFF, cutoffModDepth));
+
+            // The plug-in adds wheel x amount to the normalized cutoff, whose range of 0 to 1 is the
+            // whole range of the filter - the unit of the depth of the model as well
+            final double cutoffWheelDepth = filter.getCutoffModWheelModulator ().getDepth ();
+            if (cutoffWheelDepth != 0)
+                modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_MOD_WHEEL, TALSamplerModulator.DEST_ID_CUTOFF, cutoffWheelDepth));
         }
 
         // -----------------------------------------------------------

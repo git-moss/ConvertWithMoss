@@ -545,7 +545,7 @@ Each of the 40 slots has four parameters:
 | parameter | encoding / meaning |
 |-----------|--------------------|
 | `MatrixOnOff{k}` | 0 = *Disabled*, 1 = *Active* |
-| `MatrixSrc{k}` | source index: 4-6 = *Free Env 1-3*, 7-12 = *LFO 1-6*, the same in every format version (fw, corpus). Other sources exist and are not covered |
+| `MatrixSrc{k}` | source index: 4-6 = *Free Env 1-3*, 7-12 = *LFO 1-6*, 14 = *Wheel* (the modulation wheel), the same in every format version (fw, corpus). The firmware 4.0.6 lists 57 sources - 0 *Off*, 1 *Amp Env*, 2 *Filter1 Env*, 3 *Filter2 Env*, 4-6 *Free Env1-3*, 7-12 *LFO 1-6*, 13 *Komplex*, 14 *Wheel*, 15 *Pitch Bend*, 16 *Per-Note Pitch Bend*, 17 *After Touch*, ... 32 *Keytrack*, 33 *Velocity*, 34 *Release Velocity*, ... 40 *Constant* (fw); version 15 inserted *Per-Note Pitch Bend* and *Release Velocity*, so only the indices up to 15 are stable across versions. The other sources are not covered |
 | `MatrixDst{k}` | destination index, **which depends on the format version** (table below): 1 = *Pitch* (all three oscillators at once) and 2-4 = *Osc1-3 Pitch* in every version |
 | `MatrixAmount{k}` | bipolar, `2x - 1` = -100..+100 % |
 
@@ -697,11 +697,17 @@ no filter, or 0 plus the `Filter1*` parameters), the eight `AmpEnv*` parameters 
 Add `Matrix*`, `FreeEnv*` and `Lfo*` parameters only for the modulations you actually use - and then
 all parameters of the LFO or envelope you use.
 
-ConvertWithMoss never writes more than six matrix slots: slots 1-3 carry the pitch envelopes of
-oscillators 1-3 (*Free Env 1-3* into *Osc1-3 Pitch*), slot 4 a vibrato (*LFO 1* into *Pitch*, one
-slot for all three oscillators), slot 5 a tremolo (*LFO 2* into *VCA*, unipolar, negative amount)
-and slot 6 a modulation of the filter cutoff (*LFO 3* into *Filter1 Cutoff*, bipolar). Slots 7-40 and
-LFOs 4-6 are left untouched for the user.
+ConvertWithMoss never writes more than seven matrix slots and fills them from slot 1 on, in the
+order a player looks for them, so a patch shows its modulations at the top of the matrix page
+without gaps: first the modulation wheel into *Filter1 Cutoff* (*Wheel*, bipolar; the amount is the
+share of the filter range which the wheel at its top adds - 291 of the 1,787 factory patches of an
+Iridium MK2 carry such a slot), then the pitch envelopes of the oscillators 1-3 (*Free Env 1-3*
+into *Osc1-3 Pitch*, the free envelope with the index of the oscillator), a vibrato (*LFO 1* into
+*Pitch*, one slot for all three oscillators), a tremolo (*LFO 2* into *VCA*, unipolar, negative
+amount) and a modulation of the filter cutoff (*LFO 3* into *Filter1 Cutoff*, bipolar). A patch
+with only a wheel modulation therefore has it in slot 1. The remaining slots and LFOs 4-6 are left
+untouched for the user; the reader (section 8) finds each modulation by its source and destination
+in any slot, so it does not depend on this order.
 
 ### 7.2 Pitfalls seen on the device
 
@@ -851,8 +857,9 @@ fourth layer plays its three.
   can be reduced to their plain type.
 * Scan the 40 matrix slots: an active slot with a free envelope source and an oscillator's pitch as
   destination is that oscillator's pitch envelope; an LFO into *Pitch* or an oscillator's pitch is a
-  vibrato, an LFO into *VCA* a tremolo and an LFO into *Filter1 Cutoff* a filter modulation (convert
-  the amount with the laws of 5.7 - the pitch amount is squared). Match a destination by its hint
+  vibrato, an LFO into *VCA* a tremolo, an LFO into *Filter1 Cutoff* a filter modulation and the
+  *Wheel* into *Filter1 Cutoff* the modulation-wheel control of the cutoff (convert the amount with
+  the laws of 5.7 - the pitch amount is squared, the cutoff amount is linear). Match a destination by its hint
   and only without one by the index of the file's version (5.7). Skip an LFO with
   `Lfo{n}Sync = 1` unless you know the tempo, and read a phase at or above 0.9986 as free running.
 * Accept non-integral enumeration values (section 5.5).

@@ -79,6 +79,17 @@ public interface IFilter
 
 
     /**
+     * Get the modulation wheel modulator for the cutoff. The wheel opens or closes the filter while
+     * a note plays: the depth is the share of the range of the filter which the wheel at its top
+     * adds to the cutoff, like the depth of the cutoff envelope modulator, and a negative depth
+     * closes the filter. A depth of zero means that there is no modulation.
+     *
+     * @return The modulator, never null
+     */
+    IModulator getCutoffModWheelModulator ();
+
+
+    /**
      * Get the keyboard tracking amount applied to the filter cutoff. A value of 0 means no
      * tracking, 1 means the cutoff follows the played note one-to-one (one semi-tone per semi-tone,
      * +100%) and -1 means inverse tracking (-100%).

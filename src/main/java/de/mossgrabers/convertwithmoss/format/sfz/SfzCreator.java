@@ -653,6 +653,12 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             // In cent per key, 100 is the cutoff following the keyboard one to one
             buffer.append (addAttribute (SfzOpcode.FIL_KEY_TRACK, Integer.toString ((int) Math.round (filter.getCutoffKeyTracking () * 100.0)), true));
 
+        // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is limited to
+        // +-9600 cent
+        final double cutoffWheelDepth = filter.getCutoffModWheelModulator ().getDepth ();
+        if (cutoffWheelDepth != 0)
+            buffer.append (addAttribute (SfzOpcode.CUTOFF_ONCC1, Integer.toString ((int) Math.round (Math.clamp (cutoffWheelDepth * IEnvelope.MAX_ENVELOPE_DEPTH, -9600, 9600))), true));
+
         // Envelope modulation
 
         final StringBuilder envelopeStr = new StringBuilder ();
