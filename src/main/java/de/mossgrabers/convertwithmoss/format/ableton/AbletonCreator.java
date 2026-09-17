@@ -230,7 +230,8 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final double filterModDepth = cutoffModulator.getDepth ();
         text = text.replace ("%FILTER_EG_ENABLED%", filterModDepth != 0 ? "true" : FALSE);
-        text = text.replace ("%FILTER_EG_AMOUNT%", Integer.toString ((int) Math.round (filterModDepth * 72)));
+        // The amount is in semitones (+-72), the depth of the model covers MAX_ENVELOPE_DEPTH cent
+        text = text.replace ("%FILTER_EG_AMOUNT%", Integer.toString ((int) Math.round (Math.clamp (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0, -72, 72))));
 
         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
 
