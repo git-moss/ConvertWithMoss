@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -197,11 +196,7 @@ public class AkaiS900DiskImage
 
         // Write: Mono, 16-bit (from 12-bit)
         final int sampleRate = sample.getSampleRate ();
-
-        final WaveFile wavFile = new WaveFile (1, sampleRate, 16, (int) sampleCountPart);
-        final DataChunk dataChunk = wavFile.getDataChunk ();
-        dataChunk.setData (wavBuffer);
-        return Optional.of (wavFile);
+        return Optional.of (new WaveFile (1, sampleRate, 16, wavBuffer));
     }
 
 

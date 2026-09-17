@@ -154,7 +154,7 @@ public class Kontakt2Header
     {
         this.notifier = notifier;
         this.isBigEndian = isBigEndian;
-        this.simpleDateFormatter.setTimeZone (TimeZone.getTimeZone ("UTC+1"));
+        this.simpleDateFormatter.setTimeZone (TimeZone.getTimeZone ("GMT+01:00"));
     }
 
 

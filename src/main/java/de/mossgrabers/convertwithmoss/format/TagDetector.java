@@ -28,6 +28,8 @@ import java.util.regex.Pattern;
 @SuppressWarnings("javadoc")
 public class TagDetector
 {
+    private static final Pattern                DELIMITER_PATTERN             = Pattern.compile ("[ _-]+");
+
     private static final Map<String, String []> CATEGORIES                    = new HashMap<> ();
     private static final Map<String, String>    CATEGORY_LOOKUP               = new TreeMap<> (new StringLengthComparator ());
     private static final Map<String, String>    CATEGORY_PREFIX_LOOKUP        = new HashMap<> ();
@@ -200,12 +202,24 @@ public class TagDetector
             "Bras",
             "Brs"
         });
+        // 'Wave' is deliberately not a keyword: it is part of the names of the wavetable synthesizers
+        // (Waldorf Microwave and Wave, PPG Wave, Korg Wavestation) and of the folders which hold
+        // their sounds, and those are not chip sounds
         CATEGORIES.put (CATEGORY_CHIP, new String []
         {
             CATEGORY_CHIP,
+            "Commodore",
+            "Chiptune",
             "Computer",
-            "CPU",
-            "Wave"
+            "Nintendo",
+            "Gameboy",
+            "Arcade",
+            "8-Bit",
+            "Atari",
+            "Amiga",
+            "8Bit",
+            "C64",
+            "CPU"
         });
         CATEGORIES.put (CATEGORY_VOCAL, new String []
         {
@@ -809,7 +823,7 @@ public class TagDetector
     {
         for (final String text: texts)
         {
-            final String [] tokens = text.trim ().toUpperCase (Locale.US).split ("[ _-]+");
+            final String [] tokens = DELIMITER_PATTERN.split (text.trim ().toUpperCase (Locale.US));
             if (tokens.length > 1)
             {
                 final String category = CATEGORY_PREFIX_LOOKUP.get (tokens[0]);

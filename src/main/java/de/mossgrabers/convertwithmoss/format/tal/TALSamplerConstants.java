@@ -4,14 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.format.tal;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
-import de.mossgrabers.convertwithmoss.core.model.IGroup;
-import de.mossgrabers.convertwithmoss.core.model.ISampleData;
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 
@@ -32,6 +27,16 @@ public class TALSamplerConstants
 
     /** The current file format version to set. */
     public static final String       CURRENT_VERSION = "9";
+
+    /**
+     * The longest stage of an envelope in seconds, which the value 1 of an attack, hold, decay or
+     * release selects. The times of the envelopes of TAL-Sampler do not depend on the length of the
+     * samples: rendered offline (version 4.7.2) with the values 0.4, 0.6, 0.8 and 1.0 of the
+     * amplitude release, a note fades out in 0.19, 0.93, 2.95 and 7.2 seconds, which is 7.2 x
+     * value^4 within the accuracy of the measurement, and the attack follows the same law; the hold
+     * and the decay are taken to follow it as well.
+     */
+    public static final double       MAX_ENVELOPE_TIME = 7.2;
 
     /**
      * The maximum number of voices which can be played. Like all other parameters of the format,
@@ -175,32 +180,30 @@ public class TALSamplerConstants
 
 
     /**
-     * Each part of a TAL Sampler envelope can be as long as the sample (value = 1). Since the multi
-     * sample source has several samples of different lengths, this function calculates the medium
-     * length of all samples and converts it to seconds depending on the sample rate.
+     * Convert the normalized value of an envelope stage into seconds: {@link #MAX_ENVELOPE_TIME} x
+     * value^4, the law of the plug-in.
      *
-     * @param groups The multi groups which contains the samples
-     * @return The medium sample length in seconds
-     * @throws IOException Could not get the sample rate from the audio data
+     * @param normalizedTime The value of the stage in the range of [0..1]
+     * @return The time in seconds
      */
-    public static double getMediumSampleLength (final List<IGroup> groups) throws IOException
+    public static double denormalizeEnvelopeTime (final double normalizedTime)
     {
-        int numSamples = 0;
-        int lengths = 0;
-        int sampleRate = -1;
-        for (final IGroup group: groups)
-            for (final ISampleZone zone: group.getSampleZones ())
-            {
-                lengths += zone.getStop ();
-                numSamples++;
-                if (sampleRate < 0)
-                {
-                    final Optional<ISampleData> sampleData = zone.getSampleData ();
-                    if (sampleData.isPresent ())
-                        sampleRate = sampleData.get ().getAudioMetadata ().getSampleRate ();
-                }
-            }
-        return lengths == 0 ? 0.001 : Math.max (0.001, lengths / (double) numSamples / sampleRate);
+        final double value = Math.clamp (normalizedTime, 0.0, 1.0);
+        return MAX_ENVELOPE_TIME * value * value * value * value;
+    }
+
+
+    /**
+     * Convert the time of an envelope stage into the normalized value of the stage, the inverse of
+     * {@link #denormalizeEnvelopeTime(double)}. A time beyond the longest stage is written as the
+     * longest stage.
+     *
+     * @param seconds The time in seconds
+     * @return The value of the stage in the range of [0..1]
+     */
+    public static double normalizeEnvelopeTime (final double seconds)
+    {
+        return Math.clamp (Math.pow (Math.max (0, seconds) / MAX_ENVELOPE_TIME, 0.25), 0.0, 1.0);
     }
 
 

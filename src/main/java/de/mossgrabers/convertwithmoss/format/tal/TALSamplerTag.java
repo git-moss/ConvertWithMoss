@@ -151,7 +151,7 @@ public class TALSamplerTag
     public static final String FILTER_RESONANCE        = "filterresonance";
     /** The filter mode attribute. */
     public static final String FILTER_MODE             = "filtermode";
-    /** The filter keyboard tracking attribute. [0..1] -> -100%..100% */
+    /** The filter keyboard tracking attribute. [0..1] -> 0%..100%, the plug-in clamps a negative value to 0%. */
     public static final String FILTER_KEYBOARD         = "filterkeyboardvalue";
     /** The filter envelope intensity attribute. [0..1] -> -100%..100% */
     public static final String FILTER_ENVELOPE         = "filterenvelope";
