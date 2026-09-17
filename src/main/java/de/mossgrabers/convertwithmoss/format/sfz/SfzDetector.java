@@ -611,9 +611,11 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         final int filterVelocity = this.getIntegerValue (SfzOpcode.FIL_VELOCITY_TRACK, 0);
         filter.getCutoffVelocityModulator ().setDepth (filterVelocity / 9600.0);
 
+        // The key tracking is given in cent per key, 100 is the cutoff following the keyboard one to
+        // one, which is the full tracking of the model
         final int filterKeyTracking = this.getIntegerValue (SfzOpcode.FIL_KEY_TRACK, 0);
         if (filterKeyTracking != 0)
-            filter.setCutoffKeyTracking (Math.clamp (filterKeyTracking / 1200.0, 0, 1));
+            filter.setCutoffKeyTracking (Math.clamp (filterKeyTracking / 100.0, 0, 1));
     }
 
 
