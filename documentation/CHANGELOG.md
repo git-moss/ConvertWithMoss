@@ -86,6 +86,7 @@
   * Fixed: The loop of a pad which loops the whole sample ended one frame behind the sample, e.g. 0..144000 for a sample of 144000 frames. It ends at the last frame of the sample now.
 * Roland MC-707/MC-101
   * New: The pitch key follow of a partial (100 = chromatic, 0 = the same pitch on every key) is read and written, and the keys of a written drum kit which play a zone without key tracking all get the pitch of its root key.
+  * Fixed: A stereo sample was read and written with its two channels interleaved, but the project stores all frames of the left channel followed by all frames of the right channel. Every stereo sample of a read project therefore played at double speed, an octave up and twice in a row - the left channel, then the right one - which the audition of the Contents dialog played as two notes for every tone of the VHS Soundpack, and a written project would have played its samples the same way on the device. Both directions now use the layout of the device. Roland's own projects store every sample in stereo; a project recorded on the device stores mono samples, which were not affected.
 * Roland ZEN-Core
   * New: The pitch key follow of a partial is read and written - the same field as on the MC-707, 100 = chromatic in all templates. A drum zone was converted as chromatic and written to follow the keyboard.
 * Renoise

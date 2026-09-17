@@ -450,8 +450,9 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
 
     /**
      * Convert a zone's audio to the project's sample pool, re-using an already-added identical
-     * sample. The audio is stored the way the device's own import stores it: interleaved stereo
-     * 16-bit at 44.1 kHz (mono sources are duplicated to both channels).
+     * sample. The audio is stored the way the device's own import stores it: stereo 16-bit at
+     * 44.1 kHz with the two channels one after the other (mono sources are duplicated to both
+     * channels).
      *
      * @param zone The zone to add
      * @param rootKey The original key to store in the sample parameters
@@ -569,11 +570,34 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
             ZenCoreUtil.writeUnsigned32 (chunk, 0x20, 0x8000L + i, false);
             ZenCoreUtil.writeUnsigned32 (chunk, 0x24, SAMPLE_RATE, false);
             // 0x28: uninitialized memory in Roland-written files, left at 0 here
-            // The audio starts after a zero pre-pad, exactly as in device-written chunks.
-            System.arraycopy (sample.pcm, 0, chunk, 0x30 + PCM_PREPAD, sample.pcm.length);
+            // The audio starts after a zero pre-pad, exactly as in device-written chunks, and
+            // stores the channels one after the other
+            writeChannelsSeparately (sample.pcm, chunk, 0x30 + PCM_PREPAD);
             out.writeBytes (chunk);
         }
         return out.toByteArray ();
+    }
+
+
+    /**
+     * Store interleaved stereo frames the way the device stores them: first all frames of the left
+     * channel, then all frames of the right one.
+     *
+     * @param pcm The interleaved stereo frames
+     * @param chunk The chunk to write to
+     * @param offset The offset of the audio in the chunk
+     */
+    private static void writeChannelsSeparately (final byte [] pcm, final byte [] chunk, final int offset)
+    {
+        final int frames = pcm.length / 4;
+        final int rightOffset = offset + frames * 2;
+        for (int frame = 0; frame < frames; frame++)
+        {
+            chunk[offset + frame * 2] = pcm[frame * 4];
+            chunk[offset + frame * 2 + 1] = pcm[frame * 4 + 1];
+            chunk[rightOffset + frame * 2] = pcm[frame * 4 + 2];
+            chunk[rightOffset + frame * 2 + 1] = pcm[frame * 4 + 3];
+        }
     }
 
 

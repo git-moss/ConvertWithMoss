@@ -197,17 +197,16 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
             final int dataSize = (int) ZenCoreUtil.readUnsigned32 (data, chunk + 8, false);
             // The size field counts the bytes of ONE channel, not 16 bit words, and the audio
             // starts after the chunk header's zero pre-pad. Bit 15 of the sample tag marks a
-            // stereo sample, whose two channels are stored interleaved behind each other.
+            // stereo sample, which stores all frames of its left channel followed by all frames of
+            // its right channel - not interleaved frames.
             final int channelBytes = (int) ZenCoreUtil.readUnsigned32 (data, chunk + 0x0C, false);
             final int channels = (ZenCoreUtil.readUnsigned32 (data, chunk + 0x20, false) & 0x8000) == 0 ? 1 : 2;
             final int pcmOffset = chunk + headerSize + PCM_PREPAD;
             final int pcmLength = Math.min (channelBytes * channels, usdaEnd - pcmOffset);
             if (pcmLength > 0)
             {
-                final byte [] pcm = new byte [pcmLength];
-                System.arraycopy (data, pcmOffset, pcm, 0, pcmLength);
                 final MC707Sample sample = samples.get (usedSlots.get (i));
-                sample.pcm = pcm;
+                sample.pcm = channels == 1 ? Arrays.copyOfRange (data, pcmOffset, pcmOffset + pcmLength) : interleaveChannels (data, pcmOffset, channelBytes, pcmLength);
                 sample.channels = channels;
             }
             chunk += headerSize + dataSize;
@@ -216,6 +215,39 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
         // Drop slots without audio, they cannot be converted.
         samples.values ().removeIf (sample -> sample.pcm == null);
         return samples;
+    }
+
+
+    /**
+     * Interleave the frames of a stereo sample, which the file stores channel by channel: first all
+     * frames of the left channel, then all frames of the right one.
+     *
+     * @param data The file
+     * @param offset The offset of the audio
+     * @param channelBytes The number of bytes of one channel
+     * @param available The number of bytes which are present in the file
+     * @return The interleaved frames
+     */
+    private static byte [] interleaveChannels (final byte [] data, final int offset, final int channelBytes, final int available)
+    {
+        final int frames = channelBytes / 2;
+        final byte [] pcm = new byte [frames * 4];
+        for (int frame = 0; frame < frames; frame++)
+        {
+            final int left = frame * 2;
+            final int right = channelBytes + frame * 2;
+            if (left + 1 < available)
+            {
+                pcm[frame * 4] = data[offset + left];
+                pcm[frame * 4 + 1] = data[offset + left + 1];
+            }
+            if (right + 1 < available)
+            {
+                pcm[frame * 4 + 2] = data[offset + right];
+                pcm[frame * 4 + 3] = data[offset + right + 1];
+            }
+        }
+        return pcm;
     }
 
 
