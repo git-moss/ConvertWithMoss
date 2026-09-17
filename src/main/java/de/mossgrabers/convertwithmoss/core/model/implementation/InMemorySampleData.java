@@ -6,12 +6,11 @@ package de.mossgrabers.convertwithmoss.core.model.implementation;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
@@ -57,12 +56,7 @@ public class InMemorySampleData implements ISampleData
     {
         if (!audioMetadata.isMono ())
             throw new IllegalArgumentException ("short [] constructor can only be called for mono samples");
-
-        final ByteBuffer buffer = ByteBuffer.allocate (sampleData.length * 2);
-        buffer.order (ByteOrder.LITTLE_ENDIAN);
-        for (final short s: sampleData)
-            buffer.putShort (s);
-        return buffer.array ();
+        return AudioFileUtils.convertToByteArray (sampleData);
     }
 
 

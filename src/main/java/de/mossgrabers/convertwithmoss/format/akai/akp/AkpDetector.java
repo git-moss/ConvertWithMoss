@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -35,12 +36,14 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String [] ENDINGS_PRESET       =
+    private static final Pattern   MULTIPLE_SPACES_PATTERN = Pattern.compile ("\\s{2,}(?=\\S*$)");
+
+    private static final String [] ENDINGS_PRESET          =
     {
         ".akp"
     };
 
-    private static final String [] ENDINGS_PERFORMANCES =
+    private static final String [] ENDINGS_PERFORMANCES    =
     {
         ".akm"
     };
@@ -106,7 +109,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
                 {
                     // Workaround for several samples seem to have 1 space before the note name
                     // but are stored with 2 or more spaces
-                    final String n2 = n.replaceFirst ("\\s{2,}(?=\\S*$)", " ");
+                    final String n2 = MULTIPLE_SPACES_PATTERN.matcher (n).replaceFirst (" ");
                     final File sampleFile2 = findFileIgnoreCase (file.getParentFile (), n2 + ".wav");
                     if (sampleFile2.exists ())
                         sampleFile = sampleFile2;

@@ -22,6 +22,7 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
@@ -35,7 +36,6 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreUtil;
 import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -206,7 +206,7 @@ public class MC707Creator extends AbstractCreator<MC707CreatorUI>
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
             // The device's fixed sample rate - scale all loop/start/end positions to it.
-            recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
+            this.recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
 
             final List<ISampleZone> zones = new ArrayList<> ();
             for (final IGroup group: multisampleSource.getNonEmptyGroups (true))

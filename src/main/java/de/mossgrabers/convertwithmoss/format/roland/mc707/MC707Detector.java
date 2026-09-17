@@ -52,6 +52,17 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
     /** The audio of a SMPd chunk starts after a zero pre-pad which follows the chunk header. */
     private static final int PCM_PREPAD      = 64;
 
+    // Keyboard table of the partials: one 12 byte row per partial with the partial switch, the key
+    // range and the velocity range, see MC707_FORMAT.md. A partial which is switched off keeps its
+    // wave but does not sound.
+    private static final int KBD_TABLE       = 0x98;
+    private static final int KBD_STRIDE      = 0x0C;
+    private static final int KBD_SWITCH      = 0x00;
+    private static final int KBD_KEY_LOW     = 0x04;
+    private static final int KBD_KEY_HIGH    = 0x05;
+    private static final int KBD_VEL_LOW     = 0x08;
+    private static final int KBD_VEL_HIGH    = 0x09;
+
     // Partial oscillator block, see MC707Creator.
     private static final int PARTIAL_BLOCK   = 0xC8;
     private static final int PARTIAL_STRIDE  = 0x7C;
@@ -269,6 +280,20 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
         final StringBuilder signature = new StringBuilder ("Tone:").append (name);
         for (int partial = 0; partial < 4; partial++)
         {
+            final int kbdOffset = offset + KBD_TABLE + partial * KBD_STRIDE;
+            // A switched-off partial keeps its wave but does not sound
+            if (data[kbdOffset + KBD_SWITCH] == 0)
+                continue;
+            // The key range of the partial: several partials with their own samples and ranges
+            // form a keyboard split, e.g. a piano sampled every few keys
+            int keyLow = data[kbdOffset + KBD_KEY_LOW] & 0xFF;
+            int keyHigh = data[kbdOffset + KBD_KEY_HIGH] & 0xFF;
+            if (keyHigh < keyLow || keyHigh > 127)
+            {
+                keyLow = 0;
+                keyHigh = 127;
+            }
+
             final int partialOffset = offset + PARTIAL_BLOCK + partial * PARTIAL_STRIDE;
             final int waveGroup = data[partialOffset + OSC_WAVE_GROUP];
             final int waveNumber = ZenCoreUtil.readUnsigned16 (data, partialOffset + OSC_WAVE_NUMBER, false);
@@ -279,15 +304,32 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
                 final MC707Sample sample = samples.get (Integer.valueOf (waveNumber - 1));
                 if (sample == null)
                     continue;
-                zones.add (createZone (sample, 0, 127, sample.rootKey, sample.level));
+                zones.add (createZone (sample, keyLow, keyHigh, sample.rootKey, sample.level));
                 signature.append ('/').append (waveNumber);
             }
-            // The partial plays a multi-sample: expand the key-map record into zones.
+            // The partial plays a multi-sample: expand the key-map record into zones and cut them
+            // to the key range of the partial.
             else if (waveGroup == 3 && waveNumber >= 1 && waveNumber <= MC707Project.NUM_MULTISAMPLE_MAPS)
+            {
                 readMultisampleMap (project, waveNumber - 1, samples, zones, signature);
+                limitToKeyRange (zones, keyLow, keyHigh);
+            }
 
             if (zones.isEmpty ())
                 continue;
+            signature.append ('@').append (keyLow).append ('-').append (keyHigh);
+
+            // The velocity range of the partial, several partials with their own ranges form
+            // velocity layers
+            final int velocityLow = data[kbdOffset + KBD_VEL_LOW] & 0xFF;
+            final int velocityHigh = data[kbdOffset + KBD_VEL_HIGH] & 0xFF;
+            if (velocityLow >= 1 && velocityHigh >= velocityLow && velocityHigh <= 127)
+                for (final ISampleZone zone: zones)
+                {
+                    zone.setVelocityLow (velocityLow);
+                    zone.setVelocityHigh (velocityHigh);
+                }
+
             applyPartialShaping (data, offset, partial, zones, signature);
             for (final ISampleZone zone: zones)
                 group.addSampleZone (zone);
@@ -355,6 +397,31 @@ public class MC707Detector extends AbstractDetector<MetadataSettingsUI>
             zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
             if (type != null)
                 zone.setFilter (new DefaultFilter (type, 4, MathUtils.denormalizeCutoff (cutoff / 1023.0), resonance / 1023.0));
+        }
+    }
+
+
+    /**
+     * Cut the zones of a partial to its key range: a zone outside of the range is removed, a zone
+     * across its edge is cut at it.
+     *
+     * @param zones The zones of the partial
+     * @param keyLow The lowest key of the range
+     * @param keyHigh The highest key of the range
+     */
+    private static void limitToKeyRange (final List<ISampleZone> zones, final int keyLow, final int keyHigh)
+    {
+        if (keyLow <= 0 && keyHigh >= 127)
+            return;
+        for (final ISampleZone zone: new ArrayList<> (zones))
+        {
+            if (zone.getKeyHigh () < keyLow || zone.getKeyLow () > keyHigh)
+            {
+                zones.remove (zone);
+                continue;
+            }
+            zone.setKeyLow (Math.max (zone.getKeyLow (), keyLow));
+            zone.setKeyHigh (Math.min (zone.getKeyHigh (), keyHigh));
         }
     }
 

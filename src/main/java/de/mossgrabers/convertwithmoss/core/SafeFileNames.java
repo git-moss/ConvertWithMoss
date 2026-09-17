@@ -7,7 +7,6 @@ package de.mossgrabers.convertwithmoss.core;
 import de.mossgrabers.tools.FileUtils;
 
 
-
 /**
  * Creates file names which are safe on the media and in the tools around an embedded sampler, not
  * only on the file system of the computer which writes them.

@@ -173,9 +173,18 @@ public class ZenCoreDetector extends AbstractDetector<MetadataSettingsUI>
 
         final boolean hasVelocityWindow = partial.velLow > 1 || partial.velHigh < 127;
         final List<ISampleZone> zones = toneGroup.getSampleZones ();
-        for (int i = sizeBefore; i < zones.size (); i++)
+        for (int i = zones.size () - 1; i >= sizeBefore; i--)
         {
             final ISampleZone zone = zones.get (i);
+            // The key range of the partial: a zone outside of it is silent and dropped, a zone
+            // across its edge is cut at it
+            if (zone.getKeyHigh () < partial.keyLow || zone.getKeyLow () > partial.keyHigh)
+            {
+                zones.remove (i);
+                continue;
+            }
+            zone.setKeyLow (Math.max (zone.getKeyLow (), partial.keyLow));
+            zone.setKeyHigh (Math.min (zone.getKeyHigh (), partial.keyHigh));
             if (panning != 0)
                 zone.setPanning (Math.clamp (zone.getPanning () + panning, -1, 1));
             zone.setKeyTracking (Math.clamp (partial.keyFollow / 100.0, 0, 1));

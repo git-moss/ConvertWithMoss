@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
@@ -25,7 +26,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -88,7 +88,7 @@ public class S2400Creator extends AbstractWavCreator<WavChunkSettingsUI>
 
         // Down-sample only the (rare) samples above the native rate, so the loop points in the WAV
         // 'smpl' chunk match the written audio. Samples at 44.1kHz or 48kHz are kept unchanged.
-        recalculateAllSamplePositions (multisampleSource, NATIVE_SAMPLE_RATE, true);
+        this.recalculateAllSamplePositions (multisampleSource, NATIVE_SAMPLE_RATE, true);
 
         // Write only the WAV files of the kit zones - the zones beyond the last pad are not
         // referenced by the kit file. The track names in the kit file are derived the same way, so

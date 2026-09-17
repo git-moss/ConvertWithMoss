@@ -19,6 +19,7 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -30,8 +31,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -171,7 +170,7 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
         final String name = this.settingsConfiguration.isShortenName () ? createShortName (sourceName) : sourceName;
 
         // Samples above the maximum playback rate of the devices are down-sampled
-        recalculateAllSamplePositions (multisampleSource, MAX_SAMPLE_RATE, true);
+        this.recalculateAllSamplePositions (multisampleSource, MAX_SAMPLE_RATE, true);
 
         // Convert all zones first to know if the program needs to be stereo
         final List<PreparedZone> preparedZones = new ArrayList<> ();
