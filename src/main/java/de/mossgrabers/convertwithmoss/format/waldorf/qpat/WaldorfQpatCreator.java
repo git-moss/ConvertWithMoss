@@ -281,7 +281,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final File multiFile = this.createUniqueFilename (destinationFolder, fileName, "qpat");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
-        final String relativeSamplePath = "samples/" + sampleName;
+        // The sample folder carries the counter which the file name got when a preset of the same
+        // name was already in the destination folder, otherwise the samples of the two presets
+        // end up in one folder and those with the same name overwrite each other
+        final String relativeSamplePath = "samples/" + sampleName + getUniqueSuffix (multiFile, fileName, "qpat");
 
         final List<List<IGroup>> layers = distributeToLayers (splitLayers (this.combineSplitStereo (multisampleSource)), this.settingsConfiguration.getMaximumLayers ());
         final List<IGroup> groups = new ArrayList<> ();
