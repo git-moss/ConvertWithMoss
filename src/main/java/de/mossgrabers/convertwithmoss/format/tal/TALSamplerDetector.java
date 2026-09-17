@@ -34,6 +34,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -133,15 +134,17 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
+        // TAL Sampler lists its presets by file name, so the file name is the name of the preset.
+        // The 'programname' attribute is the name the program was saved under, which the producer
+        // of a pack often changes by renaming the file afterwards - e.g. to prefix the synthesizer
+        // the samples come from. It is only needed to tell the programs of a file apart.
+        final String fileName = FileUtils.getNameWithoutType (sourceFile);
+        final List<Element> programElements = XMLUtils.getChildElementsByName (programsElement, TALSamplerTag.PROGRAM, false);
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
-        for (final Element programElement: XMLUtils.getChildElementsByName (programsElement, TALSamplerTag.PROGRAM, false))
+        for (final Element programElement: programElements)
         {
-            final String name = programElement.getAttribute (TALSamplerTag.PROGRAM_NAME);
-            if (name.isBlank ())
-            {
-                this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_NO_NAME");
-                continue;
-            }
+            final String programName = programElement.getAttribute (TALSamplerTag.PROGRAM_NAME);
+            final String name = programElements.size () > 1 && !programName.isBlank () ? fileName + " - " + programName : fileName;
 
             // Parse all groups
             final List<IGroup> groups = new ArrayList<> (4);
