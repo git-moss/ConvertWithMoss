@@ -222,28 +222,112 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     }
 
     /**
-     * The categories for which the device uses a different word than this application. Everything
-     * else - Bass, Pad, Organ, Piano, Strings, Synth, Vocal, Lead, Drum, FX, Pipe, Winds, Pluck,
-     * Brass, Drone, World, Chromatic Percussion - is spelled identically in the factory sound sets
-     * and is written unchanged.
+     * The attributes of the factory sound sets of the device in their spelling - the vocabulary of
+     * the 1,787 factory patches of an Iridium MK2, the most frequent first. The device lists the
+     * attributes next to the name and filters the patches by them, and it lists 'Keys', 'KEYS' and
+     * 'keys' as three entries which each find a part of the sounds. Therefore every attribute is
+     * matched against this list regardless of its case and written in the spelling of the list.
      */
-    private static final Map<String, String> ATTRIBUTE_NAMES = HashMap.newHashMap (14);
+    private static final String []           FACTORY_ATTRIBUTES = new String []
+    {
+        "Synth",
+        "Pad",
+        "Atmo",
+        "Keys",
+        "FX",
+        TAG_PERCUSSIVE,
+        "Epic",
+        "PPG",
+        "Lead",
+        "Bass",
+        "Arp",
+        "Noise",
+        "Strings",
+        "Sequenced",
+        "Granular",
+        "Vocal",
+        "FM",
+        "Cinematic",
+        "Resonator",
+        "Organ",
+        "Loop",
+        "Bells",
+        "Kernel FM",
+        "Mono",
+        "Drum",
+        "Kernels",
+        "Sample",
+        "Monophon",
+        "Wavetable",
+        "Piano",
+        "Brass",
+        "Experimental",
+        "Space",
+        "Drone",
+        "World",
+        "Pipe",
+        "Winds",
+        "Chromatic Percussion",
+        "Pluck",
+        "DX7"
+    };
+
+    /**
+     * The spelling of the factory sound sets for every word which this application, the analysis or
+     * a source pack spells differently: the categories of the analysis (e.g. 'Keyboard' and 'Bell'),
+     * the tags of source packs ('DRUMS', 'ATMOSPHERIC') and the keywords of the analysis ('seq').
+     * The upper case word is the key. Everything else - Bass, Pad, Organ, Piano, Strings, Synth,
+     * Vocal, Lead, Drum, FX, Pipe, Winds, Pluck, Brass, Drone, World, Chromatic Percussion - is
+     * spelled identically and only gets its case corrected.
+     */
+    private static final Map<String, String> ATTRIBUTE_LOOKUP   = HashMap.newHashMap (80);
     static
     {
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_KEYBOARD, "Keys");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_BELL, "Bells");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_PERCUSSION, TAG_PERCUSSIVE);
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_LOOPS, "Loop");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_ACOUSTIC_DRUM, "Drum");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_MONOSYNTH, "Monophon");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_ORCHESTRAL, "Cinematic");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_ENSEMBLE, "Strings");
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_DESTRUCTION, "Experimental");
+        for (final String attribute: FACTORY_ATTRIBUTES)
+            ATTRIBUTE_LOOKUP.put (attribute.toUpperCase (Locale.US), attribute);
+        // Abbreviations which the factory sets do not use keep their capitals
+        for (final String abbreviation: new String []
+        {
+            "MPE",
+            "EBM",
+            "EDM"
+        })
+            ATTRIBUTE_LOOKUP.put (abbreviation, abbreviation);
+
+        // The categories of the analysis
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_KEYBOARD.toUpperCase (Locale.US), "Keys");
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_BELL.toUpperCase (Locale.US), "Bells");
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_PERCUSSION.toUpperCase (Locale.US), TAG_PERCUSSIVE);
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_LOOPS.toUpperCase (Locale.US), "Loop");
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_ACOUSTIC_DRUM.toUpperCase (Locale.US), "Drum");
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_MONOSYNTH.toUpperCase (Locale.US), "Monophon");
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_ORCHESTRAL.toUpperCase (Locale.US), "Cinematic");
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_ENSEMBLE.toUpperCase (Locale.US), "Strings");
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_DESTRUCTION.toUpperCase (Locale.US), "Experimental");
         // The device has one attribute for all drum sounds which are not a full kit
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_HI_HAT, TAG_PERCUSSIVE);
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_KICK, TAG_PERCUSSIVE);
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_SNARE, TAG_PERCUSSIVE);
-        ATTRIBUTE_NAMES.put (TagDetector.CATEGORY_CLAP, TAG_PERCUSSIVE);
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_HI_HAT.toUpperCase (Locale.US), TAG_PERCUSSIVE);
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_KICK.toUpperCase (Locale.US), TAG_PERCUSSIVE);
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_SNARE.toUpperCase (Locale.US), TAG_PERCUSSIVE);
+        ATTRIBUTE_LOOKUP.put (TagDetector.CATEGORY_CLAP.toUpperCase (Locale.US), TAG_PERCUSSIVE);
+
+        // The tags of source packs and the keywords of the analysis
+        ATTRIBUTE_LOOKUP.put ("KEYBOARDS", "Keys");
+        ATTRIBUTE_LOOKUP.put ("PADS", "Pad");
+        ATTRIBUTE_LOOKUP.put ("DRUMS", "Drum");
+        ATTRIBUTE_LOOKUP.put ("EFFECT", "FX");
+        ATTRIBUTE_LOOKUP.put ("EFFECTS", "FX");
+        ATTRIBUTE_LOOKUP.put ("SFX", "FX");
+        ATTRIBUTE_LOOKUP.put ("ARPEGGIO", "Arp");
+        ATTRIBUTE_LOOKUP.put ("ARPEGGIATED", "Arp");
+        ATTRIBUTE_LOOKUP.put ("ARPEGGIATOR", "Arp");
+        ATTRIBUTE_LOOKUP.put ("SEQ", "Sequenced");
+        ATTRIBUTE_LOOKUP.put ("SEQUENCE", "Sequenced");
+        ATTRIBUTE_LOOKUP.put ("SEQUENCER", "Sequenced");
+        ATTRIBUTE_LOOKUP.put ("ATMOSPHERE", "Atmo");
+        ATTRIBUTE_LOOKUP.put ("ATMOSPHERIC", "Atmo");
+        ATTRIBUTE_LOOKUP.put ("MONOPHONIC", "Mono");
+        ATTRIBUTE_LOOKUP.put ("SAMPLES", "Sample");
+        ATTRIBUTE_LOOKUP.put ("WAVETABLES", "Wavetable");
     }
 
     private int nextImportNumber = 0;
@@ -1664,10 +1748,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Write the four attributes of a patch. The device lists them next to the name and filters the
-     * patches by them, therefore the category is translated into the wording which the factory
-     * sound sets use - otherwise e.g. 'Keyboard' ends up in the filter list next to the 'Keys' of
-     * every other patch and both only find half of the sounds. A category which was not detected is
+     * Write the four attributes of a patch: the category first, then the keywords. The device lists
+     * them next to the name and filters the patches by them, therefore every attribute is written in
+     * the spelling which the factory sound sets use, see {@link #toDeviceAttribute(String)} -
+     * otherwise e.g. 'Keyboard' or 'KEYS' ends up in the filter list next to the 'Keys' of every
+     * other patch and each only finds a part of the sounds. A category which was not detected is
      * left out instead of filling the filter list with the word 'Unknown'.
      *
      * @param out The output stream to write to
@@ -1677,8 +1762,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static void writeAttributes (final OutputStream out, final IMetadata metadata) throws IOException
     {
         final List<String> attributes = new ArrayList<> ();
-        final String category = metadata.getCategory ();
-        addAttribute (attributes, ATTRIBUTE_NAMES.getOrDefault (category, category));
+        addAttribute (attributes, metadata.getCategory ());
         for (final String keyword: metadata.getKeywords ())
             addAttribute (attributes, keyword);
 
@@ -1697,12 +1781,47 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static void addAttribute (final List<String> attributes, final String attribute)
     {
-        if (attribute == null || attribute.isBlank () || attributes.size () >= 4 || TagDetector.CATEGORY_UNKNOWN.equals (attribute))
+        if (attribute == null || attribute.isBlank () || attributes.size () >= 4 || TagDetector.CATEGORY_UNKNOWN.equalsIgnoreCase (attribute.trim ()))
             return;
+        final String deviceAttribute = toDeviceAttribute (attribute);
         for (final String present: attributes)
-            if (present.equalsIgnoreCase (attribute))
+            if (present.equalsIgnoreCase (deviceAttribute))
                 return;
-        attributes.add (attribute);
+        attributes.add (deviceAttribute);
+    }
+
+
+    /**
+     * Get the spelling of the factory sound sets for an attribute: the word of the vocabulary which
+     * matches regardless of the case, e.g. 'Keys' for 'KEYS' or 'Keyboard' and 'Drum' for 'DRUMS'.
+     * A word which the factory sets do not use is written capitalized - 'Vintage' for 'VINTAGE',
+     * 'Digital' for 'digital' and 'Soft Attack' for 'soft_attack'.
+     *
+     * @param attribute The attribute as the analysis or the source spells it
+     * @return The attribute as the device spells it
+     */
+    private static String toDeviceAttribute (final String attribute)
+    {
+        final String trimmed = attribute.trim ();
+        final String known = ATTRIBUTE_LOOKUP.get (trimmed.toUpperCase (Locale.US));
+        if (known != null)
+            return known;
+
+        final StringBuilder sb = new StringBuilder (trimmed.length ());
+        boolean isWordStart = true;
+        for (final char c: trimmed.toCharArray ())
+        {
+            if (c == '_' || c == ' ')
+            {
+                if (sb.length () > 0 && sb.charAt (sb.length () - 1) != ' ')
+                    sb.append (' ');
+                isWordStart = true;
+                continue;
+            }
+            sb.append (isWordStart ? Character.toUpperCase (c) : Character.toLowerCase (c));
+            isWordStart = c == '-';
+        }
+        return sb.toString ().trim ();
     }
 
 

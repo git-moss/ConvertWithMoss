@@ -673,7 +673,11 @@ overlapping note glides on without one (hw).
   Strings, Sequenced, Vocal, FM, Cinematic, Resonator, Organ, Loop, Bells, Kernel FM, Experimental,
   Mono, Piano, Drum, Kernels, Sample, World, Monophon, Wavetable, Pipe, Winds, Space, Chromatic
   Percussion, Drone, Pluck, Brass*. Leave unused slots empty rather than writing a placeholder such
-  as *Unknown*, which would become a filter entry of its own.
+  as *Unknown*, which would become a filter entry of its own. ConvertWithMoss maps every attribute -
+  the category of the analysis, its keywords and the tags of a source pack - onto this vocabulary
+  regardless of case (*KEYS* -> *Keys*, *DRUMS* -> *Drum*, *atmospheric* -> *Atmo*) and capitalizes
+  a word the factory sets do not use (*VINTAGE* -> *Vintage*); the device shows *KEYS* and *Keys* as
+  two filter entries otherwise.
 
 ## 7. Writing a patch
 
