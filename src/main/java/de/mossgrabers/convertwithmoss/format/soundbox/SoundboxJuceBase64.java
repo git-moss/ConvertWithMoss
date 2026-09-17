@@ -90,7 +90,7 @@ public class SoundboxJuceBase64
             for (int bit = 0; bit < 6; bit++)
             {
                 final int bitPosition = i * 6 + bit;
-                if (bitPosition < numBits && (data[bitPosition >> 3] & 1 << (bitPosition & 7)) != 0)
+                if (bitPosition < numBits && (Byte.toUnsignedInt (data[bitPosition >> 3]) & 1 << (bitPosition & 7)) != 0)
                     value |= 1 << bit;
             }
             sb.append (TABLE.charAt (value));

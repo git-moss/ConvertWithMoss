@@ -253,24 +253,28 @@ public final class ContentsImporter
         final StringBuilder field = new StringBuilder ();
         boolean isQuoted = false;
 
-        for (int i = 0; i < content.length (); i++)
+        int i = 0;
+        final int length = content.length ();
+        while (i < length)
         {
             final char c = content.charAt (i);
+
             if (isQuoted)
             {
                 // Two quotes inside of a quoted field are one quote
-                if (c == '"')
+                if (c == '"' && i + 1 < length && content.charAt (i + 1) == '"')
                 {
-                    if (i + 1 < content.length () && content.charAt (i + 1) == '"')
-                    {
-                        field.append ('"');
-                        i++;
-                    }
-                    else
-                        isQuoted = false;
+                    field.append ('"');
+                    i += 2;
                 }
                 else
-                    field.append (c);
+                {
+                    if (c == '"')
+                        isQuoted = false;
+                    else
+                        field.append (c);
+                    i++;
+                }
                 continue;
             }
 
@@ -278,23 +282,23 @@ public final class ContentsImporter
             {
                 fields.add (field.toString ());
                 field.setLength (0);
-                continue;
             }
-
-            switch (c)
-            {
-                case '"' -> isQuoted = true;
-                case '\r' -> {
-                    // Ignored, the line ends with the following line feed
+            else
+                switch (c)
+                {
+                    case '"' -> isQuoted = true;
+                    case '\r' -> {
+                        // Ignored, the line ends with the following line feed
+                    }
+                    case '\n' -> {
+                        fields.add (field.toString ());
+                        field.setLength (0);
+                        lines.add (fields);
+                        fields = new ArrayList<> ();
+                    }
+                    default -> field.append (c);
                 }
-                case '\n' -> {
-                    fields.add (field.toString ());
-                    field.setLength (0);
-                    lines.add (fields);
-                    fields = new ArrayList<> ();
-                }
-                default -> field.append (c);
-            }
+            i++;
         }
 
         if (!field.isEmpty () || !fields.isEmpty ())

@@ -19,14 +19,14 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 public class TALSamplerConstants
 {
     /** Normalized value of -12dB. */
-    public static final double       MINUS_12_DB     = 0.353000;
+    public static final double       MINUS_12_DB       = 0.353000;
     /** Normalized value of +6dB. */
-    public static final double       PLUS_6_DB       = 1.0;
+    public static final double       PLUS_6_DB         = 1.0;
     /** The range between -12dB and +6dB. */
-    public static final double       VALUE_RANGE     = PLUS_6_DB - MINUS_12_DB;
+    public static final double       VALUE_RANGE       = PLUS_6_DB - MINUS_12_DB;
 
     /** The current file format version to set. */
-    public static final String       CURRENT_VERSION = "9";
+    public static final String       CURRENT_VERSION   = "9";
 
     /**
      * The longest stage of an envelope in seconds, which the value 1 of an attack, hold, decay or
@@ -46,9 +46,9 @@ public class TALSamplerConstants
      * contain the values 0.0 (1 voice, used by the monophonic bass and lead presets), 1/11, 4/11,
      * 5/11 and 7/11 (8 voices, which is the most frequently used value).
      */
-    public static final int          MAX_VOICES      = 12;
+    public static final int          MAX_VOICES        = 12;
     /** The IDs to for the 4 layers. */
-    protected static final String [] LAYERS          = new String []
+    protected static final String [] LAYERS            = new String []
     {
         "a",
         "b",
@@ -56,8 +56,8 @@ public class TALSamplerConstants
         "d"
     };
 
-    private static final double      INDEX_OFFSET    = 0.0833333333333333;
-    private static final int []      LOW_PASS_POLES  = new int []
+    private static final double      INDEX_OFFSET      = 0.0833333333333333;
+    private static final int []      LOW_PASS_POLES    = new int []
     {
         4,
         2,

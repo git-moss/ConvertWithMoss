@@ -1170,11 +1170,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         for (int i = 1; i <= WaldorfQpatModulationMatrix.NUM_SLOTS; i++)
         {
             // MatrixSrcX: [14] "Wheel"
-            if (getActiveSource (parameters, i) != WaldorfQpatModulationMatrix.SOURCE_WHEEL)
-                continue;
-
             // MatrixDstX: "Filter1 Cutoff"
-            if (!WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.DESTINATION_FILTER1_CUTOFF, version))
+            if ((getActiveSource (parameters, i) != WaldorfQpatModulationMatrix.SOURCE_WHEEL) || !WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.DESTINATION_FILTER1_CUTOFF, version))
                 continue;
 
             final double amount = getMatrixAmount (parameters, i);

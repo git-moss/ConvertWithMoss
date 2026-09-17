@@ -202,7 +202,8 @@ public class TagDetector
             "Bras",
             "Brs"
         });
-        // 'Wave' is deliberately not a keyword: it is part of the names of the wavetable synthesizers
+        // 'Wave' is deliberately not a keyword: it is part of the names of the wavetable
+        // synthesizers
         // (Waldorf Microwave and Wave, PPG Wave, Korg Wavestation) and of the folders which hold
         // their sounds, and those are not chip sounds
         CATEGORIES.put (CATEGORY_CHIP, new String []
@@ -848,12 +849,12 @@ public class TagDetector
 
 
     /**
-     * Detect keywords in the given strings. A keyword has to be a whole word of a text: 'arp' is not
-     * a keyword of a harp, 'mpe' not one of a trumpet and 'harmonic' not one of a harmonica. Words
-     * are separated by everything which is not a letter or a digit and by the case and digit changes
-     * of a compound name: 'PPG_PadSlow3WaveWideST' has the words PPG, Pad, Slow, 3, Wave, Wide and
-     * ST. A keyword of two words like 'osc_sync' matches two neighbouring words, 'Osc Sync' as well
-     * as 'OscSync'.
+     * Detect keywords in the given strings. A keyword has to be a whole word of a text: 'arp' is
+     * not a keyword of a harp, 'mpe' not one of a trumpet and 'harmonic' not one of a harmonica.
+     * Words are separated by everything which is not a letter or a digit and by the case and digit
+     * changes of a compound name: 'PPG_PadSlow3WaveWideST' has the words PPG, Pad, Slow, 3, Wave,
+     * Wide and ST. A keyword of two words like 'osc_sync' matches two neighbouring words, 'Osc
+     * Sync' as well as 'OscSync'.
      *
      * @param texts The texts
      * @return The detected keywords
@@ -866,10 +867,10 @@ public class TagDetector
             final String [] textWords = WORD_SEPARATOR.split (text.trim ());
             for (int i = 0; i < textWords.length; i++)
             {
-                final String word = textWords [i].toUpperCase (Locale.US);
+                final String word = textWords[i].toUpperCase (Locale.US);
                 words.add (word);
                 if (i > 0)
-                    words.add (textWords [i - 1].toUpperCase (Locale.US) + "_" + word);
+                    words.add (textWords[i - 1].toUpperCase (Locale.US) + "_" + word);
             }
         }
 

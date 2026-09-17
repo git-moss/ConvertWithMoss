@@ -128,8 +128,8 @@ public class WaldorfQpatModulationMatrix
 
     /**
      * Get the index of the source of a slot. The indices of the free envelopes, the low frequency
-     * oscillators and the modulation wheel are the same in all format versions; like the device, the
-     * name in the hint is used if the patch has one.
+     * oscillators and the modulation wheel are the same in all format versions; like the device,
+     * the name in the hint is used if the patch has one.
      *
      * @param parameter The source parameter of the slot
      * @return The index of the source

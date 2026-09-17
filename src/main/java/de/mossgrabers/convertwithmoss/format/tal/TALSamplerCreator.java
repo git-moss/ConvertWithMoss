@@ -102,9 +102,8 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param folderName The name to use for the sample folder
      * @param multisampleSource The multi-sample
      * @return The XML structure
-     * @throws IOException Could not create the metadata
      */
-    private Optional<String> createMetadata (final String folderName, final IMultisampleSource multisampleSource) throws IOException
+    private Optional<String> createMetadata (final String folderName, final IMultisampleSource multisampleSource)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -292,14 +291,16 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 programElement.setAttribute (TALSamplerTag.FILTER_LAYER_ON + TALSamplerConstants.LAYERS[i], "1.0");
 
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_MODE, TALSamplerConstants.getFilterValue (filter), 16);
-            // The attribute only holds a positive key tracking, the plug-in clamps a negative one to 0 %
+            // The attribute only holds a positive key tracking, the plug-in clamps a negative one
+            // to 0 %
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_KEYBOARD, Math.clamp (filter.getCutoffKeyTracking (), 0.0, 1.0), 2);
 
             final double cutoff = MathUtils.normalizeCutoff (filter.getCutoff ());
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, cutoff, 4);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, filter.getResonance (), 4);
 
-            // The amount of the filter envelope is bipolar, 0.5 is 0 %; it is always written so that
+            // The amount of the filter envelope is bipolar, 0.5 is 0 %; it is always written so
+            // that
             // a depth of zero is stored as such
             final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
             final double filterModDepth = cutoffModulator.getDepth ();
@@ -318,7 +319,8 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
             if (cutoffModDepth != 0)
                 modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_VELOCITY, TALSamplerModulator.DEST_ID_CUTOFF, cutoffModDepth));
 
-            // The plug-in adds wheel x amount to the normalized cutoff, whose range of 0 to 1 is the
+            // The plug-in adds wheel x amount to the normalized cutoff, whose range of 0 to 1 is
+            // the
             // whole range of the filter - the unit of the depth of the model as well
             final double cutoffWheelDepth = filter.getCutoffModWheelModulator ().getDepth ();
             if (cutoffWheelDepth != 0)
@@ -354,8 +356,8 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     /**
      * Write the time of an envelope stage, see
-     * {@link TALSamplerConstants#normalizeEnvelopeTime(double)}. A time which the source did not set
-     * (negative) is not written.
+     * {@link TALSamplerConstants#normalizeEnvelopeTime(double)}. A time which the source did not
+     * set (negative) is not written.
      *
      * @param element The program element
      * @param attribute The attribute of the stage

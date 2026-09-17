@@ -491,6 +491,7 @@ public class PresetRenderer
         double peak = 0;
         for (int i = 0; i < frames; i++)
             peak = Math.max (peak, Math.max (Math.abs (left[i]), Math.abs (right[i])));
+
         final double scale = peak > 1 ? 1 / peak : 1;
 
         final byte [] pcm = new byte [frames * 4];

@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -45,6 +46,7 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI>
 {
     private static final String                 IDS_NOTIFY_STORING         = "IDS_NOTIFY_STORING";
+    private static final Pattern                NON_WORD                   = Pattern.compile ("\\W");
 
     private static final int                    VC_VERSION                 = 768;
     private static final int                    VC_NAME_SIZE               = 16;
@@ -651,7 +653,7 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
 
                 // The control parameters (loop, envelope, level) are read from a control (CO)
                 // file which the voice references by an 8 character name
-                controlName = createUniqueDOSFileName (destinationFolder, SafeFileNames.create (name).replaceAll ("\\W", "_"), ".CO", controlFileNames, false);
+                controlName = createUniqueDOSFileName (destinationFolder, NON_WORD.matcher (name).replaceAll ("_"), ".CO", controlFileNames, false);
                 for (int c = 0; c < 8; c++)
                     fileData[IIX_CO_NAME_OFFSET + c] = (byte) (c < controlName.length () ? controlName.charAt (c) : ' ');
                 controlFileData = createIIxControlFileData (zone, fileData);
