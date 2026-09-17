@@ -693,13 +693,17 @@ no filter, or 0 plus the `Filter1*` parameters), the eight `AmpEnv*` parameters 
 Add `Matrix*`, `FreeEnv*` and `Lfo*` parameters only for the modulations you actually use - and then
 all parameters of the LFO or envelope you use.
 
-ConvertWithMoss never writes more than seven matrix slots: slots 1-3 carry the pitch envelopes of
-oscillators 1-3 (*Free Env 1-3* into *Osc1-3 Pitch*), slot 4 a vibrato (*LFO 1* into *Pitch*, one
-slot for all three oscillators), slot 5 a tremolo (*LFO 2* into *VCA*, unipolar, negative amount),
-slot 6 a modulation of the filter cutoff (*LFO 3* into *Filter1 Cutoff*, bipolar) and slot 7 the
-modulation wheel into *Filter1 Cutoff* (*Wheel*, bipolar; the amount is the share of the filter
-range which the wheel at its top adds - 291 of the 1,787 factory patches of an Iridium MK2 carry
-such a slot). Slots 8-40 and LFOs 4-6 are left untouched for the user.
+ConvertWithMoss never writes more than seven matrix slots and fills them from slot 1 on, in the
+order a player looks for them, so a patch shows its modulations at the top of the matrix page
+without gaps: first the modulation wheel into *Filter1 Cutoff* (*Wheel*, bipolar; the amount is the
+share of the filter range which the wheel at its top adds - 291 of the 1,787 factory patches of an
+Iridium MK2 carry such a slot), then the pitch envelopes of the oscillators 1-3 (*Free Env 1-3*
+into *Osc1-3 Pitch*, the free envelope with the index of the oscillator), a vibrato (*LFO 1* into
+*Pitch*, one slot for all three oscillators), a tremolo (*LFO 2* into *VCA*, unipolar, negative
+amount) and a modulation of the filter cutoff (*LFO 3* into *Filter1 Cutoff*, bipolar). A patch
+with only a wheel modulation therefore has it in slot 1. The remaining slots and LFOs 4-6 are left
+untouched for the user; the reader (section 8) finds each modulation by its source and destination
+in any slot, so it does not depend on this order.
 
 ### 7.2 Pitfalls seen on the device
 
