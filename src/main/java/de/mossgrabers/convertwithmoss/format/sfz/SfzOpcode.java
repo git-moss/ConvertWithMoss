@@ -244,6 +244,10 @@ public class SfzOpcode
     public static final String FIL_VELOCITY_TRACK    = "fil_veltrack";
     /** Filter cutoff key tracking. */
     public static final String FIL_KEY_TRACK         = "fil_keytrack";
+    /** SFZ v2. The modulation of the filter cutoff by the modulation wheel (MIDI CC 1) in cent. */
+    public static final String CUTOFF_ONCC1          = "cutoff_oncc1";
+    /** SFZ v2 alias. The modulation of the filter cutoff by the modulation wheel (MIDI CC 1) in cent. */
+    public static final String CUTOFF_CC1            = "cutoff_cc1";
 
     // -----------------------------------------------------------
     // Pitch opcodes
