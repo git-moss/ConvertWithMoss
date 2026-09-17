@@ -146,6 +146,15 @@ public final class ZenCoreSvz
     private static final int     PAT_PARTIAL_SWITCH    = 0xA4;
     /** Per-partial stride of the keyboard/range table (velocity + key range). */
     private static final int     PAT_KBD_STRIDE        = 0x0C;
+    /**
+     * The keyboard table is one 12 byte row per partial (see ZENCORE_FORMAT.md 3.1): the switch of
+     * the partial at +0, its key range at +4/+5 and its velocity range at +8/+9 - which is where
+     * PAT_VEL_LOW/HIGH point for the partial itself and PAT_PARTIAL_SWITCH for the NEXT partial.
+     */
+    private static final int     PAT_KBD_TABLE         = 0x98;
+    private static final int     PAT_KBD_SWITCH        = 0x00;
+    private static final int     PAT_KBD_KEY_LOW       = 0x04;
+    private static final int     PAT_KBD_KEY_HIGH      = 0x05;
     /** Wave-group value marking an active user-multi-sample partial. */
     private static final int     WAVE_GROUP_ACTIVE     = 3;
 
@@ -248,6 +257,10 @@ public final class ZenCoreSvz
         public int pan;
         /** Pitch key follow, 100 = chromatic, 0 = the same pitch on every key. */
         public int keyFollow = 100;
+        /** The lowest key of the partial (0 = C-1). */
+        public int keyLow    = 0;
+        /** The highest key of the partial (127 = G9). */
+        public int keyHigh   = 127;
         /** Velocity range lower 1-127. */
         public int velLow    = 1;
         /** Velocity range upper 1-127. */
@@ -869,13 +882,14 @@ public final class ZenCoreSvz
         final SvzInstrument tone = new SvzInstrument ();
         tone.name = ZenCoreUtil.readName (file, r, NAME_LENGTH);
 
-        // The multi-samples which the enabled partials play with the partial's pan and velocity
-        // window. A partial whose wave group is zero is switched off and plays nothing, see
-        // buildTone.
+        // The multi-samples which the enabled partials play with the partial's pan, key range and
+        // velocity window. A partial whose wave group is zero plays nothing, see buildTone, and a
+        // partial whose switch is off does not sound even if it keeps a wave.
         for (int p = 0; p < 4; p++)
         {
             final int oscBase = p * PAT_PARTIAL_STRIDE;
-            if (file[r + PAT_WAVE_GROUP + oscBase] == 0)
+            final int kbdRow = r + PAT_KBD_TABLE + p * PAT_KBD_STRIDE;
+            if (file[r + PAT_WAVE_GROUP + oscBase] == 0 || file[kbdRow + PAT_KBD_SWITCH] == 0)
                 continue;
 
             final SvzTonePartial partial = new SvzTonePartial ();
@@ -883,6 +897,14 @@ public final class ZenCoreSvz
             partial.waveRight = ZenCoreUtil.readUnsigned16 (file, r + PAT_WAVE_R + oscBase, false);
             partial.pan = file[r + PAT_PAN + oscBase];
             partial.keyFollow = (short) ZenCoreUtil.readUnsigned16 (file, r + PAT_KEY_FOLLOW + oscBase, false);
+
+            final int keyLow = file[kbdRow + PAT_KBD_KEY_LOW] & 0xFF;
+            final int keyHigh = file[kbdRow + PAT_KBD_KEY_HIGH] & 0xFF;
+            if (keyLow <= keyHigh && keyHigh <= 127)
+            {
+                partial.keyLow = keyLow;
+                partial.keyHigh = keyHigh;
+            }
 
             final int kbdBase = p * PAT_KBD_STRIDE;
             final int velLow = file[r + PAT_VEL_LOW + kbdBase] & 0xFF;
