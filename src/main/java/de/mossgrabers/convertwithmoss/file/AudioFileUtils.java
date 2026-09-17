@@ -330,6 +330,23 @@ public final class AudioFileUtils
 
 
     /**
+     * Converts a short sample array which contains 16-bit samples to a byte array in little-endian
+     * order (as to be used for a WAV file).
+     *
+     * @param sampleData The sample data to convert
+     * @return The byte array
+     */
+    public static byte [] convertToByteArray (final short [] sampleData)
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate (sampleData.length * 2);
+        buffer.order (ByteOrder.LITTLE_ENDIAN);
+        for (final short sample: sampleData)
+            buffer.putShort (sample);
+        return buffer.array ();
+    }
+
+
+    /**
      * Convert 32-bit float audio to signed integer PCM of 16, 24 or 32 bit. The nominal float range
      * of -1..1 is mapped onto the full scale of the integer format, values beyond it are clipped.
      *

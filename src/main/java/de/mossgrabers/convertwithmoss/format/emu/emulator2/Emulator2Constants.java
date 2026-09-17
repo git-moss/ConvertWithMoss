@@ -116,7 +116,9 @@ public class Emulator2Constants
      * the voice was set to start later, e.g. a copy of a voice which plays only its sustained part.
      */
     public static final int VOICE_PLAY_START       = 0xD3;
-    /** The number of frames the voice plays from its playback start plus the padding of its slot. */
+    /**
+     * The number of frames the voice plays from its playback start plus the padding of its slot.
+     */
     public static final int VOICE_PLAY_LENGTH      = 0xD6;
     /** The bytes of a slot behind the loop of a voice with a loop. */
     public static final int VOICE_SLOT_PADDING     = 4;

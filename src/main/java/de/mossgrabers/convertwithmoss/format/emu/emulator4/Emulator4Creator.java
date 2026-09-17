@@ -21,6 +21,7 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -33,8 +34,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -138,7 +137,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
             }
 
             // Samples above the maximum EOS rate are down-sampled - move the positions with them
-            recalculateAllSamplePositions (multisampleSource, MAX_SAMPLE_RATE, true);
+            this.recalculateAllSamplePositions (multisampleSource, MAX_SAMPLE_RATE, true);
 
             final List<ISampleZone> zones = new ArrayList<> ();
             for (final IGroup group: multisampleSource.getNonEmptyGroups (true))

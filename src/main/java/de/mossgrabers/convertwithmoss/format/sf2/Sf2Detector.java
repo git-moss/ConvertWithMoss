@@ -933,10 +933,11 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             }
 
             // The vibrato low frequency oscillator maps to the pitch modulation. Its waveform is
-            // always a triangle and the depth is given in cent, like the pitch envelope.
+            // always a triangle and the depth is given in cent, like the pitch envelope, whose range
+            // the depth of the model covers as well
             final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
             final int vibLfoDepth = generators.getSignedValue (Generator.VIB_LFO_TO_PITCH).intValue ();
-            pitchLfoModulator.setDepth (vibLfoDepth / (double) 1200);
+            pitchLfoModulator.setDepth (vibLfoDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
             if (vibLfoDepth != 0)
             {
                 final ILfo pitchLfo = pitchLfoModulator.getSource ();

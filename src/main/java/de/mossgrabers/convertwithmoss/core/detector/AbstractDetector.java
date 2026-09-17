@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
@@ -80,6 +81,8 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 {
     private static final String               IDS_NOTIFY_ANALYZING                = "IDS_NOTIFY_ANALYZING";
     private static final String               IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED = "IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED";
+
+    private static final Pattern              NON_WORD_PATTERN                    = Pattern.compile ("\\W");
 
     private static final AudioFileFormat.Type OGG_TYPE                            = new AudioFileFormat.Type ("OGG", "ogg");
     private static final AudioFileFormat.Type FLAC_TYPE                           = new AudioFileFormat.Type ("FLAC", "flac");
@@ -796,7 +799,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         final Set<String> tokens = new HashSet<> ();
         tokens.addAll (Arrays.asList (parts));
         tokens.add (multisampleSourceName);
-        final String [] descriptionTokens = metadata.getDescription ().split ("\\W");
+        final String [] descriptionTokens = NON_WORD_PATTERN.split (metadata.getDescription ());
         tokens.addAll (Arrays.asList (descriptionTokens));
 
         createMetadata (configuration, metadata, getFirstSample (groups), tokens.toArray (new String [tokens.size ()]));
@@ -806,9 +809,9 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             tokens.clear ();
             for (final IGroup group: groups)
             {
-                tokens.addAll (Arrays.asList (group.getName ().split ("\\W")));
+                tokens.addAll (Arrays.asList (NON_WORD_PATTERN.split (group.getName ())));
                 for (final ISampleZone zone: group.getSampleZones ())
-                    tokens.addAll (Arrays.asList (zone.getName ().split ("\\W")));
+                    tokens.addAll (Arrays.asList (NON_WORD_PATTERN.split (zone.getName ())));
             }
 
             metadata.detectMetadata (configuration, tokens.toArray (new String [tokens.size ()]), null);

@@ -14,6 +14,7 @@ import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
@@ -22,7 +23,6 @@ import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.IKontaktFormat;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt1.Kontakt1Format;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Kontakt5Format;
 import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**

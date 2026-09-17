@@ -29,7 +29,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -189,11 +188,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
             data = convertSigned8BitToUnsigned (data);
         else if (!commonChunk.isLittleEndian ())
             data = swapToLittleEndian (data, bytesPerSample);
-
-        final WaveFile wavFile = new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), (int) commonChunk.getNumSampleFrames ());
-        final DataChunk dataChunk = wavFile.getDataChunk ();
-        dataChunk.setData (data);
-        wavFile.write (outputStream);
+        new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), (int) commonChunk.getNumSampleFrames (), data).write (outputStream);
     }
 
 

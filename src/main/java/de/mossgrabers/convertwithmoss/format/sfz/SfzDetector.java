@@ -511,8 +511,9 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         final double lfoDepth = this.getDoubleValue (SfzOpcode.PITCHLFO_DEPTH, 0);
         if (lfoDepth != 0)
         {
+            // The depth is given in cent, the depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent
             final ILfoModulator pitchLfoModulator = sampleMetadata.getPitchLfoModulator ();
-            pitchLfoModulator.setDepth (lfoDepth / 1200);
+            pitchLfoModulator.setDepth (lfoDepth / IEnvelope.MAX_ENVELOPE_DEPTH);
 
             final ILfo pitchLfo = pitchLfoModulator.getSource ();
             pitchLfo.setRate (this.getDoubleValue (SfzOpcode.PITCHLFO_FREQ, -1));
@@ -596,8 +597,9 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
         final double lfoDepth = this.getDoubleValue (SfzOpcode.FILLFO_DEPTH, 0);
         if (lfoDepth != 0)
         {
+            // The depth is given in cent, the depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent
             final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
-            cutoffLfoModulator.setDepth (lfoDepth / 1200);
+            cutoffLfoModulator.setDepth (lfoDepth / IEnvelope.MAX_ENVELOPE_DEPTH);
 
             final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
             cutoffLfo.setRate (this.getDoubleValue (SfzOpcode.FILLFO_FREQ, -1));
