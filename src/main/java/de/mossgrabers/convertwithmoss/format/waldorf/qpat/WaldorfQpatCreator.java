@@ -46,6 +46,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
@@ -400,7 +401,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // end up in one folder and those with the same name overwrite each other
         final String relativeSamplePath = "samples/" + sampleName + getUniqueSuffix (multiFile, fileName, "qpat");
 
-        final List<List<IGroup>> layers = distributeToLayers (splitLayers (this.combineSplitStereo (multisampleSource)), this.settingsConfiguration.getMaximumLayers ());
+        final List<IGroup> playableGroups = this.removeReleaseZones (this.combineSplitStereo (multisampleSource));
+        final List<List<IGroup>> layers = distributeToLayers (mergeCompatibleGroups (splitLayers (playableGroups)), this.settingsConfiguration.getMaximumLayers ());
         final List<IGroup> groups = new ArrayList<> ();
         for (final List<IGroup> layerGroups: layers)
             groups.addAll (layerGroups);
@@ -679,11 +681,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * <p>
      * The layers are combined in the Multi mode, in which all of them sound over the whole keyboard
      * range: the device can split its layers by key or cycle them, but it has no velocity range for
-     * a layer, so a velocity split has to stay inside the sample maps - which is where the
-     * splitting of the source put it, since only zones which sound at the same time are separated
-     * into layers.
+     * a layer, so a velocity split has to stay inside the sample maps - which is where
+     * {@link #mergeCompatibleGroups(List)} put it, since only zones which sound at the same time
+     * are separated into groups.
      *
-     * @param groups The groups
+     * @param groups The groups, one for each set of zones which sound at the same time
      * @param maximumLayers The maximum number of layers to use, at most {@link #MAX_LAYERS}
      * @return The groups of each layer
      */
@@ -696,6 +698,147 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         if (layers.isEmpty ())
             layers.add (new ArrayList<> ());
         return layers;
+    }
+
+
+    /**
+     * Remove the zones which only sound on note-off. The device has no release trigger for a
+     * sample map, so such a zone would sound on note-on, stacked on the attack samples of the same
+     * key. A group which holds nothing else is dropped.
+     *
+     * @param groups The groups
+     * @return The groups without release-triggered zones
+     */
+    private List<IGroup> removeReleaseZones (final List<IGroup> groups)
+    {
+        final List<IGroup> result = new ArrayList<> ();
+        int removed = 0;
+        for (final IGroup group: groups)
+        {
+            final List<ISampleZone> zones = new ArrayList<> ();
+            for (final ISampleZone zone: group.getSampleZones ())
+                if (zone.getTrigger () == TriggerType.RELEASE)
+                    removed++;
+                else
+                    zones.add (zone);
+            if (zones.size () == group.getSampleZones ().size ())
+                result.add (group);
+            else if (!zones.isEmpty ())
+            {
+                final DefaultGroup keptGroup = copyGroupSettings (group);
+                for (final ISampleZone zone: zones)
+                    keptGroup.addSampleZone (zone);
+                result.add (keptGroup);
+            }
+        }
+        if (removed > 0)
+            this.notifier.log ("IDS_QPAT_NOTIFY_RELEASE_ZONES", Integer.toString (removed));
+        return result;
+    }
+
+
+    /**
+     * Merge the groups which never sound at the same time, so that they share one oscillator.
+     * To the device they are one sample map: it selects the entry by key and velocity and
+     * alternates the entries which overlap. The velocity layers of an instrument, the round
+     * robins which a source keeps in separate groups (an SFZ file often holds one group per
+     * sequence position) and key ranges which follow each other therefore all fit into one map.
+     * Only a stack of layers - zones which sound together on the same note - needs an oscillator
+     * per layer, and the oscillators are scarce: three per layer of the patch. Without this,
+     * an SFZ file with one group per round-robin position played its first two positions on
+     * every note and cycled only the rest.
+     * <p>
+     * Groups can only share an oscillator if the settings which the oscillator takes from its
+     * group agree: the key tracking and the panning, which the device does not read from the
+     * entries of a sample map.
+     *
+     * @param groups The groups, each free of internal stacks (see {@link #splitLayers(List)})
+     * @return The merged groups, in the order of the first group of each
+     */
+    private static List<IGroup> mergeCompatibleGroups (final List<IGroup> groups)
+    {
+        final List<IGroup> merged = new ArrayList<> ();
+        for (final IGroup group: groups)
+        {
+            IGroup target = null;
+            for (final IGroup candidate: merged)
+                if (canShareMap (candidate, group))
+                {
+                    target = candidate;
+                    break;
+                }
+            if (target == null)
+                merged.add (group);
+            else
+                mergeInto (target, group);
+        }
+        return merged;
+    }
+
+
+    /**
+     * Test if two groups can share one sample map: no zone of one sounds at the same time as a
+     * zone of the other, the oscillator settings agree and the map stays within the entry limit
+     * of the device.
+     *
+     * @param a The first group
+     * @param b The second group
+     * @return True if they can share a map
+     */
+    private static boolean canShareMap (final IGroup a, final IGroup b)
+    {
+        final List<ISampleZone> zonesA = a.getSampleZones ();
+        final List<ISampleZone> zonesB = b.getSampleZones ();
+        if (zonesA.size () + zonesB.size () > MAX_MAP_ENTRIES)
+            return false;
+        if (Math.abs (getOscillatorKeyTracking (zonesA) - getOscillatorKeyTracking (zonesB)) > 0.0001)
+            return false;
+        if (Math.abs (getGroupPanningOffset (a) - getGroupPanningOffset (b)) > 0.0001)
+            return false;
+        for (final ISampleZone zoneA: zonesA)
+            for (final ISampleZone zoneB: zonesB)
+                if (zonesOverlap (zoneA, zoneB))
+                    return false;
+        return true;
+    }
+
+
+    /**
+     * Add the zones of a group to another one.
+     *
+     * @param target The group to add to
+     * @param group The group whose zones are added
+     */
+    private static void mergeInto (final IGroup target, final IGroup group)
+    {
+        // The zones carry the (flattened) offsets of their own group. When the offsets of the two
+        // groups differ, the oscillator cannot hold them and the sample map carries them in full
+        // instead, exactly as reduceGroups does
+        if (target.getGain () != group.getGain () || target.getPanning () != group.getPanning () || target.getTuning () != group.getTuning ())
+        {
+            target.setGain (0);
+            target.setPanning (0);
+            target.setTuning (0);
+        }
+        for (final ISampleZone zone: group.getSampleZones ())
+            target.addSampleZone (zone);
+    }
+
+
+    /**
+     * Create an empty group with the settings of another one.
+     *
+     * @param group The group to copy the settings from
+     * @return The new group
+     */
+    private static DefaultGroup copyGroupSettings (final IGroup group)
+    {
+        final DefaultGroup copy = new DefaultGroup (group.getName ());
+        copy.setTrigger (group.getTrigger ());
+        copy.setGain (group.getGain ());
+        copy.setPanning (group.getPanning ());
+        copy.setTuning (group.getTuning ());
+        return copy;
     }
 
 
@@ -1053,13 +1196,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             layers.sort (Comparator.<List<ISampleZone>> comparingInt (List::size).reversed ());
             for (final List<ISampleZone> layer: layers)
             {
-                final DefaultGroup layerGroup = new DefaultGroup (group.getName ());
-                layerGroup.setTrigger (group.getTrigger ());
                 // All zones of a layer stem from the same group, therefore they all carry the same
                 // flattened offsets and the group offsets stay valid for each layer.
-                layerGroup.setGain (group.getGain ());
-                layerGroup.setPanning (group.getPanning ());
-                layerGroup.setTuning (group.getTuning ());
+                final DefaultGroup layerGroup = copyGroupSettings (group);
                 for (final ISampleZone zone: layer)
                     layerGroup.addSampleZone (zone);
                 result.add (layerGroup);
@@ -1133,9 +1272,16 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     {
         // Entries which overlap inside one sample map alternate on successive notes (a round
         // robin, confirmed on the device), so zones which are meant to alternate never sound at
-        // the same time and stay together in one map
+        // the same time and stay together in one map - unless both carry the same sequence
+        // position, which makes them members of two round-robin sets which sound together, a
+        // stack of two alternating instruments
         if (a.getPlayLogic () != PlayLogic.ALWAYS && b.getPlayLogic () != PlayLogic.ALWAYS)
-            return false;
+        {
+            final int positionA = a.getSequencePosition ();
+            final int positionB = b.getSequencePosition ();
+            if (positionA < 1 || positionB < 1 || positionA != positionB)
+                return false;
+        }
         final boolean keyOverlap = limitToDefault (a.getKeyLow (), 0) <= limitToDefault (b.getKeyHigh (), 127) && limitToDefault (b.getKeyLow (), 0) <= limitToDefault (a.getKeyHigh (), 127);
         final boolean velocityOverlap = limitToDefault (a.getVelocityLow (), 1) <= limitToDefault (b.getVelocityHigh (), 127) && limitToDefault (b.getVelocityLow (), 1) <= limitToDefault (a.getVelocityHigh (), 127);
         return keyOverlap && velocityOverlap;
