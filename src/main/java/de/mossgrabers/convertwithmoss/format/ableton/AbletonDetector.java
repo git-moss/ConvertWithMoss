@@ -488,7 +488,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final double cutoff = getDoubleValueAttribute (freqElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY);
 
             final Element resElement = getRequiredElement (simplerFilterElement, AbletonTag.TAG_FILTER_RESONANCE);
-            final double resonance = getDoubleValueAttribute (resElement, AbletonTag.TAG_MANUAL, IFilter.MAX_FREQUENCY) / 1.25;
+            final double resonance = getDoubleValueAttribute (resElement, AbletonTag.TAG_MANUAL, 0) / 1.25;
 
             final IFilter filter = new DefaultFilter (type, poles, cutoff, resonance);
 
@@ -512,7 +512,8 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 final Element releaseSlopeElement = getRequiredElement (envelopeElement, AbletonTag.TAG_RELEASE_SLOPE);
 
                 final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
-                cutoffModulator.setDepth (getDoubleValueAttribute (amountElement, AbletonTag.TAG_MANUAL, 0) / 72.0);
+                // The amount is in semitones (+-72), the depth of the model covers MAX_ENVELOPE_DEPTH cent
+                cutoffModulator.setDepth (getDoubleValueAttribute (amountElement, AbletonTag.TAG_MANUAL, 0) * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
 
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
                 filterEnvelope.setAttackTime (getDoubleValueAttribute (attackTimeElement, AbletonTag.TAG_MANUAL, 0) / 1000.0);

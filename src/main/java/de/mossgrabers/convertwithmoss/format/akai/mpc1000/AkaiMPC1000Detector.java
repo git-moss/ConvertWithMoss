@@ -143,7 +143,7 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
 
         final IAudioMetadata audioMetadata = sampleData.getAudioMetadata ();
         final int sampleLength = audioMetadata.getNumberOfSamples ();
-        final int sampleLengthAsSeconds = sampleLength / audioMetadata.getSampleRate ();
+        final double sampleLengthAsSeconds = sampleLength / (double) audioMetadata.getSampleRate ();
         final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();
         amplitudeEnvelopeModulator.setSource (convertEnvelope (pad, isOneShot, sampleLengthAsSeconds));
         amplitudeEnvelopeModulator.setDepth (pad.getVelocityToLevel () / 100.0);
@@ -171,7 +171,7 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static IEnvelope convertEnvelope (final AkaiMPC1000Pad pad, final boolean isOneShot, final int sampleLength)
+    private static IEnvelope convertEnvelope (final AkaiMPC1000Pad pad, final boolean isOneShot, final double sampleLength)
     {
         final IEnvelope envelope = new DefaultEnvelope ();
         envelope.setAttackTime (toSeconds (pad.getAttack (), false));

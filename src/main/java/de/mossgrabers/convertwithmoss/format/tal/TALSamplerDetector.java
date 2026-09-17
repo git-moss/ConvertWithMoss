@@ -268,20 +268,18 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static Optional<IFilter> parseModulationAttributes (final Element programElement, final IMultisampleSource multisampleSource) throws IOException
+    private static Optional<IFilter> parseModulationAttributes (final Element programElement, final IMultisampleSource multisampleSource)
     {
         final List<TALSamplerModulator> modulators = parseModulators (programElement);
-
-        final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (multisampleSource.getGroups ());
 
         // -----------------------------------------------------------
         // Amplitude
 
-        final double ampAttack = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, 0, maxEnvelopeTime, 0);
-        final double ampHold = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, 0, maxEnvelopeTime, 0);
-        final double ampDecay = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, 0, maxEnvelopeTime, 0);
-        final double ampSustain = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, 0, 1, 1);
-        final double ampRelease = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, 0, maxEnvelopeTime, 0);
+        final double ampAttack = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_ATTACK);
+        final double ampHold = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_HOLD);
+        final double ampDecay = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_DECAY);
+        final double ampSustain = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, 1);
+        final double ampRelease = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_RELEASE);
 
         double ampVelocityModAmount = 0.5;
         for (final TALSamplerModulator modulator: modulators)
@@ -310,18 +308,19 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
                 filter.setCutoffKeyTracking (Math.clamp (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_KEYBOARD, 0), -1, 1));
 
-                final double filterModDepth = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, 0);
-                if (filterModDepth > 0)
+                // The amount of the filter envelope is bipolar, 0.5 is 0 %
+                final double filterModDepth = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, 0.5) * 2.0 - 1.0;
+                if (filterModDepth != 0)
                 {
                     final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
                     cutoffModulator.setDepth (filterModDepth);
 
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                    filterEnvelope.setAttackTime (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, 0, maxEnvelopeTime, 0));
-                    filterEnvelope.setHoldTime (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, 0, maxEnvelopeTime, 0));
-                    filterEnvelope.setDecayTime (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, 0, maxEnvelopeTime, 0));
-                    filterEnvelope.setSustainLevel (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, 0, 1, 1));
-                    filterEnvelope.setReleaseTime (getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, 0, maxEnvelopeTime, 0));
+                    filterEnvelope.setAttackTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_ATTACK));
+                    filterEnvelope.setHoldTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_HOLD));
+                    filterEnvelope.setDecayTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_DECAY));
+                    filterEnvelope.setSustainLevel (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, 1));
+                    filterEnvelope.setReleaseTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_RELEASE));
                 }
 
                 for (final TALSamplerModulator modulator: modulators)
@@ -340,11 +339,11 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         final int bend = (int) Math.clamp (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, 1.0) * 1200.0, 0.0, 1200.0);
 
         // Envelope
-        final double pitchAttack = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, 0, maxEnvelopeTime, 0);
-        final double pitchHold = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, 0, maxEnvelopeTime, 0);
-        final double pitchDecay = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, 0, maxEnvelopeTime, 0);
-        final double pitchSustain = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, 0, 1, 1);
-        final double pitchRelease = getEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, 0, maxEnvelopeTime, 0);
+        final double pitchAttack = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_ATTACK);
+        final double pitchHold = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_HOLD);
+        final double pitchDecay = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_DECAY);
+        final double pitchSustain = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, 1);
+        final double pitchRelease = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_RELEASE);
 
         // Envelope 3 needs to be set to modulate the global pitch
         double globalPitchEnvelopeDepth = -1;
@@ -400,10 +399,17 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static double getEnvelopeAttribute (final Element element, final String attribute, final double minimum, final double maximum, final double defaultValue)
+    /**
+     * Read the time of an envelope stage, see
+     * {@link TALSamplerConstants#denormalizeEnvelopeTime(double)}.
+     *
+     * @param element The program element
+     * @param attribute The attribute of the stage
+     * @return The time in seconds, 0 if the attribute is missing
+     */
+    private static double getEnvelopeTime (final Element element, final String attribute)
     {
-        final double value = XMLUtils.getDoubleAttribute (element, attribute, defaultValue);
-        return MathUtils.denormalizeValue (value, minimum, maximum);
+        return TALSamplerConstants.denormalizeEnvelopeTime (XMLUtils.getDoubleAttribute (element, attribute, 0));
     }
 
 

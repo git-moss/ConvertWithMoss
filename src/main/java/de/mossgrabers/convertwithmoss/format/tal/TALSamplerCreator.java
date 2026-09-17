@@ -17,6 +17,7 @@ import org.w3c.dom.Element;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
@@ -30,7 +31,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.XMLUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -252,7 +252,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
     }
 
 
-    private static void addModulationAttributes (final Document document, final List<IGroup> groups, final Element programElement, final Optional<IFilter> optFilter) throws IOException
+    private static void addModulationAttributes (final Document document, final List<IGroup> groups, final Element programElement, final Optional<IFilter> optFilter)
     {
         if (groups.isEmpty ())
             return;
@@ -265,17 +265,15 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final double bendUpValue = bendUp == 0 ? 0.16 : Math.clamp (bendUp / 1200.0, 0, 1.0);
         XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.PITCHBEND_RANGE, bendUpValue, 3);
 
-        final double maxEnvelopeTime = TALSamplerConstants.getMediumSampleLength (groups);
-
         // -----------------------------------------------------------
         // Amplitude
 
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttackTime (), 0, maxEnvelopeTime);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHoldTime (), 0, maxEnvelopeTime);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecayTime (), 0, maxEnvelopeTime);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, amplitudeEnvelope.getSustainLevel (), 0, 1);
-        setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, amplitudeEnvelope.getReleaseTime (), 0, maxEnvelopeTime);
+        setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttackTime ());
+        setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHoldTime ());
+        setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecayTime ());
+        setEnvelopeLevelAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, amplitudeEnvelope.getSustainLevel ());
+        setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, amplitudeEnvelope.getReleaseTime ());
 
         // The modulator is always written since a missing entry cannot be distinguished from a
         // depth of zero when reading the file back
@@ -294,26 +292,26 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 programElement.setAttribute (TALSamplerTag.FILTER_LAYER_ON + TALSamplerConstants.LAYERS[i], "1.0");
 
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_MODE, TALSamplerConstants.getFilterValue (filter), 16);
-            XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_KEYBOARD, filter.getCutoffKeyTracking (), 2);
+            // The attribute only holds a positive key tracking, the plug-in clamps a negative one to 0 %
+            XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_KEYBOARD, Math.clamp (filter.getCutoffKeyTracking (), 0.0, 1.0), 2);
 
             final double cutoff = MathUtils.normalizeCutoff (filter.getCutoff ());
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_CUTOFF, cutoff, 4);
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_RESONANCE, filter.getResonance (), 4);
 
+            // The amount of the filter envelope is bipolar, 0.5 is 0 %; it is always written so that
+            // a depth of zero is stored as such
             final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
             final double filterModDepth = cutoffModulator.getDepth ();
-            if (filterModDepth > 0)
+            XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, (filterModDepth + 1.0) / 2.0, 4);
+            if (filterModDepth != 0)
             {
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, filterEnvelope.getAttackTime (), 0, maxEnvelopeTime);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, filterEnvelope.getHoldTime (), 0, maxEnvelopeTime);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, filterEnvelope.getDecayTime (), 0, maxEnvelopeTime);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, filterEnvelope.getSustainLevel (), 0, 1);
-                setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, filterEnvelope.getReleaseTime (), 0, maxEnvelopeTime);
-
-                XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_ENVELOPE, filterModDepth, 4);
-
-                // TALSamplerTag.FILTER_KEYBOARD not supported
+                setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, filterEnvelope.getAttackTime ());
+                setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, filterEnvelope.getHoldTime ());
+                setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, filterEnvelope.getDecayTime ());
+                setEnvelopeLevelAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, filterEnvelope.getSustainLevel ());
+                setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, filterEnvelope.getReleaseTime ());
             }
 
             final double cutoffModDepth = filter.getCutoffVelocityModulator ().getDepth ();
@@ -329,11 +327,11 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (pitchModDepth > 0)
         {
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, pitchEnvelope.getAttackTime (), 0, maxEnvelopeTime);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, pitchEnvelope.getHoldTime (), 0, maxEnvelopeTime);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, pitchEnvelope.getDecayTime (), 0, maxEnvelopeTime);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, pitchEnvelope.getSustainLevel (), 0, 1);
-            setEnvelopeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, pitchEnvelope.getReleaseTime (), 0, maxEnvelopeTime);
+            setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, pitchEnvelope.getAttackTime ());
+            setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, pitchEnvelope.getHoldTime ());
+            setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, pitchEnvelope.getDecayTime ());
+            setEnvelopeLevelAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, pitchEnvelope.getSustainLevel ());
+            setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, pitchEnvelope.getReleaseTime ());
 
             // Envelope 3 needs to be set to modulate the global pitch
             modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_ENV3, TALSamplerModulator.DEST_ID_MASTER_TUNE, pitchModDepth));
@@ -348,10 +346,34 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
     }
 
 
-    private static void setEnvelopeAttribute (final Element element, final String attribute, final double value, final double minimum, final double maximum)
+    /**
+     * Write the time of an envelope stage, see
+     * {@link TALSamplerConstants#normalizeEnvelopeTime(double)}. A time which the source did not set
+     * (negative) is not written.
+     *
+     * @param element The program element
+     * @param attribute The attribute of the stage
+     * @param seconds The time in seconds
+     */
+    private static void setEnvelopeTimeAttribute (final Element element, final String attribute, final double seconds)
     {
-        if (value >= 0)
-            XMLUtils.setDoubleAttribute (element, attribute, MathUtils.normalize (value, minimum, maximum), 3);
+        if (seconds >= 0)
+            XMLUtils.setDoubleAttribute (element, attribute, TALSamplerConstants.normalizeEnvelopeTime (seconds), 4);
+    }
+
+
+    /**
+     * Write the level of an envelope stage. A level which the source did not set (negative) is not
+     * written.
+     *
+     * @param element The program element
+     * @param attribute The attribute of the stage
+     * @param level The level in the range of [0..1]
+     */
+    private static void setEnvelopeLevelAttribute (final Element element, final String attribute, final double level)
+    {
+        if (level >= 0)
+            XMLUtils.setDoubleAttribute (element, attribute, Math.clamp (level, 0.0, 1.0), 3);
     }
 
 

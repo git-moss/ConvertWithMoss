@@ -18,6 +18,7 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -28,8 +29,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -176,8 +175,8 @@ public class FairlightCmi3Creator extends AbstractCreator<FairlightCmi3CreatorUI
             final int velocityHigh1 = limitToDefault (z1.zone.getVelocityHigh (), 127);
             final int velocityHigh2 = limitToDefault (z2.zone.getVelocityHigh (), 127);
             if (velocityHigh1 != velocityHigh2)
-                return velocityHigh2 - velocityHigh1;
-            return z1.zone.getKeyLow () - z2.zone.getKeyLow ();
+                return Integer.compare (velocityHigh1, velocityHigh2);
+            return Integer.compare (z1.zone.getKeyLow (), z2.zone.getKeyLow ());
         });
 
         final PreparedZone [] keyOwner = new PreparedZone [128];

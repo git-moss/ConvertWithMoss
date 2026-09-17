@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.DoubleConsumer;
+import java.util.regex.Pattern;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -49,6 +50,10 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 {
+    private static final Pattern   WHITESPACE_PATTERN  = Pattern.compile ("\\s+");
+
+    private static final String    TAG_ATTACK          = "Attack";
+
     private static final String    TIMBRE_MAGIC        = "SynclavierVirtualInstrumentTimbreVersion";
     private static final String    ENTRY               = "SynclavierPTPatchListEntry";
     private static final String    AMP_ENVELOPE_PREFIX = "SynclavierPTPIVEnv";
@@ -232,7 +237,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
                 timbrePan = parseTrailingValue (line);
             else if (line.startsWith (DYN_ENV_SOURCE))
             {
-                final String [] tokens = line.split ("\\s+");
+                final String [] tokens = WHITESPACE_PATTERN.split (line);
                 dynamicSource = parseInt (tokens[tokens.length - 1], -1);
             }
             else if (line.startsWith (FILTER_PREFIX))
@@ -661,8 +666,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 
 
     /**
-     * Test whether a line holds exactly the given keyword, and not one which merely starts with
-     * it.
+     * Test whether a line holds exactly the given keyword, and not one which merely starts with it.
      *
      * @param line The line
      * @param keyword The keyword
@@ -702,7 +706,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         setTime (envelope, "Delay", amplitudeEnvelope::setDelayTime);
-        setTime (envelope, "Attack", amplitudeEnvelope::setAttackTime);
+        setTime (envelope, TAG_ATTACK, amplitudeEnvelope::setAttackTime);
         setTime (envelope, "IDecay", amplitudeEnvelope::setDecayTime);
         setTime (envelope, "FDecay", amplitudeEnvelope::setReleaseTime);
         final Double peak = envelope.get ("Peak");
@@ -751,7 +755,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 
         // The contour levels in octaves relative to the cutoff, which is the sustain level (0).
         // With an instant attack the contour jumps to the peak, so the start level has no effect.
-        final double attackTime = filterParameters.getOrDefault ("Attack", ZERO).doubleValue ();
+        final double attackTime = filterParameters.getOrDefault (TAG_ATTACK, ZERO).doubleValue ();
         final double peak = filterParameters.getOrDefault ("PeakDelta", ZERO).doubleValue ();
         final double start = attackTime > 0 ? filterParameters.getOrDefault ("StartDelta", ZERO).doubleValue () : peak;
         final double end = filterParameters.getOrDefault ("DecayDelta", ZERO).doubleValue ();
@@ -771,7 +775,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
 
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final IEnvelope filterEnvelope = cutoffModulator.getSource ();
-        setTime (filterParameters, "Attack", filterEnvelope::setAttackTime);
+        setTime (filterParameters, TAG_ATTACK, filterEnvelope::setAttackTime);
         setTime (filterParameters, "Decay", filterEnvelope::setDecayTime);
         setTime (filterParameters, "Release", filterEnvelope::setReleaseTime);
         if (span > 0)

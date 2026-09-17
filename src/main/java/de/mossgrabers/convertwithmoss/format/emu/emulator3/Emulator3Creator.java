@@ -21,6 +21,7 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -36,8 +37,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.emu.emulator4.Emu3DiskImage;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -244,7 +243,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         for (final IMultisampleSource multisampleSource: multisampleSources)
         {
             // Samples above the maximum rate are down-sampled - move the positions with them
-            recalculateAllSamplePositions (multisampleSource, MAX_SAMPLE_RATE, true);
+            this.recalculateAllSamplePositions (multisampleSource, MAX_SAMPLE_RATE, true);
 
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
             final int firstPresetOfSource = presets.size ();
