@@ -167,6 +167,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static final int                                   MATRIX_SLOT_TREMOLO    = 5;
     /** The modulation matrix slot which routes the low frequency oscillator of the filter cutoff. */
     private static final int                                   MATRIX_SLOT_CUTOFF_LFO = 6;
+    /** The modulation matrix slot which routes the modulation wheel to the filter cutoff. */
+    private static final int                                   MATRIX_SLOT_CUTOFF_WHEEL = 7;
     /** The low frequency oscillator which plays the vibrato. */
     private static final int                                   LFO_VIBRATO            = 1;
     /** The low frequency oscillator which plays the tremolo. */
@@ -1143,6 +1145,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 parameters.add (new WaldorfQpatParameter ("AmpVeloAmount", StringUtils.formatPercent (ampVeloAmount, 2), (float) ((ampVeloAmount + 1.0) / 2.0)));
 
                 createLfoModulators (parameters, firstZone, version);
+                createCutoffWheelModulator (parameters, firstZone.getFilter (), version);
             }
         }
 
@@ -1242,10 +1245,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /**
      * Create the parameters of the vibrato and of the tremolo. The device has 6 low frequency
      * oscillators and 40 modulation matrix slots, of which this application only ever writes the
-     * slots 1-6: the slots 1-3 carry the pitch envelope of the respective oscillator, therefore the
-     * vibrato takes the slot 4, the tremolo the slot 5 and the modulation of the filter cutoff the
-     * slot 6. Nothing has to give way for them and the slots 7-40 as well as the LFOs 4-6 stay free
-     * for the user.
+     * slots 1-7: the slots 1-3 carry the pitch envelope of the respective oscillator, therefore the
+     * vibrato takes the slot 4, the tremolo the slot 5, the modulation of the filter cutoff by a low
+     * frequency oscillator the slot 6 and the one by the modulation wheel the slot 7 (see
+     * {@link #createCutoffWheelModulator(List, Optional, int)}). Nothing has to give way for them
+     * and the slots 8-40 as well as the LFOs 4-6 stay free for the user.
      * <p>
      * The vibrato modulates the destination "Pitch", which is the pitch of all three oscillators at
      * once. This costs one slot instead of one slot per oscillator and matches a vibrato of a
@@ -1310,7 +1314,31 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Activate one slot of the modulation matrix.
+     * Create the modulation of the filter cutoff by the modulation wheel: the slot 7 of the matrix
+     * with the source 'Wheel' on the destination 'Filter1 Cutoff'. The device adds wheel x amount to
+     * the cutoff in the units of Filter1CutOff, whose range of 0 to 1 covers the whole range of the
+     * filter, which is the unit of the depth of the model as well. Like the modulation by a low
+     * frequency oscillator it is only written with a filter which is written as active, see
+     * createFilterParameters.
+     *
+     * @param parameters Where to add the parameters
+     * @param optFilter The filter of the zone
+     * @param version The format version of the patch, which decides the index of a destination
+     */
+    private static void createCutoffWheelModulator (final List<WaldorfQpatParameter> parameters, final Optional<IFilter> optFilter, final int version)
+    {
+        if (optFilter.isEmpty () || optFilter.get ().getType () == FilterType.BAND_REJECTION)
+            return;
+        final double depth = optFilter.get ().getCutoffModWheelModulator ().getDepth ();
+        if (depth == 0)
+            return;
+        final String destination = WaldorfQpatModulationMatrix.DESTINATION_FILTER1_CUTOFF;
+        createModulationMatrixEntry (parameters, MATRIX_SLOT_CUTOFF_WHEEL, WaldorfQpatModulationMatrix.SOURCE_NAME_WHEEL, WaldorfQpatModulationMatrix.SOURCE_WHEEL, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), depth);
+    }
+
+
+    /**
+     * Activate one slot of the modulation matrix which a low frequency oscillator drives.
      *
      * @param parameters Where to add the parameters
      * @param slot The index of the modulation matrix slot [1..40]
@@ -1321,11 +1349,30 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static void createModulationMatrixEntry (final List<WaldorfQpatParameter> parameters, final int slot, final int lfoIndex, final String destinationName, final int destination, final double amount)
     {
+        // MatrixSrcX: [7] "LFO 1" ... [12] "LFO 6"
+        createModulationMatrixEntry (parameters, slot, "LFO " + lfoIndex, WaldorfQpatModulationMatrix.SOURCE_FIRST_LFO + lfoIndex - 1, destinationName, destination, amount);
+    }
+
+
+    /**
+     * Activate one slot of the modulation matrix.
+     *
+     * @param parameters Where to add the parameters
+     * @param slot The index of the modulation matrix slot [1..40]
+     * @param sourceName The name of the source as the device spells it
+     * @param source The index of the source
+     * @param destinationName The name of the destination as the device spells it
+     * @param destination The index of the destination
+     * @param amount The modulation amount in the range of [-1..1]
+     */
+    private static void createModulationMatrixEntry (final List<WaldorfQpatParameter> parameters, final int slot, final String sourceName, final int source, final String destinationName, final int destination, final double amount)
+    {
         // MatrixOnOffX: [0] "Disabled" [1] "Active"
         parameters.add (new WaldorfQpatParameter ("MatrixOnOff" + slot, TAG_ACTIVE, 1.0f));
 
-        // MatrixSrcX: [7] "LFO 1" ... [12] "LFO 6"
-        parameters.add (new WaldorfQpatParameter ("MatrixSrc" + slot, "LFO " + lfoIndex, (WaldorfQpatModulationMatrix.SOURCE_FIRST_LFO + lfoIndex - 1)));
+        // MatrixSrcX: the sources which are written keep their index in all format versions, see
+        // WaldorfQpatModulationMatrix
+        parameters.add (new WaldorfQpatParameter ("MatrixSrc" + slot, sourceName, source));
 
         // MatrixDstX: the device resolves the destination by its name, the index is the one of the
         // format version, see WaldorfQpatModulationMatrix

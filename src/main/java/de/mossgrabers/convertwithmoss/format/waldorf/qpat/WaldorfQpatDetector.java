@@ -650,6 +650,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             lfoModulator.setSource (cutoffLfoModulator.get ().getSource ());
         }
 
+        filter.getCutoffModWheelModulator ().setDepth (findCutoffWheelModMatrixEntry (parameters, version));
+
         return Optional.of (filter);
     }
 
@@ -1160,6 +1162,36 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Find a modulation matrix slot which routes the modulation wheel to the cutoff of the filter.
+     * The device adds wheel x amount to the cutoff in the units of Filter1CutOff, whose range of 0
+     * to 1 is the whole range of the filter - the unit of the depth of the model as well.
+     *
+     * @param parameters The parameters of the preset
+     * @param version The format version of the patch
+     * @return The depth of the modulation in the range of [-1..1], 0 if there is none
+     */
+    private static double findCutoffWheelModMatrixEntry (final Map<String, WaldorfQpatParameter> parameters, final long version)
+    {
+        for (int i = 1; i <= WaldorfQpatModulationMatrix.NUM_SLOTS; i++)
+        {
+            // MatrixSrcX: [14] "Wheel"
+            if (getActiveSource (parameters, i) != WaldorfQpatModulationMatrix.SOURCE_WHEEL)
+                continue;
+
+            // MatrixDstX: "Filter1 Cutoff"
+            if (!WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.DESTINATION_FILTER1_CUTOFF, version))
+                continue;
+
+            final double amount = getMatrixAmount (parameters, i);
+            if (amount != 0)
+                return amount;
+        }
+
+        return 0;
+    }
+
+
+    /**
      * Get the index of the low frequency oscillator which drives an active modulation matrix slot.
      *
      * @param parameters The parameters of the preset
@@ -1169,17 +1201,32 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static int getActiveLfoSource (final Map<String, WaldorfQpatParameter> parameters, final int slot)
     {
+        final int source = getActiveSource (parameters, slot);
+        if (source < 0)
+            return -1;
+
+        // MatrixSrcX: [7] "LFO 1" ... [12] "LFO 6"
+        final int lfoIndex = source - WaldorfQpatModulationMatrix.SOURCE_FIRST_LFO + 1;
+        return lfoIndex < 1 || lfoIndex > WaldorfQpatModulationMatrix.NUM_LFOS ? -1 : lfoIndex;
+    }
+
+
+    /**
+     * Get the index of the source which drives an active modulation matrix slot.
+     *
+     * @param parameters The parameters of the preset
+     * @param slot The index of the modulation matrix slot [1..40]
+     * @return The index of the source or -1 if the slot is disabled
+     */
+    private static int getActiveSource (final Map<String, WaldorfQpatParameter> parameters, final int slot)
+    {
         // MatrixOnOffX: [0] "Disabled" [1] "Active"
         final WaldorfQpatParameter isActiveParam = parameters.get ("MatrixOnOff" + slot);
         if (isActiveParam == null || isActiveParam.value != 1.0)
             return -1;
 
-        // MatrixSrcX: [7] "LFO 1" ... [12] "LFO 6"
         final WaldorfQpatParameter sourceParam = parameters.get ("MatrixSrc" + slot);
-        if (sourceParam == null)
-            return -1;
-        final int lfoIndex = WaldorfQpatModulationMatrix.getSourceIndex (sourceParam) - WaldorfQpatModulationMatrix.SOURCE_FIRST_LFO + 1;
-        return lfoIndex < 1 || lfoIndex > WaldorfQpatModulationMatrix.NUM_LFOS ? -1 : lfoIndex;
+        return sourceParam == null ? -1 : WaldorfQpatModulationMatrix.getSourceIndex (sourceParam);
     }
 
 

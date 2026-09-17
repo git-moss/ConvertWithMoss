@@ -33,6 +33,10 @@ public class WaldorfQpatModulationMatrix
     public static final int    SOURCE_FIRST_FREE_ENVELOPE = 4;
     /** MatrixSrc: [7] "LFO 1" [8] "LFO 2" [9] "LFO 3" [10] "LFO 4" [11] "LFO 5" [12] "LFO 6". */
     public static final int    SOURCE_FIRST_LFO           = 7;
+    /** MatrixSrc: [14] "Wheel" - the modulation wheel. */
+    public static final int    SOURCE_WHEEL               = 14;
+    /** The name of the source 'Wheel' as the device spells it. */
+    public static final String SOURCE_NAME_WHEEL          = "Wheel";
 
     /** MatrixDst: the pitch of all three oscillators at once. */
     public static final String DESTINATION_PITCH          = "Pitch";
@@ -123,9 +127,9 @@ public class WaldorfQpatModulationMatrix
 
 
     /**
-     * Get the index of the source of a slot. The indices of the free envelopes and the low frequency
-     * oscillators are the same in all format versions; like the device, the name in the hint is used
-     * if the patch has one.
+     * Get the index of the source of a slot. The indices of the free envelopes, the low frequency
+     * oscillators and the modulation wheel are the same in all format versions; like the device, the
+     * name in the hint is used if the patch has one.
      *
      * @param parameter The source parameter of the slot
      * @return The index of the source
@@ -133,6 +137,8 @@ public class WaldorfQpatModulationMatrix
     public static int getSourceIndex (final WaldorfQpatParameter parameter)
     {
         final String hint = parameter.hint;
+        if (hint.equals (SOURCE_NAME_WHEEL))
+            return SOURCE_WHEEL;
         for (int i = 0; i < NUM_LFOS; i++)
             if (hint.equals ("LFO " + (i + 1)))
                 return SOURCE_FIRST_LFO + i;
