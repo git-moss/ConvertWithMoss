@@ -25,6 +25,7 @@ import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
@@ -54,10 +55,8 @@ import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPartElem
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformance;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformancePart;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcWaveData;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
 import de.mossgrabers.tools.ui.Functions;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -303,7 +302,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         // The sample data is converted to 44.1 kHz, therefore the sample positions need to be
         // re-calculated as well
         for (final IMultisampleSource multisampleSource: multisampleSources)
-            recalculateSamplePositions (multisampleSource, DESTINATION_AUDIO_FORMAT.getMaxSampleRate ());
+            this.recalculateSamplePositions (multisampleSource, DESTINATION_AUDIO_FORMAT.getMaxSampleRate ());
 
         final boolean addPerformances = !this.settingsConfiguration.createOnlyWaveforms ();
         if (!addPerformances)
@@ -350,7 +349,7 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
 
             // The sample data is converted to 44.1 kHz, therefore the sample positions need to be
             // re-calculated as well
-            recalculateSamplePositions (multisampleSource, DESTINATION_AUDIO_FORMAT.getMaxSampleRate ());
+            this.recalculateSamplePositions (multisampleSource, DESTINATION_AUDIO_FORMAT.getMaxSampleRate ());
 
             final YamahaYsfcPerformancePart part = parts.get (i);
             part.setNoteLimitLow (instrumentSource.getClipKeyLow ());

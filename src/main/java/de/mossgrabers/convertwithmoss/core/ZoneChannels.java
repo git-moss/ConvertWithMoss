@@ -126,10 +126,8 @@ public enum ZoneChannels
             final ISampleZone leftSampleZone = leftSampleZones.get (i);
             final ISampleZone rightSampleZone = rightSampleZones.get (i);
             // The two channels of one recording are two different samples...
-            if (leftSampleZone.getName ().equals (rightSampleZone.getName ()))
-                return false;
             // ...and they share their tuning
-            if (Math.abs (leftSampleZone.getTuning () - rightSampleZone.getTuning ()) > 0.0001)
+            if (leftSampleZone.getName ().equals (rightSampleZone.getName ()) || (Math.abs (leftSampleZone.getTuning () - rightSampleZone.getTuning ()) > 0.0001))
                 return false;
         }
 

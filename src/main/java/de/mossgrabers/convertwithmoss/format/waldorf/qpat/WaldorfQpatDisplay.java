@@ -23,14 +23,103 @@ public class WaldorfQpatDisplay
      * the bold DIN font which is embedded into the manual of the Iridium MK2. The characters which
      * the manual does not use are estimated from DIN Alternate.
      */
-    private static final int [] CHARACTER_WIDTHS  =
+    private static final int [] CHARACTER_WIDTHS =
     {
-        232, 280, 362, 521, 521, 564, 721, 261, 336, 336, 382, 652, 279, 426, 285, 403, //   ! " # $ % & ' ( ) * + , - . /
-        543, 543, 543, 543, 543, 543, 543, 543, 543, 543, 309, 261, 652, 652, 652, 523, // 0 1 2 3 4 5 6 7 8 9 : ; < = > ?
-        869, 638, 658, 620, 659, 605, 590, 648, 685, 305, 511, 665, 575, 811, 711, 644, // @ A B C D E F G H I J K L M N O
-        628, 643, 654, 591, 571, 668, 581, 887, 603, 572, 548, 302, 362, 302, 652, 543, // P Q R S T U V W X Y Z [ \ ] ^ _
-        261, 534, 560, 480, 561, 548, 342, 555, 569, 275, 280, 559, 325, 876, 573, 543, // ` a b c d e f g h i j k l m n o
-        560, 561, 455, 501, 352, 573, 493, 759, 527, 494, 478, 302, 241, 302, 652       // p q r s t u v w x y z { | } ~
+        232,
+        280,
+        362,
+        521,
+        521,
+        564,
+        721,
+        261,
+        336,
+        336,
+        382,
+        652,
+        279,
+        426,
+        285,
+        403,                                             // ! " # $ % & ' ( ) * + , - . /
+        543,
+        543,
+        543,
+        543,
+        543,
+        543,
+        543,
+        543,
+        543,
+        543,
+        309,
+        261,
+        652,
+        652,
+        652,
+        523,                                             // 0 1 2 3 4 5 6 7 8 9 : ; < = > ?
+        869,
+        638,
+        658,
+        620,
+        659,
+        605,
+        590,
+        648,
+        685,
+        305,
+        511,
+        665,
+        575,
+        811,
+        711,
+        644,                                             // @ A B C D E F G H I J K L M N O
+        628,
+        643,
+        654,
+        591,
+        571,
+        668,
+        581,
+        887,
+        603,
+        572,
+        548,
+        302,
+        362,
+        302,
+        652,
+        543,                                             // P Q R S T U V W X Y Z [ \ ] ^ _
+        261,
+        534,
+        560,
+        480,
+        561,
+        548,
+        342,
+        555,
+        569,
+        275,
+        280,
+        559,
+        325,
+        876,
+        573,
+        543,                                             // ` a b c d e f g h i j k l m n o
+        560,
+        561,
+        455,
+        501,
+        352,
+        573,
+        493,
+        759,
+        527,
+        494,
+        478,
+        302,
+        241,
+        302,
+        652                                              // p q r s t u v w x y z { | } ~
     };
 
     /**
@@ -38,7 +127,7 @@ public class WaldorfQpatDisplay
      * and the author of the selected patch: the width of the widest text which was seen completely
      * ('DW-8000 Breathy Brea'; with the next character it becomes 10972, which did not fit).
      */
-    public static final int     PATCH_INFO_WIDTH  = 10413;
+    public static final int     PATCH_INFO_WIDTH = 10413;
 
 
     /**
@@ -102,6 +191,6 @@ public class WaldorfQpatDisplay
         // Control characters take no space, all others are replaced before they are written
         if (c < 32)
             return 0;
-        return c < 127 ? CHARACTER_WIDTHS[c - 32] : CHARACTER_WIDTHS['?' - 32];
+        return CHARACTER_WIDTHS[c < 127 ? c - 32 : '?' - 32];
     }
 }

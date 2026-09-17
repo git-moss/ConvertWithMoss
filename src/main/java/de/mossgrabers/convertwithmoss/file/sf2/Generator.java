@@ -243,7 +243,7 @@ public class Generator
      * LFO’s triangular period. A value of zero indicates a frequency of 8.176 Hz. A negative value
      * indicates a frequency less than 8.176 Hz; a positive value a frequency greater than 8.176 Hz.
      * For example, a frequency of 10 mHz would be 1200log2(.01/8.176) = -11610".
-     * 
+     *
      * @param cents The cents to convert
      * @return The frequency in Hertz
      */
@@ -255,7 +255,7 @@ public class Generator
 
     /**
      * Inversion of centsToFrequency.
-     * 
+     *
      * @param frequency The frequency in Hertz to convert
      * @return The cents
      */

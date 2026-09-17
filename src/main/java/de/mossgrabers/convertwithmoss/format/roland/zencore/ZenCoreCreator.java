@@ -24,6 +24,7 @@ import java.util.zip.CRC32;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
@@ -40,8 +41,6 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzInstrument;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzPartial;
 import de.mossgrabers.convertwithmoss.format.roland.zencore.ZenCoreSvz.SvzSample;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -212,7 +211,7 @@ public class ZenCoreCreator extends AbstractCreator<ShortNameSettingsUI>
         // The audio is resampled to 48 kHz (see ZENCORE_FORMAT), so scale the loop/start/end
         // frames to it; the loop end is then re-seated to a period-aligned point per sample in
         // addSample.
-        recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
+        this.recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
 
         final SvzInstrument instrument = new SvzInstrument ();
         instrument.name = toneName;

@@ -19,6 +19,7 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
@@ -34,9 +35,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.roland.RolandTimeTable;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.StringUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -116,7 +115,7 @@ public class MV8000Creator extends AbstractCreator<ShortNameSettingsUI>
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
 
         // The MV-8000 has a fixed sample rate
-        recalculateSamplePositions (multisampleSource, MV8000Sample.SAMPLE_RATE);
+        this.recalculateSamplePositions (multisampleSource, MV8000Sample.SAMPLE_RATE);
 
         final MV8000Patch patch = new MV8000Patch ();
         // The patch name field holds 12 characters, which the device displays

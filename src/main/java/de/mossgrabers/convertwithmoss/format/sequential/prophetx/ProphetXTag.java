@@ -23,64 +23,69 @@ import de.mossgrabers.convertwithmoss.format.TagDetector;
 public class ProphetXTag
 {
     /** The ending of the group file which maps the samples of an instrument. */
-    public static final String                GROUP_FILE_ENDING     = ".grp";
+    public static final String                GROUP_FILE_ENDING    = ".grp";
     /** The ending of an import archive. */
-    public static final String                ARCHIVE_ENDING        = ".zip";
+    public static final String                ARCHIVE_ENDING       = ".zip";
     /** The folder at the root of the USB drive below which the device looks for import archives. */
-    public static final String                USB_FOLDER            = "px";
+    public static final String                USB_FOLDER           = "px";
     /** The number of user banks (u00 to u31) of the device. */
-    public static final int                   NUM_USER_BANKS        = 32;
+    public static final int                   NUM_USER_BANKS       = 32;
     /** The optional file next to the group file with one gain factor per velocity. */
-    public static final String                VOLUME_FILE           = "Volume.txt";
+    public static final String                VOLUME_FILE          = "Volume.txt";
     /** The name of the empty sample which keeps the keys silent that no zone covers. */
-    public static final String                SILENCE_NAME          = "silence";
+    public static final String                SILENCE_NAME         = "silence";
 
     /** The sample rate of the audio engine. The device ignores the sample rate of a WAV file. */
-    public static final int                   SAMPLE_RATE           = 48000;
+    public static final int                   SAMPLE_RATE          = 48000;
     /** The only bit resolution which the device plays. */
-    public static final int                   BIT_RESOLUTION        = 16;
-    /** The maximum number of samples of an instrument, the limit of the mapping utility of the device. */
-    public static final int                   MAX_SAMPLES           = 128;
-    /** The maximum length of an instrument name; the firmware copies it into a buffer of 64 bytes. */
-    public static final int                   MAX_NAME_LENGTH       = 63;
+    public static final int                   BIT_RESOLUTION       = 16;
+    /**
+     * The maximum number of samples of an instrument, the limit of the mapping utility of the
+     * device.
+     */
+    public static final int                   MAX_SAMPLES          = 128;
+    /**
+     * The maximum length of an instrument name; the firmware copies it into a buffer of 64 bytes.
+     */
+    public static final int                   MAX_NAME_LENGTH      = 63;
     /** The value of a column which is not set. */
-    public static final int                   NOT_SET               = -1;
+    public static final int                   NOT_SET              = -1;
     /** The pitch which the firmware assumes for a sample without a pitch. */
-    public static final double                DEFAULT_PITCH         = 440.0;
+    public static final double                DEFAULT_PITCH        = 440.0;
 
     /** The column with the path of the sample file, relative to the instrument folder. */
-    public static final String                COLUMN_FILE_PATH      = "File Path";
+    public static final String                COLUMN_FILE_PATH     = "File Path";
     /** The column with the first key of the zone. */
-    public static final String                COLUMN_LOW_NOTE       = "Low Midi Note";
+    public static final String                COLUMN_LOW_NOTE      = "Low Midi Note";
     /** The column with the last key of the zone. */
-    public static final String                COLUMN_HIGH_NOTE      = "High Midi Note";
+    public static final String                COLUMN_HIGH_NOTE     = "High Midi Note";
     /** The column with the lowest velocity of the zone. */
-    public static final String                COLUMN_LOW_VELOCITY   = "Low Velocity";
+    public static final String                COLUMN_LOW_VELOCITY  = "Low Velocity";
     /** The column with the highest velocity of the zone. */
-    public static final String                COLUMN_HIGH_VELOCITY  = "High Velocity";
+    public static final String                COLUMN_HIGH_VELOCITY = "High Velocity";
     /** The column with the first frame of the loop. */
-    public static final String                COLUMN_LOOP_START     = "Loop Start";
+    public static final String                COLUMN_LOOP_START    = "Loop Start";
     /** The column with the last frame of the loop, inclusive. */
-    public static final String                COLUMN_LOOP_END       = "Loop End";
+    public static final String                COLUMN_LOOP_END      = "Loop End";
     /** The column with the 1-based number of the sample in its round robin set. */
-    public static final String                COLUMN_ROUND_ROBIN    = "Round Robin Number";
+    public static final String                COLUMN_ROUND_ROBIN   = "Round Robin Number";
     /** The column with the frequency at which the file sounds. */
-    public static final String                COLUMN_PITCH          = "Pitch in Hertz";
+    public static final String                COLUMN_PITCH         = "Pitch in Hertz";
     /** The column which switches the key tracking off. */
-    public static final String                COLUMN_MONO_PITCH     = "Mono Pitch";
+    public static final String                COLUMN_MONO_PITCH    = "Mono Pitch";
     /** The column which tells if the file is stereo or mono. */
-    public static final String                COLUMN_STEREO_MONO    = "Stereo/Mono File";
+    public static final String                COLUMN_STEREO_MONO   = "Stereo/Mono File";
     /** The column with the category of the instrument. */
-    public static final String                COLUMN_CATEGORY       = "Category";
+    public static final String                COLUMN_CATEGORY      = "Category";
     /** The column with the name of the instrument. */
-    public static final String                COLUMN_INSTRUMENT     = "Instrument Name";
+    public static final String                COLUMN_INSTRUMENT    = "Instrument Name";
     /** The column with the channel to use when a stereo file is collapsed to mono. */
-    public static final String                COLUMN_MONO_COLLAPSE  = "Mono Collapse";
+    public static final String                COLUMN_MONO_COLLAPSE = "Mono Collapse";
     /** The column with the unique identifier of the instrument. */
-    public static final String                COLUMN_UUID           = "UUID";
+    public static final String                COLUMN_UUID          = "UUID";
 
     /** All columns in the order in which the firmware defines them. */
-    public static final String []             COLUMNS               =
+    static final String []                    COLUMNS              =
     {
         COLUMN_FILE_PATH,
         COLUMN_LOW_NOTE,
@@ -100,18 +105,20 @@ public class ProphetXTag
     };
 
     /** The value of a flag column which is set. */
-    public static final String                YES                   = "Y";
+    public static final String                YES                  = "Y";
     /** The value of a flag column which is not set. */
-    public static final String                NO                    = "N";
+    public static final String                NO                   = "N";
     /** The value of the stereo/mono column for a stereo file. */
-    public static final String                STEREO                = "S";
+    public static final String                STEREO               = "S";
     /** The value of the stereo/mono column for a mono file. */
-    public static final String                MONO                  = "M";
-    /** The value of the mono collapse column which mixes both channels, the default of the firmware. */
-    public static final String                COLLAPSE_BOTH         = "B";
+    public static final String                MONO                 = "M";
+    /**
+     * The value of the mono collapse column which mixes both channels, the default of the firmware.
+     */
+    public static final String                COLLAPSE_BOTH        = "B";
 
     /** The category folders of the device in the order of their number. */
-    public static final String []             CATEGORY_FOLDERS      =
+    static final String []                    CATEGORY_FOLDERS     =
     {
         "01 Ambience",
         "02 Bass",
@@ -133,7 +140,7 @@ public class ProphetXTag
     };
 
     /** The category names without their number, as the firmware compares them. */
-    public static final String []             CATEGORY_NAMES        =
+    static final String []                    CATEGORY_NAMES       =
     {
         "Ambience",
         "Bass",
@@ -155,10 +162,10 @@ public class ProphetXTag
     };
 
     /** The category of a source whose category is unknown or has no counterpart on the device. */
-    public static final int                   DEFAULT_CATEGORY      = 14;
+    public static final int                   DEFAULT_CATEGORY     = 14;
 
     /** The category of the model which is the closest to each category of the device. */
-    private static final String []            MODEL_CATEGORIES      =
+    private static final String []            MODEL_CATEGORIES     =
     {
         TagDetector.CATEGORY_DRONE,
         TagDetector.CATEGORY_BASS,
@@ -179,7 +186,7 @@ public class ProphetXTag
         TagDetector.CATEGORY_WINDS
     };
 
-    private static final Map<String, Integer> CATEGORY_OF_MODEL     = new HashMap<> ();
+    private static final Map<String, Integer> CATEGORY_OF_MODEL    = new HashMap<> ();
     static
     {
         // The categories of the model which have a counterpart of the same meaning; a later entry

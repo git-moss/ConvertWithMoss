@@ -137,7 +137,6 @@ import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcDetector;
-import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -754,7 +753,6 @@ public class ConverterBackend
 
             final boolean hasMaximumNumberOfSamples = this.detectionSettings.maxNumberOfSamples > 0;
             if ((hasMaximumNumberOfSamples || this.detectionSettings.enableMakeMono) && ZoneChannels.detectChannelConfiguration (groups) == ZoneChannels.SPLIT_STEREO)
-            {
                 // Hard panned zones which are not the two channels of one recording are layers
                 // and must stay separate
                 if (ZoneChannels.isSplitStereo (groups))
@@ -771,7 +769,6 @@ public class ConverterBackend
                 }
                 else
                     this.notifier.log ("IDS_NOTIFY_PANNED_LAYERS_NOT_COMBINED");
-            }
 
             // -----------------------------------------------------------
             // Reduce the number of samples if necessary

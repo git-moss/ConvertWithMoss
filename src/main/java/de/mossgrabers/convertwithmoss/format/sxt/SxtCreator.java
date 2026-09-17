@@ -15,6 +15,7 @@ import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
@@ -23,7 +24,6 @@ import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.iff.IffFile;
 import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
