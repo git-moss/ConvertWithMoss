@@ -125,15 +125,35 @@ public enum ZoneChannels
         {
             final ISampleZone leftSampleZone = leftSampleZones.get (i);
             final ISampleZone rightSampleZone = rightSampleZones.get (i);
-            // The two channels of one recording are two different samples...
-            if (leftSampleZone.getName ().equals (rightSampleZone.getName ()))
-                return false;
-            // ...and they share their tuning
-            if (Math.abs (leftSampleZone.getTuning () - rightSampleZone.getTuning ()) > 0.0001)
+            // The two channels of one recording are two different samples which share their
+            // tuning and their mapping
+            if (leftSampleZone.getName ().equals (rightSampleZone.getName ()) || !areMappedAlike (leftSampleZone, rightSampleZone))
                 return false;
         }
 
         return true;
+    }
+
+
+    /**
+     * Test if two zones are mapped alike, which the two channels of one recording are. The pairs
+     * are matched by their position in the sorted lists, which pairs zones of different ranges
+     * when the left and the right zones are not the same set - e.g. two velocity layers, one
+     * panned hard left and one hard right - and those must not be combined into stereo samples.
+     *
+     * @param leftSampleZone The zone panned hard left
+     * @param rightSampleZone The zone panned hard right
+     * @return True if they share their key range, root note, velocity range, play range and tuning
+     */
+    private static boolean areMappedAlike (final ISampleZone leftSampleZone, final ISampleZone rightSampleZone)
+    {
+        if (leftSampleZone.getKeyRoot () != rightSampleZone.getKeyRoot () || leftSampleZone.getKeyLow () != rightSampleZone.getKeyLow () || leftSampleZone.getKeyHigh () != rightSampleZone.getKeyHigh ())
+            return false;
+        if (leftSampleZone.getVelocityLow () != rightSampleZone.getVelocityLow () || leftSampleZone.getVelocityHigh () != rightSampleZone.getVelocityHigh ())
+            return false;
+        if (leftSampleZone.getStart () != rightSampleZone.getStart () || leftSampleZone.getStop () != rightSampleZone.getStop ())
+            return false;
+        return Math.abs (leftSampleZone.getTuning () - rightSampleZone.getTuning ()) <= 0.0001;
     }
 
 
@@ -207,15 +227,74 @@ public enum ZoneChannels
             }
 
             leftSampleZone.setPanning (0);
-            String commonName = KeyMapping.findCommonPrefix (leftSampleZone.getName (), rightSampleZone.getName ());
-            if (commonName.endsWith ("_") || commonName.endsWith ("-"))
-                commonName = commonName.substring (0, commonName.length () - 1).trim ();
-            leftSampleZone.setName (commonName);
+            leftSampleZone.setName (createCombinedName (leftSampleZone.getName (), rightSampleZone.getName ()));
 
             group.addSampleZone (leftSampleZone);
         }
 
         return Optional.of (group);
+    }
+
+
+    /**
+     * Create the name of a stereo zone from the names of its two channels: the part they share.
+     * The channel is usually marked at the end of the name ('Piano C3 L', 'Piano C3 R'), sometimes
+     * at its start ('L Piano C3'); a name which is not shared at all is kept as the left one,
+     * since an empty name would make all combined zones write the same sample file.
+     *
+     * @param leftName The name of the left channel
+     * @param rightName The name of the right channel
+     * @return The combined name
+     */
+    private static String createCombinedName (final String leftName, final String rightName)
+    {
+        String commonName = KeyMapping.findCommonPrefix (leftName, rightName);
+        if (commonName.endsWith ("_") || commonName.endsWith ("-"))
+            commonName = commonName.substring (0, commonName.length () - 1);
+        commonName = commonName.trim ();
+        if (!commonName.isEmpty ())
+            return commonName;
+
+        // A suffix is only shared from a separator on, otherwise 'left_C3' and 'right_C3' would
+        // share 't_C3'
+        final String commonSuffix = findCommonSuffix (leftName, rightName);
+        for (int i = 0; i < commonSuffix.length (); i++)
+            if (isSeparator (commonSuffix.charAt (i)))
+            {
+                commonName = commonSuffix.substring (i + 1).trim ();
+                if (!commonName.isEmpty ())
+                    return commonName;
+                break;
+            }
+        return leftName;
+    }
+
+
+    /**
+     * Test if a character separates the words of a name.
+     *
+     * @param character The character
+     * @return True if it is a separator
+     */
+    private static boolean isSeparator (final char character)
+    {
+        return character == '_' || character == '-' || Character.isWhitespace (character);
+    }
+
+
+    /**
+     * Find the common suffix of two names.
+     *
+     * @param first The first name
+     * @param second The second name
+     * @return The common suffix, empty if there is none
+     */
+    private static String findCommonSuffix (final String first, final String second)
+    {
+        int length = 0;
+        while (length < first.length () && length < second.length () && first.charAt (first.length () - 1 - length) == second.charAt (second.length () - 1 - length))
+            length++;
+        return first.substring (first.length () - length);
     }
 
 
@@ -239,6 +318,9 @@ public enum ZoneChannels
 
     private static boolean compareSampleZones (final ISampleZone leftSampleZone, final ISampleZone rightSampleZone) throws IOException
     {
+        if (!areMappedAlike (leftSampleZone, rightSampleZone))
+            return false;
+
         final List<ISampleLoop> loopsLeft = leftSampleZone.getLoops ();
         final List<ISampleLoop> loopsRight = rightSampleZone.getLoops ();
         if (loopsLeft.size () != loopsRight.size ())

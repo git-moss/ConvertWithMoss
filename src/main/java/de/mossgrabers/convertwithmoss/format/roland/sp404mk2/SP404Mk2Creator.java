@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -24,8 +25,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -124,7 +123,7 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
                 break;
 
             // The device's fixed sample rate - scale all loop/start/end positions to it.
-            recalculateSamplePositions (multisampleSource, SP404Mk2Constants.SAMPLE_RATE);
+            this.recalculateSamplePositions (multisampleSource, SP404Mk2Constants.SAMPLE_RATE);
 
             final List<ISampleZone> zones = new ArrayList<> ();
             for (final IGroup group: multisampleSource.getNonEmptyGroups (true))

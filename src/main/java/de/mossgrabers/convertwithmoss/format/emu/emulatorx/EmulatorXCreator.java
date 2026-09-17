@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -34,8 +35,6 @@ import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
-import de.mossgrabers.tools.FileUtils;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -226,12 +225,15 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
         int loopStart = 0;
         int loopEnd = 0;
         for (final ISampleLoop loop: zone.getLoops ())
-            if (loop.getType () == LoopType.FORWARDS || loop.getType () == LoopType.ALTERNATING)
+        {
+            final LoopType type = loop.getType ();
+            if (type == LoopType.FORWARDS || type == LoopType.ALTERNATING)
             {
                 loopStart = Math.clamp (loop.getStart (), 0, numFrames - 1);
-                loopEnd = Math.min (Math.max (loop.getEnd (), loopStart + 1), numFrames - 1);
+                loopEnd = Math.clamp (loop.getEnd (), loopStart + 1, numFrames - 1);
                 break;
             }
+        }
 
         final int sampleRate = waveFile.getFormatChunk ().getSampleRate ();
         final Object contentKey = List.of (ByteBuffer.wrap (pcm), Integer.valueOf (sampleRate), Integer.valueOf (loopStart), Integer.valueOf (loopEnd));

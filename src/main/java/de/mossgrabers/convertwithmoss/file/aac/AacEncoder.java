@@ -597,7 +597,7 @@ public class AacEncoder
             for (int subWindow = 0; subWindow < 8; subWindow++)
             {
                 for (int i = 0; i < 256; i++)
-                    block[i] = window[448 + subWindow * 128 + i] * (i < 128 ? this.sineShort[i] : this.sineShort[255 - i]);
+                    block[i] = window[448 + subWindow * 128 + i] * this.sineShort[i < 128 ? i : 255 - i];
                 mdctForward (block, coefficients, subWindow * 128, 128);
             }
             return coefficients;

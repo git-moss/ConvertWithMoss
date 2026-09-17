@@ -431,8 +431,8 @@ public class AudioSampleReducer
      * @param targetRate The maximum sample rate
      * @param alwaysResample If true, do up-sample as well
      * @param loop The loop to keep intact, it has to lie inside of the audio; null to convert all
-     *            of the audio in the same way. The positions of the loop in the result are given
-     *            by {@link SincResampler#mapLoop(int, int, int, int)}
+     *            of the audio in the same way. The positions of the loop in the result are given by
+     *            {@link SincResampler#mapLoop(int, int, int, int)}
      * @return The updated sample as a WAV audio structure
      * @throws IOException Could not read the sample
      * @throws UnsupportedAudioFileException Could not parse the WAV file

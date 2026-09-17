@@ -74,10 +74,9 @@ public class CafFileSampleData extends AbstractFileSampleData
         if (!isFloat && bitsPerSample == 8)
             data = convertSigned8BitToUnsigned (data);
 
-        final WaveFile wavFile = new WaveFile (descriptionChunk.getChannelsPerFrame (), (int) Math.round (descriptionChunk.getSampleRate ()), bitsPerSample, (int) caf.getNumberOfFrames ());
+        final WaveFile wavFile = new WaveFile (descriptionChunk.getChannelsPerFrame (), (int) Math.round (descriptionChunk.getSampleRate ()), bitsPerSample, data);
         if (isFloat)
             wavFile.getFormatChunk ().setCompressionCode (FormatChunk.WAVE_FORMAT_IEEE_FLOAT);
-        wavFile.getDataChunk ().setData (data);
         wavFile.write (outputStream);
     }
 

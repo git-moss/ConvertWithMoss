@@ -163,8 +163,8 @@ public class WaldorfQpatModulationMatrix
 
 
     /**
-     * Convert a pitch in semi-tones into the amount of a slot which modulates a pitch destination. A
-     * pitch beyond the range of a slot is written at the end of the range.
+     * Convert a pitch in semi-tones into the amount of a slot which modulates a pitch destination.
+     * A pitch beyond the range of a slot is written at the end of the range.
      *
      * @param semitones The pitch in semi-tones which the full level of the source is to reach
      * @return The amount in the range of [-1..1]

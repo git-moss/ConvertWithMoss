@@ -60,46 +60,46 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String                               TAG_MATRIX_DST       = "MatrixDst";
+    private static final String                               TAG_MATRIX_DST     = "MatrixDst";
 
     /** GlideRate: the value which the device uses when a patch does not store it. */
-    private static final double                               GLIDE_RATE_DEFAULT   = 0.15;
+    private static final double                               GLIDE_RATE_DEFAULT = 0.15;
     /**
      * The lowest rate of a low frequency oscillator in Hertz, which is one cycle in 240 seconds.
      */
-    private static final double                               LFO_MINIMUM_RATE     = 1.0 / 240.0;
+    private static final double                               LFO_MINIMUM_RATE   = 1.0 / 240.0;
     /** The highest rate of a low frequency oscillator in Hertz. */
-    private static final double                               LFO_MAXIMUM_RATE     = 100.0;
+    private static final double                               LFO_MAXIMUM_RATE   = 100.0;
     /** The longest delay of a low frequency oscillator in seconds. */
-    private static final double                               LFO_MAXIMUM_DELAY    = 20.0;
+    private static final double                               LFO_MAXIMUM_DELAY  = 20.0;
     /** The longest attack (fade-in) of a low frequency oscillator in seconds. */
-    private static final double                               LFO_MAXIMUM_ATTACK   = 10.0;
+    private static final double                               LFO_MAXIMUM_ATTACK = 10.0;
     /** From this phase on the device runs the low frequency oscillator freely. */
-    private static final double                               LFO_FREE_PHASE       = 0.9986;
+    private static final double                               LFO_FREE_PHASE     = 0.9986;
     /** LayerGain: [0..1] ~ [0..24 dB], the additional gain of a layer (Iridium MK2 firmware). */
-    private static final double                               LAYER_GAIN_RANGE     = 24.0;
+    private static final double                               LAYER_GAIN_RANGE   = 24.0;
     /** The size of the header of a patch, which every layer of a patch has as well. */
-    private static final int                                  HEADER_SIZE          = 512;
+    private static final int                                  HEADER_SIZE        = 512;
     /** The offset of the number of layers in the header. */
-    private static final int                                  OFFSET_LAYER_COUNT   = 428;
+    private static final int                                  OFFSET_LAYER_COUNT = 428;
     /** The offsets at which the file offsets of the layers 2, 3 and 4 are stored. */
-    private static final int []                               OFFSET_LAYERS        =
+    private static final int []                               OFFSET_LAYERS      =
     {
         432,
         440,
         444
     };
     /** Layer count: two layers, the offset of the 2nd one is stored at 432. */
-    private static final int                                  LAYER_COUNT_TWO      = 1;
+    private static final int                                  LAYER_COUNT_TWO    = 1;
     /**
      * Layer count: up to four layers, the offsets are stored at 432, 440 and 444. Written by the
      * MK2 generation of the instruments, which always stores four layers.
      */
-    private static final int                                  LAYER_COUNT_FOUR     = 2;
+    private static final int                                  LAYER_COUNT_FOUR   = 2;
 
-    private static final Map<Integer, String>                 SYNTH_CODES          = HashMap.newHashMap (4);
-    private static final Map<Integer, String>                 TIMBRE_MODES         = HashMap.newHashMap (3);
-    private static final Map<WaldorfQpatResourceType, String> GROUP_NAMES          = HashMap.newHashMap (3);
+    private static final Map<Integer, String>                 SYNTH_CODES        = HashMap.newHashMap (4);
+    private static final Map<Integer, String>                 TIMBRE_MODES       = HashMap.newHashMap (3);
+    private static final Map<WaldorfQpatResourceType, String> GROUP_NAMES        = HashMap.newHashMap (3);
     static
     {
         SYNTH_CODES.put (Integer.valueOf (0), "Quantum");
@@ -401,23 +401,26 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             final WaldorfQpatResourceHeader resourceHeader = new WaldorfQpatResourceHeader ();
             resourceHeader.read (in);
             if (resourceHeader.isUnknownType ())
+            {
                 this.notifier.log ("IDS_QPAT_UNKNOWN_RESOURCE_TYPE", Integer.toString (resourceHeader.rawType));
-            else
-                switch (resourceHeader.type)
-                {
-                    case USER_SAMPLE_MAP1:
-                        resources[0] = resourceHeader;
-                        break;
-                    case USER_SAMPLE_MAP2:
-                        resources[1] = resourceHeader;
-                        break;
-                    case USER_SAMPLE_MAP3:
-                        resources[2] = resourceHeader;
-                        break;
-                    case null:
-                    default:
-                        break;
-                }
+                continue;
+            }
+
+            switch (resourceHeader.type)
+            {
+                case USER_SAMPLE_MAP1:
+                    resources[0] = resourceHeader;
+                    break;
+                case USER_SAMPLE_MAP2:
+                    resources[1] = resourceHeader;
+                    break;
+                case USER_SAMPLE_MAP3:
+                    resources[2] = resourceHeader;
+                    break;
+                case null:
+                default:
+                    break;
+            }
         }
         return resources;
     }
@@ -500,7 +503,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 panning = Math.clamp (panning + panningParameter.value * 2.0 - 1.0, -1.0, 1.0);
 
             // Osc1MinNote / Osc1MaxNote: [0..127] - the key window of the oscillator, which is used
-            // for splits: a zone outside of the window is silent and one across its edge is cut at it
+            // for splits: a zone outside of the window is silent and one across its edge is cut at
+            // it
             int minNote = 0;
             final WaldorfQpatParameter minNoteParameter = parameters.get ("Osc" + groupIndex + "MinNote");
             if (minNoteParameter != null)
@@ -750,9 +754,9 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Convert a position of a sample map into the frame which the device plays. The firmware
-     * (Iridium MK2 4.0.5) parses the fraction as a float and converts it in single precision:
-     * (int) (0.001f + (float) (frames - 1) x fraction). 1.0 is the last frame, and a loop plays its
-     * end frame - its length is end - start + 1.
+     * (Iridium MK2 4.0.5) parses the fraction as a float and converts it in single precision: (int)
+     * (0.001f + (float) (frames - 1) x fraction). 1.0 is the last frame, and a loop plays its end
+     * frame - its length is end - start + 1.
      *
      * @param value The fraction as stored in the map
      * @param numSampleFrames The number of frames of the sample
@@ -1028,11 +1032,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             if (sourceParam == null)
                 continue;
             final int envelopeIndex = WaldorfQpatModulationMatrix.getSourceIndex (sourceParam) - WaldorfQpatModulationMatrix.SOURCE_FIRST_FREE_ENVELOPE + 1;
-            if (envelopeIndex < 1 || envelopeIndex > WaldorfQpatModulationMatrix.NUM_FREE_ENVELOPES)
-                continue;
-
             // MatrixDstX: [2] "Osc1 Pitch" [3] "Osc2 Pitch" [4] "Osc3 Pitch"
-            if (!WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.getOscillatorPitchDestination (oscIndex), version))
+            if (envelopeIndex < 1 || envelopeIndex > WaldorfQpatModulationMatrix.NUM_FREE_ENVELOPES || !WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.getOscillatorPitchDestination (oscIndex), version))
                 continue;
 
             // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
@@ -1099,11 +1100,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         for (int i = 1; i <= WaldorfQpatModulationMatrix.NUM_SLOTS; i++)
         {
             final int lfoIndex = getActiveLfoSource (parameters, i);
-            if (lfoIndex < 0)
-                continue;
-
             // MatrixDstX: "VCA"
-            if (!WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.DESTINATION_VCA, version))
+            if ((lfoIndex < 0) || !WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.DESTINATION_VCA, version))
                 continue;
 
             final double amount = getMatrixAmount (parameters, i);
@@ -1127,8 +1125,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Find a modulation matrix slot which routes a low frequency oscillator to the cutoff of the
-     * filter. The device adds the modulation to the cutoff in the units of Filter1CutOff, whose range
-     * covers {@link WaldorfQpatModulationMatrix#CUTOFF_RANGE} semi-tones.
+     * filter. The device adds the modulation to the cutoff in the units of Filter1CutOff, whose
+     * range covers {@link WaldorfQpatModulationMatrix#CUTOFF_RANGE} semi-tones.
      *
      * @param parameters The parameters of the preset
      * @param version The format version of the patch
@@ -1139,11 +1137,8 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         for (int i = 1; i <= WaldorfQpatModulationMatrix.NUM_SLOTS; i++)
         {
             final int lfoIndex = getActiveLfoSource (parameters, i);
-            if (lfoIndex < 0)
-                continue;
-
             // MatrixDstX: "Filter1 Cutoff"
-            if (!WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.DESTINATION_FILTER1_CUTOFF, version))
+            if ((lfoIndex < 0) || !WaldorfQpatModulationMatrix.isDestination (parameters.get (TAG_MATRIX_DST + i), WaldorfQpatModulationMatrix.DESTINATION_FILTER1_CUTOFF, version))
                 continue;
 
             final double amount = getMatrixAmount (parameters, i);
@@ -1381,9 +1376,9 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Convert the value of an attack, a decay or a release into its time. The sound engine plays the
-     * value x as 60 x 10^(3 (x - 1)) - 0.06 seconds, so 0 is instant (measured on an Iridium MK2
-     * with OS 4.0.6; the display of the device shows 59 ms more).
+     * Convert the value of an attack, a decay or a release into its time. The sound engine plays
+     * the value x as 60 x 10^(3 (x - 1)) - 0.06 seconds, so 0 is instant (measured on an Iridium
+     * MK2 with OS 4.0.6; the display of the device shows 59 ms more).
      *
      * @param x The parameter value in the range of [0..1]
      * @return The time in seconds in the range of [0..59.94]
