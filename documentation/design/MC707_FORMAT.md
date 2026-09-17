@@ -160,20 +160,27 @@ Partial block p = 0..3 at 0x0C8 + p*0x7C (P1 0x0C8, P2 0x144, P3 0x1C0, P4 0x23C
   +0x2E  2  u16 TVF resonance 0-1023 (P1: 0x0F6)
 TVA envelope p = 0..3 at 0x37A + p*0x10: 4 × u16 times + 4 × u16 levels, 0-1023
   (P1 = the documented FANTOM offsets 0x37A..0x388; defaults T=0/400/400/400·rel 150, L=1023)
-Partial control blocks (36 bytes) at 0x5D0 + p*0x24: partial switch, key/velocity ranges —
-  exact field semantics unresolved; ConvertWithMoss copies the complete block pattern of a
-  Roland-authored single-partial user-sample tone verbatim (partial 1 active, 2-4 off).
+Keyboard table at 0x098 + p*0x0C (12 bytes per partial): +0 partial switch (0 = off, the partial
+  does not sound even with a wave; 1 = on), +4/+5 key range lower/upper, +8/+9 velocity range
+  lower/upper. Read from 45 user-sample tones of one project: the four-partial splits read
+  0-48 / 49-55 / 56-62 / 63-127 with the sample roots G1 / D2 / G2 / D3 (`VHS 4LAY PIANO1`),
+  0-48 / 49-61 / 62-73 / 74-127 (`VHS SPIEL 1`, `VHS BASSOON`), 0-54 / 55-66 / 67-73 / 74-127
+  (`VHS ORCHSTRINGS`), layered tones read 0-127 on every partial, and `VHS MELLSTRINGS` and
+  `VHS LEAD HORN` keep the wave of a switched-off fourth partial. Corrects `ZENCORE_FORMAT.md` §3.1,
+  whose rows were aligned at 0x0A0.
+Partial control blocks (36 bytes) at 0x5D0 + p*0x24: byte 1 holds the partial index, the rest is
+  unresolved; ConvertWithMoss copies the complete block pattern of a Roland-authored single-partial
+  user-sample tone verbatim (partial 1 active, 2-4 off).
 ```
 
 The field order of the partial block is that of Roland's ZEN-Core *Tone Partial* parameter map
 (FANTOM MIDI implementation): level, coarse tune, fine tune, random pitch, pan, pan keyfollow …
 wave group, wave IDs, gain, FXM, pitch keyfollow, filter — every parameter which the map writes as
 several nibbles is one little-endian u16 in the file. This pins the block base at **0x0C8**, six
-bytes ahead of the hardware-verified pan at 0x0CE, and it also explains the keyboard/range table
-(0x0A0 + p*0x0C, `ZENCORE_FORMAT.md` §3.1): its fourth entry runs into the partial block, so only
-the velocity range of Partial 4 (0x0C4/0x0C5) is stored there. The byte at 0x0C8 which that table
-would use for a "partial switch of the next partial" is in fact Partial 1's level, which is why
-device exports read 127 there.
+bytes ahead of the hardware-verified pan at 0x0CE, and it also fixes the end of the keyboard table
+(0x098 + p*0x0C, `ZENCORE_FORMAT.md` §3.1): its fourth row ends at 0x0C7 with the velocity range
+of Partial 4 (0x0C4/0x0C5), right in front of Partial 1's level at 0x0C8 - the byte which device
+exports read as 127.
 
 **Layered partials, corpus-verified:** tones which play the *same* sample on two partials with a
 different coarse tune and pan are common — `BORN SLIPPY` of an examined project plays sample 196 at
