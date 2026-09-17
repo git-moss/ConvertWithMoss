@@ -350,8 +350,9 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         if (lfoVibratoDepth > 0 && keygroup.getModulationWheelLfoDepthModulation () == 0)
         {
             final ILfoModulator pitchLfoModulator = sampleZone.getPitchLfoModulator ();
-            // Should be +-3 semi-tones
-            pitchLfoModulator.setDepth (lfoVibratoDepth / 99.0 * 0.25);
+            // The full depth is +-3 semi-tones, the depth of the model covers
+            // IEnvelope#MAX_ENVELOPE_DEPTH cent
+            pitchLfoModulator.setDepth (lfoVibratoDepth / 99.0 * 300.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
             final ILfo lfo = pitchLfoModulator.getSource ();
             lfo.setWaveform (LfoWaveform.SINE);
             lfo.setRate (lfoRateToHertz (keygroup.getLfoVibratoRate () / 99.0));
