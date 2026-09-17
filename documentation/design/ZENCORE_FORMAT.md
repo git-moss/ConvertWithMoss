@@ -125,7 +125,7 @@ each with its own base offset and stride (all offsets are Partial 1; add the str
 
 | Per-partial table | Base | Stride | Partials 1–4 |
 |-------------------|------|--------|--------------|
-| Keyboard / range  | 0x0A0 | 0x0C | 0x0A0 / 0x0AC / 0x0B8 / 0x0C4 |
+| Keyboard / range  | 0x098 | 0x0C | 0x098 / 0x0A4 / 0x0B0 / 0x0BC |
 | Oscillator / filter | 0x0CE | 0x7C | 0x0CE / 0x14A / 0x1C6 / 0x242 |
 | Pitch envelope    | 0x2B8 | 0x18 | 0x2B8 / 0x2D0 / 0x2E8 / 0x300 |
 | Filter (TVF) envelope | 0x318 | 0x18 | 0x318 / 0x330 / 0x348 / 0x360 |
@@ -134,12 +134,19 @@ each with its own base offset and stride (all offsets are Partial 1; add the str
 ```
 0x000  16  tone name (ASCII, space padded)
 
-Keyboard/range table (stride 0x0C):
+Keyboard/range table (one 12-byte row per partial, base 0x098, stride 0x0C):
+0x098   1  Partial Switch: 0 = off (the partial does not sound, even if it keeps a wave), 1 = on
+0x09C   1  Key Range Lower (0 = C-1)
+0x09D   1  Key Range Upper (127 = G9)
 0x0A0   1  Velocity Range Lower (1–127)
 0x0A1   1  Velocity Range Upper (1–127)
-0x0A4   1  Partial-switch display gate for the NEXT partial (see "Partial switching" below)
-0x0A8   1  Key Range Lower (0 = C-1) ─┐ probable, not written by CWM; Partial 4's entry
-0x0A9   1  Key Range Upper (127 = G9)─┘ overlaps Partial 1's pan at 0x0CE, so it is truncated
+           The row base was pinned by 45 user-sample tones of an MC-707 project (the tone record
+           is the same): four-partial keyboard splits read 0-48 / 49-55 / 56-62 / 63-127 with the
+           sample roots G1 / D2 / G2 / D3, layered tones read 0-127 on every partial, and the
+           writer templates read switch 1 and 0-127 for partial 1. Earlier revisions aligned the
+           rows at 0x0A0, which made the switch look like a gate "for the next partial" and put
+           the key range one partial off. The fourth row ends at 0x0C7, right in front of
+           Partial 1's level at 0x0C8.
 
 Oscillator/filter table (stride 0x7C):
 0x0CE   1  Partial pan (signed, −64 = hard left … 0 = center … +63 = hard right)
@@ -188,23 +195,20 @@ TVA-envelope table (stride 0x10):
   four-sample pool once imported completely, so the exact trigger beyond "last slot" is not
   pinned down.) The writer therefore always appends an inert, unmapped 128-byte silence "Spacer"
   sample, so no real sample ever sits in the last slot.
-- **Partial switching (two independent things: sound and display).** A partial *sounds* when its
-  **Wave Group (0x0DF+) = 3** with a non-zero **Wave Number**. To make an unused partial silent,
-  set **Wave Number L/R = 0** (a group-0 partial that keeps a non-zero wave number rings a ROM wave
-  — hardware-verified). Separately, the *partial page's ON/OFF display* is driven by the keyboard
-  byte at **0x0A4 + p·0x0C**, which — counter-intuitively — **gates the NEXT partial (p+1)**, not
-  its own: **1** = the next partial shows ON, **0** = it shows OFF; Partial 4 (no next partial) reads
-  **127**. So for `count` active partials the row of switch bytes is
-  `switch[p] = 127 if p==3 else (1 if p+1<count else (0 if p<count else 127))` — e.g. one active
-  partial → `[0,127,127,127]`, two → `[1,0,127,127]`, three → `[1,1,0,127]`, four → `[1,1,1,127]`.
-  Hardware-verified against device exports at one, two and four active partials (the writer's
-  two-active output is byte-identical to a device tone with Partial 3 switched off). The `p==3`
-  entry is not a switch at all: `0x0A4 + 3·0x0C` = **0x0C8** is already Partial 1's *level*
-  (`MC707_FORMAT.md` §5 pins the partial block at 0x0C8), so device exports read 127 there because
-  their first partial plays at the maximum level — which is also what the writer wants, so its
-  output stays correct. This is why the
-  mono template (its Partial 1 byte is 0) shows its unused partials OFF while the stereo template
-  needs the byte corrected. The writer sets Wave 0 and this gate for every unused partial.
+- **Partial switching.** The first byte of a partial's keyboard row (0x098 + p·0x0C) is its switch:
+  0 = off, the partial does not sound even if it keeps a wave (an MC-707 project keeps the wave of a
+  switched-off partial, e.g. partial 4 of 'VHS MELLSTRINGS' and 'VHS LEAD HORN'); 1 = on. A partial
+  sounds when it is switched on and its **Wave Group (0x0DF+) = 3** with a non-zero **Wave Number**;
+  to make an unused partial silent, the writer sets **Wave Number L/R = 0** as well (a group-0
+  partial that keeps a non-zero wave number rings a ROM wave — hardware-verified) and switches it off.
+  Earlier revisions of this document read the rows aligned at 0x0A0, which made the switch appear as
+  a "display gate for the NEXT partial" at +4: the byte at 0x0A4 + p·0x0C is simply the switch of
+  partial p+1, and 0x0A4 + 3·0x0C = 0x0C8 is Partial 1's *level* (`MC707_FORMAT.md` §5 pins the
+  partial block at 0x0C8), which is why device exports read 127 there. The byte pattern the writer
+  puts there — `[0,127,127,127]` for one active partial, `[1,0,127,127]` for two, `[1,1,1,127]` for
+  four, hardware-verified against device exports at one, two and four active partials — is
+  unchanged: it switches the partials 2-4 on or off and sets Partial 1's level to 127, which is what
+  the templates want as well. Partial 1's own switch comes from the template (1).
 - **Velocity layers.** The flat `MSPa` map has no velocity axis, so velocity layering uses the
   partials instead: each distinct source velocity range is laid onto its own partial — **one partial
   per mono layer** (centre pan), **two partials per stereo layer** (hard L/R). This is done
