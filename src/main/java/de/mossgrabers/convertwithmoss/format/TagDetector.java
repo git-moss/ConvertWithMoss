@@ -196,12 +196,24 @@ public class TagDetector
             "Bras",
             "Brs"
         });
+        // 'Wave' is deliberately not a keyword: it is part of the names of the wavetable synthesizers
+        // (Waldorf Microwave and Wave, PPG Wave, Korg Wavestation) and of the folders which hold
+        // their sounds, and those are not chip sounds
         CATEGORIES.put (CATEGORY_CHIP, new String []
         {
             CATEGORY_CHIP,
+            "Commodore",
+            "Chiptune",
             "Computer",
-            "CPU",
-            "Wave"
+            "Nintendo",
+            "Gameboy",
+            "Arcade",
+            "8-Bit",
+            "Atari",
+            "Amiga",
+            "8Bit",
+            "C64",
+            "CPU"
         });
         CATEGORIES.put (CATEGORY_VOCAL, new String []
         {

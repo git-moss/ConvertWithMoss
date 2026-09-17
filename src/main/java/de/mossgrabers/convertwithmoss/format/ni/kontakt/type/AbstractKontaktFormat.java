@@ -239,8 +239,10 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
         if (instrumentURL != null && !instrumentURL.isBlank ())
             metadata.setDescription ("Website : " + instrumentURL);
 
+        // The icons 'New' (the default) and 'Wave' (a waveform, the generic icon of a sampled sound)
+        // say nothing about the category, which is then detected from the names instead
         final String instrumentIconName = program.getInstrumentIconName ();
-        if (instrumentIconName == null || instrumentIconName.isBlank () || "New".equals (instrumentIconName))
+        if (instrumentIconName == null || instrumentIconName.isBlank () || "New".equals (instrumentIconName) || "Wave".equals (instrumentIconName))
             metadata.setCategory (TagDetector.detectCategory (parts));
         else
             metadata.setCategory (TagDetector.detectCategory (instrumentIconName.split (" ")));
