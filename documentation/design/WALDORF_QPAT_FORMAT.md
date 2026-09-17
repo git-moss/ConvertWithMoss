@@ -750,7 +750,12 @@ brings a sample of its own plays both layers after the import, while the same pa
 entry fails with *loading samples/.../L2_saw_octave.wav failed*.
 
 A written two-layer patch loads and its second layer carries its own filter and amplitude envelope
-**(hw)**; the samples of the second layer were the open problem described above.
+**(hw)**; the samples of the second layer were the open problem described above. ConvertWithMoss
+writes the four-layer layout of the MK2 - count 2, version 15, four stored layers, the unused ones
+with `LayerActive` 0 and without oscillators - when a source needs three or four layers. Verified
+on an Iridium MK2 with OS 4.0.6 **(hw)**: a written four-layer patch with one sample pitch per
+layer plays all four pitches after the import, and a three-layer patch with its switched-off
+fourth layer plays its three.
 
 ## 8. Reading a patch
 
@@ -816,7 +821,12 @@ A written two-layer patch loads and its second layer carries its own filter and 
   whether an MK2 can write code 1, and whether a first-generation instrument accepts code 2, is
   unknown. The loader accepts the codes 1, 2 and 3 as "more than one layer" and loads the layers 3
   and 4 for the codes 2 and 3 (fw). A written two-layer patch loads and, with the entries of
-  section 7.5, plays its own samples in the second layer (hw).
+  section 7.5, plays its own samples in the second layer; a written four-layer patch (count 2,
+  version 15) plays all four layers on an Iridium MK2 (hw). The first generation holds two layers -
+  the Iridium and Iridium Core manuals switch "between the two layers by tapping on the Layer 1 or
+  Layer 2 button", and Waldorf describes the MK2 upgrade as raising the layer count from 2 to 4 -
+  so a count-2 file is for the MK2 generation only; how a first-generation OS reacts to one is not
+  known (manual).
 * **Oscillator type indices.** *Off* is 5 in versions 9-11 and 6 in version 15; how an instrument
   interprets the index of a file of another version (e.g. a version-14 file with `Osc2Type` = 5 on
   an MK2) is untested - hence the advice to write nothing for unused oscillators.
@@ -870,7 +880,7 @@ For readers who want to compare an implementation against ConvertWithMoss (`Wald
   Experimental*).
 * **Options**: re-sample to 16 bit / 44.1 kHz (default on), *Author* and *Bank* overrides, the
   `NNNNN-` import number prefix with a configurable first number, short file names which keep the
-  whole file name within 40 characters, and *Use a second layer for more than 3 groups* (off by
-  default, which writes exactly what earlier versions wrote). It writes at most two layers - the
-  layer count 1, which every instrument of the family has stored since the format version 8 - and
-  never the four-layer count, which has only been seen in files of the version 15.
+  whole file name within 40 characters, and *Maximum number of layers* with 1 to 4 layers (1 by default,
+  which writes exactly what earlier versions wrote). One or two layers use the layer count 1, which
+  every instrument of the family has stored since the format version 8; three or four use the
+  four-layer layout of section 7.5 with the format version 15.

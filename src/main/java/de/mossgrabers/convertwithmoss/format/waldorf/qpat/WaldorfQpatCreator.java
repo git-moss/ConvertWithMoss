@@ -80,7 +80,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     /** The sample rate which the device plays and to which this creator re-samples. */
     private static final int                                   DESTINATION_SAMPLE_RATE = 44100;
+    /** The format version of a patch with one or two layers, which every instrument of the family loads. */
     private static final int                                   PRESET_VERSION         = 14;
+    /**
+     * The format version of a patch with the four-layer layout. The loader clears the file offsets
+     * of the layers 3 and 4 in files up to the version 14, so four layers need the version of the
+     * MK2 generation.
+     */
+    private static final int                                   PRESET_VERSION_FOUR    = 15;
 
     /** The size of the header of a patch, which every layer of a patch has as well. */
     private static final int                                   HEADER_SIZE            = 512;
@@ -99,14 +106,19 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      */
     private static final int                                   MAX_MAP_ENTRIES        = 1024;
     /**
-     * The maximum number of layers which is written. The MK2 generation of the instruments stores
-     * four layers, but that layer count has only ever been observed in files of the format version
-     * 15, while two layers are stored the same way from the version 8 on - so a patch with two
-     * layers plays on every instrument of the family.
+     * The maximum number of layers which is written. Two layers are stored the same way from the
+     * format version 8 on, so a patch with two layers plays on every instrument of the family. Four
+     * layers are the layout of the MK2 generation (Iridium MK2, Quantum MK2 and first-generation
+     * instruments upgraded to the MK2 hardware): the layer count 2, the format version 15 and
+     * always four stored layers, of which the unused ones are switched off.
      */
-    private static final int                                   MAX_LAYERS             = 2;
+    private static final int                                   MAX_LAYERS             = 4;
+    /** The number of layers which a patch with three or four layers stores. */
+    private static final int                                   MAX_LAYERS_TWO         = 2;
     /** Layer count: two layers, the file offset of the 2nd one is stored at 432. */
     private static final int                                   LAYER_COUNT_TWO        = 1;
+    /** Layer count: four layers, the file offsets of the layers 2, 3 and 4 are stored at 432, 440 and 444. */
+    private static final int                                   LAYER_COUNT_FOUR       = 2;
     /** The header holds the file offsets of the layers 2, 3 and 4. */
     private static final int                                   NUM_LAYER_OFFSETS      = 3;
     /**
@@ -407,15 +419,33 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             metadata.setDescription (bank);
 
         final int numLayers = layers.size ();
-        final int layerCount = numLayers == 1 ? 0 : LAYER_COUNT_TWO;
+        // One or two layers are stored the way every instrument of the family stores them; three
+        // or four layers need the layout of the MK2 generation, which always stores four layers -
+        // the loader checks the offsets of all of them - and switches the unused ones off
+        final boolean fourLayerLayout = numLayers > MAX_LAYERS_TWO;
+        final int layerCount = numLayers == 1 ? 0 : fourLayerLayout ? LAYER_COUNT_FOUR : LAYER_COUNT_TWO;
+        final int version = fourLayerLayout ? PRESET_VERSION_FOUR : PRESET_VERSION;
+        final int numStoredLayers = fourLayerLayout ? MAX_LAYERS : numLayers;
+        if (fourLayerLayout)
+            this.notifier.log ("IDS_QPAT_NOTIFY_FOUR_LAYERS", Integer.toString (numLayers));
 
         // The content of every layer has to be known before the first one can be written, since
         // the header holds the file offset of the following layer
         final List<List<WaldorfQpatParameter>> layerParameters = new ArrayList<> ();
         final List<List<byte []>> layerSampleMaps = new ArrayList<> ();
-        final int [] layerSizes = new int [numLayers];
-        for (int i = 0; i < numLayers; i++)
+        final int [] layerSizes = new int [numStoredLayers];
+        for (int i = 0; i < numStoredLayers; i++)
         {
+            if (i >= numLayers)
+            {
+                // A stored layer which is not used: switched off, without oscillators and maps
+                final List<WaldorfQpatParameter> parameters = createInactiveLayerParameters ();
+                layerParameters.add (parameters);
+                layerSampleMaps.add (new ArrayList<> ());
+                layerSizes[i] = HEADER_SIZE + parameters.size () * PARAMETER_SIZE;
+                continue;
+            }
+
             final List<IGroup> groups = layers.get (i);
             // A zero-attack/zero-decay amplitude envelope that sustains below full level makes the
             // device pop at the start of each note: it snaps to the 100% attack peak and then
@@ -438,15 +468,34 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             layerSizes[i] = size;
         }
 
-        // The absolute file offsets of the layers 2, 3 and 4; a layer which is not stored keeps 0
+        // The absolute file offsets of the layers 2, 3 and 4, each the sum of the sizes of the
+        // layers in front of it; a layer which is not stored keeps 0
         final int [] layerOffsets = new int [NUM_LAYER_OFFSETS];
-        System.arraycopy (layerSizes, 0, layerOffsets, 0, numLayers - 1);
+        for (int i = 1; i < numStoredLayers; i++)
+            layerOffsets[i - 1] = layerOffsets[Math.max (0, i - 2)] + layerSizes[i - 1];
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            for (int i = 0; i < numLayers; i++)
-                writeLayer (out, metadata, deviceName, layerParameters.get (i), layerSampleMaps.get (i), layerCount, numLayers == 1 ? 0 : (int) TIMBRE_MODE_MULTI, layerOffsets);
+            for (int i = 0; i < numStoredLayers; i++)
+                writeLayer (out, metadata, deviceName, version, layerParameters.get (i), layerSampleMaps.get (i), layerCount, numLayers == 1 ? 0 : (int) TIMBRE_MODE_MULTI, layerOffsets);
         }
+    }
+
+
+    /**
+     * Create the parameters of a stored layer which is not used. The four-layer layout always
+     * stores four layers, so a patch with three sounding layers stores a fourth one which is
+     * switched off; its oscillators are left unwritten, which the device reads as Off.
+     *
+     * @return The parameters
+     */
+    private static List<WaldorfQpatParameter> createInactiveLayerParameters ()
+    {
+        final List<WaldorfQpatParameter> parameters = new ArrayList<> ();
+        parameters.add (new WaldorfQpatParameter ("TimbreMode", "Layered", TIMBRE_MODE_MULTI));
+        parameters.add (new WaldorfQpatParameter ("MultiAllocMode", "Layered", 0));
+        parameters.add (new WaldorfQpatParameter ("LayerActive", "Off", 0));
+        return parameters;
     }
 
 
@@ -457,6 +506,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param out The output stream to write to
      * @param metadata The metadata of the multi-sample
      * @param deviceName The name to write into the name field, which the device displays
+     * @param version The format version of the patch
      * @param parameters The parameters of the layer
      * @param sampleMaps The sample maps of the layer
      * @param layerCount The number of layers of the patch, coded as the device does
@@ -464,9 +514,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param layerOffsets The absolute file offsets of the layers 2, 3 and 4
      * @throws IOException Could not write the layer
      */
-    private static void writeLayer (final OutputStream out, final IMetadata metadata, final String deviceName, final List<WaldorfQpatParameter> parameters, final List<byte []> sampleMaps, final int layerCount, final int timbreMode, final int [] layerOffsets) throws IOException
+    private static void writeLayer (final OutputStream out, final IMetadata metadata, final String deviceName, final int version, final List<WaldorfQpatParameter> parameters, final List<byte []> sampleMaps, final int layerCount, final int timbreMode, final int [] layerOffsets) throws IOException
     {
-        writeHeader (out, metadata, deviceName);
+        writeHeader (out, metadata, deviceName, version);
 
         StreamUtils.writeUnsigned16 (out, parameters.size (), false);
         StreamUtils.padBytes (out, 2);
@@ -1466,12 +1516,13 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param out The output stream to write to
      * @param metadata The metadata
      * @param name The name of the multi-sample
+     * @param version The format version of the patch
      * @throws IOException Could not write
      */
-    private static void writeHeader (final OutputStream out, final IMetadata metadata, final String name) throws IOException
+    private static void writeHeader (final OutputStream out, final IMetadata metadata, final String name, final int version) throws IOException
     {
         StreamUtils.writeUnsigned32 (out, WaldorfQpatConstants.MAGIC, false);
-        StreamUtils.writeUnsigned32 (out, PRESET_VERSION, false);
+        StreamUtils.writeUnsigned32 (out, version, false);
         StreamUtils.writeAscii (out, StringUtils.fixASCII (name), WaldorfQpatConstants.MAX_STRING_LENGTH);
         // The author (offset 40) and bank (offset 72) fields are shown by the device. Use the
         // explicit creator settings when provided, otherwise fall back to the source metadata.
