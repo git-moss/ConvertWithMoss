@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 
 /**
@@ -67,6 +68,12 @@ public class TagDetector
     public static final String                  CATEGORY_WINDS                = "Winds";
     public static final String                  CATEGORY_LOOPS                = "Loops";
     public static final String                  CATEGORY_WORLD                = "World";
+
+    /**
+     * Separates the words of a text: everything which is not a letter or a digit, the change from a
+     * lower to an upper case letter and the change between a letter and a digit.
+     */
+    private static final Pattern                WORD_SEPARATOR                = Pattern.compile ("[^\\p{L}\\p{N}]+|(?<=\\p{Ll})(?=\\p{Lu})|(?<=\\p{L})(?=\\p{N})|(?<=\\p{N})(?=\\p{L})");
 
     private static final String []              KEYWORDS                      =
     {
@@ -827,21 +834,35 @@ public class TagDetector
 
 
     /**
-     * Detect keywords in the given strings.
+     * Detect keywords in the given strings. A keyword has to be a whole word of a text: 'arp' is not
+     * a keyword of a harp, 'mpe' not one of a trumpet and 'harmonic' not one of a harmonica. Words
+     * are separated by everything which is not a letter or a digit and by the case and digit changes
+     * of a compound name: 'PPG_PadSlow3WaveWideST' has the words PPG, Pad, Slow, 3, Wave, Wide and
+     * ST. A keyword of two words like 'osc_sync' matches two neighbouring words, 'Osc Sync' as well
+     * as 'OscSync'.
      *
      * @param texts The texts
      * @return The detected keywords
      */
     public static String [] detectKeywords (final Collection<String> texts)
     {
-        final Set<String> keywords = new HashSet<> ();
+        final Set<String> words = new HashSet<> ();
         for (final String text: texts)
         {
-            final String t = text.toUpperCase (Locale.US);
-            for (final Map.Entry<String, String> e: KEYWORD_LOOKUP.entrySet ())
-                if (t.contains (e.getKey ()))
-                    keywords.add (e.getValue ());
+            final String [] textWords = WORD_SEPARATOR.split (text.trim ());
+            for (int i = 0; i < textWords.length; i++)
+            {
+                final String word = textWords [i].toUpperCase (Locale.US);
+                words.add (word);
+                if (i > 0)
+                    words.add (textWords [i - 1].toUpperCase (Locale.US) + "_" + word);
+            }
         }
+
+        final Set<String> keywords = new HashSet<> ();
+        for (final Map.Entry<String, String> e: KEYWORD_LOOKUP.entrySet ())
+            if (words.contains (e.getKey ()))
+                keywords.add (e.getValue ());
         return keywords.toArray (new String [keywords.size ()]);
     }
 
