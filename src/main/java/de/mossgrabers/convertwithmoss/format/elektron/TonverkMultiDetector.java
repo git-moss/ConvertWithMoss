@@ -21,6 +21,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
@@ -136,10 +137,16 @@ public class TonverkMultiDetector extends AbstractDetector<MetadataSettingsUI>
             sampleZones.add (sampleZone);
         }
 
-        // If there is more than 1 sample, apply round-robin
+        // Several samples in one velocity layer alternate on successive notes: a round robin.
+        // Only the play logic tells the creators that these zones never sound at the same time,
+        // the sequence position alone does not.
         if (sampleZones.size () > 1)
             for (int i = 0; i < sampleZones.size (); i++)
-                sampleZones.get (i).setSequencePosition (1 + i);
+            {
+                final ISampleZone sampleZone = sampleZones.get (i);
+                sampleZone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+                sampleZone.setSequencePosition (1 + i);
+            }
 
         return sampleZones;
     }
