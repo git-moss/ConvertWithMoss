@@ -39,7 +39,9 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private static final String QPAT_SHORT_FILE_NAMES    = "QPATShortFileNames";
     private static final String QPAT_NUMBER_PREFIX_START = "QPATNumberPrefixStart";
     private static final String QPAT_LAYERS              = "QPATLayers";
-    /** The option which the layers option replaced, still read so that its setting is taken over. */
+    /**
+     * The option which the layers option replaced, still read so that its setting is taken over.
+     */
     private static final String QPAT_SECOND_LAYER        = "QPATUseSecondLayer";
     /** The choices of the layers option: the maximum number of layers of a patch. */
     private static final int [] LAYER_OPTIONS            =
@@ -243,7 +245,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private static void limitToPatchInfo (final TextField field)
     {
         field.setTooltip (new Tooltip (Functions.getText ("@IDS_QPAT_PATCH_INFO_TOOLTIP")));
-        field.setTextFormatter (new TextFormatter<String> (change -> {
+        field.setTextFormatter (new TextFormatter<> (change -> {
 
             // Removing characters never makes a text wider
             final String addedText = change.getText ();
@@ -370,6 +372,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     {
         return this.numberPrefixStart;
     }
+
 
     /**
      * Get the index of the selected layer option.

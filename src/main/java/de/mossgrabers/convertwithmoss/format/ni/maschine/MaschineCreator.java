@@ -10,10 +10,10 @@ import java.io.IOException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.maschine1.Maschine1Format;
 import de.mossgrabers.convertwithmoss.format.ni.maschine.maschine2.Maschine2Format;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**

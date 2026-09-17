@@ -799,8 +799,8 @@ public class StreamUtils
 
         for (int i = 0; i < data.length; i += 2)
         {
-            final byte first = isBigEndian ? data[i + 1] : data[i];
-            final byte second = isBigEndian ? data[i] : data[i + 1];
+            final byte first = data[isBigEndian ? i + 1 : i];
+            final byte second = data[isBigEndian ? i : i + 1];
             if (first == 0)
                 break;
             sb.append (new String (new byte []

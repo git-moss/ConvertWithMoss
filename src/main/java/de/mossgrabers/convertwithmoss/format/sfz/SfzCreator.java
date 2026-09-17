@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -42,7 +43,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.tools.Pair;
-import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 
 
 /**
@@ -438,7 +438,9 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (lfoDepth != 0)
         {
             final StringBuilder lfoStr = new StringBuilder ();
-            lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append ((int) Math.round (lfoDepth * 1200));
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is limited
+            // to +-1200 cent
+            lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append ((int) Math.round (Math.clamp (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH, -1200, 1200)));
 
             final ILfo pitchLfo = pitchLfoModulator.getSource ();
             addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FREQ, Math.clamp (pitchLfo.getRate (), 0, 20));
@@ -648,7 +650,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         final double filterKeyTracking = filter.getCutoffKeyTracking ();
         buffer.append (addAttribute (SfzOpcode.RESONANCE, formatDouble (filter.getResonance () * IFilter.MAX_RESONANCE, 2), filterKeyTracking <= 0));
         if (filterKeyTracking > 0)
-            buffer.append (addAttribute (SfzOpcode.FIL_KEY_TRACK, Integer.toString ((int) Math.round (filter.getCutoffKeyTracking () * 1200.0)), true));
+            // In cent per key, 100 is the cutoff following the keyboard one to one
+            buffer.append (addAttribute (SfzOpcode.FIL_KEY_TRACK, Integer.toString ((int) Math.round (filter.getCutoffKeyTracking () * 100.0)), true));
 
         // Envelope modulation
 
@@ -685,7 +688,9 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (lfoDepth != 0)
         {
             final StringBuilder lfoStr = new StringBuilder ();
-            lfoStr.append (SfzOpcode.FILLFO_DEPTH).append ('=').append ((int) Math.round (lfoDepth * 1200));
+            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is limited
+            // to +-1200 cent
+            lfoStr.append (SfzOpcode.FILLFO_DEPTH).append ('=').append ((int) Math.round (Math.clamp (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH, -1200, 1200)));
 
             final ILfo pitchLfo = cutoffLfoModulator.getSource ();
             addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_FREQ, Math.clamp (pitchLfo.getRate (), 0, 20));
@@ -804,7 +809,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             final Pair<String, List<Pair<String, List<String>>>> group = groupContent.get (g);
             final List<Pair<String, List<String>>> zones = group.getValue ();
 
-            final Set<String> common = zones.isEmpty () ? Collections.emptySet () : SfzCreator.intersectAll (zones.stream ().map (Pair::getValue).collect (Collectors.toList ()));
+            final Set<String> common = zones.isEmpty () ? Collections.emptySet () : SfzCreator.intersectAll (zones.stream ().map (Pair::getValue).toList ());
 
             // Remove from zones (only non-common parameters remain)
             for (final Pair<String, List<String>> zone: zones)
@@ -836,9 +841,8 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
             documentBuffer.append (String.join ("", documentCommon));
 
         // Step 5: write group keys and zone keys into documentBuffer
-        for (int g = 0; g < groupContent.size (); g++)
+        for (final Pair<String, List<Pair<String, List<String>>>> group: groupContent)
         {
-            final Pair<String, List<Pair<String, List<String>>>> group = groupContent.get (g);
             documentBuffer.append (group.getKey ());
             for (final Pair<String, List<String>> zone: group.getValue ())
                 documentBuffer.append (appendParameters (zone.getKey (), zone.getValue ()));

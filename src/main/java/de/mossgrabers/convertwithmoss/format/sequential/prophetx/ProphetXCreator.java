@@ -49,8 +49,8 @@ import de.mossgrabers.tools.FileUtils;
  * contains its samples as WAV files and a group file (ending <i>.grp</i>) with the key, velocity
  * and loop mapping. By default the instrument is written as the archive which the device imports
  * from a USB drive: <i>px/&lt;bank&gt;/&lt;category&gt;/&lt;name&gt;.zip</i>. The format was
- * reverse-engineered from the OS 2.2.2 firmware and the output follows the conventions of the
- * free PXToolkit, whose archives play on the device, see
+ * reverse-engineered from the OS 2.2.2 firmware and the output follows the conventions of the free
+ * PXToolkit, whose archives play on the device, see
  * <i>documentation/design/PROPHET_X_GRP_FORMAT.md</i>.
  *
  * @author Jürgen Moßgraber
@@ -149,9 +149,9 @@ public class ProphetXCreator extends AbstractWavCreator<ProphetXCreatorUI>
 
     /**
      * Write the instrument as the archive which the device imports from a USB drive:
-     * <i>px/&lt;bank&gt;/&lt;category&gt;/&lt;name&gt;.zip</i>. The archive contains the
-     * instrument folder, which the importer of the device extracts next to the other instruments
-     * of the category.
+     * <i>px/&lt;bank&gt;/&lt;category&gt;/&lt;name&gt;.zip</i>. The archive contains the instrument
+     * folder, which the importer of the device extracts next to the other instruments of the
+     * category.
      *
      * @param destinationFolder The folder in which to create the USB layout
      * @param multisampleSource The multi-sample
@@ -246,8 +246,8 @@ public class ProphetXCreator extends AbstractWavCreator<ProphetXCreatorUI>
 
 
     /**
-     * Collect the zones which the device can play: those with a mono or stereo sample which play
-     * on note-on.
+     * Collect the zones which the device can play: those with a mono or stereo sample which play on
+     * note-on.
      *
      * @param multisampleSource The multi-sample
      * @return The zones
@@ -430,8 +430,8 @@ public class ProphetXCreator extends AbstractWavCreator<ProphetXCreatorUI>
 
 
     /**
-     * Create the text of the group file: a header line with the column names and one line per
-     * zone, separated by tabs, plus one line per key gap which maps it to the empty sample.
+     * Create the text of the group file: a header line with the column names and one line per zone,
+     * separated by tabs, plus one line per key gap which maps it to the empty sample.
      *
      * @param zones The zones to write
      * @param name The name of the instrument
@@ -479,7 +479,10 @@ public class ProphetXCreator extends AbstractWavCreator<ProphetXCreatorUI>
      */
     private String [] createRow (final ISampleZone zone, final int zoneIndex, final String categoryName, final String name, final String uuid) throws IOException
     {
-        final IAudioMetadata audioMetadata = zone.getSampleData ().get ().getAudioMetadata ();
+        final Optional<ISampleData> sampleData = zone.getSampleData ();
+        if (sampleData.isEmpty ())
+            return new String [0];
+        final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
 
         final int keyLow = Math.clamp (zone.getKeyLow (), 0, 127);
         final int keyHigh = Math.clamp (limitToDefault (zone.getKeyHigh (), 127), keyLow, 127);
@@ -603,7 +606,7 @@ public class ProphetXCreator extends AbstractWavCreator<ProphetXCreatorUI>
         for (final ISampleZone zone: zones)
         {
             final IModulator modulator = zone.getAmplitudeVelocityModulator ();
-            if (depth == null)
+            if (depth == null || curve == null)
             {
                 depth = Double.valueOf (modulator.getDepth ());
                 curve = Double.valueOf (modulator.getCurve ());
@@ -611,7 +614,7 @@ public class ProphetXCreator extends AbstractWavCreator<ProphetXCreatorUI>
             else if (depth.doubleValue () != modulator.getDepth () || curve.doubleValue () != modulator.getCurve ())
                 return Optional.empty ();
         }
-        if (depth == null || depth.doubleValue () == 1 && curve.doubleValue () == 0)
+        if (depth == null || curve == null || (depth.doubleValue () == 1 && curve.doubleValue () == 0))
             return Optional.empty ();
 
         // The response of the model is 1 - depth + depth * (velocity / 127) ^ (3 ^ curve)

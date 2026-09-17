@@ -50,32 +50,9 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    /** Reads the files of an instrument folder, which is either a plain folder or an archive. */
-    private interface IInstrumentFolder
-    {
-        /**
-         * Load the data of a sample.
-         *
-         * @param filePath The file path from the group file, relative to the instrument folder
-         * @return The sample data or null if the sample was not found, which is already reported
-         * @throws IOException Could not read the sample
-         */
-        ISampleData loadSample (String filePath) throws IOException;
-
-
-        /**
-         * Load the optional file with the velocity volumes.
-         *
-         * @return The text of the file or null if the instrument has none
-         * @throws IOException Could not read the file
-         */
-        String loadVelocityVolumes () throws IOException;
-    }
-
-
     private static final String  MACOS_RESOURCE_FOLDER = "__MACOSX/";
     /** The firmware reads digits and dots only. */
-    private static final Pattern VOLUME_NUMBER         = Pattern.compile ("[0-9]+(\\.[0-9]*)?|\\.[0-9]+");
+    private static final Pattern VOLUME_NUMBER         = Pattern.compile ("\\d+(\\.\\d*)?|\\.\\d+");
     private static final int     NUM_VELOCITIES        = 128;
 
 
@@ -112,8 +89,8 @@ public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Read an instrument from its group file. The samples are located relative to the folder of
-     * the group file.
+     * Read an instrument from its group file. The samples are located relative to the folder of the
+     * group file.
      *
      * @param file The group file
      * @return The multi-sample source
@@ -128,28 +105,42 @@ public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
 
         final IInstrumentFolder folder = new IInstrumentFolder ()
         {
+            /** {@inheritDoc} */
             @Override
             public ISampleData loadSample (final String filePath) throws IOException
             {
-                final File sampleFile = ProphetXDetector.this.createCanonicalFile (instrumentFolder, filePath);
-                if (!sampleFile.exists ())
-                {
-                    ProphetXDetector.this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
-                    return null;
-                }
-                return createSampleData (sampleFile, ProphetXDetector.this.notifier);
+                return ProphetXDetector.this.loadSampleFromGroup (instrumentFolder, filePath);
             }
 
 
+            /** {@inheritDoc} */
             @Override
             public String loadVelocityVolumes () throws IOException
             {
-                final File volumeFile = findFileIgnoreCase (instrumentFolder, ProphetXTag.VOLUME_FILE);
-                return volumeFile.exists () ? ProphetXDetector.this.loadTextFile (volumeFile) : null;
+                return ProphetXDetector.this.loadVelocityVolumesFromGroups (instrumentFolder);
             }
         };
 
         return this.parseGroupFile (file, FileUtils.getNameWithoutType (file), this.loadTextFile (file), folderCategory, folder);
+    }
+
+
+    private ISampleData loadSampleFromGroup (final File instrumentFolder, final String filePath) throws IOException
+    {
+        final File sampleFile = this.createCanonicalFile (instrumentFolder, filePath);
+        if (!sampleFile.exists ())
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
+            return null;
+        }
+        return createSampleData (sampleFile, this.notifier);
+    }
+
+
+    private String loadVelocityVolumesFromGroups (final File instrumentFolder) throws IOException
+    {
+        final File volumeFile = findFileIgnoreCase (instrumentFolder, ProphetXTag.VOLUME_FILE);
+        return volumeFile.exists () ? this.loadTextFile (volumeFile) : null;
     }
 
 
@@ -183,20 +174,15 @@ public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
 
             final IInstrumentFolder folder = new IInstrumentFolder ()
             {
+                /** {@inheritDoc} */
                 @Override
                 public ISampleData loadSample (final String filePath) throws IOException
                 {
-                    final String entryName = entryFolder + filePath.replace ('\\', '/');
-                    final ZipEntry sampleEntry = findEntry (zipFile, entryName);
-                    if (sampleEntry == null)
-                    {
-                        ProphetXDetector.this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", file.getName () + ": " + entryName);
-                        return null;
-                    }
-                    return ProphetXDetector.this.createSampleData (file, new File (sampleEntry.getName ()));
+                    return ProphetXDetector.this.loadSampleFromArchive (file, zipFile, entryFolder, filePath);
                 }
 
 
+                /** {@inheritDoc} */
                 @Override
                 public String loadVelocityVolumes () throws IOException
                 {
@@ -210,14 +196,27 @@ public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
+    private ISampleData loadSampleFromArchive (final File file, final ZipFile zipFile, final String entryFolder, final String filePath) throws IOException
+    {
+        final String entryName = entryFolder + filePath.replace ('\\', '/');
+        final ZipEntry sampleEntry = findEntry (zipFile, entryName);
+        if (sampleEntry == null)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", file.getName () + ": " + entryName);
+            return null;
+        }
+        return this.createSampleData (file, new File (sampleEntry.getName ()));
+    }
+
+
     /**
      * Parse the content of a group file into a multi-sample source.
      *
      * @param sourceFile The group file or the archive
      * @param fileName The name of the group file, which the device shows for the instrument
      * @param content The text of the group file
-     * @param folderCategory The index of the category folder in which the instrument lies or -1
-     *            if it does not lie in one
+     * @param folderCategory The index of the category folder in which the instrument lies or -1 if
+     *            it does not lie in one
      * @param folder Reads the files of the instrument folder
      * @return The multi-sample source
      * @throws IOException Could not read a file of the instrument
@@ -368,8 +367,8 @@ public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Apply the optional velocity volumes of the instrument, one gain factor per velocity, to the
-     * amplitude velocity modulators of all zones. The device uses its built-in curve instead if
-     * the instrument has no such file, which is left to the defaults of the model.
+     * amplitude velocity modulators of all zones. The device uses its built-in curve instead if the
+     * instrument has no such file, which is left to the defaults of the model.
      *
      * @param sourceFile The group file or the archive, for the error message
      * @param groups The groups with the zones

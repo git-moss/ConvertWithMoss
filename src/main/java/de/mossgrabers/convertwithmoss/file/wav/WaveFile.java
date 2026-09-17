@@ -77,6 +77,23 @@ public class WaveFile extends AbstractRIFFFile
 
 
     /**
+     * Constructor. Creates a new file in memory.
+     *
+     * @param numberOfChannels The number of channels of the sample
+     * @param sampleRate The sample rate (in Hz)
+     * @param bitsPerSample The resolution the sample in bits
+     * @param wavData The sample byte array in little-endian order
+     */
+    public WaveFile (final int numberOfChannels, final int sampleRate, final int bitsPerSample, final byte [] wavData)
+    {
+        this ();
+
+        this.formatChunk = new FormatChunk (numberOfChannels, sampleRate, bitsPerSample, true);
+        this.dataChunk = new DataChunk (this.formatChunk, wavData);
+    }
+
+
+    /**
      * Constructor. Reads the given WAV file.
      *
      * @param wavFile The WAV file
