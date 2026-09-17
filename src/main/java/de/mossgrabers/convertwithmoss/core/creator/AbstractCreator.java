@@ -668,6 +668,28 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
+     * Get the counter suffix which createUniqueFilename appended to a file name, e.g. " (2)". A
+     * sample folder which belongs to the preset file needs to carry the same suffix, otherwise two
+     * presets of the same name in one destination folder write their samples into one folder,
+     * where samples of the same name overwrite each other.
+     *
+     * @param uniqueFile The file which createUniqueFilename returned
+     * @param sampleName The name which was passed to createUniqueFilename
+     * @param extension The extension which was passed to createUniqueFilename
+     * @return The suffix, empty if the file name was already unique
+     */
+    protected static String getUniqueSuffix (final File uniqueFile, final String sampleName, final String extension)
+    {
+        final String ext = extension.isBlank () ? "" : "." + extension;
+        final String name = SafeFileNames.create (withoutExtensionTail (sampleName, extension));
+        final String uniqueName = uniqueFile.getName ();
+        if (!uniqueName.startsWith (name) || !uniqueName.endsWith (ext))
+            return "";
+        return uniqueName.substring (name.length (), uniqueName.length () - ext.length ());
+    }
+
+
+    /**
      * Creates a unique file name which does not already exists in the list of the given ones.
      *
      * @param destinationFolder The folder in which to create the file
