@@ -379,6 +379,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
+        // Zones which only sound on note-off are skipped (see removeReleaseZones), so there needs
+        // to be at least one other zone - there is none, e.g. if no sample of the source was found
+        if (multisampleSource.getNonEmptyGroups (true).isEmpty ())
+        {
+            this.notifier.logError ("IDS_ERR_NO_GROUPS_IN_SOURCE");
+            return;
+        }
+
         // The name which the device displays. The file name normally keeps the full name of the
         // source instead, which tells the presets of different banks apart on the computer, but is
         // longer than what the import screen of the device can show
