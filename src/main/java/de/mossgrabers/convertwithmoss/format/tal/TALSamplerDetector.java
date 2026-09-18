@@ -211,7 +211,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         final ISampleZone zone;
         try
         {
-            zone = this.createSampleZone (new File (parentFolder, filename));
+            zone = this.createSampleZone (lookupSampleFile (parentFolder, filename));
         }
         catch (final FileNotFoundException ex)
         {
@@ -265,6 +265,31 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         if (sampleData.isPresent ())
             sampleData.get ().addZoneData (zone, false, false);
         return Optional.of (zone);
+    }
+
+
+    /**
+     * Look up the file of a sample. The preset stores the path which the sample had when the
+     * preset was saved, relative to the preset or absolute. An absolute path mostly belongs to the
+     * computer on which a pack was produced, e.g. 'F:\Nuendo\000007 Prophet VS\Samples\x.wav', and
+     * a path of Windows is not even one on macOS or Linux, which do not separate folders with
+     * back-slashes. A pack ships its samples with its presets, therefore a sample which is not
+     * found at its path is looked up by its file name in the folder of the preset and below it.
+     *
+     * @param presetFolder The folder which contains the preset
+     * @param samplePath The path of the sample as stored in the preset
+     * @return The sample file; if it cannot be found, the file of the stored path, which lets the
+     *         caller report it as missing
+     */
+    private static File lookupSampleFile (final File presetFolder, final String samplePath)
+    {
+        final String path = samplePath.replace ('\\', '/');
+        final File file = new File (path);
+        final File sampleFile = file.isAbsolute () ? file : new File (presetFolder, path);
+        if (sampleFile.isFile ())
+            return sampleFile;
+        final Optional<File> foundFile = findFileRecursively (presetFolder, file.getName ());
+        return foundFile.isPresent () ? foundFile.get () : sampleFile;
     }
 
 
