@@ -274,7 +274,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_END, "0");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_CROSSFADE, "0");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_TUNE, "0");
-        // The root note is strangely one more then the lower upper keys!
+        // The root note is strangely one more than the lower upper keys!
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ROOT_NOTE, Integer.toString (limitToDefault (zone.getKeyRoot (), limitToDefault (zone.getKeyLow (), 0)) + 1));
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_KEY_TRACK, zone.getKeyTracking () == 0 ? "False" : "True");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME, zoneName);

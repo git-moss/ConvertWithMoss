@@ -889,11 +889,12 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         sampleZone.setBendDown (-pitchBendDown);
 
         final SampleInfo sampleInfo = sampleInfos.get (sampleName);
+        // The root note is strangely one more than the lower upper keys!
         final int rootNote = layerNode.get ("rootNote").asInt ();
         if (rootNote > 0)
-            sampleZone.setKeyRoot (rootNote);
+            sampleZone.setKeyRoot (rootNote - 1);
         else if (sampleInfo != null)
-            sampleZone.setKeyRoot (sampleInfo.rootNote);
+            sampleZone.setKeyRoot (sampleInfo.rootNote - 1);
 
         // The instrument tuning is already part of the tuning parameter, the layer adds its own
         final int layerCoarseTune = layerNode.path ("coarseTune").asInt ();
