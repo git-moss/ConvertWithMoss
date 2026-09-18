@@ -87,6 +87,11 @@ The **`dataOffset` is the tell** for the two container variants:
 .SVD:  u16 headerEnd (LE, offset of last TOC byte) + "SVD5\0" + padding
 ```
 
+The two "version" bytes are counts: the number of blocks and how many of them have a fixed record
+size. Roland's *SVZ Sample Converter* computes them that way, and they match every device and
+converter file at hand: `05 04` = `DIFa`, `PATa`, `USPa`, `MSPa` plus the variable `USDa`; `02 01` =
+`USPa` + `USDa` (a samples-only file); `03 03` = the ZENOLOGY export's `DIFa`, `PATa`, `MDLa`.
+
 ---
 
 ## 3. Importable keyboard-instrument `.SVZ`
@@ -299,7 +304,7 @@ sample chunks is a 16-byte directory entry per sample:
 +0x0C  u32  crc32 of the chunk  (the device tolerates 0 here; the CWM writer fills it in)
 ```
 
-Each chunk is one **`SMPd`** sample. Two encodings exist and both import:
+Each chunk is one **`SMPd`** sample. Three encodings exist:
 
 **Device-native `SMPd` (what the FANTOM exports, and what CWM writes):**
 
@@ -326,42 +331,69 @@ computes `frames = f04 >> 1` regardless of the channel count, then allocates
 in 512-byte blocks with a fixed 64-frame allocation margin past the declared extent for the
 voice engine's read-ahead.
 
-**Roland SF2→SVZ converter `SMPd`** (read by CWM; not written): the output of Roland's own
-SF2→SVZ converter, as shipped in commercial third-party packs (e.g. Vulture Culture's *SOURCE*,
-"ARP Solina Strings"). The header is 0x20 bytes - the sample name at 0x10, the rate at 0x0C, and
-the byte at 0x08 holding an unrelated `0x32` (NOT the channel count, which is the trap that made
-these files read as "50 channels") - followed by a **complete embedded `RIFF`/`WAVE` file at
-0x20** (PCM, 44100 Hz) rather than raw PCM, and the `USDa` directory CRCs are 0. The `USPa`
-record is byte-identical to the device's. CWM detects the variant by the `RIFF`/`WAVE` signature
-at 0x20 and reads the audio with the standard WAV reader (see `ZenCoreSvz.isEmbeddedWaveChunk` /
-`readEmbeddedWave`); it always writes the device-native raw-PCM `SMPd`.
-
-**Compact `SMPd`** (file version `02 01`; seen in third-party sample-pool exports, e.g. a pool
-tagged `Nemly`): follows the same `f04 = 2 × end` law at +4, the same bits at `0x009`, rate at
-`0x00C` and name at `0x010` as the device-native encoding, but uses a shorter **158-byte**
-(`0x9E`) header with a shorter preview, and stores the **channel count as a u16 at `0x00A`** — the
-byte at `0x008` (channels in the device encoding) holds an unrelated `0x32`. Interleaved 16-bit
-LITTLE-endian PCM follows at `0x9E`. CWM reads it; it is not written.
+**Roland SVZ Sample Converter `SMPd`** (read by CWM; not written): the output of Roland's own
+*SVZ Sample Converter* (Ver. 1.00 for Windows and macOS, WAV and SF2 input), as shipped in
+commercial third-party packs (e.g. Vulture Culture's *SOURCE*, "ARP Solina Strings"). The header
+is 0x20 bytes, followed by a **complete embedded `RIFF`/`WAVE` file at 0x20** (PCM, 44100 Hz)
+rather than raw PCM, and the `USDa` directory CRCs are 0. The `USPa` record is byte-identical to
+the device's. The header fields, as the converter's code fills them in:
 
 ```
 0x000   4  "SMPd"
-0x004   4  u32 f04 = 2 × end
-0x008   1  0x32  (NOT the channel count in this encoding)
+0x004   4  u32 byte count of the WAV data / channels (= 2 × frames for 16 bit)
+0x008   1  0x30 | channels  (0x31 mono, 0x32 stereo - NOT a plain channel count, which is the
+           trap that made these files read as "50 channels")
 0x009   1  bits (16)
-0x00A   2  u16 channels (2)
-0x00C   4  u32 sample rate  (44100 / 48000)
+0x00A   1  0  (0x02 in the scrambled files, see below)
+0x00B   1  0
+0x00C   4  u32 sample rate
 0x010  16  sample name
-0x060 ..   shorter preview
-0x09E  ..  interleaved 16-bit LITTLE-endian PCM
+0x020  ..  RIFF/WAVE file
 ```
 
-**Distinguishing the encodings on read.** The device-native (460) and compact (158) header sizes
-differ by 302 (`2 mod 4`), so a stereo chunk's PCM byte count is a whole number of 4-byte frames
-for exactly one of them. The reader (`ZenCoreSvz.resolveSmpdLayout`) picks the header whose
-channel-count field — the byte at `0x008` for the 460 header, the u16 at `0x00A` for the 158
-header — is 1 or 2 and whose PCM region past the header divides evenly into frames; the declared
-`end` is deliberately not used to size the PCM, since the stored frame count runs a little past or
-short of it.
+CWM detects the variant by the `RIFF`/`WAVE` signature at 0x20 and reads the audio with the
+standard WAV reader (see `ZenCoreSvz.readSampleChunk`); it always writes the device-native raw-PCM
+`SMPd`.
+
+**Scrambled embedded WAV `SMPd`** (read by CWM; not written): seen in a third-party sample pack
+(`02_Melodic.svz`, 32 stereo loops at 44.1 and 48 kHz; model tag `Nemly`, header flag `0x11`).
+The same 0x20-byte header as the converter's, except `0x00A = 0x02`, and the same kind of complete
+WAV file behind it - but every byte of the WAV file is substituted, with one law for the bytes at
+even and one for the bytes at odd offsets from its start (the low and the high bytes of the 16-bit
+samples). A stored byte is decoded by re-ordering its bits and multiplying by `0xDD`, modulo 256:
+
+```
+decoded = (0xDD × r) mod 256,   bit k of r = bit ORDER[k] of the stored byte
+ORDER, even offsets (low bytes):   1 3 5 6 2 4 0 7
+ORDER, odd offsets (high bytes):   3 4 7 1 0 6 5 2
+```
+
+Both substitutions keep 0. Decoded, every sample is a regular WAV file: `fmt ` (18 bytes, PCM),
+`fact`, `data`, and a trailing `smpl` chunk (unity note 60, one forward loop over the whole
+sample, matching the `USPa` record). The `USDa` directory CRC of such a chunk is the CRC-32 of the
+stored, still scrambled WAV file (32 of 32). The law was pinned by known plaintext - `RIFF`,
+`WAVE`, `fmt `, `fact`, `data`, `smpl` and the chunk values which the `SMPd` header and the `USPa`
+record repeat - after the high bytes of the audio had shown up as one clean chain of neighbouring
+values, i.e. a fixed substitution. The decoded audio is music (the RMS of the frame-to-frame
+difference is 0.04-0.34 of the signal RMS, where noise gives 1.41), and every sample peaks at the
+same 31129, the level the pack was normalized to. Unexplained markers of the pack, not used for
+detection: `USPa` `0x10 = 0x01` and `0x11 = 0xC8` (0 in every other file). Neither the converter
+(which has no scrambling code) nor the FANTOM-0 firmware 1.08 (`mi078`, no static table of either
+law) tells whether other packs use other laws, so the variant is detected by its content.
+
+This is the encoding which an earlier revision of this document described as a *compact 158-byte
+header* with a u16 channel count at `0x00A`. The 158 bytes are all the bytes of the chunk which are
+not audio - the 0x20 header, the 58 bytes of the WAV header (`RIFF`, `fmt `, `fact` and the head
+of `data`) and the 68 bytes of the `smpl` chunk at its end - so reading the PCM from `0x09E` moved
+the audio by 17 frames and took the `smpl` chunk as its last 17 frames; and since nothing was
+decoded, every sample was read as full-scale noise.
+
+**Distinguishing the encodings on read** (`ZenCoreSvz.readSampleChunk`): a `RIFF`/`WAVE`
+signature at 0x20 is the converter's WAV file; a signature which appears there after decoding is
+the scrambled one; anything else must be the device-native header, whose byte at `0x008` is 1 or 2
+and whose PCM region past the 460-byte header is a whole number of frames. The declared `end` is
+deliberately not used to size the PCM, since the stored frame count runs a little past or short
+of it.
 
 ---
 
