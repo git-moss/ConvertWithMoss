@@ -188,7 +188,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
             data = convertSigned8BitToUnsigned (data);
         else if (!commonChunk.isLittleEndian ())
             data = swapToLittleEndian (data, bytesPerSample);
-        new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), (int) commonChunk.getNumSampleFrames (), data).write (outputStream);
+        new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), data).write (outputStream);
     }
 
 
