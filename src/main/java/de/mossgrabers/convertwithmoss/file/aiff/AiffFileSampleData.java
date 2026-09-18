@@ -127,7 +127,28 @@ public class AiffFileSampleData extends AbstractFileSampleData
             }
 
             // Read the input AIFF file
-            try (final InputStream in = new BufferedInputStream (inputStream); final AudioInputStream audioIn = AudioSystem.getAudioInputStream (in))
+            final AudioInputStream audioIn;
+            try
+            {
+                audioIn = AudioSystem.getAudioInputStream (new BufferedInputStream (inputStream));
+            }
+            catch (final UnsupportedAudioFileException | IOException ex)
+            {
+                // The SPI does not skip the pad byte which follows a chunk of an odd length and
+                // therefore rejects a file with such a chunk in front of the sound data - with an
+                // IOException instead if another reader it tries has read beyond the mark of the
+                // stream. Nothing has been written yet, so convert from the parsed chunks
+                final String fileEnding = this.sampleFile.getName ().toLowerCase ();
+                if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
+                {
+                    this.writeFromChunks (outputStream);
+                    return;
+                }
+
+                throw ex instanceof final IOException ioException ? ioException : new IOException (ex);
+            }
+
+            try (audioIn)
             {
                 // Obtains the file types that the system can write from the audio input stream
                 // specified. Check if WAV can be written
@@ -137,17 +158,6 @@ public class AiffFileSampleData extends AbstractFileSampleData
 
                 // Write the output WAV file
                 AudioSystem.write (audioIn, AudioFileFormat.Type.WAVE, outputStream);
-            }
-            catch (final UnsupportedAudioFileException ex)
-            {
-                final String fileEnding = this.sampleFile.getName ().toLowerCase ();
-                if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
-                {
-                    this.writeFromChunks (outputStream);
-                    return;
-                }
-
-                throw new IOException (ex);
             }
         }
         finally
@@ -310,8 +320,19 @@ public class AiffFileSampleData extends AbstractFileSampleData
         }
         if (commonChunk == null || commonChunk.getCompressionType () == null)
         {
-            super.createAudioMetadata ();
-            return;
+            try
+            {
+                super.createAudioMetadata ();
+                return;
+            }
+            catch (final IOException ex)
+            {
+                // The SPI does not skip the pad byte which follows a chunk of an odd length and
+                // therefore rejects a plain AIFF file with such a chunk in front of the sound data,
+                // e.g. an author chunk of 13 characters; the parsed chunks provide the metadata
+                if (commonChunk == null)
+                    throw ex;
+            }
         }
 
         if (!commonChunk.isPCM ())
