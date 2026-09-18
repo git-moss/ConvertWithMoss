@@ -25,6 +25,11 @@
 * Fixed: 'Wave' was a keyword of the Chip category, so every sound whose name or folder contains it - the wavetable synthesizers Waldorf Microwave, PPG Wave and Korg Wavestation among them - was categorized as Chip unless a longer keyword matched: 27 of the 50 presets in the 'Waldorf MicroWaveXT' folder of Espen Kraft's 'Digital Collection Vol. 7' came out as Chip, e.g. 'MWIIXT Mellow Pad', 'PPG Wavetable Sawmill' of Vol. 1 as well, and 162 of the 214 presets of the 'BlueWave' pack, whose folder carries the word. The Chip category now recognizes Chiptune, Computer, Gameboy, Nintendo, Commodore, Arcade, 8-Bit, Atari, Amiga, C64 and CPU instead.
 * Ableton
   * Fixed: A filter whose resonance is not stored in the preset got a resonance of 16,000 on a scale of 0 to 1 - the default of the cutoff frequency had been copied - which a destination like the Waldorf Quantum/Iridium writes as it is; the default is now 0. The amount of the filter envelope (+-72 semitones in Simpler) was read and written with 72 semitones as the full depth of the model instead of its 120, so an envelope of e.g. 36 semitones arrived as one of 60 semitones at a destination which applies the depth of the model.
+* Akai MPC
+  * Fixed: Writing a sample chunk is now enabled by default. It seems that the MPC is always reading the loop data from the chunk.
+  * Fixed: Writing/reading XTY format was off by 1 semitone.
+  * Fixed: Writing XTY used a template which had a panning of +13 and a reverb effect. Panning is now centered and the reverb effect has been removed.
+  * Fixed: Creator configuration was not always stored.
 * Akai MPC500/MPC1000/MPC2500
   * Fixed: The length of a sample was rounded down to whole seconds before it became the release of a one-shot pad, so every one-shot shorter than a second got a release of 0 seconds - which a destination with an amplitude envelope cuts off at note-off - and a longer one a release up to a second too short.
 * Akai S900/S950

@@ -170,7 +170,8 @@ public class MPC3TrackFile
                 sampleNode.put ("name", zoneName);
                 sampleNode.put ("path", zoneName + ".WAV");
                 final ObjectNode metadataNode = (ObjectNode) sampleNode.get ("metadata");
-                metadataNode.put ("rootNote", limitToDefault (zone.getKeyRoot (), limitToDefault (zone.getKeyLow (), 0)));
+                // The root note is strangely one more than the lower upper keys!
+                metadataNode.put ("rootNote", limitToDefault (zone.getKeyRoot (), limitToDefault (zone.getKeyLow (), 0)) + 1);
                 metadataNode.put ("tune", 0.0);
                 samplesNode.add (sampleNode);
                 return sampleNode;
@@ -225,7 +226,8 @@ public class MPC3TrackFile
 
         // Ensure that a root note is set, if this is not the case it is read from the WAV file
         // which is not forced to contain a SMPL chunk!
-        layerNode.put ("rootNote", limitToDefault (zone.getKeyRoot (), limitToDefault (zone.getKeyLow (), 0)));
+        // The root note is strangely one more than the lower upper keys!
+        layerNode.put ("rootNote", limitToDefault (zone.getKeyRoot (), limitToDefault (zone.getKeyLow (), 0)) + 1);
 
         final double tuneSemitones = zone.getTuning ();
         final int coarseTune = (int) Math.round (tuneSemitones);

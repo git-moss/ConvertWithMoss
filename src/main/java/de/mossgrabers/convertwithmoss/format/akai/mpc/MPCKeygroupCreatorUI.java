@@ -46,7 +46,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
      */
     public MPCKeygroupCreatorUI (final String prefix)
     {
-        super (prefix);
+        super (prefix, false, false, true, false);
     }
 
 
@@ -101,8 +101,8 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     @Override
     public void saveSettings (final BasicConfig config)
     {
-        config.setProperty (MPC_OUTPUT_FORMAT, this.writeTrackFile ? FORMAT_XTY : FORMAT_XPM);
-        config.setBoolean (MPC_LAYER_LIMIT_USE_8, this.getLayerLimit () == 8);
+        config.setProperty (MPC_OUTPUT_FORMAT, this.outputFormatGroup.getToggles ().get (1).isSelected () ? FORMAT_XTY : FORMAT_XPM);
+        config.setBoolean (MPC_LAYER_LIMIT_USE_8, this.layerLimitGroup.getToggles ().get (1).isSelected ());
 
         super.saveSettings (config);
     }

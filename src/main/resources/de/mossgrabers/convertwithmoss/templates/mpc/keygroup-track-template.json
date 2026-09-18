@@ -4,7 +4,7 @@
   "name": "",
   "volume": 1.0,
   "volumeKnown": true,
-  "pan": 0.5039370059967041,
+  "pan": 0.5,
   "panKnown": true,
   "mute": false,
   "cvPort": 0,
@@ -758,7 +758,7 @@
     "volume": 0.7079457640647888,
     "mute": false,
     "solo": false,
-    "pan": 0.6322810053825378,
+    "pan": 0.5,
     "automationFilter": 1,
     "sends": [
      0.0,
@@ -768,33 +768,7 @@
     ],
     "inserts": {
      "insertsEnabled": true,
-     "effects": [
-      {
-       "index": 0,
-       "plugin": {
-        "version": 2,
-        "is64Bits": true,
-        "description": {
-         "version": 1,
-         "name": "Reverb Large",
-         "descriptiveName": "Reverb Large",
-         "pluginFormatName": "MPC",
-         "category": "",
-         "manufacturerName": "Akai Professional",
-         "fileOrIdentifier": "Reverb Large",
-         "uid": 1094932090,
-         "isInstrument": false,
-         "numInputChannels": 2,
-         "numOutputChannels": 2
-        },
-        "state": "190.AMjUSA....P.I.........................PA.........PTYiEVd...P+X..........DklYlU2b....+X..........D41boQWd....+X..........DIWdWUFcOJb88T..........EElbrkG...vOF..........RoAxP0QWyLybOF..........SuAxP0QWyLybOF..........TxUFQkwVAp0uOI4VZzA.TRUzTEQkSA0TQE.....",
-        "programNumber": 0,
-        "presetName": "Init",
-        "presetEdited": false
-       },
-       "enable": true
-      }
-     ]
+     "effects": []
     }
    },
    "customisable": {
