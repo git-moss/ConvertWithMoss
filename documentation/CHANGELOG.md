@@ -2,7 +2,7 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* Fixed: The note about loops which click reported loops with a cross-fade of less than 1% of the loop, while 'Snap loops which click' leaves every loop with a cross-fade alone, since the cross-fade already smooths the wrap. The note then named loops which the option had skipped - '0 adjusted' - and recommended the option, and 'Only loops which click' replaced the cross-fade of these loops with its own. A loop with a cross-fade is now never reported, whatever its length, and when the loops were snapped, the note says that the loops it names still click instead of recommending the option. The 16 loops which were reported in 9 of the 32 presets of Michael Oakley's TAL-Sampler pack - e.g. in 'John Hughes Movies' with a step of 82% of the level - have cross-fades of 0.5% to 0.9% of the loop, 20 to 60 ms, through which they wrap without a click. The converted audio and loops do not change, and 'Only loops which click' keeps the cross-fades of the source.
 
 ## 20.3.0
 
