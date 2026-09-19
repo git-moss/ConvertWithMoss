@@ -140,13 +140,16 @@ public class DefaultMetadata implements IMetadata
     @Override
     public void detectMetadata (final IMetadataConfig config, final String [] parts, final String [] folderNames, final String category)
     {
-        final String [] texts = Arrays.copyOf (parts, parts.length + folderNames.length);
-        System.arraycopy (folderNames, 0, texts, parts.length, folderNames.length);
-
+        // The creator is often only named in the title of a library, therefore all folder names
+        // take part in its detection
         if (this.creator.isBlank ())
+        {
+            final String [] texts = Arrays.copyOf (parts, parts.length + folderNames.length);
+            System.arraycopy (folderNames, 0, texts, parts.length, folderNames.length);
             this.setCreator (TagDetector.detect (texts, config.getCreatorTags (), config.getCreatorName ()));
+        }
         if (this.category.isBlank () || TagDetector.CATEGORY_UNKNOWN.equals (this.category))
-            this.setCategory (category == null || category.isBlank () ? TagDetector.detectCategory (texts, config.isCategoryFromNamePrefix ()) : category);
+            this.setCategory (category == null || category.isBlank () ? TagDetector.detectCategory (Arrays.asList (parts), Arrays.asList (folderNames), config.isCategoryFromNamePrefix ()) : category);
         if (this.keywords.isEmpty ())
             this.setKeywords (TagDetector.detectKeywords (Arrays.asList (parts), Arrays.asList (folderNames)));
     }

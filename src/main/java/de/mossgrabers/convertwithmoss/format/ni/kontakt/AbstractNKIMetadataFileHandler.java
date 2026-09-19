@@ -225,13 +225,16 @@ public abstract class AbstractNKIMetadataFileHandler
         if (creator == null || creator.isBlank ())
             metadata.setCreator (TagDetector.detect (parts, metadataConfig.getCreatorTags (), metadataConfig.getCreatorName ()));
 
+        final List<String> name = Collections.singletonList (parts[0]);
+        final List<String> folderNames = Arrays.asList (AudioFileUtils.getFolderNames (parts));
+
         final String category = metadata.getCategory ();
         if (category == null || category.isBlank () || "New".equals (category))
-            metadata.setCategory (TagDetector.detectCategory (parts));
+            metadata.setCategory (TagDetector.detectCategory (name, folderNames, false));
 
         final String [] keywords = metadata.getKeywords ();
         if (keywords == null || keywords.length == 0)
-            metadata.setKeywords (TagDetector.detectKeywords (Collections.singletonList (parts[0]), Arrays.asList (AudioFileUtils.getFolderNames (parts))));
+            metadata.setKeywords (TagDetector.detectKeywords (name, folderNames));
     }
 
 

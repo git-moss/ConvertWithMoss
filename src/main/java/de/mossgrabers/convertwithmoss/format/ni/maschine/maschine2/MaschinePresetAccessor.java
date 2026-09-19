@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -944,7 +945,7 @@ public class MaschinePresetAccessor
                 categoryPath.add (categoryParts[i]);
         String detectedCategory = TagDetector.detectCategory (categoryPath);
         if (TagDetector.CATEGORY_UNKNOWN.equals (detectedCategory))
-            detectedCategory = TagDetector.detectCategory (parts);
+            detectedCategory = TagDetector.detectCategory (Collections.singletonList (parts[0]), Arrays.asList (AudioFileUtils.getFolderNames (parts)), false);
         metadata.setCategory (detectedCategory);
         metadata.setKeywords (TagDetector.detectKeywords (categoryPath));
 

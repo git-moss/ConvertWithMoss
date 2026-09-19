@@ -829,7 +829,9 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
 
     /**
-     * Add the words of a name to the tokens which are used to detect the metadata.
+     * Add the words of a name to the tokens which are used to detect the metadata. Letters and
+     * digits are separate words, since the names of samples mostly carry their note: the 'c3' of
+     * 'S_000_060_c3' is not the Hammond C3 of the organ category.
      *
      * @param tokens The tokens to add to
      * @param name The name, may be null
@@ -837,7 +839,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     private static void addNameTokens (final Set<String> tokens, final String name)
     {
         if (name != null)
-            tokens.addAll (Arrays.asList (NON_WORD_PATTERN.split (name)));
+            tokens.addAll (Arrays.asList (TagDetector.splitWords (name)));
     }
 
 
