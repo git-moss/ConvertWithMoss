@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.tal;
 
 import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -18,12 +19,13 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
  */
 public class TALSamplerConstants
 {
-    /** Normalized value of -12dB. */
-    public static final double       MINUS_12_DB       = 0.353000;
-    /** Normalized value of +6dB. */
-    public static final double       PLUS_6_DB         = 1.0;
-    /** The range between -12dB and +6dB. */
-    public static final double       VALUE_RANGE       = PLUS_6_DB - MINUS_12_DB;
+    /**
+     * The volume of a sample which TAL-Sampler plays at 0dB. The volume of a sample is a linear
+     * amplitude factor relative to it: rendered offline (version 4.7.2), the volumes 0.1, 0.353, 0.5
+     * and 1.0 play a sample at -17.9, -6.9, -3.9 and +2.1dB, which is 20 log (volume / 0.7843)
+     * within 0.01dB.
+     */
+    public static final double       ZONE_VOLUME_0_DB  = 0.7843;
 
     /** The current file format version to set. */
     public static final String       CURRENT_VERSION   = "9";
@@ -204,6 +206,59 @@ public class TALSamplerConstants
     public static double normalizeEnvelopeTime (final double seconds)
     {
         return Math.clamp (Math.pow (Math.max (0, seconds) / MAX_ENVELOPE_TIME, 0.25), 0.0, 1.0);
+    }
+
+
+    /**
+     * Convert the volume of a sample into dB: 20 log (volume / {@link #ZONE_VOLUME_0_DB}), the
+     * largest volume 1.0 is +2.1dB.
+     *
+     * @param volume The volume of the sample in the range of [0..1]
+     * @return The volume in dB
+     */
+    public static double zoneVolumeToDb (final double volume)
+    {
+        return MathUtils.valueToDb (volume / ZONE_VOLUME_0_DB);
+    }
+
+
+    /**
+     * Convert a volume in dB into the volume of a sample, the inverse of
+     * {@link #zoneVolumeToDb(double)}. A volume above +2.1dB is written as the largest volume.
+     *
+     * @param volumeDB The volume in dB
+     * @return The volume of the sample in the range of [0..1]
+     */
+    public static double dbToZoneVolume (final double volumeDB)
+    {
+        return Math.clamp (ZONE_VOLUME_0_DB * Math.pow (10.0, volumeDB / 20.0), 0.0, 1.0);
+    }
+
+
+    /**
+     * Convert the main volume or the volume of a layer into dB. TAL-Sampler shows both as 40 log
+     * (2 x) dB: 0.5 is 0dB, 1.0 is +12dB, which rendering the main volumes 0.25, 0.75 and 1.0
+     * offline confirms.
+     *
+     * @param volume The volume in the range of [0..1], larger than 0
+     * @return The volume in dB
+     */
+    public static double volumeToDb (final double volume)
+    {
+        return 40.0 * Math.log10 (2.0 * volume);
+    }
+
+
+    /**
+     * Convert a volume in dB into the main volume or the volume of a layer, the inverse of
+     * {@link #volumeToDb(double)}. A volume above +12dB is written as the largest volume.
+     *
+     * @param volumeDB The volume in dB
+     * @return The volume in the range of [0..1]
+     */
+    public static double dbToVolume (final double volumeDB)
+    {
+        return Math.clamp (Math.pow (10.0, volumeDB / 40.0) / 2.0, 0.0, 1.0);
     }
 
 

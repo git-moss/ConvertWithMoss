@@ -221,14 +221,16 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
         final String layer = TALSamplerConstants.LAYERS[groupCounter];
 
-        // The default is the raw value which represents 0dB. The volume of the layer applies to
-        // all of its zones, TAL-Sampler shows it as 40 log (2 x) dB: 0.5 is 0dB, 1.0 is +12dB. A
-        // layer with the volume 0 is only heard through a modulation of its volume, which is not
-        // converted, therefore it is not silenced
-        double gain = convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, TALSamplerConstants.MINUS_12_DB + TALSamplerConstants.VALUE_RANGE * 12.0 / 18.0));
+        // A missing volume of the sample is 0dB. The volume of the layer and the main volume of the
+        // program apply to all of its zones. A layer with the volume 0 is only heard through a
+        // modulation of its volume, which is not converted, therefore it is not silenced
+        double gain = TALSamplerConstants.zoneVolumeToDb (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, TALSamplerConstants.ZONE_VOLUME_0_DB));
         final double layerVolume = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LAYER_VOLUME + layer, 0.5);
         if (layerVolume > 0)
-            gain += 40.0 * Math.log10 (2.0 * layerVolume);
+            gain += TALSamplerConstants.volumeToDb (layerVolume);
+        final double mainVolume = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.VOLUME, 0.5);
+        if (mainVolume > 0)
+            gain += TALSamplerConstants.volumeToDb (mainVolume);
         zone.setGain (gain);
         // The panning of the layer (-1 to 1 like the one of the zone) applies to all of its zones
         final double layerPanning = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LAYER_PANNING + layer, 0.5) * 2.0 - 1.0;
@@ -498,19 +500,5 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     private static double getEnvelopeTime (final Element element, final String attribute)
     {
         return TALSamplerConstants.denormalizeEnvelopeTime (XMLUtils.getDoubleAttribute (element, attribute, 0));
-    }
-
-
-    /**
-     * Convert a volume in the range of [0..1] which represent [-Inf..6dB] to a range of
-     * [-12dB..12dB].
-     *
-     * @param volume The volume to convert
-     * @return The converted volume DB
-     */
-    private static double convertGain (final double volume)
-    {
-        final double result = volume - TALSamplerConstants.MINUS_12_DB;
-        return result * 18.0 / TALSamplerConstants.VALUE_RANGE - 12;
     }
 }
