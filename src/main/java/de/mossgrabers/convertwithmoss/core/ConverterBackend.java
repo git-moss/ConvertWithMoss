@@ -720,12 +720,13 @@ public class ConverterBackend
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
 
             // -----------------------------------------------------------
-            // Loop cross-fade
+            // Loop cross-fade - of all loops; only of the loops which click is done below, once
+            // the audio is final and the loops are snapped
 
-            if (this.detectionSettings.loopCrossfades > 0)
+            final double crossfadeFactor = Math.clamp (this.detectionSettings.loopCrossfades - 1L, 0, 100) / 100.0;
+            if (this.detectionSettings.loopCrossfades > 0 && !this.detectionSettings.crossfadeClicking)
             {
                 this.notifier.log ("IDS_PROCESSING_LOOP_CROSSFADE_LOG");
-                final double crossfadeFactor = Math.clamp (this.detectionSettings.loopCrossfades - 1L, 0, 100) / 100.0;
                 for (final IGroup group: multisampleSource.getGroups ())
                     for (final ISampleZone zone: group.getSampleZones ())
                         for (final ISampleLoop loop: zone.getLoops ())
@@ -816,11 +817,48 @@ public class ConverterBackend
                 final int snapped = LoopZeroSnapper.snap (sampleZones);
                 this.notifier.log ("IDS_PROCESSING_SNAP_LOOPS", Integer.toString (snapped));
             }
+
+            // -----------------------------------------------------------
+            // Cross-fade only the loops which still click
+
+            if (this.detectionSettings.loopCrossfades > 0 && this.detectionSettings.crossfadeClicking)
+            {
+                final int crossfaded = crossfadeClickingLoops (groups, crossfadeFactor);
+                this.notifier.log ("IDS_PROCESSING_CROSSFADE_CLICKING_LOOPS", Integer.toString (crossfaded));
+            }
         }
         catch (final IOException | UnsupportedAudioFileException ex)
         {
             this.notifier.logError ("IDS_NOTIFY_COULD_NOT_RESAMPLE", ex);
         }
+    }
+
+
+    /**
+     * Set a cross-fade on the forward loops which click at their wrap-around point - measured like
+     * the note about clicking loops does - and leave all other loops as they are. A cross-fade
+     * blends the end of the loop with the audio in front of the loop start, so it is limited to the
+     * audio which is there: a loop which starts at the beginning of its sample gets none.
+     *
+     * @param groups The groups whose loops to check
+     * @param crossfade The cross-fade in the range of [0..1] of the loop length
+     * @return The number of loops which got a cross-fade
+     */
+    private static int crossfadeClickingLoops (final List<IGroup> groups, final double crossfade)
+    {
+        int crossfaded = 0;
+        if (crossfade <= 0)
+            return crossfaded;
+        for (final ISampleLoop loop: LoopClickDetector.findClickingLoops (groups))
+        {
+            final int start = loop.getStart ();
+            final int length = loop.getEnd () - start + 1;
+            if (start <= 0 || length <= 1)
+                continue;
+            loop.setCrossfade (Math.min (crossfade, (double) start / length));
+            crossfaded++;
+        }
+        return crossfaded;
     }
 
 
