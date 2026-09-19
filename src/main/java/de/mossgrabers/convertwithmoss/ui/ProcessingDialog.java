@@ -9,16 +9,21 @@ import java.util.Collections;
 import java.util.List;
 
 import de.mossgrabers.tools.ui.ControlFunctions;
+import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.PseudoModalDialog;
 import de.mossgrabers.tools.ui.panel.BasePanel;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import de.mossgrabers.tools.ui.panel.TwoColsPanel;
+import javafx.collections.FXCollections;
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Tooltip;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
@@ -248,8 +253,15 @@ public class ProcessingDialog extends PseudoModalDialog
         this.alwaysResampleCheckbox = panel3.createCheckBox ("@IDS_PROCESSING_ALWAYS_RESAMPLE_LABEL", "@IDS_PROCESSING_ALWAYS_RESAMPLE_TOOLTIP");
 
         final BoxPanel panel4 = new TwoColsPanel ();
-        this.loopCrossfadesCombobox = panel4.createComboBox ("@IDS_PROCESSING_LOOP_CROSSFADE", "@IDS_PROCESSING_LOOP_CROSSFADE_TOOLTIP", LOOP_CROSSFADES);
-        this.crossfadeClickingCheckbox = panel4.createCheckBox ("@IDS_PROCESSING_CROSSFADE_CLICKING_LABEL", "@IDS_PROCESSING_CROSSFADE_CLICKING_TOOLTIP");
+        // The check box which limits the cross-fade to the loops which click shares the row of
+        // the cross-fade, a further row would push the buttons out of the window on a small
+        // screen
+        this.loopCrossfadesCombobox = new ComboBox<> (FXCollections.observableList (LOOP_CROSSFADES));
+        this.crossfadeClickingCheckbox = new CheckBox (Functions.getMessage ("IDS_PROCESSING_CROSSFADE_CLICKING_LABEL"));
+        this.crossfadeClickingCheckbox.setTooltip (new Tooltip (Functions.getMessage ("IDS_PROCESSING_CROSSFADE_CLICKING_TOOLTIP")));
+        final HBox crossfadeRow = new HBox (12, this.loopCrossfadesCombobox, this.crossfadeClickingCheckbox);
+        crossfadeRow.setAlignment (Pos.CENTER_LEFT);
+        panel4.addComponent (crossfadeRow, "@IDS_PROCESSING_LOOP_CROSSFADE", "@IDS_PROCESSING_LOOP_CROSSFADE_TOOLTIP");
         this.snapLoopsCheckbox = panel4.createCheckBox ("@IDS_PROCESSING_SNAP_LOOPS_LABEL", "@IDS_PROCESSING_SNAP_LOOPS_TOOLTIP");
 
         final BoxPanel panel5 = new TwoColsPanel ();
