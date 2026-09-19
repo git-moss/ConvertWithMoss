@@ -2,7 +2,8 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* TAL Sampler
+  * Fixed: The decay of the envelopes was converted with the time law of the attack and the release, 7.2 x^4 seconds, but TAL-Sampler decays much slower: exponentially towards the sustain level, by 6 dB after 0.35 seconds with the value 0.4 and after 1.35 seconds with 0.6, rendered offline (4.7.2). A decay is now converted to the linear decay which reaches -20 dB at the same moment, 37.1 x^3.75 seconds, and written back with the inverse law. Sounds which decay to silence were far too short on the destination: 'Casiowave' of Michael Oakley's pack decayed in 0.12 instead of 0.8 seconds and 'Emulator II Bells' in 0.79 instead of 4.7 seconds.
 
 ## 20.3.0
 

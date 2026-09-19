@@ -282,7 +282,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
         setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_AMP_ATTACK, amplitudeEnvelope.getAttackTime ());
         setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_AMP_HOLD, amplitudeEnvelope.getHoldTime ());
-        setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecayTime ());
+        setDecayTimeAttribute (programElement, TALSamplerTag.ADSR_AMP_DECAY, amplitudeEnvelope.getDecayTime ());
         setEnvelopeLevelAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, amplitudeEnvelope.getSustainLevel ());
         setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_AMP_RELEASE, amplitudeEnvelope.getReleaseTime ());
 
@@ -322,7 +322,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 final IEnvelope filterEnvelope = cutoffModulator.getSource ();
                 setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_VCF_ATTACK, filterEnvelope.getAttackTime ());
                 setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_VCF_HOLD, filterEnvelope.getHoldTime ());
-                setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, filterEnvelope.getDecayTime ());
+                setDecayTimeAttribute (programElement, TALSamplerTag.ADSR_VCF_DECAY, filterEnvelope.getDecayTime ());
                 setEnvelopeLevelAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, filterEnvelope.getSustainLevel ());
                 setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_VCF_RELEASE, filterEnvelope.getReleaseTime ());
             }
@@ -349,7 +349,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
             setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_MOD_ATTACK, pitchEnvelope.getAttackTime ());
             setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_MOD_HOLD, pitchEnvelope.getHoldTime ());
-            setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, pitchEnvelope.getDecayTime ());
+            setDecayTimeAttribute (programElement, TALSamplerTag.ADSR_MOD_DECAY, pitchEnvelope.getDecayTime ());
             setEnvelopeLevelAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, pitchEnvelope.getSustainLevel ());
             setEnvelopeTimeAttribute (programElement, TALSamplerTag.ADSR_MOD_RELEASE, pitchEnvelope.getReleaseTime ());
 
@@ -379,6 +379,21 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
     {
         if (seconds >= 0)
             XMLUtils.setDoubleAttribute (element, attribute, TALSamplerConstants.normalizeEnvelopeTime (seconds), 4);
+    }
+
+
+    /**
+     * Write the time of a decay, see {@link TALSamplerConstants#normalizeDecayTime(double)}. A time
+     * which the source did not set (negative) is not written.
+     *
+     * @param element The program element
+     * @param attribute The attribute of the decay
+     * @param seconds The time in seconds
+     */
+    private static void setDecayTimeAttribute (final Element element, final String attribute, final double seconds)
+    {
+        if (seconds >= 0)
+            XMLUtils.setDoubleAttribute (element, attribute, TALSamplerConstants.normalizeDecayTime (seconds), 4);
     }
 
 

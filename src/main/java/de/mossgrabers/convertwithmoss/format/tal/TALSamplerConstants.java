@@ -31,14 +31,25 @@ public class TALSamplerConstants
     public static final String       CURRENT_VERSION   = "9";
 
     /**
-     * The longest stage of an envelope in seconds, which the value 1 of an attack, hold, decay or
-     * release selects. The times of the envelopes of TAL-Sampler do not depend on the length of the
+     * The longest stage of an envelope in seconds, which the value 1 of an attack, hold or release
+     * selects. The times of the envelopes of TAL-Sampler do not depend on the length of the
      * samples: rendered offline (version 4.7.2) with the values 0.4, 0.6, 0.8 and 1.0 of the
      * amplitude release, a note fades out in 0.19, 0.93, 2.95 and 7.2 seconds, which is 7.2 x
      * value^4 within the accuracy of the measurement, and the attack follows the same law; the hold
-     * and the decay are taken to follow it as well.
+     * is taken to follow it as well. The decay has a law of its own, see {@link #DECAY_TIME_FACTOR}.
      */
     public static final double       MAX_ENVELOPE_TIME = 7.2;
+    /**
+     * The decay of the plug-in approaches the sustain level exponentially and much slower than the
+     * other stages. Rendered offline (version 4.7.2) with a sustain of 0, the decay values 0.3, 0.4,
+     * 0.5, 0.6, 0.7 and 0.8 reach -6 dB after 0.11, 0.35, 0.70, 1.35, 2.70 and 4.56 seconds and
+     * every further 6 dB after the same time again; towards a sustain level of 0.5 the decay has the
+     * same time constant. The model expects the time of a linear decay, which is how the
+     * destinations play it: the linear decay which reaches -20 dB at the same moment as the decay
+     * of the plug-in lasts 37.1 x value^3.75 seconds, within 9 % of these measurements.
+     */
+    public static final double       DECAY_TIME_FACTOR = 37.1;
+    private static final double      DECAY_EXPONENT    = 3.75;
 
     /**
      * The maximum number of voices which can be played. Like all other parameters of the format,
@@ -206,6 +217,33 @@ public class TALSamplerConstants
     public static double normalizeEnvelopeTime (final double seconds)
     {
         return Math.clamp (Math.pow (Math.max (0, seconds) / MAX_ENVELOPE_TIME, 0.25), 0.0, 1.0);
+    }
+
+
+    /**
+     * Convert the normalized value of a decay into seconds: {@link #DECAY_TIME_FACTOR} x
+     * value^3.75, the law of the decay of the plug-in.
+     *
+     * @param normalizedTime The value of the decay in the range of [0..1]
+     * @return The time in seconds
+     */
+    public static double denormalizeDecayTime (final double normalizedTime)
+    {
+        return DECAY_TIME_FACTOR * Math.pow (Math.clamp (normalizedTime, 0.0, 1.0), DECAY_EXPONENT);
+    }
+
+
+    /**
+     * Convert the time of a decay into the normalized value of the decay, the inverse of
+     * {@link #denormalizeDecayTime(double)}. A time beyond the longest decay is written as the
+     * longest decay.
+     *
+     * @param seconds The time in seconds
+     * @return The value of the decay in the range of [0..1]
+     */
+    public static double normalizeDecayTime (final double seconds)
+    {
+        return Math.clamp (Math.pow (Math.max (0, seconds) / DECAY_TIME_FACTOR, 1.0 / DECAY_EXPONENT), 0.0, 1.0);
     }
 
 
