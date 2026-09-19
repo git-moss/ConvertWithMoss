@@ -63,6 +63,10 @@ public class TALSamplerTag
     public static final String PANNING                 = "pan";
     /** The layer transpose attribute. */
     public static final String LAYER_TRANSPOSE         = "layertranspose";
+    /** The layer volume attribute. */
+    public static final String LAYER_VOLUME            = "samplevolume";
+    /** The layer panning attribute. */
+    public static final String LAYER_PANNING           = "samplepan";
     /** The tune sample attribute. */
     public static final String SAMPLE_TUNE             = "sampletune";
     /** The fine tune sample attribute. */

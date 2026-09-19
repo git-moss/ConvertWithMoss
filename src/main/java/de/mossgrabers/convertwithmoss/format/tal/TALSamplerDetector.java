@@ -219,21 +219,31 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             return Optional.empty ();
         }
 
-        // The default is the raw value which represents 0dB
-        zone.setGain (convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, TALSamplerConstants.MINUS_12_DB + TALSamplerConstants.VALUE_RANGE * 12.0 / 18.0)));
-        zone.setPanning (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANNING, 0.5) * 2.0 - 1.0);
+        final String layer = TALSamplerConstants.LAYERS[groupCounter];
+
+        // The default is the raw value which represents 0dB. The volume of the layer applies to
+        // all of its zones, TAL-Sampler shows it as 40 log (2 x) dB: 0.5 is 0dB, 1.0 is +12dB. A
+        // layer with the volume 0 is only heard through a modulation of its volume, which is not
+        // converted, therefore it is not silenced
+        double gain = convertGain (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, TALSamplerConstants.MINUS_12_DB + TALSamplerConstants.VALUE_RANGE * 12.0 / 18.0));
+        final double layerVolume = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LAYER_VOLUME + layer, 0.5);
+        if (layerVolume > 0)
+            gain += 40.0 * Math.log10 (2.0 * layerVolume);
+        zone.setGain (gain);
+        // The panning of the layer (-1 to 1 like the one of the zone) applies to all of its zones
+        final double layerPanning = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LAYER_PANNING + layer, 0.5) * 2.0 - 1.0;
+        zone.setPanning (Math.clamp (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PANNING, 0.5) * 2.0 - 1.0 + layerPanning, -1.0, 1.0));
 
         zone.setStart ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.START_SAMPLE, -1)));
         zone.setStop ((int) Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.END_SAMPLE, -1)));
         // The flag is stored numerically (0/1) like all other TAL flags
         zone.setReversed (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.REVERSE, 0) > 0);
 
-        final double layerTranspose = Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LAYER_TRANSPOSE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 48.0 - 24.0);
-        final double sampleTune = Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_TUNE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 48.0 - 24.0);
-        final double sampleFine = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + TALSamplerConstants.LAYERS[groupCounter], 0.5) * 2.0 - 1.0;
+        final double sampleTune = Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_TUNE + layer, 0.5) * 48.0 - 24.0);
+        final double sampleFine = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.SAMPLE_FINE_TUNE + layer, 0.5) * 2.0 - 1.0;
         final double transpose = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.TRANSPOSE, 0.5) * 48.0 - 24.0);
         final double detune = Math.round (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.DETUNE, 0.5) * 48.0 - 24.0);
-        zone.setTuning (layerTranspose + sampleTune + transpose + detune + sampleFine);
+        zone.setTuning (sampleTune + transpose + detune + sampleFine);
         zone.setKeyTracking (XMLUtils.getDoubleAttribute (sampleElement, TALSamplerTag.PITCH_KEY_TRACK, 1));
 
         zone.setKeyRoot (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.ROOT_NOTE, -1));
@@ -243,6 +253,15 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setKeyHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_NOTE, zone.getKeyHigh ()));
         zone.setVelocityLow (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.LO_VEL, zone.getVelocityLow ()));
         zone.setVelocityHigh (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.HI_VEL, zone.getVelocityHigh ()));
+
+        // The transpose of a layer is not a tuning of its samples: TAL-Sampler adds it to the
+        // played note before it looks up the zone which plays that note. With a transpose of -24
+        // the key C3 plays the zone of C1 as it plays C1 and not the zone of C3 two octaves lower,
+        // which would play its sample at a quarter of its speed. The zones of the layer are
+        // therefore moved on the keyboard by the transpose, which plays the same
+        final int layerTranspose = (int) Math.round (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LAYER_TRANSPOSE + layer, 0.5) * 48.0 - 24.0);
+        if (!transposeZone (zone, layerTranspose))
+            return Optional.empty ();
 
         // The mute group is the exclusive group, 0 means that the sample is not assigned to one
         zone.setExclusiveGroup (Math.max (0, XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.MUTE_GROUP, 0)));
@@ -265,6 +284,40 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         if (sampleData.isPresent ())
             sampleData.get ().addZoneData (zone, false, false);
         return Optional.of (zone);
+    }
+
+
+    /**
+     * Move a zone on the keyboard by the transpose of its layer, so that a key plays what the note
+     * of the key plus the transpose played before: the key range and the root key are moved by the
+     * negative transpose. A root key which moves out of the MIDI range stays at its end and the
+     * rest is added to the tuning.
+     *
+     * @param zone The zone to move
+     * @param transpose The transpose of the layer in semi-tones
+     * @return False if the zone cannot be played from the keyboard anymore
+     */
+    private static boolean transposeZone (final ISampleZone zone, final int transpose)
+    {
+        if (transpose == 0)
+            return true;
+
+        final int keyLow = zone.getKeyLow () - transpose;
+        final int keyHigh = zone.getKeyHigh () - transpose;
+        if (keyHigh < 0 || keyLow > 127)
+            return false;
+        zone.setKeyLow (Math.max (0, keyLow));
+        zone.setKeyHigh (Math.min (127, keyHigh));
+
+        final int keyRoot = zone.getKeyRoot ();
+        if (keyRoot >= 0)
+        {
+            final int movedRoot = keyRoot - transpose;
+            final int limitedRoot = Math.clamp (movedRoot, 0, 127);
+            zone.setKeyRoot (limitedRoot);
+            zone.setTuning (zone.getTuning () + limitedRoot - movedRoot);
+        }
+        return true;
     }
 
 
