@@ -2,7 +2,10 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* TAL Sampler
+  * Fixed: The filter was applied to all layers if the first layer is switched through it and to none otherwise, but TAL-Sampler switches each layer through its filter or not. 83 of the 1,675 TAL-Sampler presets on the test machine filter only some of their layers: 'Mallet Pad' of Michael Oakley's pack plays its choir layers through a low-pass filter at 376 Hz and was converted without any filter, 'PPG Power Keys' leaves the noise of its fourth layer unfiltered, which was converted through the 495 Hz filter of the others. Only the layers which are switched through the filter get it now, and a written preset switches only the layers through it whose samples have a filter. A destination which knows only one filter for the whole preset writes none when the layers differ, as for any other source whose zones differ.
+* Waldorf Quantum/Iridium
+  * New: An oscillator whose samples have no filter while others of the layer have one plays around the filter: it is written with the destination 'VCA', which sends it directly to the amplifier, and read without the filter. A filtered and an unfiltered group are not merged into one oscillator anymore. E.g. the unfiltered first layer of 'FM84 Bells' of Michael Oakley's TAL-Sampler pack, whose other layers play through a low-pass filter at 1.5 kHz.
 
 ## 20.3.0
 
