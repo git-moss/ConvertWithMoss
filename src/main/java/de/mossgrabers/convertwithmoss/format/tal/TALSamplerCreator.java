@@ -134,17 +134,27 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         // Add up to 4 groups
         int groupCounter = 0;
         final List<IGroup> groups = this.optimizeGroups (multisampleSource.getNonEmptyGroups (true));
+
+        // The volume of a sample reaches only +2.1dB, the main volume and then the volume of the
+        // layers carry the gain above it
+        final double gainAboveDB = getGainAboveSampleVolume (groups);
+        final double mainVolumeDB = Math.min (gainAboveDB, TALSamplerConstants.volumeToDb (1.0));
+        final double layerVolumeDB = gainAboveDB - mainVolumeDB;
+        XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.VOLUME, TALSamplerConstants.dbToVolume (mainVolumeDB), 6);
+
         for (final IGroup group: groups)
         {
             final Element groupElement = XMLUtils.addElement (document, programElement, TALSamplerTag.SAMPLE_LAYER + groupCounter);
             final Element multisamplesElement = XMLUtils.addElement (document, groupElement, TALSamplerTag.MULTISAMPLES);
 
             programElement.setAttribute (TALSamplerTag.PROGRAM_LAYER_ON + TALSamplerConstants.LAYERS[groupCounter], "1.0");
+            if (layerVolumeDB > 0)
+                XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.LAYER_VOLUME + TALSamplerConstants.LAYERS[groupCounter], TALSamplerConstants.dbToVolume (layerVolumeDB), 6);
 
             // No group name and trigger types
 
             for (final ISampleZone sample: group.getSampleZones ())
-                createSample (document, folderName, programElement, groupCounter, multisamplesElement, sample);
+                createSample (document, folderName, programElement, groupCounter, multisamplesElement, sample, gainAboveDB);
 
             groupCounter++;
             if (groupCounter == 4)
@@ -166,8 +176,10 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param groupCounter The index of the group
      * @param groupElement The element where to add the sample information
      * @param zone Where to get the sample info from
+     * @param gainAboveDB The part of the gain which the main volume and the volume of the layer
+     *            carry, in dB
      */
-    private static void createSample (final Document document, final String folderName, final Element programElement, final int groupCounter, final Element groupElement, final ISampleZone zone)
+    private static void createSample (final Document document, final String folderName, final Element programElement, final int groupCounter, final Element groupElement, final ISampleZone zone, final double gainAboveDB)
     {
         // -----------------------------------------------------------
         // Sample element and attributes
@@ -176,7 +188,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         sampleElement.setAttribute (TALSamplerTag.MULTISAMPLE_URL, AbstractCreator.formatFileName (folderName, zone.getName () + ".wav"));
 
         // Always write the volume: a missing attribute is not read back as 0dB
-        XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, convertGain (zone.getGain ()), 6);
+        XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, TALSamplerConstants.dbToZoneVolume (zone.getGain () - gainAboveDB), 6);
         XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.PANNING, (zone.getPanning () + 1.0) / 2.0, 2);
 
         XMLUtils.setIntegerAttribute (sampleElement, TALSamplerTag.START_SAMPLE, Math.max (0, zone.getStart ()));
@@ -386,17 +398,20 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Convert a volume in the range of [-12dB..12dB] to a range of [0..1] which represent
-     * [-Inf..6dB].
+     * Get the gain of the loudest sample above the largest volume of a sample (+2.1dB), limited to
+     * what the main volume and the volume of a layer can add (+12dB each).
      *
-     * @param volumeDB The volume to convert
-     * @return The converted volume
+     * @param groups The groups to write, only the first 4 are written
+     * @return The gain in dB, 0 if no sample is louder than +2.1dB
      */
-    private static double convertGain (final double volumeDB)
+    private static double getGainAboveSampleVolume (final List<IGroup> groups)
     {
-        final double v = 12 + (volumeDB > 6 ? 6 : volumeDB);
-        final double result = TALSamplerConstants.VALUE_RANGE * v / 18.0;
-        return TALSamplerConstants.MINUS_12_DB + result;
+        double maxGain = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < Math.min (4, groups.size ()); i++)
+            for (final ISampleZone zone: groups.get (i).getSampleZones ())
+                maxGain = Math.max (maxGain, zone.getGain ());
+        final double gainAbove = maxGain - TALSamplerConstants.zoneVolumeToDb (1.0);
+        return gainAbove > 0 ? Math.min (gainAbove, 2 * TALSamplerConstants.volumeToDb (1.0)) : 0;
     }
 
 
