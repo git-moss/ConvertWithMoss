@@ -898,11 +898,60 @@ public class TagDetector
      */
     public static String [] detectKeywords (final Collection<String> texts, final Collection<String> folderNames)
     {
+        return detectKeywords (addDescribingFolderNames (texts, folderNames));
+    }
+
+
+    /**
+     * Detect a category in the texts of a multi-sample and in the names of the folders which
+     * contain it. Like for the keywords (see {@link #detectKeywords(Collection, Collection)}) only
+     * a folder name which describes the sound of its content takes part. The name of a library is
+     * a title: 'Voice' in the folder 'Espen Kraft PX Vol 2 Digital Voices 43 patches SF2' made
+     * vocals of 28 of its 43 presets, among them 'D-50 EP Classic' and 'D-50 Dry Organ'.
+     *
+     * @param texts The texts of the multi-sample itself, e.g. its name, the most specific first
+     * @param folderNames The names of the folders which contain the multi-sample, the innermost
+     *            first
+     * @param categoryFromNamePrefix If true, a category tag at the very start of one of the texts
+     *            declares the category and takes precedence over keyword matches anywhere in the
+     *            texts
+     * @return The detected category
+     */
+    public static String detectCategory (final Collection<String> texts, final Collection<String> folderNames, final boolean categoryFromNamePrefix)
+    {
+        return detectCategory (addDescribingFolderNames (texts, folderNames), categoryFromNamePrefix);
+    }
+
+
+    /**
+     * Split a text into its words: everything which is not a letter or a digit separates them, as
+     * well as the change from a lower to an upper case letter and the change between a letter and
+     * a digit. A note name like 'c3' in the name of a sample therefore is not the Hammond C3.
+     *
+     * @param text The text to split
+     * @return The words
+     */
+    public static String [] splitWords (final String text)
+    {
+        return WORD_SEPARATOR.split (text.trim ());
+    }
+
+
+    /**
+     * Get the texts of a multi-sample followed by the names of the folders which contain it which
+     * describe the sound of their content, see {@link #isDescription(String)}.
+     *
+     * @param texts The texts of the multi-sample itself
+     * @param folderNames The names of the folders which contain the multi-sample
+     * @return The texts and the describing folder names
+     */
+    private static List<String> addDescribingFolderNames (final Collection<String> texts, final Collection<String> folderNames)
+    {
         final List<String> describingTexts = new ArrayList<> (texts);
         for (final String folderName: folderNames)
             if (isDescription (folderName))
                 describingTexts.add (folderName);
-        return detectKeywords (describingTexts);
+        return describingTexts;
     }
 
 

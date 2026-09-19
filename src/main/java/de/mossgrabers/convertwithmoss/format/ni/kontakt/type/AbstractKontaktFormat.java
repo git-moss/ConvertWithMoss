@@ -7,6 +7,8 @@ package de.mossgrabers.convertwithmoss.format.ni.kontakt.type;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.ExternalModulator;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Group;
@@ -244,7 +247,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
         // say nothing about the category, which is then detected from the names instead
         final String instrumentIconName = program.getInstrumentIconName ();
         if (instrumentIconName == null || instrumentIconName.isBlank () || "New".equals (instrumentIconName) || "Wave".equals (instrumentIconName))
-            metadata.setCategory (TagDetector.detectCategory (parts));
+            metadata.setCategory (TagDetector.detectCategory (Collections.singletonList (parts[0]), Arrays.asList (AudioFileUtils.getFolderNames (parts)), false));
         else
             metadata.setCategory (TagDetector.detectCategory (instrumentIconName.split (" ")));
     }
