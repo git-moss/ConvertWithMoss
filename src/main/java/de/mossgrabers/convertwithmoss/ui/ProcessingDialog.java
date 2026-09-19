@@ -65,6 +65,7 @@ public class ProcessingDialog extends PseudoModalDialog
     public ComboBox<String> loopCrossfadesCombobox;
     /** Check-box to snap forward loop boundaries to zero-crossings. */
     public CheckBox         snapLoopsCheckbox;
+    public CheckBox         crossfadeClickingCheckbox;
     /** Combo-box for transposing play-back by semi-tones. */
     public ComboBox<String> transposeCombobox;
 
@@ -248,6 +249,7 @@ public class ProcessingDialog extends PseudoModalDialog
 
         final BoxPanel panel4 = new TwoColsPanel ();
         this.loopCrossfadesCombobox = panel4.createComboBox ("@IDS_PROCESSING_LOOP_CROSSFADE", "@IDS_PROCESSING_LOOP_CROSSFADE_TOOLTIP", LOOP_CROSSFADES);
+        this.crossfadeClickingCheckbox = panel4.createCheckBox ("@IDS_PROCESSING_CROSSFADE_CLICKING_LABEL", "@IDS_PROCESSING_CROSSFADE_CLICKING_TOOLTIP");
         this.snapLoopsCheckbox = panel4.createCheckBox ("@IDS_PROCESSING_SNAP_LOOPS_LABEL", "@IDS_PROCESSING_SNAP_LOOPS_TOOLTIP");
 
         final BoxPanel panel5 = new TwoColsPanel ();
@@ -271,6 +273,7 @@ public class ProcessingDialog extends PseudoModalDialog
         this.traversalManager.add (this.reduceFrequencyCombobox);
         this.traversalManager.add (this.alwaysResampleCheckbox);
         this.traversalManager.add (this.loopCrossfadesCombobox);
+        this.traversalManager.add (this.crossfadeClickingCheckbox);
         this.traversalManager.add (this.snapLoopsCheckbox);
         this.traversalManager.add (this.transposeCombobox);
         this.traversalManager.add (this.getOkButton ());

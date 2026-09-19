@@ -113,6 +113,7 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-Zf", "--ProcessFrequency").paramLabel ("PROCESS_FREQUENCY").type (Integer.class).description ("Reduces the sample-rate of all samples to this maximum value, if processing is enabled. Valid numbers are: 48000, 44100, 32000, 31250, 30000, 28000, 27000, 24000, 22050, 16000, 12000, 11025 and 8000").build ());
             spec.addOption (OptionSpec.builder ("-Za", "--ProcessAlwaysResample").paramLabel ("PROCESS_ALWAYS_RESAMPLE").type (Boolean.class).description ("Does as well up-sampling to the set sample frequency and bit depth, if enabled.").build ());
             spec.addOption (OptionSpec.builder ("-Zl", "--ProcessLoopCrossfade").paramLabel ("PROCESS_LOOP_CROSSFADE").type (Integer.class).description ("Sets a fixed loop crossfade as a percentage. Valid values are 0-100.").build ());
+            spec.addOption (OptionSpec.builder ("-Zlc", "--ProcessLoopCrossfadeClicking").paramLabel ("PROCESS_LOOP_CROSSFADE_CLICKING").type (Boolean.class).description ("Sets the loop crossfade of -Zl only on forward loops which click at their wrap - after snapping with -Zs, if enabled - limited to the audio in front of the loop start, if processing is enabled.").build ());
             spec.addOption (OptionSpec.builder ("-Zs", "--ProcessSnapLoops").paramLabel ("PROCESS_SNAP_LOOPS").type (Boolean.class).description ("Moves the boundaries of forward loops which click at their wrap to a nearby zero-crossing or to where the waveform continues best, if processing is enabled.").build ());
             spec.addOption (OptionSpec.builder ("-Zp", "--ProcessTranspose").paramLabel ("PROCESS_TRANSPOSE").type (Integer.class).description ("Transposes playback by the given number of semitones (-24 to 24) by moving the sample root keys, if processing is enabled. The key ranges are not changed.").build ());
 
@@ -199,6 +200,7 @@ public class CLIBackend implements INotifier
         }
         detectSettings.alwaysResample = parseResult.matchedOptionValue ("Za", Boolean.FALSE).booleanValue ();
         detectSettings.loopCrossfades = parseResult.matchedOptionValue ("Zl", Integer.valueOf (-1)).intValue () + 1;
+        detectSettings.crossfadeClicking = parseResult.matchedOptionValue ("Zlc", Boolean.FALSE).booleanValue ();
         detectSettings.snapLoopsToZero = parseResult.matchedOptionValue ("Zs", Boolean.FALSE).booleanValue ();
         final Integer transpose = parseResult.matchedOptionValue ("Zp", Integer.valueOf (0));
         if (transpose != null && transpose.intValue () != 0)

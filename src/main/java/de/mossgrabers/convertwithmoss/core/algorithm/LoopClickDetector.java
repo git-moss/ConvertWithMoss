@@ -71,6 +71,19 @@ public final class LoopClickDetector
 
 
     /**
+     * A loop which clicks.
+     *
+     * @param zone The zone of the loop
+     * @param loop The loop
+     * @param stepPercent The step at its wrap in percent of the local peak level
+     */
+    private record Click (ISampleZone zone, ISampleLoop loop, double stepPercent)
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Private due to helper class.
      */
     private LoopClickDetector ()
@@ -89,11 +102,47 @@ public final class LoopClickDetector
      */
     public static Optional<Result> detect (final List<IGroup> groups)
     {
-        int clickingLoops = 0;
-        int checkedLoops = 0;
-        String worstZoneName = "";
-        double worstStepPercent = 0;
+        final List<Click> clicks = new ArrayList<> ();
+        final int checkedLoops = scan (groups, clicks);
+        if (clicks.isEmpty ())
+            return Optional.empty ();
 
+        Click worst = clicks.get (0);
+        for (final Click click: clicks)
+            if (click.stepPercent () > worst.stepPercent ())
+                worst = click;
+        return Optional.of (new Result (clicks.size (), checkedLoops, worst.zone ().getName (), worst.stepPercent ()));
+    }
+
+
+    /**
+     * Get the forward loops of the given groups which click at their wrap-around point, measured
+     * like {@link #detect(List)} does.
+     *
+     * @param groups The groups whose zones to check
+     * @return The loops which click, empty if none does
+     */
+    public static List<ISampleLoop> findClickingLoops (final List<IGroup> groups)
+    {
+        final List<Click> clicks = new ArrayList<> ();
+        scan (groups, clicks);
+        final List<ISampleLoop> loops = new ArrayList<> (clicks.size ());
+        for (final Click click: clicks)
+            loops.add (click.loop ());
+        return loops;
+    }
+
+
+    /**
+     * Measure the wrap of all forward loops without a cross-fade.
+     *
+     * @param groups The groups whose zones to check
+     * @param clicks Where to add the loops which click
+     * @return The number of loops which were checked
+     */
+    private static int scan (final List<IGroup> groups, final List<Click> clicks)
+    {
+        int checkedLoops = 0;
         for (final Map.Entry<ISampleData, List<ISampleZone>> entry: groupZonesBySampleData (groups).entrySet ())
         {
             final List<ISampleZone> zones = entry.getValue ();
@@ -125,33 +174,13 @@ public final class LoopClickDetector
                         continue;
                     checkedLoops++;
                     if (stepPercent > 0)
-                    {
-                        clickingLoops++;
-                        if (stepPercent > worstStepPercent)
-                        {
-                            worstStepPercent = stepPercent;
-                            worstZoneName = zone.getName ();
-                        }
-                    }
+                        clicks.add (new Click (zone, loop, stepPercent));
                 }
         }
-
-        if (clickingLoops == 0)
-            return Optional.empty ();
-        return Optional.of (new Result (clickingLoops, checkedLoops, worstZoneName, worstStepPercent));
+        return checkedLoops;
     }
 
 
-    /**
-     * Collect the zones of all groups by the sample data they play. Zones regularly share one
-     * sample - a Logic instrument with consolidated samples maps thousands of zones into a single
-     * audio file - and decoding a compressed sample takes seconds, so the audio must not be read
-     * once per zone. Sample data objects are compared by identity, which is what the model uses to
-     * express 'this is the same audio'.
-     *
-     * @param groups The groups whose zones to collect
-     * @return The zones of each sample data object, both in the order in which they appear
-     */
     private static Map<ISampleData, List<ISampleZone>> groupZonesBySampleData (final List<IGroup> groups)
     {
         final Map<ISampleData, List<ISampleZone>> zonesBySampleData = new LinkedHashMap<> ();

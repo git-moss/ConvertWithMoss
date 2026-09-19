@@ -64,6 +64,8 @@ public class DetectSettings
     public boolean                       alwaysResample     = false;
     /** The fixed loop cross-fade. 0 is off. */
     public int                           loopCrossfades     = 0;
+    /** Set the loop cross-fade only on loops which click at their wrap-around point. */
+    public boolean                       crossfadeClicking  = false;
     /** Snap forward loop boundaries to the nearest zero-crossing to avoid loop clicks. */
     public boolean                       snapLoopsToZero    = false;
     /** Transpose playback by this number of semitones by moving the sample root keys. 0 is off. */
