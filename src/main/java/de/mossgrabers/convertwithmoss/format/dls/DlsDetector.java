@@ -150,11 +150,12 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         // Remove unnecessary 'Comment' labels. Order is important!
         description = description.replace (InfoRiffChunkId.INFO_COMM.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_ICMT.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_CMNT.getDescription () + ": ", "");
 
-        final List<String> tags = new ArrayList<> ();
-        Collections.addAll (tags, parts);
-        tags.add (name);
-        tags.add (instrument.getName ());
-        metadata.detectMetadata (this.settingsConfiguration, tags.toArray (new String [tags.size ()]), instrument.isDrumInstrument () ? TagDetector.CATEGORY_DRUM : null);
+        final String [] texts =
+        {
+            name,
+            instrument.getName ()
+        };
+        metadata.detectMetadata (this.settingsConfiguration, texts, AudioFileUtils.getFolderNames (parts), instrument.isDrumInstrument () ? TagDetector.CATEGORY_DRUM : null);
 
         if (TagDetector.CATEGORY_UNKNOWN.equals (metadata.getCategory ()))
             metadata.setCategory (TagDetector.detectCategory (description.split ("\n")));

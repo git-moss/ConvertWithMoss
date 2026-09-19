@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.core.model.implementation;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -131,11 +132,22 @@ public class DefaultMetadata implements IMetadata
     @Override
     public void detectMetadata (final IMetadataConfig config, final String [] parts, final String category)
     {
+        this.detectMetadata (config, parts, new String [0], category);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void detectMetadata (final IMetadataConfig config, final String [] parts, final String [] folderNames, final String category)
+    {
+        final String [] texts = Arrays.copyOf (parts, parts.length + folderNames.length);
+        System.arraycopy (folderNames, 0, texts, parts.length, folderNames.length);
+
         if (this.creator.isBlank ())
-            this.setCreator (TagDetector.detect (parts, config.getCreatorTags (), config.getCreatorName ()));
+            this.setCreator (TagDetector.detect (texts, config.getCreatorTags (), config.getCreatorName ()));
         if (this.category.isBlank () || TagDetector.CATEGORY_UNKNOWN.equals (this.category))
-            this.setCategory (category == null || category.isBlank () ? TagDetector.detectCategory (parts, config.isCategoryFromNamePrefix ()) : category);
+            this.setCategory (category == null || category.isBlank () ? TagDetector.detectCategory (texts, config.isCategoryFromNamePrefix ()) : category);
         if (this.keywords.isEmpty ())
-            this.setKeywords (TagDetector.detectKeywords (parts));
+            this.setKeywords (TagDetector.detectKeywords (Arrays.asList (parts), Arrays.asList (folderNames)));
     }
 }

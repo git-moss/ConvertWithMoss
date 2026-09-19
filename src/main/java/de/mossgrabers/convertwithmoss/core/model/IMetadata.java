@@ -121,4 +121,19 @@ public interface IMetadata
      * @param category If the category is not null, it is assigned and not detected
      */
     void detectMetadata (IMetadataConfig configuration, String [] parts, String category);
+
+
+    /**
+     * Detect metadata (creator, category, keywords) from the given text parts of the multi-sample
+     * and the names of the folders which contain it. A folder name only provides keywords if it
+     * describes the sound of its content (e.g. 'Analog Synths') and not if it is the title of a
+     * library.
+     *
+     * @param configuration Some configuration settings
+     * @param parts The text parts of the multi-sample itself, e.g. its name
+     * @param folderNames The names of the folders which contain the multi-sample, the innermost
+     *            first
+     * @param category If the category is not null, it is assigned and not detected
+     */
+    void detectMetadata (IMetadataConfig configuration, String [] parts, String [] folderNames, String category);
 }

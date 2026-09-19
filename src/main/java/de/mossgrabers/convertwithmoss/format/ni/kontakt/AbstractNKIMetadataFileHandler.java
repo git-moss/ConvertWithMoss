@@ -12,6 +12,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -230,7 +231,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
         final String [] keywords = metadata.getKeywords ();
         if (keywords == null || keywords.length == 0)
-            metadata.setKeywords (TagDetector.detectKeywords (parts));
+            metadata.setKeywords (TagDetector.detectKeywords (Collections.singletonList (parts[0]), Arrays.asList (AudioFileUtils.getFolderNames (parts))));
     }
 
 
