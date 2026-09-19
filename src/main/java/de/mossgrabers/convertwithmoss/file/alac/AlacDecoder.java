@@ -606,34 +606,12 @@ public class AlacDecoder
             final int k = Math.min (lg3a (m), this.kb);
             m = (1 << k) - 1;
 
-            // dyn_get_32bit()
-            int n;
+            final int [] pos =
             {
-                final int streamlong = peek32 (data, bitPosition);
-                n = Integer.numberOfLeadingZeros (~streamlong);
-                if (n >= MAX_PREFIX_32)
-                {
-                    if (maxSize > 32)
-                        throw new IOException ("Malformed ALAC packet.");
-                    n = getStreamBits (data, bitPosition + MAX_PREFIX_32, maxSize);
-                    bitPosition += MAX_PREFIX_32 + maxSize;
-                }
-                else
-                {
-                    bitPosition += n + 1;
-                    if (k != 1)
-                    {
-                        final int v = streamlong << n + 1 >>> 32 - k;
-                        bitPosition += k - 1;
-                        n *= m;
-                        if (v >= 2)
-                        {
-                            n += v - 1;
-                            bitPosition += 1;
-                        }
-                    }
-                }
-            }
+                bitPosition
+            };
+            final int n = dynGet32Bit (data, pos, m, k, maxSize);
+            bitPosition = pos[0];
 
             // The least significant bit is the sign bit
             final int ndecode = n + zmode;
@@ -655,32 +633,12 @@ public class AlacDecoder
                 final int kz = Integer.numberOfLeadingZeros (meanB) - BITOFF + (meanB + MOFF >> MDENSHIFT);
                 final int mz = (1 << kz) - 1 & wb;
 
-                // dyn_get()
-                final int runLength;
+                final int [] pos2 =
                 {
-                    final int streamlong = peek32 (data, bitPosition);
-                    int pre = Integer.numberOfLeadingZeros (~streamlong);
-                    if (pre >= MAX_PREFIX_16)
-                    {
-                        pre = MAX_PREFIX_16;
-                        bitPosition += pre;
-                        runLength = streamlong << pre >>> 32 - MAX_DATATYPE_BITS_16;
-                        bitPosition += MAX_DATATYPE_BITS_16;
-                    }
-                    else
-                    {
-                        bitPosition += pre + 1;
-                        final int v = kz > 0 ? streamlong << pre + 1 >>> 32 - kz : 0;
-                        bitPosition += kz;
-                        int result = pre * mz + v - 1;
-                        if (Integer.compareUnsigned (v, 2) < 0)
-                        {
-                            result -= v - 1;
-                            bitPosition -= 1;
-                        }
-                        runLength = result;
-                    }
-                }
+                    bitPosition
+                };
+                final int runLength = dynGet (data, pos2, kz, mz);
+                bitPosition = pos2[0];
 
                 if (c + runLength > numSamples)
                     throw new IOException ("Malformed ALAC packet.");
@@ -701,6 +659,73 @@ public class AlacDecoder
         bits.setPosition (bitPosition);
         if (bitPosition > maxPosition)
             throw new IOException ("Malformed ALAC packet.");
+    }
+
+
+    private static int dynGet32Bit (final byte [] data, final int [] bitPositionHolder, final int m, final int k, final int maxSize) throws IOException
+    {
+        int bitPosition = bitPositionHolder[0];
+
+        final int streamlong = peek32 (data, bitPosition);
+        int n = Integer.numberOfLeadingZeros (~streamlong);
+        if (n >= MAX_PREFIX_32)
+        {
+            if (maxSize > 32)
+                throw new IOException ("Malformed ALAC packet.");
+            n = getStreamBits (data, bitPosition + MAX_PREFIX_32, maxSize);
+            bitPosition += MAX_PREFIX_32 + maxSize;
+        }
+        else
+        {
+            bitPosition += n + 1;
+            if (k != 1)
+            {
+                final int v = streamlong << n + 1 >>> 32 - k;
+                bitPosition += k - 1;
+                n *= m;
+                if (v >= 2)
+                {
+                    n += v - 1;
+                    bitPosition += 1;
+                }
+            }
+        }
+
+        bitPositionHolder[0] = bitPosition;
+        return n;
+    }
+
+
+    private static int dynGet (final byte [] data, final int [] bitPositionHolder, final int kz, final int mz)
+    {
+        int bitPosition = bitPositionHolder[0];
+
+        final int streamlong = peek32 (data, bitPosition);
+        int pre = Integer.numberOfLeadingZeros (~streamlong);
+        final int runLength;
+        if (pre >= MAX_PREFIX_16)
+        {
+            pre = MAX_PREFIX_16;
+            bitPosition += pre;
+            runLength = streamlong << pre >>> 32 - MAX_DATATYPE_BITS_16;
+            bitPosition += MAX_DATATYPE_BITS_16;
+        }
+        else
+        {
+            bitPosition += pre + 1;
+            final int v = kz > 0 ? streamlong << pre + 1 >>> 32 - kz : 0;
+            bitPosition += kz;
+            int result = pre * mz + v - 1;
+            if (Integer.compareUnsigned (v, 2) < 0)
+            {
+                result -= v - 1;
+                bitPosition -= 1;
+            }
+            runLength = result;
+        }
+
+        bitPositionHolder[0] = bitPosition;
+        return runLength;
     }
 
 

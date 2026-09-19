@@ -322,8 +322,8 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Look up the file of a sample. The preset stores the path which the sample had when the
-     * preset was saved, relative to the preset or absolute. An absolute path mostly belongs to the
+     * Look up the file of a sample. The preset stores the path which the sample had when the preset
+     * was saved, relative to the preset or absolute. An absolute path mostly belongs to the
      * computer on which a pack was produced, e.g. 'F:\Nuendo\000007 Prophet VS\Samples\x.wav', and
      * a path of Windows is not even one on macOS or Linux, which do not separate folders with
      * back-slashes. A pack ships its samples with its presets, therefore a sample which is not

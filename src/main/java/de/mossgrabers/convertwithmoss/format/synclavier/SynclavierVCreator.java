@@ -13,10 +13,12 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.zip.CRC32;
@@ -485,7 +487,34 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
     {
         private record Entry (byte [] name, byte [] data, long crc, int offset)
         {
-            // Intentionally empty
+            /** {@inheritDoc} */
+            @Override
+            public boolean equals (final Object o)
+            {
+                if (this == o)
+                    return true;
+                if (!(o instanceof Entry (byte [] name, byte [] data, long crc, int offset)))
+                    return false;
+                return this.crc == crc && this.offset == offset && Arrays.equals (this.name, name) && Arrays.equals (this.data, data);
+            }
+
+
+            /** {@inheritDoc} */
+            @Override
+            public int hashCode ()
+            {
+                int result = Objects.hash (Long.valueOf (this.crc), Integer.valueOf (this.offset));
+                result = 31 * result + Arrays.hashCode (this.name);
+                return 31 * result + Arrays.hashCode (this.data);
+            }
+
+
+            /** {@inheritDoc} */
+            @Override
+            public String toString ()
+            {
+                return "Entry[" + "name=" + Arrays.toString (this.name) + ", data=" + Arrays.toString (this.data) + ", crc=" + this.crc + ", offset=" + this.offset + ']';
+            }
         }
 
 

@@ -916,19 +916,30 @@ public class TagDetector
     private static boolean isDescription (final String text)
     {
         final String [] textWords = WORD_SEPARATOR.split (text.trim ());
+        boolean skipNextWord = false;
+
         for (int i = 0; i < textWords.length; i++)
         {
+            if (skipNextWord)
+            {
+                skipNextWord = false;
+                continue;
+            }
+
             final String word = textWords[i].toUpperCase (Locale.US);
             if (word.chars ().noneMatch (Character::isLetter) || isTag (word))
                 continue;
-            // A keyword of two words like 'osc_sync'
+
+            // Is it a two-word keyword?
             if (i + 1 < textWords.length && KEYWORD_LOOKUP.containsKey (word + "_" + textWords[i + 1].toUpperCase (Locale.US)))
             {
-                i++;
+                skipNextWord = true;
                 continue;
             }
+
             return false;
         }
+
         return true;
     }
 

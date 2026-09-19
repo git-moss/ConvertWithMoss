@@ -166,18 +166,6 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /** The highest cutoff frequency of the filter of the device, the value 1 of Filter1CutOff. */
     private static final double                                MAX_CUTOFF_FREQUENCY    = 19912.2;
 
-    /**
-     * The modulation matrix slot which routes the low frequency oscillator of the vibrato. The
-     * slots 1-3 are already used for the pitch envelopes of the 3 oscillators, see
-     * {@link #createPitchEnvelopeModulator(List, IEnvelopeModulator, int, int)}.
-     */
-    private static final int                                   MATRIX_SLOT_VIBRATO     = 4;
-    /** The modulation matrix slot which routes the low frequency oscillator of the tremolo. */
-    private static final int                                   MATRIX_SLOT_TREMOLO     = 5;
-    /**
-     * The modulation matrix slot which routes the low frequency oscillator of the filter cutoff.
-     */
-    private static final int                                   MATRIX_SLOT_CUTOFF_LFO  = 6;
     /** The low frequency oscillator which plays the vibrato. */
     private static final int                                   LFO_VIBRATO             = 1;
     /** The low frequency oscillator which plays the tremolo. */
@@ -539,7 +527,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // or four layers need the layout of the MK2 generation, which always stores four layers -
         // the loader checks the offsets of all of them - and switches the unused ones off
         final boolean fourLayerLayout = numLayers > MAX_LAYERS_TWO;
-        final int layerCount = numLayers == 1 ? 0 : fourLayerLayout ? LAYER_COUNT_FOUR : LAYER_COUNT_TWO;
+        int layerCount = 0;
+        if (numLayers > 1)
+            layerCount = fourLayerLayout ? LAYER_COUNT_FOUR : LAYER_COUNT_TWO;
         final int version = fourLayerLayout ? PRESET_VERSION_FOUR : PRESET_VERSION;
         final int numStoredLayers = fourLayerLayout ? MAX_LAYERS : numLayers;
         if (fourLayerLayout)
@@ -1527,9 +1517,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         // Filter cutoff - the cutoff swings around its value, therefore the LFO stays bipolar. The
         // device adds the modulation to the cutoff in the units of Filter1CutOff, whose range
-        // covers
-        // WaldorfQpatModulationMatrix#CUTOFF_RANGE semi-tones, and does not square its amount. The
-        // modulation is only written with a filter which is written as active, see
+        // covers WaldorfQpatModulationMatrix#CUTOFF_RANGE semi-tones, and does not square its
+        // amount. The modulation is only written with a filter which is written as active, see
         // createFilterParameters
         final Optional<IFilter> optFilter = zone.getFilter ();
         if (optFilter.isEmpty () || optFilter.get ().getType () == FilterType.BAND_REJECTION)

@@ -488,11 +488,10 @@ public class PresetRenderer
     private static byte [] toPcm (final double [] left, final double [] right, final int frames)
     {
         // Normalize only if the mix of several zones went past full scale
-        double peak = 0;
-        for (int i = 0; i < frames; i++)
-            peak = Math.max (peak, Math.max (Math.abs (left[i]), Math.abs (right[i])));
-
-        final double scale = peak > 1 ? 1 / peak : 1;
+        final double peak = calculatePeak (left, right, frames);
+        double scale = 1.0;
+        if (peak > 1.0 && peak != 0.0)
+            scale = 1.0 / peak;
 
         final byte [] pcm = new byte [frames * 4];
         for (int i = 0; i < frames; i++)
@@ -501,6 +500,15 @@ public class PresetRenderer
             writeSample (pcm, i * 4 + 2, right[i] * scale);
         }
         return pcm;
+    }
+
+
+    private static double calculatePeak (final double [] left, final double [] right, final int frames)
+    {
+        double peak = 0;
+        for (int i = 0; i < frames; i++)
+            peak = Math.max (peak, Math.max (Math.abs (left[i]), Math.abs (right[i])));
+        return peak;
     }
 
 

@@ -406,20 +406,23 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
             }
 
-            switch (resourceHeader.type)
+            final WaldorfQpatResourceType type = resourceHeader.type;
+            if (type != null)
             {
-                case USER_SAMPLE_MAP1:
-                    resources[0] = resourceHeader;
-                    break;
-                case USER_SAMPLE_MAP2:
-                    resources[1] = resourceHeader;
-                    break;
-                case USER_SAMPLE_MAP3:
-                    resources[2] = resourceHeader;
-                    break;
-                case null:
-                default:
-                    break;
+                switch (type)
+                {
+                    case USER_SAMPLE_MAP1:
+                        resources[0] = resourceHeader;
+                        break;
+                    case USER_SAMPLE_MAP2:
+                        resources[1] = resourceHeader;
+                        break;
+                    case USER_SAMPLE_MAP3:
+                        resources[2] = resourceHeader;
+                        break;
+                    default:
+                        break;
+                }
             }
         }
         return resources;

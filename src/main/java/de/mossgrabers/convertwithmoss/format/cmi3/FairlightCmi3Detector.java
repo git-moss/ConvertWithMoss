@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -1206,6 +1207,33 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
      */
     private static record DiskEntry (String filename, byte [] data)
     {
-        // Intentionally empty
+        /** {@inheritDoc} */
+        @Override
+        public boolean equals (final Object o)
+        {
+            if (this == o)
+                return true;
+            if (o == null || this.getClass () != o.getClass ())
+                return false;
+            final DiskEntry that = (DiskEntry) o;
+            return Objects.equals (this.filename, that.filename) && Arrays.equals (this.data, that.data);
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public int hashCode ()
+        {
+            int result = Objects.hash (this.filename);
+            return 31 * result + Arrays.hashCode (this.data);
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString ()
+        {
+            return "DiskEntry{" + "filename='" + this.filename + '\'' + ", data=" + Arrays.toString (this.data) + '}';
+        }
     }
 }

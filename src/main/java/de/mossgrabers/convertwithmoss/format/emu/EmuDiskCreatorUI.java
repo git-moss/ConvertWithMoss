@@ -112,7 +112,7 @@ public class EmuDiskCreatorUI implements ICoreTaskSettings
             switch (format.trim ().toLowerCase (Locale.US))
             {
                 case FORMAT_HFE:
-                    // this.writeRawImage is already false;
+                    // this.writeRawImage is already false
                     break;
                 case FORMAT_RAW:
                     this.writeRawImage = true;

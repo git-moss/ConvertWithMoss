@@ -8,8 +8,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import de.mossgrabers.convertwithmoss.file.hfe.DiskImageBuilder;
 import de.mossgrabers.convertwithmoss.file.hfe.HfeFile;
@@ -80,6 +82,37 @@ public class CasioFZDisk
         public int getCounter (final int index)
         {
             return CasioFZVoice.readUnsigned16 (this.head, 1018 + index * 2);
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean equals (final Object o)
+        {
+            if (this == o)
+                return true;
+            if (o == null || this.getClass () != o.getClass ())
+                return false;
+            final CasioFZFile that = (CasioFZFile) o;
+            return this.type == that.type && Objects.equals (this.name, that.name) && Arrays.equals (this.head, that.head) && Arrays.equals (this.content, that.content);
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public int hashCode ()
+        {
+            int result = Objects.hash (this.name, Integer.valueOf (this.type));
+            result = 31 * result + Arrays.hashCode (this.head);
+            return 31 * result + Arrays.hashCode (this.content);
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString ()
+        {
+            return "CasioFZFile{" + "name='" + this.name + '\'' + ", type=" + this.type + ", head=" + Arrays.toString (this.head) + ", content=" + Arrays.toString (this.content) + '}';
         }
     }
 

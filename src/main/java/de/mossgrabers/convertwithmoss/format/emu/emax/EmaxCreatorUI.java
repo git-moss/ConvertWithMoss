@@ -111,7 +111,7 @@ public class EmaxCreatorUI implements ICoreTaskSettings
             switch (device.trim ().toLowerCase (Locale.US))
             {
                 case "emax", "emax1", "emaxi", "1":
-                    // this.targetModel is already EmaxModel.EMAX;
+                    // this.targetModel is already EmaxModel.EMAX
                     break;
                 case "emax2", "emaxii", "2":
                     this.targetModel = EmaxModel.EMAX_2;
