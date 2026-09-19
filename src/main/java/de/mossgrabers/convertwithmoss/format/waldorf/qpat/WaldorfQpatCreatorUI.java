@@ -43,6 +43,12 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
      * The option which the layers option replaced, still read so that its setting is taken over.
      */
     private static final String QPAT_SECOND_LAYER        = "QPATUseSecondLayer";
+    /**
+     * The default of the layers option: 2 layers, which every instrument of the family plays. A
+     * preset which needs more than the 3 oscillators of one layer otherwise plays two of its groups
+     * alternately.
+     */
+    private static final int    DEFAULT_LAYERS           = 2;
     /** The choices of the layers option: the maximum number of layers of a patch. */
     private static final int [] LAYER_OPTIONS            =
     {
@@ -65,7 +71,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
     private boolean             numberPrefix;
     private int                 numberPrefixStart        = 0;
     private boolean             shortFileNames;
-    private int                 maximumLayers            = 1;
+    private int                 maximumLayers            = DEFAULT_LAYERS;
 
 
     /**
@@ -114,7 +120,8 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         this.numberPrefixStartField.setText (Integer.toString (config.getInteger (QPAT_NUMBER_PREFIX_START, 0)));
         this.shortFileNamesCheckBox.setSelected (config.getBoolean (QPAT_SHORT_FILE_NAMES, false));
         // The setting of the option which this one replaced is taken over
-        final int layers = config.getInteger (QPAT_LAYERS, config.getBoolean (QPAT_SECOND_LAYER, false) ? 2 : 1);
+        // Only a setting of the replaced option which leaves the second layer off selects 1 layer
+        final int layers = config.getInteger (QPAT_LAYERS, config.getBoolean (QPAT_SECOND_LAYER, true) ? DEFAULT_LAYERS : 1);
         this.layersBox.getSelectionModel ().select (layersToIndex (layers));
 
         super.loadSettings (config);
@@ -192,7 +199,7 @@ public class WaldorfQpatCreatorUI extends WavChunkSettingsUI
         final String layersValue = parameters.remove (QPAT_LAYERS);
         final String secondLayerValue = parameters.remove (QPAT_SECOND_LAYER);
         if (layersValue == null || layersValue.isBlank ())
-            this.maximumLayers = "1".equals (secondLayerValue) ? 2 : 1;
+            this.maximumLayers = secondLayerValue == null || "1".equals (secondLayerValue) ? DEFAULT_LAYERS : 1;
         else
         {
             this.maximumLayers = parseLayers (layersValue);
