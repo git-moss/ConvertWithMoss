@@ -132,7 +132,18 @@ public class FastLZ
 
                 if (compressionLevel == FASTLZ_LEVEL2 && distance >= MAX_DISTANCE_LZ2)
                 {
-                    if (data[ip++] != data[ref++] || data[ip++] != data[ref++])
+                    boolean mismatch = data[ip] != data[ref];
+                    ip++;
+                    ref++;
+
+                    if (!mismatch)
+                    {
+                        mismatch = data[ip] != data[ref];
+                        ip++;
+                        ref++;
+                    }
+
+                    if (mismatch)
                     {
                         compressed[op++] = data[anchor++];
                         ip = anchor;

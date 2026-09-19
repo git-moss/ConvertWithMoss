@@ -319,7 +319,6 @@ public class AiffFileSampleData extends AbstractFileSampleData
             // Cannot be parsed - let the SPI try
         }
         if (commonChunk == null || commonChunk.getCompressionType () == null)
-        {
             try
             {
                 super.createAudioMetadata ();
@@ -333,7 +332,6 @@ public class AiffFileSampleData extends AbstractFileSampleData
                 if (commonChunk == null)
                     throw ex;
             }
-        }
 
         if (!commonChunk.isPCM ())
             throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", this.filename, commonChunk.getCompressionName (), commonChunk.getCompressionType ()));

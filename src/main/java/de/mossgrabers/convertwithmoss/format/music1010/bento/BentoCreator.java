@@ -410,16 +410,8 @@ public class BentoCreator extends AbstractMusic1010Creator
         final String filename = this.createSampleFilename (zone, 0, ".wav");
         paramsElement.setAttribute (Music1010Tag.ATTR_FILENAME, presetPath + filename);
 
-        // IMPROVE The following parameters (panning, gain and pitch) are only available on
-        // instrument level (1010music needs to implement it on sample level first)
-        // Panning: -100..100% -> -1000..1000
-        // paramsElement.setAttribute (Music1010Tag.ATTR_PANNING, Integer.toString ((int) Math.clamp
-        // (zone.getPanning () * 1000.0, -1000.0, 1000.0)));
-        // -12..12dB -> -12000..12000
-        // gaindb="4300"
-        // -24..24 -> -24000..24000
-        // pitch="-19350"
-        // panpos="-352"
+        // IMPROVE Implement panning, gain and pitch if 1010music makes them available on
+        // Sample-Level. Currently, they are only available on instrument level
 
         // -----------------------------------------------------------
         // Key & Velocity attributes

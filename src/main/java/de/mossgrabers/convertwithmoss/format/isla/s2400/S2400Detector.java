@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -483,6 +485,36 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
             while (length > 0 && this.blob[length - 1] == 0)
                 length--;
             return new String (this.blob, 0, length, StandardCharsets.US_ASCII);
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean equals (final Object o)
+        {
+            if (this == o)
+                return true;
+            if (o == null || this.getClass () != o.getClass ())
+                return false;
+            final S2400Record that = (S2400Record) o;
+            return this.type == that.type && this.id == that.id && this.value == that.value && Arrays.equals (this.blob, that.blob);
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public int hashCode ()
+        {
+            int result = Objects.hash (Integer.valueOf (this.type), Integer.valueOf (this.id), Long.valueOf (this.value));
+            return 31 * result + Arrays.hashCode (this.blob);
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString ()
+        {
+            return "S2400Record{" + "type=" + this.type + ", id=" + this.id + ", value=" + this.value + ", blob=" + Arrays.toString (this.blob) + '}';
         }
     }
 
