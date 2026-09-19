@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +18,6 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
-import de.mossgrabers.tools.Pair;
 
 
 /**
@@ -25,8 +25,9 @@ import de.mossgrabers.tools.Pair;
  * <i>DIFa</i>, one <i>PATa</i> tone per instrument (ZEN-Core tone, 1632 bytes; its oscillator
  * points at the instrument's multi-sample via the Wave-Number L/R fields), one <i>MSPa</i> 128-key
  * map per instrument, a shared <i>USPa</i> sample-parameter pool (64 byte records) and a shared
- * <i>USDa</i> pool of <i>SMPd</i> sample chunks (a fixed header - 460 bytes as written by the
- * FANTOM, 158 bytes in an older generation - followed by interleaved 16-bit little-endian PCM). All
+ * <i>USDa</i> pool of <i>SMPd</i> sample chunks (a 460 byte header followed by interleaved 16-bit
+ * little-endian PCM as written by the FANTOM, or a 32 byte header followed by a complete WAV file as
+ * written by Roland's sample converter - stored scrambled in some third-party sample packs). All
  * framing carries the per-record CRC32 tables verified from device exports. Byte templates for the
  * constant/opaque parts live next to this class as resources. See
  * {@code documentation/design/ZENCORE_FORMAT.md}.
@@ -42,23 +43,49 @@ public final class ZenCoreSvz
     /** The size of the FANTOM / KY019 SMPd chunk header (PCM follows at this offset). */
     public static final int      SMPD_HEADER_SIZE      = 0x1CC;
     /**
-     * The size of the compact SMPd chunk header written by an older sample generation (SVZ file
-     * version 02 01, e.g. third-party sample packs). It carries a shorter waveform preview than the
-     * FANTOM export and stores the channel count as a u16 at {@link #SMPD_CHANNELS_COMPACT} instead
-     * of the byte at {@link #SMPD_CHANNELS_KY019} (whose slot then holds an unrelated value, 0x32).
-     */
-    private static final int     SMPD_HEADER_COMPACT   = 0x9E;
-    /**
      * Channel-count field of a FANTOM / KY019 SMPd header: a byte holding 1 (mono) or 2 (stereo).
      */
-    private static final int     SMPD_CHANNELS_KY019   = 0x08;
-    /** Channel-count field of a compact SMPd header: a u16 holding 1 (mono) or 2 (stereo). */
-    private static final int     SMPD_CHANNELS_COMPACT = 0x0A;
+    private static final int     SMPD_CHANNELS         = 0x08;
     /**
-     * Offset of the embedded RIFF/WAVE file in a SF2-to-SVZ converter SMPd chunk: a 0x20 byte
-     * header followed by a complete WAV file rather than raw PCM.
+     * Offset of the embedded RIFF/WAVE file in a SMPd chunk written by Roland's SVZ sample
+     * converter: a 0x20 byte header followed by a complete WAV file rather than raw PCM.
      */
     private static final int     SMPD_EMBEDDED_WAVE    = 0x20;
+
+    /**
+     * Some third-party sample packs store the embedded WAV file scrambled byte by byte, with one
+     * substitution for the bytes at even and one for the bytes at odd offsets from the start of the
+     * WAV file - the low and the high bytes of the 16-bit samples. A stored byte is decoded by
+     * re-ordering its bits - bit k of the result is the bit of the stored byte whose number the
+     * table holds at index k - and multiplying the result with {@link #SCRAMBLE_FACTOR} (modulo
+     * 256). Both substitutions keep 0.
+     */
+    private static final int []  SCRAMBLE_BITS_EVEN    =
+    {
+        1,
+        3,
+        5,
+        6,
+        2,
+        4,
+        0,
+        7
+    };
+    /** The bit order of the scrambled bytes at odd offsets, see {@link #SCRAMBLE_BITS_EVEN}. */
+    private static final int []  SCRAMBLE_BITS_ODD     =
+    {
+        3,
+        4,
+        7,
+        1,
+        0,
+        6,
+        5,
+        2
+    };
+    private static final int     SCRAMBLE_FACTOR       = 0xDD;
+    private static final byte [] DESCRAMBLE_EVEN       = createDescrambleTable (SCRAMBLE_BITS_EVEN);
+    private static final byte [] DESCRAMBLE_ODD        = createDescrambleTable (SCRAMBLE_BITS_ODD);
 
     private static final int     NAME_LENGTH           = 16;
     private static final int     PREVIEW_OFFSET        = 0x60;
@@ -765,36 +792,8 @@ public final class ZenCoreSvz
                 final int chunkOffset = (int) ZenCoreUtil.readUnsigned32 (file, entryOffset + 4, false);
                 final int chunkSize = (int) ZenCoreUtil.readUnsigned32 (file, entryOffset + 8, false);
                 final int chunkStart = usdSectionStart + chunkOffset;
-                if (chunkStart >= 0 && chunkSize > SMPD_HEADER_COMPACT && chunkStart + chunkSize <= file.length)
-                    // A third SMPd variant - the output of Roland's SF2-to-SVZ converter, used by
-                    // some commercial packs - embeds a complete RIFF/WAVE file after a 0x20 byte
-                    // header instead of raw PCM (its byte at 0x08 is an unrelated 0x32, so the
-                    // raw-PCM channel detection cannot be used); it is read with the standard WAV
-                    // reader. Otherwise the header is one of the two raw-PCM variants (see
-                    // resolveSmpdLayout); an unrecognized chunk leaves the sample without audio.
-                    if (isEmbeddedWaveChunk (file, chunkStart))
-                        try
-                        {
-                            sample.setSampleData (readEmbeddedWave (file, chunkStart, chunkSize));
-                        }
-                        catch (final IOException _)
-                        {
-                            // A malformed embedded WAV leaves the sample without audio.
-                        }
-                    else
-                    {
-                        final Optional<Pair<Integer, Integer>> layout = resolveSmpdLayout (file, chunkStart, chunkSize);
-                        if (layout.isPresent ())
-                        {
-                            final Pair<Integer, Integer> pair = layout.get ();
-                            final int channels = pair.getKey ().intValue ();
-                            final int headerSize = pair.getValue ().intValue ();
-                            final int rate = (int) ZenCoreUtil.readUnsigned32 (file, chunkStart + 0x0C, false);
-                            final int pcmStart = chunkStart + headerSize;
-                            final int pcmSize = chunkSize - headerSize;
-                            sample.setSampleData (decodePcm (file, pcmStart, pcmSize, channels, rate < 8000 || rate > 192000 ? 48000 : rate));
-                        }
-                    }
+                if (chunkStart >= 0 && chunkSize > SMPD_EMBEDDED_WAVE && chunkStart + chunkSize <= file.length)
+                    readSampleChunk (file, chunkStart, chunkSize).ifPresent (sample::setSampleData);
             }
             result.add (sample);
         }
@@ -957,88 +956,114 @@ public final class ZenCoreSvz
 
 
     /**
-     * Whether a SMPd chunk is the SF2-to-SVZ converter variant, which embeds a complete RIFF/WAVE
-     * file after a {@link #SMPD_EMBEDDED_WAVE} byte header instead of raw PCM. Detected by the
-     * RIFF/WAVE signature at that offset.
-     *
-     * @param file The file content
-     * @param chunkStart The absolute offset of the SMPd chunk
-     * @return True if the chunk embeds a RIFF/WAVE file
-     */
-    private static boolean isEmbeddedWaveChunk (final byte [] file, final int chunkStart)
-    {
-        final int riff = chunkStart + SMPD_EMBEDDED_WAVE;
-        return riff + 12 <= file.length && file[riff] == 'R' && file[riff + 1] == 'I' && file[riff + 2] == 'F' && file[riff + 3] == 'F' && file[riff + 8] == 'W' && file[riff + 9] == 'A' && file[riff + 10] == 'V' && file[riff + 11] == 'E';
-    }
-
-
-    /**
-     * Read the embedded RIFF/WAVE file of a SF2-to-SVZ converter SMPd chunk (the audio follows the
-     * {@link #SMPD_EMBEDDED_WAVE} byte header) with the standard WAV reader.
+     * Read the audio of a <i>SMPd</i> chunk. Roland's SVZ sample converter embeds a complete
+     * RIFF/WAVE file behind a {@link #SMPD_EMBEDDED_WAVE} byte header, which some third-party
+     * sample packs store scrambled; both are read with the standard WAV reader. The FANTOM itself
+     * stores raw PCM behind a {@link #SMPD_HEADER_SIZE} byte header whose byte at
+     * {@link #SMPD_CHANNELS} is the channel count. The declared play length is deliberately not used
+     * to size the PCM - device exports may declare a handful of frames more than they store.
      *
      * @param file The file content
      * @param chunkStart The absolute offset of the SMPd chunk
      * @param chunkSize The chunk size from the USDa directory
+     * @return The sample data, empty if the chunk is not recognized
+     */
+    private static Optional<ISampleData> readSampleChunk (final byte [] file, final int chunkStart, final int chunkSize)
+    {
+        try
+        {
+            if (isEmbeddedWaveChunk (file, chunkStart, chunkSize, false))
+                return Optional.of (readEmbeddedWave (file, chunkStart, chunkSize, false));
+            if (isEmbeddedWaveChunk (file, chunkStart, chunkSize, true))
+                return Optional.of (readEmbeddedWave (file, chunkStart, chunkSize, true));
+        }
+        catch (final IOException _)
+        {
+            // A malformed embedded WAV leaves the sample without audio
+            return Optional.empty ();
+        }
+
+        final int channels = file[chunkStart + SMPD_CHANNELS] & 0xFF;
+        final int pcmSize = chunkSize - SMPD_HEADER_SIZE;
+        if (channels < 1 || channels > 2 || pcmSize <= 0 || pcmSize % (channels * 2) != 0)
+            return Optional.empty ();
+        final int rate = (int) ZenCoreUtil.readUnsigned32 (file, chunkStart + 0x0C, false);
+        return Optional.of (decodePcm (file, chunkStart + SMPD_HEADER_SIZE, pcmSize, channels, rate < 8000 || rate > 192000 ? 48000 : rate));
+    }
+
+
+    /**
+     * Whether a SMPd chunk embeds a complete RIFF/WAVE file after a {@link #SMPD_EMBEDDED_WAVE}
+     * byte header instead of raw PCM. Detected by the RIFF/WAVE signature at that offset.
+     *
+     * @param file The file content
+     * @param chunkStart The absolute offset of the SMPd chunk
+     * @param chunkSize The chunk size from the USDa directory
+     * @param scrambled True to check for a scrambled WAV file, see {@link #SCRAMBLE_BITS_EVEN}
+     * @return True if the chunk embeds a RIFF/WAVE file
+     */
+    private static boolean isEmbeddedWaveChunk (final byte [] file, final int chunkStart, final int chunkSize, final boolean scrambled)
+    {
+        final int riff = chunkStart + SMPD_EMBEDDED_WAVE;
+        if (riff + 12 > chunkStart + chunkSize)
+            return false;
+        final byte [] signature = Arrays.copyOfRange (file, riff, riff + 12);
+        if (scrambled)
+            descramble (signature);
+        return signature[0] == 'R' && signature[1] == 'I' && signature[2] == 'F' && signature[3] == 'F' && signature[8] == 'W' && signature[9] == 'A' && signature[10] == 'V' && signature[11] == 'E';
+    }
+
+
+    /**
+     * Read the embedded RIFF/WAVE file of a SMPd chunk (it follows the {@link #SMPD_EMBEDDED_WAVE}
+     * byte header) with the standard WAV reader.
+     *
+     * @param file The file content
+     * @param chunkStart The absolute offset of the SMPd chunk
+     * @param chunkSize The chunk size from the USDa directory
+     * @param scrambled True if the WAV file is stored scrambled, see {@link #SCRAMBLE_BITS_EVEN}
      * @return The sample data
      * @throws IOException The embedded WAV could not be read
      */
-    private static ISampleData readEmbeddedWave (final byte [] file, final int chunkStart, final int chunkSize) throws IOException
+    private static ISampleData readEmbeddedWave (final byte [] file, final int chunkStart, final int chunkSize, final boolean scrambled) throws IOException
     {
-        final int waveStart = chunkStart + SMPD_EMBEDDED_WAVE;
-        final byte [] wave = new byte [chunkStart + chunkSize - waveStart];
-        System.arraycopy (file, waveStart, wave, 0, wave.length);
+        final byte [] wave = Arrays.copyOfRange (file, chunkStart + SMPD_EMBEDDED_WAVE, chunkStart + chunkSize);
+        if (scrambled)
+            descramble (wave);
         return new WavFileSampleData (new ByteArrayInputStream (wave));
     }
 
 
     /**
-     * Resolve a <i>SMPd</i> chunk's PCM layout. Two header variants exist. The FANTOM / KY019
-     * export uses a {@link #SMPD_HEADER_SIZE} byte header with the channel count in the byte at
-     * {@link #SMPD_CHANNELS_KY019}. An older generation (SVZ file version 02 01, e.g. third-party
-     * sample packs) uses a {@link #SMPD_HEADER_COMPACT} byte header with the channel count as a u16
-     * at {@link #SMPD_CHANNELS_COMPACT} - there the byte at {@link #SMPD_CHANNELS_KY019} holds an
-     * unrelated value (0x32), which is why reading the channel count from it alone fails on those
-     * files. The matching variant is the one whose PCM region past the header is a whole number of
-     * frames: the two header sizes differ by 302 (2 mod 4), so a stereo chunk's byte count is a
-     * multiple of the 4 byte stereo frame for exactly one of them.
+     * Decode a scrambled WAV file in place, see {@link #SCRAMBLE_BITS_EVEN}.
      *
-     * @param file The file content
-     * @param chunkStart The absolute offset of the SMPd chunk
-     * @param chunkSize The chunk size from the USDa directory
-     * @return {channels, headerSize}, or null if neither variant fits
+     * @param data The bytes of the WAV file, starting with its first byte
      */
-    private static Optional<Pair<Integer, Integer>> resolveSmpdLayout (final byte [] file, final int chunkStart, final int chunkSize)
+    private static void descramble (final byte [] data)
     {
-        final int ky019Channels = file[chunkStart + SMPD_CHANNELS_KY019] & 0xFF;
-        if (smpdFits (chunkSize, SMPD_HEADER_SIZE, ky019Channels))
-            return Optional.of (new Pair<> (Integer.valueOf (ky019Channels), Integer.valueOf (SMPD_HEADER_SIZE)));
-
-        final int compactChannels = ZenCoreUtil.readUnsigned16 (file, chunkStart + SMPD_CHANNELS_COMPACT, false);
-        if (smpdFits (chunkSize, SMPD_HEADER_COMPACT, compactChannels))
-            return Optional.of (new Pair<> (Integer.valueOf (compactChannels), Integer.valueOf (SMPD_HEADER_COMPACT)));
-
-        return Optional.empty ();
+        for (int i = 0; i < data.length; i++)
+            data[i] = ((i & 1) == 0 ? DESCRAMBLE_EVEN : DESCRAMBLE_ODD)[data[i] & 0xFF];
     }
 
 
     /**
-     * Whether a SMPd header size and channel count are consistent with the chunk: a plausible
-     * channel count (1 or 2) whose PCM region past the header is a whole number of frames. The
-     * declared play length is deliberately not used - device exports may declare a handful of
-     * frames more than they store - so only the frame alignment, together with the channel-count
-     * field, selects the layout.
+     * Create the table which decodes the scrambled bytes of one byte position, see
+     * {@link #SCRAMBLE_BITS_EVEN}.
      *
-     * @param chunkSize The chunk size
-     * @param headerSize The candidate header size
-     * @param channels The candidate channel count
-     * @return True if the combination fits
+     * @param bitOrder For each bit of the decoded value the bit of the stored byte to take
+     * @return The decoded value for each of the 256 stored byte values
      */
-    private static boolean smpdFits (final int chunkSize, final int headerSize, final int channels)
+    private static byte [] createDescrambleTable (final int [] bitOrder)
     {
-        if (channels < 1 || channels > 2)
-            return false;
-        final int pcmSize = chunkSize - headerSize;
-        return pcmSize > 0 && pcmSize % (channels * 2) == 0;
+        final byte [] table = new byte [256];
+        for (int stored = 0; stored < 256; stored++)
+        {
+            int reordered = 0;
+            for (int bit = 0; bit < 8; bit++)
+                reordered |= (stored >> bitOrder[bit] & 1) << bit;
+            table[stored] = (byte) (reordered * SCRAMBLE_FACTOR);
+        }
+        return table;
     }
 
 
