@@ -883,6 +883,76 @@ public class TagDetector
 
 
     /**
+     * Detect keywords in the texts of a multi-sample and in the names of the folders which contain
+     * it. The texts, e.g. the name of the multi-sample, provide keywords as described in
+     * {@link #detectKeywords(Collection)}. A folder name only provides keywords if it describes the
+     * sound of its content, which means that all of its words are keywords or category names, like
+     * 'Digital', 'Mono' or 'Analog Synths'. The name of a library usually is a title instead, which
+     * does not describe the sound of each of its presets: 'Digital' in 'Espen Kraft The Digital
+     * Collection Vol6 TAL Sampler Oberheim Matrix-12' is the name of a series of libraries, and the
+     * Oberheim Matrix-12 is an analog synthesizer.
+     *
+     * @param texts The texts of the multi-sample itself, e.g. its name
+     * @param folderNames The names of the folders which contain the multi-sample
+     * @return The detected keywords
+     */
+    public static String [] detectKeywords (final Collection<String> texts, final Collection<String> folderNames)
+    {
+        final List<String> describingTexts = new ArrayList<> (texts);
+        for (final String folderName: folderNames)
+            if (isDescription (folderName))
+                describingTexts.add (folderName);
+        return detectKeywords (describingTexts);
+    }
+
+
+    /**
+     * Checks if a text consists of nothing but keywords and category names or their plurals, e.g.
+     * 'Analog Synths' or 'Soft Basses'. Numbers are ignored, e.g. the one of '01 Soft Pads'.
+     *
+     * @param text The text to check
+     * @return True if all words of the text are keywords or category names
+     */
+    private static boolean isDescription (final String text)
+    {
+        final String [] textWords = WORD_SEPARATOR.split (text.trim ());
+        for (int i = 0; i < textWords.length; i++)
+        {
+            final String word = textWords[i].toUpperCase (Locale.US);
+            if (word.chars ().noneMatch (Character::isLetter) || isTag (word))
+                continue;
+            // A keyword of two words like 'osc_sync'
+            if (i + 1 < textWords.length && KEYWORD_LOOKUP.containsKey (word + "_" + textWords[i + 1].toUpperCase (Locale.US)))
+            {
+                i++;
+                continue;
+            }
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * Checks if a word is a keyword or a category name or the plural of one.
+     *
+     * @param word The word in upper case
+     * @return True if it is a keyword or a category name
+     */
+    private static boolean isTag (final String word)
+    {
+        if (KEYWORD_LOOKUP.containsKey (word) || CATEGORY_LOOKUP.containsKey (word))
+            return true;
+        if (!word.endsWith ("S"))
+            return false;
+        final String singular = word.substring (0, word.length () - 1);
+        if (KEYWORD_LOOKUP.containsKey (singular) || CATEGORY_LOOKUP.containsKey (singular))
+            return true;
+        return word.endsWith ("ES") && CATEGORY_LOOKUP.containsKey (word.substring (0, word.length () - 2));
+    }
+
+
+    /**
      * Detect a tag in the given strings.
      *
      * @param texts The texts

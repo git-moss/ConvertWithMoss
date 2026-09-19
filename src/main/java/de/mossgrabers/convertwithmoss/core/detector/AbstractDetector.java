@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -796,13 +797,15 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
         if (metadataDescription != null && !metadataDescription.isBlank ())
             metadata.setDescription (metadataDescription);
 
-        final Set<String> tokens = new HashSet<> ();
-        tokens.addAll (Arrays.asList (parts));
+        // The texts of the multi-sample itself, the most specific first; the names of the folders
+        // which contain it follow its name in the parts
+        final Set<String> tokens = new LinkedHashSet<> ();
         tokens.add (multisampleSourceName);
+        tokens.add (parts[0]);
         final String [] descriptionTokens = NON_WORD_PATTERN.split (metadata.getDescription ());
         tokens.addAll (Arrays.asList (descriptionTokens));
 
-        createMetadata (configuration, metadata, getFirstSample (groups), tokens.toArray (new String [tokens.size ()]));
+        createMetadata (configuration, metadata, getFirstSample (groups), tokens.toArray (new String [tokens.size ()]), AudioFileUtils.getFolderNames (parts), null);
 
         if (TagDetector.CATEGORY_UNKNOWN.equals (metadata.getCategory ()))
         {
@@ -1021,11 +1024,15 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param configuration The metadata settings
      * @param metadata The metadata object to fill
      * @param sampleData The sample file data
-     * @param parts The already processed parts of the file name
+     * @param parts The already processed parts of the file name, the name followed by the names of
+     *            the folders, see {@link AudioFileUtils#createPathParts(File, File, String)}
      */
     protected static void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final Optional<? extends IFileBasedSampleData> sampleData, final String [] parts)
     {
-        createMetadata (configuration, metadata, sampleData, parts, null);
+        createMetadata (configuration, metadata, sampleData, new String []
+        {
+            parts[0]
+        }, AudioFileUtils.getFolderNames (parts), null);
     }
 
 
@@ -1036,13 +1043,15 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      * @param configuration The metadata settings
      * @param metadata The metadata object to fill
      * @param sampleData The wave file data
-     * @param parts The already processed parts of the file name
+     * @param parts The texts of the multi-sample itself, e.g. its name
+     * @param folderNames The names of the folders which contain the multi-sample, the innermost
+     *            first
      * @param category If the category is not null, it is assigned and not detected
      */
-    protected static void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final Optional<? extends IFileBasedSampleData> sampleData, final String [] parts, final String category)
+    protected static void createMetadata (final IMetadataConfig configuration, final IMetadata metadata, final Optional<? extends IFileBasedSampleData> sampleData, final String [] parts, final String [] folderNames, final String category)
     {
         if (configuration != null)
-            metadata.detectMetadata (configuration, parts, category);
+            metadata.detectMetadata (configuration, parts, folderNames, category);
         if (sampleData.isPresent ())
             sampleData.get ().updateMetadata (metadata);
     }

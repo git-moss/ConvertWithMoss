@@ -571,7 +571,10 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, name);
 
         final IMetadata metadata = multisampleSource.getMetadata ();
-        metadata.detectMetadata (this.settingsConfiguration, parts);
+        metadata.detectMetadata (this.settingsConfiguration, new String []
+        {
+            name
+        }, AudioFileUtils.getFolderNames (parts), null);
         if (categoryValue >= 0)
         {
             final String category = YamahaYsfcCategories.getMainCategory (categoryValue);
