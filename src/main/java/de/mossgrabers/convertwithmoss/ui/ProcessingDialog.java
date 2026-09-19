@@ -70,6 +70,7 @@ public class ProcessingDialog extends PseudoModalDialog
     public ComboBox<String> loopCrossfadesCombobox;
     /** Check-box to snap forward loop boundaries to zero-crossings. */
     public CheckBox         snapLoopsCheckbox;
+    /** Check-box to only cross-fade loops which do click. */
     public CheckBox         crossfadeClickingCheckbox;
     /** Combo-box for transposing play-back by semi-tones. */
     public ComboBox<String> transposeCombobox;

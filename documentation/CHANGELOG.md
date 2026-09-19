@@ -1,6 +1,6 @@
 # Changes
 
-## 20.3.0 (work-in-progress)
+## 20.3.0
 
 * Many thanks to Douglas Carmichael for plenty of contributions and fixes!
 * New: Added support for the E-mu Emulator (1981), the first Emulator (HFE, EMUFD, IMG). Written disks are not yet verified on hardware.
