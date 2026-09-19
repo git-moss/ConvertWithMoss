@@ -2,7 +2,8 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* TAL Sampler
+  * New: Presets with encrypted samples (*.talwav) are converted - the format in which the factory library of TAL-Sampler and many sample packs deliver their samples, and which the plug-in creates with 'Convert wav Samples to talwav'. Such presets were rejected with 'Encrypted samples are not supported'. An encrypted sample is its WAV file encrypted with Blowfish and is now decrypted when it is read. A file which was converted more than once holds several encrypted copies of the WAV file one after the other, and the first one is read, which is the one the plug-in plays. Of the 864 TAL-Sampler presets on the test machine - the factory library, the Hollowsun library and the packs of other producers - 781 use encrypted samples; 780 of them convert now, one uses a built-in waveform of the plug-in as well, which is still not supported. Rendered offline with the plug-in (4.7.2), the 32 presets of a pack by Michael Oakley play sample for sample identically with their encrypted samples and with the decrypted ones.
 
 ## 20.3.0
 
