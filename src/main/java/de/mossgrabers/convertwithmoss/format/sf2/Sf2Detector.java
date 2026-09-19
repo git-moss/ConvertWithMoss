@@ -213,7 +213,10 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
         // Remove unnecessary 'Comment' labels. Order is important!
         description = description.replace (InfoRiffChunkId.INFO_COMM.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_ICMT.getDescription () + ": ", "").replace (InfoRiffChunkId.INFO_CMNT.getDescription () + ": ", "");
 
-        metadata.detectMetadata (this.settingsConfiguration, parts);
+        metadata.detectMetadata (this.settingsConfiguration, new String []
+        {
+            parts[0]
+        }, AudioFileUtils.getFolderNames (parts), null);
 
         if (TagDetector.CATEGORY_UNKNOWN.equals (metadata.getCategory ()))
             metadata.setCategory (TagDetector.detectCategory (description.split ("\n")));

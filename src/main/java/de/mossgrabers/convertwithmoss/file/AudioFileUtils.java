@@ -17,6 +17,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -642,6 +643,20 @@ public final class AudioFileUtils
         for (int i = 0; i < pathNames.size (); i++)
             result[i + 1] = pathNames.get (i);
         return result;
+    }
+
+
+    /**
+     * Get the names of the folders from path parts created with
+     * {@link #createPathParts(File, File, String)}.
+     *
+     * @param pathParts The name of the multi-sample followed by the names of the folders
+     * @return The names of the folders, from the one which contains the multi-sample up to the
+     *         source folder
+     */
+    public static String [] getFolderNames (final String [] pathParts)
+    {
+        return pathParts.length < 2 ? new String [0] : Arrays.copyOfRange (pathParts, 1, pathParts.length);
     }
 
 
