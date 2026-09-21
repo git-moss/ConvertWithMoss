@@ -18,6 +18,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -71,6 +73,10 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
     private static final String                  ENDING_DSLIBRARY      = ".dslibrary";
     private static final String                  ENDING_DSPRESET       = ".dspreset";
+    /** A start tag or an empty-element tag with at least one attribute: name, attributes, white-space, slash. */
+    private static final Pattern                 START_TAG_PATTERN     = Pattern.compile ("<([A-Za-z_][\\w.:-]*)((?:\\s+[A-Za-z_][\\w.:-]*\\s*=\\s*(?:\"[^\"]*\"|'[^']*'))+)(\\s*)(/?)>");
+    /** One attribute of a start tag: the white-space in front of it, its name and its quoted value. */
+    private static final Pattern                 ATTRIBUTE_PATTERN     = Pattern.compile ("(\\s+)([A-Za-z_][\\w.:-]*)\\s*=\\s*(\"[^\"]*\"|'[^']*')");
 
     private static final Map<String, FilterType> FILTER_TYPE_MAP       = new HashMap<> ();
     private static final Map<String, Integer>    FILTER_POLES_MAP      = new HashMap<> ();
@@ -179,7 +185,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         try (final InputStream in = zipFile.getInputStream (entry))
         {
-            final String content = fixInvalidXML (StreamUtils.readUtf8 (in));
+            final String content = this.fixInvalidXML (StreamUtils.readUtf8 (in));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (FileUtils.getNameWithoutType (presetFile), file, parent, true, document);
         }
@@ -192,15 +198,62 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
 
     /**
-     * Workaround for invalid XML files which contain comments before the XML header.
+     * Workaround for invalid XML files: comments in front of the XML header are removed and an
+     * attribute which is repeated on an element is ignored. Presets are often written by hand and
+     * such a repetition is easy to produce; DecentSampler still loads the preset.
      *
      * @param content The XML document
      * @return The potentially fixed XML document
      */
-    private static String fixInvalidXML (final String content)
+    private String fixInvalidXML (final String content)
     {
         final int headerStart = content.indexOf ("<?xml");
-        return headerStart > 0 ? content.substring (headerStart) : content;
+        return this.removeDuplicateAttributes (headerStart > 0 ? content.substring (headerStart) : content);
+    }
+
+
+    /**
+     * Removes attributes which are repeated on the same element, which the XML parser rejects. The
+     * first occurrence is kept, which is the value the XML parser of JUCE returns for a repeated
+     * attribute: it appends every attribute it reads and looks the name up from the front. Each
+     * removed repetition is logged.
+     *
+     * @param content The XML document
+     * @return The XML document without repeated attributes
+     */
+    private String removeDuplicateAttributes (final String content)
+    {
+        final Matcher tagMatcher = START_TAG_PATTERN.matcher (content);
+        final StringBuilder result = new StringBuilder (content.length ());
+        while (tagMatcher.find ())
+        {
+            final String elementName = tagMatcher.group (1);
+            final Set<String> attributeNames = new HashSet<> ();
+            final StringBuilder attributes = new StringBuilder ();
+            boolean changed = false;
+            final Matcher attributeMatcher = ATTRIBUTE_PATTERN.matcher (tagMatcher.group (2));
+            while (attributeMatcher.find ())
+            {
+                final String attributeName = attributeMatcher.group (2);
+                if (attributeNames.add (attributeName))
+                {
+                    attributes.append (attributeMatcher.group ());
+                    continue;
+                }
+
+                this.notifier.log ("IDS_DS_DUPLICATE_ATTRIBUTE_IGNORED", attributeName, elementName);
+                changed = true;
+
+                // Keep the line breaks so that the line numbers in error messages stay correct
+                final String whitespace = attributeMatcher.group (1);
+                if (whitespace.indexOf ('\n') >= 0)
+                    attributes.append (whitespace);
+            }
+            if (changed)
+                tagMatcher.appendReplacement (result, Matcher.quoteReplacement ("<" + elementName + attributes + tagMatcher.group (3) + tagMatcher.group (4) + ">"));
+        }
+        tagMatcher.appendTail (result);
+        return result.toString ();
     }
 
 
@@ -214,7 +267,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
-            final String content = fixInvalidXML (StreamUtils.readUtf8 (in));
+            final String content = this.fixInvalidXML (StreamUtils.readUtf8 (in));
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (FileUtils.getNameWithoutType (file), file, file.getParent (), false, document);
         }
