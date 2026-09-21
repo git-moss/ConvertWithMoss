@@ -65,8 +65,6 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetectorUI>
 {
-    private static final String                  TAG_PARAMETER         = "parameter";
-
     private static final String                  DECENT_SAMPLER        = "DecentSampler";
     private static final String                  ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
     private static final String                  ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
@@ -215,8 +213,10 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     /**
      * Removes attributes which are repeated on the same element, which the XML parser rejects. The
      * first occurrence is kept, which is the value the XML parser of JUCE returns for a repeated
-     * attribute: it appends every attribute it reads and looks the name up from the front. Each
-     * removed repetition is logged.
+     * attribute: it appends every attribute it reads and looks the name up from the front. A
+     * repetition is logged if its value differs from the first one and the attribute is one which
+     * the conversion uses - a repetition in e.g. the user interface makes no difference to the
+     * result and is only logged if all unused elements and attributes are logged.
      *
      * @param content The XML document
      * @return The XML document without repeated attributes
@@ -228,20 +228,23 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         while (tagMatcher.find ())
         {
             final String elementName = tagMatcher.group (1);
-            final Set<String> attributeNames = new HashSet<> ();
+            final Map<String, String> attributeValues = new HashMap<> ();
             final StringBuilder attributes = new StringBuilder ();
             boolean changed = false;
             final Matcher attributeMatcher = ATTRIBUTE_PATTERN.matcher (tagMatcher.group (2));
             while (attributeMatcher.find ())
             {
                 final String attributeName = attributeMatcher.group (2);
-                if (attributeNames.add (attributeName))
+                final String quotedValue = attributeMatcher.group (3);
+                final String value = quotedValue.substring (1, quotedValue.length () - 1);
+                if (attributeValues.putIfAbsent (attributeName, value) == null)
                 {
                     attributes.append (attributeMatcher.group ());
                     continue;
                 }
 
-                this.notifier.log ("IDS_DS_DUPLICATE_ATTRIBUTE_IGNORED", attributeName, elementName);
+                if (!value.equals (attributeValues.get (attributeName)) && (isAttributeUsed (elementName, attributeName) || this.settingsConfiguration.logUnsupportedAttributes ()))
+                    this.notifier.log ("IDS_DS_DUPLICATE_ATTRIBUTE_IGNORED", attributeName, elementName);
                 changed = true;
 
                 // Keep the line breaks so that the line numbers in error messages stay correct
@@ -254,6 +257,20 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         }
         tagMatcher.appendTail (result);
         return result.toString ();
+    }
+
+
+    /**
+     * Test whether the conversion uses an attribute of an element.
+     *
+     * @param elementName The name of the element
+     * @param attributeName The name of the attribute
+     * @return True if the attribute is used
+     */
+    private static boolean isAttributeUsed (final String elementName, final String attributeName)
+    {
+        final Set<String> attributes = DecentSamplerTag.getAttributes (elementName);
+        return attributes != null && attributes.contains (attributeName);
     }
 
 
@@ -417,13 +434,13 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         for (final Element effectElement: XMLUtils.getChildElementsByName (effectsElement, DecentSamplerTag.EFFECTS_EFFECT, false))
         {
-            final String effectType = effectElement.getAttribute ("type");
+            final String effectType = effectElement.getAttribute (DecentSamplerTag.EFFECT_TYPE);
             final FilterType filterType = FILTER_TYPE_MAP.get (effectType);
             if (filterType != null)
             {
                 final int poles = FILTER_POLES_MAP.get (effectType).intValue ();
-                final double frequency = XMLUtils.getDoubleAttribute (effectElement, "frequency", IFilter.MAX_FREQUENCY);
-                final double resonance = Math.clamp ((XMLUtils.getDoubleAttribute (effectElement, "resonance", 0.7) - 0.7) / 4.3, 0, 1);
+                final double frequency = XMLUtils.getDoubleAttribute (effectElement, DecentSamplerTag.EFFECT_FREQUENCY, IFilter.MAX_FREQUENCY);
+                final double resonance = Math.clamp ((XMLUtils.getDoubleAttribute (effectElement, DecentSamplerTag.EFFECT_RESONANCE, 0.7) - 0.7) / 4.3, 0, 1);
                 final IFilter filter = new DefaultFilter (filterType, poles, frequency, resonance);
 
                 // Parse the filter envelope
@@ -432,7 +449,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                     for (final Element envelopeElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.ENVELOPE))
                     {
                         final Element bindingElement = XMLUtils.getChildElementByName (envelopeElement, DecentSamplerTag.BINDING);
-                        if (bindingElement != null && "FX_FILTER_FREQUENCY".equals (bindingElement.getAttribute (TAG_PARAMETER)))
+                        if (bindingElement != null && "FX_FILTER_FREQUENCY".equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER)))
                         {
                             // IMPROVE: All filters are applied to the global filter. If filters on
                             // all levels are supported, this needs to be checked here
@@ -724,7 +741,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             for (final Element envelopeElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.ENVELOPE))
             {
                 final Element bindingElement = XMLUtils.getChildElementByName (envelopeElement, DecentSamplerTag.BINDING);
-                if (bindingElement != null && "GROUP_TUNING".equals (bindingElement.getAttribute (TAG_PARAMETER)))
+                if (bindingElement != null && "GROUP_TUNING".equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER)))
                 {
                     final double depth = XMLUtils.getDoubleAttribute (envelopeElement, DecentSamplerTag.MOD_AMOUNT, 1.0);
                     final IEnvelopeModulator pitchEnvelopeModulator = new DefaultEnvelopeModulator (depth);
@@ -746,7 +763,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             for (final Element lfoElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.LFO))
             {
                 final Element bindingElement = XMLUtils.getChildElementByName (lfoElement, DecentSamplerTag.BINDING);
-                if (bindingElement == null || !"GROUP_TUNING".equals (bindingElement.getAttribute (TAG_PARAMETER)))
+                if (bindingElement == null || !"GROUP_TUNING".equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER)))
                     continue;
 
                 final double depth = XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0);
@@ -777,7 +794,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             for (final Element lfoElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.LFO))
             {
                 final Element bindingElement = XMLUtils.getChildElementByName (lfoElement, DecentSamplerTag.BINDING);
-                if (bindingElement == null || !"AMP_VOLUME".equals (bindingElement.getAttribute (TAG_PARAMETER)))
+                if (bindingElement == null || !"AMP_VOLUME".equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER)))
                     continue;
 
                 final double modAmount = XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0);

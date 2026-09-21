@@ -3,7 +3,7 @@
 ## 20.4.0 (work-in-progress)
 
 * DecentSampler
-  * Fixed: A preset which sets the same attribute twice on one element could not be read: the whole preset was skipped with 'Could not parse XML ... Attribute "textColor" was already specified for element "labeled-knob"', while DecentSampler loads it. Presets are often written by hand, where such a repetition is easy to produce - all seven presets of Harry Zimm's 'Rare Akai AX73' carry a second 'textColor' on the reverb knob of their user interface. A repeated attribute is now ignored and its first value used, which is the value the XML parser of JUCE, the framework DecentSampler is built on, returns as well; the log names the attribute and the element.
+  * Fixed: A preset which sets the same attribute twice on one element could not be read: the whole preset was skipped with 'Could not parse XML ... Attribute "textColor" was already specified for element "labeled-knob"', while DecentSampler loads it. Presets are often written by hand, where such a repetition is easy to produce - all seven presets of Harry Zimm's 'Rare Akai AX73' carry a second 'textColor' on the reverb knob of their user interface. A repeated attribute is now ignored and its first value used, which is the value the XML parser of JUCE, the framework DecentSampler is built on, returns as well. The log names the attribute and the element when the two values differ and the attribute is one which the conversion uses; a repetition in e.g. the user interface, like the one of these presets, makes no difference to the result and is only logged with 'Log unused XML elements and attributes'.
 
 ## 20.3.0
 
