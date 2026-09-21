@@ -766,19 +766,57 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
     {
         final String n = this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings && metadataSettings.isPreferFolderName () ? this.sourceFolder.getName () : multisampleSourceName;
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
-        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups, metadataDescription);
+        return this.createMultisampleSource (sourceFile, parts, multisampleSourceName, groups, metadataDescription);
     }
 
 
     protected IMultisampleSource createMultisampleSource (final File sourceFile, final String [] parts, final String multisampleSourceName, final List<IGroup> groups)
     {
-        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups, "");
+        return this.createMultisampleSource (sourceFile, parts, multisampleSourceName, groups, "");
     }
 
 
     protected IMultisampleSource createMultisampleSource (final File sourceFile, final String [] parts, final String multisampleSourceName, final List<IGroup> groups, final String metadataDescription)
     {
-        return createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups, metadataDescription);
+        final IMultisampleSource multisampleSource = createMultisampleSource (this.settingsConfiguration instanceof final MetadataSettingsUI metadataSettings ? metadataSettings : null, sourceFile, parts, multisampleSourceName, groups, metadataDescription);
+        // A package folder is not reproduced by the folder structure of the output; its name is
+        // only used for the detection of the metadata like any folder name
+        multisampleSource.setSubPath (this.removePackageFolders (parts));
+        return multisampleSource;
+    }
+
+
+    /**
+     * Test whether a folder is a package which the format treats as one file, e.g. the
+     * '.dsbundle' folder of DecentSampler. Such a folder is not reproduced when the folder
+     * structure of the source is created in the output folder, exactly like the library file of
+     * a format is not: its presets are written into the folder which contains the package. The
+     * name of the folder is still used for the detection of the metadata like any folder name.
+     *
+     * @param folderName The name of the folder
+     * @return True if the folder is a package
+     */
+    protected boolean isPackageFolder (final String folderName)
+    {
+        return false;
+    }
+
+
+    /**
+     * Remove the package folders from the path parts, see {@link #isPackageFolder(String)}. The
+     * name of the multi-sample, which is the first part, and the source folder, which is the
+     * last, are kept.
+     *
+     * @param parts The path parts
+     * @return The path parts without the package folders, the given parts if there is none
+     */
+    private String [] removePackageFolders (final String [] parts)
+    {
+        final List<String> result = new ArrayList<> (parts.length);
+        for (int i = 0; i < parts.length; i++)
+            if (i == 0 || i == parts.length - 1 || !this.isPackageFolder (parts[i]))
+                result.add (parts[i]);
+        return result.size () == parts.length ? parts : result.toArray (new String [result.size ()]);
     }
 
 

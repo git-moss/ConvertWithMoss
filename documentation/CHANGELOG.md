@@ -2,7 +2,8 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* DecentSampler
+  * Fixed: With 'Create folder structure', the presets of a dsbundle were written into an output folder named like the bundle, e.g. 'Harry Zimms Rare Akai AX73 Synthesizer.dsbundle/asgard.sfz', which the Finder shows as a bundle file again. A dsbundle is a folder which DecentSampler treats as one file, like a dslibrary, whose presets already went into the folder which contains the library file. The presets of a bundle now go into the folder which contains the bundle as well, also when the bundle is the selected source folder or has sub-folders. The name of the bundle is still used for the detection of the metadata like any folder name, and the Contents dialog still shows the bundle as the folder it is.
 
 ## 20.3.0
 

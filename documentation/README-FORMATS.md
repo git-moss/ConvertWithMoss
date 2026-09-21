@@ -282,7 +282,7 @@ The output formats use a XML format and keep the samples separate. There followi
 The Decent Sampler plugin is a free (but closed source) sample player plugin that allows you to play sample libraries in the DecentSampler format (files with extensions: dspreset and dslibrary). See https://www.decentsamples.com/product/decent-sampler-plugin/
 The format specification is available here: https://www.decentsamples.com/wp-content/uploads/2020/06/format-documentation.html#the-sample-element
 
-A dspreset file contains a single preset and the description of the multi-sample. The related samples are normally kept in a separate folder. WAV and FLAC files are supported. A dslibrary file contains several dspreset files including the samples compressed in ZIP format. A dsbundle is similar but uncompressed.
+A dspreset file contains a single preset and the description of the multi-sample. The related samples are normally kept in a separate folder. WAV and FLAC files are supported. A dslibrary file contains several dspreset files including the samples compressed in ZIP format. A dsbundle is similar but uncompressed. Both are treated as one file when the folder structure is created in the output folder: their presets go into the folder which contains the library or the bundle.
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
