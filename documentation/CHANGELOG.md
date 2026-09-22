@@ -2,7 +2,7 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* New: A note reports when the samples of a multi-sample sound away from the root keys they are mapped to - e.g. an octave, because the instrument was transposed when it was recorded - and the Transpose processing option set to 'Auto' (`-Zpa` on the command line) moves the root notes of each multi-sample onto its measured pitch. Only the root notes are moved, the audio and the key ranges stay as they are.
 
 ## 20.3.0
 

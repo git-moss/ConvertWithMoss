@@ -70,6 +70,8 @@ public class DetectSettings
     public boolean                       snapLoopsToZero    = false;
     /** Transpose playback by this number of semitones by moving the sample root keys. 0 is off. */
     public int                           transposeSemitones = 0;
+    /** Transpose each multi-sample by the measured pitch of its samples instead of a fixed number of semitones. */
+    public boolean                       transposeToPitch   = false;
 
 
     /**
@@ -79,6 +81,6 @@ public class DetectSettings
      */
     public boolean needsProcessing ()
     {
-        return this.enableProcessing && (this.maxNumberOfSamples > 0 || this.enableMakeMono || this.enableTrimSample || this.reduceBitDepth > 0 || this.reduceFrequency > 0 || this.enableNormalize || this.loopCrossfades > 0 || this.snapLoopsToZero || this.transposeSemitones != 0);
+        return this.enableProcessing && (this.maxNumberOfSamples > 0 || this.enableMakeMono || this.enableTrimSample || this.reduceBitDepth > 0 || this.reduceFrequency > 0 || this.enableNormalize || this.loopCrossfades > 0 || this.snapLoopsToZero || this.transposeSemitones != 0 || this.transposeToPitch);
     }
 }
