@@ -2,7 +2,7 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* Fixed: Reducing the sample frequency with the processing options clipped samples which peak close to full scale. Such a sample is now lowered to fit and its zone plays it louder by the same amount.
 
 ## 20.3.0
 
