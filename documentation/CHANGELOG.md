@@ -2,7 +2,8 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* SFZ
+  * New: Exclusive groups are read and written ('group' and 'off_by').
 
 ## 20.3.0
 

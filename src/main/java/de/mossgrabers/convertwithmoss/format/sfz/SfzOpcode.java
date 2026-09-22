@@ -29,6 +29,10 @@ public class SfzOpcode
 
     /** SFZ v2. The maximum number of voices which can be played at the same time. */
     public static final String POLYPHONY             = "polyphony";
+    /** SFZ v1. The number of the exclusive group of a region. */
+    public static final String GROUP                 = "group";
+    /** SFZ v1. A region is switched off when a region of this group starts to play. */
+    public static final String OFF_BY                = "off_by";
 
     // -----------------------------------------------------------
     // Group opcodes
