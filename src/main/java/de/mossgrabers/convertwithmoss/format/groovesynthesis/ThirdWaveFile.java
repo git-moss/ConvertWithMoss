@@ -18,8 +18,8 @@ import java.util.List;
 
 /**
  * Reads and writes the sample slots (S00, S01, ...) of the Groove Synthesis 3rd Wave: the
- * multi-sample slot files (*.bin) and the sample slots which are embedded in unified program files
- * (*.pgdata). The settings of a program are not interpreted. See
+ * multi-sample slot files (*.bin) and unified program files (*.pgdata), which contain a program
+ * together with the sample slots it uses. The settings of a program are not read. See
  * <i>documentation/design/THIRD_WAVE_FORMAT.md</i> for the layouts.
  *
  * @author Jürgen Moßgraber
@@ -38,6 +38,8 @@ final class ThirdWaveFile
     static final int            MAX_TRANSPOSITION  = 24;
     /** The maximum length of a name, which is always written with a terminating zero. */
     static final int            MAX_NAME_LENGTH    = 31;
+    /** The maximum volume of a sample in a unified program file (+6dB). */
+    static final double         MAX_VOLUME         = 2;
 
     static final int            LOOP_OFF           = 0;
     static final int            LOOP_WHILE_HELD    = 1;
@@ -57,7 +59,10 @@ final class ThirdWaveFile
 
     private static final int    TYPE_P_WAVETABLE   = 0;
     private static final int    TYPE_U_WAVETABLE   = 1;
+    private static final int    TYPE_ANALOG        = 2;
     private static final int    TYPE_SAMPLE_SLOT   = 4;
+    /** The analog waveform which the init program uses for its third oscillator. */
+    private static final int    ANALOG_WAVEFORM    = 42;
     private static final int    P_WAVETABLE_SIZE   = NAME_SIZE + 65536;
     private static final int    U_WAVETABLE_SIZE   = NAME_SIZE + 524288;
     private static final int    FIRST_SLOT_NUMBER  = 4000;
@@ -97,6 +102,18 @@ final class ThirdWaveFile
         int getFrames ()
         {
             return this.audio.length / 2;
+        }
+
+
+        /**
+         * Create a copy of the sample with another lowest note.
+         *
+         * @param newLow The lowest note which plays the sample
+         * @return The copy
+         */
+        Sample withLow (final int newLow)
+        {
+            return new Sample (this.name, this.sampleRate, this.bitDepth, this.start, this.end, this.loopStart, this.loopEnd, this.root, newLow, this.high, this.crossfadeType, this.crossfade, this.loopMode, this.tune, this.secondSampleRate, this.volume, this.audio);
         }
     }
 
@@ -190,15 +207,70 @@ final class ThirdWaveFile
      */
     static void write (final OutputStream output, final Slot slot) throws IOException
     {
+        output.write (createMagic (SLOT_MAGIC + WRITE_VERSION));
+        writeSlot (output, slot, WRITE_VERSION);
+    }
+
+
+    /**
+     * Write a unified program file: the program and the sample slots it plays. The silent
+     * oscillators of the program play an analog waveform, which is part of every instrument and
+     * therefore not included in the file.
+     *
+     * @param output Where to write the file
+     * @param name The name of the program
+     * @param slots The sample slots, their index is their ID in the resource directory; the ID of
+     *            the analog waveform is the number of slots
+     * @param program The program, which uses these IDs
+     * @throws IOException Could not write the file or the slots exceed the limits of the instrument
+     */
+    static void writeProgram (final OutputStream output, final String name, final List<Slot> slots, final ThirdWaveProgram program) throws IOException
+    {
+        final int count = slots.size () + 1;
+        check (count <= MAX_RESOURCES, "Too many sample slots for a program.");
+
+        output.write (createMagic (PROGRAM_MAGIC));
+        output.write (count);
+        final ByteBuffer directory = ByteBuffer.allocate (4 * count).order (ByteOrder.LITTLE_ENDIAN);
+        for (int i = 0; i < slots.size (); i++)
+            directory.put ((byte) i).put ((byte) TYPE_SAMPLE_SLOT).putShort ((short) (FIRST_SLOT_NUMBER + i));
+        directory.put ((byte) slots.size ()).put ((byte) TYPE_ANALOG).putShort ((short) ANALOG_WAVEFORM);
+        output.write (directory.array ());
+
+        for (int i = 0; i < slots.size (); i++)
+        {
+            output.write (TYPE_SAMPLE_SLOT);
+            output.write (i);
+            output.write (1);
+            writeSlot (output, slots.get (i), PROGRAM_VERSION);
+        }
+        output.write (TYPE_ANALOG);
+        output.write (slots.size ());
+        output.write (0);
+
+        output.write (createName (name));
+        program.write (output);
+    }
+
+
+    /**
+     * Write a slot: the number of samples, the name of the slot and the samples with their audio.
+     *
+     * @param output Where to write the slot
+     * @param slot The slot, the samples need to be ordered by their assigned note
+     * @param version The version of the samples: 4 or 5, which adds the volume
+     * @throws IOException Could not write the slot or it exceeds the limits of the instrument
+     */
+    private static void writeSlot (final OutputStream output, final Slot slot, final int version) throws IOException
+    {
         final List<Sample> samples = slot.samples ();
         check (!samples.isEmpty () && samples.size () <= MAX_SAMPLES && slot.getFrames () <= MEMORY_FRAMES, "The slot exceeds the limits of the instrument.");
 
-        output.write (createMagic (SLOT_MAGIC + WRITE_VERSION));
         output.write (samples.size ());
         output.write (createName (slot.name ()));
         for (final Sample sample: samples)
         {
-            final ByteBuffer buffer = ByteBuffer.allocate (74).order (ByteOrder.LITTLE_ENDIAN);
+            final ByteBuffer buffer = ByteBuffer.allocate (version >= PROGRAM_VERSION ? 78 : 74).order (ByteOrder.LITTLE_ENDIAN);
             buffer.putInt (sample.getFrames ());
             buffer.putFloat (sample.sampleRate ());
             buffer.put ((byte) sample.bitDepth ());
@@ -215,6 +287,8 @@ final class ThirdWaveFile
             buffer.put ((byte) sample.loopMode ());
             buffer.putFloat (sample.tune ());
             buffer.putFloat (sample.secondSampleRate ());
+            if (version >= PROGRAM_VERSION)
+                buffer.putFloat (sample.volume ());
             output.write (buffer.array ());
             output.write (sample.audio ());
         }

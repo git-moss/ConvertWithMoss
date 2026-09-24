@@ -9,9 +9,10 @@ The oscillators of the 3rd Wave play wavetables, analog waveforms and *sample sl
 * a program together with the slots and wavetables it uses as a **unified program file**
   (`.pgdata`, folder *Programs*), see *Import/Export unified program data file*.
 
-ConvertWithMoss reads the slots of both file types and writes multi-sample files. The settings of a
-program are not interpreted. Classes: `format/groovesynthesis/ThirdWaveFile` (layouts),
-`ThirdWaveDetector` and `ThirdWaveCreator`.
+ConvertWithMoss reads the slots of both file types and writes both file types; a written program is
+the init program of the instrument whose parts play the slots. The settings of a program are not
+read. Classes: `format/groovesynthesis/ThirdWaveFile` (layouts), `ThirdWaveProgram` (program
+parameters), `ThirdWaveDetector`, `ThirdWaveCreator` and `ThirdWaveCreatorUI`.
 
 Public references: the *3rd Wave Keyboard User Manual v1.9* (sampling chapter), the *3rd Wave
 MIDI CC + SysEx Spec v2.0* (section *Using MIDI SysEx to manage multisample (S) slots*, which
@@ -111,8 +112,63 @@ data:
 
 The program follows: its name (32 bytes) and four counts (uint32) `F`, `I`, `S`, `E` (observed:
 181, 136, 179 or 181, number of sequencer events), then `4 * (4 * (F + I) + S) + 24 * E` bytes
-of parameters (four parts) and sequencer events, which end the file. The reader checks this size
-but does not interpret the parameters.
+of parameters and sequencer events, which end the file. The reader checks this size but does not
+interpret the parameters.
+
+## Program parameters
+
+A program stores, in this order:
+
+| Count | Type | Content |
+| --- | --- | --- |
+| 4 * 181 (`F`) | int32 | The integer parameters of part 1, then of part 2, 3 and 4 |
+| 4 * 136 (`I`) | float32 | The float parameters of part 1, then of part 2, 3 and 4 |
+| 181 (`S`) | int32 | The parameters of the whole program |
+| 6 * `E` | int32 | The sequencer events |
+
+The stand-alone program file of the instrument (`.pro`, header `W3_PROG_5`) is a text file with
+one value per line: header, name, `F`, `I`, `S`, `E` and the same values in the same order. The
+parameters of a unified program file are the ones of its `.pro` except for the 12 oscillator
+references: a `.pro` holds the *global* number of a wavetable, analog waveform or sample slot
+(the numbers of the resource directory above), a unified program file its *ID* in the resource
+directory. Compared with the 1,000 programs of the factory banks (24-voice and 8M), the
+parameters follow the groups and ranges of the NRPN list of the MIDI specification: the integers
+hold the discrete settings and the 0-127 controls, the floats the continuous ones (levels 0 to 1,
+tuning in semi-tones, amounts -1 to 1). The positions which ConvertWithMoss uses, confirmed by
+programs whose purpose is evident from their names (split, stereo and single-part programs):
+
+| Position | Content |
+| --- | --- |
+| Part integer 0-2 | Wave of oscillator 1-3 (reference, see above) |
+| Part integer 22, 26, 30 | Amplifier envelope attack, decay, release (0-127) |
+| Part float 6-8 | Level of oscillator 1-3 (0 to 1) |
+| Part float 99 | Amplifier envelope sustain (0 to 1) |
+| Part float 112 | Part volume (0 to 1.7) |
+| Part float 124 | Part pan (0 = left, 0.5 = center, 1 = right) |
+| Program integer 18 | Number of split points of the keyboard (0-3) |
+| Program integer 21-23 | Notes of the split points 1-3 |
+| Program integer 24-27 | Parts which the keyboard sections 1-4 play (bit mask, part 1 = 1) |
+
+Stereo sample programs play the left and the right slot with parts 1 and 2 panned hard left and
+right, both in keyboard section 1 (mask 3). Split programs set the number of split points and
+the split notes, section 1 plays part 1, section 2 part 2 and so on. The manual describes a split
+note as "the end of Split point 1 and the beginning of Split point 2"; to which section the note
+itself belongs is not established.
+
+The global numbers of the analog waveforms are 41-47 for the analog waveforms 0-6 of the MIDI
+specification: sawtooth, square, supersaw, sine, noise 1, noise 2 and triangle.
+
+### The init program
+
+The factory banks of the 8M (bank 5, programs 52-100) contain the init program of the instrument
+('init prog' on the home screen, "one PPG legacy wavetable ... and one modern User wavetable, and
+filter and amplifier envelopes set to useful values"): all four parts are the same, oscillator 1
+plays P02 and oscillator 2 U35 at level 0.5, oscillator 3 the analog waveform 42 at level 0; the
+amplifier envelope has attack 0, decay 80, sustain 1 and release 82; one keyboard section plays
+part 1. Its values are the defaults which the stock sample programs keep for everything they do
+not use. Seven parameters differ between the 24-voice and the 8M versions of the same factory
+programs (program integers 0, 75, 142 and 177, part floats 102, 115 and 116); unified program
+files with either variant are part of the libraries for both.
 
 ## Limits
 
@@ -135,17 +191,27 @@ program. Each sample becomes a zone: key range, assigned note as root, fine tuni
 (dB), play range and loop with its cross-fade. A bit depth below 16 bit is reported, the 16-bit
 audio is kept.
 
-**Writing.** Version 4 multi-sample files, since that version is available as a reference from
-the manufacturer. The samples of all groups are distributed to slots:
+**Writing.** Either a unified program file (the default) or version 4 multi-sample files, since
+that version is available as a reference from the manufacturer. The samples of all groups are
+first distributed to *layers*: samples are layered if they have the same assigned note or the
+assigned note of one lies in the key range of the other, e.g. velocity layers and round robins.
+Key ranges which only overlap at their edges are kept.
 
-1. Samples are *layered* if they have the same assigned note or the assigned note of one lies in
-   the key range of the other, e.g. velocity layers and round robins. Layered samples go into
-   different layers; key ranges which only overlap at their edges are kept.
-2. Each layer is split in the order of the assigned notes into slots of at most 8 samples which fit
-   into the sample memory.
+* *Unified program file:* the first layer is split in the order of the assigned notes into slots
+  of at most 8 samples, up to 4 slots. The program is the init program (a resource in the `.pro`
+  format) in which part N plays slot N with oscillator 1 at level 1 and oscillators 2 and 3 at
+  level 0; these and the oscillators of the parts which are not used play the analog waveform 42,
+  which the file lists without data. With more than one slot the keyboard is split: the split
+  note lies on a note which neither neighbouring slot plays, or the lowest sample of the upper
+  slot is extended by the split note, so that either reading of the split note plays a sample.
+  All samples of the program need to fit into the sample memory, otherwise the program is not
+  written. The samples store the gain as volume, up to +6 dB.
+* *Multi-sample files:* every layer is split in the order of the assigned notes into slots of at
+  most 8 samples which fit into the sample memory, each written as a file.
 
-A multi-sample which needs more than one slot gets numbered files and slot names (`Name 1`,
-`Name 2`, ...); the slot name is shortened so that the number is kept. Further:
+A multi-sample which needs more than one slot gets numbered slot names (`Name 1`, `Name 2`, ...)
+and, for multi-sample files, numbered files; the slot name is shortened so that the number is
+kept. Further:
 
 * Audio: 16 bit mono, stereo is mixed down. Sample rates outside 10-48 kHz are converted; a looped
   sample is converted together with its loop so that it stays seamless
@@ -154,8 +220,8 @@ A multi-sample which needs more than one slot gets numbered files and slot names
   written as the tuning. A sample which does not follow the keyboard (key tracking off) gets the
   key in the middle of its range as its assigned note.
 * The key range is limited to two octaves around the assigned note.
-* The format has no volume: the gain is applied to the audio, but a gain above 0 dB only up to the
-  peak level of the sample.
+* The multi-sample files have no volume: the gain is applied to the audio, as is the part of it
+  above +6 dB in a program file, but above 0 dB only up to the peak level of the sample.
 * Only the first loop is written, forwards and within the play range. A cross-fade is written as
   *equal volume*. Reversed samples are written reversed.
 * Samples which play on the release of a note are skipped.
@@ -173,7 +239,10 @@ A multi-sample which needs more than one slot gets numbered files and slot names
 * **Round trip:** all 65 slots of the sample library written as multi-sample files: all 270
   samples keep audio (with the applied gain), play range, loop, cross-fade length, key range and
   tuning, except for 31 equal-power cross-fades (written as equal volume), 5 bit depths of 12 bit
-  (written as 16 bit) and the key range of `RandroidG6` (limited to 91-115).
+  (written as 16 bit) and the key range of `RandroidG6` (limited to 91-115). Written as unified
+  program files, all 270 samples keep their audio unchanged and their volume as well.
+* **Programs:** the written programs differ from the init program only in the oscillator
+  references and levels and the keyboard split, checked by reading them back.
 * **Other sources:** e.g. the 66 SoundFonts of a stereo, multi-layered library, and synthetic SFZ
   files for 96 kHz and 8 kHz loops (seamless after the conversion), key tracking off, release
   samples, velocity layers, coarse tuning, reversed samples and gain.
@@ -185,9 +254,10 @@ A multi-sample which needs more than one slot gets numbered files and slot names
 * The meaning of the second sample rate, see above.
 * The version and layout of the multi-sample files which current OS versions export (version 5
   is assumed to match the samples of the unified program files).
-* The parameters of the program. The MIDI specification lists every program parameter as an
-  NRPN; mapping them to the parameter arrays would allow converting parts, oscillator settings
-  (e.g. the pan of stereo pairs of slots), envelopes and filters.
+* The remaining parameters of the program and the time law of the envelopes (0-127 to seconds),
+  which are needed to convert envelopes and filters, and to read programs as a whole, e.g. stereo
+  pairs of slots.
+* Whether a split note belongs to the lower or the upper keyboard section.
 * How the device quantizes 8- and 12-bit playback.
 * The size of an included WaveMaker wavetable (type 3); no file has one, a program which includes
   one is rejected since the resources behind it cannot be found.

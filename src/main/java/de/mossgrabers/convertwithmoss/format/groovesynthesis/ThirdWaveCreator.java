@@ -27,20 +27,22 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
-import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 
 /**
- * Creates multi-sample slot files (*.bin) for the Groove Synthesis 3rd Wave, which are loaded with
- * 'Import multisample' or 'Bulk multisample import' from the 'Audio' folder. A slot holds up to 8
- * mono samples with key ranges which do not overlap. Samples which do not fit into one slot, e.g.
- * velocity layers, are written as further slots. The settings of a program are not created.
+ * Creates files for the Groove Synthesis 3rd Wave: either a unified program file (*.pgdata), a
+ * program together with its samples, which is loaded with 'Import unified program data file' from
+ * the 'Programs' folder, or multi-sample slot files (*.bin), which are loaded with 'Import
+ * multisample' or 'Bulk multisample import' from the 'Audio' folder. A sample slot holds up to 8
+ * mono samples which are not layered. The program is the init program of the instrument whose
+ * parts play the sample slots; the settings of the source (envelopes, filters, ...) are not
+ * converted.
  *
  * @author Jürgen Moßgraber
  */
-public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
+public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
 {
     private static final int DEFAULT_ROOT_KEY = 60;
 
@@ -65,7 +67,7 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
      */
     public ThirdWaveCreator (final INotifier notifier)
     {
-        super ("Groove Synthesis 3rd Wave", "ThirdWave", notifier, EmptySettingsUI.INSTANCE);
+        super ("Groove Synthesis 3rd Wave", "ThirdWave", notifier, new ThirdWaveCreatorUI ("ThirdWave"));
     }
 
 
@@ -74,6 +76,7 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final String name = multisampleSource.getName ();
+        final boolean writeProgram = this.settingsConfiguration.isWriteProgram ();
 
         // The 3rd Wave plays 10 to 48kHz, the audio of a looped sample outside of this range needs
         // to be converted together with its positions
@@ -89,7 +92,7 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
                 if (zone.getTrigger () == TriggerType.RELEASE || group.getTrigger () == TriggerType.RELEASE)
                     notes.releaseTriggers++;
                 else
-                    this.createSample (zone, notes).ifPresent (samples::add);
+                    this.createSample (zone, notes, writeProgram).ifPresent (samples::add);
                 this.progress.notifyProgress ();
             }
 
@@ -100,12 +103,102 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
             return;
         }
 
-        final List<List<ThirdWaveFile.Sample>> slots = createSlots (samples);
+        final List<List<ThirdWaveFile.Sample>> layers = createLayers (samples);
+        if (writeProgram)
+            this.writeProgram (destinationFolder, name, layers);
+        else
+            this.writeSlots (destinationFolder, name, layers);
+
+        this.progress.notifyDone ();
+    }
+
+
+    /**
+     * Write a unified program file. The program plays the first layer of samples, each of its
+     * sample slots with one part, which split the keyboard.
+     *
+     * @param destinationFolder Where to write the file
+     * @param name The name of the preset
+     * @param layers The layers of samples
+     * @throws IOException Could not write the file
+     */
+    private void writeProgram (final File destinationFolder, final String name, final List<List<ThirdWaveFile.Sample>> layers) throws IOException
+    {
+        if (layers.size () > 1)
+            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_LAYERS", name, Integer.toString (layers.size ()));
+
+        // All samples of a program need to fit into the memory at the same time, therefore its
+        // slots are only split by the number of samples
+        List<List<ThirdWaveFile.Sample>> slotSamples = splitLayer (layers.get (0), false);
+        if (slotSamples.size () > ThirdWaveProgram.NUM_PARTS)
+        {
+            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_PARTS", name, Integer.toString (slotSamples.size ()), Integer.toString (slotSamples.size () - ThirdWaveProgram.NUM_PARTS));
+            slotSamples = new ArrayList<> (slotSamples.subList (0, ThirdWaveProgram.NUM_PARTS));
+        }
+        long frames = 0;
+        for (final List<ThirdWaveFile.Sample> samples: slotSamples)
+            for (final ThirdWaveFile.Sample sample: samples)
+                frames += sample.getFrames ();
+        if (frames > ThirdWaveFile.MEMORY_FRAMES)
+        {
+            this.notifier.logError ("IDS_THIRD_WAVE_PROGRAM_MEMORY", name);
+            return;
+        }
+
+        final int [] splitNotes = splitKeyboard (slotSamples);
+        if (splitNotes.length > 0)
+            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_SPLITS", name, Integer.toString (slotSamples.size ()));
+
+        // Part N plays slot N with its first oscillator; its other oscillators and the parts which
+        // are not used play the analog waveform, whose ID follows the ones of the slots
+        final List<ThirdWaveFile.Slot> slots = new ArrayList<> ();
+        final ThirdWaveProgram program = ThirdWaveProgram.createInitProgram ();
+        final int analogWaveform = slotSamples.size ();
+        for (int part = 0; part < ThirdWaveProgram.NUM_PARTS; part++)
+        {
+            if (part < slotSamples.size ())
+            {
+                final String suffix = slotSamples.size () == 1 ? "" : createSuffix (part + 1, slotSamples.size ());
+                slots.add (new ThirdWaveFile.Slot (createSlotName (name, suffix), -1, slotSamples.get (part)));
+                program.setOscillator (part, 0, part, 1);
+                for (int oscillator = 1; oscillator < ThirdWaveProgram.NUM_OSCILLATORS; oscillator++)
+                    program.setOscillator (part, oscillator, analogWaveform, 0);
+            }
+            else
+                for (int oscillator = 0; oscillator < ThirdWaveProgram.NUM_OSCILLATORS; oscillator++)
+                    program.setOscillatorResource (part, oscillator, analogWaveform);
+        }
+        program.setKeyboardSplits (splitNotes);
+
+        final File file = this.createUniqueFilename (destinationFolder, SafeFileNames.create (name), "pgdata");
+        this.notifier.log ("IDS_NOTIFY_STORING", file.getAbsolutePath ());
+        try (final OutputStream out = new BufferedOutputStream (new FileOutputStream (file)))
+        {
+            ThirdWaveFile.writeProgram (out, name, slots, program);
+        }
+    }
+
+
+    /**
+     * Write multi-sample slot files, one for each slot of all layers.
+     *
+     * @param destinationFolder Where to write the files
+     * @param name The name of the preset
+     * @param layers The layers of samples
+     * @throws IOException Could not write a file
+     */
+    private void writeSlots (final File destinationFolder, final String name, final List<List<ThirdWaveFile.Sample>> layers) throws IOException
+    {
+        final List<List<ThirdWaveFile.Sample>> slots = new ArrayList<> ();
+        long frames = 0;
+        for (final List<ThirdWaveFile.Sample> layer: layers)
+        {
+            slots.addAll (splitLayer (layer, true));
+            for (final ThirdWaveFile.Sample sample: layer)
+                frames += sample.getFrames ();
+        }
         if (slots.size () > 1)
             this.notifier.log ("IDS_THIRD_WAVE_SLOTS", name, Integer.toString (slots.size ()));
-        long frames = 0;
-        for (final ThirdWaveFile.Sample sample: samples)
-            frames += sample.getFrames ();
         if (frames > ThirdWaveFile.MEMORY_FRAMES)
             this.notifier.log ("IDS_THIRD_WAVE_MEMORY", name);
 
@@ -119,8 +212,6 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
                 ThirdWaveFile.write (out, new ThirdWaveFile.Slot (createSlotName (name, suffix), -1, slots.get (i)));
             }
         }
-
-        this.progress.notifyDone ();
     }
 
 
@@ -129,10 +220,12 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
      *
      * @param zone The zone
      * @param notes Where to count the differences
+     * @param hasVolume True if the sample stores a volume (unified program files), otherwise the
+     *            gain is applied to the audio
      * @return The sample, empty if the zone cannot be converted
      * @throws IOException Could not convert the audio
      */
-    private Optional<ThirdWaveFile.Sample> createSample (final ISampleZone zone, final Notes notes) throws IOException
+    private Optional<ThirdWaveFile.Sample> createSample (final ISampleZone zone, final Notes notes, final boolean hasVolume) throws IOException
     {
         final String zoneName = zone.getName ();
         final Optional<ISampleData> sampleData = zone.getSampleData ();
@@ -208,9 +301,16 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
             peak = Math.max (peak, Math.abs (mono[frame]));
         }
 
-        // The format has no volume, therefore the gain is applied to the audio - but not further
-        // than to its peak level, since the audio would clip
+        // The samples of a unified program store a volume up to +6dB, the multi-sample slot files
+        // none; the rest of the gain is applied to the audio - but not further than to its peak
+        // level, since the audio would clip
         double gain = Math.pow (10, zone.getGain () / 20.0);
+        float volume = 1;
+        if (hasVolume)
+        {
+            volume = (float) Math.min (gain, ThirdWaveFile.MAX_VOLUME);
+            gain = volume > 0 ? gain / volume : 1;
+        }
         if (gain > 1 && peak * gain > Short.MAX_VALUE)
         {
             gain = Math.max (1, Short.MAX_VALUE / peak);
@@ -271,7 +371,7 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
 
         final float fineTuning = (float) (tuning - coarseTuning);
         final int crossfadeType = crossfade > 0 ? ThirdWaveFile.CROSSFADE_LINEAR : ThirdWaveFile.CROSSFADE_OFF;
-        return Optional.of (new ThirdWaveFile.Sample (zoneName, sampleRate, ThirdWaveFile.BIT_DEPTH_16, start, end, loopStart, loopEnd, (int) root, low, high, crossfadeType, crossfade, loopMode, fineTuning, sampleRate, 1, audio));
+        return Optional.of (new ThirdWaveFile.Sample (zoneName, sampleRate, ThirdWaveFile.BIT_DEPTH_16, start, end, loopStart, loopEnd, (int) root, low, high, crossfadeType, crossfade, loopMode, fineTuning, sampleRate, volume, audio));
     }
 
 
@@ -301,15 +401,14 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Distribute the samples to slots. A slot holds up to 8 samples, which fit into the sample
-     * memory and whose assigned notes are different and do not lie in the key range of another
-     * sample of the slot. First, the samples are distributed to layers, e.g. one for each velocity
-     * layer, then each layer is split into slots in the order of the keys.
+     * Distribute the samples to layers, e.g. one for each velocity layer. The samples of a layer
+     * have different assigned notes, which do not lie in the key range of another sample of the
+     * layer.
      *
      * @param samples The samples
-     * @return The samples of each slot, ordered by their assigned note
+     * @return The samples of each layer, ordered by their assigned note
      */
-    private static List<List<ThirdWaveFile.Sample>> createSlots (final List<ThirdWaveFile.Sample> samples)
+    private static List<List<ThirdWaveFile.Sample>> createLayers (final List<ThirdWaveFile.Sample> samples)
     {
         final List<ThirdWaveFile.Sample> sortedSamples = new ArrayList<> (samples);
         sortedSamples.sort (Comparator.comparingInt (ThirdWaveFile.Sample::root));
@@ -331,26 +430,78 @@ public class ThirdWaveCreator extends AbstractCreator<EmptySettingsUI>
             }
             matchingLayer.add (sample);
         }
+        return layers;
+    }
 
+
+    /**
+     * Split a layer in the order of the keys into slots, which hold up to 8 samples.
+     *
+     * @param layer The samples of the layer, ordered by their assigned note
+     * @param limitMemory If true, a slot also ends before it would exceed the sample memory
+     * @return The samples of each slot
+     */
+    private static List<List<ThirdWaveFile.Sample>> splitLayer (final List<ThirdWaveFile.Sample> layer, final boolean limitMemory)
+    {
         final List<List<ThirdWaveFile.Sample>> slots = new ArrayList<> ();
-        for (final List<ThirdWaveFile.Sample> layer: layers)
+        List<ThirdWaveFile.Sample> slot = new ArrayList<> ();
+        int frames = 0;
+        for (final ThirdWaveFile.Sample sample: layer)
         {
-            List<ThirdWaveFile.Sample> slot = new ArrayList<> ();
-            int frames = 0;
-            for (final ThirdWaveFile.Sample sample: layer)
+            if (slot.size () == ThirdWaveFile.MAX_SAMPLES || limitMemory && frames + sample.getFrames () > ThirdWaveFile.MEMORY_FRAMES)
             {
-                if (slot.size () == ThirdWaveFile.MAX_SAMPLES || frames + sample.getFrames () > ThirdWaveFile.MEMORY_FRAMES)
-                {
-                    slots.add (slot);
-                    slot = new ArrayList<> ();
-                    frames = 0;
-                }
-                slot.add (sample);
-                frames += sample.getFrames ();
+                slots.add (slot);
+                slot = new ArrayList<> ();
+                frames = 0;
             }
-            slots.add (slot);
+            slot.add (sample);
+            frames += sample.getFrames ();
         }
+        slots.add (slot);
         return slots;
+    }
+
+
+    /**
+     * Calculate the split points of the keyboard between the slots, which are ordered by their
+     * keys. The instrument sets a split point to 'the end of the lower and the beginning of the
+     * upper split zone', it is not clear to which one the note belongs. Therefore, the split point
+     * lies either on a note which neither slot plays or the lowest sample of the upper slot is
+     * extended to play the note as well.
+     *
+     * @param slots The samples of the slots, the lowest samples might be replaced
+     * @return The notes of the split points, one less than there are slots
+     */
+    private static int [] splitKeyboard (final List<List<ThirdWaveFile.Sample>> slots)
+    {
+        final int [] splitNotes = new int [slots.size () - 1];
+        for (int i = 1; i < slots.size (); i++)
+        {
+            final List<ThirdWaveFile.Sample> lower = slots.get (i - 1);
+            final List<ThirdWaveFile.Sample> upper = slots.get (i);
+            int lowerHigh = 0;
+            for (final ThirdWaveFile.Sample sample: lower)
+                lowerHigh = Math.max (lowerHigh, sample.high ());
+            int lowest = 0;
+            for (int s = 1; s < upper.size (); s++)
+                if (upper.get (s).low () < upper.get (lowest).low ())
+                    lowest = s;
+            final ThirdWaveFile.Sample lowestSample = upper.get (lowest);
+
+            int splitNote;
+            if (lowestSample.low () > lowerHigh + 1)
+                splitNote = lowerHigh + 1;
+            else
+            {
+                splitNote = lowestSample.low () - 1;
+                if (lowestSample.root () - splitNote <= ThirdWaveFile.MAX_TRANSPOSITION)
+                    upper.set (lowest, lowestSample.withLow (splitNote));
+            }
+            if (i > 1)
+                splitNote = Math.max (splitNote, splitNotes[i - 2] + 1);
+            splitNotes[i - 1] = Math.clamp (splitNote, 0, 127);
+        }
+        return splitNotes;
     }
 
 

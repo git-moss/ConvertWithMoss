@@ -5961,7 +5961,7 @@
       <text:p>Read</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
-      <text:p>bin (multi-sample slot), pgdata (the sample slots of a unified program)</text:p>
+      <text:p>pgdata (the sample slots of a unified program), bin (multi-sample slot)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce41"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
@@ -6073,7 +6073,7 @@
       <text:p>Write</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
-      <text:p>bin (multi-sample slot)</text:p>
+      <text:p>pgdata (program with its samples), bin (multi-sample slot)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce41"/>
      <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
@@ -6113,7 +6113,7 @@
       <text:p>Reverse: the audio is reversed</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
-      <text:p>Applied to the audio (up to its peak level)</text:p>
+      <text:p>Volume up to +6 dB (pgdata), else applied to the audio (up to its peak level)</text:p>
      </table:table-cell>
      <table:covered-table-cell table:number-columns-repeated="5"/>
      <table:table-cell table:style-name="ce23"/>
