@@ -399,7 +399,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final String relativeSamplePath = "samples/" + sampleName + getUniqueSuffix (multiFile, fileName, "qpat");
 
         final List<IGroup> playableGroups = this.removeReleaseZones (this.combineSplitStereo (multisampleSource));
-        final List<List<IGroup>> layers = distributeToLayers (mergeCompatibleGroups (splitLayers (playableGroups)), this.settingsConfiguration.getMaximumLayers ());
+        final List<IGroup> separateGroups = mergeCompatibleGroups (splitLayers (playableGroups));
+        final int maximumLayers = this.settingsConfiguration.getMaximumLayers ();
+        this.checkLayersFit (multisampleSource.getName (), separateGroups, maximumLayers);
+        final List<List<IGroup>> layers = distributeToLayers (separateGroups, maximumLayers);
         final List<IGroup> groups = new ArrayList<> ();
         for (final List<IGroup> layerGroups: layers)
             groups.addAll (layerGroups);
@@ -669,6 +672,52 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // Write resource(s)
         for (final byte [] sampleMap: sampleMaps)
             out.write (sampleMap);
+    }
+
+
+    /**
+     * Warn if the groups need more oscillators than the layers which the option allows provide.
+     * Each group needs an oscillator of its own since it either sounds at the same time as the
+     * others or needs other settings of the oscillator. The groups which do not fit are added to
+     * the sample map of the last oscillator, where entries which overlap alternate on successive
+     * notes instead of sounding together, see {@link #reduceGroups(List, int)}.
+     *
+     * @param name The name of the multi-sample
+     * @param groups The groups, each for an oscillator of its own
+     * @param maximumLayers The maximum number of layers of the option
+     */
+    private void checkLayersFit (final String name, final List<IGroup> groups, final int maximumLayers)
+    {
+        final int layers = Math.clamp (maximumLayers, 1, MAX_LAYERS);
+        final int oscillators = layers * MAX_OSCILLATORS;
+        if (groups.size () <= oscillators)
+            return;
+
+        // A sample which several groups play is named once
+        final Set<String> foldedNames = new LinkedHashSet<> ();
+        for (final IGroup group: groups.subList (oscillators, groups.size ()))
+            foldedNames.add ("'" + getDisplayName (group) + "'");
+        final String targetName = "'" + getDisplayName (groups.get (oscillators - 1)) + "'";
+        final String folded = String.join (", ", foldedNames);
+        final int neededLayers = (groups.size () + MAX_OSCILLATORS - 1) / MAX_OSCILLATORS;
+        if (neededLayers <= MAX_LAYERS)
+            this.notifier.log ("IDS_QPAT_NOTIFY_LAYERS_DO_NOT_FIT", name, Integer.toString (groups.size ()), Integer.toString (layers), Integer.toString (oscillators), folded, targetName, Integer.toString (neededLayers));
+        else
+            this.notifier.log ("IDS_QPAT_NOTIFY_LAYERS_EXCEED_DEVICE", name, Integer.toString (groups.size ()), Integer.toString (MAX_LAYERS), Integer.toString (MAX_LAYERS * MAX_OSCILLATORS), folded, targetName);
+    }
+
+
+    /**
+     * Get the name by which a group is recognized: the name of its first zone, which is usually
+     * the name of its sample, or the name of the group if it has no zones.
+     *
+     * @param group The group
+     * @return The name
+     */
+    private static String getDisplayName (final IGroup group)
+    {
+        final List<ISampleZone> zones = group.getSampleZones ();
+        return zones.isEmpty () ? group.getName () : zones.get (0).getName ();
     }
 
 
