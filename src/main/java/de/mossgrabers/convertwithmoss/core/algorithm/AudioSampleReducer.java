@@ -451,10 +451,10 @@ public class AudioSampleReducer
 
     /**
      * Re-sample frequency with a band-limited interpolation and keep a loop intact, see
-     * {@link #resampleFrequency(byte[], int, boolean, ISampleLoop)}. The interpolation overshoots at
-     * steep transients, e.g. the edges of a square wave, therefore the audio of a sample which peaks
-     * close to full scale can exceed the range of the bit depth after the conversion. It is either
-     * lowered to fit, if the caller compensates the attenuation, or clipped.
+     * {@link #resampleFrequency(byte[], int, boolean, ISampleLoop)}. The interpolation overshoots
+     * at steep transients, e.g. the edges of a square wave, therefore the audio of a sample which
+     * peaks close to full scale can exceed the range of the bit depth after the conversion. It is
+     * either lowered to fit, if the caller compensates the attenuation, or clipped.
      *
      * @param wavData The WAV data structure
      * @param targetRate The maximum sample rate

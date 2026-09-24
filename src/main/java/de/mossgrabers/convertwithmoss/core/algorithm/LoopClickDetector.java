@@ -28,8 +28,8 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
  * <p>
  * Only reported, nothing is changed: whether to enable the snap-to-zero-crossing or loop cross-fade
  * processing - or to keep the loop as the faithful reproduction of the source - is left to the
- * user. A loop which already has a cross-fade is not reported, since the cross-fade masks the wrap -
- * whatever its length, exactly like the snapping leaves it alone.
+ * user. A loop which already has a cross-fade is not reported, since the cross-fade masks the wrap
+ * - whatever its length, exactly like the snapping leaves it alone.
  *
  * @author Jürgen Moßgraber
  */

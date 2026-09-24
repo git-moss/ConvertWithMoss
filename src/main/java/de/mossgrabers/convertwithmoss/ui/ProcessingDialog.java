@@ -40,7 +40,9 @@ public class ProcessingDialog extends PseudoModalDialog
     private static final List<String> LOOP_CROSSFADES = new ArrayList<> ();
     private static final List<String> TRANSPOSE       = new ArrayList<> ();
     private static final int          TRANSPOSE_RANGE = 24;
-    /** The first entry of the transpose combo-box, which measures the pitch of the samples instead. */
+    /**
+     * The first entry of the transpose combo-box, which measures the pitch of the samples instead.
+     */
     private static final int          TRANSPOSE_PITCH = 0;
 
     static

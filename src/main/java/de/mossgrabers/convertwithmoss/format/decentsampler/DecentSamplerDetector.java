@@ -72,9 +72,14 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     private static final String                  ENDING_DSBUNDLE       = ".dsbundle";
     private static final String                  ENDING_DSLIBRARY      = ".dslibrary";
     private static final String                  ENDING_DSPRESET       = ".dspreset";
-    /** A start tag or an empty-element tag with at least one attribute: name, attributes, white-space, slash. */
+    /**
+     * A start tag or an empty-element tag with at least one attribute: name, attributes,
+     * white-space, slash.
+     */
     private static final Pattern                 START_TAG_PATTERN     = Pattern.compile ("<([A-Za-z_][\\w.:-]*)((?:\\s+[A-Za-z_][\\w.:-]*\\s*=\\s*(?:\"[^\"]*\"|'[^']*'))+)(\\s*)(/?)>");
-    /** One attribute of a start tag: the white-space in front of it, its name and its quoted value. */
+    /**
+     * One attribute of a start tag: the white-space in front of it, its name and its quoted value.
+     */
     private static final Pattern                 ATTRIBUTE_PATTERN     = Pattern.compile ("(\\s+)([A-Za-z_][\\w.:-]*)\\s*=\\s*(\"[^\"]*\"|'[^']*')");
 
     private static final Map<String, FilterType> FILTER_TYPE_MAP       = new HashMap<> ();

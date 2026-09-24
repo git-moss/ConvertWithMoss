@@ -408,7 +408,6 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
 
             final WaldorfQpatResourceType type = resourceHeader.type;
             if (type != null)
-            {
                 switch (type)
                 {
                     case USER_SAMPLE_MAP1:
@@ -423,7 +422,6 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                     default:
                         break;
                 }
-            }
         }
         return resources;
     }

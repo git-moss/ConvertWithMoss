@@ -787,11 +787,11 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
 
     /**
-     * Test whether a folder is a package which the format treats as one file, e.g. the
-     * '.dsbundle' folder of DecentSampler. Such a folder is not reproduced when the folder
-     * structure of the source is created in the output folder, exactly like the library file of
-     * a format is not: its presets are written into the folder which contains the package. The
-     * name of the folder is still used for the detection of the metadata like any folder name.
+     * Test whether a folder is a package which the format treats as one file, e.g. the '.dsbundle'
+     * folder of DecentSampler. Such a folder is not reproduced when the folder structure of the
+     * source is created in the output folder, exactly like the library file of a format is not: its
+     * presets are written into the folder which contains the package. The name of the folder is
+     * still used for the detection of the metadata like any folder name.
      *
      * @param folderName The name of the folder
      * @return True if the folder is a package
@@ -804,8 +804,8 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
 
     /**
      * Remove the package folders from the path parts, see {@link #isPackageFolder(String)}. The
-     * name of the multi-sample, which is the first part, and the source folder, which is the
-     * last, are kept.
+     * name of the multi-sample, which is the first part, and the source folder, which is the last,
+     * are kept.
      *
      * @param parts The path parts
      * @return The path parts without the package folders, the given parts if there is none

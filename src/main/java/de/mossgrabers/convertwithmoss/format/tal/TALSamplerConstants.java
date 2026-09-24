@@ -21,8 +21,8 @@ public class TALSamplerConstants
 {
     /**
      * The volume of a sample which TAL-Sampler plays at 0dB. The volume of a sample is a linear
-     * amplitude factor relative to it: rendered offline (version 4.7.2), the volumes 0.1, 0.353, 0.5
-     * and 1.0 play a sample at -17.9, -6.9, -3.9 and +2.1dB, which is 20 log (volume / 0.7843)
+     * amplitude factor relative to it: rendered offline (version 4.7.2), the volumes 0.1, 0.353,
+     * 0.5 and 1.0 play a sample at -17.9, -6.9, -3.9 and +2.1dB, which is 20 log (volume / 0.7843)
      * within 0.01dB.
      */
     public static final double       ZONE_VOLUME_0_DB  = 0.7843;
@@ -36,15 +36,16 @@ public class TALSamplerConstants
      * samples: rendered offline (version 4.7.2) with the values 0.4, 0.6, 0.8 and 1.0 of the
      * amplitude release, a note fades out in 0.19, 0.93, 2.95 and 7.2 seconds, which is 7.2 x
      * value^4 within the accuracy of the measurement, and the attack follows the same law; the hold
-     * is taken to follow it as well. The decay has a law of its own, see {@link #DECAY_TIME_FACTOR}.
+     * is taken to follow it as well. The decay has a law of its own, see
+     * {@link #DECAY_TIME_FACTOR}.
      */
     public static final double       MAX_ENVELOPE_TIME = 7.2;
     /**
      * The decay of the plug-in approaches the sustain level exponentially and much slower than the
-     * other stages. Rendered offline (version 4.7.2) with a sustain of 0, the decay values 0.3, 0.4,
-     * 0.5, 0.6, 0.7 and 0.8 reach -6 dB after 0.11, 0.35, 0.70, 1.35, 2.70 and 4.56 seconds and
-     * every further 6 dB after the same time again; towards a sustain level of 0.5 the decay has the
-     * same time constant. The model expects the time of a linear decay, which is how the
+     * other stages. Rendered offline (version 4.7.2) with a sustain of 0, the decay values 0.3,
+     * 0.4, 0.5, 0.6, 0.7 and 0.8 reach -6 dB after 0.11, 0.35, 0.70, 1.35, 2.70 and 4.56 seconds
+     * and every further 6 dB after the same time again; towards a sustain level of 0.5 the decay
+     * has the same time constant. The model expects the time of a linear decay, which is how the
      * destinations play it: the linear decay which reaches -20 dB at the same moment as the decay
      * of the plug-in lasts 37.1 x value^3.75 seconds, within 9 % of these measurements.
      */
@@ -274,9 +275,9 @@ public class TALSamplerConstants
 
 
     /**
-     * Convert the main volume or the volume of a layer into dB. TAL-Sampler shows both as 40 log
-     * (2 x) dB: 0.5 is 0dB, 1.0 is +12dB, which rendering the main volumes 0.25, 0.75 and 1.0
-     * offline confirms.
+     * Convert the main volume or the volume of a layer into dB. TAL-Sampler shows both as 40 log (2
+     * x) dB: 0.5 is 0dB, 1.0 is +12dB, which rendering the main volumes 0.25, 0.75 and 1.0 offline
+     * confirms.
      *
      * @param volume The volume in the range of [0..1], larger than 0
      * @return The volume in dB

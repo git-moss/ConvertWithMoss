@@ -50,8 +50,8 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 {
     private static final String                   TAG_VALUE                = "value";
 
-    // The version number to use: 3.8.0
-    private static final int                      BLISS_VERSION            = 0x30800;
+    // The version number to use: 3.20.0
+    private static final int                      BLISS_VERSION            = 0x32000;
 
     private static final DestinationAudioFormat   DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -252,7 +252,12 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         XMLUtils.setIntegerAttribute (zoneElement, "mp_gain", (int) Math.round (zone.getGain ()));
         XMLUtils.setDoubleAttribute (zoneElement, "vel_amp", zone.getAmplitudeVelocityModulator ().getDepth (), 2);
         XMLUtils.setIntegerAttribute (zoneElement, "mp_pan", (int) Math.round (zone.getPanning () * 100.0));
-        XMLUtils.setIntegerAttribute (zoneElement, "midi_trigger", zone.getTrigger () == TriggerType.RELEASE ? 1 : 0);
+        final int trigger;
+        if (zone.isOneShot ())
+            trigger = 2;
+        else
+            trigger = zone.getTrigger () == TriggerType.RELEASE ? 1 : 0;
+        XMLUtils.setIntegerAttribute (zoneElement, "midi_trigger", trigger);
         XMLUtils.setIntegerAttribute (zoneElement, "midi_root_key", zone.getKeyRoot ());
 
         if (sequenceLength > 1)
@@ -317,7 +322,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
             pitchEnvelopeModulator.setDepth (1);
             setEnvelopeModulator (document, "mod", zoneElement, pitchEnvelopeModulator);
             hasModEnvelope = true;
-            XMLUtils.setDoubleAttribute (zoneElement, "mod_env_dest1", fromDestinationIndex (2), 8);
+            XMLUtils.setIntegerAttribute (zoneElement, "mod_env_dest1", 2);
             setDoubleValueAttribute (document, zoneElement, "mod_env_dest1amt", pitchDepth / 2.0 + 0.5);
         }
 
@@ -351,11 +356,14 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
                         setEnvelopeModulator (document, "mod", zoneElement, cutoffEnvelopeModulator);
                     }
 
-                    XMLUtils.setDoubleAttribute (zoneElement, "mod_env_dest2", fromDestinationIndex (3), 8);
+                    XMLUtils.setIntegerAttribute (zoneElement, "mod_env_dest2", 3);
                     setDoubleValueAttribute (document, zoneElement, "mod_env_dest2amt", cutoffDepth / 2.0 + 0.5);
                 }
                 XMLUtils.setDoubleAttribute (zoneElement, "flt1_vel_trk", filter.getCutoffVelocityModulator ().getDepth (), 2);
                 XMLUtils.setDoubleAttribute (zoneElement, "flt1_kbd_trk", filter.getCutoffKeyTracking (), 2);
+
+                XMLUtils.setIntegerAttribute (zoneElement, "flt1_boost", 0);
+                XMLUtils.setIntegerAttribute (zoneElement, "flt2_boost", 0);
             }
         }
     }
@@ -410,7 +418,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         final IEnvelope envelope = envelopeModulator.getSource ();
         setDoubleValueAttribute (document, zoneElement, prefix + "_env_att", normalizeTime (envelope.getAttackTime ()));
         setDoubleValueAttribute (document, zoneElement, prefix + "_env_att_shp", normalizeSlope (envelope.getAttackSlope ()));
-        setDoubleValueAttribute (document, zoneElement, prefix + "_env_dec", normalizeTime (Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ())));
+        setDoubleValueAttribute (document, zoneElement, prefix + "_env_dec", normalizeTime (envelope.getHoldTime ()) + normalizeTime (envelope.getDecayTime ()));
         setDoubleValueAttribute (document, zoneElement, prefix + "_env_dec_shp", normalizeSlope (envelope.getDecaySlope ()));
         final double sustainLevel = envelope.getSustainLevel ();
         setDoubleValueAttribute (document, zoneElement, prefix + "_env_sus", sustainLevel < 0 ? 1 : sustainLevel);
@@ -419,11 +427,11 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
-    private static double normalizeTime (final double value)
+    private static double normalizeTime (final double seconds)
     {
-        if (value < 0)
+        if (seconds < 0.001)
             return 0;
-        return Math.pow (value / 16.0, 0.25);
+        return Math.pow ((seconds - 0.001) / 15.999, 0.25);
     }
 
 
@@ -439,11 +447,5 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
     {
         final Element childElement = XMLUtils.addElement (document, parentElement, childElementName);
         XMLUtils.setDoubleAttribute (childElement, TAG_VALUE, value, 2);
-    }
-
-
-    private static double fromDestinationIndex (final int value)
-    {
-        return (value + 0.5) / 14.0;
     }
 }
