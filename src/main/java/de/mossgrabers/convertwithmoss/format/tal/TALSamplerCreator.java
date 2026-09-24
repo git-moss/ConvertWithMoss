@@ -161,7 +161,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 break;
         }
 
-        addModulationAttributes (document, groups, programElement, multisampleSource.getGlobalFilter ());
+        addModulationAttributes (document, groups, programElement, getSharedFilter (groups));
 
         return this.createXMLString (document);
     }
@@ -263,6 +263,47 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
     }
 
 
+    /**
+     * Get the filter which is shared by all zones which have one. The plug-in has only one filter,
+     * through which each layer is switched or not, so zones without a filter can be kept but
+     * different filters cannot.
+     *
+     * @param groups The groups whose zones to check
+     * @return The filter, empty if no zone has one or if the zones have different ones
+     */
+    private static Optional<IFilter> getSharedFilter (final List<IGroup> groups)
+    {
+        IFilter sharedFilter = null;
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final Optional<IFilter> optFilter = zone.getFilter ();
+                if (optFilter.isEmpty ())
+                    continue;
+                if (sharedFilter == null)
+                    sharedFilter = optFilter.get ();
+                else if (!sharedFilter.equals (optFilter.get ()))
+                    return Optional.empty ();
+            }
+        return Optional.ofNullable (sharedFilter);
+    }
+
+
+    /**
+     * Check if a zone of the group has a filter.
+     *
+     * @param group The group
+     * @return True if at least one of its zones has a filter
+     */
+    private static boolean hasFilter (final IGroup group)
+    {
+        for (final ISampleZone zone: group.getSampleZones ())
+            if (zone.getFilter ().isPresent ())
+                return true;
+        return false;
+    }
+
+
     private static void addModulationAttributes (final Document document, final List<IGroup> groups, final Element programElement, final Optional<IFilter> optFilter)
     {
         if (groups.isEmpty ())
@@ -298,9 +339,11 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         {
             final IFilter filter = optFilter.get ();
 
-            // Enable the filter on all 4 velocity layers
+            // The plug-in has one filter and each layer is switched through it or not: a layer
+            // whose zones have no filter plays unfiltered
             for (int i = 0; i < 4; i++)
-                programElement.setAttribute (TALSamplerTag.FILTER_LAYER_ON + TALSamplerConstants.LAYERS[i], "1.0");
+                if (i >= groups.size () || hasFilter (groups.get (i)))
+                    programElement.setAttribute (TALSamplerTag.FILTER_LAYER_ON + TALSamplerConstants.LAYERS[i], "1.0");
 
             XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.FILTER_MODE, TALSamplerConstants.getFilterValue (filter), 16);
             // The attribute only holds a positive key tracking, the plug-in clamps a negative one
