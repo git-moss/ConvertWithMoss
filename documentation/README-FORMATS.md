@@ -1022,6 +1022,8 @@ The envelopes are converted with the time law of the plug-in: a stage with the v
 Choosing TAL Sampler as the destination format, creates a *talsmpl*
 file and stores all samples in a sub-folder by the same name. The samples of the source groups are distributed across the 4 layers of TAL Sampler in such a way that the key and velocity splits do not overlap. This is a workaround for the fact that TAL Sampler does not support overlapping samples. Since groups have only the name and trigger type as attributes, which are not supported in TAL Sampler anyway, this should work in most cases. If there are still overlapping samples a warning is displayed.
 
+The decay is the exception to the time law of the envelopes above: it approaches the sustain level exponentially and much slower than the other stages - with the value 0.4 it falls by 6 dB after 0.35 seconds and by every further 6 dB after the same time again. It is converted to the linear decay which reaches -20 dB at the same moment, 37.1 x^3.75 seconds (0.4 is 1.2 seconds, 0.6 is 5.5 seconds), and written back with the inverse law.
+
 ## Teenage Engineering OP-XY
 
 The OP-XY is a portable sampler and sequencer from Teenage Engineering. Its multi-sample presets are open: a preset is a folder with the ending *.preset* which contains all samples as WAV files and a *patch.json* file with the mapping and the settings of the synthesizer engine.

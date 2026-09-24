@@ -386,7 +386,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
         final double ampAttack = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_ATTACK);
         final double ampHold = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_HOLD);
-        final double ampDecay = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_DECAY);
+        final double ampDecay = getDecayTime (programElement, TALSamplerTag.ADSR_AMP_DECAY);
         final double ampSustain = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, 1);
         final double ampRelease = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_RELEASE);
 
@@ -428,7 +428,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
                     filterEnvelope.setAttackTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_ATTACK));
                     filterEnvelope.setHoldTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_HOLD));
-                    filterEnvelope.setDecayTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_DECAY));
+                    filterEnvelope.setDecayTime (getDecayTime (programElement, TALSamplerTag.ADSR_VCF_DECAY));
                     filterEnvelope.setSustainLevel (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, 1));
                     filterEnvelope.setReleaseTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_RELEASE));
                 }
@@ -461,7 +461,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         // Envelope
         final double pitchAttack = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_ATTACK);
         final double pitchHold = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_HOLD);
-        final double pitchDecay = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_DECAY);
+        final double pitchDecay = getDecayTime (programElement, TALSamplerTag.ADSR_MOD_DECAY);
         final double pitchSustain = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, 1);
         final double pitchRelease = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_RELEASE);
 
@@ -543,5 +543,18 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     private static double getEnvelopeTime (final Element element, final String attribute)
     {
         return TALSamplerConstants.denormalizeEnvelopeTime (XMLUtils.getDoubleAttribute (element, attribute, 0));
+    }
+
+
+    /**
+     * Read the time of a decay, see {@link TALSamplerConstants#denormalizeDecayTime(double)}.
+     *
+     * @param element The program element
+     * @param attribute The attribute of the decay
+     * @return The time in seconds, 0 if the attribute is missing
+     */
+    private static double getDecayTime (final Element element, final String attribute)
+    {
+        return TALSamplerConstants.denormalizeDecayTime (XMLUtils.getDoubleAttribute (element, attribute, 0));
     }
 }

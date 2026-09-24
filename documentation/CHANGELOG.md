@@ -2,6 +2,8 @@
 
 ## 20.4.0 (work-in-progress)
 
+* TAL Sampler
+  * Fixed: The decay of the envelopes was converted with the time law of the attack and the release, 7.2 x^4 seconds, but TAL-Sampler decays much slower: exponentially towards the sustain level, by 6 dB after 0.35 seconds with the value 0.4 and after 1.35 seconds with 0.6, rendered offline (4.7.2). A decay is now converted to the linear decay which reaches -20 dB at the same moment, 37.1 x^3.75 seconds, and written back with the inverse law. Sounds which decay to silence were far too short on the destination: 'Casiowave' of Michael Oakley's pack decayed in 0.12 instead of 0.8 seconds and 'Emulator II Bells' in 0.79 instead of 4.7 seconds.
 * Waldorf Quantum/Iridium
   * New: A warning is logged when the groups of a preset need more oscillators than the maximum number of layers provides, 3 per layer. The groups which do not fit are merged into the last sample map, where entries which overlap alternate on successive notes instead of sounding together; the warning names the preset, the samples which are merged and the number of layers which keeps them apart. Converted with 1 layer, 7 of the 32 presets of Michael Oakley's TAL-Sampler pack play two of their layers alternately instead of together, e.g. the choir and the JP8 pad of 'Lush Choir'; with 2 layers only 'Crocketts Revenge.wav' does, which needs 3. The default of the option is now 2 layers, which every instrument of the family plays, instead of 1; a preset which fits into one layer is still written as one.
 * TAL Sampler
