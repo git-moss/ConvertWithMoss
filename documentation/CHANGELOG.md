@@ -2,7 +2,7 @@
 
 ## 20.4.0 (work-in-progress)
 
-* New: Added support for the Groove Synthesis 3rd Wave (PGDATA, BIN): the sample slots of unified program files and multi-sample files are read; unified program files, whose program plays the samples, and multi-sample files are written. Written files are not yet verified on hardware.
+* New: Added support for the Groove Synthesis 3rd Wave (PGDATA, BIN): a unified program file is read as one instrument with the level, tuning, panning and keyboard range of the parts which play its samples (e.g. stereo, split and layered programs), a multi-sample file as its sample slot; unified program files, whose parts layer and split the samples, and multi-sample files are written. Written files are not yet verified on hardware.
 
 ## 20.3.0
 

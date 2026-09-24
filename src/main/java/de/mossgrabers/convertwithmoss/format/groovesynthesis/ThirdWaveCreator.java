@@ -10,10 +10,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -26,6 +31,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -37,7 +43,8 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
  * the 'Programs' folder, or multi-sample slot files (*.bin), which are loaded with 'Import
  * multisample' or 'Bulk multisample import' from the 'Audio' folder. A sample slot holds up to 8
  * mono samples which are not layered. The program is the init program of the instrument whose
- * parts play the sample slots; the settings of the source (envelopes, filters, ...) are not
+ * parts play the sample slots, split across the keyboard and panned like the samples, e.g. the two
+ * channels of stereo samples; the other settings of the source (envelopes, filters, ...) are not
  * converted.
  *
  * @author Jürgen Moßgraber
@@ -45,6 +52,21 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
 {
     private static final int DEFAULT_ROOT_KEY = 60;
+
+
+    /**
+     * A sample of a slot together with the properties of its zone which a program needs.
+     *
+     * @param sample The sample, for a program without the tuning of the zone
+     * @param tuning The tuning of the zone in semi-tones
+     * @param panning The panning of the zone
+     * @param velocityHigh The highest velocity which plays the zone
+     * @param isAlternative True if the zone is not the first of a round robin or random selection
+     */
+    private record ProgramSample (ThirdWaveFile.Sample sample, double tuning, double panning, int velocityHigh, boolean isAlternative)
+    {
+        // Intentionally empty
+    }
 
 
     /** Counts the samples of a preset which could not be converted exactly. */
@@ -83,7 +105,7 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
         this.recalculateSamplePositions (multisampleSource, ThirdWaveFile.MIN_SAMPLE_RATE, ThirdWaveFile.MAX_SAMPLE_RATE);
 
         final Notes notes = new Notes ();
-        final List<ThirdWaveFile.Sample> samples = new ArrayList<> ();
+        final List<ProgramSample> samples = new ArrayList<> ();
         for (final IGroup group: multisampleSource.getNonEmptyGroups (false))
             for (final ISampleZone zone: group.getSampleZones ())
             {
@@ -92,83 +114,202 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
                 if (zone.getTrigger () == TriggerType.RELEASE || group.getTrigger () == TriggerType.RELEASE)
                     notes.releaseTriggers++;
                 else
-                    this.createSample (zone, notes, writeProgram).ifPresent (samples::add);
+                {
+                    final Optional<ThirdWaveFile.Sample> sample = this.createSample (zone, notes, writeProgram);
+                    if (sample.isPresent ())
+                    {
+                        final boolean isAlternative = zone.getPlayLogic () != PlayLogic.ALWAYS && zone.getSequencePosition () > 1;
+                        samples.add (new ProgramSample (sample.get (), zone.getTuning (), zone.getPanning (), limitToDefault (zone.getVelocityHigh (), 127), isAlternative));
+                    }
+                }
                 this.progress.notifyProgress ();
             }
 
-        this.logNotes (name, notes);
         if (samples.isEmpty ())
         {
+            this.logNotes (name, notes);
             this.notifier.logError ("IDS_THIRD_WAVE_NO_SAMPLES", name);
             return;
         }
 
-        final List<List<ThirdWaveFile.Sample>> layers = createLayers (samples);
         if (writeProgram)
-            this.writeProgram (destinationFolder, name, layers);
+            this.writeProgram (destinationFolder, name, samples, notes);
         else
-            this.writeSlots (destinationFolder, name, layers);
+        {
+            final List<ThirdWaveFile.Sample> slotSamples = new ArrayList<> ();
+            for (final ProgramSample sample: samples)
+                slotSamples.add (sample.sample ());
+            this.writeSlots (destinationFolder, name, createLayers (slotSamples));
+        }
+        this.logNotes (name, notes);
 
         this.progress.notifyDone ();
     }
 
 
     /**
-     * Write a unified program file. The program plays the first layer of samples, each of its
-     * sample slots with one part, which split the keyboard.
+     * Write a unified program file. A program cannot switch between velocity layers or round
+     * robins, it plays only the loudest velocity layer and the first round. Samples which play at
+     * the same time, e.g. the two channels of a stereo recording or detuned copies, are played by
+     * parts of their own, panned like their samples. The sample slots of such a layer split the
+     * keyboard.
      *
      * @param destinationFolder Where to write the file
      * @param name The name of the preset
-     * @param layers The layers of samples
+     * @param samples The samples
+     * @param notes Where to count the differences
      * @throws IOException Could not write the file
      */
-    private void writeProgram (final File destinationFolder, final String name, final List<List<ThirdWaveFile.Sample>> layers) throws IOException
+    private void writeProgram (final File destinationFolder, final String name, final List<ProgramSample> samples, final Notes notes) throws IOException
     {
-        if (layers.size () > 1)
-            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_LAYERS", name, Integer.toString (layers.size ()));
+        int maxVelocity = 0;
+        for (final ProgramSample sample: samples)
+            if (!sample.isAlternative ())
+                maxVelocity = Math.max (maxVelocity, sample.velocityHigh ());
+        final List<ProgramSample> playedSamples = new ArrayList<> ();
+        for (final ProgramSample sample: samples)
+            if (!sample.isAlternative () && sample.velocityHigh () == maxVelocity)
+                playedSamples.add (sample);
+        if (playedSamples.size () < samples.size ())
+            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_LAYERS", name, Integer.toString (samples.size () - playedSamples.size ()));
 
-        // All samples of a program need to fit into the memory at the same time, therefore its
-        // slots are only split by the number of samples
-        List<List<ThirdWaveFile.Sample>> slotSamples = splitLayer (layers.get (0), false);
-        if (slotSamples.size () > ThirdWaveProgram.NUM_PARTS)
+        final Map<ThirdWaveFile.Sample, Double> tunings = new IdentityHashMap<> ();
+        for (final ProgramSample sample: playedSamples)
+            tunings.put (sample.sample (), Double.valueOf (sample.tuning ()));
+
+        // Samples which are tuned differently than the others of their slot need parts of their
+        // own, e.g. a sound which is tuned an octave down, if their tuning cannot be moved to their
+        // assigned notes; every part divides the voices of the instrument
+        List<Voice> voices = createVoices (playedSamples, true, false);
+        if (!isTunable (voices, tunings))
         {
-            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_PARTS", name, Integer.toString (slotSamples.size ()), Integer.toString (slotSamples.size () - ThirdWaveProgram.NUM_PARTS));
-            slotSamples = new ArrayList<> (slotSamples.subList (0, ThirdWaveProgram.NUM_PARTS));
+            final List<Voice> tunedVoices = createVoices (playedSamples, true, true);
+            if (countParts (tunedVoices) <= ThirdWaveProgram.NUM_PARTS)
+                voices = tunedVoices;
         }
+        if (countParts (voices) > ThirdWaveProgram.NUM_PARTS && voices.size () > 1)
+        {
+            final List<Voice> centeredVoices = createVoices (playedSamples, false, false);
+            if (centeredVoices.size () < voices.size ())
+            {
+                this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_PANNING", name);
+                voices = centeredVoices;
+            }
+        }
+        final int numParts = countParts (voices);
+        if (numParts > ThirdWaveProgram.NUM_PARTS)
+        {
+            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_PARTS", name, Integer.toString (numParts), Integer.toString (numParts - ThirdWaveProgram.NUM_PARTS));
+            int remaining = ThirdWaveProgram.NUM_PARTS;
+            final List<Voice> limitedVoices = new ArrayList<> ();
+            for (final Voice voice: voices)
+            {
+                if (remaining == 0)
+                    break;
+                final int numSlots = Math.min (voice.slots ().size (), remaining);
+                limitedVoices.add (new Voice (voice.panning (), new ArrayList<> (voice.slots ().subList (0, numSlots))));
+                remaining -= numSlots;
+            }
+            voices = limitedVoices;
+        }
+        if (voices.size () > 1)
+            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_VOICES", name, Integer.toString (voices.size ()));
+
+        // The tuning and the loudness which the samples of a slot share are set on the part which
+        // plays it, e.g. a part which is tuned an octave down; its samples keep the rest
+        final Map<List<ThirdWaveFile.Sample>, double []> partSettings = new IdentityHashMap<> ();
+        for (final Voice voice: voices)
+            for (final List<ThirdWaveFile.Sample> slot: voice.slots ())
+            {
+                final double [] settings = moveToPart (slot, tunings);
+                partSettings.put (slot, settings);
+                notes.limitedKeyRanges += (int) settings[3];
+            }
+
+        // The keyboard is split between the slots of the voice with the most slots; the voices whose
+        // slots fit into these sections share them, the others play in the sections which their
+        // slots reach
+        int mainVoice = 0;
+        for (int i = 1; i < voices.size (); i++)
+            if (voices.get (i).slots ().size () > voices.get (mainVoice).slots ().size ())
+                mainVoice = i;
+        final int numSections = voices.get (mainVoice).slots ().size ();
+        final int [] splitNotes = splitKeyboard (voices, numSections, voices.get (mainVoice).slots ());
+
+        // Parts whose slots have the same samples play the same slot, e.g. a slot which is panned to
+        // both sides
+        final List<ThirdWaveFile.Slot> slots = new ArrayList<> ();
+        final List<int []> parts = new ArrayList<> ();
+        for (int voice = 0; voice < voices.size (); voice++)
+        {
+            final List<List<ThirdWaveFile.Sample>> voiceSlots = voices.get (voice).slots ();
+            for (int slot = 0; slot < voiceSlots.size (); slot++)
+            {
+                final List<ThirdWaveFile.Sample> slotSamples = voiceSlots.get (slot);
+                int resource = -1;
+                for (int i = 0; i < slots.size (); i++)
+                    if (isSameSlot (slots.get (i).samples (), slotSamples))
+                        resource = i;
+                if (resource < 0)
+                {
+                    resource = slots.size ();
+                    final String suffix = createSuffix (slot, voiceSlots.size (), voice, voices);
+                    slots.add (new ThirdWaveFile.Slot (createSlotName (name, suffix), -1, resource, slotSamples));
+                }
+                parts.add (new int []
+                {
+                    voice,
+                    slot,
+                    resource
+                });
+            }
+        }
+
+        // All samples of a program need to fit into the memory at the same time
         long frames = 0;
-        for (final List<ThirdWaveFile.Sample> samples: slotSamples)
-            for (final ThirdWaveFile.Sample sample: samples)
-                frames += sample.getFrames ();
+        for (final ThirdWaveFile.Slot slot: slots)
+            frames += slot.getFrames ();
         if (frames > ThirdWaveFile.MEMORY_FRAMES)
         {
             this.notifier.logError ("IDS_THIRD_WAVE_PROGRAM_MEMORY", name);
             return;
         }
-
-        final int [] splitNotes = splitKeyboard (slotSamples);
         if (splitNotes.length > 0)
-            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_SPLITS", name, Integer.toString (slotSamples.size ()));
+            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_SPLITS", name, Integer.toString (numSections));
 
-        // Part N plays slot N with its first oscillator; its other oscillators and the parts which
-        // are not used play the analog waveform, whose ID follows the ones of the slots
-        final List<ThirdWaveFile.Slot> slots = new ArrayList<> ();
+        // Part N plays one slot with its first oscillator; its other oscillators and the parts
+        // which are not used play the analog waveform, whose ID follows the ones of the slots
         final ThirdWaveProgram program = ThirdWaveProgram.createInitProgram ();
-        final int analogWaveform = slotSamples.size ();
+        final int analogWaveform = slots.size ();
+        final int [] sectionParts = new int [numSections];
         for (int part = 0; part < ThirdWaveProgram.NUM_PARTS; part++)
         {
-            if (part < slotSamples.size ())
+            if (part >= parts.size ())
             {
-                final String suffix = slotSamples.size () == 1 ? "" : createSuffix (part + 1, slotSamples.size ());
-                slots.add (new ThirdWaveFile.Slot (createSlotName (name, suffix), -1, slotSamples.get (part)));
-                program.setOscillator (part, 0, part, 1);
-                for (int oscillator = 1; oscillator < ThirdWaveProgram.NUM_OSCILLATORS; oscillator++)
-                    program.setOscillator (part, oscillator, analogWaveform, 0);
-            }
-            else
                 for (int oscillator = 0; oscillator < ThirdWaveProgram.NUM_OSCILLATORS; oscillator++)
                     program.setOscillatorResource (part, oscillator, analogWaveform);
+                continue;
+            }
+
+            final int [] partSlot = parts.get (part);
+            final Voice voice = voices.get (partSlot[0]);
+            final List<ThirdWaveFile.Sample> slotSamples = voice.slots ().get (partSlot[1]);
+            if (voice.slots ().size () == numSections && fitsSections (voice.slots (), splitNotes))
+                sectionParts[partSlot[1]] |= 1 << part;
+            else
+                for (int section = 0; section < numSections; section++)
+                    if (isInSection (slotSamples, section, splitNotes))
+                        sectionParts[section] |= 1 << part;
+
+            final double [] settings = partSettings.get (slotSamples);
+            program.setOscillator (part, 0, partSlot[2], (float) settings[1]);
+            program.setOscillatorTuning (part, 0, settings[0]);
+            for (int oscillator = 1; oscillator < ThirdWaveProgram.NUM_OSCILLATORS; oscillator++)
+                program.setOscillator (part, oscillator, analogWaveform, 0);
+            program.setPartVolume (part, (float) settings[2]);
+            program.setPartPanning (part, voice.panning ());
         }
-        program.setKeyboardSplits (splitNotes);
+        program.setKeyboardSplits (splitNotes, sectionParts);
 
         final File file = this.createUniqueFilename (destinationFolder, SafeFileNames.create (name), "pgdata");
         this.notifier.log ("IDS_NOTIFY_STORING", file.getAbsolutePath ());
@@ -176,6 +317,220 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
         {
             ThirdWaveFile.writeProgram (out, name, slots, program);
         }
+    }
+
+
+    /**
+     * A voice of a program: samples which are not layered, split into sample slots along the
+     * keyboard, and the panning of their parts.
+     *
+     * @param panning The panning of the parts, -1 (left) to 1 (right)
+     * @param slots The samples of the slots
+     */
+    private record Voice (double panning, List<List<ThirdWaveFile.Sample>> slots)
+    {
+        // Intentionally empty
+    }
+
+
+    /**
+     * Distribute the samples to voices: first by their panning and by their tuning in semi-tones,
+     * e.g. a part which plays an octave lower, then into layers.
+     *
+     * @param samples The samples
+     * @param usePanning If false, all samples are centered
+     * @param useTuning If false, the tuning is not considered
+     * @return The voices, ordered by their panning
+     */
+    private static List<Voice> createVoices (final List<ProgramSample> samples, final boolean usePanning, final boolean useTuning)
+    {
+        final TreeMap<Double, TreeMap<Long, List<ThirdWaveFile.Sample>>> groups = new TreeMap<> ();
+        for (final ProgramSample sample: samples)
+        {
+            final double panning = usePanning ? Math.round (sample.panning () * 100) / 100.0 : 0;
+            final long tuning = useTuning ? Math.round (sample.tuning ()) : 0;
+            groups.computeIfAbsent (Double.valueOf (panning), _ -> new TreeMap<> ()).computeIfAbsent (Long.valueOf (tuning), _ -> new ArrayList<> ()).add (sample.sample ());
+        }
+        final List<Voice> voices = new ArrayList<> ();
+        for (final Map.Entry<Double, TreeMap<Long, List<ThirdWaveFile.Sample>>> panningGroup: groups.entrySet ())
+            for (final List<ThirdWaveFile.Sample> tuningGroup: panningGroup.getValue ().values ())
+                for (final List<ThirdWaveFile.Sample> layer: createLayers (tuningGroup))
+                    voices.add (new Voice (panningGroup.getKey ().doubleValue (), splitLayer (layer, false)));
+        return voices;
+    }
+
+
+    /**
+     * Test if the tuning of the samples of all slots can be set on the parts which play them: the
+     * part gets the tuning which most samples of its slot share, the others need to move their
+     * assigned note by the difference without losing a key of their key range.
+     *
+     * @param voices The voices
+     * @param tunings The tuning of each sample
+     * @return True if the tuning of all samples can be kept
+     */
+    private static boolean isTunable (final List<Voice> voices, final Map<ThirdWaveFile.Sample, Double> tunings)
+    {
+        for (final Voice voice: voices)
+            for (final List<ThirdWaveFile.Sample> slot: voice.slots ())
+            {
+                final double tuning = getPartTuning (slot, tunings);
+                for (final ThirdWaveFile.Sample sample: slot)
+                {
+                    final long root = sample.root () - Math.round (tunings.get (sample).doubleValue () - tuning);
+                    if (root < 0 || root > 127 || sample.low () < root - ThirdWaveFile.MAX_TRANSPOSITION || sample.high () > root + ThirdWaveFile.MAX_TRANSPOSITION)
+                        return false;
+                }
+            }
+        return true;
+    }
+
+
+    /**
+     * Get the tuning for the part which plays a slot: the one which most of its samples have.
+     *
+     * @param slot The samples of the slot
+     * @param tunings The tuning of each sample
+     * @return The tuning in semi-tones
+     */
+    private static double getPartTuning (final List<ThirdWaveFile.Sample> slot, final Map<ThirdWaveFile.Sample, Double> tunings)
+    {
+        final Map<Double, Integer> counts = new HashMap<> ();
+        double tuning = tunings.get (slot.get (0)).doubleValue ();
+        int maxCount = 0;
+        for (final ThirdWaveFile.Sample sample: slot)
+        {
+            final Double sampleTuning = tunings.get (sample);
+            final int count = counts.merge (sampleTuning, Integer.valueOf (1), Integer::sum).intValue ();
+            if (count > maxCount)
+            {
+                maxCount = count;
+                tuning = sampleTuning.doubleValue ();
+            }
+        }
+        return tuning;
+    }
+
+
+    /**
+     * Move the tuning and the loudness which the samples of a slot share to the part which plays
+     * the slot: the tuning which most of the samples have and the volume of the loudest one. The
+     * samples keep the difference.
+     *
+     * @param slot The samples of the slot, which are replaced
+     * @param tunings The tuning of each sample
+     * @return The tuning of the oscillator in semi-tones, its level, the volume of the part and the
+     *         number of samples whose key range was limited
+     */
+    private static double [] moveToPart (final List<ThirdWaveFile.Sample> slot, final Map<ThirdWaveFile.Sample, Double> tunings)
+    {
+        final double tuning = getPartTuning (slot, tunings);
+        int limitedKeyRanges = 0;
+        double volume = 0;
+        for (final ThirdWaveFile.Sample sample: slot)
+            volume = Math.max (volume, sample.volume ());
+        final double level = Math.min (volume, 1);
+        final double partVolume = Math.clamp (volume, 1, ThirdWaveProgram.MAX_PART_VOLUME);
+        final double partGain = level * partVolume;
+
+        for (int i = 0; i < slot.size (); i++)
+        {
+            final ThirdWaveFile.Sample sample = slot.get (i);
+            // The rest of the tuning moves the assigned note, if it can
+            final double rest = tunings.get (sample).doubleValue () - tuning;
+            long coarse = Math.round (rest);
+            final long root = sample.root () - coarse;
+            if (root < 0 || root > 127)
+                coarse = 0;
+            final int newRoot = (int) (sample.root () - coarse);
+            final int low = Math.max (sample.low (), newRoot - ThirdWaveFile.MAX_TRANSPOSITION);
+            final int high = Math.min (sample.high (), newRoot + ThirdWaveFile.MAX_TRANSPOSITION);
+            if (low != sample.low () || high != sample.high ())
+                limitedKeyRanges++;
+            final float fineTuning = (float) Math.clamp (rest - coarse, -1, 1);
+            final float sampleVolume = (float) (partGain > 0 ? Math.min (sample.volume () / partGain, ThirdWaveFile.MAX_VOLUME) : 1);
+            slot.set (i, new ThirdWaveFile.Sample (sample.name (), sample.sampleRate (), sample.bitDepth (), sample.start (), sample.end (), sample.loopStart (), sample.loopEnd (), newRoot, Math.min (low, high), high, sample.crossfadeType (), sample.crossfade (), sample.loopMode (), fineTuning, sample.secondSampleRate (), sampleVolume, sample.audio ()));
+        }
+        return new double []
+        {
+            tuning,
+            level,
+            partVolume,
+            limitedKeyRanges
+        };
+    }
+
+
+    /**
+     * Test if two slots have the same samples: the same audio, mapping, loop, tuning and volume.
+     *
+     * @param samples1 The samples of the first slot
+     * @param samples2 The samples of the second slot
+     * @return True if they are the same
+     */
+    private static boolean isSameSlot (final List<ThirdWaveFile.Sample> samples1, final List<ThirdWaveFile.Sample> samples2)
+    {
+        if (samples1.size () != samples2.size ())
+            return false;
+        for (int i = 0; i < samples1.size (); i++)
+        {
+            final ThirdWaveFile.Sample s1 = samples1.get (i);
+            final ThirdWaveFile.Sample s2 = samples2.get (i);
+            if (s1.sampleRate () != s2.sampleRate () || s1.start () != s2.start () || s1.end () != s2.end () || s1.loopStart () != s2.loopStart () || s1.loopEnd () != s2.loopEnd () || s1.root () != s2.root () || s1.low () != s2.low () || s1.high () != s2.high () || s1.crossfadeType () != s2.crossfadeType () || s1.crossfade () != s2.crossfade () || s1.loopMode () != s2.loopMode () || s1.tune () != s2.tune () || s1.volume () != s2.volume () || !Arrays.equals (s1.audio (), s2.audio ()))
+                return false;
+        }
+        return true;
+    }
+
+
+    private static int countParts (final List<Voice> voices)
+    {
+        int count = 0;
+        for (final Voice voice: voices)
+            count += voice.slots ().size ();
+        return count;
+    }
+
+
+    /**
+     * Test if the slots of a voice lie in the keyboard sections with the same index. A slot may
+     * reach one key into the neighbouring sections, which the lowest sample of the upper slot plays
+     * as well, see splitKeyboard.
+     *
+     * @param slots The samples of the slots of the voice, one for each section
+     * @param splitNotes The notes of the split points; a split point belongs to the lower section
+     * @return True if all slots fit into their sections
+     */
+    private static boolean fitsSections (final List<List<ThirdWaveFile.Sample>> slots, final int [] splitNotes)
+    {
+        for (int section = 0; section < slots.size (); section++)
+        {
+            final int low = section == 0 ? 0 : splitNotes[section - 1];
+            final int high = section == splitNotes.length ? 127 : splitNotes[section] + 1;
+            for (final ThirdWaveFile.Sample sample: slots.get (section))
+                if (sample.low () < low || sample.high () > high)
+                    return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * Test if one of the samples of a slot plays in a keyboard section.
+     *
+     * @param samples The samples of the slot
+     * @param section The index of the section
+     * @param splitNotes The notes of the split points; a split point belongs to the lower section
+     * @return True if a sample plays in the section
+     */
+    private static boolean isInSection (final List<ThirdWaveFile.Sample> samples, final int section, final int [] splitNotes)
+    {
+        final int low = section == 0 ? 0 : splitNotes[section - 1] + 1;
+        final int high = section == splitNotes.length ? 127 : splitNotes[section];
+        for (final ThirdWaveFile.Sample sample: samples)
+            if (sample.low () <= high && sample.high () >= low)
+                return true;
+        return false;
     }
 
 
@@ -209,7 +564,7 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
             this.notifier.log ("IDS_NOTIFY_STORING", file.getAbsolutePath ());
             try (final OutputStream out = new BufferedOutputStream (new FileOutputStream (file)))
             {
-                ThirdWaveFile.write (out, new ThirdWaveFile.Slot (createSlotName (name, suffix), -1, slots.get (i)));
+                ThirdWaveFile.write (out, new ThirdWaveFile.Slot (createSlotName (name, suffix), -1, -1, slots.get (i)));
             }
         }
     }
@@ -220,12 +575,13 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
      *
      * @param zone The zone
      * @param notes Where to count the differences
-     * @param hasVolume True if the sample stores a volume (unified program files), otherwise the
-     *            gain is applied to the audio
+     * @param forProgram True if the sample is for a unified program file: its gain is stored as its
+     *            volume and its tuning is left to the program; otherwise the gain is applied to the
+     *            audio and the tuning to the assigned note and the fine tuning
      * @return The sample, empty if the zone cannot be converted
      * @throws IOException Could not convert the audio
      */
-    private Optional<ThirdWaveFile.Sample> createSample (final ISampleZone zone, final Notes notes, final boolean hasVolume) throws IOException
+    private Optional<ThirdWaveFile.Sample> createSample (final ISampleZone zone, final Notes notes, final boolean forProgram) throws IOException
     {
         final String zoneName = zone.getName ();
         final Optional<ISampleData> sampleData = zone.getSampleData ();
@@ -236,7 +592,7 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
         }
 
         // The assigned note moves by the coarse tuning, the fine tuning is only +/-1 semi-tone
-        final double tuning = zone.getTuning ();
+        final double tuning = forProgram ? 0 : zone.getTuning ();
         final long coarseTuning = Math.round (tuning);
         final int keyLow = Math.clamp (limitToDefault (zone.getKeyLow (), 0), 0, 127);
         final int keyHigh = Math.clamp (limitToDefault (zone.getKeyHigh (), 127), keyLow, 127);
@@ -301,14 +657,15 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
             peak = Math.max (peak, Math.abs (mono[frame]));
         }
 
-        // The samples of a unified program store a volume up to +6dB, the multi-sample slot files
-        // none; the rest of the gain is applied to the audio - but not further than to its peak
-        // level, since the audio would clip
+        // The samples of a unified program store a volume up to +6dB, which the volume of the part
+        // raises by up to 1.7 (see moveToPart), the multi-sample slot files none; the rest of the
+        // gain is applied to the audio - but not further than to its peak level, since the audio
+        // would clip
         double gain = Math.pow (10, zone.getGain () / 20.0);
         float volume = 1;
-        if (hasVolume)
+        if (forProgram)
         {
-            volume = (float) Math.min (gain, ThirdWaveFile.MAX_VOLUME);
+            volume = (float) Math.min (gain, ThirdWaveFile.MAX_VOLUME * ThirdWaveProgram.MAX_PART_VOLUME);
             gain = volume > 0 ? gain / volume : 1;
         }
         if (gain > 1 && peak * gain > Short.MAX_VALUE)
@@ -467,41 +824,50 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
      * keys. The instrument sets a split point to 'the end of the lower and the beginning of the
      * upper split zone', it is not clear to which one the note belongs. Therefore, the split point
      * lies either on a note which neither slot plays or the lowest sample of the upper slot is
-     * extended to play the note as well.
+     * extended to play the note as well; this is done for all voices with as many slots.
      *
-     * @param slots The samples of the slots, the lowest samples might be replaced
-     * @return The notes of the split points, one less than there are slots
+     * @param voices The voices, the lowest samples of their slots might be replaced
+     * @param numSections The number of keyboard sections, the number of slots of the main voice
+     * @param slots The slots of the main voice
+     * @return The notes of the split points, one less than there are sections
      */
-    private static int [] splitKeyboard (final List<List<ThirdWaveFile.Sample>> slots)
+    private static int [] splitKeyboard (final List<Voice> voices, final int numSections, final List<List<ThirdWaveFile.Sample>> slots)
     {
-        final int [] splitNotes = new int [slots.size () - 1];
-        for (int i = 1; i < slots.size (); i++)
+        final int [] splitNotes = new int [numSections - 1];
+        for (int i = 1; i < numSections; i++)
         {
-            final List<ThirdWaveFile.Sample> lower = slots.get (i - 1);
-            final List<ThirdWaveFile.Sample> upper = slots.get (i);
             int lowerHigh = 0;
-            for (final ThirdWaveFile.Sample sample: lower)
+            for (final ThirdWaveFile.Sample sample: slots.get (i - 1))
                 lowerHigh = Math.max (lowerHigh, sample.high ());
-            int lowest = 0;
-            for (int s = 1; s < upper.size (); s++)
-                if (upper.get (s).low () < upper.get (lowest).low ())
-                    lowest = s;
-            final ThirdWaveFile.Sample lowestSample = upper.get (lowest);
+            final ThirdWaveFile.Sample lowestSample = slots.get (i).get (getLowestSample (slots.get (i)));
 
-            int splitNote;
-            if (lowestSample.low () > lowerHigh + 1)
-                splitNote = lowerHigh + 1;
-            else
-            {
-                splitNote = lowestSample.low () - 1;
-                if (lowestSample.root () - splitNote <= ThirdWaveFile.MAX_TRANSPOSITION)
-                    upper.set (lowest, lowestSample.withLow (splitNote));
-            }
+            int splitNote = lowestSample.low () > lowerHigh + 1 ? lowerHigh + 1 : lowestSample.low () - 1;
             if (i > 1)
                 splitNote = Math.max (splitNote, splitNotes[i - 2] + 1);
             splitNotes[i - 1] = Math.clamp (splitNote, 0, 127);
+
+            for (final Voice voice: voices)
+            {
+                if (voice.slots ().size () != numSections)
+                    continue;
+                final List<ThirdWaveFile.Sample> upper = voice.slots ().get (i);
+                final int lowest = getLowestSample (upper);
+                final ThirdWaveFile.Sample sample = upper.get (lowest);
+                if (sample.low () == splitNotes[i - 1] + 1 && sample.root () - splitNotes[i - 1] <= ThirdWaveFile.MAX_TRANSPOSITION)
+                    upper.set (lowest, sample.withLow (splitNotes[i - 1]));
+            }
         }
         return splitNotes;
+    }
+
+
+    private static int getLowestSample (final List<ThirdWaveFile.Sample> samples)
+    {
+        int lowest = 0;
+        for (int i = 1; i < samples.size (); i++)
+            if (samples.get (i).low () < samples.get (lowest).low ())
+                lowest = i;
+        return lowest;
     }
 
 
@@ -533,6 +899,28 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
     private static String createSuffix (final int number, final int count)
     {
         return count < 10 ? " " + number : String.format (Locale.US, " %02d", Integer.valueOf (number));
+    }
+
+
+    /**
+     * Create the suffix of the name of a slot of a program, which numbers the slots along the
+     * keyboard and names the voice: 'L' and 'R' for two voices panned to both sides, otherwise
+     * letters.
+     *
+     * @param slot The index of the slot along the keyboard
+     * @param numSlots The number of slots of the voice
+     * @param voice The index of the voice
+     * @param voices All voices, ordered from left to right
+     * @return The suffix
+     */
+    private static String createSuffix (final int slot, final int numSlots, final int voice, final List<Voice> voices)
+    {
+        final String suffix = numSlots == 1 ? "" : createSuffix (slot + 1, numSlots);
+        if (voices.size () == 1)
+            return suffix;
+        if (voices.size () == 2 && voices.get (0).panning () < 0 && voices.get (1).panning () > 0)
+            return suffix + (voice == 0 ? " L" : " R");
+        return suffix + " " + (char) ('A' + Math.min (voice, 25));
     }
 
 

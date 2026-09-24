@@ -17,8 +17,9 @@ import java.util.List;
 /**
  * The parameters of a program of the Groove Synthesis 3rd Wave. A program has 4 parts, each with 3
  * oscillators, 181 integer and 136 float parameters, followed by 181 integer parameters of the
- * whole program. A program is created from the init program of the instrument, of which only the
- * oscillators of the parts, their levels and the split of the keyboard are changed. See
+ * whole program. Written programs are created from the init program of the instrument, of which
+ * only the oscillators of the parts with their levels and tuning, the volume and panning of the
+ * parts and the split of the keyboard are changed. See
  * <i>documentation/design/THIRD_WAVE_FORMAT.md</i> for the positions of these parameters.
  *
  * @author Jürgen Moßgraber
@@ -29,15 +30,35 @@ final class ThirdWaveProgram
     static final int            NUM_PARTS                   = 4;
     /** The number of oscillators of a part. */
     static final int            NUM_OSCILLATORS             = 3;
-
-    private static final int    NUM_PART_INTEGERS           = 181;
-    private static final int    NUM_PART_FLOATS             = 136;
-    private static final int    NUM_PROGRAM_INTEGERS        = 181;
+    /** The number of integer parameters of a part. */
+    static final int            NUM_PART_INTEGERS           = 181;
+    /** The number of float parameters of a part. */
+    static final int            NUM_PART_FLOATS             = 136;
+    /** The number of integer parameters of the program, older versions have fewer. */
+    static final int            NUM_PROGRAM_INTEGERS        = 181;
+    /** The number of the first integer parameters of the program which are used. */
+    static final int            NUM_USED_PROGRAM_INTEGERS   = 28;
 
     /** Part integers: the wavetable, analog waveform or sample slot of oscillator 1 to 3. */
     private static final int    PART_OSCILLATOR_WAVE        = 0;
+    /** Part integers: 1 if oscillator 1 to 3 follows the keyboard, 0 if its pitch is fixed. */
+    private static final int    PART_OSCILLATOR_PITCH       = 167;
+    /** Part floats: the coarse tuning of oscillator 1 to 3 in semi-tones. */
+    private static final int    PART_OSCILLATOR_COARSE      = 0;
+    /** Part floats: the fine tuning of oscillator 1 to 3 in semi-tones (-0.5 to 0.5). */
+    private static final int    PART_OSCILLATOR_FINE        = 3;
     /** Part floats: the level (0 to 1) of oscillator 1 to 3. */
     private static final int    PART_OSCILLATOR_LEVEL       = 6;
+    /** Part floats: the transposition of the keyboard in semi-tones (-24 to 24). */
+    private static final int    PART_TRANSPOSE              = 9;
+    /** Part floats: the volume of the part as a factor (0 to 1.7). */
+    private static final int    PART_VOLUME                 = 112;
+    /** The maximum volume of a part. */
+    static final float          MAX_PART_VOLUME             = 1.7f;
+    /** Part floats: the panning of the part (0 = left, 0.5 = center, 1 = right). */
+    private static final int    PART_PAN                    = 124;
+    /** Part floats: the fine tuning of the part in semi-tones (-0.5 to 0.5). */
+    private static final int    PART_FINE                   = 125;
     /** Program integers: the number of split points of the keyboard (0 to 3). */
     private static final int    PROGRAM_SPLIT_COUNT         = 18;
     /** Program integers: the notes of the split points 1 to 3. */
@@ -54,7 +75,7 @@ final class ThirdWaveProgram
 
 
     /**
-     * Private since created by the factory method.
+     * Private since created by the factory methods.
      */
     private ThirdWaveProgram ()
     {
@@ -105,6 +126,170 @@ final class ThirdWaveProgram
 
 
     /**
+     * Read the parameters of a program as they are stored behind the numbers of the parameters in a
+     * unified program file.
+     *
+     * @param data The parameters, little-endian
+     * @param numProgramIntegers The number of integer parameters of the program, at least
+     *            NUM_USED_PROGRAM_INTEGERS
+     * @return The program
+     */
+    static ThirdWaveProgram read (final ByteBuffer data, final int numProgramIntegers)
+    {
+        data.order (ByteOrder.LITTLE_ENDIAN);
+        final ThirdWaveProgram program = new ThirdWaveProgram ();
+        for (int part = 0; part < NUM_PARTS; part++)
+            for (int i = 0; i < NUM_PART_INTEGERS; i++)
+                program.partIntegers[part][i] = data.getInt ();
+        for (int part = 0; part < NUM_PARTS; part++)
+            for (int i = 0; i < NUM_PART_FLOATS; i++)
+                program.partFloats[part][i] = data.getFloat ();
+        for (int i = 0; i < numProgramIntegers; i++)
+        {
+            final int value = data.getInt ();
+            if (i < NUM_PROGRAM_INTEGERS)
+                program.programIntegers[i] = value;
+        }
+        return program;
+    }
+
+
+    /**
+     * Get what an oscillator of a part plays.
+     *
+     * @param part The index of the part (0-3)
+     * @param oscillator The index of the oscillator (0-2)
+     * @return The ID of the resource (sample slot, wavetable or analog waveform) in the resource
+     *         directory of the program file
+     */
+    int getOscillatorResource (final int part, final int oscillator)
+    {
+        return this.partIntegers[part][PART_OSCILLATOR_WAVE + oscillator];
+    }
+
+
+    /**
+     * Get the level of an oscillator of a part.
+     *
+     * @param part The index of the part (0-3)
+     * @param oscillator The index of the oscillator (0-2)
+     * @return The level, 0 to 1
+     */
+    float getOscillatorLevel (final int part, final int oscillator)
+    {
+        return this.partFloats[part][PART_OSCILLATOR_LEVEL + oscillator];
+    }
+
+
+    /**
+     * Get the tuning of an oscillator of a part.
+     *
+     * @param part The index of the part (0-3)
+     * @param oscillator The index of the oscillator (0-2)
+     * @return The coarse and fine tuning in semi-tones
+     */
+    double getOscillatorTuning (final int part, final int oscillator)
+    {
+        return (double) this.partFloats[part][PART_OSCILLATOR_COARSE + oscillator] + this.partFloats[part][PART_OSCILLATOR_FINE + oscillator];
+    }
+
+
+    /**
+     * Does an oscillator of a part follow the keyboard?
+     *
+     * @param part The index of the part (0-3)
+     * @param oscillator The index of the oscillator (0-2)
+     * @return False if its pitch is fixed
+     */
+    boolean isOscillatorPitchTracked (final int part, final int oscillator)
+    {
+        return this.partIntegers[part][PART_OSCILLATOR_PITCH + oscillator] != 0;
+    }
+
+
+    /**
+     * Get the transposition of the keyboard of a part.
+     *
+     * @param part The index of the part (0-3)
+     * @return The transposition in semi-tones
+     */
+    int getPartTranspose (final int part)
+    {
+        return Math.round (this.partFloats[part][PART_TRANSPOSE]);
+    }
+
+
+    /**
+     * Get the volume of a part.
+     *
+     * @param part The index of the part (0-3)
+     * @return The volume as a factor, 0 to 1.7
+     */
+    float getPartVolume (final int part)
+    {
+        return this.partFloats[part][PART_VOLUME];
+    }
+
+
+    /**
+     * Get the panning of a part.
+     *
+     * @param part The index of the part (0-3)
+     * @return The panning, -1 (left) to 1 (right)
+     */
+    double getPartPanning (final int part)
+    {
+        return Math.clamp (2.0 * this.partFloats[part][PART_PAN] - 1.0, -1.0, 1.0);
+    }
+
+
+    /**
+     * Get the fine tuning of a part.
+     *
+     * @param part The index of the part (0-3)
+     * @return The tuning in semi-tones
+     */
+    double getPartFineTuning (final int part)
+    {
+        return this.partFloats[part][PART_FINE];
+    }
+
+
+    /**
+     * Get the ranges of the keyboard sections, which are split by the split points.
+     *
+     * @return The lowest and highest note of each section; the note of a split point belongs to
+     *         the lower section
+     */
+    int [] [] getKeyboardSections ()
+    {
+        final int numSplits = Math.clamp (this.programIntegers[PROGRAM_SPLIT_COUNT], 0, NUM_PARTS - 1);
+        final int [] [] sections = new int [numSplits + 1] [2];
+        int low = 0;
+        for (int i = 0; i <= numSplits; i++)
+        {
+            final int high = i == numSplits ? 127 : Math.clamp (this.programIntegers[PROGRAM_SPLIT_NOTE + i], low, 127);
+            sections[i][0] = low;
+            sections[i][1] = high;
+            low = Math.min (high + 1, 127);
+        }
+        return sections;
+    }
+
+
+    /**
+     * Get the parts which a keyboard section plays.
+     *
+     * @param section The index of the section (0-3)
+     * @return The parts as a bit mask, bit 0 is part 1
+     */
+    int getSectionParts (final int section)
+    {
+        return this.programIntegers[PROGRAM_SECTION_PARTS + section];
+    }
+
+
+    /**
      * Set what an oscillator of a part plays.
      *
      * @param part The index of the part (0-3)
@@ -134,18 +319,58 @@ final class ThirdWaveProgram
 
 
     /**
-     * Split the keyboard into sections, the first section plays part 1, the second part 2, and so
-     * on.
+     * Set the tuning of an oscillator of a part.
+     *
+     * @param part The index of the part (0-3)
+     * @param oscillator The index of the oscillator (0-2)
+     * @param tuning The tuning in semi-tones, -64 to 63
+     */
+    void setOscillatorTuning (final int part, final int oscillator, final double tuning)
+    {
+        final long coarse = Math.clamp (Math.round (tuning), -64, 63);
+        this.partFloats[part][PART_OSCILLATOR_COARSE + oscillator] = coarse;
+        this.partFloats[part][PART_OSCILLATOR_FINE + oscillator] = (float) Math.clamp (tuning - coarse, -0.5, 0.5);
+    }
+
+
+    /**
+     * Set the volume of a part.
+     *
+     * @param part The index of the part (0-3)
+     * @param volume The volume as a factor, 0 to 1.7
+     */
+    void setPartVolume (final int part, final float volume)
+    {
+        this.partFloats[part][PART_VOLUME] = Math.clamp (volume, 0, MAX_PART_VOLUME);
+    }
+
+
+    /**
+     * Set the panning of a part.
+     *
+     * @param part The index of the part (0-3)
+     * @param panning The panning, -1 (left) to 1 (right)
+     */
+    void setPartPanning (final int part, final double panning)
+    {
+        this.partFloats[part][PART_PAN] = (float) ((Math.clamp (panning, -1.0, 1.0) + 1.0) / 2.0);
+    }
+
+
+    /**
+     * Split the keyboard into sections.
      *
      * @param splitNotes The notes of the split points, at most 3, increasing
+     * @param sectionParts The parts (bit mask) which each section plays, one more than there are
+     *            split points
      */
-    void setKeyboardSplits (final int [] splitNotes)
+    void setKeyboardSplits (final int [] splitNotes, final int [] sectionParts)
     {
         this.programIntegers[PROGRAM_SPLIT_COUNT] = splitNotes.length;
         for (int i = 0; i < splitNotes.length; i++)
             this.programIntegers[PROGRAM_SPLIT_NOTE + i] = splitNotes[i];
         for (int i = 0; i < NUM_PARTS; i++)
-            this.programIntegers[PROGRAM_SECTION_PARTS + i] = 1 << i;
+            this.programIntegers[PROGRAM_SECTION_PARTS + i] = i < sectionParts.length ? sectionParts[i] : 1 << i;
     }
 
 

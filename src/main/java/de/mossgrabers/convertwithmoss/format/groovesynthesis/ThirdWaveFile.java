@@ -123,9 +123,11 @@ final class ThirdWaveFile
      *
      * @param name The name of the slot
      * @param index The index of the slot (0 for S00), -1 if unknown
+     * @param resource The ID of the slot in the resource directory of a unified program file, -1
+     *            for a multi-sample file
      * @param samples The samples of the slot, ordered by their assigned note
      */
-    record Slot (String name, int index, List<Sample> samples)
+    record Slot (String name, int index, int resource, List<Sample> samples)
     {
         /**
          * Get the number of frames of all recordings of the slot.
@@ -148,10 +150,37 @@ final class ThirdWaveFile
      * @param name The name of the program or slot
      * @param isProgram True if the file is a unified program file
      * @param slots The sample slots
+     * @param resourceTypes The types of the resources of a unified program file by their ID
+     * @param program The parameters of the program of a unified program file, null if there is
+     *            none or its layout is unknown
      */
-    record Content (String name, boolean isProgram, List<Slot> slots)
+    record Content (String name, boolean isProgram, List<Slot> slots, int [] resourceTypes, ThirdWaveProgram program)
     {
-        // Intentionally empty
+        /**
+         * Test if a resource of a unified program file is a sample slot.
+         *
+         * @param resource The ID of the resource
+         * @return True if it is a sample slot
+         */
+        boolean isSampleSlot (final int resource)
+        {
+            return resource >= 0 && resource < this.resourceTypes.length && this.resourceTypes[resource] == TYPE_SAMPLE_SLOT;
+        }
+
+
+        /**
+         * Get the sample slot with a resource ID.
+         *
+         * @param resource The ID of the resource
+         * @return The slot, null if it is none or its samples are not included in the file
+         */
+        Slot getSlot (final int resource)
+        {
+            for (final Slot slot: this.slots)
+                if (slot.resource () == resource)
+                    return slot;
+            return null;
+        }
     }
 
 
@@ -190,9 +219,9 @@ final class ThirdWaveFile
                 return readProgram (input);
             }
 
-            final Slot slot = readSlot (input, getSlotVersion (header, magic), -1);
+            final Slot slot = readSlot (input, getSlotVersion (header, magic), -1, -1);
             check (input.getFilePointer () == input.length (), "Unexpected data behind the last sample.");
-            return new Content (slot.name (), false, List.of (slot));
+            return new Content (slot.name (), false, List.of (slot), new int [0], null);
         }
     }
 
@@ -367,24 +396,32 @@ final class ThirdWaveFile
                     skip (input, U_WAVETABLE_SIZE);
                     break;
                 case TYPE_SAMPLE_SLOT:
-                    slots.add (readSlot (input, PROGRAM_VERSION, numbers[id] - FIRST_SLOT_NUMBER));
+                    slots.add (readSlot (input, PROGRAM_VERSION, numbers[id] - FIRST_SLOT_NUMBER, id));
                     break;
                 default:
                     throw new IOException ("Unsupported resource type: " + type);
             }
         }
 
-        // The program: name, number of parameters per part (floats and integers), number of the
+        // The program: name, number of integer and float parameters of each part, number of the
         // parameters of the program and number of sequencer events
         final String name = readName (input);
-        final long numFloats = readUnsignedInt (input);
-        final long numIntegers = readUnsignedInt (input);
-        final long numSingles = readUnsignedInt (input);
+        final long numPartIntegers = readUnsignedInt (input);
+        final long numPartFloats = readUnsignedInt (input);
+        final long numProgramIntegers = readUnsignedInt (input);
         final long numEvents = readUnsignedInt (input);
-        check (numFloats <= MAX_PARAMETERS && numIntegers <= MAX_PARAMETERS && numSingles <= MAX_PARAMETERS, "Invalid number of program parameters.");
-        final long programSize = 4 * (4 * (numFloats + numIntegers) + numSingles) + 24 * numEvents;
+        check (numPartIntegers <= MAX_PARAMETERS && numPartFloats <= MAX_PARAMETERS && numProgramIntegers <= MAX_PARAMETERS, "Invalid number of program parameters.");
+        final long programSize = 4 * (4 * (numPartIntegers + numPartFloats) + numProgramIntegers) + 24 * numEvents;
         check (programSize == input.length () - input.getFilePointer (), "Broken program data.");
-        return new Content (name, true, slots);
+
+        ThirdWaveProgram program = null;
+        if (numPartIntegers == ThirdWaveProgram.NUM_PART_INTEGERS && numPartFloats == ThirdWaveProgram.NUM_PART_FLOATS && numProgramIntegers >= ThirdWaveProgram.NUM_USED_PROGRAM_INTEGERS)
+        {
+            final byte [] parameters = new byte [(int) (4 * (4 * (numPartIntegers + numPartFloats) + numProgramIntegers))];
+            input.readFully (parameters);
+            program = ThirdWaveProgram.read (ByteBuffer.wrap (parameters), (int) numProgramIntegers);
+        }
+        return new Content (name, true, slots, types, program);
     }
 
 
@@ -395,10 +432,11 @@ final class ThirdWaveFile
      * @param input The input
      * @param version The version of the samples
      * @param index The index of the slot, -1 if unknown
+     * @param resource The ID of the slot in the resource directory, -1 if none
      * @return The slot
      * @throws IOException The data is broken
      */
-    private static Slot readSlot (final RandomAccessFile input, final int version, final int index) throws IOException
+    private static Slot readSlot (final RandomAccessFile input, final int version, final int index, final int resource) throws IOException
     {
         final int count = input.readUnsignedByte ();
         check (count <= MAX_SAMPLES, "A slot holds at most 8 samples but found " + count + ".");
@@ -438,7 +476,7 @@ final class ThirdWaveFile
             input.readFully (audio);
             samples.add (new Sample (name, sampleRate, bitDepth, start, end, loopStart, loopEnd, root, low, high, crossfadeType, (int) crossfade, loopMode, tune, secondSampleRate, volume, audio));
         }
-        return new Slot (slotName, index, samples);
+        return new Slot (slotName, index, resource, samples);
     }
 
 
