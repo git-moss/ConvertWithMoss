@@ -92,7 +92,12 @@ public class AudioSampleReducer
             if (reduceBitDepth > 0 || reduceFrequency > 0)
             {
                 resampledLoops[i] = getResampledLoop (sampleZone.getLoops (), data).orElse (null);
-                data = resample (data, reduceBitDepth, reduceFrequency, alwaysResample, resampledLoops[i]);
+                final ConvertedSample converted = resample (data, reduceBitDepth, reduceFrequency, alwaysResample, resampledLoops[i]);
+                data = converted.data ();
+                // A sample which would clip after the conversion is lowered, the zone plays it
+                // louder by the same amount
+                if (converted.attenuation () > 0)
+                    sampleZone.setGain (sampleZone.getGain () + converted.attenuation ());
             }
 
             newSampleCache.add (data);
@@ -194,12 +199,12 @@ public class AudioSampleReducer
     }
 
 
-    private static byte [] resample (final byte [] wavData, final int reduceBitDepth, final int reduceFrequency, final boolean alwaysResample, final ISampleLoop loop) throws IOException, UnsupportedAudioFileException
+    private static ConvertedSample resample (final byte [] wavData, final int reduceBitDepth, final int reduceFrequency, final boolean alwaysResample, final ISampleLoop loop) throws IOException, UnsupportedAudioFileException
     {
         final boolean shouldResampleBitDepth = reduceBitDepth > 0;
         final boolean shouldResampleFrequency = reduceFrequency > 0;
         if (!shouldResampleBitDepth && !shouldResampleFrequency)
-            return wavData;
+            return new ConvertedSample (wavData, 0);
 
         boolean needsBitDepthResampling = false;
         boolean needsFrequencyResampling = false;
@@ -213,8 +218,8 @@ public class AudioSampleReducer
         if (needsBitDepthResampling)
             data = reduceBitDepth (data, reduceBitDepth, alwaysResample);
         if (needsFrequencyResampling)
-            data = resampleFrequency (data, reduceFrequency, alwaysResample, loop);
-        return data;
+            return convertFrequency (data, reduceFrequency, alwaysResample, loop, true);
+        return new ConvertedSample (data, 0);
     }
 
 
@@ -425,7 +430,8 @@ public class AudioSampleReducer
 
     /**
      * Re-sample frequency with a band-limited interpolation and keep a loop intact, see
-     * {@link SincResampler#resampleLoop(double[], int, int, int, int)}.
+     * {@link SincResampler#resampleLoop(double[], int, int, int, int)}. Audio which exceeds the
+     * range of the bit depth after the conversion is clipped.
      *
      * @param wavData The WAV data structure
      * @param targetRate The maximum sample rate
@@ -439,12 +445,34 @@ public class AudioSampleReducer
      */
     public static byte [] resampleFrequency (final byte [] wavData, final int targetRate, final boolean alwaysResample, final ISampleLoop loop) throws IOException, UnsupportedAudioFileException
     {
+        return convertFrequency (wavData, targetRate, alwaysResample, loop, false).data ();
+    }
+
+
+    /**
+     * Re-sample frequency with a band-limited interpolation and keep a loop intact, see
+     * {@link #resampleFrequency(byte[], int, boolean, ISampleLoop)}. The interpolation overshoots at
+     * steep transients, e.g. the edges of a square wave, therefore the audio of a sample which peaks
+     * close to full scale can exceed the range of the bit depth after the conversion. It is either
+     * lowered to fit, if the caller compensates the attenuation, or clipped.
+     *
+     * @param wavData The WAV data structure
+     * @param targetRate The maximum sample rate
+     * @param alwaysResample If true, do up-sample as well
+     * @param loop The loop to keep intact, null to convert all of the audio in the same way
+     * @param attenuate True to lower audio which would clip, false to clip it
+     * @return The updated sample as a WAV audio structure and the attenuation which was applied
+     * @throws IOException Could not read the sample
+     * @throws UnsupportedAudioFileException Could not parse the WAV file
+     */
+    private static ConvertedSample convertFrequency (final byte [] wavData, final int targetRate, final boolean alwaysResample, final ISampleLoop loop, final boolean attenuate) throws IOException, UnsupportedAudioFileException
+    {
         try (final AudioInputStream ais = AudioSystem.getAudioInputStream (new ByteArrayInputStream (wavData)))
         {
             final AudioFormat sourceFormat = ais.getFormat ();
             final float sourceRate = sourceFormat.getSampleRate ();
             if (sourceRate == targetRate || sourceRate < targetRate && !alwaysResample)
-                return wavData;
+                return new ConvertedSample (wavData, 0);
 
             final byte [] sourceData = ais.readAllBytes ();
             final AudioFormat.Encoding encoding = sourceFormat.getEncoding ();
@@ -468,19 +496,50 @@ public class AudioSampleReducer
 
             final int convertedFrames = converted[0].length;
             final byte [] targetData = new byte [convertedFrames * frameSize];
-            // The kernel overshoots at steep transients, therefore the result needs to be clipped
             final int maximum = (1 << sampleSizeInBits - 1) - 1;
             final int minimum = -(1 << sampleSizeInBits - 1);
+
+            // The kernel overshoots at steep transients: lower the audio to fit into the range or
+            // clip it
+            double scale = 1;
+            if (attenuate)
+            {
+                double highest = 0;
+                double lowest = 0;
+                for (final double [] channelData: converted)
+                    for (final double value: channelData)
+                    {
+                        highest = Math.max (highest, value);
+                        lowest = Math.min (lowest, value);
+                    }
+                if (highest > maximum + 0.5)
+                    scale = maximum / highest;
+                if (lowest < minimum - 0.5)
+                    scale = Math.min (scale, minimum / lowest);
+            }
+
             for (int frame = 0; frame < convertedFrames; frame++)
                 for (int channel = 0; channel < channels; channel++)
                 {
-                    final int sample = Math.clamp (Math.round (converted[channel][frame]), minimum, maximum);
+                    final int sample = Math.clamp (Math.round (converted[channel][frame] * scale), minimum, maximum);
                     writeSample (targetData, frame * frameSize + channel * bytesPerSample, sample, sampleSizeInBits, bigEndian, encoding);
                 }
 
             final AudioFormat targetFormat = new AudioFormat (encoding, targetRate, sampleSizeInBits, channels, frameSize, targetRate, bigEndian);
-            return audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (targetData), targetFormat, convertedFrames));
+            final byte [] result = audioStreamToWavBytes (new AudioInputStream (new ByteArrayInputStream (targetData), targetFormat, convertedFrames));
+            return new ConvertedSample (result, scale < 1 ? -20.0 * Math.log10 (scale) : 0);
         }
+    }
+
+
+    /**
+     * The audio of a sample after a conversion.
+     *
+     * @param data The sample as a WAV audio structure
+     * @param attenuation The attenuation in dB which was applied to the audio to prevent clipping
+     */
+    private record ConvertedSample (byte [] data, double attenuation)
+    {
     }
 
 
