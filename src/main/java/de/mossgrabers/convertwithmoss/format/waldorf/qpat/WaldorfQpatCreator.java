@@ -708,8 +708,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Get the name by which a group is recognized: the name of its first zone, which is usually
-     * the name of its sample, or the name of the group if it has no zones.
+     * Get the name by which a group is recognized: the name of its first zone, which is usually the
+     * name of its sample, or the name of the group if it has no zones.
      *
      * @param group The group
      * @return The name
@@ -837,10 +837,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     {
         final List<ISampleZone> zonesA = a.getSampleZones ();
         final List<ISampleZone> zonesB = b.getSampleZones ();
-        if ((zonesA.size () + zonesB.size () > MAX_MAP_ENTRIES) || (Math.abs (getOscillatorKeyTracking (zonesA) - getOscillatorKeyTracking (zonesB)) > 0.0001) || (Math.abs (getGroupPanningOffset (a) - getGroupPanningOffset (b)) > 0.0001))
-            return false;
         // An oscillator plays either through the filter or around it
-        if (hasFilter (zonesA) != hasFilter (zonesB))
+        if ((zonesA.size () + zonesB.size () > MAX_MAP_ENTRIES) || (Math.abs (getOscillatorKeyTracking (zonesA) - getOscillatorKeyTracking (zonesB)) > 0.0001) || (Math.abs (getGroupPanningOffset (a) - getGroupPanningOffset (b)) > 0.0001) || (hasFilter (zonesA) != hasFilter (zonesB)))
             return false;
         for (final ISampleZone zoneA: zonesA)
             for (final ISampleZone zoneB: zonesB)

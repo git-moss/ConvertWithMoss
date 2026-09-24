@@ -27,47 +27,47 @@ import java.util.List;
 final class ThirdWaveFile
 {
     /** The maximum number of samples in a slot. */
-    static final int            MAX_SAMPLES        = 8;
+    static final int            MAX_SAMPLES       = 8;
     /** The size of the sample memory in frames, 35 seconds at 48kHz. */
-    static final int            MEMORY_FRAMES      = 1683456;
+    static final int            MEMORY_FRAMES     = 1683456;
     /** The lowest sample rate the instrument plays. */
-    static final int            MIN_SAMPLE_RATE    = 10000;
+    static final int            MIN_SAMPLE_RATE   = 10000;
     /** The highest sample rate the instrument plays. */
-    static final int            MAX_SAMPLE_RATE    = 48000;
+    static final int            MAX_SAMPLE_RATE   = 48000;
     /** The largest distance of the lowest or highest note of a sample from its assigned note. */
-    static final int            MAX_TRANSPOSITION  = 24;
+    static final int            MAX_TRANSPOSITION = 24;
     /** The maximum length of a name, which is always written with a terminating zero. */
-    static final int            MAX_NAME_LENGTH    = 31;
+    static final int            MAX_NAME_LENGTH   = 31;
     /** The maximum volume of a sample in a unified program file (+6dB). */
-    static final double         MAX_VOLUME         = 2;
+    static final double         MAX_VOLUME        = 2;
 
-    static final int            LOOP_OFF           = 0;
-    static final int            LOOP_WHILE_HELD    = 1;
-    static final int            LOOP_ALWAYS        = 2;
-    static final int            CROSSFADE_OFF      = 0;
-    static final int            CROSSFADE_LINEAR   = 1;
-    static final int            BIT_DEPTH_16       = 2;
+    static final int            LOOP_OFF          = 0;
+    static final int            LOOP_WHILE_HELD   = 1;
+    static final int            LOOP_ALWAYS       = 2;
+    static final int            CROSSFADE_OFF     = 0;
+    static final int            CROSSFADE_LINEAR  = 1;
+    static final int            BIT_DEPTH_16      = 2;
 
-    private static final String PROGRAM_MAGIC      = "W3_UNIPROG_1";
-    private static final String SLOT_MAGIC         = "W3_MSAMPLE_";
-    private static final int    MAGIC_SIZE         = 16;
-    private static final int    NAME_SIZE          = 32;
+    private static final String PROGRAM_MAGIC     = "W3_UNIPROG_1";
+    private static final String SLOT_MAGIC        = "W3_MSAMPLE_";
+    private static final int    MAGIC_SIZE        = 16;
+    private static final int    NAME_SIZE         = 32;
     /** The version which is written. */
-    private static final int    WRITE_VERSION      = 4;
+    private static final int    WRITE_VERSION     = 4;
     /** The version of the samples in a unified program file, which adds the volume. */
-    private static final int    PROGRAM_VERSION    = 5;
+    private static final int    PROGRAM_VERSION   = 5;
 
-    private static final int    TYPE_P_WAVETABLE   = 0;
-    private static final int    TYPE_U_WAVETABLE   = 1;
-    private static final int    TYPE_ANALOG        = 2;
-    private static final int    TYPE_SAMPLE_SLOT   = 4;
+    private static final int    TYPE_P_WAVETABLE  = 0;
+    private static final int    TYPE_U_WAVETABLE  = 1;
+    private static final int    TYPE_ANALOG       = 2;
+    private static final int    TYPE_SAMPLE_SLOT  = 4;
     /** The analog waveform which the init program uses for its third oscillator. */
-    private static final int    ANALOG_WAVEFORM    = 42;
-    private static final int    P_WAVETABLE_SIZE   = NAME_SIZE + 65536;
-    private static final int    U_WAVETABLE_SIZE   = NAME_SIZE + 524288;
-    private static final int    FIRST_SLOT_NUMBER  = 4000;
-    private static final int    MAX_RESOURCES      = 12;
-    private static final int    MAX_PARAMETERS     = 4096;
+    private static final int    ANALOG_WAVEFORM   = 42;
+    private static final int    P_WAVETABLE_SIZE  = NAME_SIZE + 65536;
+    private static final int    U_WAVETABLE_SIZE  = NAME_SIZE + 524288;
+    private static final int    FIRST_SLOT_NUMBER = 4000;
+    private static final int    MAX_RESOURCES     = 12;
+    private static final int    MAX_PARAMETERS    = 4096;
 
 
     /**
@@ -163,8 +163,8 @@ final class ThirdWaveFile
      * @param isProgram True if the file is a unified program file
      * @param slots The sample slots
      * @param resourceTypes The types of the resources of a unified program file by their ID
-     * @param program The parameters of the program of a unified program file, null if there is
-     *            none or its layout is unknown
+     * @param program The parameters of the program of a unified program file, null if there is none
+     *            or its layout is unknown
      */
     record Content (String name, boolean isProgram, List<Slot> slots, int [] resourceTypes, ThirdWaveProgram program)
     {

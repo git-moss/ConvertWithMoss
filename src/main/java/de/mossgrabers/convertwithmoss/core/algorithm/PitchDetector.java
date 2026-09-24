@@ -17,13 +17,13 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 /**
  * Measures how far the recordings of a multi-sample sound away from the root keys they are mapped
  * to. Sample libraries are often built from an instrument which was itself transposed - an
- * oscillator set to another footage, a frequency ratio of one half or two, a transposed patch -
- * so that the recording of the key C3 sounds one or two octaves higher or lower. The mapping is
- * faithful, the source plays exactly the same way, but on the destination device the preset is
- * then played in a different part of the keyboard than the player expects.
+ * oscillator set to another footage, a frequency ratio of one half or two, a transposed patch - so
+ * that the recording of the key C3 sounds one or two octaves higher or lower. The mapping is
+ * faithful, the source plays exactly the same way, but on the destination device the preset is then
+ * played in a different part of the keyboard than the player expects.
  * <p>
- * The pitch of a recording is the highest fundamental whose harmonics hold most of the power of
- * the spectrum. That rule cannot fall for an octave too low - such a candidate explains the same
+ * The pitch of a recording is the highest fundamental whose harmonics hold most of the power of the
+ * spectrum. That rule cannot fall for an octave too low - such a candidate explains the same
  * partials but predicts harmonics between them which are not there - and it only reports an octave
  * too high if the odd harmonics of the sound are practically absent, in which case that is the
  * pitch which is heard. Material which is not clearly pitched - drums, noise, sound effects - does
@@ -35,7 +35,10 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
  */
 public final class PitchDetector
 {
-    /** Zones are measured spread over the multi-sample, so that one velocity layer or one corner of the keyboard cannot decide the result alone. */
+    /**
+     * Zones are measured spread over the multi-sample, so that one velocity layer or one corner of
+     * the keyboard cannot decide the result alone.
+     */
     private static final int    MAXIMUM_MEASURED_ZONES = 12;
     /** At least this many zones must be measurable, otherwise a single odd sample could decide. */
     private static final int    MINIMUM_MEASURED_ZONES = 3;
@@ -53,7 +56,9 @@ public final class PitchDetector
     private static final double MINIMUM_LOOP           = 0.05;
     /** The shortest analysed part of a sample, in frames. */
     private static final int    MINIMUM_SEGMENT_FRAMES = 2048;
-    /** Frequencies below this are not considered as a fundamental - mains hum and rumble live there. */
+    /**
+     * Frequencies below this are not considered as a fundamental - mains hum and rumble live there.
+     */
     private static final double MINIMUM_FREQUENCY      = 16;
     /** The spectrum is analysed up to this part of the sample rate. */
     private static final double BAND_LIMIT             = 0.45;

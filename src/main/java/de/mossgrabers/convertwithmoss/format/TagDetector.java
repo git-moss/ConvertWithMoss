@@ -905,9 +905,9 @@ public class TagDetector
     /**
      * Detect a category in the texts of a multi-sample and in the names of the folders which
      * contain it. Like for the keywords (see {@link #detectKeywords(Collection, Collection)}) only
-     * a folder name which describes the sound of its content takes part. The name of a library is
-     * a title: 'Voice' in the folder 'Espen Kraft PX Vol 2 Digital Voices 43 patches SF2' made
-     * vocals of 28 of its 43 presets, among them 'D-50 EP Classic' and 'D-50 Dry Organ'.
+     * a folder name which describes the sound of its content takes part. The name of a library is a
+     * title: 'Voice' in the folder 'Espen Kraft PX Vol 2 Digital Voices 43 patches SF2' made vocals
+     * of 28 of its 43 presets, among them 'D-50 EP Classic' and 'D-50 Dry Organ'.
      *
      * @param texts The texts of the multi-sample itself, e.g. its name, the most specific first
      * @param folderNames The names of the folders which contain the multi-sample, the innermost
@@ -925,8 +925,8 @@ public class TagDetector
 
     /**
      * Split a text into its words: everything which is not a letter or a digit separates them, as
-     * well as the change from a lower to an upper case letter and the change between a letter and
-     * a digit. A note name like 'c3' in the name of a sample therefore is not the Hammond C3.
+     * well as the change from a lower to an upper case letter and the change between a letter and a
+     * digit. A note name like 'c3' in the name of a sample therefore is not the Hammond C3.
      *
      * @param text The text to split
      * @return The words

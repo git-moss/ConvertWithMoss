@@ -44,8 +44,8 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
  * program together with its samples, which is loaded with 'Import unified program data file' from
  * the 'Programs' folder, or multi-sample slot files (*.bin), which are loaded with 'Import
  * multisample' or 'Bulk multisample import' from the 'Audio' folder. A sample slot holds up to 8
- * mono samples which are not layered. The program is the init program of the instrument whose
- * parts play the sample slots, split across the keyboard and panned like the samples, e.g. the two
+ * mono samples which are not layered. The program is the init program of the instrument whose parts
+ * play the sample slots, split across the keyboard and panned like the samples, e.g. the two
  * channels of stereo samples; the other settings of the source (envelopes, filters, ...) are not
  * converted.
  *
@@ -219,7 +219,8 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
                 notes.limitedKeyRanges += (int) settings[3];
             }
 
-        // The keyboard is split between the slots of the voice with the most slots; the voices whose
+        // The keyboard is split between the slots of the voice with the most slots; the voices
+        // whose
         // slots fit into these sections share them, the others play in the sections which their
         // slots reach
         int mainVoice = 0;
@@ -229,7 +230,8 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
         final int numSections = voices.get (mainVoice).slots ().size ();
         final int [] splitNotes = splitKeyboard (voices, numSections, voices.get (mainVoice).slots ());
 
-        // Parts whose slots have the same samples play the same slot, e.g. a slot which is panned to
+        // Parts whose slots have the same samples play the same slot, e.g. a slot which is panned
+        // to
         // both sides
         final List<ThirdWaveFile.Slot> slots = new ArrayList<> ();
         final List<int []> parts = new ArrayList<> ();
@@ -327,8 +329,8 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
 
 
     /**
-     * Combine samples which play the same audio in the same way on the same keys, e.g. a layer which
-     * is doubled: they sound like one sample with the sum of their volumes.
+     * Combine samples which play the same audio in the same way on the same keys, e.g. a layer
+     * which is doubled: they sound like one sample with the sum of their volumes.
      *
      * @param samples The samples
      * @return The samples, of which each plays in a different way
@@ -981,9 +983,8 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
 
     /**
      * Tests if a sample is layered with one of the samples of a layer, which is the case if their
-     * assigned notes are the same or one of them lies within the key range of the other. Key
-     * ranges which only overlap at their edges are allowed, slots of the instrument have them as
-     * well.
+     * assigned notes are the same or one of them lies within the key range of the other. Key ranges
+     * which only overlap at their edges are allowed, slots of the instrument have them as well.
      *
      * @param layer The samples of the layer
      * @param sample The sample to test
