@@ -2,6 +2,7 @@
 
 ## 20.4.0 (work-in-progress)
 
+* New: Added support for the Groove Synthesis 3rd Wave (PGDATA, BIN): a unified program file is read as one instrument with the level, tuning, panning and keyboard range of the parts which play its samples (e.g. stereo, split and layered programs), a multi-sample file as its sample slot; unified program files, whose parts layer and split the samples, and multi-sample files are written. Written files are not yet verified on hardware.
 * New: A note reports when the samples of a multi-sample sound away from the root keys they are mapped to - e.g. an octave, because the instrument was transposed when it was recorded - and the Transpose processing option set to 'Auto' (`-Zpa` on the command line) moves the root notes of each multi-sample onto its measured pitch. Only the root notes are moved, the audio and the key ranges stay as they are.
 * Fixed: Reducing the sample frequency with the processing options clipped samples which peak close to full scale. Such a sample is now lowered to fit and its zone plays it louder by the same amount.
 * SFZ
