@@ -128,7 +128,7 @@ public final class LoopZeroSnapper
      */
     private static boolean snapLoop (final ISampleLoop loop, final int [] [] channels, final int sampleRate)
     {
-        if (loop.getType () != LoopType.FORWARDS || loop.getCrossfade () > 0)
+        if (loop.getType () != LoopType.FORWARDS || isSmoothedByCrossfade (loop))
             return false;
 
         final int length = channels[0].length;
@@ -333,6 +333,19 @@ public final class LoopZeroSnapper
         final int last = Math.clamp (end, 0, signal.length - 1);
         final int first = Math.clamp (start, 0, signal.length - 1);
         return Math.abs (signal[last] - signal[first]);
+    }
+
+
+    /**
+     * Check if the wrap of a loop is smoothed by a cross-fade. Such a loop is neither moved nor
+     * reported as clicking by the {@link LoopClickDetector}, so both always agree about a loop.
+     *
+     * @param loop The loop to check
+     * @return True if the loop has a cross-fade
+     */
+    static boolean isSmoothedByCrossfade (final ISampleLoop loop)
+    {
+        return loop.getCrossfade () > 0;
     }
 
 
