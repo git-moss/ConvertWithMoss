@@ -20,6 +20,7 @@ import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.MachineProgressReporter;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -33,7 +34,9 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -146,8 +149,9 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             final String programName = programElement.getAttribute (TALSamplerTag.PROGRAM_NAME);
             final String name = programElements.size () > 1 && !programName.isBlank () ? fileName + " - " + programName : fileName;
 
-            // Parse all groups
+            // Parse all groups, each is one layer of the plug-in
             final List<IGroup> groups = new ArrayList<> (4);
+            final List<Integer> groupLayers = new ArrayList<> (4);
             final File parentFolder = sourceFile.getParentFile ();
             for (int groupCounter = 0; groupCounter < 4; groupCounter++)
                 // Group is disabled?
@@ -166,14 +170,20 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                                     group.addSampleZone (sampleZone.get ());
                             }
                         groups.add (group);
+                        groupLayers.add (Integer.valueOf (groupCounter));
                     }
                 }
 
             final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, name, groups);
             multisampleSource.setPolyphony (TALSamplerConstants.denormalizeVoices (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.PROGRAM_NUM_VOICES, 1.0)));
+            // The plug-in has one filter, but each layer is switched through it or not - a layer
+            // which is not switched through it plays unfiltered
             final Optional<IFilter> optFilter = parseModulationAttributes (programElement, multisampleSource);
             if (optFilter.isPresent ())
-                multisampleSource.setGlobalFilter (optFilter.get ());
+                for (int i = 0; i < groups.size (); i++)
+                    if (isFilterOn (programElement, groupLayers.get (i).intValue ()))
+                        for (final ISampleZone zone: groups.get (i).getSampleZones ())
+                            zone.setFilter (optFilter.get ());
 
             multisampleSources.add (multisampleSource);
         }
@@ -201,9 +211,6 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             this.notifier.logError ("IDS_NOTIFY_ERR_NO_SAMPLE_FILE");
             return Optional.empty ();
         }
-
-        if (filename.endsWith (".talwav"))
-            throw new IOException (Functions.getMessage ("IDS_TAL_ENCRYPTED_SAMPLES_NOT_SUPPORTED", filename));
 
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.IS_ROM_SAMPLE, 0) == 1)
             throw new IOException (Functions.getMessage ("IDS_TAL_ROM_SAMPLES_NOT_SUPPORTED", filename));
@@ -348,6 +355,28 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
+    /**
+     * Create the zone of a sample. An encrypted sample (*.talwav) is decrypted into the WAV file
+     * from which the plug-in created it.
+     *
+     * @param sampleFile The sample file
+     * @return The zone
+     * @throws IOException Unsupported sample file type or the sample could not be decrypted
+     */
+    @Override
+    protected ISampleZone createSampleZone (final File sampleFile) throws IOException
+    {
+        if (!TALSamplerEncryptedWave.isEncrypted (sampleFile))
+            return super.createSampleZone (sampleFile);
+
+        if (!sampleFile.exists ())
+            throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
+        final ISampleData sampleData = new WavFileSampleData (sampleFile, TALSamplerEncryptedWave.decrypt (sampleFile));
+        MachineProgressReporter.reportSample (sampleFile);
+        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
+    }
+
+
     private static Optional<IFilter> parseModulationAttributes (final Element programElement, final IMultisampleSource multisampleSource)
     {
         final List<TALSamplerModulator> modulators = parseModulators (programElement);
@@ -357,7 +386,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
 
         final double ampAttack = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_ATTACK);
         final double ampHold = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_HOLD);
-        final double ampDecay = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_DECAY);
+        final double ampDecay = getDecayTime (programElement, TALSamplerTag.ADSR_AMP_DECAY);
         final double ampSustain = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.ADSR_AMP_SUSTAIN, 1);
         final double ampRelease = getEnvelopeTime (programElement, TALSamplerTag.ADSR_AMP_RELEASE);
 
@@ -372,9 +401,10 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         // -----------------------------------------------------------
         // Filter
 
-        // We only have a global filter, therefore take only values from the 1st layer
+        // The settings of the filter belong to the whole program, the layers which are switched
+        // through it get it, see parseDescription
         Optional<IFilter> optFilter = Optional.empty ();
-        if (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_LAYER_ON + TALSamplerConstants.LAYERS[0], 0) > 0)
+        if (isFilterOn (programElement, 0) || isFilterOn (programElement, 1) || isFilterOn (programElement, 2) || isFilterOn (programElement, 3))
         {
             final Optional<IFilter> filterType = TALSamplerConstants.getFilterType (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_MODE, 0));
             if (filterType.isPresent ())
@@ -398,7 +428,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                     final IEnvelope filterEnvelope = cutoffModulator.getSource ();
                     filterEnvelope.setAttackTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_ATTACK));
                     filterEnvelope.setHoldTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_HOLD));
-                    filterEnvelope.setDecayTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_DECAY));
+                    filterEnvelope.setDecayTime (getDecayTime (programElement, TALSamplerTag.ADSR_VCF_DECAY));
                     filterEnvelope.setSustainLevel (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.ADSR_VCF_SUSTAIN, 1));
                     filterEnvelope.setReleaseTime (getEnvelopeTime (programElement, TALSamplerTag.ADSR_VCF_RELEASE));
                 }
@@ -431,7 +461,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
         // Envelope
         final double pitchAttack = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_ATTACK);
         final double pitchHold = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_HOLD);
-        final double pitchDecay = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_DECAY);
+        final double pitchDecay = getDecayTime (programElement, TALSamplerTag.ADSR_MOD_DECAY);
         final double pitchSustain = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.ADSR_MOD_SUSTAIN, 1);
         final double pitchRelease = getEnvelopeTime (programElement, TALSamplerTag.ADSR_MOD_RELEASE);
 
@@ -478,6 +508,19 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
+    /**
+     * Check if a layer is switched through the filter.
+     *
+     * @param programElement The program element
+     * @param layer The index of the layer, 0 to 3
+     * @return True if the layer plays through the filter
+     */
+    private static boolean isFilterOn (final Element programElement, final int layer)
+    {
+        return XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.FILTER_LAYER_ON + TALSamplerConstants.LAYERS[layer], 0) > 0;
+    }
+
+
     private static List<TALSamplerModulator> parseModulators (final Element soundShapeElement)
     {
         final List<TALSamplerModulator> modulators = new ArrayList<> ();
@@ -500,5 +543,18 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
     private static double getEnvelopeTime (final Element element, final String attribute)
     {
         return TALSamplerConstants.denormalizeEnvelopeTime (XMLUtils.getDoubleAttribute (element, attribute, 0));
+    }
+
+
+    /**
+     * Read the time of a decay, see {@link TALSamplerConstants#denormalizeDecayTime(double)}.
+     *
+     * @param element The program element
+     * @param attribute The attribute of the decay
+     * @return The time in seconds, 0 if the attribute is missing
+     */
+    private static double getDecayTime (final Element element, final String attribute)
+    {
+        return TALSamplerConstants.denormalizeDecayTime (XMLUtils.getDoubleAttribute (element, attribute, 0));
     }
 }
