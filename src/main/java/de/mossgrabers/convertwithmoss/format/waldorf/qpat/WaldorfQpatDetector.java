@@ -519,7 +519,11 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             if (minNote > 0 || maxNote < 127)
                 clipKeyWindow (group, minNote, maxNote);
 
-            final Optional<IFilter> filter = parseFilter (parameters, version);
+            // Osc1Destination: [0] "Main" [1] "VCA" [2] "DF 0 Fil 100" ... [22] "DF 100 Fil 0" -
+            // "VCA" sends the oscillator directly to the amplifier, around the filter
+            final WaldorfQpatParameter destinationParameter = parameters.get ("Osc" + groupIndex + "Destination");
+            final boolean bypassesFilter = destinationParameter != null && Math.round (destinationParameter.value) == 1;
+            final Optional<IFilter> filter = bypassesFilter ? Optional.empty () : parseFilter (parameters, version);
 
             final IEnvelope ampEnvelope = parseEnvelope (parameters, "AmpEnv", "AmpEnv");
             // AmpVeloAmount: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
