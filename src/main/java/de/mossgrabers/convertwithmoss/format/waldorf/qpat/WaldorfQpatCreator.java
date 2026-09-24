@@ -1772,12 +1772,6 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Create all filter parameters.
-     *
-     * @param parameters Where to add the filter parameters
-     * @param optFilter The filter for which to create the parameters
-     */
-    /**
      * Find the filter of a layer: the filter of the first zone which has one.
      *
      * @param groups The groups of the layer
@@ -1823,6 +1817,12 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     }
 
 
+    /**
+     * Create all filter parameters.
+     *
+     * @param parameters Where to add the filter parameters
+     * @param optFilter The filter for which to create the parameters
+     */
     private static void createFilterParameters (final List<WaldorfQpatParameter> parameters, final Optional<IFilter> optFilter)
     {
         if (optFilter.isEmpty () || optFilter.get ().getType () == FilterType.BAND_REJECTION)
