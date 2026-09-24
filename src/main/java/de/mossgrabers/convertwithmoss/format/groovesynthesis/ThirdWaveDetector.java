@@ -64,6 +64,18 @@ public class ThirdWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
     /** {@inheritDoc} */
     @Override
+    public Set<String> getFileEndings ()
+    {
+        // The detector reads the multi-sample files (*.bin, see the constructor) as well, but many
+        // devices use that ending, e.g. the pad configuration of the Roland SP-404MK2. For the
+        // format list and the selection of the format by the ending of a picked file, the unified
+        // program files are shown instead, in which Groove Synthesis distributes its sample library.
+        return Set.of (".pgdata");
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     protected List<IMultisampleSource> readPresetFile (final File file)
     {
         if (this.waitForDelivery ())
