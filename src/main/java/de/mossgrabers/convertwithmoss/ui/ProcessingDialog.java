@@ -40,9 +40,12 @@ public class ProcessingDialog extends PseudoModalDialog
     private static final List<String> LOOP_CROSSFADES = new ArrayList<> ();
     private static final List<String> TRANSPOSE       = new ArrayList<> ();
     private static final int          TRANSPOSE_RANGE = 24;
+    /** The first entry of the transpose combo-box, which measures the pitch of the samples instead. */
+    private static final int          TRANSPOSE_PITCH = 0;
 
     static
     {
+        TRANSPOSE.add ("Auto");
         for (int i = -TRANSPOSE_RANGE; i <= TRANSPOSE_RANGE; i++)
             TRANSPOSE.add (i == 0 ? "Off" : String.format ("%+d", Integer.valueOf (i)));
         Collections.addAll (BIT_DEPTH, "Ignore", "24 bit", "16 bit", "8 bit");
@@ -216,22 +219,35 @@ public class ProcessingDialog extends PseudoModalDialog
      * Select the transpose value.
      *
      * @param semitones The number of semitones in the range of [-24..24]
+     * @param toPitch True to select the transposition to the measured pitch of the samples
      */
-    public void selectTranspose (final int semitones)
+    public void selectTranspose (final int semitones, final boolean toPitch)
     {
-        this.transposeCombobox.getSelectionModel ().select (Math.clamp (semitones, -TRANSPOSE_RANGE, TRANSPOSE_RANGE) + TRANSPOSE_RANGE);
+        this.transposeCombobox.getSelectionModel ().select (toPitch ? TRANSPOSE_PITCH : Math.clamp (semitones, -TRANSPOSE_RANGE, TRANSPOSE_RANGE) + TRANSPOSE_RANGE + 1);
     }
 
 
     /**
      * Get the transpose value.
      *
-     * @return The number of semitones in the range of [-24..24]
+     * @return The number of semitones in the range of [-24..24], 0 if the transposition to the
+     *         measured pitch of the samples is selected
      */
     public int getTranspose ()
     {
         final int itemIndex = this.transposeCombobox.getSelectionModel ().getSelectedIndex ();
-        return itemIndex < 0 ? 0 : itemIndex - TRANSPOSE_RANGE;
+        return itemIndex <= TRANSPOSE_PITCH ? 0 : itemIndex - TRANSPOSE_RANGE - 1;
+    }
+
+
+    /**
+     * Check if each multi-sample should be transposed by the pitch measured in its samples.
+     *
+     * @return True if it should
+     */
+    public boolean isTransposeToPitch ()
+    {
+        return this.transposeCombobox.getSelectionModel ().getSelectedIndex () == TRANSPOSE_PITCH;
     }
 
 
