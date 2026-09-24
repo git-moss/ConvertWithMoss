@@ -458,6 +458,13 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         opcodes.add (this.createLoops (zone));
 
         // -----------------------------------------------------------
+        // Exclusive group: the regions of the group switch each other off
+
+        final int exclusiveGroup = zone.getExclusiveGroup ();
+        if (exclusiveGroup > 0)
+            opcodes.add (addIntegerAttribute (SfzOpcode.GROUP, exclusiveGroup, false) + addIntegerAttribute (SfzOpcode.OFF_BY, exclusiveGroup, true));
+
+        // -----------------------------------------------------------
         // Filter
 
         opcodes.add (createFilter (zone));

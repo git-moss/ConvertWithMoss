@@ -683,9 +683,10 @@ public class ConverterBackend
     /**
      * Log a note for loops which audibly click at their wrap-around point, so the presets which
      * need the snap-to-zero-crossing or loop cross-fade processing can be found without listening
-     * to every converted preset. The step is measured on the source audio as it was read - before
-     * any resampling of the destination format - and reports the loop as it was authored. Nothing
-     * is changed and a sample which cannot be read is simply skipped.
+     * to every converted preset. The step is measured on the audio after the processing - before
+     * any resampling of the destination format. If the loops were snapped, the note reports the
+     * loops which still click and does not recommend the snapping again. Nothing is changed and a
+     * sample which cannot be read is simply skipped.
      *
      * @param multisampleSource The multi-sample to check
      */
@@ -695,7 +696,8 @@ public class ConverterBackend
         if (result.isPresent ())
         {
             final LoopClickDetector.Result loopClicks = result.get ();
-            this.notifier.log ("IDS_NOTIFY_LOOP_CLICKS", multisampleSource.getName (), Integer.toString (loopClicks.clickingLoops ()), Integer.toString (loopClicks.checkedLoops ()), String.format (Locale.US, "%.0f", Double.valueOf (loopClicks.worstStepPercent ())), loopClicks.worstZoneName ());
+            final boolean snapped = !this.onlyAnalyse && this.detectionSettings.needsProcessing () && this.detectionSettings.snapLoopsToZero;
+            this.notifier.log (snapped ? "IDS_NOTIFY_LOOP_CLICKS_AFTER_SNAPPING" : "IDS_NOTIFY_LOOP_CLICKS", multisampleSource.getName (), Integer.toString (loopClicks.clickingLoops ()), Integer.toString (loopClicks.checkedLoops ()), String.format (Locale.US, "%.0f", Double.valueOf (loopClicks.worstStepPercent ())), loopClicks.worstZoneName ());
         }
     }
 
