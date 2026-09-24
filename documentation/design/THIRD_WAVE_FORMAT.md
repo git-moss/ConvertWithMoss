@@ -285,11 +285,12 @@ kept. Further:
   same samples with the same pitch, level, panning and loop, except the keys 116-120 of
   *Randroid+Waves Mars* (`RandroidG6`, see above) and 3 keys of *CircuiT gL1tcH Drums*, whose
   oscillator does not follow the keyboard - the writer tunes such samples on the middle key of
-  their range. The 18 programs of the library which play more than one slot or oscillator
-  (stereo, split and layered programs; 16 with two groups, one each with three and four) keep what
-  every key plays through SFZ and DecentSampler as well. The written programs differ from the init
-  program only in the oscillator references, levels and tuning, the part volume and panning and
-  the keyboard split, checked by reading them back.
+  their range. The 18 programs of the library which play more than one slot or oscillator (stereo,
+  split and layered programs; 16 with two groups, one each with three and four) keep what every key
+  plays when they are written as DecentSampler or SFZ presets and read back, except one part of
+  *Hanger Drums and FM*, whose tuning of +36.93 semi-tones the SFZ reader limits to 36. The written
+  programs differ from the init program only in the oscillator references, levels and tuning, the
+  part volume and panning and the keyboard split, checked by reading them back.
 * **Other sources:** e.g. the 66 SoundFonts of a stereo, multi-layered library (all larger than the
   sample memory, which is reported), 29 TAL-Sampler presets with up to three layers (every key
   within two octaves of the assigned note of its sample plays the same, except for a loop which
