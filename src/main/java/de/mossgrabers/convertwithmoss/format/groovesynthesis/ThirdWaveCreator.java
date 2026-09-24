@@ -13,11 +13,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -166,12 +168,13 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
         for (final ProgramSample sample: samples)
             if (!sample.isAlternative ())
                 maxVelocity = Math.max (maxVelocity, sample.velocityHigh ());
-        final List<ProgramSample> playedSamples = new ArrayList<> ();
+        final List<ProgramSample> loudestSamples = new ArrayList<> ();
         for (final ProgramSample sample: samples)
             if (!sample.isAlternative () && sample.velocityHigh () == maxVelocity)
-                playedSamples.add (sample);
-        if (playedSamples.size () < samples.size ())
-            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_LAYERS", name, Integer.toString (samples.size () - playedSamples.size ()));
+                loudestSamples.add (sample);
+        if (loudestSamples.size () < samples.size ())
+            this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_LAYERS", name, Integer.toString (samples.size () - loudestSamples.size ()));
+        final List<ProgramSample> playedSamples = combineIdenticalSamples (loudestSamples);
 
         final Map<ThirdWaveFile.Sample, Double> tunings = new IdentityHashMap<> ();
         for (final ProgramSample sample: playedSamples)
@@ -200,17 +203,7 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
         if (numParts > ThirdWaveProgram.NUM_PARTS)
         {
             this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_PARTS", name, Integer.toString (numParts), Integer.toString (numParts - ThirdWaveProgram.NUM_PARTS));
-            int remaining = ThirdWaveProgram.NUM_PARTS;
-            final List<Voice> limitedVoices = new ArrayList<> ();
-            for (final Voice voice: voices)
-            {
-                if (remaining == 0)
-                    break;
-                final int numSlots = Math.min (voice.slots ().size (), remaining);
-                limitedVoices.add (new Voice (voice.panning (), new ArrayList<> (voice.slots ().subList (0, numSlots))));
-                remaining -= numSlots;
-            }
-            voices = limitedVoices;
+            voices = limitParts (voices);
         }
         if (voices.size () > 1)
             this.notifier.log ("IDS_THIRD_WAVE_PROGRAM_VOICES", name, Integer.toString (voices.size ()));
@@ -330,6 +323,110 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
     private record Voice (double panning, List<List<ThirdWaveFile.Sample>> slots)
     {
         // Intentionally empty
+    }
+
+
+    /**
+     * Combine samples which play the same audio in the same way on the same keys, e.g. a layer which
+     * is doubled: they sound like one sample with the sum of their volumes.
+     *
+     * @param samples The samples
+     * @return The samples, of which each plays in a different way
+     */
+    private static List<ProgramSample> combineIdenticalSamples (final List<ProgramSample> samples)
+    {
+        final List<ProgramSample> combined = new ArrayList<> ();
+        for (final ProgramSample sample: samples)
+        {
+            int index = -1;
+            for (int i = 0; i < combined.size () && index < 0; i++)
+            {
+                final ProgramSample other = combined.get (i);
+                if (other.tuning () == sample.tuning () && other.panning () == sample.panning () && isSameSample (other.sample (), sample.sample (), false))
+                    index = i;
+            }
+            if (index < 0)
+                combined.add (sample);
+            else
+            {
+                final ProgramSample other = combined.get (index);
+                final ThirdWaveFile.Sample otherSample = other.sample ();
+                combined.set (index, new ProgramSample (otherSample.withVolume (otherSample.volume () + sample.sample ().volume ()), other.tuning (), other.panning (), other.velocityHigh (), other.isAlternative ()));
+            }
+        }
+        return combined;
+    }
+
+
+    /**
+     * Select the slots which are written if the voices need more than the parts of a program. The
+     * voices get parts layer by layer: the first voice of each panning, then the second one of each
+     * and so on. In a layer, voices which are panned to both sides by the same amount, e.g. the two
+     * channels of a stereo sample, come first and get their slots together from the lowest one on,
+     * so that both sides keep the same keys; then the other voices get theirs.
+     *
+     * @param voices The voices, ordered by their panning
+     * @return The voices with the slots which are written
+     */
+    private static List<Voice> limitParts (final List<Voice> voices)
+    {
+        final TreeMap<Double, List<Voice>> panningGroups = new TreeMap<> ();
+        for (final Voice voice: voices)
+            panningGroups.computeIfAbsent (Double.valueOf (voice.panning ()), _ -> new ArrayList<> ()).add (voice);
+
+        final Map<Voice, Integer> numSlots = new IdentityHashMap<> ();
+        int remaining = ThirdWaveProgram.NUM_PARTS;
+        for (int layer = 0; remaining > 0; layer++)
+        {
+            // A layer has one voice of each panning at most
+            final TreeMap<Double, Voice> layerVoices = new TreeMap<> ();
+            for (final Map.Entry<Double, List<Voice>> panningGroup: panningGroups.entrySet ())
+                if (layer < panningGroup.getValue ().size ())
+                    layerVoices.put (panningGroup.getKey (), panningGroup.getValue ().get (layer));
+            if (layerVoices.isEmpty ())
+                break;
+
+            final List<List<Voice>> units = new ArrayList<> ();
+            final Set<Double> pairedPannings = new HashSet<> ();
+            for (final Map.Entry<Double, Voice> entry: layerVoices.entrySet ())
+            {
+                final double panning = entry.getKey ().doubleValue ();
+                final Voice mirrored = layerVoices.get (Double.valueOf (-panning));
+                if (panning < 0 && mirrored != null)
+                {
+                    units.add (List.of (entry.getValue (), mirrored));
+                    pairedPannings.add (entry.getKey ());
+                    pairedPannings.add (Double.valueOf (-panning));
+                }
+            }
+            for (final Map.Entry<Double, Voice> entry: layerVoices.entrySet ())
+                if (!pairedPannings.contains (entry.getKey ()))
+                    units.add (List.of (entry.getValue ()));
+
+            for (final List<Voice> unit: units)
+                for (int slot = 0;; slot++)
+                {
+                    int needed = 0;
+                    for (final Voice voice: unit)
+                        if (slot < voice.slots ().size ())
+                            needed++;
+                    if (needed == 0 || needed > remaining)
+                        break;
+                    for (final Voice voice: unit)
+                        if (slot < voice.slots ().size ())
+                            numSlots.put (voice, Integer.valueOf (slot + 1));
+                    remaining -= needed;
+                }
+        }
+
+        final List<Voice> limitedVoices = new ArrayList<> ();
+        for (final Voice voice: voices)
+        {
+            final Integer count = numSlots.get (voice);
+            if (count != null)
+                limitedVoices.add (new Voice (voice.panning (), new ArrayList<> (voice.slots ().subList (0, count.intValue ()))));
+        }
+        return limitedVoices;
     }
 
 
@@ -473,13 +570,24 @@ public class ThirdWaveCreator extends AbstractCreator<ThirdWaveCreatorUI>
         if (samples1.size () != samples2.size ())
             return false;
         for (int i = 0; i < samples1.size (); i++)
-        {
-            final ThirdWaveFile.Sample s1 = samples1.get (i);
-            final ThirdWaveFile.Sample s2 = samples2.get (i);
-            if (s1.sampleRate () != s2.sampleRate () || s1.start () != s2.start () || s1.end () != s2.end () || s1.loopStart () != s2.loopStart () || s1.loopEnd () != s2.loopEnd () || s1.root () != s2.root () || s1.low () != s2.low () || s1.high () != s2.high () || s1.crossfadeType () != s2.crossfadeType () || s1.crossfade () != s2.crossfade () || s1.loopMode () != s2.loopMode () || s1.tune () != s2.tune () || s1.volume () != s2.volume () || !Arrays.equals (s1.audio (), s2.audio ()))
+            if (!isSameSample (samples1.get (i), samples2.get (i), true))
                 return false;
-        }
         return true;
+    }
+
+
+    /**
+     * Test if two samples play the same audio in the same way: the same mapping, play range, loop
+     * and tuning.
+     *
+     * @param s1 The first sample
+     * @param s2 The second sample
+     * @param compareVolume True to compare their volume as well
+     * @return True if they are the same
+     */
+    private static boolean isSameSample (final ThirdWaveFile.Sample s1, final ThirdWaveFile.Sample s2, final boolean compareVolume)
+    {
+        return s1.sampleRate () == s2.sampleRate () && s1.start () == s2.start () && s1.end () == s2.end () && s1.loopStart () == s2.loopStart () && s1.loopEnd () == s2.loopEnd () && s1.root () == s2.root () && s1.low () == s2.low () && s1.high () == s2.high () && s1.crossfadeType () == s2.crossfadeType () && s1.crossfade () == s2.crossfade () && s1.loopMode () == s2.loopMode () && s1.tune () == s2.tune () && (!compareVolume || s1.volume () == s2.volume ()) && Arrays.equals (s1.audio (), s2.audio ());
     }
 
 

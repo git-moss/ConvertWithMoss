@@ -115,6 +115,18 @@ final class ThirdWaveFile
         {
             return new Sample (this.name, this.sampleRate, this.bitDepth, this.start, this.end, this.loopStart, this.loopEnd, this.root, newLow, this.high, this.crossfadeType, this.crossfade, this.loopMode, this.tune, this.secondSampleRate, this.volume, this.audio);
         }
+
+
+        /**
+         * Create a copy of the sample with another volume.
+         *
+         * @param newVolume The volume as a factor
+         * @return The copy
+         */
+        Sample withVolume (final float newVolume)
+        {
+            return new Sample (this.name, this.sampleRate, this.bitDepth, this.start, this.end, this.loopStart, this.loopEnd, this.root, this.low, this.high, this.crossfadeType, this.crossfade, this.loopMode, this.tune, this.secondSampleRate, newVolume, this.audio);
+        }
     }
 
 

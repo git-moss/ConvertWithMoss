@@ -223,28 +223,31 @@ first distributed to *layers*: samples are layered if they have the same assigne
 assigned note of one lies in the key range of the other, e.g. velocity layers and round robins.
 Key ranges which only overlap at their edges are kept.
 
-* *Unified program file:* only the loudest velocity layer and the first round of round robins
-  can be played. Their samples are grouped into *voices* by their panning - e.g. the left and the
-  right channel of a stereo sample - and each voice is distributed to layers and split in the
-  order of the assigned notes into slots of at most 8 samples. Each slot is played by a part of
-  its own, which gets the tuning which most samples of the slot have; the other samples move
-  their assigned note by the difference. If that would cost a sample keys of its range, e.g. a
-  sound which is tuned an octave down against the others, the samples are grouped by their
-  tuning in whole semi-tones as well, as long as that needs no more than 4 parts: every part
-  divides the voices of the instrument. If there are more than 4 parts, the panned samples are
-  centered, and then the slots of the last voices are left out. The program is the init program
-  (a resource in the `.pro` format) in which part N plays its slot with oscillator 1: the tuning
-  of the part is set on the oscillator (coarse and fine), the volume of the loudest sample on the
-  oscillator level (up to 1) and the part volume (1 to 1.7), the panning of the voice on the part.
-  Oscillators 2 and 3 are at level 0; these and the oscillators of the parts which are not used
-  play the analog waveform 42, which the file lists without data. Parts whose slots hold the same
-  samples play one shared slot. The voice with the most slots splits the keyboard: the split note
-  lies on a note which neither neighbouring slot plays, or the lowest sample of the upper slot is
-  extended by the split note, so that either reading of the split note plays a sample. The parts
-  of the voices whose slots fit into these sections play them as well, the others play all
-  sections which their samples reach. All samples of the program need to fit into the sample
-  memory, otherwise the program is not written. The samples store the rest of their gain as
-  volume, up to +6 dB.
+* *Unified program file:* only the loudest velocity layer and the first round of round robins can be
+  played. Their samples are grouped into *voices* by their panning - e.g. the left and the right
+  channel of a stereo sample - and each voice is distributed to layers and split in the order of the
+  assigned notes into slots of at most 8 samples. Each slot is played by a part of its own, which
+  gets the tuning which most samples of the slot have; the other samples move their assigned note by
+  the difference. If that would cost a sample keys of its range, e.g. a sound which is tuned an
+  octave down against the others, the samples are grouped by their tuning in whole semi-tones as
+  well, as long as that needs no more than 4 parts: every part divides the voices of the instrument.
+  Samples which play the same audio in the same way on the same keys, e.g. a doubled layer, are
+  combined into one with the sum of their volumes beforehand. If there are more than 4 parts, the
+  panned samples are centered if that needs fewer parts; otherwise the parts are given layer by
+  layer - the first voice of each panning, then the second one of each - where voices which are
+  panned to both sides by the same amount get their slots together from the lowest one on, so that
+  both sides keep the same keys. The program is the init program (a resource in the `.pro` format)
+  in which part N plays its slot with oscillator 1: the tuning of the part is set on the oscillator
+  (coarse and fine), the volume of the loudest sample on the oscillator level (up to 1) and the part
+  volume (1 to 1.7), the panning of the voice on the part. Oscillators 2 and 3 are at level 0; these
+  and the oscillators of the parts which are not used play the analog waveform 42, which the file
+  lists without data. Parts whose slots hold the same samples play one shared slot. The voice with
+  the most slots splits the keyboard: the split note lies on a note which neither neighbouring slot
+  plays, or the lowest sample of the upper slot is extended by the split note, so that either
+  reading of the split note plays a sample. The parts of the voices whose slots fit into these
+  sections play them as well, the others play all sections which their samples reach. All samples of
+  the program need to fit into the sample memory, otherwise the program is not written. The samples
+  store the rest of their gain as volume, up to +6 dB.
 * *Multi-sample files:* every layer is split in the order of the assigned notes into slots of at
   most 8 samples which fit into the sample memory, each written as a file.
 
