@@ -20,6 +20,7 @@ import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.MachineProgressReporter;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -33,7 +34,9 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.XMLUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -202,9 +205,6 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             return Optional.empty ();
         }
 
-        if (filename.endsWith (".talwav"))
-            throw new IOException (Functions.getMessage ("IDS_TAL_ENCRYPTED_SAMPLES_NOT_SUPPORTED", filename));
-
         if (XMLUtils.getIntegerAttribute (sampleElement, TALSamplerTag.IS_ROM_SAMPLE, 0) == 1)
             throw new IOException (Functions.getMessage ("IDS_TAL_ROM_SAMPLES_NOT_SUPPORTED", filename));
 
@@ -345,6 +345,28 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
             return sampleFile;
         final Optional<File> foundFile = findFileRecursively (presetFolder, file.getName ());
         return foundFile.isPresent () ? foundFile.get () : sampleFile;
+    }
+
+
+    /**
+     * Create the zone of a sample. An encrypted sample (*.talwav) is decrypted into the WAV file
+     * from which the plug-in created it.
+     *
+     * @param sampleFile The sample file
+     * @return The zone
+     * @throws IOException Unsupported sample file type or the sample could not be decrypted
+     */
+    @Override
+    protected ISampleZone createSampleZone (final File sampleFile) throws IOException
+    {
+        if (!TALSamplerEncryptedWave.isEncrypted (sampleFile))
+            return super.createSampleZone (sampleFile);
+
+        if (!sampleFile.exists ())
+            throw new FileNotFoundException (Functions.getMessage ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ()));
+        final ISampleData sampleData = new WavFileSampleData (sampleFile, TALSamplerEncryptedWave.decrypt (sampleFile));
+        MachineProgressReporter.reportSample (sampleFile);
+        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
     }
 
 
