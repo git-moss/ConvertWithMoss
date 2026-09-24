@@ -399,7 +399,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final String relativeSamplePath = "samples/" + sampleName + getUniqueSuffix (multiFile, fileName, "qpat");
 
         final List<IGroup> playableGroups = this.removeReleaseZones (this.combineSplitStereo (multisampleSource));
-        final List<List<IGroup>> layers = distributeToLayers (mergeCompatibleGroups (splitLayers (playableGroups)), this.settingsConfiguration.getMaximumLayers ());
+        final List<IGroup> separateGroups = mergeCompatibleGroups (splitLayers (playableGroups));
+        final int maximumLayers = this.settingsConfiguration.getMaximumLayers ();
+        this.checkLayersFit (multisampleSource.getName (), separateGroups, maximumLayers);
+        final List<List<IGroup>> layers = distributeToLayers (separateGroups, maximumLayers);
         final List<IGroup> groups = new ArrayList<> ();
         for (final List<IGroup> layerGroups: layers)
             groups.addAll (layerGroups);
@@ -673,6 +676,52 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
+     * Warn if the groups need more oscillators than the layers which the option allows provide.
+     * Each group needs an oscillator of its own since it either sounds at the same time as the
+     * others or needs other settings of the oscillator. The groups which do not fit are added to
+     * the sample map of the last oscillator, where entries which overlap alternate on successive
+     * notes instead of sounding together, see {@link #reduceGroups(List, int)}.
+     *
+     * @param name The name of the multi-sample
+     * @param groups The groups, each for an oscillator of its own
+     * @param maximumLayers The maximum number of layers of the option
+     */
+    private void checkLayersFit (final String name, final List<IGroup> groups, final int maximumLayers)
+    {
+        final int layers = Math.clamp (maximumLayers, 1, MAX_LAYERS);
+        final int oscillators = layers * MAX_OSCILLATORS;
+        if (groups.size () <= oscillators)
+            return;
+
+        // A sample which several groups play is named once
+        final Set<String> foldedNames = new LinkedHashSet<> ();
+        for (final IGroup group: groups.subList (oscillators, groups.size ()))
+            foldedNames.add ("'" + getDisplayName (group) + "'");
+        final String targetName = "'" + getDisplayName (groups.get (oscillators - 1)) + "'";
+        final String folded = String.join (", ", foldedNames);
+        final int neededLayers = (groups.size () + MAX_OSCILLATORS - 1) / MAX_OSCILLATORS;
+        if (neededLayers <= MAX_LAYERS)
+            this.notifier.log ("IDS_QPAT_NOTIFY_LAYERS_DO_NOT_FIT", name, Integer.toString (groups.size ()), Integer.toString (layers), Integer.toString (oscillators), folded, targetName, Integer.toString (neededLayers));
+        else
+            this.notifier.log ("IDS_QPAT_NOTIFY_LAYERS_EXCEED_DEVICE", name, Integer.toString (groups.size ()), Integer.toString (MAX_LAYERS), Integer.toString (MAX_LAYERS * MAX_OSCILLATORS), folded, targetName);
+    }
+
+
+    /**
+     * Get the name by which a group is recognized: the name of its first zone, which is usually
+     * the name of its sample, or the name of the group if it has no zones.
+     *
+     * @param group The group
+     * @return The name
+     */
+    private static String getDisplayName (final IGroup group)
+    {
+        final List<ISampleZone> zones = group.getSampleZones ();
+        return zones.isEmpty () ? group.getName () : zones.get (0).getName ();
+    }
+
+
+    /**
      * Distribute the groups across the layers of the patch. Each layer plays up to 3 groups, one on
      * each of its oscillators, so a patch reaches 3 groups with one layer and 6 with two. Groups
      * which do not fit into the available layers are added to the last group, as they are when only
@@ -789,6 +838,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         final List<ISampleZone> zonesA = a.getSampleZones ();
         final List<ISampleZone> zonesB = b.getSampleZones ();
         if ((zonesA.size () + zonesB.size () > MAX_MAP_ENTRIES) || (Math.abs (getOscillatorKeyTracking (zonesA) - getOscillatorKeyTracking (zonesB)) > 0.0001) || (Math.abs (getGroupPanningOffset (a) - getGroupPanningOffset (b)) > 0.0001))
+            return false;
+        // An oscillator plays either through the filter or around it
+        if (hasFilter (zonesA) != hasFilter (zonesB))
             return false;
         for (final ISampleZone zoneA: zonesA)
             for (final ISampleZone zoneB: zonesB)
@@ -1317,9 +1369,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
         // The slots of the modulation matrix are filled from the first one on, the modulation wheel
         // first, see MatrixSlots. The filter belongs to the layer and is read from the first zone
-        // of its first group, like in createFilterParameters below
+        // which has one; an oscillator whose zones have none is routed around it, see below
+        final Optional<IFilter> layerFilter = findFilter (groups);
         final MatrixSlots slots = new MatrixSlots ();
-        createCutoffWheelModulator (parameters, groups.get (0).getSampleZones ().get (0).getFilter (), version, slots);
+        createCutoffWheelModulator (parameters, layerFilter, version, slots);
 
         for (int i = 0; i < groups.size (); i++)
         {
@@ -1364,11 +1417,18 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             final String panningStr = panningOffset == 0 ? "Center" : StringUtils.formatPercent (panningOffset, 2);
             parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Pan", panningStr, (float) ((panningOffset + 1.0) / 2.0)));
 
+            // Osc1Destination: [0] "Main" [1] "VCA" [2] "DF 0 Fil 100" ... [22] "DF 100 Fil 0" -
+            // "VCA" sends the oscillator directly to the amplifier, around the filter. The source
+            // might filter only some of its layers, e.g. TAL-Sampler switches each layer through
+            // its filter or not
+            if (isWrittenAsActive (layerFilter) && !hasFilter (sampleZones))
+                parameters.add (new WaldorfQpatParameter ("Osc" + groupIndex + "Destination", "VCA", 1.0f));
+
             createPitchEnvelopeModulator (parameters, firstZone.getPitchEnvelopeModulator (), i + 1, version, slots);
 
             if (i == 0)
             {
-                createFilterParameters (parameters, firstZone.getFilter ());
+                createFilterParameters (parameters, layerFilter);
 
                 final IEnvelopeModulator amplitudeEnvelopeModulator = firstZone.getAmplitudeEnvelopeModulator ();
                 final IEnvelope envelope = amplitudeEnvelopeModulator.getSource ();
@@ -1381,7 +1441,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
                 final double ampVeloAmount = firstZone.getAmplitudeVelocityModulator ().getDepth ();
                 parameters.add (new WaldorfQpatParameter ("AmpVeloAmount", StringUtils.formatPercent (ampVeloAmount, 2), (float) ((ampVeloAmount + 1.0) / 2.0)));
 
-                createLfoModulators (parameters, firstZone, version, slots);
+                createLfoModulators (parameters, firstZone, layerFilter, version, slots);
             }
         }
 
@@ -1481,10 +1541,11 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      *
      * @param parameters Where to add the parameters
      * @param zone The zone which carries the modulators
+     * @param layerFilter The filter of the layer, which carries the modulation of the cutoff
      * @param version The format version of the patch, which decides the index of a destination
      * @param slots The slots of the modulation matrix
      */
-    private static void createLfoModulators (final List<WaldorfQpatParameter> parameters, final ISampleZone zone, final int version, final MatrixSlots slots)
+    private static void createLfoModulators (final List<WaldorfQpatParameter> parameters, final ISampleZone zone, final Optional<IFilter> layerFilter, final int version, final MatrixSlots slots)
     {
         // Vibrato - the pitch swings around the played note, therefore the LFO stays bipolar
         final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
@@ -1520,10 +1581,9 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // covers WaldorfQpatModulationMatrix#CUTOFF_RANGE semi-tones, and does not square its
         // amount. The modulation is only written with a filter which is written as active, see
         // createFilterParameters
-        final Optional<IFilter> optFilter = zone.getFilter ();
-        if (optFilter.isEmpty () || optFilter.get ().getType () == FilterType.BAND_REJECTION)
+        if (!isWrittenAsActive (layerFilter))
             return;
-        final ILfoModulator cutoffLfoModulator = optFilter.get ().getCutoffLfoModulator ();
+        final ILfoModulator cutoffLfoModulator = layerFilter.get ().getCutoffLfoModulator ();
         final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
         final double cutoffDepth = cutoffLfoModulator.getDepth ();
         if (cutoffDepth != 0 && cutoffLfo.isSet ())
@@ -1719,6 +1779,52 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * @param parameters Where to add the filter parameters
      * @param optFilter The filter for which to create the parameters
      */
+    /**
+     * Find the filter of a layer: the filter of the first zone which has one.
+     *
+     * @param groups The groups of the layer
+     * @return The filter, empty if no zone has one
+     */
+    private static Optional<IFilter> findFilter (final List<IGroup> groups)
+    {
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final Optional<IFilter> optFilter = zone.getFilter ();
+                if (optFilter.isPresent ())
+                    return optFilter;
+            }
+        return Optional.empty ();
+    }
+
+
+    /**
+     * Check if one of the zones has a filter.
+     *
+     * @param zones The zones to check
+     * @return True if at least one zone has a filter
+     */
+    private static boolean hasFilter (final List<ISampleZone> zones)
+    {
+        for (final ISampleZone zone: zones)
+            if (zone.getFilter ().isPresent ())
+                return true;
+        return false;
+    }
+
+
+    /**
+     * Check if the filter is written as an active filter, see createFilterParameters.
+     *
+     * @param optFilter The filter
+     * @return True if the filter is active on the device
+     */
+    private static boolean isWrittenAsActive (final Optional<IFilter> optFilter)
+    {
+        return optFilter.isPresent () && optFilter.get ().getType () != FilterType.BAND_REJECTION;
+    }
+
+
     private static void createFilterParameters (final List<WaldorfQpatParameter> parameters, final Optional<IFilter> optFilter)
     {
         if (optFilter.isEmpty () || optFilter.get ().getType () == FilterType.BAND_REJECTION)

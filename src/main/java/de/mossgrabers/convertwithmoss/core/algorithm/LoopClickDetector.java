@@ -28,7 +28,8 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
  * <p>
  * Only reported, nothing is changed: whether to enable the snap-to-zero-crossing or loop cross-fade
  * processing - or to keep the loop as the faithful reproduction of the source - is left to the
- * user. A loop which already has a cross-fade is not reported, since the cross-fade masks the wrap.
+ * user. A loop which already has a cross-fade is not reported, since the cross-fade masks the wrap -
+ * whatever its length, exactly like the snapping leaves it alone.
  *
  * @author Jürgen Moßgraber
  */
@@ -42,8 +43,6 @@ public final class LoopClickDetector
     private static final int    WINDOW                = 512;
     /** Loops shorter than this are skipped, like everywhere else in the processing. */
     private static final int    MINIMUM_LOOP_LENGTH   = 16;
-    /** A loop with at least this much cross-fade does not click, the cross-fade masks the wrap. */
-    private static final double CROSSFADE_THRESHOLD   = 0.01;
     /**
      * The frame-to-frame movement must be compared per unit of time, not per frame, otherwise the
      * check depends on the sample rate of the source: the same waveform stored at 22 kHz moves
@@ -166,7 +165,7 @@ public final class LoopClickDetector
             for (final ISampleZone zone: zones)
                 for (final ISampleLoop loop: zone.getLoops ())
                 {
-                    if (loop.getType () != LoopType.FORWARDS || loop.getCrossfade () >= CROSSFADE_THRESHOLD)
+                    if (loop.getType () != LoopType.FORWARDS || LoopZeroSnapper.isSmoothedByCrossfade (loop))
                         continue;
 
                     final double stepPercent = measure (signal, loop, sampleRate);
@@ -205,7 +204,7 @@ public final class LoopClickDetector
     {
         for (final ISampleZone zone: zones)
             for (final ISampleLoop loop: zone.getLoops ())
-                if (loop.getType () == LoopType.FORWARDS && loop.getCrossfade () < CROSSFADE_THRESHOLD)
+                if (loop.getType () == LoopType.FORWARDS && !LoopZeroSnapper.isSmoothedByCrossfade (loop))
                     return true;
         return false;
     }
