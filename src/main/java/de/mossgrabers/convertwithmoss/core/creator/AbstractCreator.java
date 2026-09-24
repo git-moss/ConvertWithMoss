@@ -544,6 +544,33 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
     }
 
 
+    /**
+     * Re-calculates the sample start, stop and loop start, stop positions of all samples/zones in
+     * the given multi-sample whose sample rate lies outside of the given range for the closest
+     * sample rate of the range. The audio of such a zone with a loop is converted right away, see
+     * {@link #recalculateSamplePositions(IMultisampleSource, int)}.
+     *
+     * @param multisampleSource The multi-sample source
+     * @param minSampleRate The lowest supported sample rate
+     * @param maxSampleRate The highest supported sample rate
+     * @throws IOException Could not retrieve the current sample rate or convert the audio
+     */
+    protected void recalculateSamplePositions (final IMultisampleSource multisampleSource, final int minSampleRate, final int maxSampleRate) throws IOException
+    {
+        final Map<ISampleData, Map<Long, WavFileSampleData>> conversions = new IdentityHashMap<> ();
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone sampleZone: group.getSampleZones ())
+            {
+                final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+                if (sampleData.isPresent ())
+                {
+                    final int sampleRate = sampleData.get ().getAudioMetadata ().getSampleRate ();
+                    this.recalculateSamplePositions (sampleZone, Math.clamp (sampleRate, minSampleRate, maxSampleRate), false, conversions);
+                }
+            }
+    }
+
+
     private void recalculateSamplePositions (final ISampleZone sampleZone, final int newSampleRate, final boolean onlyIfLarger, final Map<ISampleData, Map<Long, WavFileSampleData>> conversions) throws IOException
     {
         final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
