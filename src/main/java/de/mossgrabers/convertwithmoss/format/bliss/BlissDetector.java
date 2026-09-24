@@ -30,9 +30,12 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFileBasedSampleData;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -56,14 +59,21 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String                   VALUE                                = "value";
+    private static final String                    VALUE                                = "value";
 
-    private static final String                   IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND = "IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND";
-    private static final String                   ERR_BAD_METADATA_FILE                = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String                    IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND = "IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND";
+    private static final String                    ERR_BAD_METADATA_FILE                = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
 
-    private static final Map<Integer, FilterType> FILTER_TYPE_MAP                      = new HashMap<> ();
+    private static final Map<Integer, LfoWaveform> LFO_WAVE_FORMS                       = new HashMap<> ();
+    private static final Map<Integer, FilterType>  FILTER_TYPE_MAP                      = new HashMap<> ();
     static
     {
+        LFO_WAVE_FORMS.put (Integer.valueOf (0), LfoWaveform.SINE);
+        LFO_WAVE_FORMS.put (Integer.valueOf (1), LfoWaveform.TRIANGLE);
+        LFO_WAVE_FORMS.put (Integer.valueOf (2), LfoWaveform.SAWTOOTH_UP);
+        LFO_WAVE_FORMS.put (Integer.valueOf (3), LfoWaveform.SQUARE);
+        LFO_WAVE_FORMS.put (Integer.valueOf (4), LfoWaveform.RANDOM);
+
         FILTER_TYPE_MAP.put (Integer.valueOf (1), FilterType.LOW_PASS);
         FILTER_TYPE_MAP.put (Integer.valueOf (2), FilterType.HIGH_PASS);
         FILTER_TYPE_MAP.put (Integer.valueOf (3), FilterType.BAND_PASS);
@@ -162,8 +172,9 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
      * @param programElement The program element to parse
      * @param programIndex The index of the program to parse
      * @return The parsed multi-sample source
+     * @throws IOException Could not parse the version attribute
      */
-    private Optional<IMultisampleSource> parseProgram (final File sourceFile, final Element programElement, final int programIndex)
+    private Optional<IMultisampleSource> parseProgram (final File sourceFile, final Element programElement, final int programIndex) throws IOException
     {
         if (!BlissTag.PROGRAM.equals (programElement.getNodeName ()))
         {
@@ -182,13 +193,14 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             return Optional.empty ();
         }
 
-        final int version = XMLUtils.getIntegerAttribute (programElement, "version", -1);
-        if (version < 0)
+        final int versionValue = XMLUtils.getIntegerAttribute (programElement, "version", -1);
+        if (versionValue < 0)
         {
             this.notifier.logError (ERR_BAD_METADATA_FILE, "Negative version attribute");
             return Optional.empty ();
         }
-        this.notifier.log ("IDS_BLISS_DETECTED_PROGRAM", name, formatVersion (version));
+        final Version version = new Version (versionValue);
+        this.notifier.log ("IDS_BLISS_DETECTED_PROGRAM", name, version.toString ());
 
         final Element zonesElement = XMLUtils.getChildElementByName (programElement, BlissTag.ZONES);
         if (zonesElement == null)
@@ -207,7 +219,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             final Element zoneElement = zoneElements.get (i);
             final int resourceGroupIndex = XMLUtils.getIntegerAttribute (zoneElement, "res_group", 0);
             final IGroup group = groupsMap.computeIfAbsent (Integer.valueOf (resourceGroupIndex), index -> new DefaultGroup ("Group " + index));
-            this.parseZone (sourceFile, group, zoneElement, programIndex, i);
+            this.parseZone (sourceFile, group, zoneElement, programIndex, i, version);
         }
 
         return Optional.of (this.createMultisampleSource (sourceFile, name, new ArrayList<> (groupsMap.values ())));
@@ -222,8 +234,9 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
      * @param zoneElement The XML zone element
      * @param programIndex The index of the program to parse
      * @param zoneIndex The index of the zone
+     * @param version The version of the Bliss document
      */
-    private void parseZone (final File zipFile, final IGroup group, final Element zoneElement, final int programIndex, final int zoneIndex)
+    private void parseZone (final File zipFile, final IGroup group, final Element zoneElement, final int programIndex, final int zoneIndex, final Version version)
     {
         final Optional<ISampleZone> zoneOpt = this.initZone (zipFile, zoneElement, programIndex, zoneIndex);
         if (zoneOpt.isEmpty ())
@@ -240,7 +253,11 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setGain (XMLUtils.getIntegerAttribute (zoneElement, "mp_gain", 0));
         zone.getAmplitudeVelocityModulator ().setDepth (XMLUtils.getDoubleAttribute (zoneElement, "vel_amp", 1.0));
         zone.setPanning (XMLUtils.getIntegerAttribute (zoneElement, "mp_pan", 0) / 100.0);
-        zone.setTrigger (XMLUtils.getIntegerAttribute (zoneElement, "midi_trigger", 0) == 1 ? TriggerType.RELEASE : TriggerType.ATTACK);
+        final int midiTrigger = XMLUtils.getIntegerAttribute (zoneElement, "midi_trigger", 0);
+        if (midiTrigger == 2)
+            zone.setOneShot (true);
+        else
+            zone.setTrigger (midiTrigger == 1 ? TriggerType.RELEASE : TriggerType.ATTACK);
         zone.setKeyRoot (XMLUtils.getIntegerAttribute (zoneElement, "midi_root_key", 60));
         zone.setKeyLow (XMLUtils.getIntegerAttribute (lowElement, "midi_key", 0));
         zone.setKeyHigh (XMLUtils.getIntegerAttribute (highElement, "midi_key", 127));
@@ -248,13 +265,6 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         zone.setVelocityHigh (XMLUtils.getIntegerAttribute (highElement, "midi_vel", 127));
         zone.setTuning (XMLUtils.getIntegerAttribute (zoneElement, "midi_coarse_tune", 0) + XMLUtils.getIntegerAttribute (zoneElement, "midi_fine_tune", 0) / 100.0);
         zone.setKeyTracking (XMLUtils.getIntegerAttribute (zoneElement, "midi_keycents", 100) / 100.0);
-
-        final int sequenceLength = XMLUtils.getIntegerAttribute (zoneElement, "seq_length", 0);
-        if (sequenceLength > 1)
-        {
-            zone.setSequencePosition (XMLUtils.getIntegerAttribute (zoneElement, "seq_position", 1));
-            zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
-        }
 
         // Read loop
         final int loopMode = XMLUtils.getIntegerAttribute (zoneElement, "loop_mode", 1);
@@ -282,10 +292,10 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         amplitudeEnvelopeModulator.setSource (ampEnvelopeModulator.getSource ());
 
         final IEnvelopeModulator modEnvelopeModulator = getEnvelopeModulator ("mod", zoneElement);
-        final double ampEnvDest1 = toDestinationIndex (XMLUtils.getDoubleAttribute (zoneElement, "amp_env_dest1", -1));
-        final double ampEnvDest2 = toDestinationIndex (XMLUtils.getDoubleAttribute (zoneElement, "amp_env_dest2", -1));
-        final double modEnvDest1 = toDestinationIndex (XMLUtils.getDoubleAttribute (zoneElement, "mod_env_dest1", -1));
-        final double modEnvDest2 = toDestinationIndex (XMLUtils.getDoubleAttribute (zoneElement, "mod_env_dest2", -1));
+        final double ampEnvDest1 = toDestinationIndex (zoneElement.getAttribute ("amp_env_dest1"), version);
+        final double ampEnvDest2 = toDestinationIndex (zoneElement.getAttribute ("amp_env_dest2"), version);
+        final double modEnvDest1 = toDestinationIndex (zoneElement.getAttribute ("mod_env_dest1"), version);
+        final double modEnvDest2 = toDestinationIndex (zoneElement.getAttribute ("mod_env_dest2"), version);
 
         IEnvelopeModulator pitchEnvelopeModulator = null;
         double pitchAmount = 0;
@@ -350,7 +360,62 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             pitchEnvelopeMod.setDepth ((pitchEnvelopeModulator.getDepth () - 0.5) * (pitchAmount - 0.5) * 4.0);
         }
 
+        if (version.supportsRoundRobins ())
+        {
+            final int sequenceLength = XMLUtils.getIntegerAttribute (zoneElement, "seq_length", 0);
+            if (sequenceLength > 1)
+            {
+                zone.setSequencePosition (XMLUtils.getIntegerAttribute (zoneElement, "seq_position", 1));
+                zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
+            }
+        }
+
+        if (version.supportsKeySwitches ())
+        {
+            // IMPROVE Add if key-switches are support in CWM
+            // `sw_last`, -1, Key-switch note this zone responds to `sw_last`, -1 = disabled
+            // `sw_lokey`, -1, Key-switch range low bound (-1 = not set)
+            // `sw_hikey`, -1, Key-switch range high bound (-1 = not set)
+        }
+
+        applyLfo (zone, toDestinationIndex (zoneElement.getAttribute ("mod_lfo1_dest"), version), zoneElement, 1);
+        applyLfo (zone, toDestinationIndex (zoneElement.getAttribute ("mod_lfo2_dest"), version), zoneElement, 2);
+
         group.addSampleZone (zone);
+    }
+
+
+    private static void applyLfo (final ISampleZone zone, final int destinationIndex, final Element zoneElement, final int lfoIndex)
+    {
+        final ILfoModulator modulator = switch (destinationIndex)
+        {
+            case 1 -> zone.getAmplitudeLfoModulator ();
+            case 2 -> zone.getPitchLfoModulator ();
+            case 3 -> zone.getFilter ().get ().getCutoffLfoModulator ();
+            default -> null;
+        };
+
+        if (modulator == null)
+            return;
+
+        final ILfo lfo = modulator.getSource ();
+
+        final int lfoType = XMLUtils.getIntegerAttribute (zoneElement, "mod_lfo" + lfoIndex + "_type", 0);
+        final LfoWaveform waveform = LFO_WAVE_FORMS.getOrDefault (Integer.valueOf (lfoType), LfoWaveform.SINE);
+        lfo.setWaveform (waveform);
+
+        final int lfoSync = XMLUtils.getIntegerAttribute (zoneElement, "mod_lfo" + lfoIndex + "_syn", 0);
+        lfo.setKeySync (lfoSync == 1);
+
+        // TODO
+
+        // <mod_lfo1_rat value="0.7" sense="0.5"/>
+        //
+        // | `mod_lfo1_del` | 0.0 | 0.5 | LFO 1 delay |
+        // | `mod_lfo1_phs` | 1.0 | 0.5 | LFO 1 phase |
+        // | `mod_lfo1_rat` | 0.7 | 0.5 | LFO 1 rate |
+        // | `mod_lfo1_amt` | 0.0 | 0.5 | LFO 1 amount |
+
     }
 
 
@@ -404,14 +469,6 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static String formatVersion (final int version)
-    {
-        String hex = StringUtils.padLeftSpaces (StringUtils.formatHexStr (version), 6);
-        hex = hex.substring (hex.length () - 6);
-        return hex.length () != 6 ? hex : hex.substring (0, 2).trim () + "." + hex.substring (2, 4) + "." + hex.substring (4, 6);
-    }
-
-
     private static IEnvelopeModulator getEnvelopeModulator (final String prefix, final Element zoneElement)
     {
         final double amount = getDoubleValueAttribute (zoneElement, prefix + "_env_amt", 1.0);
@@ -432,7 +489,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
 
     private static double denormalizeTime (final double normalizedValue)
     {
-        return Math.pow (normalizedValue, 4) * 16.0;
+        return 0.001 + Math.pow (normalizedValue, 4) * (16.0 - 0.001);
     }
 
 
@@ -451,8 +508,81 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static int toDestinationIndex (final double normalizedValue)
+    private static int toDestinationIndex (final String value, final Version version)
     {
-        return normalizedValue < 0 ? 0 : (int) Math.floor (normalizedValue * 14.0);
+        if (value == null)
+            return 0;
+        if (version.supportsIntegerDestinations ())
+            return Integer.parseInt (value);
+        return (int) Math.floor (Float.parseFloat (value) * 14.0);
+    }
+
+
+    private class Version
+    {
+        final int major;
+        final int minor;
+        final int patch;
+
+
+        /**
+         * Constructor.
+         *
+         * @param version The version as an integer
+         * @throws IOException Could not parse the version
+         */
+        public Version (final int version) throws IOException
+        {
+            String hex = StringUtils.padLeftSpaces (StringUtils.formatHexStr (version), 6);
+            hex = hex.substring (hex.length () - 6);
+            if (hex.length () != 6)
+                throw new IOException ();
+
+            this.major = Integer.parseInt (hex.substring (0, 2).trim (), 16);
+            this.minor = Integer.parseInt (hex.substring (2, 4), 16);
+            this.patch = Integer.parseInt (hex.substring (4, 6), 16);
+        }
+
+
+        /**
+         * Does this version support key-switches? Requires version 3.8+.
+         *
+         * @return True if it does
+         */
+        public boolean supportsKeySwitches ()
+        {
+            return this.major > 3 || (this.major == 3 && this.minor >= 8);
+        }
+
+
+        /**
+         * Does this version support round-robins? Requires version 3.8+.
+         *
+         * @return True if it does
+         */
+        public boolean supportsRoundRobins ()
+        {
+            return this.major > 3 || (this.major == 3 && this.minor >= 8);
+        }
+
+
+        /**
+         * Does this version support envelope/LFO destinations as plain integers? Requires version
+         * 3.18+.
+         *
+         * @return True if it does
+         */
+        public boolean supportsIntegerDestinations ()
+        {
+            return this.major > 3 || (this.major == 3 && this.minor >= 18);
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString ()
+        {
+            return this.major + "." + this.minor + "." + this.patch;
+        }
     }
 }

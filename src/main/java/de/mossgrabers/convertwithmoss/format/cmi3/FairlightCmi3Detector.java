@@ -1224,7 +1224,7 @@ public class FairlightCmi3Detector extends AbstractDetector<MetadataSettingsUI>
         @Override
         public int hashCode ()
         {
-            int result = Objects.hash (this.filename);
+            final int result = Objects.hash (this.filename);
             return 31 * result + Arrays.hashCode (this.data);
         }
 

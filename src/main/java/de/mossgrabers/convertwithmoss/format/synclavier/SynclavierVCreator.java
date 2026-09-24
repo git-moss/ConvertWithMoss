@@ -493,7 +493,7 @@ public class SynclavierVCreator extends AbstractCreator<SynclavierVCreatorUI>
             {
                 if (this == o)
                     return true;
-                if (!(o instanceof Entry (byte [] name, byte [] data, long crc, int offset)))
+                if (!(o instanceof Entry (final byte [] name, final byte [] data, final long crc, final int offset)))
                     return false;
                 return this.crc == crc && this.offset == offset && Arrays.equals (this.name, name) && Arrays.equals (this.data, data);
             }

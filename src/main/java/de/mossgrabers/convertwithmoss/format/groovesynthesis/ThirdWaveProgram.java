@@ -27,51 +27,51 @@ import java.util.List;
 final class ThirdWaveProgram
 {
     /** The number of parts of a program. */
-    static final int            NUM_PARTS                   = 4;
+    static final int            NUM_PARTS                 = 4;
     /** The number of oscillators of a part. */
-    static final int            NUM_OSCILLATORS             = 3;
+    static final int            NUM_OSCILLATORS           = 3;
     /** The number of integer parameters of a part. */
-    static final int            NUM_PART_INTEGERS           = 181;
+    static final int            NUM_PART_INTEGERS         = 181;
     /** The number of float parameters of a part. */
-    static final int            NUM_PART_FLOATS             = 136;
+    static final int            NUM_PART_FLOATS           = 136;
     /** The number of integer parameters of the program, older versions have fewer. */
-    static final int            NUM_PROGRAM_INTEGERS        = 181;
+    static final int            NUM_PROGRAM_INTEGERS      = 181;
     /** The number of the first integer parameters of the program which are used. */
-    static final int            NUM_USED_PROGRAM_INTEGERS   = 28;
+    static final int            NUM_USED_PROGRAM_INTEGERS = 28;
 
     /** Part integers: the wavetable, analog waveform or sample slot of oscillator 1 to 3. */
-    private static final int    PART_OSCILLATOR_WAVE        = 0;
+    private static final int    PART_OSCILLATOR_WAVE      = 0;
     /** Part integers: 1 if oscillator 1 to 3 follows the keyboard, 0 if its pitch is fixed. */
-    private static final int    PART_OSCILLATOR_PITCH       = 167;
+    private static final int    PART_OSCILLATOR_PITCH     = 167;
     /** Part floats: the coarse tuning of oscillator 1 to 3 in semi-tones. */
-    private static final int    PART_OSCILLATOR_COARSE      = 0;
+    private static final int    PART_OSCILLATOR_COARSE    = 0;
     /** Part floats: the fine tuning of oscillator 1 to 3 in semi-tones (-0.5 to 0.5). */
-    private static final int    PART_OSCILLATOR_FINE        = 3;
+    private static final int    PART_OSCILLATOR_FINE      = 3;
     /** Part floats: the level (0 to 1) of oscillator 1 to 3. */
-    private static final int    PART_OSCILLATOR_LEVEL       = 6;
+    private static final int    PART_OSCILLATOR_LEVEL     = 6;
     /** Part floats: the transposition of the keyboard in semi-tones (-24 to 24). */
-    private static final int    PART_TRANSPOSE              = 9;
+    private static final int    PART_TRANSPOSE            = 9;
     /** Part floats: the volume of the part as a factor (0 to 1.7). */
-    private static final int    PART_VOLUME                 = 112;
+    private static final int    PART_VOLUME               = 112;
     /** The maximum volume of a part. */
-    static final float          MAX_PART_VOLUME             = 1.7f;
+    static final float          MAX_PART_VOLUME           = 1.7f;
     /** Part floats: the panning of the part (0 = left, 0.5 = center, 1 = right). */
-    private static final int    PART_PAN                    = 124;
+    private static final int    PART_PAN                  = 124;
     /** Part floats: the fine tuning of the part in semi-tones (-0.5 to 0.5). */
-    private static final int    PART_FINE                   = 125;
+    private static final int    PART_FINE                 = 125;
     /** Program integers: the number of split points of the keyboard (0 to 3). */
-    private static final int    PROGRAM_SPLIT_COUNT         = 18;
+    private static final int    PROGRAM_SPLIT_COUNT       = 18;
     /** Program integers: the notes of the split points 1 to 3. */
-    private static final int    PROGRAM_SPLIT_NOTE          = 21;
+    private static final int    PROGRAM_SPLIT_NOTE        = 21;
     /** Program integers: the parts (bit mask) which the keyboard sections 1 to 4 play. */
-    private static final int    PROGRAM_SECTION_PARTS       = 24;
+    private static final int    PROGRAM_SECTION_PARTS     = 24;
 
-    private static final String TEMPLATE                    = "InitProgram.pro";
-    private static final String TEMPLATE_MAGIC              = "W3_PROG_5";
+    private static final String TEMPLATE                  = "InitProgram.pro";
+    private static final String TEMPLATE_MAGIC            = "W3_PROG_5";
 
-    private final int [] []     partIntegers                = new int [NUM_PARTS] [NUM_PART_INTEGERS];
-    private final float [] []   partFloats                  = new float [NUM_PARTS] [NUM_PART_FLOATS];
-    private final int []        programIntegers             = new int [NUM_PROGRAM_INTEGERS];
+    private final int [] []     partIntegers              = new int [NUM_PARTS] [NUM_PART_INTEGERS];
+    private final float [] []   partFloats                = new float [NUM_PARTS] [NUM_PART_FLOATS];
+    private final int []        programIntegers           = new int [NUM_PROGRAM_INTEGERS];
 
 
     /**
@@ -258,8 +258,8 @@ final class ThirdWaveProgram
     /**
      * Get the ranges of the keyboard sections, which are split by the split points.
      *
-     * @return The lowest and highest note of each section; the note of a split point belongs to
-     *         the lower section
+     * @return The lowest and highest note of each section; the note of a split point belongs to the
+     *         lower section
      */
     int [] [] getKeyboardSections ()
     {

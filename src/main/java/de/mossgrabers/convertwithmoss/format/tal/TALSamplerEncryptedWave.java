@@ -19,8 +19,8 @@ import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * An encrypted sample of TAL-Sampler (*.talwav), in which the factory library of the plug-in and many
- * sample packs deliver their samples. The plug-in creates it from a WAV file with 'Convert wav
+ * An encrypted sample of TAL-Sampler (*.talwav), in which the factory library of the plug-in and
+ * many sample packs deliver their samples. The plug-in creates it from a WAV file with 'Convert wav
  * Samples to talwav': the WAV file encrypted with Blowfish in the electronic code-book mode with a
  * fixed key of 72 bytes. The two halves of a block of 8 bytes are 32-bit little-endian words, and
  * the up to 7 bytes behind the last whole block are not encrypted.

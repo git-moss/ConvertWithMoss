@@ -70,7 +70,10 @@ public class DetectSettings
     public boolean                       snapLoopsToZero    = false;
     /** Transpose playback by this number of semitones by moving the sample root keys. 0 is off. */
     public int                           transposeSemitones = 0;
-    /** Transpose each multi-sample by the measured pitch of its samples instead of a fixed number of semitones. */
+    /**
+     * Transpose each multi-sample by the measured pitch of its samples instead of a fixed number of
+     * semitones.
+     */
     public boolean                       transposeToPitch   = false;
 
 

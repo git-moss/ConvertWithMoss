@@ -505,7 +505,7 @@ public class S2400Detector extends AbstractDetector<MetadataSettingsUI>
         @Override
         public int hashCode ()
         {
-            int result = Objects.hash (Integer.valueOf (this.type), Integer.valueOf (this.id), Long.valueOf (this.value));
+            final int result = Objects.hash (Integer.valueOf (this.type), Integer.valueOf (this.id), Long.valueOf (this.value));
             return 31 * result + Arrays.hashCode (this.blob);
         }
 
