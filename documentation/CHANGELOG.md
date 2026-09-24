@@ -2,7 +2,7 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* New: Added support for the sample slots of the Groove Synthesis 3rd Wave (BIN, PGDATA): multi-sample files are read and written, the sample slots of unified program files are read. Written files are not yet verified on hardware.
 
 ## 20.3.0
 

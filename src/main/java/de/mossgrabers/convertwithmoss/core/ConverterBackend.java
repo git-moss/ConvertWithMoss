@@ -75,6 +75,8 @@ import de.mossgrabers.convertwithmoss.format.ensoniq.epsasr.EnsoniqEpsAsrDetecto
 import de.mossgrabers.convertwithmoss.format.ensoniq.mirage.MirageDetector;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Creator;
 import de.mossgrabers.convertwithmoss.format.exs.EXS24Detector;
+import de.mossgrabers.convertwithmoss.format.groovesynthesis.ThirdWaveCreator;
+import de.mossgrabers.convertwithmoss.format.groovesynthesis.ThirdWaveDetector;
 import de.mossgrabers.convertwithmoss.format.isla.s2400.S2400Creator;
 import de.mossgrabers.convertwithmoss.format.isla.s2400.S2400Detector;
 import de.mossgrabers.convertwithmoss.format.iso.IsoDetector;
@@ -230,6 +232,7 @@ public class ConverterBackend
         this.detectors.add (new DistingExDetector (notifier));
         this.detectors.add (new FairlightCmi3Detector (notifier));
         this.detectors.add (new DirectWaveDetector (notifier));
+        this.detectors.add (new ThirdWaveDetector (notifier));
         this.detectors.add (new S2400Detector (notifier));
         this.detectors.add (new IsoDetector (notifier));
         this.detectors.add (new KMPDetector (notifier));
@@ -283,6 +286,7 @@ public class ConverterBackend
         this.creators.add (new FairlightCmi3Creator (notifier));
         this.creators.add (new DistingExCreator (notifier));
         this.creators.add (new DirectWaveCreator (notifier));
+        this.creators.add (new ThirdWaveCreator (notifier));
         this.creators.add (new S2400Creator (notifier));
         this.creators.add (new KMPCreator (notifier));
         this.creators.add (new KorgmultisampleCreator (notifier));

@@ -5953,6 +5953,187 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
+    <table:table-row table:style-name="ro18">
+     <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Groove Synthesis 3rd Wave</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+      <text:p>Read</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>bin (multi-sample slot), pgdata (the sample slots of a unified program)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce41"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>16</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>10 - 48 kHz</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce43"/>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
+      <text:p>slot name, program name</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
+      <text:p>from name</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
+      <text:p>from name</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce43" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>slot name</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce5"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Assigned note</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Min / Max note</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Start</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>End (inclusive)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
+      <text:p>Tuning (+/-1 semi-tone)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Volume</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce5"/>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Forward only</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Loop on when note on / always on</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce8" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Loop Start</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce8" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Loop End (inclusive)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Crossfade length</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce39"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce37"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce37"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:number-columns-repeated="67"/>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro11">
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+      <text:p>Write</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>bin (multi-sample slot)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce41"/>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
+      <text:p>16</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
+      <text:p>10 - 48 kHz</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce43"/>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
+      <text:p>slot name (31 characters), file name</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39"/>
+     <table:covered-table-cell table:number-columns-repeated="3"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce5"/>
+     <table:covered-table-cell/>
+     <table:table-cell table:style-name="ce31" office:value-type="string" calcext:value-type="string">
+      <text:p>Min / Max note (at most 2 octaves from the assigned note)</text:p>
+     </table:table-cell>
+     <table:covered-table-cell table:number-columns-repeated="5"/>
+     <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
+      <text:p>Assigned note + Tuning</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
+      <text:p>Off: assigned note in the middle of the key range</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
+      <text:p>Reverse: the audio is reversed</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
+      <text:p>Applied to the audio (up to its peak level)</text:p>
+     </table:table-cell>
+     <table:covered-table-cell table:number-columns-repeated="5"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce5"/>
+     <table:covered-table-cell table:number-columns-repeated="6"/>
+     <table:table-cell table:style-name="ce23"/>
+     <table:table-cell table:style-name="ce39"/>
+     <table:covered-table-cell table:number-columns-repeated="5"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce37"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:number-columns-repeated="3"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce37"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:covered-table-cell table:number-columns-repeated="7"/>
+     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:number-columns-repeated="67"/>
+     <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
+    </table:table-row>
     <table:table-row table:style-name="ro3">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Korgmultisample</text:p>

@@ -72,6 +72,7 @@ The following multi-sample formats are supported:
 * [Expert Sleepers disting EX](#expert-sleepers-disting-ex)
 * [Fairlight CMI Voice](#fairlight-cmi-voice)
 * [FL Studio DirectWave](#fl-studio-directwave)
+* [Groove Synthesis 3rd Wave](#groove-synthesis-3rd-wave)
 * [ISLA S2400](#isla-s2400)
 * [ISO/IMG Files](#isoimg-files)
 * [Korg KSC/KMP/KSF](#korg-ksckmpksf)
@@ -566,6 +567,14 @@ As a source, DWP programs are read from their binary structure (see DIRECTWAVE_D
 As a destination, one monolithic DWP file is written per instrument, i.e. a single self-contained file which carries all its samples as FLAC compressed audio. FL Studio Desktop loads it directly and for FL Studio Mobile it only needs to be copied into its user files. The DWP structure carries name, key/velocity ranges, root, gain, panning, loop, amplitude envelope, a low-pass/high-pass/band-pass/notch filter and the two zone LFOs (LFO 1 modulates the pitch, LFO 2 the volume) per zone. Only the first round-robin cycle is kept since trigger groups cannot be written.
 
 To import a DWP file into FL Studio Mobile, copy it to the iOS device and open it with FL Studio Mobile. This will copy the file to the user instrument folder.
+
+## Groove Synthesis 3rd Wave
+
+The 3rd Wave is a wavetable synthesizer from Groove Synthesis whose oscillators can play samples as well. The samples are kept in *sample slots* (S00, S01, ...): a slot holds up to 8 mono samples, each with its key range around its assigned note, fine tuning, volume, play range and loop. On its USB drive the device stores a slot as a multi-sample file (ending *.bin*, in the *Audio* folder) and a program together with the slots and wavetables it uses as a unified program file (ending *.pgdata*, in the *Programs* folder).
+
+As a source, both file types are read. Each slot becomes a multi-sample. The slots of a unified program file are named after the program and the slot; if a program uses only one slot, it is named after the program. Each sample becomes a zone with its key range, assigned note (root), fine tuning, volume, play range and loop including its cross-fade: *looping on when note on* becomes a loop which ends at the release of the note, *looping always on* a loop which continues. The settings of the program itself - oscillators, parts and key splits, envelopes, filters, modulation, effects, arpeggiator and sequencer - are not converted. A sample which the device plays with 8 or 12 bit keeps the 16 bit of its recording, which is reported.
+
+As a destination, multi-sample files are written. Copy them into the *Audio* folder of the device and load them with *Import multisample* or *Bulk multisample import* in the Global menu; the latter imports all files of the folder in alphabetical order into consecutive slots. Then select the slot with the wavetable control of an oscillator. A slot holds at most 8 samples and no layered samples - samples with the same assigned note or whose assigned note lies in the key range of another - therefore larger multi-samples, velocity layers and round robins are written as further slots, numbered after the name of the multi-sample. The samples are written as 16 bit mono (stereo samples are mixed down) with a sample rate between 10 and 48 kHz; other sample rates are converted. Coarse tuning moves the assigned note and the key range of a sample is limited to two octaves around it. A sample which plays the same pitch on all keys plays in tune on the key in the middle of its key range. The format has no volume, therefore the gain is applied to the audio, but only up to the peak level of the sample. Only the first loop is written, forwards and within the play range, and reversed samples are written reversed. Samples which play on the release of a note are not written. The device has 35 seconds of sample memory at 48 kHz for all its slots: a multi-sample which needs more is reported, the processing options can reduce the number of its samples and their sample rate. Envelopes, filters and the other settings belong to the program which plays a slot and are not written. The written files are not yet verified on hardware.
 
 ## ISLA S2400
 
