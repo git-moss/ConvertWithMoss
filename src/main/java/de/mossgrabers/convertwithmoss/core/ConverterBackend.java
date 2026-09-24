@@ -689,8 +689,10 @@ public class ConverterBackend
      * need the snap-to-zero-crossing or loop cross-fade processing can be found without listening
      * to every converted preset. The step is measured on the audio after the processing - before
      * any resampling of the destination format. If the loops were snapped, the note reports the
-     * loops which still click and does not recommend the snapping again. Nothing is changed and a
-     * sample which cannot be read is simply skipped.
+     * loops which still click and does not recommend the snapping again. If the loops which still
+     * click were cross-faded, only loops which start at the beginning of their sample are left,
+     * which have no audio for a cross-fade. Nothing is changed and a sample which cannot be read
+     * is simply skipped.
      *
      * @param multisampleSource The multi-sample to check
      */
@@ -700,8 +702,16 @@ public class ConverterBackend
         if (result.isPresent ())
         {
             final LoopClickDetector.Result loopClicks = result.get ();
-            final boolean snapped = !this.onlyAnalyse && this.detectionSettings.needsProcessing () && this.detectionSettings.snapLoopsToZero;
-            this.notifier.log (snapped ? "IDS_NOTIFY_LOOP_CLICKS_AFTER_SNAPPING" : "IDS_NOTIFY_LOOP_CLICKS", multisampleSource.getName (), Integer.toString (loopClicks.clickingLoops ()), Integer.toString (loopClicks.checkedLoops ()), String.format (Locale.US, "%.0f", Double.valueOf (loopClicks.worstStepPercent ())), loopClicks.worstZoneName ());
+            final boolean processed = !this.onlyAnalyse && this.detectionSettings.needsProcessing ();
+            final String messageID;
+            // 0 is off and 1 is a cross-fade of 0%, which sets none
+            if (processed && this.detectionSettings.crossfadeClicking && this.detectionSettings.loopCrossfades > 1)
+                messageID = "IDS_NOTIFY_LOOP_CLICKS_NO_LEAD_IN";
+            else if (processed && this.detectionSettings.snapLoopsToZero)
+                messageID = "IDS_NOTIFY_LOOP_CLICKS_AFTER_SNAPPING";
+            else
+                messageID = "IDS_NOTIFY_LOOP_CLICKS";
+            this.notifier.log (messageID, multisampleSource.getName (), Integer.toString (loopClicks.clickingLoops ()), Integer.toString (loopClicks.checkedLoops ()), String.format (Locale.US, "%.0f", Double.valueOf (loopClicks.worstStepPercent ())), loopClicks.worstZoneName ());
         }
     }
 
