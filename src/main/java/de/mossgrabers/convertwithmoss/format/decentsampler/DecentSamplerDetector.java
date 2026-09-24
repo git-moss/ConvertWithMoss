@@ -69,6 +69,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     private static final String                  ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
     private static final String                  ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
 
+    private static final String                  ENDING_DSBUNDLE       = ".dsbundle";
     private static final String                  ENDING_DSLIBRARY      = ".dslibrary";
     private static final String                  ENDING_DSPRESET       = ".dspreset";
     /** A start tag or an empty-element tag with at least one attribute: name, attributes, white-space, slash. */
@@ -134,6 +135,14 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         }
 
         return result;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected boolean isPackageFolder (final String folderName)
+    {
+        return folderName.toLowerCase (Locale.US).endsWith (ENDING_DSBUNDLE);
     }
 
 
