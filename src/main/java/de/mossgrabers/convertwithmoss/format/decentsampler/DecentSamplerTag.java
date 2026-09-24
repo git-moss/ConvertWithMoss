@@ -27,6 +27,12 @@ public class DecentSamplerTag
     public static final String                    MOD_EFFECT           = "effect";
     /** The effects tag. */
     public static final String                    EFFECTS_EFFECT       = "effect";
+    /** The effect type attribute. */
+    public static final String                    EFFECT_TYPE          = "type";
+    /** The filter frequency attribute of an effect. */
+    public static final String                    EFFECT_FREQUENCY     = "frequency";
+    /** The filter resonance attribute of an effect. */
+    public static final String                    EFFECT_RESONANCE     = "resonance";
     /** The modulators tag. */
     public static final String                    MODULATORS           = "modulators";
     /** The envelope tag. */
@@ -50,6 +56,8 @@ public class DecentSamplerTag
     public static final String                    LABELED_KNOB         = "labeled-knob";
     /** The binding tag. */
     public static final String                    BINDING              = "binding";
+    /** The parameter attribute of a binding. */
+    public static final String                    BINDING_PARAMETER    = "parameter";
     /** The tags tag. */
     public static final String                    TAGS                 = "tags";
     /** The tag tag. */
@@ -169,6 +177,11 @@ public class DecentSamplerTag
         ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE, SEQ_MODE, TAGS_ATTRIBUTE));
         ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_ENABLED, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANNING, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER, SEQ_MODE, SEQ_POSITION, SEQ_LENGTH, TAGS_ATTRIBUTE));
         ATTRIBUTES.put (SAMPLE, Set.of (SAMPLE_NAME, PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANNING, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, SEQ_MODE, SEQ_POSITION));
+        ATTRIBUTES.put (TAG, Set.of (TAG_NAME, TAG_POLYPHONY));
+        ATTRIBUTES.put (EFFECTS_EFFECT, Set.of (EFFECT_TYPE, EFFECT_FREQUENCY, EFFECT_RESONANCE));
+        ATTRIBUTES.put (ENVELOPE, Set.of (MOD_AMOUNT, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE));
+        ATTRIBUTES.put (LFO, Set.of (MOD_AMOUNT, LFO_SHAPE, LFO_FREQUENCY, LFO_FREQUENCY_FORMAT, LFO_DELAY_TIME));
+        ATTRIBUTES.put (BINDING, Set.of (BINDING_PARAMETER));
     }
 
 

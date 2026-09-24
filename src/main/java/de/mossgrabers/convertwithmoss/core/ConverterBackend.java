@@ -21,6 +21,7 @@ import de.mossgrabers.convertwithmoss.core.algorithm.AudioSampleReducer;
 import de.mossgrabers.convertwithmoss.core.algorithm.LoopClickDetector;
 import de.mossgrabers.convertwithmoss.core.algorithm.LoopZeroSnapper;
 import de.mossgrabers.convertwithmoss.core.algorithm.MultiSampleReducer;
+import de.mossgrabers.convertwithmoss.core.algorithm.PitchDetector;
 import de.mossgrabers.convertwithmoss.core.creator.ICreator;
 import de.mossgrabers.convertwithmoss.core.detector.IDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -154,6 +155,8 @@ public class ConverterBackend
 
     /** The MIDI note at the middle of the keyboard. */
     private static final int               MIDDLE_KEY                  = 60;
+    /** Samples which sound at least this many semitones from their root keys are reported. */
+    private static final double            MINIMUM_PITCH_OFFSET        = 0.5;
     private static final String []         NOTE_NAMES                  =
     {
         "C",
@@ -621,16 +624,73 @@ public class ConverterBackend
         this.processSamples (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
         this.checkOffCenterMapping (multisampleSource);
+        this.checkSamplePitch (multisampleSource);
         this.checkLoopClicks (multisampleSource);
+    }
+
+
+    /**
+     * Log a note if the samples sound away from the root keys they are mapped to, so that a preset
+     * which plays one or two octaves off is found without trying it on the destination device. The
+     * instrument was usually transposed when it was recorded - another footage, a frequency ratio
+     * of one half or two, a transposed patch - and the source plays exactly the same way, so
+     * nothing is changed. A multi-sample whose samples are not clearly pitched, or whose zones do
+     * not agree with each other, is not reported at all.
+     *
+     * @param multisampleSource The multi-sample to check
+     */
+    private void checkSamplePitch (final IMultisampleSource multisampleSource)
+    {
+        // The transposition to the measured pitch has already reported it
+        if (this.detectionSettings.transposeToPitch && this.detectionSettings.needsProcessing ())
+            return;
+
+        final Optional<PitchDetector.Result> result = PitchDetector.detect (multisampleSource.getGroups ());
+        if (result.isEmpty ())
+            return;
+        final PitchDetector.Result pitch = result.get ();
+        if (Math.abs (pitch.semitones ()) < MINIMUM_PITCH_OFFSET)
+            return;
+        this.notifier.log ("IDS_NOTIFY_SAMPLE_PITCH", multisampleSource.getName (), formatSemitones (pitch.semitones ()), Integer.toString (pitch.agreeingZones ()), Integer.toString (pitch.measuredZones ()));
+    }
+
+
+    /**
+     * Measure how far the samples of the multi-sample sound away from their root keys and get the
+     * transposition which brings them onto their keys. Only whole semitones can be moved, since the
+     * transposition moves the root keys - the audio is not touched.
+     *
+     * @param multisampleSource The multi-sample to measure
+     * @return The number of semitones to transpose, 0 if the pitch could not be measured or the
+     *         samples already sound at their keys
+     */
+    private int measureTranspose (final IMultisampleSource multisampleSource)
+    {
+        final Optional<PitchDetector.Result> result = PitchDetector.detect (multisampleSource.getGroups ());
+        if (result.isEmpty ())
+            return 0;
+        final PitchDetector.Result pitch = result.get ();
+        final int transpose = (int) Math.round (-pitch.semitones ());
+        if (transpose == 0)
+            return 0;
+        this.notifier.log ("IDS_PROCESSING_TRANSPOSE_TO_PITCH", Integer.toString (transpose), formatSemitones (pitch.semitones ()), Integer.toString (pitch.agreeingZones ()), Integer.toString (pitch.measuredZones ()));
+        return transpose;
+    }
+
+
+    private static String formatSemitones (final double semitones)
+    {
+        return String.format (Locale.US, "%+.1f", Double.valueOf (semitones));
     }
 
 
     /**
      * Log a note for loops which audibly click at their wrap-around point, so the presets which
      * need the snap-to-zero-crossing or loop cross-fade processing can be found without listening
-     * to every converted preset. The step is measured on the source audio as it was read - before
-     * any resampling of the destination format - and reports the loop as it was authored. Nothing
-     * is changed and a sample which cannot be read is simply skipped.
+     * to every converted preset. The step is measured on the audio after the processing - before
+     * any resampling of the destination format. If the loops were snapped, the note reports the
+     * loops which still click and does not recommend the snapping again. Nothing is changed and a
+     * sample which cannot be read is simply skipped.
      *
      * @param multisampleSource The multi-sample to check
      */
@@ -640,7 +700,8 @@ public class ConverterBackend
         if (result.isPresent ())
         {
             final LoopClickDetector.Result loopClicks = result.get ();
-            this.notifier.log ("IDS_NOTIFY_LOOP_CLICKS", multisampleSource.getName (), Integer.toString (loopClicks.clickingLoops ()), Integer.toString (loopClicks.checkedLoops ()), String.format (Locale.US, "%.0f", Double.valueOf (loopClicks.worstStepPercent ())), loopClicks.worstZoneName ());
+            final boolean snapped = !this.onlyAnalyse && this.detectionSettings.needsProcessing () && this.detectionSettings.snapLoopsToZero;
+            this.notifier.log (snapped ? "IDS_NOTIFY_LOOP_CLICKS_AFTER_SNAPPING" : "IDS_NOTIFY_LOOP_CLICKS", multisampleSource.getName (), Integer.toString (loopClicks.clickingLoops ()), Integer.toString (loopClicks.checkedLoops ()), String.format (Locale.US, "%.0f", Double.valueOf (loopClicks.worstStepPercent ())), loopClicks.worstZoneName ());
         }
     }
 
@@ -740,10 +801,11 @@ public class ConverterBackend
             // -----------------------------------------------------------
             // Transpose playback by moving the sample root keys - the key ranges are not changed
 
-            final int transpose = this.detectionSettings.transposeSemitones;
+            final int transpose = this.detectionSettings.transposeToPitch ? this.measureTranspose (multisampleSource) : this.detectionSettings.transposeSemitones;
             if (transpose != 0)
             {
-                this.notifier.log ("IDS_PROCESSING_TRANSPOSE", Integer.toString (transpose));
+                if (!this.detectionSettings.transposeToPitch)
+                    this.notifier.log ("IDS_PROCESSING_TRANSPOSE", Integer.toString (transpose));
                 for (final IGroup group: multisampleSource.getGroups ())
                     for (final ISampleZone zone: group.getSampleZones ())
                     {
