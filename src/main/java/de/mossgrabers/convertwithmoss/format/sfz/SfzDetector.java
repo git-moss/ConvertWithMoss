@@ -399,6 +399,12 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
             sampleMetadata.setSequencePosition (sequencePosition);
         }
 
+        // The regions of an exclusive group switch each other off. A region which is switched off
+        // by another group, e.g. an open hi-hat by the closed one, has no exclusive group
+        final int exclusiveGroup = this.getIntegerValue (SfzOpcode.GROUP, 0);
+        if (exclusiveGroup > 0 && this.getIntegerValue (SfzOpcode.OFF_BY, 0) == exclusiveGroup)
+            sampleMetadata.setExclusiveGroup (exclusiveGroup);
+
         final int offset = this.getIntegerValue (SfzOpcode.OFFSET);
         if (offset >= 0)
             sampleMetadata.setStart (offset);
