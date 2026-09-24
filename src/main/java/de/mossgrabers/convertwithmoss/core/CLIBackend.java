@@ -115,7 +115,8 @@ public class CLIBackend implements INotifier
             spec.addOption (OptionSpec.builder ("-Zl", "--ProcessLoopCrossfade").paramLabel ("PROCESS_LOOP_CROSSFADE").type (Integer.class).description ("Sets a fixed loop crossfade as a percentage. Valid values are 0-100.").build ());
             spec.addOption (OptionSpec.builder ("-Zlc", "--ProcessLoopCrossfadeClicking").paramLabel ("PROCESS_LOOP_CROSSFADE_CLICKING").type (Boolean.class).description ("Sets the loop crossfade of -Zl only on forward loops which click at their wrap - after snapping with -Zs, if enabled - limited to the audio in front of the loop start, if processing is enabled.").build ());
             spec.addOption (OptionSpec.builder ("-Zs", "--ProcessSnapLoops").paramLabel ("PROCESS_SNAP_LOOPS").type (Boolean.class).description ("Moves the boundaries of forward loops which click at their wrap to a nearby zero-crossing or to where the waveform continues best, if processing is enabled.").build ());
-            spec.addOption (OptionSpec.builder ("-Zp", "--ProcessTranspose").paramLabel ("PROCESS_TRANSPOSE").type (Integer.class).description ("Transposes playback by the given number of semitones (-24 to 24) by moving the sample root keys, if processing is enabled. The key ranges are not changed.").build ());
+            spec.addOption (OptionSpec.builder ("-Zpa", "--ProcessTransposeToPitch").paramLabel ("PROCESS_TRANSPOSE_TO_PITCH").type (Boolean.class).description ("Transposes each multi-sample by the pitch measured in its samples, if processing is enabled. Overrides -Zp.").build ());
+        spec.addOption (OptionSpec.builder ("-Zp", "--ProcessTranspose").paramLabel ("PROCESS_TRANSPOSE").type (Integer.class).description ("Transposes playback by the given number of semitones (-24 to 24) by moving the sample root keys, if processing is enabled. The key ranges are not changed.").build ());
 
             spec.addPositional (PositionalParamSpec.builder ().paramLabel ("SOURCE... DESTINATION_FOLDER").hideParamSyntax (true).type (List.class).auxiliaryTypes (File.class).index ("0..*").arity ("2..*").description ("The source folder to process or, instead, one or more source files to convert only these (e.g. by using a wildcard), followed by the destination folder to write to.").required (true).build ());
 
@@ -212,6 +213,7 @@ public class CLIBackend implements INotifier
             }
             detectSettings.transposeSemitones = transpose.intValue ();
         }
+        detectSettings.transposeToPitch = parseResult.matchedOptionValue ("Zpa", Boolean.FALSE).booleanValue ();
 
         // The destination may need to adjust or reject the processing options, e.g. because it
         // writes a fixed sample rate. The graphical interface asks it here as well (see MainFrame).
