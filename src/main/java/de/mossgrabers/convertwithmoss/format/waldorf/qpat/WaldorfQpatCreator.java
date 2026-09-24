@@ -2114,8 +2114,10 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
     /**
      * Get the gain offset of a group which is stored in the volume of the respective oscillator.
-     * The offset is not applied for a fully silenced group, since subtracting negative infinity
-     * from the (equally infinite) zone gain would result in a NaN which cannot be written.
+     * The volume of an oscillator ends at 0dB, the part of a higher gain stays in the entries of
+     * the sample map. The offset is not applied for a fully silenced group, since subtracting
+     * negative infinity from the (equally infinite) zone gain would result in a NaN which cannot be
+     * written.
      *
      * @param group The group
      * @return The gain offset in dB, 0 if there is none
@@ -2123,7 +2125,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     private static double getGroupGainOffset (final IGroup group)
     {
         final double gain = group.getGain ();
-        return Double.isFinite (gain) ? gain : 0;
+        return Double.isFinite (gain) ? Math.min (gain, 0) : 0;
     }
 
 
