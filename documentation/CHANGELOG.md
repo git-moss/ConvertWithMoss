@@ -2,7 +2,8 @@
 
 ## 20.4.0 (work-in-progress)
 
-* ...
+* Waldorf Quantum/Iridium
+  * Fixed: A group whose gain is above 0 dB lost that part of it. The gain of a group is written as the volume of its oscillator, which ends at 0 dB, and it was taken off the entries of the sample map in full. The part above 0 dB now stays in the entries of the sample map. A DecentSampler preset whose two layers are raised by 1.7 and 2.3 dB arrived that much quieter, with the balance between its layers changed.
 
 ## 20.3.0
 
