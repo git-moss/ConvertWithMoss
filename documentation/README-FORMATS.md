@@ -889,6 +889,8 @@ The SFZ file contains only the description of the multi-sample. The related samp
 
 SFZ can only mark a sample as a one-shot (`loop_mode=one_shot`) if it has no loop. A looped zone therefore keeps its loop and is not written as a one-shot.
 
+Exclusive groups are read and written with the `group` and `off_by` opcodes: the regions of an exclusive group carry its number in both, so that each of them switches off the others. A region which is switched off by another group than its own, e.g. an open hi-hat which the closed one stops but not vice versa, cannot be expressed as an exclusive group and is read without one.
+
 A pitch LFO (vibrato) is read and written via the `pitchlfo_freq` (Hertz), `pitchlfo_depth` (cent), `pitchlfo_delay` and `pitchlfo_fade` (seconds) opcodes. A volume LFO (tremolo) is read and written via the `amplfo_freq` (Hertz), `amplfo_depth` (decibels), `amplfo_delay` and `amplfo_fade` (seconds) opcodes.
 
 The intensity of the velocity to volume modulation is read and written via the `amp_veltrack` opcode. If the source also describes the response curve of the modulation (e.g. the velocity modulation of Kontakt scales the amplitude with the cube of the velocity), the curve is written as `amp_velcurve_N` points between which the players interpolate linearly. When reading, `amp_velcurve_N` points are fitted to the closest power law and stored as the curve of the modulation, so the response survives a round trip.

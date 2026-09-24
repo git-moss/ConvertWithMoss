@@ -2,6 +2,8 @@
 
 ## 20.4.0 (work-in-progress)
 
+* SFZ
+  * New: Exclusive groups are read and written ('group' and 'off_by').
 * DecentSampler
   * Fixed: With 'Create folder structure', the presets of a dsbundle were written into an output folder named like the bundle, e.g. 'Harry Zimms Rare Akai AX73 Synthesizer.dsbundle/asgard.sfz', which the Finder shows as a bundle file again. A dsbundle is a folder which DecentSampler treats as one file, like a dslibrary, whose presets already went into the folder which contains the library file. The presets of a bundle now go into the folder which contains the bundle as well, also when the bundle is the selected source folder or has sub-folders. The name of the bundle is still used for the detection of the metadata like any folder name, and the Contents dialog still shows the bundle as the folder it is.
   * Fixed: A preset which sets the same attribute twice on one element could not be read: the whole preset was skipped with 'Could not parse XML ... Attribute "textColor" was already specified for element "labeled-knob"', while DecentSampler loads it. Presets are often written by hand, where such a repetition is easy to produce - all seven presets of Harry Zimm's 'Rare Akai AX73' carry a second 'textColor' on the reverb knob of their user interface. A repeated attribute is now ignored and its first value used, which is the value the XML parser of JUCE, the framework DecentSampler is built on, returns as well. The log names the attribute and the element when the two values differ and the attribute is one which the conversion uses; a repetition in e.g. the user interface, like the one of these presets, makes no difference to the result and is only logged with 'Log unused XML elements and attributes'.

@@ -9626,7 +9626,9 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>loop_mode=one_shot</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>group / off_by (mutual)</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Region</text:p>
@@ -9730,7 +9732,9 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>loop_mode=one_shot</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>group / off_by</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:covered-table-cell table:number-columns-repeated="7" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce23"/>
