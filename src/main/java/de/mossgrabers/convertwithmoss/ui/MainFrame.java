@@ -116,6 +116,7 @@ public class MainFrame extends AbstractFrame implements INotifier
     private static final String    PROCESSING_SNAP_LOOPS               = "ProcessingSnapLoops";
     private static final String    PROCESSING_CROSSFADE_CLICKING       = "ProcessingCrossfadeClicking";
     private static final String    PROCESSING_TRANSPOSE                = "ProcessingTranspose";
+    private static final String    PROCESSING_TRANSPOSE_TO_PITCH       = "ProcessingTransposeToPitch";
 
     private static final int       DEST_TYPE_PRESET                    = 0;
     private static final int       DEST_TYPE_PRESET_LIBRARY            = 1;
@@ -583,6 +584,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.detectSettings.snapLoopsToZero = this.config.getBoolean (PROCESSING_SNAP_LOOPS, false);
         this.detectSettings.crossfadeClicking = this.config.getBoolean (PROCESSING_CROSSFADE_CLICKING, false);
         this.detectSettings.transposeSemitones = this.config.getInteger (PROCESSING_TRANSPOSE, 0);
+        this.detectSettings.transposeToPitch = this.config.getBoolean (PROCESSING_TRANSPOSE_TO_PITCH, false);
 
         // -----------------------------------------------------------
         // Options
@@ -638,6 +640,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.config.setBoolean (PROCESSING_SNAP_LOOPS, this.detectSettings.snapLoopsToZero);
         this.config.setBoolean (PROCESSING_CROSSFADE_CLICKING, this.detectSettings.crossfadeClicking);
         this.config.setInteger (PROCESSING_TRANSPOSE, this.detectSettings.transposeSemitones);
+        this.config.setBoolean (PROCESSING_TRANSPOSE_TO_PITCH, this.detectSettings.transposeToPitch);
 
         // -----------------------------------------------------------
         // Options
@@ -749,7 +752,7 @@ public class MainFrame extends AbstractFrame implements INotifier
         this.processingDialog.selectLoopCrossfades (this.detectSettings.loopCrossfades);
         this.processingDialog.snapLoopsCheckbox.setSelected (this.detectSettings.snapLoopsToZero);
         this.processingDialog.crossfadeClickingCheckbox.setSelected (this.detectSettings.crossfadeClicking);
-        this.processingDialog.selectTranspose (this.detectSettings.transposeSemitones);
+        this.processingDialog.selectTranspose (this.detectSettings.transposeSemitones, this.detectSettings.transposeToPitch);
 
         this.processingDialog.display ().thenAccept (result -> {
             if (result.booleanValue ())
@@ -767,6 +770,7 @@ public class MainFrame extends AbstractFrame implements INotifier
                 this.detectSettings.snapLoopsToZero = this.processingDialog.snapLoopsCheckbox.isSelected ();
                 this.detectSettings.crossfadeClicking = this.processingDialog.crossfadeClickingCheckbox.isSelected ();
                 this.detectSettings.transposeSemitones = this.processingDialog.getTranspose ();
+                this.detectSettings.transposeToPitch = this.processingDialog.isTransposeToPitch ();
             }
         });
     }

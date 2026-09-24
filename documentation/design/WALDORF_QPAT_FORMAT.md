@@ -467,6 +467,7 @@ hundred more (wavetable, kernel, resonator, effects, arpeggiator, ...).
 | `Osc{i}Vol` | `dB = 40 log10(x)`: 1.0 = 0 dB, 0.5 = -12 dB, 0 = silent |
 | `Osc{i}Pan` | 0..1 = left..right, 0.5 = center |
 | `Osc{i}MinNote`, `Osc{i}MaxNote` | key window of the oscillator (0..127), used for splits; not needed for a full-range oscillator |
+| `Osc{i}Destination` | enum: 0 *Main* (through the filter section, the default), 1 ***VCA*** (directly to the amplifier, around the filters), 2..22 *DF x Fil y* in steps of 5 % from *DF 0 Fil 100* to *DF 100 Fil 0*, the balance between the Digital Former and the filter (corpus: 1,787 factory patches, 261 of their oscillators use *VCA*). ConvertWithMoss writes *VCA* for an oscillator whose zones have no filter while other zones of the layer have one, and reads such an oscillator without the filter. Verified on an Iridium MK2 (OS 4.0.6): the device shows the oscillator routed to the VCA and plays it around the filter, while the other oscillators of the layer play through it (hw) |
 
 The oscillator's volume, panning and tuning are **offsets on top of the map entries**: an entry with
 gain 0.5 under an oscillator at -6 dB plays at -12 dB. A reader combines the two; a writer can put a

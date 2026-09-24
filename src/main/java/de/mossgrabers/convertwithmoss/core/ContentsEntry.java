@@ -280,9 +280,20 @@ public class ContentsEntry
             return new ArrayList<> ();
         final List<String> containers = new ArrayList<> (Arrays.asList (subPath).subList (1, subPath.length - 1));
         Collections.reverse (containers);
-        final int folderCount = folderPath.size ();
-        if (folderCount > 0 && containers.size () >= folderCount && containers.subList (0, folderCount).equals (folderPath))
-            return new ArrayList<> (containers.subList (folderCount, containers.size ()));
-        return containers;
+
+        // Remove the folders of the file, in their order. A folder which the format treats as one
+        // file, e.g. the '.dsbundle' of DecentSampler, is part of the folder path but not of the
+        // sub-path, so the folders do not always match one to one
+        final List<String> result = new ArrayList<> ();
+        int folderIndex = 0;
+        for (final String container: containers)
+        {
+            final int index = folderPath.subList (folderIndex, folderPath.size ()).indexOf (container);
+            if (index < 0)
+                result.add (container);
+            else
+                folderIndex += index + 1;
+        }
+        return result;
     }
 }
