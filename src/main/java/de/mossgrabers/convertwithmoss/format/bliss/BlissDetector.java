@@ -387,11 +387,12 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
 
     private static void applyLfo (final ISampleZone zone, final int destinationIndex, final Element zoneElement, final int lfoIndex)
     {
+        final Optional<IFilter> filter = zone.getFilter ();
         final ILfoModulator modulator = switch (destinationIndex)
         {
             case 1 -> zone.getAmplitudeLfoModulator ();
             case 2 -> zone.getPitchLfoModulator ();
-            case 3 -> zone.getFilter ().get ().getCutoffLfoModulator ();
+            case 3 -> filter.isPresent () ? filter.get ().getCutoffLfoModulator () : null;
             default -> null;
         };
 
