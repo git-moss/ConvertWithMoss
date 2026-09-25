@@ -17,7 +17,9 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  * A Kurzweil PC3 series / Forte sample object. Contains one sample header per recording. A sample
  * with several headers is a multi-root sample; for stereo samples the headers form left/right pairs
  * (even index = left channel). Apart from the longer headers the object is laid out like a sample
- * object of the K2000/K2500/K2600.
+ * object of the K2000/K2500/K2600. The Forte generation (Forte, PC4, K2700) stores its samples in
+ * an object of its own type with a 16 byte preamble and headers with 64-bit positions; written
+ * sample objects always use the PC3K layout.
  *
  * @author Jürgen Moßgraber
  */
@@ -74,27 +76,42 @@ public class PC3Sample
      * @param id The object ID
      * @param name The name of the sample
      * @param in The input stream to read from
+     * @param isExtended True for a sample object of the Forte generation (Forte, PC4, K2700):
+     *            a 16 byte preamble with the number of headers and headers with 64-bit positions
      * @throws IOException Could not read the object
      */
-    public PC3Sample (final int id, final String name, final InputStream in) throws IOException
+    public PC3Sample (final int id, final String name, final InputStream in, final boolean isExtended) throws IOException
     {
         this.id = id;
         this.name = name;
 
-        this.baseID = StreamUtils.readSigned16 (in, true);
-        final int numHeaders = StreamUtils.readSigned16 (in, true);
-        // The offset to the first header - always 8
-        StreamUtils.readSigned16 (in, true);
-        this.flags = in.read ();
-        // 1 unused byte, the copy ID and 2 unused bytes
-        in.read ();
-        this.copyID = StreamUtils.readSigned16 (in, true);
-        StreamUtils.readSigned16 (in, true);
+        final int numHeaders;
+        if (isExtended)
+        {
+            this.baseID = StreamUtils.readSigned32 (in, true);
+            numHeaders = StreamUtils.readSigned16 (in, true);
+            this.flags = StreamUtils.readSigned16 (in, true);
+            // The offset to the first header (8) and 6 unused bytes
+            in.readNBytes (8);
+        }
+        else
+        {
+            this.baseID = StreamUtils.readSigned16 (in, true);
+            numHeaders = StreamUtils.readSigned16 (in, true) + 1;
+            // The offset to the first header - always 8
+            StreamUtils.readSigned16 (in, true);
+            this.flags = in.read ();
+            // 1 unused byte, the copy ID and 2 unused bytes
+            in.read ();
+            this.copyID = StreamUtils.readSigned16 (in, true);
+            StreamUtils.readSigned16 (in, true);
+        }
 
-        if (numHeaders < 0 || (numHeaders + 1) * PC3SampleHeader.LENGTH > in.available ())
+        final int headerLength = isExtended ? PC3SampleHeader.LENGTH_EXTENDED : PC3SampleHeader.LENGTH;
+        if (numHeaders <= 0 || numHeaders * headerLength > in.available ())
             throw new IOException ("Broken sample object in Kurzweil PC3/Forte file.");
-        for (int i = 0; i <= numHeaders; i++)
-            this.headers.add (new PC3SampleHeader (in));
+        for (int i = 0; i < numHeaders; i++)
+            this.headers.add (new PC3SampleHeader (in, isExtended));
 
         // The rest of the object data holds the natural envelope records which are not
         // interpreted and re-created with default values when writing

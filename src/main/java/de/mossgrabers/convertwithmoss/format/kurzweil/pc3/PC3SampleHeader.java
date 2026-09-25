@@ -17,7 +17,8 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  * root key, loop and the position of its 16-bit big-endian PCM data in the sample data region of
  * the file. The header holds the fields of the K2000/K2500/K2600 sample header followed by 8 more
  * bytes; the positions are counted in bytes (the K2x00 family counts 16-bit words) and the end
- * position addresses the last frame (inclusive).
+ * position addresses the last frame (inclusive). The Forte generation (Forte, PC4, K2700) stores
+ * the four positions as 64-bit values.
  *
  * @author Jürgen Moßgraber
  */
@@ -25,6 +26,8 @@ public class PC3SampleHeader
 {
     /** The length of a sample header in bytes. */
     public static final int      LENGTH            = 40;
+    /** The length of a sample header of the Forte generation (64-bit positions) in bytes. */
+    public static final int      LENGTH_EXTENDED   = 56;
 
     private static final int     FLAG_NOT_LOOPED   = 0x80;
     private static final int     FLAG_DATA_PRESENT = 0x40;
@@ -79,9 +82,11 @@ public class PC3SampleHeader
      * Constructor. Reads the header from the stream.
      *
      * @param in The input stream to read from
+     * @param isExtended True for the header of the Forte generation (Forte, PC4, K2700) which
+     *            stores the positions as 64-bit values
      * @throws IOException Could not read the header
      */
-    public PC3SampleHeader (final InputStream in) throws IOException
+    public PC3SampleHeader (final InputStream in, final boolean isExtended) throws IOException
     {
         this.rootKey = in.read ();
         this.flags = in.read ();
@@ -89,16 +94,42 @@ public class PC3SampleHeader
         this.altVolumeAdjust = StreamUtils.readSigned8 (in);
         this.maxPitch = StreamUtils.readSigned16 (in, true);
         this.offsetToName = StreamUtils.readSigned16 (in, true);
-        this.sampleStart = StreamUtils.readSigned32 (in, true);
-        this.altSampleStart = StreamUtils.readSigned32 (in, true);
-        this.loopStart = StreamUtils.readSigned32 (in, true);
-        this.sampleEnd = StreamUtils.readSigned32 (in, true);
+        if (isExtended)
+        {
+            this.sampleStart = readPosition (in);
+            this.altSampleStart = readPosition (in);
+            this.loopStart = readPosition (in);
+            this.sampleEnd = readPosition (in);
+        }
+        else
+        {
+            this.sampleStart = StreamUtils.readSigned32 (in, true);
+            this.altSampleStart = StreamUtils.readSigned32 (in, true);
+            this.loopStart = StreamUtils.readSigned32 (in, true);
+            this.sampleEnd = StreamUtils.readSigned32 (in, true);
+        }
         this.offsetToEnvelope = StreamUtils.readSigned16 (in, true);
         this.altOffsetToEnvelope = StreamUtils.readSigned16 (in, true);
         this.samplePeriod = StreamUtils.readSigned32 (in, true);
         // The 8 extension bytes are not interpreted
         if (in.readNBytes (EXTENSION.length).length < EXTENSION.length)
             throw new IOException ("Broken sample header in Kurzweil PC3/Forte file.");
+    }
+
+
+    /**
+     * Read a 64-bit position. Positions beyond the 2 GB which a file can hold are read as -1 so
+     * that the sample data extraction fails for the header.
+     *
+     * @param in The input stream to read from
+     * @return The position
+     * @throws IOException Could not read the position
+     */
+    private static int readPosition (final InputStream in) throws IOException
+    {
+        final long high = StreamUtils.readUnsigned32 (in, true);
+        final long low = StreamUtils.readUnsigned32 (in, true);
+        return high != 0 || low > Integer.MAX_VALUE ? -1 : (int) low;
     }
 
 
@@ -294,11 +325,20 @@ public class PC3SampleHeader
     }
 
 
+    /**
+     * Calculate the maximum pitch of an untuned sample: the pitch it reaches at the maximum
+     * playback rate of the devices. The devices truncate the transposition to whole cents (the
+     * K2x00 family rounds it up).
+     *
+     * @param rootKey The root key
+     * @param samplePeriod The sample period in nanoseconds
+     * @return The maximum pitch in cents
+     */
     private static int calculateMaxPitch (final int rootKey, final int samplePeriod)
     {
         if (samplePeriod <= 0)
             return 100 * rootKey;
-        return (int) Math.ceil (1200.0 * Math.log (MAX_PLAYBACK_RATE / (double) NANOS_PER_SECOND * samplePeriod) / Math.log (2.0)) + 100 * rootKey - 1200;
+        return (int) Math.floor (1200.0 * Math.log (MAX_PLAYBACK_RATE / (double) NANOS_PER_SECOND * samplePeriod) / Math.log (2.0)) + 100 * rootKey - 1200;
     }
 
 

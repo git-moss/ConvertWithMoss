@@ -44,8 +44,8 @@ import de.mossgrabers.tools.FileUtils;
 
 /**
  * Detects recursively Kurzweil PC3 series, Forte, PC4 and K2700 object files in folders. Files must
- * end with <i>.pc3</i>, <i>.p3k</i>, <i>.p3a</i>, <i>.ple</i>, <i>.for</i>, <i>.fse</i>,
- * <i>.pc4</i>, <i>.p4s</i> or <i>.k27</i>. Each program in a file becomes one multi-sample;
+ * end with <i>.pc3</i>, <i>.p3k</i>, <i>.k2p</i>, <i>.p3a</i>, <i>.ple</i>, <i>.for</i>,
+ * <i>.fse</i>, <i>.pc4</i>, <i>.p4s</i> or <i>.k27</i>. Each program in a file becomes one multi-sample;
  * keymaps and samples which are not referenced by a program are added as multi-samples of their
  * own.
  *
@@ -66,7 +66,7 @@ public class PC3Detector extends AbstractDetector<MetadataSettingsUI>
      */
     public PC3Detector (final INotifier notifier)
     {
-        super ("Kurzweil PC3/Forte", "PC3", notifier, new MetadataSettingsUI ("PC3"), ".pc3", ".p3k", ".p3a", ".ple", ".for", ".fse", ".pc4", ".p4s", ".k27");
+        super ("Kurzweil PC3/Forte", "PC3", notifier, new MetadataSettingsUI ("PC3"), ".pc3", ".p3k", ".k2p", ".p3a", ".ple", ".for", ".fse", ".pc4", ".p4s", ".k27");
     }
 
 
@@ -283,6 +283,31 @@ public class PC3Detector extends AbstractDetector<MetadataSettingsUI>
      */
     private void createGroupsFromKeymap (final PC3File pc3File, final KurzweilKeymap keymap, final PC3Program.Layer layer, final List<IGroup> groups, final Map<Long, ISampleData> sampleDataCache, final Set<Integer> usedSampleIDs, final Set<Integer> reportedRomSampleIDs, final boolean reportProblems, final int panning)
     {
+        // A keymap whose entries all reference samples which are not in the file plays the ROM
+        // samples of the device: one note for the keymap instead of one per entry
+        final Set<Integer> missingSampleIDs = new LinkedHashSet<> ();
+        boolean hasSamples = false;
+        for (final KurzweilKeymapEntry [] entries: keymap.getEntryTables ())
+            for (final KurzweilKeymapEntry entry: entries)
+            {
+                if (!entry.isUsed () || entry.getSampleID () == 0)
+                    continue;
+                if (pc3File.getSamples ().containsKey (Integer.valueOf (entry.getSampleID ())))
+                    hasSamples = true;
+                else
+                    missingSampleIDs.add (Integer.valueOf (entry.getSampleID ()));
+            }
+        if (reportProblems)
+        {
+            if (!hasSamples && !missingSampleIDs.isEmpty ())
+                this.notifier.log ("IDS_PC3_ROM_KEYMAP", keymap.getName ());
+            else
+                for (final Integer sampleID: missingSampleIDs)
+                    this.notifier.log ("IDS_KURZWEIL_SAMPLE_MISSING", sampleID.toString (), keymap.getName ());
+        }
+        if (!hasSamples)
+            return;
+
         final List<KurzweilKeymapEntry []> entryTables = keymap.getEntryTables ();
         for (int tableIndex = 0; tableIndex < entryTables.size (); tableIndex++)
         {
@@ -358,14 +383,11 @@ public class PC3Detector extends AbstractDetector<MetadataSettingsUI>
      */
     private ISampleZone createZone (final PC3File pc3File, final KurzweilKeymap keymap, final KurzweilKeymapEntry entry, final int firstIndex, final int lastIndex, final PC3Program.Layer layer, final Map<Long, ISampleData> sampleDataCache, final Set<Integer> usedSampleIDs, final Set<Integer> reportedRomSampleIDs, final boolean reportProblems, final int panning)
     {
+        // Missing samples were reported for the whole keymap
         final Integer sampleID = Integer.valueOf (entry.getSampleID ());
         final PC3Sample sample = pc3File.getSamples ().get (sampleID);
         if (sample == null)
-        {
-            if (reportProblems)
-                this.notifier.log ("IDS_KURZWEIL_SAMPLE_MISSING", sampleID.toString (), keymap.getName ());
             return null;
-        }
         usedSampleIDs.add (sampleID);
 
         final int keyLow = Math.clamp (Math.max (keymap.getNoteOfEntry (firstIndex), layer.getLowKey ()), 0, 127);
