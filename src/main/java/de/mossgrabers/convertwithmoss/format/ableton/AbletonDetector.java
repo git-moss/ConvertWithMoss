@@ -94,6 +94,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
     private File                                 previousSampleFolder;
+    private AbletonCoreLibrary                   coreLibrary         = new AbletonCoreLibrary ();
     /** The Live Packs which were opened by the current detection, by their files. */
     private final Map<String, AbletonLivePack>   livePacks           = new HashMap<> ();
 
@@ -132,6 +133,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     {
         // The samples of the packs of the previous detection are not read anymore
         this.disposeLivePacks ();
+        this.coreLibrary = new AbletonCoreLibrary ();
         super.startDetection ();
     }
 
@@ -473,8 +475,15 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
+        if (entry.isEmpty ())
+        {
+            final Optional<File> coreSample = this.findCoreLibrarySample (pack.getFile (), fileRefElement);
+            if (coreSample.isPresent ())
+                return createSampleData (coreSample.get (), this.notifier);
+        }
+
         final String sampleFileName = getSampleFileName (fileRefElement);
-        if (entry.isEmpty () && !sampleFileName.isBlank ())
+        if (entry.isEmpty () && !isCoreLibraryReference (fileRefElement) && !sampleFileName.isBlank ())
             entry = pack.findFileByName (sampleFileName, presetFolder);
 
         if (entry.isEmpty ())
@@ -728,9 +737,15 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 sampleFile = new File (absolutePath);
             else
             {
-                final String sampleFileName = getSampleFileName (fileRefElement);
-                if (!sampleFileName.isBlank ())
-                    sampleFile = findSampleFile (this.notifier, multiSampleFile.getParentFile (), this.previousSampleFolder, sampleFileName, SEARCH_LEVELS);
+                final Optional<File> coreSample = this.findCoreLibrarySample (multiSampleFile, fileRefElement);
+                if (coreSample.isPresent ())
+                    sampleFile = coreSample.get ();
+                else if (!isCoreLibraryReference (fileRefElement))
+                {
+                    final String sampleFileName = getSampleFileName (fileRefElement);
+                    if (!sampleFileName.isBlank ())
+                        sampleFile = findSampleFile (this.notifier, multiSampleFile.getParentFile (), this.previousSampleFolder, sampleFileName, SEARCH_LEVELS);
+                }
             }
 
             if (!sampleFile.isFile ())
@@ -742,6 +757,36 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
         this.previousSampleFolder = sampleFile.getParentFile ();
         return createSampleData (sampleFile, this.notifier);
+    }
+
+
+    /**
+     * Find a sample which belongs to the bundled Core Library, rather than to the project which
+     * contains the preset or Live Set. Never substitute a sample from another pack by its name.
+     *
+     * @param sourceFile The preset, Live Set or Live Pack
+     * @param fileRefElement The reference to the sample
+     * @return The sample, empty if the reference is not to the Core Library or was not found
+     */
+    private Optional<File> findCoreLibrarySample (final File sourceFile, final Element fileRefElement)
+    {
+        return isCoreLibraryReference (fileRefElement) ? this.coreLibrary.findSample (sourceFile, getRelativePath (fileRefElement)) : Optional.empty ();
+    }
+
+
+    /**
+     * Check if a file reference points into the Core Library. Such a reference has the relative
+     * path type 5 of a library file and carries the identifier or the name of the Core Library.
+     *
+     * @param fileRefElement The reference to the sample
+     * @return True if the sample belongs to the Core Library
+     */
+    private static boolean isCoreLibraryReference (final Element fileRefElement)
+    {
+        if (getIntegerValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH_TYPE, -1) != 5)
+            return false;
+        final String packID = getValueAttribute (fileRefElement, AbletonTag.TAG_LIVE_PACK_ID);
+        return packID.isBlank () ? AbletonCoreLibrary.NAME.equalsIgnoreCase (getValueAttribute (fileRefElement, AbletonTag.TAG_LIVE_PACK_NAME)) : AbletonCoreLibrary.ID.equals (packID);
     }
 
 
