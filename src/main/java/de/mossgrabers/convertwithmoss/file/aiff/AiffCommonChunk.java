@@ -140,13 +140,24 @@ public class AiffCommonChunk extends AiffChunk
     /**
      * Check if the sound data is plain (un-compressed) PCM. This is the case for AIFF files and for
      * AIFC files with one of the PCM compression types (e.g. 'sowt' which only marks the data as
-     * little-endian).
+     * little-endian), including 32-bit floating-point PCM.
      *
      * @return True if the sound data is plain PCM
      */
     public boolean isPCM ()
     {
-        return this.compressionType == null || PCM_COMPRESSION_TYPES.contains (this.compressionType);
+        return this.compressionType == null || PCM_COMPRESSION_TYPES.contains (this.compressionType) || this.isFloatingPoint ();
+    }
+
+
+    /**
+     * Check if the sound data is 32-bit IEEE floating-point PCM, stored in big-endian order.
+     *
+     * @return True if the data is floating-point PCM
+     */
+    public boolean isFloatingPoint ()
+    {
+        return this.sampleSize == 32 && ("fl32".equals (this.compressionType) || "FL32".equals (this.compressionType));
     }
 
 

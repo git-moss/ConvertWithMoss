@@ -981,8 +981,8 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
             // accept all AIFF files
             if (fileEnding.endsWith (".aiff") || fileEnding.endsWith (".aif"))
             {
-                // Check if it is a compressed (= encrypted) AIFC file and report accordingly.
-                // AIFC files with plain PCM sound data (e.g. little-endian 'sowt') are supported.
+                // AIFC is a container, not necessarily compressed or encrypted. Integer PCM
+                // (e.g. little-endian 'sowt') and 32-bit floating-point PCM are supported.
                 final AiffFile aiffFile = new AiffFile (sampleFile);
                 final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
                 if (commonChunk != null && !commonChunk.isPCM ())
