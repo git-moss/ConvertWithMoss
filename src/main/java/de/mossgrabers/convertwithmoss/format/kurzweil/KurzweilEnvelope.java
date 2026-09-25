@@ -18,7 +18,9 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
  */
 public class KurzweilEnvelope
 {
-    private static final int          NUM_STAGES  = 7;
+    /** The number of stages: 3 attack, 1 decay and 3 release stages. */
+    public static final int           NUM_STAGES  = 7;
+
     private static final int          STAGE_DECAY = 3;
 
     /**
@@ -93,6 +95,44 @@ public class KurzweilEnvelope
             data[stage * 2] = (byte) encodeTime (this.times[stage]);
             data[stage * 2 + 1] = (byte) Math.clamp (this.levels[stage], -100, 100);
         }
+    }
+
+
+    /**
+     * Get the duration of a stage.
+     *
+     * @param stage The index of the stage (0-6)
+     * @return The duration in seconds
+     */
+    public double getTime (final int stage)
+    {
+        return this.times[stage];
+    }
+
+
+    /**
+     * Get the target level of a stage.
+     *
+     * @param stage The index of the stage (0-6)
+     * @return The level as a signed percentage
+     */
+    public int getLevel (final int stage)
+    {
+        return this.levels[stage];
+    }
+
+
+    /**
+     * Set a stage.
+     *
+     * @param stage The index of the stage (0-6)
+     * @param time The duration in seconds
+     * @param level The target level as a signed percentage
+     */
+    public void setStage (final int stage, final double time, final int level)
+    {
+        this.times[stage] = time;
+        this.levels[stage] = level;
     }
 
 
