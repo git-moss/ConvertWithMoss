@@ -31,8 +31,9 @@ import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilProgram;
  * record and the following one, whose function byte is then not significant. The records of
  * algorithm 1 are [2-block F1/F2] [1-block F3] [1-block F4], the layout written for a filter.
  *
- * A program which is created for writing copies the header, the layer record and the trailing
- * block of a program written by a PC3K and sets only the fields which the conversion controls.
+ * A program which is created for writing copies the header and the trailing block of the default
+ * program of the target device generation and the layer record of a program written by a PC3K,
+ * and sets only the fields which the conversion controls.
  *
  * @author Jürgen Moßgraber
  */
@@ -115,11 +116,13 @@ public class PC3Program
     /** The control source code of the second envelope (ENV2). */
     private static final int      CONTROL_SOURCE_ENV2     = 121;
 
-    // The DSP functions
+    // The DSP functions (the numbering of the K2000/K2500/K2600 functions)
     private static final int      FUNCTION_NONE           = 0;
     private static final int      FUNCTION_LOW_PASS_2P    = 2;
     private static final int      FUNCTION_BAND_PASS_2P   = 3;
+    private static final int      FUNCTION_NOTCH_2P       = 4;
     private static final int      FUNCTION_LOW_PASS_1P    = 15;
+    private static final int      FUNCTION_HIGH_PASS_1P   = 16;
     private static final int      FUNCTION_LOW_PASS_4P    = 50;
     private static final int      FUNCTION_HIGH_PASS_4P   = 54;
     private static final int      FUNCTION_BAND_PASS_4P   = 55;
@@ -127,8 +130,11 @@ public class PC3Program
     /** The function byte which the devices write into the second record of a 2-block function. */
     private static final int      FUNCTION_SECOND_BLOCK   = 60;
 
-    /** The width of the 2-pole bandpass on its second record - the value of most factory layers. */
-    private static final int      BAND_PASS_DEFAULT_WIDTH = 53;
+    /**
+     * The width of the 2-pole bandpass and notch filters on their second record - the value of most
+     * factory layers.
+     */
+    private static final int      BAND_WIDTH_DEFAULT      = 53;
 
     /** The envelope times of the first codes of the time list: 0, 2, 5 and 10 milliseconds. */
     private static final double[] SHORT_TIMES             =
@@ -140,10 +146,31 @@ public class PC3Program
     };
 
     /**
-     * The header of a two layer program written by a PC3K (version 4.5): no effect chains, no KB3
-     * organ; the number of layers is patched in.
+     * The program layout of a device generation: the header (229 bytes) and the trailing block of
+     * the default program of the generation, which a written program copies. The number of layers
+     * is patched into the header, the effect chain references are cleared.
      */
-    private static final byte []  HEADER_TEMPLATE         = HexFormat.of ().parseHex ("50433304055043330303000000000000136b6579776f7264312c206b6579776f7264320003050805020037400000ffffffffffffffffffffffff370000000000001000000000001800000014000000000018000000030351000000000000007f7f030352000000000000007f7f030353000000000000007f7f50726f6772616d524655303132353637000000000000000000000000000000000000000000000000000000000000000000000000000000006e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000048616d6d");
+    public enum Layout
+    {
+        /** PC3K (program version 4.5, the trailing block holds no controller information). */
+        PC3K("50433304055043330303000000000000136b6579776f7264312c206b6579776f7264320003050805020037400000ffffffffffffffffffffffff370000000000001000000000001800000014000000000018000000030351000000000000007f7f030352000000000000007f7f030353000000000000007f7f50726f6772616d524655303132353637000000000000000000000000000000000000000000000000000000000000000000000000000000006e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000048616d6d", "0001020000000300000105007f0000000000000008006400000164000018020000000000000004000000000001000002e80000000f0000000124282f2b373b3e"),
+        /** Forte and Forte SE (program version 4.9, the default program of the Forte OS 4.4). */
+        FORTE("50433304095043330303140000000000136b6579776f7264312c206b6579776f72643200030508050104374000000000000000000000000000003700000001000011000000000019091c5a1500000000001b000000030351000000000000007f7f030352000000000000007f7f030353000000000000007f7f50726f6772616d524655303132353637000000000000000000000000000000000000000000000000000000000000000000000000000000006e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000048616d6d", "000102000f00000040ffff00085375737461696e00000000160000000f416d7020456e762041747461636b000000001700000010416d7020456e762052656c65617365000000001c0000000e52657665726220416d6f756e7400000000520000000f416d7020456e7620496d70616374000000000b007f000b45787072657373696f6e000000005a0000000e52657665726220456e61626c65000000000c007f000f4c502046696c746572204672657100000000500000000c566172696174696f6e203200000000510000000c566172696174696f6e203300000000530000001b52656c656173652053616d706c6573204f6e2f4f6666202020200000000042ffff000b536f7374656e75746f20000000000d0000000f4c502046696c74657220526573200000000043ffff000b536f667420506564616c0000000080000000194b75727a7765696c20466163746f72792050726f6772616d2e0003001801160016011700170140ff40011c001c01520052010bff0b015a005a0150005001510051015300530142ff42010c7f0c010d000d0143ff43020900090456005604194019041a401a04570057041b0f1b04590059041d001d040400040401000100020109007f000000000000000800640000016400001802000000000000000400000000000000000000000000000001000000000001000000000001000000000000000000010000000000010000007100000014000000013c3d3e3f4041424300010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000124000000010000000000002ee00000000400000004000000000000000000000000000000000000000000000000000000010000000c0000000000000064000000000000000000000000000000000000000000000000000000000000007f0000004000000060000000400000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff000000060000012800000001000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606000000000000000000000000000000000ffffffffffffffffffffff"),
+        /** PC4, PC4 SE and K2700 (program version 4.9, the default program of the OS 4.5). */
+        K2700("504333040950433303030d0000000000136b6579776f7264312c206b6579776f726432000305080501003740000000000000000000000000000037000000010000110000000000190000001500000000001b000000030351000000000000007f7f030352000000000000007f7f030353000000000000007f7f50726f6772616d524655303132353637000000000000000000000000000000000000000000000000000000000000000000000000000000006e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000048616d6d", "000102001000000040ffff00085375737461696e00000000160000000741747461636b00000000170000000852656c65617365000000001c0000000e52657665726220416d6f756e74000000005200000007496d70616374000000000b007f000b45787072657373696f6e000000005a0000000e52657665726220456e61626c65000000000c007f000c46696c74657220467265710000000042ffff000b536f7374656e75746f20000000000d0000000c46696c74657220526573200000000043ffff0006536f667420000000000a0040008050616e007765696c20466163746f72792050726f6772616d2e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000085669627261746f000000004500000007467265657a650000000015ffff0080417578205069746368000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000003002401160016011700170140ff40011c001c01520052010bff0b015a005a0142ff42010c7f0c010d000d0143ff43010a400a01010001014500530209100904190019041a001a041b001b0410001004030003044f404f0448404804494049044740470450005004464046044e404e04120012045700570459005904560056041100110418001804550055040e000e0451005100020109007f000000000000000800640000016400001802000000000000000400000000000000000000000000000001000000000001000000000001000000000000000000010000000000010000007100000014000000013c3d3e3f4041424300010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000124000000010000000000002ee00000000400000004000000000000000000000000000000000000000000000000000000010000000c0000000000000064000000000000000000000000000000000000000000000000000000000000007f0000004000000060000000400000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff000000060000012800000001000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060000000000000000000000000000000006060606060606060606060");
+
+
+        private final byte [] header;
+        private final byte [] tail;
+
+
+        Layout (final String header, final String tail)
+        {
+            this.header = HexFormat.of ().parseHex (header);
+            this.tail = HexFormat.of ().parseHex (tail);
+        }
+    }
+
 
     /**
      * A layer record written by a PC3K which plays a RAM sample keymap straight through the
@@ -153,10 +180,6 @@ public class PC3Program
 
     /** The envelope control segment: user envelope, no real-time control of the envelope rates. */
     private static final byte []  ENVC_TEMPLATE           = HexFormat.of ().parseHex ("200000000049000000480000004800");
-
-    /** The trailing block of a program written by a PC3K: no controller information. */
-    private static final byte []  TAIL_TEMPLATE           = HexFormat.of ().parseHex ("0001020000000300000105007f0000000000000008006400000164000018020000000000000004000000000001000002e80000000f0000000124282f2b373b3e");
-
 
     /**
      * One layer of a program: a keymap mapped to a key and velocity range with its envelope and
@@ -296,7 +319,7 @@ public class PC3Program
             record[CAL_OFFSET + CAL_LAYER_COUNTER] = 0;
 
             // The filter uses algorithm 1: a 2-block function (the 2-pole filters with their
-            // resonance or width) takes the slot F1/F2, a 1-block function (the 1-pole low-pass)
+            // resonance or width) takes the slot F1/F2, a 1-block function (the 1-pole filters)
             // the slot F3; the other slots stay empty
             if (this.filterFunction != FUNCTION_NONE)
             {
@@ -611,9 +634,9 @@ public class PC3Program
             return switch (this.filterFunction)
             {
                 case FUNCTION_LOW_PASS_1P, FUNCTION_LOW_PASS_2P, FUNCTION_LOW_PASS_4P -> FilterType.LOW_PASS;
-                case FUNCTION_HIGH_PASS_4P -> FilterType.HIGH_PASS;
+                case FUNCTION_HIGH_PASS_1P, FUNCTION_HIGH_PASS_4P -> FilterType.HIGH_PASS;
                 case FUNCTION_BAND_PASS_2P, FUNCTION_BAND_PASS_4P -> FilterType.BAND_PASS;
-                case FUNCTION_NOTCH_4P -> FilterType.BAND_REJECTION;
+                case FUNCTION_NOTCH_2P, FUNCTION_NOTCH_4P -> FilterType.BAND_REJECTION;
                 default -> null;
             };
         }
@@ -628,8 +651,8 @@ public class PC3Program
         {
             return switch (this.filterFunction)
             {
-                case FUNCTION_LOW_PASS_1P -> 1;
-                case FUNCTION_LOW_PASS_2P, FUNCTION_BAND_PASS_2P -> 2;
+                case FUNCTION_LOW_PASS_1P, FUNCTION_HIGH_PASS_1P -> 1;
+                case FUNCTION_LOW_PASS_2P, FUNCTION_BAND_PASS_2P, FUNCTION_NOTCH_2P -> 2;
                 default -> 4;
             };
         }
@@ -661,17 +684,16 @@ public class PC3Program
 
 
         /**
-         * Set the filter of the layer. The 1-pole low-pass, the 2-pole low-pass (also for a
-         * low-pass with more poles) and the 2-pole bandpass of the devices are written; other types
-         * are not supported.
+         * Set the filter of the layer. A low-pass becomes the 1-pole low-pass or, with more poles,
+         * the 2-pole low-pass with its resonance, a high-pass the 1-pole high-pass, a bandpass the
+         * 2-pole bandpass and a notch filter the 2-pole notch filter of the devices.
          *
          * @param type The filter type
          * @param poles The number of poles
          * @param cutoffFrequency The cutoff frequency in Hertz
          * @param resonance The resonance in the range of [0..1] where 1 represents 40dB
-         * @return True if the filter type is supported and was set
          */
-        public boolean setFilter (final FilterType type, final int poles, final double cutoffFrequency, final double resonance)
+        public void setFilter (final FilterType type, final int poles, final double cutoffFrequency, final double resonance)
         {
             switch (type)
             {
@@ -689,16 +711,23 @@ public class PC3Program
                     }
                     break;
 
+                case HIGH_PASS:
+                    this.filterFunction = FUNCTION_HIGH_PASS_1P;
+                    this.secondParameter = 0;
+                    break;
+
                 case BAND_PASS:
                     this.filterFunction = FUNCTION_BAND_PASS_2P;
-                    this.secondParameter = BAND_PASS_DEFAULT_WIDTH;
+                    this.secondParameter = BAND_WIDTH_DEFAULT;
                     break;
 
                 default:
-                    return false;
+                case BAND_REJECTION:
+                    this.filterFunction = FUNCTION_NOTCH_2P;
+                    this.secondParameter = BAND_WIDTH_DEFAULT;
+                    break;
             }
             this.cutoff = KurzweilProgram.encodeCutoff (cutoffFrequency);
-            return true;
         }
 
 
@@ -706,7 +735,7 @@ public class PC3Program
         {
             return switch (function)
             {
-                case FUNCTION_LOW_PASS_1P, FUNCTION_LOW_PASS_2P, FUNCTION_BAND_PASS_2P, FUNCTION_LOW_PASS_4P, FUNCTION_HIGH_PASS_4P, FUNCTION_BAND_PASS_4P, FUNCTION_NOTCH_4P -> true;
+                case FUNCTION_LOW_PASS_1P, FUNCTION_HIGH_PASS_1P, FUNCTION_LOW_PASS_2P, FUNCTION_BAND_PASS_2P, FUNCTION_NOTCH_2P, FUNCTION_LOW_PASS_4P, FUNCTION_HIGH_PASS_4P, FUNCTION_BAND_PASS_4P, FUNCTION_NOTCH_4P -> true;
                 default -> false;
             };
         }
@@ -721,19 +750,28 @@ public class PC3Program
          */
         private static boolean isOneBlockFunction (final int function)
         {
-            return function == FUNCTION_NONE || function == FUNCTION_LOW_PASS_1P;
+            return function == FUNCTION_NONE || function == FUNCTION_LOW_PASS_1P || function == FUNCTION_HIGH_PASS_1P;
         }
 
 
+        /**
+         * Does the second record of the filter function hold its resonance? The 1-pole filters have
+         * a fixed resonance, the second record of the 2-pole bandpass and notch filters holds the
+         * width.
+         *
+         * @param function The filter function
+         * @return True if the second record holds the resonance
+         */
         private static boolean hasResonance (final int function)
         {
-            return function != FUNCTION_LOW_PASS_1P && function != FUNCTION_BAND_PASS_2P;
+            return !isOneBlockFunction (function) && function != FUNCTION_BAND_PASS_2P && function != FUNCTION_NOTCH_2P;
         }
     }
 
 
     private final int         id;
     private final String      name;
+    private final Layout      layout;
     private final List<Layer> layers      = new ArrayList<> ();
     private String            version     = "";
     private boolean           isTruncated = false;
@@ -744,11 +782,13 @@ public class PC3Program
      *
      * @param id The object ID
      * @param name The name of the program, maximum 16 characters
+     * @param layout The program layout of the target device generation
      */
-    public PC3Program (final int id, final String name)
+    public PC3Program (final int id, final String name, final Layout layout)
     {
         this.id = id;
         this.name = name;
+        this.layout = layout;
     }
 
 
@@ -763,6 +803,7 @@ public class PC3Program
     {
         this.id = id;
         this.name = name;
+        this.layout = Layout.PC3K;
 
         if (data.length < HEADER_LENGTH || data[0] != 'P' || data[1] != 'C' || data[2] != '3')
         {
@@ -794,12 +835,12 @@ public class PC3Program
     public byte [] createObjectData () throws IOException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
-        final byte [] header = HEADER_TEMPLATE.clone ();
+        final byte [] header = this.layout.header.clone ();
         header[NUM_LAYERS_OFFSET] = (byte) this.layers.size ();
         out.write (header);
         for (final Layer layer: this.layers)
             out.write (layer.createRecord ());
-        out.write (TAIL_TEMPLATE);
+        out.write (this.layout.tail);
         return out.toByteArray ();
     }
 

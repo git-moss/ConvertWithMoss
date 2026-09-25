@@ -169,9 +169,10 @@ public class PC3SampleHeader
      *
      * @param out The output stream to write to
      * @param byteOffset The byte offset of the data of this header in the sample data region
+     * @param isExtended True to write the header of the Forte generation with 64-bit positions
      * @throws IOException Could not write the header
      */
-    public void write (final OutputStream out, final int byteOffset) throws IOException
+    public void write (final OutputStream out, final int byteOffset, final boolean isExtended) throws IOException
     {
         out.write (this.rootKey);
         out.write (this.flags);
@@ -179,10 +180,18 @@ public class PC3SampleHeader
         out.write (this.altVolumeAdjust);
         StreamUtils.writeSigned16 (out, this.maxPitch, true);
         StreamUtils.writeSigned16 (out, this.offsetToName, true);
-        StreamUtils.writeSigned32 (out, byteOffset + this.sampleStart, true);
-        StreamUtils.writeSigned32 (out, byteOffset + this.altSampleStart, true);
-        StreamUtils.writeSigned32 (out, byteOffset + this.loopStart, true);
-        StreamUtils.writeSigned32 (out, byteOffset + this.sampleEnd, true);
+        for (final int position: new int []
+        {
+            this.sampleStart,
+            this.altSampleStart,
+            this.loopStart,
+            this.sampleEnd
+        })
+        {
+            if (isExtended)
+                StreamUtils.writeSigned32 (out, 0, true);
+            StreamUtils.writeSigned32 (out, byteOffset + position, true);
+        }
         StreamUtils.writeSigned16 (out, this.offsetToEnvelope, true);
         StreamUtils.writeSigned16 (out, this.altOffsetToEnvelope, true);
         StreamUtils.writeSigned32 (out, this.samplePeriod, true);

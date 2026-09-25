@@ -6737,7 +6737,7 @@
      <table:table-cell table:style-name="ce37"/>
      <table:table-cell table:style-name="ce5"/>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
-      <text:p>DSP page with a K2x00 filter:</text:p>
+      <text:p>DSP record with a K2x00 filter: 1-/2-pole low-pass, 1-pole high-pass, 2-pole bandpass and notch, 4-pole filters</text:p>
       <text:p>low-pass, high-pass, bandpass, notch</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
@@ -6835,7 +6835,7 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce37"/>
      <table:table-cell table:style-name="ce5"/>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>2-pole low-pass, 1-pole low-pass, 2-pole bandpass</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>1-/2-pole low-pass, 1-pole high-pass, 2-pole bandpass, 2-pole notch</text:p></table:table-cell>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>1 / 2</text:p></table:table-cell>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Page frequency (16Hz - 25kHz)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Next page resonance (0-24dB)</text:p></table:table-cell>

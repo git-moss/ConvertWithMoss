@@ -123,7 +123,16 @@ public class PC3File
                 this.samples.put (Integer.valueOf (id), new PC3Sample (id, name, new ByteArrayInputStream (fileData, dataStart, dataLength), true));
                 break;
             case TYPE_KEYMAP:
-                this.keymaps.put (Integer.valueOf (id), new KurzweilKeymap (id, name, new ByteArrayInputStream (fileData, dataStart, dataLength)));
+                try
+                {
+                    this.keymaps.put (Integer.valueOf (id), new KurzweilKeymap (id, name, new ByteArrayInputStream (fileData, dataStart, dataLength)));
+                }
+                catch (final IOException ex)
+                {
+                    // The factory sets contain velocity switch templates whose level offsets do
+                    // not address entry tables; such keymaps cannot be converted and are skipped
+                    // (a program which references one reports the missing keymap)
+                }
                 break;
             case TYPE_PROGRAM:
                 this.programs.add (new PC3Program (id, name, Arrays.copyOfRange (fileData, dataStart, dataStart + dataLength)));
@@ -141,9 +150,11 @@ public class PC3File
      * followed by the sample data of all sample objects in the same order.
      *
      * @param out The output stream to write to
+     * @param isExtended True to write the sample objects of the Forte generation (Forte, PC4,
+     *            K2700), false for the ones of the PC3K
      * @throws IOException Could not write the file
      */
-    public void write (final OutputStream out) throws IOException
+    public void write (final OutputStream out, final boolean isExtended) throws IOException
     {
         final ByteArrayOutputStream objectRegion = new ByteArrayOutputStream ();
         for (final PC3Program program: this.programs)
@@ -158,7 +169,7 @@ public class PC3File
         {
             if (byteOffset + sample.getNumberOfDataBytes () > Integer.MAX_VALUE)
                 throw new IOException ("The sample data exceeds the 2 GB which a Kurzweil PC3/Forte file can address.");
-            writeObject (objectRegion, TYPE_SAMPLE, sample.getId (), sample.getName (), sample.createObjectData ((int) byteOffset));
+            writeObject (objectRegion, isExtended ? TYPE_SAMPLE_EXTENDED : TYPE_SAMPLE, sample.getId (), sample.getName (), sample.createObjectData ((int) byteOffset, isExtended));
             byteOffset += sample.getNumberOfDataBytes ();
         }
 

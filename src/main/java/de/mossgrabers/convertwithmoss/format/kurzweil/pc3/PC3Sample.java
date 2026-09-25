@@ -18,8 +18,8 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  * with several headers is a multi-root sample; for stereo samples the headers form left/right pairs
  * (even index = left channel). Apart from the longer headers the object is laid out like a sample
  * object of the K2000/K2500/K2600. The Forte generation (Forte, PC4, K2700) stores its samples in
- * an object of its own type with a 16 byte preamble and headers with 64-bit positions; written
- * sample objects always use the PC3K layout.
+ * an object of its own type with a 16 byte preamble and headers with 64-bit positions. Both
+ * layouts are read and written.
  *
  * @author Jürgen Moßgraber
  */
@@ -27,8 +27,8 @@ public class PC3Sample
 {
     private static final int            FLAG_STEREO      = 1;
 
-    /** The default natural envelope: 2 records of 6 signed 16-bit values. */
-    private static final int [] []      DEFAULT_ENVELOPE =
+    /** The default natural envelope written by a PC3K: 2 records of 6 signed 16-bit values. */
+    private static final int [] []      DEFAULT_ENVELOPE          =
     {
         {
             -1,
@@ -44,6 +44,27 @@ public class PC3Sample
             0,
             0,
             -1600,
+            0
+        }
+    };
+
+    /** The default natural envelope written by a K2700. */
+    private static final int [] []      DEFAULT_ENVELOPE_EXTENDED =
+    {
+        {
+            -1,
+            256,
+            0,
+            0,
+            -5416,
+            0
+        },
+        {
+            -1,
+            256,
+            0,
+            0,
+            -5416,
             0
         }
     };
@@ -89,10 +110,14 @@ public class PC3Sample
         if (isExtended)
         {
             this.baseID = StreamUtils.readSigned32 (in, true);
-            numHeaders = StreamUtils.readSigned16 (in, true);
-            this.flags = StreamUtils.readSigned16 (in, true);
-            // The offset to the first header (8) and 6 unused bytes
-            in.readNBytes (8);
+            // Always 1
+            StreamUtils.readSigned16 (in, true);
+            numHeaders = StreamUtils.readSigned16 (in, true) + 1;
+            // The offset to the first header - always 8
+            StreamUtils.readSigned16 (in, true);
+            this.flags = in.read ();
+            // 5 unused bytes
+            in.readNBytes (5);
         }
         else
         {
@@ -123,36 +148,55 @@ public class PC3Sample
      *
      * @param byteOffset The byte offset in the sample data region at which the sample data of this
      *            object will be placed
+     * @param isExtended True to write the sample object of the Forte generation (Forte, PC4,
+     *            K2700) with 64-bit positions
      * @return The object data
      * @throws IOException Could not write the object
      */
-    public byte [] createObjectData (final int byteOffset) throws IOException
+    public byte [] createObjectData (final int byteOffset, final boolean isExtended) throws IOException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
 
-        StreamUtils.writeSigned16 (out, this.baseID, true);
-        StreamUtils.writeSigned16 (out, this.headers.size () - 1, true);
-        StreamUtils.writeSigned16 (out, 8, true);
-        out.write (this.flags);
-        out.write (0);
-        StreamUtils.writeSigned16 (out, this.copyID, true);
-        StreamUtils.writeSigned16 (out, 0, true);
+        if (isExtended)
+        {
+            StreamUtils.writeSigned32 (out, this.baseID, true);
+            StreamUtils.writeSigned16 (out, 1, true);
+            StreamUtils.writeSigned16 (out, this.headers.size () - 1, true);
+            StreamUtils.writeSigned16 (out, 8, true);
+            out.write (this.flags);
+            for (int i = 0; i < 5; i++)
+                out.write (0);
+        }
+        else
+        {
+            StreamUtils.writeSigned16 (out, this.baseID, true);
+            StreamUtils.writeSigned16 (out, this.headers.size () - 1, true);
+            StreamUtils.writeSigned16 (out, 8, true);
+            out.write (this.flags);
+            out.write (0);
+            StreamUtils.writeSigned16 (out, this.copyID, true);
+            StreamUtils.writeSigned16 (out, 0, true);
+        }
 
-        // Every header points both of its envelope offset fields at the first envelope record
-        // which starts right after the last header (offsets are relative to the fields at bytes
-        // 24/26 of the header)
+        // Every header points its envelope offset fields at the two envelope records which start
+        // right after the last header (the offsets are relative to the fields themselves, which sit
+        // 16 bytes before the end of a header)
+        final int headerLength = isExtended ? PC3SampleHeader.LENGTH_EXTENDED : PC3SampleHeader.LENGTH;
         int offset = byteOffset;
         final int numHeaders = this.headers.size ();
         for (int i = 0; i < numHeaders; i++)
         {
             final PC3SampleHeader header = this.headers.get (i);
-            final int distanceToEnvelope = (numHeaders - 1 - i) * PC3SampleHeader.LENGTH;
-            header.setEnvelopeOffsets (distanceToEnvelope + 16, distanceToEnvelope + 14);
-            header.write (out, offset);
+            final int distanceToEnvelope = (numHeaders - 1 - i) * headerLength;
+            if (isExtended)
+                header.setEnvelopeOffsets (distanceToEnvelope + 16, distanceToEnvelope + 26);
+            else
+                header.setEnvelopeOffsets (distanceToEnvelope + 16, distanceToEnvelope + 14);
+            header.write (out, offset, isExtended);
             offset += header.getNumberOfDataBytes ();
         }
 
-        for (final int [] envelope: DEFAULT_ENVELOPE)
+        for (final int [] envelope: isExtended ? DEFAULT_ENVELOPE_EXTENDED : DEFAULT_ENVELOPE)
             for (final int value: envelope)
                 StreamUtils.writeSigned16 (out, value, true);
 

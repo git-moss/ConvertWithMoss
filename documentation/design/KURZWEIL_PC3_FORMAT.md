@@ -106,25 +106,29 @@ samples are stored this way. Readers treat `loopStart >= sampleEnd` as "no loop"
 
 ## Sample object of the Forte generation (type 0xAA)
 
-The Forte, PC4 and K2700 store their user samples in an object of their own type. It is the
-PC3K sample object with a longer preamble and 64-bit positions:
+The Forte, PC4 and K2700 store their samples in an object of their own type. It is the PC3K
+sample object with a longer preamble and 64-bit positions:
 
 ```
 uint32 baseID       (1)
-uint16 numHeaders   number of sample headers (not minus 1)
-uint16 flags        1 = stereo (assumed as for the PC3K object)
+uint16 1
+uint16 numHeaders-1 number of sample headers minus 1 (like the PC3K object)
 uint16 headersOfs   offset from this field to the first header (8)
-6 bytes             0
+uint8  flags        1 = stereo (the headers are left/right pairs)
+5 bytes             0
 numHeaders x sample header (56 bytes each): the fields of the PC3K header with the four
                     positions (sampleStart, altSampleStart, loopStart, sampleEnd) as int64
                     byte offsets; the envelope offsets are relative to their fields
                     (16 and 26 for a single header)
-natural envelope records, 2 x 12 bytes
+sub-sample names and natural envelope records (2 x 12 bytes per header when written by a
+                    device: -1, 256, 0, 0, -5416, 0)
 ```
 
-The K2700 tutorial file holds 8 mono samples of one header each (96 byte objects) whose data
-follows contiguously in the sample data region like in a PC3K file. The devices import PC3K
-files, so the creator writes the PC3K object (type 0x9E).
+The factory ROM objects of the Forte, PC4 and K2700 use this layout with up to 73 headers; the
+K2700 tutorial file holds 8 mono samples of one header each (96 byte objects) whose data
+follows contiguously in the sample data region like in a PC3K file. The creator writes this
+object for the Forte, Forte SE, PC4, PC4 SE and K2700 and the PC3K object (type 0x9E) for the
+PC3K.
 
 ## Keymap object (type 0x85)
 
@@ -235,15 +239,34 @@ first record of a block identifies the function. Algorithm 1 is [2-block F1/F2] 
 the first record of a 2-block function, 0x0300 on 1-block records and 0 on the second record
 of a 2-block function.
 
-The filter functions of the K2x00 family keep their numbers: 2 = 2-pole low-pass, 3 = 2-pole
-bandpass, 15 = 1-pole low-pass (a 1-block function without a resonance), 50 = 4-pole low-pass,
-54 = 4-pole high-pass, 55 = twin peaks bandpass, 56 = double notch (0 = none, 61 = none in a
-2-block slot). For these the coarse value is the cutoff in semitones (440 Hz * 2^((coarse - 9)
-/ 12), -48 = 16 Hz to 79 = 25088 Hz). Source 1 and its depth on the filter record route the
-filter envelope (source 121 = ENV2) or the attack velocity (source 100) to the cutoff; the
-depth law is taken over from the K2x00. The PC3 family adds many DSP functions with higher
-numbers, which are not interpreted; the 4-pole functions of the K2x00 do not occur in the
-factory programs of the PC3 family.
+The function numbers of the K2x00 family are kept for the classic functions:
+
+```
+0  NONE            1  AMP             2  2POLE LOWPASS    3  BANDPASS FILT   4  NOTCH FILTER
+5  2POLE ALLPASS   8  PARA BASS       9  PARA TREBLE     12  HIFREQ STIMUL.  13  PARAMETRIC EQ
+14 STEEP RES. BASS 15 LOPASS          16 HIPASS          17  ALPASS          18  GAIN
+19 SHAPER          20 DIST            22 PWM             23  SINE            24  LF SIN
+25 SW+SHP          26 SAW+            27 SAW             28  LF SAW          29  SQUARE
+30 LF SQR          31 WRAP            33 SYNC M          34  SYNC S          35  BAND2
+36 NOTCH2          37 LOPAS2          38 AMP U AMP L     39  BAL AMP         40  PANNER
+41 x GAIN          42 + GAIN          43 XFADE           44  AMPMOD          48  x AMP
+49 + AMP           50 4POLE LOPASS W/SEP  51 PARA MID    52  HIPAS2          53  SW+DST
+54 4POLE HIPASS W/SEP  55 TWIN PEAKS BANDPASS  56 DOUBLE NOTCH W/SEP  57 LPGATE
+60-63 NONE (the following blocks of a multi-block slot)  127 PITCH
+```
+
+The 1-pole filters 15 and 16 are 1-block functions without a resonance; the 2-pole filters 2, 3
+and 4 are 2-block functions whose second record holds the resonance (0.5 dB steps) or the width.
+For all filters the coarse value is the cutoff in semitones (440 Hz * 2^((coarse - 9) / 12), -48
+= 16 Hz to 79 = 25088 Hz). Source 1 and its depth on the filter record route the filter envelope
+(source 121 = ENV2) or the attack velocity (source 100) to the cutoff; the depth law is taken
+over from the K2x00. The functions which the PC3 family added (the anti-aliased KVA oscillators,
+the 4-pole 'Mogue' low-pass, the 2-pole high-pass, the shelving filters and more) use numbers
+from 64 upwards which are not documented here; from the factory programs, 109 is the 4-pole
+'Mogue' low-pass (used in the cascade examples of the manuals), 73 and 97 are the anti-aliased
+saw and square oscillators and 67 is a 2-block filter (probably the 2-pole high-pass). Layers
+which use these functions are read without a filter. The 4-pole functions of the K2x00 do not
+occur in the factory programs of the PC3 family.
 
 ### Trailing block
 
@@ -254,19 +277,28 @@ program when writing.
 
 ## Writing
 
-The creator writes a PC3K file (.p3k, program version 4.5), which the PC3K, Forte, Forte SE, PC4
-and K2700 load. Each group of a multi-sample becomes a layer with its own keymap (32 layers at
-most). The header, the layer record and the trailing block of a program are copies of a two
-layer program of the *Take 6* library which plays RAM samples through algorithm 5 without DSP
-functions; only the number of layers, the key and velocity window, the enable source (ON), the
+The creator writes the file of the selected target device; every device of the family loads the
+files of the others:
+
+| Device            | Extension | Program version | Program header/trailer            | Sample object |
+|-------------------|-----------|-----------------|-----------------------------------|---------------|
+| PC3K              | p3k       | 4.5             | 'Default Program' of the PC3K OS   | 0x9E          |
+| Forte, Forte SE   | for, fse  | 4.9             | 'Editor Template' of the Forte OS 4.4 (1197 byte trailer) | 0xAA |
+| PC4, PC4 SE, K2700| pc4, p4s, k27 | 4.9         | 'Editor Template' of the OS 4.5 (1413 byte trailer) | 0xAA |
+
+Each group of a multi-sample becomes a layer with its own keymap (32 layers at most). The header
+and the trailing block of a program are copies of the default program of the device generation
+with the effect chain references cleared; the layer record is a copy of a layer of a two layer
+program of the *Take 6* library which plays RAM samples through algorithm 5 without DSP
+functions. Only the number of layers, the key and velocity window, the enable source (ON), the
 flags (0x04, plus 0x20 for stereo), the envelope control (user envelope) with the AMPENV stages,
 the keymap IDs and the velocity tracking of the amplifier record are set. A layer with a filter
-switches to algorithm 1: the 2-pole low-pass or bandpass goes into the records F1/F2 with the
-resonance or width on the second record, the 1-pole low-pass into the record F3, the other
-records are set to 'none'; the filter record carries the filter envelope (ENV2, written into
-the ENV2 segment) or the attack velocity as source 1 with the depth. Samples are written with
-the flags 0x70, the natural envelope records above and consecutive byte offsets. Written files
-are not yet verified on hardware.
+switches to algorithm 1: the 2-pole low-pass, bandpass or notch filter goes into the records
+F1/F2 with the resonance or width on the second record, the 1-pole low-pass or high-pass into
+the record F3, the other records are set to 'none'; the filter record carries the filter
+envelope (ENV2, written into the ENV2 segment) or the attack velocity as source 1 with the
+depth. Samples are written with the flags 0x70, the natural envelope records above and
+consecutive byte offsets. Written files are not yet verified on hardware.
 
 ## Not interpreted / unknown
 
@@ -275,7 +307,6 @@ are not yet verified on hardware.
   object.
 * The layer level and the modulations of the amplifier record (other than its velocity
   tracking), the layer effects, the LFOs, ASRs, FUNs and the pitch envelope are not converted.
-* The DSP function numbers which the PC3 family added (e.g. the 4-pole 'Mogue' low-pass) are
-  not known; layers which use them are read without a filter. The function 67, which the PC3
-  programs use in the place of a filter, is probably the 2-pole high-pass but is not verified.
+* The DSP functions which the PC3 family added (numbers from 64 upwards, see above) are read
+  without a filter.
 * The modulation of the cutoff by source 2 with its depth control is not read, only source 1.

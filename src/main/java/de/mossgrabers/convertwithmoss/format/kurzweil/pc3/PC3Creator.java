@@ -12,9 +12,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -31,8 +29,6 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
-import de.mossgrabers.convertwithmoss.core.settings.ShortNameSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilEnvelope;
@@ -41,15 +37,16 @@ import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilKeymapEntry;
 
 
 /**
- * Creator for Kurzweil PC3K files (.p3k), the object files with RAM samples which the PC3K,
- * Forte, Forte SE, PC4 and K2700 load. Each multi-sample becomes a program with one layer per
- * group; a layer plays a keymap with one sample object per zone and carries the amplitude
- * envelope, the velocity tracking and the low-pass or bandpass filter of its group. The velocity
- * ranges of the zones are mapped onto the 8 dynamic levels of the keymap.
+ * Creator for the object files with user samples of the Kurzweil PC3K (.p3k), Forte and Forte SE
+ * (.for, .fse), PC4 and PC4 SE (.pc4, .p4s) and K2700 (.k27); every device of the family loads the
+ * files of the others. Each multi-sample becomes a program with one layer per group; a layer plays
+ * a keymap with one sample object per zone and carries the amplitude envelope, the velocity
+ * tracking and the filter of its group. The velocity ranges of the zones are mapped onto the 8
+ * dynamic levels of the keymap.
  *
  * @author Jürgen Moßgraber
  */
-public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
+public class PC3Creator extends AbstractCreator<PC3CreatorUI>
 {
     /** The maximum sample playback rate of the devices. */
     private static final int                    MAX_SAMPLE_RATE    = 96000;
@@ -62,7 +59,6 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
     private static final int                    MAX_NAME_LENGTH    = 16;
     /** The maximum number of layers of a program. */
     private static final int                    MAX_LAYERS         = 32;
-    private static final String                 FILE_EXTENSION     = "p3k";
 
     /** The number of object IDs available per object type (1024-4095). */
     private static final int                    NUM_IDS            = PC3File.LAST_ID - PC3File.FIRST_ID + 1;
@@ -96,7 +92,7 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
      */
     public PC3Creator (final INotifier notifier)
     {
-        super ("Kurzweil PC3/Forte", "PC3", notifier, new ShortNameSettingsUI ("PC3"));
+        super ("Kurzweil PC3/Forte", "PC3", notifier, new PC3CreatorUI ());
     }
 
 
@@ -154,11 +150,12 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
         if (pc3File.getPrograms ().isEmpty ())
             return;
 
-        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (name), FILE_EXTENSION);
+        final PC3CreatorUI.TargetDevice device = this.settingsConfiguration.getTargetDevice ();
+        final File outputFile = this.createUniqueFilename (destinationFolder, SafeFileNames.create (name), device.getExtension ());
         this.notifier.log ("IDS_NOTIFY_STORING", outputFile.getAbsolutePath ());
         try (final OutputStream out = new BufferedOutputStream (new FileOutputStream (outputFile)))
         {
-            pc3File.write (out);
+            pc3File.write (out, device.hasExtendedSamples ());
         }
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
     }
@@ -225,8 +222,7 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
             this.notifier.log ("IDS_PC3_TOO_MANY_GROUPS", Integer.toString (groups.size ()), name);
 
         final int programID = PC3File.FIRST_ID + pc3File.getPrograms ().size ();
-        final PC3Program program = new PC3Program (programID, shortenName (name));
-        final Set<FilterType> unsupportedFilterTypes = new LinkedHashSet<> ();
+        final PC3Program program = new PC3Program (programID, shortenName (name), this.settingsConfiguration.getTargetDevice ().getLayout ());
         int numConflicts = 0;
         int numOutOfRange = 0;
         for (final PreparedLayer preparedLayer: preparedLayers)
@@ -298,15 +294,13 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
             }
             pc3File.getKeymaps ().put (Integer.valueOf (keymapID), keymap);
 
-            program.addLayer (createLayer (preparedZones, keymapID, isStereo, unsupportedFilterTypes));
+            program.addLayer (createLayer (preparedZones, keymapID, isStereo));
         }
 
         if (numConflicts > 0)
             this.notifier.logError ("IDS_KURZWEIL_OVERLAPPING_ZONES", Integer.toString (numConflicts), name);
         if (numOutOfRange > 0)
             this.notifier.logError ("IDS_KURZWEIL_KEYS_OUT_OF_RANGE", name);
-        for (final FilterType filterType: unsupportedFilterTypes)
-            this.notifier.log ("IDS_PC3_FILTER_UNSUPPORTED", filterType.name ().toLowerCase (Locale.US).replace ('_', ' '), name);
 
         pc3File.getPrograms ().add (program);
     }
@@ -321,10 +315,9 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
      * @param preparedZones The zones of the layer
      * @param keymapID The ID of the keymap object of the layer
      * @param isStereo True if the keymap references stereo samples
-     * @param unsupportedFilterTypes The types of the filters which cannot be written are added
      * @return The layer
      */
-    private static PC3Program.Layer createLayer (final List<PreparedZone> preparedZones, final int keymapID, final boolean isStereo, final Set<FilterType> unsupportedFilterTypes)
+    private static PC3Program.Layer createLayer (final List<PreparedZone> preparedZones, final int keymapID, final boolean isStereo)
     {
         final PC3Program.Layer layer = new PC3Program.Layer ();
         layer.setKeymapID (keymapID);
@@ -351,26 +344,22 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
         if (filterOpt.isPresent ())
         {
             final IFilter filter = filterOpt.get ();
-            if (layer.setFilter (filter.getType (), filter.getPoles (), filter.getCutoff (), filter.getResonance ()))
+            layer.setFilter (filter.getType (), filter.getPoles (), filter.getCutoff (), filter.getResonance ());
+            final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
+            final int depth = (int) Math.round (cutoffModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH);
+            if (depth != 0 && cutoffModulator.getSource ().isSet ())
             {
-                final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
-                final int depth = (int) Math.round (cutoffModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH);
-                if (depth != 0 && cutoffModulator.getSource ().isSet ())
-                {
-                    final KurzweilEnvelope envelope = new KurzweilEnvelope ();
-                    envelope.fromEnvelope (cutoffModulator.getSource ());
-                    layer.setFilterEnvelope (envelope, depth);
-                }
-                else
-                {
-                    // The filter page has only one modulation slot, the filter envelope has priority
-                    final int velocityDepth = (int) Math.round (filter.getCutoffVelocityModulator ().getDepth () * PC3Program.MAX_VELOCITY_MODULATION_CENTS);
-                    if (velocityDepth != 0)
-                        layer.setCutoffVelocityModulation (velocityDepth);
-                }
+                final KurzweilEnvelope envelope = new KurzweilEnvelope ();
+                envelope.fromEnvelope (cutoffModulator.getSource ());
+                layer.setFilterEnvelope (envelope, depth);
             }
             else
-                unsupportedFilterTypes.add (filter.getType ());
+            {
+                // The filter record has only one modulation slot, the filter envelope has priority
+                final int velocityDepth = (int) Math.round (filter.getCutoffVelocityModulator ().getDepth () * PC3Program.MAX_VELOCITY_MODULATION_CENTS);
+                if (velocityDepth != 0)
+                    layer.setCutoffVelocityModulation (velocityDepth);
+            }
         }
 
         return layer;
