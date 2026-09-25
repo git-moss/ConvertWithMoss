@@ -2924,7 +2924,7 @@
       <text:p>Read</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>dspreset</text:p>
+      <text:p>dspreset</text:p><text:p>dsproduct (read only)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>dslibrary/dsbundle</text:p>
@@ -3003,7 +3003,12 @@
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>trigger</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>ampEnvEnabled</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>silencedByTags (mutual)</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>loopEnabled</text:p>
@@ -3098,7 +3103,12 @@
      <table:covered-table-cell table:number-columns-repeated="4" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39"/>
      <table:covered-table-cell table:number-columns-repeated="4" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>ampEnvEnabled</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>tags / silencedByTags</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce36"/>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39"/>

@@ -4,7 +4,9 @@
 
 package de.mossgrabers.convertwithmoss.format.decentsampler;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,6 +22,18 @@ public class DecentSamplerTag
     public static final String                    DECENTSAMPLER        = "DecentSampler";
     /** The root minimum version attribute. */
     public static final String                    MIN_VERSION          = "minVersion";
+    /** The product identifier attribute on the root of a product preset. */
+    public static final String                    PRODUCT_ID           = "_dsProductId";
+    /** The MIDI tag. */
+    public static final String                    MIDI                 = "midi";
+    /** The buses tag. */
+    public static final String                    BUSES                = "buses";
+    /** The arpeggiator tag. */
+    public static final String                    ARPEGGIATOR          = "arpeggiator";
+    /** The note sequences tag. */
+    public static final String                    NOTE_SEQUENCES       = "noteSequences";
+    /** The enabled attribute of groups, tags and effects. */
+    public static final String                    ENABLED              = "enabled";
 
     /** The effects tag. */
     public static final String                    EFFECTS              = "effects";
@@ -33,6 +47,26 @@ public class DecentSamplerTag
     public static final String                    EFFECT_FREQUENCY     = "frequency";
     /** The filter resonance attribute of an effect. */
     public static final String                    EFFECT_RESONANCE     = "resonance";
+    /** The level attribute of the gain effect. */
+    public static final String                    EFFECT_LEVEL         = "level";
+    /** The unit of the level attribute of the gain effect, decibels if absent. */
+    public static final String                    EFFECT_LEVEL_UNIT    = "levelUnit";
+    /** The unit value for a level which is a linear factor. */
+    public static final String                    LEVEL_UNIT_LINEAR    = "linear";
+    /** The dry/wet mix attribute of an effect. */
+    public static final String                    EFFECT_MIX           = "mix";
+    /** The wet level attribute of an effect. */
+    public static final String                    EFFECT_WET_LEVEL     = "wetLevel";
+    /** The impulse response attribute of the convolution effect. */
+    public static final String                    EFFECT_IR_FILE       = "irFile";
+    /** The semitones attribute of the pitch shift effect. */
+    public static final String                    EFFECT_PITCH_SHIFT   = "pitchShift";
+    /** The type of the pitch shift effect. */
+    public static final String                    EFFECT_TYPE_PITCH    = "pitch_shift";
+    /** The type of the gain effect. */
+    public static final String                    EFFECT_TYPE_GAIN     = "gain";
+    /** The type of the reverb effect. */
+    public static final String                    EFFECT_TYPE_REVERB   = "reverb";
     /** The modulators tag. */
     public static final String                    MODULATORS           = "modulators";
     /** The envelope tag. */
@@ -70,11 +104,17 @@ public class DecentSamplerTag
     public static final String                    TAGS_ATTRIBUTE       = "tags";
     /** The name of the tag which is used to limit an instrument to one voice. */
     public static final String                    TAG_MONOPHONIC       = "monophonic";
+    /** The start of the name of the tag of an exclusive group, followed by its number. */
+    public static final String                    TAG_EXCLUSIVE_GROUP  = "exclusiveGroup";
 
     /** The groups tag. */
     public static final String                    GROUPS               = "groups";
     /** The groups tag. */
     public static final String                    GLOBAL_TUNING        = "globalTuning";
+    /** The alias of the volume attribute on the groups level, which wins if both are set. */
+    public static final String                    GLOBAL_VOLUME        = "globalVolume";
+    /** The pan offset of the whole instrument, which is added to the pan. */
+    public static final String                    GLOBAL_PAN           = "globalPan";
     /** The group tag. */
     public static final String                    GROUP                = "group";
     /** The sample tag. */
@@ -99,6 +139,32 @@ public class DecentSamplerTag
     public static final String                    GROUP_NAME           = "name";
     /** The group enabled tag. */
     public static final String                    GROUP_ENABLED        = "enabled";
+    /** The alias of the volume attribute on the group level, which wins if both are set. */
+    public static final String                    GROUP_VOLUME         = "groupVolume";
+    /** The pan offset of a group, which is added to the pan. */
+    public static final String                    GROUP_PAN            = "groupPan";
+    /** The attribute which turns the amplitude envelope off, which plays the samples as one-shots. */
+    public static final String                    AMP_ENV_ENABLED      = "ampEnvEnabled";
+    /** The tags which stop a sample when a sample with one of them is triggered. */
+    public static final String                    SILENCED_BY_TAGS     = "silencedByTags";
+    /** How a silenced sample is stopped. */
+    public static final String                    SILENCING_MODE       = "silencingMode";
+    /** The silencing mode value which stops a sample immediately. */
+    public static final String                    SILENCING_MODE_FAST  = "fast";
+    /** A fade-out time of a silenced sample which overrides the silencing mode. */
+    public static final String                    SILENCING_DECAY      = "silencingDecay";
+    /** The start of the names of the output routing attributes, followed by the output number. */
+    public static final String                    OUTPUT               = "output";
+    /** The end of the name of the attribute which selects the target of an output. */
+    public static final String                    OUTPUT_TARGET        = "Target";
+    /** The end of the name of the attribute which sets the volume of an output. */
+    public static final String                    OUTPUT_VOLUME        = "Volume";
+    /** The output target of the main output. */
+    public static final String                    OUTPUT_MAIN          = "MAIN_OUTPUT";
+    /** The output target which does not output anything. */
+    public static final String                    OUTPUT_NONE          = "NO_OUTPUT";
+    /** The number of outputs of a sample. */
+    public static final int                       NUMBER_OF_OUTPUTS    = 8;
 
     /** The group name tag. */
     public static final String                    SAMPLE_NAME          = "name";
@@ -173,12 +239,12 @@ public class DecentSamplerTag
 
     static
     {
-        ATTRIBUTES.put (DECENTSAMPLER, Set.of (MIN_VERSION));
-        ATTRIBUTES.put (GROUPS, Set.of (GLOBAL_TUNING, ENV_ATTACK, ENV_DECAY, ENV_SUSTAIN, ENV_RELEASE, SEQ_MODE, TAGS_ATTRIBUTE));
-        ATTRIBUTES.put (GROUP, Set.of (GROUP_NAME, GROUP_ENABLED, GROUP_TUNING, TUNING, VOLUME, AMP_VELOCITY_TRACK, PANNING, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER, SEQ_MODE, SEQ_POSITION, SEQ_LENGTH, TAGS_ATTRIBUTE));
-        ATTRIBUTES.put (SAMPLE, Set.of (SAMPLE_NAME, PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANNING, PITCH_KEY_TRACK, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, SEQ_MODE, SEQ_POSITION));
-        ATTRIBUTES.put (TAG, Set.of (TAG_NAME, TAG_POLYPHONY));
-        ATTRIBUTES.put (EFFECTS_EFFECT, Set.of (EFFECT_TYPE, EFFECT_FREQUENCY, EFFECT_RESONANCE));
+        ATTRIBUTES.put (DECENTSAMPLER, Set.of (MIN_VERSION, PRODUCT_ID));
+        ATTRIBUTES.put (GROUPS, withOutputs (GLOBAL_TUNING, VOLUME, GLOBAL_VOLUME, GLOBAL_PAN, PANNING, TUNING, PITCH_KEY_TRACK, AMP_VELOCITY_TRACK, AMP_ENV_ENABLED, SILENCED_BY_TAGS, SILENCING_MODE, SILENCING_DECAY, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER, SEQ_MODE, SEQ_POSITION, TAGS_ATTRIBUTE));
+        ATTRIBUTES.put (GROUP, withOutputs (GROUP_NAME, GROUP_ENABLED, GROUP_TUNING, TUNING, VOLUME, GROUP_VOLUME, GROUP_PAN, AMP_VELOCITY_TRACK, PANNING, PITCH_KEY_TRACK, AMP_ENV_ENABLED, SILENCED_BY_TAGS, SILENCING_MODE, SILENCING_DECAY, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, TRIGGER, SEQ_MODE, SEQ_POSITION, TAGS_ATTRIBUTE));
+        ATTRIBUTES.put (SAMPLE, withOutputs (SAMPLE_NAME, PATH, ROOT_NOTE, LO_NOTE, HI_NOTE, LO_VEL, HI_VEL, START, END, TUNING, VOLUME, PANNING, PITCH_KEY_TRACK, AMP_VELOCITY_TRACK, AMP_ENV_ENABLED, SILENCED_BY_TAGS, SILENCING_MODE, SILENCING_DECAY, TAGS_ATTRIBUTE, TRIGGER, LOOP_START, LOOP_END, LOOP_CROSSFADE, LOOP_ENABLED, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE, SEQ_MODE, SEQ_POSITION));
+        ATTRIBUTES.put (TAG, Set.of (TAG_NAME, TAG_POLYPHONY, VOLUME, ENABLED));
+        ATTRIBUTES.put (EFFECTS_EFFECT, Set.of (EFFECT_TYPE, EFFECT_FREQUENCY, EFFECT_RESONANCE, ENABLED, EFFECT_LEVEL, EFFECT_LEVEL_UNIT));
         ATTRIBUTES.put (ENVELOPE, Set.of (MOD_AMOUNT, ENV_ATTACK, ENV_ATTACK_CURVE, ENV_DECAY, ENV_DECAY_CURVE, ENV_SUSTAIN, ENV_RELEASE, ENV_RELEASE_CURVE));
         ATTRIBUTES.put (LFO, Set.of (MOD_AMOUNT, LFO_SHAPE, LFO_FREQUENCY, LFO_FREQUENCY_FORMAT, LFO_DELAY_TIME));
         ATTRIBUTES.put (BINDING, Set.of (BINDING_PARAMETER));
@@ -203,5 +269,24 @@ public class DecentSamplerTag
     public static Set<String> getAttributes (final String tagName)
     {
         return ATTRIBUTES.get (tagName);
+    }
+
+
+    /**
+     * Add the attributes of the output routing, which can be set on all levels, to the attributes
+     * of a tag.
+     *
+     * @param attributes The other attributes of the tag
+     * @return All attributes
+     */
+    private static Set<String> withOutputs (final String... attributes)
+    {
+        final Set<String> result = new HashSet<> (Arrays.asList (attributes));
+        for (int output = 1; output <= NUMBER_OF_OUTPUTS; output++)
+        {
+            result.add (OUTPUT + output + OUTPUT_TARGET);
+            result.add (OUTPUT + output + OUTPUT_VOLUME);
+        }
+        return result;
     }
 }

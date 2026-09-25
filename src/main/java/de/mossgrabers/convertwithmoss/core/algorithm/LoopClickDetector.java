@@ -282,7 +282,9 @@ public final class LoopClickDetector
         final int medianStep = steps[steps.length / 2];
 
         final int step = LoopZeroSnapper.discontinuity (signal, start, end);
-        final double movementPerReferenceFrame = medianStep * sampleRate / REFERENCE_SAMPLE_RATE;
+        // In floating point: the product of the two integers exceeds the integer range for 24 and
+        // 32 bit audio, e.g. a median step of 74,000 at 48 kHz
+        final double movementPerReferenceFrame = (double) medianStep * sampleRate / REFERENCE_SAMPLE_RATE;
         if (step > MINIMUM_STEP_RATIO * (movementPerReferenceFrame + 1.0) && step > MINIMUM_RELATIVE_STEP * peak)
             return 100.0 * step / peak;
         return 0;
