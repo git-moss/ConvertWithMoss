@@ -306,6 +306,8 @@ A pitch LFO (vibrato) is converted as an `<lfo>` bound to the group tuning, carr
 * Template and resources folder: Allows to modify the UI and effects section of the presets (see below).
 * Options to write/update [WAV Chunk Information](#wav-chunk-information).
 
+A one-shot is written by switching off the amplitude envelope of its samples (ampEnvEnabled), unless a sample is looped, since it would never stop then. The samples of an exclusive group carry a tag by which they silence each other (silencedByTags).
+
 If no 'Template and resources folder' is configured the default template is used which creates several controls for an amp envelope, a lowpass filter with envelope, a delay and reverb as well as pitch-modulation via mod-wheel.
 To modify this template, first create an empty folder somewhere on your disc. Select this folder in the 'Template and resources folder' field. Then click on the button 'Create template in the selected folder'. This copies the template 'ui.xml' into this folder. You can copy additional images and documentation files to the folder. These resource files will be added to the output as well. This template will be applied to all created dspresets. But note that you can have multiple templates if you use several template folders which can then be switched for each conversion run.
 
