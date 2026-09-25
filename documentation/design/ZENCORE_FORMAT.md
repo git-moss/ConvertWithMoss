@@ -422,7 +422,7 @@ loops.) CWM prepares samples accordingly:
    invariant that hardware-verified click-free playback requires (and that well-mastered packs
    satisfy).
 3. **Source loop cross-fades are baked.** A source-specified loop cross-fade (a Renoise or
-   Tonverk patch, or the *Set fixed loop-crossfade* processing option) is blended into the audio
+   Tonverk patch, or the *Cross-fade loops* processing option) is blended into the audio
    with its full source length - source formats apply it live at playback, but the ZEN-Core
    engine has no loop cross-fade of its own, so without baking, a loop whose sound evolves across
    the loop region jumps audibly at every wrap even though the waveform seam is perfect. The
