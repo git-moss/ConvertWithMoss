@@ -4,21 +4,27 @@
 
 package de.mossgrabers.convertwithmoss.format.ableton;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 
 import org.w3c.dom.Document;
@@ -28,6 +34,7 @@ import org.xml.sax.SAXException;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.ZoneSplitter;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -47,6 +54,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
@@ -55,14 +63,21 @@ import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * Detects recursively Ableton Preset/Rack-Preset files in folders. Files must end with <i>.adv</i>
- * or <i>.adg</i>.
+ * Detects recursively Ableton Preset/Rack-Preset files, Live Sets and Live Packs in folders. Files
+ * must end with <i>.adv</i>, <i>.adg</i>, <i>.als</i> or <i>.alp</i>. The Sampler and Simpler
+ * devices of a Live Set are read from all of its tracks, those of a Live Pack from all presets and
+ * Live Sets which it contains.
  *
  * @author Jürgen Moßgraber
  */
 public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 {
     private static final String                  ERR_MISSING_TAG     = "IDS_NOTIFY_ERR_MISSING_TAG";
+
+    private static final String                  ENDING_PRESET       = ".adv";
+    private static final String                  ENDING_RACK         = ".adg";
+    private static final String                  ENDING_SET          = ".als";
+    private static final String                  ENDING_PACK         = ".alp";
 
     /** The name of the folder which is present in every Ableton project folder. */
     private static final String                  PROJECT_INFO_FOLDER = "Ableton Project Info";
@@ -78,7 +93,26 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         FILTER_TYPES.put ("3", FilterType.BAND_REJECTION);
     }
 
-    private File previousSampleFolder;
+    private File                                 previousSampleFolder;
+    /** The Live Packs which were opened by the current detection, by their files. */
+    private final Map<String, AbletonLivePack>   livePacks           = new HashMap<> ();
+
+
+    /**
+     * Loads the sample of a file reference of a device, from the file system or from a Live Pack.
+     */
+    @FunctionalInterface
+    private interface ISampleLoader
+    {
+        /**
+         * Load the sample of a file reference.
+         *
+         * @param fileRefElement The file reference element
+         * @return The sample data or null if the sample was not found, which is already reported
+         * @throws IOException Could not access the sample
+         */
+        ISampleData loadSample (Element fileRefElement) throws IOException;
+    }
 
 
     /**
@@ -88,7 +122,26 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
      */
     public AbletonDetector (final INotifier notifier)
     {
-        super ("Ableton Sampler", "Ableton", notifier, new MetadataSettingsUI ("Ableton"), ".adv", ".adg");
+        super ("Ableton Sampler", "Ableton", notifier, new MetadataSettingsUI ("Ableton"), ENDING_PRESET, ENDING_RACK, ENDING_SET, ENDING_PACK);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void startDetection ()
+    {
+        // The samples of the packs of the previous detection are not read anymore
+        this.disposeLivePacks ();
+        super.startDetection ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void shutdown ()
+    {
+        this.disposeLivePacks ();
+        super.shutdown ();
     }
 
 
@@ -97,11 +150,44 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     protected List<IMultisampleSource> readPresetFile (final File file)
     {
         this.previousSampleFolder = null;
+        if (this.waitForDelivery ())
+            return Collections.emptyList ();
 
-        try (final InputStream in = new GZIPInputStream (new FileInputStream (file)))
+        try
         {
-            final String multiSampleFileContent = StreamUtils.readUtf8 (in);
-            return this.readMetadataFile (file, multiSampleFileContent);
+            if (hasEnding (file.getName (), ENDING_PACK))
+                return this.readLivePack (file);
+
+            final Optional<Element> top = this.readDocument (Files.readAllBytes (file.toPath ()));
+            if (top.isEmpty ())
+                return Collections.emptyList ();
+
+            final String name = FileUtils.getNameWithoutType (file);
+            final Function<String, IMultisampleSource> sourceFactory = sourceName -> this.createMultisampleSource (file, sourceName);
+            if (hasEnding (file.getName (), ENDING_SET))
+            {
+                // The samples of a Live Set are stored relative to its project folder, which
+                // contains the Live Set
+                final File projectFolder = file.getParentFile ();
+                final List<IMultisampleSource> multisampleSources = this.parseLiveSet (top.get (), name, sourceFactory, fileRef -> this.getSampleData (file, fileRef, projectFolder));
+                if (multisampleSources.isEmpty ())
+                    this.notifier.logError ("IDS_ADV_NO_SAMPLER_IN_SET");
+                return multisampleSources;
+            }
+
+            final Optional<Pair<Element, List<Element>>> devices = getPresetDevices (top.get ());
+            if (devices.isEmpty ())
+            {
+                this.notifier.logError ("IDS_ADV_NOT_A_SAMPLER_PRESET");
+                return Collections.emptyList ();
+            }
+            final File rootPath = getRootPath (file, devices.get ().getKey ());
+            return this.parsePresetDevices (top.get (), devices.get ().getValue (), name, sourceFactory, fileRef -> this.getSampleData (file, fileRef, rootPath));
+        }
+        catch (final SAXException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", ex);
+            return Collections.emptyList ();
         }
         catch (final IOException ex)
         {
@@ -112,92 +198,307 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Read the metadata description file.
+     * Read the Sampler and Simpler devices of all presets and Live Sets of a Live Pack. Their
+     * samples are read from the pack as well.
      *
-     * @param multiSampleFile The file
-     * @param multiSampleFileContent The XML description file content
-     * @return The result
-     * @throws IOException Error reading the file
+     * @param packFile The pack file
+     * @return The multi-samples
+     * @throws IOException Could not read the pack
      */
-    private List<IMultisampleSource> readMetadataFile (final File multiSampleFile, final String multiSampleFileContent) throws IOException
+    private List<IMultisampleSource> readLivePack (final File packFile) throws IOException
     {
-        if (this.waitForDelivery ())
-            return Collections.emptyList ();
+        final AbletonLivePack pack = this.openLivePack (packFile);
+        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+        int numberWithoutDevices = 0;
+        int numberOfBinaryPresets = 0;
+        for (final AbletonLivePack.Entry entry: pack.getFiles ())
+        {
+            final String entryName = entry.getName ();
+            final boolean isSet = hasEnding (entryName, ENDING_SET);
+            if (!isSet && !hasEnding (entryName, ENDING_PRESET) && !hasEnding (entryName, ENDING_RACK))
+                continue;
+            if (this.waitForDelivery ())
+                break;
 
-        try
-        {
-            final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (multiSampleFileContent)));
-            return this.parseDescription (multiSampleFile, document);
+            this.notifier.log ("IDS_NOTIFY_ANALYZING", packFile.getAbsolutePath () + File.separator + entry.path ().replace ('/', File.separatorChar));
+            try
+            {
+                final byte [] content = decompress (pack.readContent (entry));
+                if (isBinaryFormat (content))
+                {
+                    numberOfBinaryPresets++;
+                    continue;
+                }
+                final Element top = parseXml (content);
+                if (!AbletonTag.TAG_ROOT.equals (top.getNodeName ()))
+                    throw new IOException (Functions.getMessage (ERR_MISSING_TAG, AbletonTag.TAG_ROOT));
+
+                final String name = FileUtils.getNameWithoutType (new File (entryName));
+                final String folder = entry.getFolder ();
+                final Function<String, IMultisampleSource> sourceFactory = sourceName -> this.createPackMultisampleSource (packFile, folder, sourceName);
+                final ISampleLoader sampleLoader = fileRef -> this.getPackSampleData (pack, folder, fileRef);
+                final List<IMultisampleSource> sources;
+                if (isSet)
+                    sources = this.parseLiveSet (top, name, sourceFactory, sampleLoader);
+                else
+                {
+                    final Optional<Pair<Element, List<Element>>> devices = getPresetDevices (top);
+                    sources = devices.isEmpty () ? Collections.emptyList () : this.parsePresetDevices (top, devices.get ().getValue (), name, sourceFactory, sampleLoader);
+                }
+                if (sources.isEmpty ())
+                    numberWithoutDevices++;
+                multisampleSources.addAll (sources);
+            }
+            catch (final IOException | SAXException ex)
+            {
+                this.notifier.logError ("IDS_ADV_PACK_ENTRY_FAILED", entry.path (), ex.getMessage ());
+            }
         }
-        catch (final SAXException ex)
+
+        if (numberOfBinaryPresets > 0)
+            this.notifier.logError ("IDS_ADV_PACK_BINARY_PRESETS", Integer.toString (numberOfBinaryPresets));
+        if (numberWithoutDevices > 0)
+            this.notifier.log ("IDS_ADV_PACK_WITHOUT_SAMPLER", Integer.toString (numberWithoutDevices));
+        if (multisampleSources.isEmpty ())
+            this.notifier.logError ("IDS_ADV_PACK_NO_SAMPLER");
+        return multisampleSources;
+    }
+
+
+    /**
+     * Open a Live Pack. A pack stays open until the next detection starts, since its samples are
+     * read when the multi-samples are written, and a pack is read again when only one of its
+     * presets is needed, e.g. to play it in the contents dialog - the de-compression of a large
+     * pack takes some seconds.
+     *
+     * @param packFile The pack file
+     * @return The pack
+     * @throws IOException Could not open the pack
+     */
+    private AbletonLivePack openLivePack (final File packFile) throws IOException
+    {
+        final String key = packFile.getCanonicalPath () + "|" + packFile.length () + "|" + packFile.lastModified ();
+        synchronized (this.livePacks)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", ex);
-            return Collections.emptyList ();
+            AbletonLivePack pack = this.livePacks.get (key);
+            if (pack == null)
+            {
+                pack = AbletonLivePack.open (packFile, this.notifier);
+                this.livePacks.put (key, pack);
+            }
+            return pack;
         }
     }
 
 
     /**
-     * Process the multi-sample metadata file and the related wave files.
-     *
-     * @param multiSampleFile The multi-sample file
-     * @param document The metadata XML document
-     * @return The parsed multi-sample source
-     * @throws IOException Could not parse the XML document
+     * Delete the temporary files of all opened Live Packs.
      */
-    private List<IMultisampleSource> parseDescription (final File multiSampleFile, final Document document) throws IOException
+    private void disposeLivePacks ()
     {
-        final Element top = document.getDocumentElement ();
+        synchronized (this.livePacks)
+        {
+            for (final AbletonLivePack pack: this.livePacks.values ())
+                pack.dispose ();
+            this.livePacks.clear ();
+        }
+    }
+
+
+    /**
+     * Read the XML document of a preset or Live Set.
+     *
+     * @param content The content of the file
+     * @return The top element of the document, empty if the file is not supported, which is
+     *         already reported
+     * @throws IOException Could not de-compress the file
+     * @throws SAXException Could not parse the XML document
+     */
+    private Optional<Element> readDocument (final byte [] content) throws IOException, SAXException
+    {
+        final byte [] data = decompress (content);
+        if (isBinaryFormat (data))
+        {
+            this.notifier.logError ("IDS_ADV_BINARY_FORMAT");
+            return Optional.empty ();
+        }
+
+        final Element top = parseXml (data);
         if (!AbletonTag.TAG_ROOT.equals (top.getNodeName ()))
         {
             this.notifier.logError (ERR_MISSING_TAG, AbletonTag.TAG_ROOT);
-            return Collections.emptyList ();
+            return Optional.empty ();
         }
+        return Optional.of (top);
+    }
 
+
+    /**
+     * Create the multi-samples of the Sampler and Simpler devices of a preset.
+     *
+     * @param top The top element of the preset
+     * @param devices The Sampler and Simpler devices of the preset
+     * @param name The name of the preset
+     * @param sourceFactory Creates a multi-sample source with the given name
+     * @param sampleLoader Loads the samples of the devices
+     * @return The multi-samples
+     * @throws IOException Could not parse a device
+     */
+    private List<IMultisampleSource> parsePresetDevices (final Element top, final List<Element> devices, final String name, final Function<String, IMultisampleSource> sourceFactory, final ISampleLoader sampleLoader) throws IOException
+    {
         final String creator = top.getAttribute (AbletonTag.ATTR_CREATOR);
-
-        final Optional<Pair<List<Element>, File>> samplerElementsOpt = getSamplerElements (top, multiSampleFile);
-        if (samplerElementsOpt.isEmpty ())
-        {
-            this.notifier.logError ("IDS_ADV_NOT_A_SAMPLER_PRESET");
-            return Collections.emptyList ();
-        }
-
-        final Pair<List<Element>, File> samplerElements = samplerElementsOpt.get ();
-        final File rootPath = samplerElements.getValue ();
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
-        int counter = 0;
-        final List<Element> elementsList = samplerElements.getKey ();
-        final boolean multiple = elementsList.size () > 1;
-        for (final Element samplerElement: elementsList)
+        final boolean multiple = devices.size () > 1;
+        for (int i = 0; i < devices.size (); i++)
         {
-            final IMultisampleSource multiSample = this.parseSampler (multiSampleFile, samplerElement, rootPath, creator);
+            final IMultisampleSource multiSample = sourceFactory.apply (name);
+            this.parseSampler (multiSample, devices.get (i), sampleLoader, creator);
             multisampleSources.add (multiSample);
             // Create unique names if there are multiple ones
             if (multiple)
-                multiSample.setName (FileUtils.getNameWithoutType (new File (multiSample.getName ())) + (counter + 1));
-            counter++;
+                multiSample.setName (FileUtils.getNameWithoutType (new File (multiSample.getName ())) + (i + 1));
         }
         return multisampleSources;
     }
 
 
     /**
-     * Parse an Ableton preset XML document with a Simpler or Sampler device.
+     * Create the multi-samples of all Sampler and Simpler devices of a Live Set, from all of its
+     * tracks and the racks on them. They are named after the Live Set and their track. A device
+     * without any sample, e.g. an empty Simpler on a track, is left out.
      *
-     * @param sourceFile The multi-sample source file
-     * @param deviceElement The device element
-     * @param rootPath The root path where the samples are located
-     * @param creator The creator value
-     * @return The parse multi-sample source
-     * @throws IOException Could not parse the document
+     * @param top The top element of the Live Set
+     * @param setName The name of the Live Set
+     * @param sourceFactory Creates a multi-sample source with the given name
+     * @param sampleLoader Loads the samples of the devices
+     * @return The multi-samples
+     * @throws IOException Could not parse a device
      */
-    private IMultisampleSource parseSampler (final File sourceFile, final Element deviceElement, final File rootPath, final String creator) throws IOException
+    private List<IMultisampleSource> parseLiveSet (final Element top, final String setName, final Function<String, IMultisampleSource> sourceFactory, final ISampleLoader sampleLoader) throws IOException
     {
-        final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, FileUtils.getNameWithoutType (sourceFile));
+        final Element liveSetElement = XMLUtils.getChildElementByName (top, AbletonTag.TAG_LIVE_SET);
+        final Element tracksElement = liveSetElement == null ? null : XMLUtils.getChildElementByName (liveSetElement, AbletonTag.TAG_TRACKS);
+        if (tracksElement == null)
+            return Collections.emptyList ();
+
+        final List<Pair<String, List<Element>>> tracks = new ArrayList<> ();
+        int numberOfDevices = 0;
+        for (final Element trackElement: XMLUtils.getChildElements (tracksElement))
+        {
+            final List<Element> devices = new ArrayList<> ();
+            collectDevices (trackElement, devices);
+            if (!devices.isEmpty ())
+            {
+                tracks.add (new Pair<> (getTrackName (trackElement), devices));
+                numberOfDevices += devices.size ();
+            }
+        }
+
+        final String creator = top.getAttribute (AbletonTag.ATTR_CREATOR);
+        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+        for (final Pair<String, List<Element>> track: tracks)
+        {
+            final List<Element> devices = track.getValue ();
+            for (int i = 0; i < devices.size (); i++)
+            {
+                final StringBuilder name = new StringBuilder (setName);
+                if (numberOfDevices > 1)
+                    name.append (" - ").append (track.getKey ());
+                if (devices.size () > 1)
+                    name.append (' ').append (i + 1);
+                final IMultisampleSource multiSample = sourceFactory.apply (name.toString ());
+                this.parseSampler (multiSample, devices.get (i), sampleLoader, creator);
+                multisampleSources.add (multiSample);
+            }
+        }
+        return multisampleSources;
+    }
+
+
+    /**
+     * Create a multi-sample source for a preset or Live Set of a Live Pack. The folders of the
+     * pack are used like the folders of the file system, as if the pack was unpacked into a folder
+     * which is named like the pack file, which is what Live does.
+     *
+     * @param packFile The pack file
+     * @param folder The path of the folder in the pack which contains the preset or Live Set
+     * @param name The name of the multi-sample
+     * @return The multi-sample source
+     */
+    private IMultisampleSource createPackMultisampleSource (final File packFile, final String folder, final String name)
+    {
+        final String n = this.settingsConfiguration.isPreferFolderName () ? this.sourceFolder.getName () : name;
+        final List<String> parts = new ArrayList<> ();
+        parts.add (n);
+        if (!folder.isEmpty ())
+        {
+            final String [] folders = folder.split ("/");
+            for (int i = folders.length - 1; i >= 0; i--)
+                parts.add (SafeFileNames.create (folders[i]));
+        }
+        parts.add (FileUtils.getNameWithoutType (packFile));
+        final String [] outerParts = AudioFileUtils.createPathParts (packFile.getParentFile (), this.sourceFolder, n);
+        parts.addAll (Arrays.asList (outerParts).subList (1, outerParts.length));
+        return this.createMultisampleSource (packFile, parts.toArray (new String [parts.size ()]), name, Collections.emptyList ());
+    }
+
+
+    /**
+     * Get the sample of a file reference of a preset or Live Set of a Live Pack. The path of a
+     * sample is relative to a folder which contains the preset - its project folder or the folder
+     * of its library - from where it continues with e.g. 'Samples/Imported'. It is therefore
+     * looked up from the folder of the preset upwards to the root of the pack. If it is not found
+     * there, the sample with the name of the file which is closest to the preset is taken.
+     *
+     * @param pack The pack
+     * @param presetFolder The path of the folder in the pack which contains the preset
+     * @param fileRefElement The file reference element
+     * @return The sample data or null if the sample was not found
+     * @throws IOException Could not read the sample
+     */
+    private ISampleData getPackSampleData (final AbletonLivePack pack, final String presetFolder, final Element fileRefElement) throws IOException
+    {
+        final String relativePath = getRelativePath (fileRefElement);
+        Optional<AbletonLivePack.Entry> entry = Optional.empty ();
+        if (!relativePath.isBlank ())
+        {
+            String folder = presetFolder;
+            while (true)
+            {
+                entry = pack.findFile (folder.isEmpty () ? relativePath : folder + "/" + relativePath);
+                if (entry.isPresent () || folder.isEmpty ())
+                    break;
+                final int pos = folder.lastIndexOf ('/');
+                folder = pos < 0 ? "" : folder.substring (0, pos);
+            }
+        }
+
+        final String sampleFileName = getSampleFileName (fileRefElement);
+        if (entry.isEmpty () && !sampleFileName.isBlank ())
+            entry = pack.findFileByName (sampleFileName, presetFolder);
+
+        if (entry.isEmpty ())
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", new File (pack.getFile (), relativePath.isBlank () ? sampleFileName : relativePath).getPath ());
+            return null;
+        }
+        return pack.createSampleData (entry.get (), this.notifier);
+    }
+
+
+    /**
+     * Parse a Simpler or Sampler device and store it in the multi-sample source.
+     *
+     * @param multisampleSource The multi-sample source to fill
+     * @param deviceElement The device element
+     * @param sampleLoader Loads the samples of the device
+     * @param creator The creator value
+     * @throws IOException Could not parse the device
+     */
+    private void parseSampler (final IMultisampleSource multisampleSource, final Element deviceElement, final ISampleLoader sampleLoader, final String creator) throws IOException
+    {
         parseMetadata (deviceElement, multisampleSource.getMetadata (), creator);
-        this.parseMultiSample (sourceFile, rootPath, multisampleSource, deviceElement);
-        return multisampleSource;
+        this.parseMultiSample (multisampleSource, deviceElement, sampleLoader);
     }
 
 
@@ -252,7 +553,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             case 5:
             case 6:
             default:
-                final String relativePresetPath = getValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH);
+                final String relativePresetPath = getRelativePath (fileRefElement);
                 filePath = createUpwardsPath (relativePresetPath);
                 return new File (multiSampleFile.getParent (), filePath).getCanonicalFile ();
         }
@@ -262,13 +563,12 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Parse all zone information from the XML code and store it in the multi-sample.
      *
-     * @param multiSampleFile The multi-sample source file
-     * @param rootPath The root path where the samples are located
      * @param multisampleSource Where to store the data
      * @param deviceElement The device element which contains the zone data
+     * @param sampleLoader Loads the samples of the zones
      * @throws IOException Could not access the sample
      */
-    private void parseMultiSample (final File multiSampleFile, final File rootPath, final IMultisampleSource multisampleSource, final Element deviceElement) throws IOException
+    private void parseMultiSample (final IMultisampleSource multisampleSource, final Element deviceElement, final ISampleLoader sampleLoader) throws IOException
     {
         final Element playerElement = getRequiredElement (deviceElement, AbletonTag.TAG_PLAYER);
         final Element mapElement = getRequiredElement (playerElement, AbletonTag.TAG_MULTI_SAMPLE_MAP);
@@ -284,7 +584,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             final Element sampleRefElement = getRequiredElement (multiSamplePartElement, AbletonTag.TAG_SAMPLE_REF);
             final Element fileRefElement = getRequiredElement (sampleRefElement, AbletonTag.TAG_FILE_REF);
 
-            final ISampleData sampleData = this.getSampleData (multiSampleFile, fileRefElement, rootPath);
+            final ISampleData sampleData = sampleLoader.loadSample (fileRefElement);
             if (sampleData != null)
             {
                 final String name = FileUtils.getNameWithoutType (new File (zoneName));
@@ -419,16 +719,16 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private ISampleData getSampleData (final File multiSampleFile, final Element fileRefElement, final File rootPath) throws IOException
     {
-        final String relativePath = getValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH);
+        final String relativePath = getRelativePath (fileRefElement);
         File sampleFile = new File (rootPath, relativePath);
         if (!sampleFile.isFile ())
         {
-            final String absolutePath = getValueAttribute (fileRefElement, AbletonTag.TAG_PATH);
+            final String absolutePath = getAbsolutePath (fileRefElement);
             if (!absolutePath.isBlank () && new File (absolutePath).isFile ())
                 sampleFile = new File (absolutePath);
             else
             {
-                final String sampleFileName = new File (relativePath).getName ();
+                final String sampleFileName = getSampleFileName (fileRefElement);
                 if (!sampleFileName.isBlank ())
                     sampleFile = findSampleFile (this.notifier, multiSampleFile.getParentFile (), this.previousSampleFolder, sampleFileName, SEARCH_LEVELS);
             }
@@ -815,7 +1115,15 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static Optional<Pair<List<Element>, File>> getSamplerElements (final Element top, final File multiSampleFile) throws IOException
+    /**
+     * Get the Sampler and Simpler devices of a preset: the device of a device preset or all
+     * devices in a rack preset.
+     *
+     * @param top The top element of the preset
+     * @return The element of the device or rack, which references the preset file, and the Sampler
+     *         and Simpler devices; empty if the preset contains none
+     */
+    private static Optional<Pair<Element, List<Element>>> getPresetDevices (final Element top)
     {
         final List<Element> samplerElements = new ArrayList<> ();
 
@@ -833,8 +1141,186 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             samplerElements.addAll (XMLUtils.getChildElementsByName (deviceElement, AbletonTag.TAG_DEVICE_SIMPLER, true));
         }
 
-        final File rootPath = getRootPath (multiSampleFile, deviceElement);
-        return Optional.of (new Pair<> (samplerElements, rootPath));
+        return samplerElements.isEmpty () ? Optional.empty () : Optional.of (new Pair<> (deviceElement, samplerElements));
+    }
+
+
+    /**
+     * Collect all Sampler and Simpler devices which contain samples in the given element and in
+     * its children, e.g. in the racks of a track, in the order in which they are stored.
+     *
+     * @param element The element to search
+     * @param devices Where to add the found devices
+     */
+    private static void collectDevices (final Element element, final List<Element> devices)
+    {
+        for (final Element child: XMLUtils.getChildElements (element))
+        {
+            final String tag = child.getNodeName ();
+            if (AbletonTag.TAG_DEVICE_SAMPLER.equals (tag) || AbletonTag.TAG_DEVICE_SIMPLER.equals (tag))
+            {
+                if (!XMLUtils.getChildElementsByName (child, AbletonTag.TAG_MULTI_SAMPLE_PART, true).isEmpty ())
+                    devices.add (child);
+            }
+            else
+                collectDevices (child, devices);
+        }
+    }
+
+
+    /**
+     * Get the name of a track of a Live Set.
+     *
+     * @param trackElement The track element
+     * @return The name which Live displays, the type of the track if it has none
+     */
+    private static String getTrackName (final Element trackElement)
+    {
+        final Element nameElement = XMLUtils.getChildElementByName (trackElement, AbletonTag.TAG_NAME);
+        if (nameElement != null)
+        {
+            final String effectiveName = getValueAttribute (nameElement, AbletonTag.TAG_EFFECTIVE_NAME);
+            if (!effectiveName.isBlank ())
+                return effectiveName;
+            final String userName = getValueAttribute (nameElement, AbletonTag.TAG_USER_NAME);
+            if (!userName.isBlank ())
+                return userName;
+        }
+        return trackElement.getNodeName ();
+    }
+
+
+    /**
+     * Get the path of a file reference, relative to the folder which the type of the reference
+     * refers to. Live 11 and later store it as one text. Earlier versions store each folder as an
+     * element - an empty one moves one folder up - and the name of the file separately.
+     *
+     * @param fileRefElement The file reference element
+     * @return The relative path, empty if there is none
+     */
+    private static String getRelativePath (final Element fileRefElement)
+    {
+        final Element relativePathElement = XMLUtils.getChildElementByName (fileRefElement, AbletonTag.TAG_RELATIVE_PATH);
+        if (relativePathElement == null)
+            return "";
+        final String relativePath = relativePathElement.getAttribute (AbletonTag.ATTR_VALUE);
+        if (!relativePath.isEmpty ())
+            return relativePath;
+
+        final String fileName = getValueAttribute (fileRefElement, AbletonTag.TAG_NAME);
+        if (fileName.isBlank ())
+            return "";
+        final StringBuilder path = new StringBuilder ();
+        for (final Element folderElement: XMLUtils.getChildElementsByName (relativePathElement, AbletonTag.TAG_RELATIVE_PATH_ELEMENT, false))
+        {
+            final String folder = folderElement.getAttribute (AbletonTag.ATTR_DIR);
+            path.append (folder.isEmpty () ? ".." : folder).append ('/');
+        }
+        return path.append (fileName).toString ();
+    }
+
+
+    /**
+     * Get the absolute path of a file reference. Live 11 and later store it as one text. Earlier
+     * versions store the folders as elements of a search hint and the name of the file separately.
+     *
+     * @param fileRefElement The file reference element
+     * @return The absolute path, empty if there is none
+     */
+    private static String getAbsolutePath (final Element fileRefElement)
+    {
+        final String absolutePath = getValueAttribute (fileRefElement, AbletonTag.TAG_PATH);
+        if (!absolutePath.isBlank ())
+            return absolutePath;
+
+        final String fileName = getValueAttribute (fileRefElement, AbletonTag.TAG_NAME);
+        final Element searchHintElement = XMLUtils.getChildElementByName (fileRefElement, AbletonTag.TAG_SEARCH_HINT);
+        final Element pathHintElement = searchHintElement == null ? null : XMLUtils.getChildElementByName (searchHintElement, AbletonTag.TAG_PATH_HINT);
+        if (fileName.isBlank () || pathHintElement == null)
+            return "";
+        final List<String> parts = new ArrayList<> ();
+        for (final Element folderElement: XMLUtils.getChildElementsByName (pathHintElement, AbletonTag.TAG_RELATIVE_PATH_ELEMENT, false))
+            parts.add (folderElement.getAttribute (AbletonTag.ATTR_DIR));
+        if (parts.isEmpty ())
+            return "";
+        parts.add (fileName);
+        // A path on Windows starts with the drive instead of the root folder
+        final String path = String.join (File.separator, parts);
+        return parts.get (0).endsWith (":") ? path : File.separator + path;
+    }
+
+
+    /**
+     * Get the name of the file of a file reference.
+     *
+     * @param fileRefElement The file reference element
+     * @return The name, empty if there is none
+     */
+    private static String getSampleFileName (final Element fileRefElement)
+    {
+        String path = getRelativePath (fileRefElement);
+        if (path.isBlank ())
+            path = getAbsolutePath (fileRefElement);
+        return path.substring (Math.max (path.lastIndexOf ('/'), path.lastIndexOf ('\\')) + 1);
+    }
+
+
+    /**
+     * De-compress the content of a preset or Live Set. Their XML documents are compressed with
+     * GZIP, except in Live Packs, which may store them uncompressed.
+     *
+     * @param content The content of the file
+     * @return The de-compressed content, the given content if it is not compressed
+     * @throws IOException Could not de-compress the content
+     */
+    private static byte [] decompress (final byte [] content) throws IOException
+    {
+        if (content.length < 2 || (content[0] & 0xFF) != 0x1F || (content[1] & 0xFF) != 0x8B)
+            return content;
+        try (final InputStream in = new GZIPInputStream (new ByteArrayInputStream (content)))
+        {
+            return in.readAllBytes ();
+        }
+    }
+
+
+    /**
+     * Test if the content of a preset is stored in the binary format of older versions of Live
+     * instead of XML.
+     *
+     * @param content The de-compressed content of the file
+     * @return True if it is stored in the binary format
+     */
+    private static boolean isBinaryFormat (final byte [] content)
+    {
+        return content.length >= 4 && ByteBuffer.wrap (content, 0, 4).order (ByteOrder.LITTLE_ENDIAN).getInt () == AbletonBinaryDecoder.RECORD_ID;
+    }
+
+
+    /**
+     * Parse an XML document.
+     *
+     * @param content The de-compressed content of the file, UTF-8 encoded
+     * @return The top element of the document
+     * @throws SAXException Could not parse the document
+     */
+    private static Element parseXml (final byte [] content) throws SAXException
+    {
+        final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (StreamUtils.readUtf8 (ByteBuffer.wrap (content)))));
+        return document.getDocumentElement ();
+    }
+
+
+    /**
+     * Test if a file name has the given ending, ignoring the case of the letters.
+     *
+     * @param fileName The name of the file
+     * @param ending The ending, e.g. '.alp'
+     * @return True if the name ends with the ending
+     */
+    private static boolean hasEnding (final String fileName, final String ending)
+    {
+        return fileName.toLowerCase (Locale.US).endsWith (ending);
     }
 
 

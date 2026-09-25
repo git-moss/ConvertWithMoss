@@ -21,6 +21,13 @@ public class AbletonTag
     /** The Rack device preset tag. */
     public static final String TAG_DEVICE_RACK             = "GroupDevicePreset";
 
+    /** The Live Set tag. */
+    public static final String TAG_LIVE_SET                = "LiveSet";
+    /** The tag which contains the tracks of a Live Set. */
+    public static final String TAG_TRACKS                  = "Tracks";
+    /** The name which Live displays for a track. */
+    public static final String TAG_EFFECTIVE_NAME          = "EffectiveName";
+
     /** The user defined name of the preset. */
     public static final String TAG_USER_NAME               = "UserName";
     /** The annotation tag. */
@@ -70,6 +77,12 @@ public class AbletonTag
     public static final String TAG_RELATIVE_PATH_TYPE      = "RelativePathType";
     /** The name of the absolute path tag. */
     public static final String TAG_PATH                    = "Path";
+    /** A folder of a relative path before Live 11. */
+    public static final String TAG_RELATIVE_PATH_ELEMENT   = "RelativePathElement";
+    /** The hint where to search for a file before Live 11. */
+    public static final String TAG_SEARCH_HINT             = "SearchHint";
+    /** The folders of the absolute path in the search hint before Live 11. */
+    public static final String TAG_PATH_HINT               = "PathHint";
 
     /** The key-range tag. */
     public static final String TAG_KEY_RANGE               = "KeyRange";
@@ -197,6 +210,8 @@ public class AbletonTag
     public static final String ATTR_CREATOR                = "Creator";
     /** The value attribute. */
     public static final String ATTR_VALUE                  = "Value";
+    /** The folder attribute of a relative path element. */
+    public static final String ATTR_DIR                    = "Dir";
 
 
     /**

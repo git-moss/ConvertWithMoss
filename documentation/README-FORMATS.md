@@ -146,9 +146,14 @@ If 'Performance' is selected as the destination type, some workarounds are appli
 
 ## Ableton Sampler
 
-Ableton uses a generic preset format (*.adv) for all of their devices. For combined rack presets another format (*.adg) is used. All their formats are XML documents which are compressed with the open GZIP algorithm.
+Ableton uses a generic preset format (*.adv) for all of their devices. For combined rack presets another format (*.adg) is used. All their formats are XML documents which are usually compressed with the open GZIP algorithm; uncompressed documents are read as well.
 
 ConvertWithMoss can extract Sampler and Simpler presets from ADV files as well as all instances of Sampler or Simpler in ADG files when selected as a source. The presets from the Ableton libraries cannot be extracted since their AIFF files use a proprietary encryption algorithm. It writes ADV files as the destination.
+
+Live Sets (*.als) and Live Packs (*.alp) are read as well:
+
+* A Live Set delivers every Sampler and Simpler on its tracks, also those in racks, as a multi-sample which is named after the Live Set and the track. Devices without any sample are left out. The samples are searched relative to the project folder which contains the Live Set.
+* A Live Pack is the file in which Live content is distributed and installed. It is read directly, without unpacking it in Live first: all Sampler and Simpler devices of the presets and Live Sets in the pack are read, and their samples, which a pack stores compressed with FLAC, are taken from the pack itself. With the option *Create folder structure*, the folders of the pack are recreated in the output folder below a folder which is named like the pack, as if the pack had been unpacked. Presets in packs of older Live versions (e.g. from 2008 and 2009) are stored in a binary format which is not supported; they are counted and reported. Samples which a pack uses from another pack are only found if the other pack is included.
 
 ADV files and their samples need to be placed in the Ableton user library in the correct folders to allow Ableton to open it. Therefore, ConvertWithMoss creates the necessary folder structure which can be simply copied to the user library. If the source has sub-folders the global option *Create folder structure* should be deactivated otherwise it can be quite tedious to collect all the results files with their additional Ableton sub-folder structure.
 
