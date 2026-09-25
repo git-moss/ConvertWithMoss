@@ -56,7 +56,7 @@ import de.mossgrabers.tools.XMLUtils;
  * which is understood by all firmware versions.
  * <p>
  * The Deluge has no loop cross-fade parameter of its own. Like the Renoise creator, a loop
- * cross-fade - set with the 'Set fixed loop-crossfade' processing option or read from the source -
+ * cross-fade - set with the 'Cross-fade loops' processing option or read from the source -
  * is therefore baked into the looped sample audio. No extra option is needed for this; the
  * cross-fade is applied automatically whenever a forward loop carries one.
  *
@@ -963,8 +963,8 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
     {
         super.additionalProcessing (multisampleSource, zone, wavFile);
 
-        // The Deluge has no loop cross-fade parameter. A loop cross-fade (set via the 'Set fixed
-        // loop-crossfade' processing option or read from the source) is baked into the sample audio
+        // The Deluge has no loop cross-fade parameter. A loop cross-fade (set via the 'Cross-fade
+        // loops' processing option or read from the source) is baked into the sample audio
         // so that forward loops do not click at the loop point.
         final Optional<ISampleLoop> loopOpt = getCrossfadeLoop (zone);
         if (loopOpt.isEmpty ())
