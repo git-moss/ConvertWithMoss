@@ -212,25 +212,38 @@ the sustain is written explicitly into the decay stage (e.g. level 100, time 0).
 
 #### DSP function pages
 
-Each of the five 22 byte pages holds the parameters of one DSP block of the layer's algorithm:
+Each of the five 22 byte records holds the parameters of one DSP block of the layer's algorithm:
 
 ```
 [0] tag 0x50..0x54, [1] function, [2] coarse ('Adjust'), [3] fine, [4] key tracking,
 [5] velocity tracking, [6] source 1, [7] depth of source 1, [8] depth control, [9] minimum
-depth, [10] maximum depth, [11] source 2, [12..13] int16, [14..15] output, [16..17] gain,
+depth, [10] maximum depth, [11] source 2, [12..13] block type, [14..15] output, [16..17] gain,
 [18..19] pan mode, [20] pan 1, [21] pan 2
 ```
 
-The first 11 bytes match the K2x00 function pages. Which page belongs to which block and
-which page is the amplifier is defined by the algorithm; the function byte identifies the DSP
-function of the page. The filter functions of the K2x00 family keep their numbers: 2 = 2-pole
-low-pass, 3 = 2-pole bandpass, 15 = 1-pole low-pass, 50 = 4-pole low-pass, 54 = 4-pole high-pass,
-55 = twin peaks bandpass, 56 = double notch (0 = none, 1 = the amplifier). For these the coarse
-value is the cutoff in semitones (440 Hz * 2^((coarse - 9) / 12), -48 = 16 Hz to 79 = 25088 Hz)
-and the page after a 2-pole low-pass holds the resonance in 0.5 dB steps (-12 to 24 dB). Source 1
-and its depth on the filter page route the filter envelope (source 121 = ENV2) or the attack
-velocity (source 100) to the cutoff with the K2x00 depth law. The PC3 family adds many DSP
-functions with higher numbers, which are not interpreted.
+The first 11 bytes match the K2x00 function pages. The records are positional (the tag bytes
+are cosmetic; the PC3K writes them in the order 0x50, 0x51, 0x53, 0x52, 0x54): the third
+record is always the amplifier (function 1 or 0/41 on the PC3K, output 0x2000; [2] = the level
+adjust in dB, [5] = the velocity tracking in dB, 35 on a new layer of the Forte and K2700), the
+first two records hold the blocks F1 and F2 of the algorithm and the last two the blocks F3 and
+F4. A 2-block function occupies two records: the second record holds its second parameter - the
+resonance of the 2-pole low-pass in 0.5 dB steps (-12 to 24 dB), the width of the 2-pole
+bandpass - with a modulation of its own, and its function byte is 60 (the 'none' of a second
+block) or the leftover of a previously assigned function, so only the function byte of the
+first record of a block identifies the function. Algorithm 1 is [2-block F1/F2] [1-block F3]
+[1-block F4] and algorithm 5 has no DSP blocks. The block type bytes [12..13] hold 0x0200 on
+the first record of a 2-block function, 0x0300 on 1-block records and 0 on the second record
+of a 2-block function.
+
+The filter functions of the K2x00 family keep their numbers: 2 = 2-pole low-pass, 3 = 2-pole
+bandpass, 15 = 1-pole low-pass (a 1-block function without a resonance), 50 = 4-pole low-pass,
+54 = 4-pole high-pass, 55 = twin peaks bandpass, 56 = double notch (0 = none, 61 = none in a
+2-block slot). For these the coarse value is the cutoff in semitones (440 Hz * 2^((coarse - 9)
+/ 12), -48 = 16 Hz to 79 = 25088 Hz). Source 1 and its depth on the filter record route the
+filter envelope (source 121 = ENV2) or the attack velocity (source 100) to the cutoff; the
+depth law is taken over from the K2x00. The PC3 family adds many DSP functions with higher
+numbers, which are not interpreted; the 4-pole functions of the K2x00 do not occur in the
+factory programs of the PC3 family.
 
 ### Trailing block
 
@@ -246,16 +259,23 @@ and K2700 load. Each group of a multi-sample becomes a layer with its own keymap
 most). The header, the layer record and the trailing block of a program are copies of a two
 layer program of the *Take 6* library which plays RAM samples through algorithm 5 without DSP
 functions; only the number of layers, the key and velocity window, the enable source (ON), the
-flags (0x04, plus 0x20 for stereo), the envelope control (user envelope) with the AMPENV stages
-and the keymap IDs are set. Samples are written with the flags 0x70, the natural envelope
-records above and consecutive byte offsets. Written files are not yet verified on hardware.
+flags (0x04, plus 0x20 for stereo), the envelope control (user envelope) with the AMPENV stages,
+the keymap IDs and the velocity tracking of the amplifier record are set. A layer with a filter
+switches to algorithm 1: the 2-pole low-pass or bandpass goes into the records F1/F2 with the
+resonance or width on the second record, the 1-pole low-pass into the record F3, the other
+records are set to 'none'; the filter record carries the filter envelope (ENV2, written into
+the ENV2 segment) or the attack velocity as source 1 with the depth. Samples are written with
+the flags 0x70, the natural envelope records above and consecutive byte offsets. Written files
+are not yet verified on hardware.
 
 ## Not interpreted / unknown
 
 * The sample object of the Forte generation was verified on one K2700 file with mono samples of
   one header each; multi-header and stereo objects of this type are assumed to follow the PC3K
   object.
-* The layer level (the amplifier page), the layer effects, the LFOs, ASRs, FUNs and the pitch
-  envelope are not converted.
+* The layer level and the modulations of the amplifier record (other than its velocity
+  tracking), the layer effects, the LFOs, ASRs, FUNs and the pitch envelope are not converted.
 * The DSP function numbers which the PC3 family added (e.g. the 4-pole 'Mogue' low-pass) are
-  not known; layers which use them are read without a filter.
+  not known; layers which use them are read without a filter. The function 67, which the PC3
+  programs use in the place of a filter, is probably the 2-pole high-pass but is not verified.
+* The modulation of the cutoff by source 2 with its depth control is not read, only source 1.
