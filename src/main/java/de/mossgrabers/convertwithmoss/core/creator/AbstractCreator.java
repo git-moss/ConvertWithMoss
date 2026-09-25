@@ -837,7 +837,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
                 return ParameterLevel.GROUP;
         }
 
-        return ParameterLevel.ZONE;
+        // All groups have the same modulator
+        return ParameterLevel.INSTRUMENT;
     }
 
 

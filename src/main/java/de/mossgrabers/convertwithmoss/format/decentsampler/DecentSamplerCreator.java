@@ -292,6 +292,8 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         multisampleElement.setAttribute (DecentSamplerTag.MIN_VERSION, "1.11");
 
         final ParameterLevel ampEnvParameterLevel = getAmpEnvelopeParamLevel (multisampleSource);
+        final int polyphony = this.getPolyphony (multisampleSource);
+        final String polyphonyTag = polyphony > 0 ? getPolyphonyTag (polyphony) : null;
 
         // No metadata at all
 
@@ -333,7 +335,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
                     seqLength = Math.max (seqLength, zone.getSequencePosition ());
 
                 ampVelDepths.add (Double.valueOf (zone.getAmplitudeVelocityModulator ().getDepth ()));
-                final Element sampleElement = createSample (document, folderName, groupElement, zone);
+                final Element sampleElement = createSample (document, folderName, groupElement, zone, polyphonyTag);
 
                 // Note: there is no amplitude envelope modulation depth parameter!
                 final IEnvelope modulatorSource = zone.getAmplitudeEnvelopeModulator ().getSource ();
@@ -382,18 +384,44 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
      */
     private void applyPolyphony (final Document document, final Element multisampleElement, final Element groupsElement, final IMultisampleSource multisampleSource)
     {
-        int polyphony = multisampleSource.getPolyphony ();
-        if (this.settingsConfiguration.makeMonophonic () || multisampleSource.isMonophonicLegato ())
-            polyphony = 1;
+        final int polyphony = this.getPolyphony (multisampleSource);
         if (polyphony <= 0)
             return;
 
-        final String tagName = polyphony == 1 ? DecentSamplerTag.TAG_MONOPHONIC : DecentSamplerTag.TAG_POLYPHONY;
+        final String tagName = getPolyphonyTag (polyphony);
         groupsElement.setAttribute (DecentSamplerTag.TAGS_ATTRIBUTE, tagName);
         final Element tagsElement = XMLUtils.addElement (document, multisampleElement, DecentSamplerTag.TAGS);
         final Element tagElement = XMLUtils.addElement (document, tagsElement, DecentSamplerTag.TAG);
         tagElement.setAttribute (DecentSamplerTag.TAG_NAME, tagName);
         tagElement.setAttribute (DecentSamplerTag.TAG_POLYPHONY, Integer.toString (polyphony));
+    }
+
+
+    /**
+     * Get the number of voices of the instrument. The option to make the instrument monophonic
+     * always enforces one voice, otherwise the polyphony of the instrument is applied, if it is
+     * set.
+     *
+     * @param multisampleSource The multi-sample source
+     * @return The number of voices, 0 or less if it is not limited
+     */
+    private int getPolyphony (final IMultisampleSource multisampleSource)
+    {
+        if (this.settingsConfiguration.makeMonophonic () || multisampleSource.isMonophonicLegato ())
+            return 1;
+        return multisampleSource.getPolyphony ();
+    }
+
+
+    /**
+     * Get the name of the tag which limits the number of voices.
+     *
+     * @param polyphony The number of voices
+     * @return The name of the tag
+     */
+    private static String getPolyphonyTag (final int polyphony)
+    {
+        return polyphony == 1 ? DecentSamplerTag.TAG_MONOPHONIC : DecentSamplerTag.TAG_POLYPHONY;
     }
 
 
@@ -404,9 +432,10 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
      * @param folderName The name to use for the sample folder
      * @param groupElement The element where to add the sample information
      * @param zone Where to get the sample info from
+     * @param polyphonyTag The tag which limits the number of voices, null if there is none
      * @return The sample element
      */
-    private static Element createSample (final Document document, final String folderName, final Element groupElement, final ISampleZone zone)
+    private static Element createSample (final Document document, final String folderName, final Element groupElement, final ISampleZone zone, final String polyphonyTag)
     {
         // -----------------------------------------------------------
         // Sample element and attributes
@@ -464,7 +493,14 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         final List<ISampleLoop> loops = zone.getLoops ();
         // Loops are enabled by default!
         if (loops.isEmpty ())
+        {
             sampleElement.setAttribute (DecentSamplerTag.LOOP_ENABLED, "false");
+
+            // Without its amplitude envelope a sample plays to its end like a one-shot. A looped
+            // sample would never stop, therefore only a sample without a loop is written as one
+            if (zone.isOneShot ())
+                sampleElement.setAttribute (DecentSamplerTag.AMP_ENV_ENABLED, "false");
+        }
         else
         {
 
@@ -477,6 +513,20 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
             final int crossfade = sampleLoop.getCrossfadeInSamples ();
             if (crossfade > 0)
                 XMLUtils.setIntegerAttribute (sampleElement, DecentSamplerTag.LOOP_CROSSFADE, crossfade);
+        }
+
+        // -----------------------------------------------------------
+        // Exclusive group
+
+        // A sample is stopped when a sample with one of its silencing tags is triggered, therefore
+        // all samples of an exclusive group carry the tag by which they are silenced. The sample
+        // keeps the tag which limits the number of voices
+        final int exclusiveGroup = zone.getExclusiveGroup ();
+        if (exclusiveGroup > 0)
+        {
+            final String exclusiveGroupTag = DecentSamplerTag.TAG_EXCLUSIVE_GROUP + exclusiveGroup;
+            sampleElement.setAttribute (DecentSamplerTag.TAGS_ATTRIBUTE, polyphonyTag == null ? exclusiveGroupTag : polyphonyTag + "," + exclusiveGroupTag);
+            sampleElement.setAttribute (DecentSamplerTag.SILENCED_BY_TAGS, exclusiveGroupTag);
         }
 
         return sampleElement;
@@ -734,9 +784,14 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
         setEnvelopeAttribute (element, DecentSamplerTag.ENV_SUSTAIN, envelope.getSustainLevel ());
         setEnvelopeTimeAttribute (element, DecentSamplerTag.ENV_RELEASE, envelope.getReleaseTime ());
 
-        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_ATTACK_CURVE, envelope.getAttackSlope () * 100.0);
-        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_DECAY_CURVE, envelope.getDecaySlope () * 100.0);
-        setEnvelopeSlopeAttribute (element, DecentSamplerTag.ENV_RELEASE_CURVE, envelope.getReleaseSlope () * 100.0);
+        // A curve which is not set is logarithmic for the attack and exponential for the decay and
+        // the release, therefore a linear curve (0) needs to be written as well
+        if (envelope.isSet ())
+        {
+            XMLUtils.setDoubleAttribute (element, DecentSamplerTag.ENV_ATTACK_CURVE, envelope.getAttackSlope () * 100.0, 3);
+            XMLUtils.setDoubleAttribute (element, DecentSamplerTag.ENV_DECAY_CURVE, envelope.getDecaySlope () * 100.0, 3);
+            XMLUtils.setDoubleAttribute (element, DecentSamplerTag.ENV_RELEASE_CURVE, envelope.getReleaseSlope () * 100.0, 3);
+        }
     }
 
 
@@ -750,13 +805,6 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
     private static void setEnvelopeAttribute (final Element element, final String attribute, final double value)
     {
         if (value >= 0)
-            XMLUtils.setDoubleAttribute (element, attribute, value, 3);
-    }
-
-
-    private static void setEnvelopeSlopeAttribute (final Element element, final String attribute, final double value)
-    {
-        if (value != 0)
             XMLUtils.setDoubleAttribute (element, attribute, value, 3);
     }
 
