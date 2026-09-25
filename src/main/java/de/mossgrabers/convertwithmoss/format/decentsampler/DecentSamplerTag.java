@@ -104,6 +104,8 @@ public class DecentSamplerTag
     public static final String                    TAGS_ATTRIBUTE       = "tags";
     /** The name of the tag which is used to limit an instrument to one voice. */
     public static final String                    TAG_MONOPHONIC       = "monophonic";
+    /** The start of the name of the tag of an exclusive group, followed by its number. */
+    public static final String                    TAG_EXCLUSIVE_GROUP  = "exclusiveGroup";
 
     /** The groups tag. */
     public static final String                    GROUPS               = "groups";
