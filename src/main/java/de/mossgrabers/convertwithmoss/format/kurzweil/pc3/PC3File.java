@@ -36,8 +36,10 @@ public class PC3File
     public static final int                    TYPE_KEYMAP          = 0x85;
     /** The object type of a program. */
     public static final int                    TYPE_PROGRAM         = 0x8A;
-    /** The object type of a sample. */
+    /** The object type of a sample (PC3K layout). */
     public static final int                    TYPE_SAMPLE          = 0x9E;
+    /** The object type of a sample of the Forte generation (Forte, PC4, K2700). */
+    public static final int                    TYPE_SAMPLE_EXTENDED = 0xAA;
 
     /** The first object ID of the user area of the devices. */
     public static final int                    FIRST_ID             = 1024;
@@ -115,7 +117,10 @@ public class PC3File
         switch (type)
         {
             case TYPE_SAMPLE:
-                this.samples.put (Integer.valueOf (id), new PC3Sample (id, name, new ByteArrayInputStream (fileData, dataStart, dataLength)));
+                this.samples.put (Integer.valueOf (id), new PC3Sample (id, name, new ByteArrayInputStream (fileData, dataStart, dataLength), false));
+                break;
+            case TYPE_SAMPLE_EXTENDED:
+                this.samples.put (Integer.valueOf (id), new PC3Sample (id, name, new ByteArrayInputStream (fileData, dataStart, dataLength), true));
                 break;
             case TYPE_KEYMAP:
                 this.keymaps.put (Integer.valueOf (id), new KurzweilKeymap (id, name, new ByteArrayInputStream (fileData, dataStart, dataLength)));

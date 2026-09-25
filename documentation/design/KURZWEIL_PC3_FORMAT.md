@@ -1,4 +1,4 @@
-# Kurzweil PC3 Series / Forte / PC4 / K2700 Object File Format (.PC3 / .P3K / .P3A / .PLE / .FOR / .FSE / .PC4 / .P4S / .K27)
+# Kurzweil PC3 Series / Forte / PC4 / K2700 Object File Format (.PC3 / .P3K / .K2P / .P3A / .PLE / .FOR / .FSE / .PC4 / .P4S / .K27)
 
 Object files of the Kurzweil PC3 series (PC3, PC3K, PC3A, PC3LE), the Forte and Forte SE, the PC4
 and the K2700. All these devices share one container format, the successor of the
@@ -10,8 +10,10 @@ files of the other devices reference the ROM samples of the device only.
 The layout of the container and of the objects follows the open-source object viewer *Kurzweil
 Object View* by Brian Cowell (MIT license, https://github.com/cunka/Kurzweil-Object-View) and was
 verified on the free sound packs which Kurzweil publishes for the PC3, PC3K, Forte and Forte SE
-(e.g. `ACCORDN1.PC3`, `REAL32DW.P3K` of the *Take 6* sample library, the 25 Forte *Legacy* /
-*Patch Kreator* packs and their Forte SE variants). All multi-byte values are **big-endian**.
+(e.g. `ACCORDN1.PC3`, `REAL32DW.P3K` of the *Take 6* sample library, `KCOMP100.K2P` - the K2661
+ROM compatibility samples for the PC3K -, the 25 Forte *Legacy* / *Patch Kreator* packs, their
+Forte SE variants and the K2700 packs including `NylonGuitar.K27` of the *Building Keymaps*
+tutorial, which holds samples in the layout of the Forte generation). All multi-byte values are **big-endian**.
 Sample positions are counted in **bytes** (the K2x00 family counts 16-bit words).
 
 ## File layout
@@ -50,8 +52,9 @@ The next object starts at `objectOffset + size`.
 Object types: 0x64 master table, 0x67 intonation table, 0x70 song, **0x85 keymap**, 0x88 quick
 access bank, **0x8A program**, 0x95 algorithm, 0x9B setup (PC3) / multi (Forte), 0x9C effect
 chain, **0x9E sample**, 0xA3 shift pattern, 0xA4 velocity pattern, 0xA7 duration pattern, 0xA8
-arpeggiator template, 0xA9 beats pattern, 0xAA sample TOBA/LENA (Forte), 0xAB velocity per key
-(Forte). Only keymaps, programs and samples are interpreted.
+arpeggiator template, 0xA9 beats pattern, **0xAA sample of the Forte generation** (Forte, PC4,
+K2700), 0xAB velocity per key (Forte). Only keymaps, programs and the two sample types are
+interpreted.
 
 ## Sample object (type 0x9E)
 
@@ -91,14 +94,37 @@ positions. The sample data of consecutive samples follows without padding: the n
 at `sampleEnd + 2` of the previous one; the last `sampleEnd + 2` is the file size.
 
 `maxPitch` is the pitch which the sample reaches at the maximum playback rate of the devices
-(96 kHz): `ceil(1200 * log2(96000 * samplePeriod / 1e9)) + 100 * rootKey - 1200`. The *Pitch
-Adjust* of the sample editor shifts this value by the same number of cents, so the pitch adjust
-of a sample is `maxPitch` minus that formula (the 258 samples of *Take 6* give values between
--49 and +57 cents).
+(96 kHz): `floor(1200 * log2(96000 * samplePeriod / 1e9)) + 100 * rootKey - 1200` (the K2x00
+family rounds up instead; the 8 untuned WAV imports of the K2700 tutorial and the 258 K2661
+samples of `KCOMP100.K2P` truncate). The *Pitch Adjust* of the sample editor shifts this value
+by the same number of cents, so the pitch adjust of a sample is `maxPitch` minus that formula
+(the 258 samples of *Take 6* give values between -48 and +58 cents).
 
 Non-looped samples are written with the loop flag ON and `loopStart == sampleEnd` (a
 degenerate one-frame loop), like KurzFiler does for the K2x00 family: 147 of the 258 *Take 6*
 samples are stored this way. Readers treat `loopStart >= sampleEnd` as "no loop".
+
+## Sample object of the Forte generation (type 0xAA)
+
+The Forte, PC4 and K2700 store their user samples in an object of their own type. It is the
+PC3K sample object with a longer preamble and 64-bit positions:
+
+```
+uint32 baseID       (1)
+uint16 numHeaders   number of sample headers (not minus 1)
+uint16 flags        1 = stereo (assumed as for the PC3K object)
+uint16 headersOfs   offset from this field to the first header (8)
+6 bytes             0
+numHeaders x sample header (56 bytes each): the fields of the PC3K header with the four
+                    positions (sampleStart, altSampleStart, loopStart, sampleEnd) as int64
+                    byte offsets; the envelope offsets are relative to their fields
+                    (16 and 26 for a single header)
+natural envelope records, 2 x 12 bytes
+```
+
+The K2700 tutorial file holds 8 mono samples of one header each (96 byte objects) whose data
+follows contiguously in the sample data region like in a PC3K file. The devices import PC3K
+files, so the creator writes the PC3K object (type 0x9E).
 
 ## Keymap object (type 0x85)
 
@@ -226,9 +252,9 @@ records above and consecutive byte offsets. Written files are not yet verified o
 
 ## Not interpreted / unknown
 
-* The sample objects of type 0xAA (TOBA/LENA) which the Forte lists among its object types
-  are not present in the files at hand; user samples in Forte files were not available for
-  testing, only the PC3K sample layout is implemented.
+* The sample object of the Forte generation was verified on one K2700 file with mono samples of
+  one header each; multi-header and stereo objects of this type are assumed to follow the PC3K
+  object.
 * The layer level (the amplifier page), the layer effects, the LFOs, ASRs, FUNs and the pitch
   envelope are not converted.
 * The DSP function numbers which the PC3 family added (e.g. the 4-pole 'Mogue' low-pass) are
