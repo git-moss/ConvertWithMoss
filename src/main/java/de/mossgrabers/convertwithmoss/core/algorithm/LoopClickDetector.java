@@ -26,6 +26,13 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
  * surprisingly often, and without a note the first hint is the converted preset ticking on the
  * destination device.
  * <p>
+ * A loop which wraps in a steep part of the waveform, e.g. at the edge of a saw wave or in a burst
+ * of high frequencies, steps as far without any click, since the waveform moves that much from one
+ * frame to the next there anyway. Therefore the wrap must also break the curve of the waveform: its
+ * second difference has to stand out from the audio around it, which is the measure with which the
+ * snapping decides whether a loop clicks. A loop which the snapping leaves alone as clean is never
+ * reported, and the loop cross-fade of the loops which still click is not set on it.
+ * <p>
  * Only reported, nothing is changed: whether to enable the snap-to-zero-crossing or loop cross-fade
  * processing - or to keep the loop as the faithful reproduction of the source - is left to the
  * user. A loop which already has a cross-fade is not reported, since the cross-fade masks the wrap
@@ -150,17 +157,20 @@ public final class LoopClickDetector
             if (!hasLoopToCheck (zones))
                 continue;
 
-            final int [] signal;
+            final int [] [] channels;
             final int sampleRate;
             try
             {
-                signal = LoopZeroSnapper.readMonoSignal (zones.get (0));
+                channels = LoopZeroSnapper.readChannels (zones.get (0));
                 sampleRate = entry.getKey ().getAudioMetadata ().getSampleRate ();
             }
             catch (final Exception _)
             {
                 continue;
             }
+            if (channels.length == 0)
+                continue;
+            final int [] signal = LoopZeroSnapper.mixToMono (channels);
 
             for (final ISampleZone zone: zones)
                 for (final ISampleLoop loop: zone.getLoops ())
@@ -172,7 +182,7 @@ public final class LoopClickDetector
                     if (stepPercent < 0)
                         continue;
                     checkedLoops++;
-                    if (stepPercent > 0)
+                    if (stepPercent > 0 && breaksCurve (channels, loop))
                         clicks.add (new Click (zone, loop, stepPercent));
                 }
         }
@@ -207,6 +217,24 @@ public final class LoopClickDetector
                 if (loop.getType () == LoopType.FORWARDS && !LoopZeroSnapper.isSmoothedByCrossfade (loop))
                     return true;
         return false;
+    }
+
+
+    /**
+     * Check if the wrap of a loop breaks the curve of the waveform, measured like the snapping does.
+     *
+     * @param channels The audio of all channels
+     * @param loop The loop to check
+     * @return True if it does
+     */
+    private static boolean breaksCurve (final int [] [] channels, final ISampleLoop loop)
+    {
+        final int length = channels[0].length;
+        // A loop end of -1 (or beyond the audio) means "loop to the end of the sample"
+        int end = loop.getEnd ();
+        if (end < 0 || end >= length)
+            end = length - 1;
+        return LoopZeroSnapper.clicksAtWrap (channels, loop.getStart (), end);
     }
 
 

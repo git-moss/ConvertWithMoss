@@ -268,6 +268,22 @@ public final class LoopZeroSnapper
 
 
     /**
+     * Check if a loop clicks at its wrap-around by the measure which decides whether a loop is
+     * snapped: the second difference of the audio right at the wrap stands out from the second
+     * differences of the audio around it.
+     *
+     * @param channels The audio of all channels
+     * @param start The loop start frame
+     * @param end The loop end frame (inclusive)
+     * @return True if the loop clicks
+     */
+    static boolean clicksAtWrap (final int [] [] channels, final int start, final int end)
+    {
+        return measureWrap (channels, start, end) > CLEAN_WRAP;
+    }
+
+
+    /**
      * Measure the click at the wrap-around of a loop: the largest second difference of the played
      * audio right at the wrap, relative to the median second difference of the audio around it, in
      * the channel where this is the largest.
@@ -394,7 +410,7 @@ public final class LoopZeroSnapper
      * @param channels The audio of all channels
      * @return The mono signal, the average of the channels
      */
-    private static int [] mixToMono (final int [] [] channels)
+    static int [] mixToMono (final int [] [] channels)
     {
         final int numberOfFrames = channels[0].length;
         final int [] signal = new int [numberOfFrames];
@@ -418,7 +434,7 @@ public final class LoopZeroSnapper
      * @throws IOException Could not read the audio
      * @throws UnsupportedAudioFileException The audio format is not supported
      */
-    private static int [] [] readChannels (final ISampleZone zone) throws IOException, UnsupportedAudioFileException
+    static int [] [] readChannels (final ISampleZone zone) throws IOException, UnsupportedAudioFileException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         final Optional<ISampleData> sampleData = zone.getSampleData ();
