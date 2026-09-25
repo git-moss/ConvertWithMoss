@@ -22,8 +22,14 @@ import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilProgram;
  * and the KB3 organ block) followed by one fixed size record per layer and a trailing block with
  * the controller information of the program. A layer record holds the segments known from the
  * K2000/K2500/K2600 programs in a fixed order (layer, ASRs, FUNs, LFOs, envelope control, the
- * three envelopes, the keymap/pitch block and five DSP function pages), each opened by its tag
- * byte, followed by the layer effect reference and the layer name.
+ * three envelopes, the keymap/pitch block and five DSP records), each opened by its tag byte,
+ * followed by the layer effect reference and the layer name.
+ *
+ * The five DSP records hold the four function blocks of the algorithm between its PITCH and AMP
+ * blocks - F1 and F2 in the first two records, F3 and F4 in the last two - and the amplifier in
+ * the third record. A 2-block function (e.g. the 2-pole low-pass with its resonance) occupies its
+ * record and the following one, whose function byte is then not significant. The records of
+ * algorithm 1 are [2-block F1/F2] [1-block F3] [1-block F4], the layout written for a filter.
  *
  * A program which is created for writing copies the header, the layer record and the trailing
  * block of a program written by a PC3K and sets only the fields which the conversion controls.
@@ -32,6 +38,11 @@ import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilProgram;
  */
 public class PC3Program
 {
+    /** The velocity tracking of the amplifier in dB which the devices give a new layer. */
+    public static final int       DEFAULT_VELOCITY_TRACKING = 35;
+    /** A full cutoff velocity modulation is 8 octaves (the SFZ 'fil_veltrack' range). */
+    public static final int       MAX_VELOCITY_MODULATION_CENTS = 9600;
+
     /** The length of the fixed header which precedes the layer records. */
     private static final int      HEADER_LENGTH           = 229;
     /** The length of a layer record. */
@@ -60,13 +71,33 @@ public class PC3Program
     private static final int      CAL_KEYMAP_2            = 8;
     private static final int      CAL_KEYMAP              = 12;
     private static final int      CAL_LAYER_COUNTER       = 17;
+    private static final int      CAL_ALGORITHM           = 30;
     private static final int      PAGES_OFFSET            = 162;
     private static final int      PAGE_LENGTH             = 22;
-    private static final int      NUM_PAGES               = 5;
+
+    // The five DSP records
+    private static final int      RECORD_F1               = 0;
+    private static final int      RECORD_F2               = 1;
+    private static final int      RECORD_AMPLIFIER        = 2;
+    private static final int      RECORD_F3               = 3;
+    private static final int      RECORD_F4               = 4;
+
+    // The fields of a DSP record
     private static final int      PAGE_FUNCTION           = 1;
     private static final int      PAGE_COARSE             = 2;
     private static final int      PAGE_SOURCE_1           = 6;
     private static final int      PAGE_DEPTH_1            = 7;
+    private static final int      PAGE_VELOCITY_TRACKING  = 5;
+    private static final int      PAGE_TYPE               = 12;
+    private static final int      PAGE_OUTPUT             = 14;
+
+    /** The type field of the record of a 2-block function. */
+    private static final int      PAGE_TYPE_TWO_BLOCK     = 0x0200;
+    /** The type field of the record of a 1-block function. */
+    private static final int      PAGE_TYPE_ONE_BLOCK     = 0x0300;
+
+    /** The algorithm whose F1 slot takes a 2-block function, followed by two 1-block slots. */
+    private static final int      ALGORITHM_TWO_BLOCK     = 1;
 
     /** The layer flag which is set on all layers written by the devices. */
     private static final int      MORE_FLAGS_DEFAULT      = 0x04;
@@ -84,7 +115,8 @@ public class PC3Program
     /** The control source code of the second envelope (ENV2). */
     private static final int      CONTROL_SOURCE_ENV2     = 121;
 
-    // The DSP functions of the K2000/K2500/K2600 which implement a filter
+    // The DSP functions
+    private static final int      FUNCTION_NONE           = 0;
     private static final int      FUNCTION_LOW_PASS_2P    = 2;
     private static final int      FUNCTION_BAND_PASS_2P   = 3;
     private static final int      FUNCTION_LOW_PASS_1P    = 15;
@@ -92,6 +124,11 @@ public class PC3Program
     private static final int      FUNCTION_HIGH_PASS_4P   = 54;
     private static final int      FUNCTION_BAND_PASS_4P   = 55;
     private static final int      FUNCTION_NOTCH_4P       = 56;
+    /** The function byte which the devices write into the second record of a 2-block function. */
+    private static final int      FUNCTION_SECOND_BLOCK   = 60;
+
+    /** The width of the 2-pole bandpass on its second record - the value of most factory layers. */
+    private static final int      BAND_PASS_DEFAULT_WIDTH = 53;
 
     /** The envelope times of the first codes of the time list: 0, 2, 5 and 10 milliseconds. */
     private static final double[] SHORT_TIMES             =
@@ -142,10 +179,11 @@ public class PC3Program
         private KurzweilEnvelope filterEnvelope         = null;
         private int              cutoffModulationSource = 0;
         private int              cutoffModulationDepth  = 0;
+        private int              velocityTracking       = DEFAULT_VELOCITY_TRACKING;
 
-        private int              filterFunction         = 0;
+        private int              filterFunction         = FUNCTION_NONE;
         private int              cutoff                 = 0;
-        private int              resonance              = 0;
+        private int              secondParameter        = 0;
 
 
         /**
@@ -181,11 +219,24 @@ public class PC3Program
             this.secondKeymapID = readUnsigned16 (record, CAL_OFFSET + CAL_KEYMAP_2);
             this.keymapID = readUnsigned16 (record, CAL_OFFSET + CAL_KEYMAP);
 
-            // The filter is the first DSP function page which holds one of the filter functions
-            // of the K2x00 family; a 2-block filter keeps its resonance on the following page
-            for (int page = 0; page < NUM_PAGES; page++)
+            // The amplifier: its velocity tracking in dB
+            this.velocityTracking = record[PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_VELOCITY_TRACKING];
+
+            // The filter: the first function block which holds one of the filter functions of the
+            // K2x00 family. F2 and F4 are blocks of their own only when F1 and F3 hold a 1-block
+            // function - a 2-block function keeps its second parameter (the resonance) in the
+            // following record, whose function byte is not significant
+            for (final int rec: new int []
             {
-                final int offset = PAGES_OFFSET + page * PAGE_LENGTH;
+                RECORD_F1,
+                RECORD_F2,
+                RECORD_F3,
+                RECORD_F4
+            })
+            {
+                final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
+                if ((rec == RECORD_F2 || rec == RECORD_F4) && !isOneBlockFunction (record[offset - PAGE_LENGTH + PAGE_FUNCTION] & 0xFF))
+                    continue;
                 final int function = record[offset + PAGE_FUNCTION] & 0xFF;
                 if (!isFilterFunction (function))
                     continue;
@@ -193,12 +244,12 @@ public class PC3Program
                 this.cutoff = record[offset + PAGE_COARSE];
                 this.cutoffModulationSource = record[offset + PAGE_SOURCE_1] & 0xFF;
                 this.cutoffModulationDepth = KurzweilProgram.decodeModulationDepth (record[offset + PAGE_DEPTH_1]);
-                if (hasResonance (function) && page + 1 < NUM_PAGES)
+                if (hasResonance (function) && (rec == RECORD_F1 || rec == RECORD_F3))
                 {
                     // 0.5dB steps in the range of the Res parameter (-12 to 24 dB)
                     final int value = record[offset + PAGE_LENGTH + PAGE_COARSE];
                     if (value >= -24 && value <= 48)
-                        this.resonance = value;
+                        this.secondParameter = value;
                 }
                 break;
             }
@@ -244,7 +295,53 @@ public class PC3Program
             writeUnsigned16 (record, CAL_OFFSET + CAL_KEYMAP, this.keymapID);
             record[CAL_OFFSET + CAL_LAYER_COUNTER] = 0;
 
+            // The filter uses algorithm 1: a 2-block function (the 2-pole filters with their
+            // resonance or width) takes the slot F1/F2, a 1-block function (the 1-pole low-pass)
+            // the slot F3; the other slots stay empty
+            if (this.filterFunction != FUNCTION_NONE)
+            {
+                record[CAL_OFFSET + CAL_ALGORITHM] = (byte) ALGORITHM_TWO_BLOCK;
+                if (isOneBlockFunction (this.filterFunction))
+                {
+                    writePage (record, RECORD_F1, FUNCTION_NONE, 0, PAGE_TYPE_ONE_BLOCK);
+                    writePage (record, RECORD_F2, FUNCTION_NONE, 0, 0);
+                    this.writeFilterPage (record, RECORD_F3, PAGE_TYPE_ONE_BLOCK);
+                }
+                else
+                {
+                    this.writeFilterPage (record, RECORD_F1, PAGE_TYPE_TWO_BLOCK);
+                    writePage (record, RECORD_F2, FUNCTION_SECOND_BLOCK, this.secondParameter, 0);
+                    writePage (record, RECORD_F3, FUNCTION_NONE, 0, PAGE_TYPE_ONE_BLOCK);
+                }
+                writePage (record, RECORD_F4, FUNCTION_NONE, 0, PAGE_TYPE_ONE_BLOCK);
+
+                if (this.getFilterEnvelope () != null)
+                    writeEnvelope (record, ENV2_OFFSET, this.filterEnvelope);
+            }
+
+            // The amplifier: the velocity tracking
+            record[PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_VELOCITY_TRACKING] = (byte) Math.clamp (this.velocityTracking, 0, 96);
+
             return record;
+        }
+
+
+        /**
+         * Write the DSP record of the filter: the function, the cutoff and the modulation of the
+         * cutoff by the filter envelope or the attack velocity.
+         *
+         * @param record The layer record
+         * @param rec The index of the DSP record
+         * @param type The type field of the record
+         */
+        private void writeFilterPage (final byte [] record, final int rec, final int type)
+        {
+            writePage (record, rec, this.filterFunction, this.cutoff, type);
+            if (this.cutoffModulationSource == CONTROL_SOURCE_OFF || this.cutoffModulationDepth == 0)
+                return;
+            final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
+            record[offset + PAGE_SOURCE_1] = (byte) this.cutoffModulationSource;
+            record[offset + PAGE_DEPTH_1] = (byte) KurzweilProgram.encodeModulationDepth (this.cutoffModulationDepth);
         }
 
 
@@ -421,6 +518,29 @@ public class PC3Program
 
 
         /**
+         * Get the velocity tracking of the amplifier: the level range which the attack velocity
+         * covers.
+         *
+         * @return The velocity tracking in dB
+         */
+        public int getVelocityTracking ()
+        {
+            return this.velocityTracking;
+        }
+
+
+        /**
+         * Set the velocity tracking of the amplifier.
+         *
+         * @param velocityTracking The velocity tracking in dB (0-96)
+         */
+        public void setVelocityTracking (final int velocityTracking)
+        {
+            this.velocityTracking = velocityTracking;
+        }
+
+
+        /**
          * Get the filter envelope (ENV2) of the layer.
          *
          * @return The envelope or null if it is not routed to the filter frequency
@@ -443,6 +563,20 @@ public class PC3Program
 
 
         /**
+         * Set the filter envelope (ENV2) of the layer and route it to the filter frequency.
+         *
+         * @param envelope The envelope
+         * @param depth The modulation depth in cents
+         */
+        public void setFilterEnvelope (final KurzweilEnvelope envelope, final int depth)
+        {
+            this.filterEnvelope = envelope;
+            this.cutoffModulationSource = CONTROL_SOURCE_ENV2;
+            this.cutoffModulationDepth = depth;
+        }
+
+
+        /**
          * Get the depth of the velocity modulation of the filter frequency (the attack velocity as
          * the cutoff control source).
          *
@@ -451,6 +585,19 @@ public class PC3Program
         public int getCutoffVelocityDepth ()
         {
             return this.cutoffModulationSource == CONTROL_SOURCE_VELOCITY ? this.cutoffModulationDepth : 0;
+        }
+
+
+        /**
+         * Route the attack velocity to the filter frequency. Note that the filter page has only one
+         * modulation slot: this replaces a set filter envelope.
+         *
+         * @param depth The modulation depth in cents
+         */
+        public void setCutoffVelocityModulation (final int depth)
+        {
+            this.cutoffModulationSource = CONTROL_SOURCE_VELOCITY;
+            this.cutoffModulationDepth = depth;
         }
 
 
@@ -506,8 +653,52 @@ public class PC3Program
          */
         public double getResonance ()
         {
+            if (!hasResonance (this.filterFunction))
+                return 0;
             // The value is stored in 0.5dB steps with a maximum of 24dB
-            return Math.clamp (this.resonance, 0, 48) / 80.0;
+            return Math.clamp (this.secondParameter, 0, 48) / 80.0;
+        }
+
+
+        /**
+         * Set the filter of the layer. The 1-pole low-pass, the 2-pole low-pass (also for a
+         * low-pass with more poles) and the 2-pole bandpass of the devices are written; other types
+         * are not supported.
+         *
+         * @param type The filter type
+         * @param poles The number of poles
+         * @param cutoffFrequency The cutoff frequency in Hertz
+         * @param resonance The resonance in the range of [0..1] where 1 represents 40dB
+         * @return True if the filter type is supported and was set
+         */
+        public boolean setFilter (final FilterType type, final int poles, final double cutoffFrequency, final double resonance)
+        {
+            switch (type)
+            {
+                case LOW_PASS:
+                    if (poles <= 1)
+                    {
+                        // The 1-pole low-pass has a fixed resonance
+                        this.filterFunction = FUNCTION_LOW_PASS_1P;
+                        this.secondParameter = 0;
+                    }
+                    else
+                    {
+                        this.filterFunction = FUNCTION_LOW_PASS_2P;
+                        this.secondParameter = Math.clamp ((int) Math.round (resonance * 80), 0, 48);
+                    }
+                    break;
+
+                case BAND_PASS:
+                    this.filterFunction = FUNCTION_BAND_PASS_2P;
+                    this.secondParameter = BAND_PASS_DEFAULT_WIDTH;
+                    break;
+
+                default:
+                    return false;
+            }
+            this.cutoff = KurzweilProgram.encodeCutoff (cutoffFrequency);
+            return true;
         }
 
 
@@ -518,6 +709,19 @@ public class PC3Program
                 case FUNCTION_LOW_PASS_1P, FUNCTION_LOW_PASS_2P, FUNCTION_BAND_PASS_2P, FUNCTION_LOW_PASS_4P, FUNCTION_HIGH_PASS_4P, FUNCTION_BAND_PASS_4P, FUNCTION_NOTCH_4P -> true;
                 default -> false;
             };
+        }
+
+
+        /**
+         * Is the function one of the known 1-block functions, which leave the following record to
+         * the next block?
+         *
+         * @param function The function
+         * @return True if 1-block
+         */
+        private static boolean isOneBlockFunction (final int function)
+        {
+            return function == FUNCTION_NONE || function == FUNCTION_LOW_PASS_1P;
         }
 
 
@@ -623,7 +827,7 @@ public class PC3Program
 
 
     /**
-     * Get the version of the program object (4.0 = PC3, 4.5 = PC3K, 4.7 = Forte).
+     * Get the version of the program object (4.0 = PC3, 4.5 = PC3K, 4.7 = Forte, 4.9 = K2700).
      *
      * @return The version
      */
@@ -735,6 +939,28 @@ public class PC3Program
             record[offset + 2 + stage * 2] = (byte) Math.clamp (envelope.getLevel (stage), 0, 100);
             record[offset + 3 + stage * 2] = (byte) encodeTime (envelope.getTime (stage));
         }
+    }
+
+
+    /**
+     * Write the function and the main parameter of a DSP record and clear its modulation and
+     * output fields. The tag and the pan fields of the template are kept.
+     *
+     * @param record The layer record
+     * @param rec The index of the DSP record
+     * @param function The DSP function
+     * @param coarse The main parameter
+     * @param type The type field of the record
+     */
+    private static void writePage (final byte [] record, final int rec, final int function, final int coarse, final int type)
+    {
+        final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
+        record[offset + PAGE_FUNCTION] = (byte) function;
+        record[offset + PAGE_COARSE] = (byte) coarse;
+        for (int i = PAGE_COARSE + 1; i < PAGE_TYPE; i++)
+            record[offset + i] = 0;
+        writeUnsigned16 (record, offset + PAGE_TYPE, type);
+        writeUnsigned16 (record, offset + PAGE_OUTPUT, 0);
     }
 
 

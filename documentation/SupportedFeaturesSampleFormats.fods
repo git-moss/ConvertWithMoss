@@ -6720,7 +6720,7 @@
       <text:p>3 release stages)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce17" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Amplifier velocity tracking (dB)</text:p></table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
@@ -6835,12 +6835,12 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce37"/>
      <table:table-cell table:style-name="ce5"/>
-     <table:table-cell table:style-name="ce28"/>
-     <table:table-cell table:style-name="ce28"/>
-     <table:table-cell table:style-name="ce28"/>
-     <table:table-cell table:style-name="ce28"/>
-     <table:table-cell table:style-name="ce28"/>
-     <table:table-cell table:style-name="ce28"/>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>2-pole low-pass, 1-pole low-pass, 2-pole bandpass</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>1 / 2</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Page frequency (16Hz - 25kHz)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Next page resonance (0-24dB)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>ENV2 segment + depth</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Attack velocity source + depth (without envelope)</text:p></table:table-cell>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:number-columns-repeated="67"/>

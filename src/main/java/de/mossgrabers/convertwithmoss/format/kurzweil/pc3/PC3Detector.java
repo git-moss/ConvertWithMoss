@@ -53,10 +53,7 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class PC3Detector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String IDS_KURZWEIL_READING          = "IDS_KURZWEIL_READING";
-
-    /** A full cutoff velocity modulation is 8 octaves (the SFZ 'fil_veltrack' range). */
-    private static final int    MAX_VELOCITY_MODULATION_CENTS = 9600;
+    private static final String IDS_KURZWEIL_READING = "IDS_KURZWEIL_READING";
 
 
     /**
@@ -443,6 +440,8 @@ public class PC3Detector extends AbstractDetector<MetadataSettingsUI>
         final KurzweilEnvelope amplitudeEnvelope = layer.getAmplitudeEnvelope ();
         if (amplitudeEnvelope != null)
             amplitudeEnvelope.toEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource ());
+        // The velocity tracking of the amplifier relative to the one of a new layer
+        zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (layer.getVelocityTracking () / (double) PC3Program.DEFAULT_VELOCITY_TRACKING, 0, 1));
 
         final FilterType filterType = layer.getFilterType ();
         if (filterType == null)
@@ -457,7 +456,7 @@ public class PC3Detector extends AbstractDetector<MetadataSettingsUI>
         }
         final int cutoffVelocityDepth = layer.getCutoffVelocityDepth ();
         if (cutoffVelocityDepth != 0)
-            filter.getCutoffVelocityModulator ().setDepth (Math.clamp (cutoffVelocityDepth / (double) MAX_VELOCITY_MODULATION_CENTS, -1, 1));
+            filter.getCutoffVelocityModulator ().setDepth (Math.clamp (cutoffVelocityDepth / (double) PC3Program.MAX_VELOCITY_MODULATION_CENTS, -1, 1));
         zone.setFilter (filter);
     }
 

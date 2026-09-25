@@ -12,7 +12,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -24,10 +26,12 @@ import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.settings.ShortNameSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -39,9 +43,9 @@ import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilKeymapEntry;
 /**
  * Creator for Kurzweil PC3K files (.p3k), the object files with RAM samples which the PC3K,
  * Forte, Forte SE, PC4 and K2700 load. Each multi-sample becomes a program with one layer per
- * group; a layer plays a keymap with one sample object per zone and carries the amplitude envelope
- * of its group. The velocity ranges of the zones are mapped onto the 8 dynamic levels of the
- * keymap.
+ * group; a layer plays a keymap with one sample object per zone and carries the amplitude
+ * envelope, the velocity tracking and the low-pass or bandpass filter of its group. The velocity
+ * ranges of the zones are mapped onto the 8 dynamic levels of the keymap.
  *
  * @author Jürgen Moßgraber
  */
@@ -192,13 +196,11 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
         // last layer
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
         final List<PreparedLayer> preparedLayers = new ArrayList<> ();
-        boolean hasFilter = false;
         for (final IGroup group: groups)
         {
             final List<PreparedZone> preparedZones = new ArrayList<> ();
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                hasFilter |= zone.getFilter ().isPresent ();
                 final PreparedZone preparedZone = this.prepareZone (zone);
                 if (preparedZone != null)
                     preparedZones.add (preparedZone);
@@ -221,11 +223,10 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
         }
         if (groups.size () > MAX_LAYERS)
             this.notifier.log ("IDS_PC3_TOO_MANY_GROUPS", Integer.toString (groups.size ()), name);
-        if (hasFilter)
-            this.notifier.log ("IDS_PC3_FILTER_DROPPED", name);
 
         final int programID = PC3File.FIRST_ID + pc3File.getPrograms ().size ();
         final PC3Program program = new PC3Program (programID, shortenName (name));
+        final Set<FilterType> unsupportedFilterTypes = new LinkedHashSet<> ();
         int numConflicts = 0;
         int numOutOfRange = 0;
         for (final PreparedLayer preparedLayer: preparedLayers)
@@ -297,13 +298,15 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
             }
             pc3File.getKeymaps ().put (Integer.valueOf (keymapID), keymap);
 
-            program.addLayer (createLayer (preparedZones, keymapID, isStereo));
+            program.addLayer (createLayer (preparedZones, keymapID, isStereo, unsupportedFilterTypes));
         }
 
         if (numConflicts > 0)
             this.notifier.logError ("IDS_KURZWEIL_OVERLAPPING_ZONES", Integer.toString (numConflicts), name);
         if (numOutOfRange > 0)
             this.notifier.logError ("IDS_KURZWEIL_KEYS_OUT_OF_RANGE", name);
+        for (final FilterType filterType: unsupportedFilterTypes)
+            this.notifier.log ("IDS_PC3_FILTER_UNSUPPORTED", filterType.name ().toLowerCase (Locale.US).replace ('_', ' '), name);
 
         pc3File.getPrograms ().add (program);
     }
@@ -311,21 +314,24 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
 
     /**
      * Create a layer of the program: it plays a keymap on the full key and velocity range and
-     * carries the amplitude envelope of its zones if present.
+     * carries the amplitude envelope, the velocity tracking, the filter and the filter envelope or
+     * cutoff velocity modulation of its zones. The zones of a group share these settings, they are
+     * taken from the first zone.
      *
      * @param preparedZones The zones of the layer
      * @param keymapID The ID of the keymap object of the layer
      * @param isStereo True if the keymap references stereo samples
+     * @param unsupportedFilterTypes The types of the filters which cannot be written are added
      * @return The layer
      */
-    private static PC3Program.Layer createLayer (final List<PreparedZone> preparedZones, final int keymapID, final boolean isStereo)
+    private static PC3Program.Layer createLayer (final List<PreparedZone> preparedZones, final int keymapID, final boolean isStereo, final Set<FilterType> unsupportedFilterTypes)
     {
         final PC3Program.Layer layer = new PC3Program.Layer ();
         layer.setKeymapID (keymapID);
         layer.setStereo (isStereo);
 
-        // The zones of a group share their envelope, take it from the first one
-        final IEnvelopeModulator amplitudeModulator = preparedZones.get (0).zone.getAmplitudeEnvelopeModulator ();
+        final ISampleZone zone = preparedZones.get (0).zone;
+        final IEnvelopeModulator amplitudeModulator = zone.getAmplitudeEnvelopeModulator ();
         if (amplitudeModulator.getDepth () > 0)
         {
             final IEnvelope source = amplitudeModulator.getSource ();
@@ -335,6 +341,36 @@ public class PC3Creator extends AbstractCreator<ShortNameSettingsUI>
                 envelope.fromEnvelope (source);
                 layer.setAmplitudeEnvelope (envelope);
             }
+        }
+
+        // The velocity tracking of the amplifier: the full sensitivity of the model is the one
+        // which the devices give a new layer
+        layer.setVelocityTracking ((int) Math.round (Math.clamp (zone.getAmplitudeVelocityModulator ().getDepth (), 0, 1) * PC3Program.DEFAULT_VELOCITY_TRACKING));
+
+        final Optional<IFilter> filterOpt = zone.getFilter ();
+        if (filterOpt.isPresent ())
+        {
+            final IFilter filter = filterOpt.get ();
+            if (layer.setFilter (filter.getType (), filter.getPoles (), filter.getCutoff (), filter.getResonance ()))
+            {
+                final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
+                final int depth = (int) Math.round (cutoffModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH);
+                if (depth != 0 && cutoffModulator.getSource ().isSet ())
+                {
+                    final KurzweilEnvelope envelope = new KurzweilEnvelope ();
+                    envelope.fromEnvelope (cutoffModulator.getSource ());
+                    layer.setFilterEnvelope (envelope, depth);
+                }
+                else
+                {
+                    // The filter page has only one modulation slot, the filter envelope has priority
+                    final int velocityDepth = (int) Math.round (filter.getCutoffVelocityModulator ().getDepth () * PC3Program.MAX_VELOCITY_MODULATION_CENTS);
+                    if (velocityDepth != 0)
+                        layer.setCutoffVelocityModulation (velocityDepth);
+                }
+            }
+            else
+                unsupportedFilterTypes.add (filter.getType ());
         }
 
         return layer;
