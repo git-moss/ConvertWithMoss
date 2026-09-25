@@ -1498,7 +1498,7 @@
       <text:p>Read</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
-      <text:p>ADV / ADG</text:p>
+      <text:p>ADV / ADG / ALS / ALP</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce41" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:number-columns-repeated="2" table:style-name="ce14" office:value-type="string" calcext:value-type="string">
