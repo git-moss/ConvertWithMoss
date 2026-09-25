@@ -272,16 +272,20 @@ public class ProcessingDialog extends PseudoModalDialog
         this.alwaysResampleCheckbox = panel3.createCheckBox ("@IDS_PROCESSING_ALWAYS_RESAMPLE_LABEL", "@IDS_PROCESSING_ALWAYS_RESAMPLE_TOOLTIP");
 
         final BoxPanel panel4 = new TwoColsPanel ();
-        // The check box which limits the cross-fade to the loops which click shares the row of
-        // the cross-fade, a further row would push the buttons out of the window on a small
+        // In the order in which they are applied: the loops are snapped first, then the
+        // cross-fade is set, optionally only on the loops which still click
+        this.snapLoopsCheckbox = panel4.createCheckBox ("@IDS_PROCESSING_SNAP_LOOPS_LABEL", "@IDS_PROCESSING_SNAP_LOOPS_TOOLTIP");
+        // The check box which limits the cross-fade to the loops which still click shares the row
+        // of the cross-fade, a further row would push the buttons out of the window on a small
         // screen
         this.loopCrossfadesCombobox = new ComboBox<> (FXCollections.observableList (LOOP_CROSSFADES));
         this.crossfadeClickingCheckbox = new CheckBox (Functions.getMessage ("IDS_PROCESSING_CROSSFADE_CLICKING_LABEL"));
         this.crossfadeClickingCheckbox.setTooltip (new Tooltip (Functions.getMessage ("IDS_PROCESSING_CROSSFADE_CLICKING_TOOLTIP")));
+        // Limiting the cross-fade to some loops needs a cross-fade to set, 'Off' and '0%' set none
+        this.crossfadeClickingCheckbox.disableProperty ().bind (this.loopCrossfadesCombobox.getSelectionModel ().selectedIndexProperty ().lessThan (2));
         final HBox crossfadeRow = new HBox (12, this.loopCrossfadesCombobox, this.crossfadeClickingCheckbox);
         crossfadeRow.setAlignment (Pos.CENTER_LEFT);
         panel4.addComponent (crossfadeRow, "@IDS_PROCESSING_LOOP_CROSSFADE", "@IDS_PROCESSING_LOOP_CROSSFADE_TOOLTIP");
-        this.snapLoopsCheckbox = panel4.createCheckBox ("@IDS_PROCESSING_SNAP_LOOPS_LABEL", "@IDS_PROCESSING_SNAP_LOOPS_TOOLTIP");
 
         final BoxPanel panel5 = new TwoColsPanel ();
         this.transposeCombobox = panel5.createComboBox ("@IDS_PROCESSING_TRANSPOSE_LABEL", "@IDS_PROCESSING_TRANSPOSE_TOOLTIP", TRANSPOSE);
@@ -303,9 +307,9 @@ public class ProcessingDialog extends PseudoModalDialog
         this.traversalManager.add (this.reduceBitDepthCombobox);
         this.traversalManager.add (this.reduceFrequencyCombobox);
         this.traversalManager.add (this.alwaysResampleCheckbox);
+        this.traversalManager.add (this.snapLoopsCheckbox);
         this.traversalManager.add (this.loopCrossfadesCombobox);
         this.traversalManager.add (this.crossfadeClickingCheckbox);
-        this.traversalManager.add (this.snapLoopsCheckbox);
         this.traversalManager.add (this.transposeCombobox);
         this.traversalManager.add (this.getOkButton ());
         this.traversalManager.add (this.getCancelButton ());
