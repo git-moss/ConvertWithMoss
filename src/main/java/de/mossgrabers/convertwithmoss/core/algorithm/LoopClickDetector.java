@@ -178,7 +178,7 @@ public final class LoopClickDetector
                     if (loop.getType () != LoopType.FORWARDS || LoopZeroSnapper.isSmoothedByCrossfade (loop))
                         continue;
 
-                    final double stepPercent = measure (signal, loop, sampleRate);
+                    final double stepPercent = measure (signal, loop.getStart (), loop.getEnd (), sampleRate);
                     if (stepPercent < 0)
                         continue;
                     checkedLoops++;
@@ -242,17 +242,17 @@ public final class LoopClickDetector
      * Measure the step at the wrap of one loop.
      *
      * @param signal The mono mix of the sample audio
-     * @param loop The loop to measure
+     * @param start The loop start frame
+     * @param loopEnd The loop end frame (inclusive)
      * @param sampleRate The sample rate of the audio
      * @return The step in percent of the local peak level if the loop clicks, 0 if it does not, -1
      *         if it could not be measured
      */
-    private static double measure (final int [] signal, final ISampleLoop loop, final int sampleRate)
+    static double measure (final int [] signal, final int start, final int loopEnd, final int sampleRate)
     {
         final int length = signal.length;
-        final int start = loop.getStart ();
         // A loop end of -1 (or beyond the audio) means "loop to the end of the sample"
-        int end = loop.getEnd ();
+        int end = loopEnd;
         if (end < 0 || end >= length)
             end = length - 1;
         if (start < 0 || end <= start || end - start < MINIMUM_LOOP_LENGTH)

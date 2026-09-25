@@ -143,6 +143,12 @@ public final class LoopZeroSnapper
         final double click = measureWrap (channels, start, end);
         if (click <= CLEAN_WRAP)
             return false;
+        // A position whose curve is smoother but which jumps is no improvement: e.g. a loop whose
+        // end frame repeats its start frame bends a little at the wrap, while the nearest
+        // zero-crossings of a pulse wave jump by half of its level. If the loop does not jump, the
+        // new position must not jump either.
+        final int [] signal = mixToMono (channels);
+        final boolean mayJump = LoopClickDetector.measure (signal, start, end, sampleRate) > 0;
 
         int [] best = null;
         double bestClick = click * REQUIRED_IMPROVEMENT;
@@ -152,14 +158,13 @@ public final class LoopZeroSnapper
         if (matched.isPresent ())
         {
             final double matchedClick = measureWrap (channels, matched.get ()[0], matched.get ()[1]);
-            if (matchedClick < bestClick)
+            if (matchedClick < bestClick && (mayJump || !jumps (signal, matched.get (), sampleRate)))
             {
                 best = matched.get ();
                 bestClick = matchedClick;
             }
         }
 
-        final int [] signal = mixToMono (channels);
         final int window = Math.min (MAXIMUM_WINDOW, (end - start) / 8);
         final int newStart = nearestRisingZeroCrossing (signal, start, window);
         final int newEndCrossing = nearestRisingZeroCrossing (signal, end, window);
@@ -174,7 +179,7 @@ public final class LoopZeroSnapper
             if (crossings[1] - crossings[0] + 1 >= MINIMUM_LOOP_LENGTH)
             {
                 final double crossingsClick = measureWrap (channels, crossings[0], crossings[1]);
-                if (crossingsClick < bestClick)
+                if (crossingsClick < bestClick && (mayJump || !jumps (signal, crossings, sampleRate)))
                     best = crossings;
             }
         }
@@ -184,6 +189,20 @@ public final class LoopZeroSnapper
         loop.setStart (best[0]);
         loop.setEnd (best[1]);
         return true;
+    }
+
+
+    /**
+     * Check if a loop position jumps at its wrap, measured like the note about clicking loops does.
+     *
+     * @param signal The mono mix of the sample audio
+     * @param position The loop start and end frame (inclusive)
+     * @param sampleRate The sample rate of the audio
+     * @return True if it jumps
+     */
+    private static boolean jumps (final int [] signal, final int [] position, final int sampleRate)
+    {
+        return LoopClickDetector.measure (signal, position[0], position[1], sampleRate) > 0;
     }
 
 
