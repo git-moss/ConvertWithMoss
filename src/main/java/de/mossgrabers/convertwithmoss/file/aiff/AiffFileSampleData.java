@@ -166,7 +166,9 @@ public class AiffFileSampleData extends AbstractFileSampleData
             // Remove the temporary file after usage and restore the original file
             if (this.sourceFile != null)
             {
-                Files.delete (this.sampleFile.toPath ());
+                // Do not delete the temporary file since it is marked for auto-deletion. Otherwise,
+                // a FileSystemException is thrown!
+
                 this.sampleFile = this.sourceFile;
                 this.sourceFile = null;
             }

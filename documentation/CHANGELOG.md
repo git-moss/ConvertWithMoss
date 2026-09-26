@@ -18,9 +18,8 @@
   * Fixed: The samples of presets and Live Sets which were saved with Live 10 or earlier were not found, since these versions store the path of a sample as a list of folders with the name of the file separately.
 * discoDSP Bliss
   * New: Added support for reading/writing version 3.8 - 3.20 features (round-robin, one-shot). Writing now always uses version 3.20.
-  * Fixed: Read version is now output in decimal not hexadecimal.
+  * Fixed: Read version is now logged in decimal not hexadecimal.
 * DecentSampler
-  * New: Product presets (dsproduct) are read, also from libraries and bundles.
   * New: The stored values of the controls of the user interface are applied, as DecentSampler does when it loads a preset.
   * New: One-shots, exclusive groups (silencedByTags), disabled tags, tag volumes and gain effects are read. A message lists the features of a preset which cannot be converted.
   * New: One-shots and exclusive groups are written.
@@ -33,7 +32,6 @@
 * SFZ
   * New: Exclusive groups are read and written ('group' and 'off_by').
 * TAL Sampler
-  * New: Presets with encrypted samples (*.talwav) are converted - the format in which the factory library of TAL-Sampler and many sample packs deliver their samples, and which the plug-in creates with 'Convert wav Samples to talwav'. Such presets were rejected with 'Encrypted samples are not supported'. An encrypted sample is its WAV file encrypted with Blowfish and is now decrypted when it is read. A file which was converted more than once holds several encrypted copies of the WAV file one after the other, and the first one is read, which is the one the plug-in plays. Of the 864 TAL-Sampler presets on the test machine - the factory library, the Hollowsun library and the packs of other producers - 781 use encrypted samples; 780 of them convert now, one uses a built-in waveform of the plug-in as well, which is still not supported. Rendered offline with the plug-in (4.7.2), the 32 presets of a pack by Michael Oakley play sample for sample identically with their encrypted samples and with the decrypted ones.
   * Fixed: The decay of the envelopes was converted with the time law of the attack and the release, 7.2 x^4 seconds, but TAL-Sampler decays much slower: exponentially towards the sustain level, by 6 dB after 0.35 seconds with the value 0.4 and after 1.35 seconds with 0.6, rendered offline (4.7.2). A decay is now converted to the linear decay which reaches -20 dB at the same moment, 37.1 x^3.75 seconds, and written back with the inverse law. Sounds which decay to silence were far too short on the destination: 'Casiowave' of Michael Oakley's pack decayed in 0.12 instead of 0.8 seconds and 'Emulator II Bells' in 0.79 instead of 4.7 seconds.
   * Fixed: The filter was applied to all layers if the first layer is switched through it and to none otherwise, but TAL-Sampler switches each layer through its filter or not. 83 of the 1,675 TAL-Sampler presets on the test machine filter only some of their layers: 'Mallet Pad' of Michael Oakley's pack plays its choir layers through a low-pass filter at 376 Hz and was converted without any filter, 'PPG Power Keys' leaves the noise of its fourth layer unfiltered, which was converted through the 495 Hz filter of the others. Only the layers which are switched through the filter get it now, and a written preset switches only the layers through it whose samples have a filter. A destination which knows only one filter for the whole preset writes none when the layers differ, as for any other source whose zones differ.
 * Waldorf Quantum/Iridium
