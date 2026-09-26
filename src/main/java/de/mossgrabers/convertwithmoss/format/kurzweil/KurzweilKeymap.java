@@ -109,18 +109,21 @@ public class KurzweilKeymap
         // level. Normalizing them by the distance to the end of the level fields leaves for each
         // level the offset of its table into the entry table area
         final int [] levelOffsets = new int [NUM_LEVELS];
-        int numTables = 1;
+        int maxOffset = 0;
         for (int i = 0; i < NUM_LEVELS; i++)
+        {
             levelOffsets[i] = StreamUtils.readSigned16 (in, true) - (NUM_LEVELS - i) * 2;
-        for (int i = 1; i < NUM_LEVELS; i++)
-            if (levelOffsets[i] != levelOffsets[i - 1])
-                numTables++;
+            maxOffset = Math.max (maxOffset, levelOffsets[i]);
+        }
 
         final int entrySize = getEntrySize (this.method);
         if (entrySize == 0 || this.numEntries <= 0)
             throw new IOException ("Invalid keymap method or entry count.");
 
+        // The tables follow each other in the entry table area; the levels may reference them in
+        // any order (e.g. the levels below and above a velocity range share an empty table)
         final int tableSize = this.numEntries * entrySize;
+        final int numTables = maxOffset / tableSize + 1;
         if (numTables * tableSize > in.available ())
             throw new IOException ("Broken keymap object in Kurzweil file.");
         for (int table = 0; table < numTables; table++)
