@@ -133,7 +133,7 @@ public class ProphetXDetector extends AbstractDetector<MetadataSettingsUI>
             this.notifier.logError ("IDS_NOTIFY_ERR_SAMPLE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
             return null;
         }
-        return createSampleData (sampleFile, this.notifier);
+        return AbstractDetector.createSampleData (sampleFile, this.notifier);
     }
 
 

@@ -18,14 +18,14 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  * with several headers is a multi-root sample; for stereo samples the headers form left/right pairs
  * (even index = left channel). Apart from the longer headers the object is laid out like a sample
  * object of the K2000/K2500/K2600. The Forte generation (Forte, PC4, K2700) stores its samples in
- * an object of its own type with a 16 byte preamble and headers with 64-bit positions. Both
- * layouts are read and written.
+ * an object of its own type with a 16 byte preamble and headers with 64-bit positions. Both layouts
+ * are read and written.
  *
  * @author Jürgen Moßgraber
  */
 public class PC3Sample
 {
-    private static final int            FLAG_STEREO      = 1;
+    private static final int            FLAG_STEREO               = 1;
 
     /** The default natural envelope written by a PC3K: 2 records of 6 signed 16-bit values. */
     private static final int [] []      DEFAULT_ENVELOPE          =
@@ -71,11 +71,11 @@ public class PC3Sample
 
     private final int                   id;
     private final String                name;
-    private int                         baseID           = 1;
-    private int                         flags            = 0;
-    private int                         copyID           = 0;
+    private int                         baseID                    = 1;
+    private int                         flags                     = 0;
+    private int                         copyID                    = 0;
 
-    private final List<PC3SampleHeader> headers          = new ArrayList<> ();
+    private final List<PC3SampleHeader> headers                   = new ArrayList<> ();
 
 
     /**
@@ -97,8 +97,8 @@ public class PC3Sample
      * @param id The object ID
      * @param name The name of the sample
      * @param in The input stream to read from
-     * @param isExtended True for a sample object of the Forte generation (Forte, PC4, K2700):
-     *            a 16 byte preamble with the number of headers and headers with 64-bit positions
+     * @param isExtended True for a sample object of the Forte generation (Forte, PC4, K2700): a 16
+     *            byte preamble with the number of headers and headers with 64-bit positions
      * @throws IOException Could not read the object
      */
     public PC3Sample (final int id, final String name, final InputStream in, final boolean isExtended) throws IOException
@@ -148,8 +148,8 @@ public class PC3Sample
      *
      * @param byteOffset The byte offset in the sample data region at which the sample data of this
      *            object will be placed
-     * @param isExtended True to write the sample object of the Forte generation (Forte, PC4,
-     *            K2700) with 64-bit positions
+     * @param isExtended True to write the sample object of the Forte generation (Forte, PC4, K2700)
+     *            with 64-bit positions
      * @return The object data
      * @throws IOException Could not write the object
      */

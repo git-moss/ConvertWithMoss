@@ -133,7 +133,7 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
             return null;
         }
 
-        final ISampleData sampleData = createSampleData (sampleFile, this.notifier);
+        final ISampleData sampleData = AbstractDetector.createSampleData (sampleFile, this.notifier);
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
 
         zone.setKeyLow (Math.clamp (getInt (regionNode, OpXyTag.TAG_LOW_KEY, 0), 0, 127));

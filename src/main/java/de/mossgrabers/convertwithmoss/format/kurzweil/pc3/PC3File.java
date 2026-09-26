@@ -20,11 +20,11 @@ import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilKeymap;
 
 
 /**
- * An object file of the Kurzweil PC3 series (PC3, PC3K, PC3A, PC3LE), Forte, Forte SE, PC4 and K2700
- * (.pc3, .p3k, .p3a, .ple, .for, .fse, .pc4, .p4s, .k27). The file starts with a 36 byte header
- * ('COOL' magic) followed by the objects and the raw sample data region. Each object starts with a
- * 20 byte header (type, ID, size and the offset of its data) and its name; a zero word terminates
- * the object list. All values are big-endian.
+ * An object file of the Kurzweil PC3 series (PC3, PC3K, PC3A, PC3LE), Forte, Forte SE, PC4 and
+ * K2700 (.pc3, .p3k, .p3a, .ple, .for, .fse, .pc4, .p4s, .k27). The file starts with a 36 byte
+ * header ('COOL' magic) followed by the objects and the raw sample data region. Each object starts
+ * with a 20 byte header (type, ID, size and the offset of its data) and its name; a zero word
+ * terminates the object list. All values are big-endian.
  *
  * See documentation/design/KURZWEIL_PC3_FORMAT.md for the details.
  *
@@ -127,7 +127,7 @@ public class PC3File
                 {
                     this.keymaps.put (Integer.valueOf (id), new KurzweilKeymap (id, name, new ByteArrayInputStream (fileData, dataStart, dataLength)));
                 }
-                catch (final IOException ex)
+                catch (final IOException _)
                 {
                     // The factory sets contain velocity switch templates whose level offsets do
                     // not address entry tables; such keymaps cannot be converted and are skipped
@@ -138,7 +138,8 @@ public class PC3File
                 this.programs.add (new PC3Program (id, name, Arrays.copyOfRange (fileData, dataStart, dataStart + dataLength)));
                 break;
             default:
-                // Setups/multis, effect chains, algorithms, songs, patterns, ... are not relevant for
+                // Setups/multis, effect chains, algorithms, songs, patterns, ... are not relevant
+                // for
                 // the conversion
                 break;
         }

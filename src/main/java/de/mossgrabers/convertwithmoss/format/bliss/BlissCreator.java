@@ -26,10 +26,13 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
@@ -48,20 +51,29 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 {
-    private static final String                   TAG_VALUE                = "value";
+    private static final String MOD_LFO = "mod_lfo";
+
+    private static final String                    TAG_VALUE                = "value";
 
     // The version number to use: 3.20.0
-    private static final int                      BLISS_VERSION            = 0x32000;
+    private static final int                       BLISS_VERSION            = 0x31400;
 
-    private static final DestinationAudioFormat   DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
+    private static final DestinationAudioFormat    DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         16,
         24
     }, 96000, false);
 
-    private static final Map<FilterType, Integer> FILTER_TYPE_MAP          = new EnumMap<> (FilterType.class);
+    private static final Map<FilterType, Integer>  FILTER_TYPE_MAP          = new EnumMap<> (FilterType.class);
+    private static final Map<LfoWaveform, Integer> LFO_WAVE_FORMS           = new EnumMap<> (LfoWaveform.class);
     static
     {
+        LFO_WAVE_FORMS.put (LfoWaveform.SINE, Integer.valueOf (0));
+        LFO_WAVE_FORMS.put (LfoWaveform.TRIANGLE, Integer.valueOf (1));
+        LFO_WAVE_FORMS.put (LfoWaveform.SAWTOOTH_UP, Integer.valueOf (2));
+        LFO_WAVE_FORMS.put (LfoWaveform.SQUARE, Integer.valueOf (3));
+        LFO_WAVE_FORMS.put (LfoWaveform.RANDOM, Integer.valueOf (4));
+
         FILTER_TYPE_MAP.put (FilterType.LOW_PASS, Integer.valueOf (1));
         FILTER_TYPE_MAP.put (FilterType.HIGH_PASS, Integer.valueOf (2));
         FILTER_TYPE_MAP.put (FilterType.BAND_PASS, Integer.valueOf (3));
@@ -328,6 +340,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 
         // Set filter
         final Optional<IFilter> filterOpt = zone.getFilter ();
+        ILfoModulator cutoffModulator = null;
         if (filterOpt.isPresent ())
         {
             final IFilter filter = filterOpt.get ();
@@ -364,8 +377,20 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 
                 XMLUtils.setIntegerAttribute (zoneElement, "flt1_boost", 0);
                 XMLUtils.setIntegerAttribute (zoneElement, "flt2_boost", 0);
+
+                cutoffModulator = filter.getCutoffLfoModulator ();
             }
         }
+
+        int lfoIndex = 0;
+        final ILfoModulator ampModulator = zone.getAmplitudeLfoModulator ();
+        if (ampModulator.getDepth () > 0)
+            applyLfo (document, zoneElement, ++lfoIndex, ampModulator, 1);
+        final ILfoModulator pitchModulator = zone.getPitchLfoModulator ();
+        if (pitchModulator.getDepth () > 0)
+            applyLfo (document, zoneElement, ++lfoIndex, pitchModulator, 2);
+        if (cutoffModulator != null && lfoIndex < 2)
+            applyLfo (document, zoneElement, ++lfoIndex, cutoffModulator, 3);
     }
 
 
@@ -435,6 +460,14 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
+    private static double normalizeLfoTime (final double seconds)
+    {
+        if (seconds < 0)
+            return 0;
+        return Math.pow (seconds / 16.0, 0.25);
+    }
+
+
     // -1..1 (logarithmic..exponential) ->
     // 0..1 (0.0: concave (slow start, fast end), 0.5: linear, 1.0: convex (fast start, slow end))
     private static double normalizeSlope (final double value)
@@ -447,5 +480,33 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
     {
         final Element childElement = XMLUtils.addElement (document, parentElement, childElementName);
         XMLUtils.setDoubleAttribute (childElement, TAG_VALUE, value, 2);
+    }
+
+
+    private static void applyLfo (final Document document, final Element zoneElement, final int lfoIndex, final ILfoModulator modulator, final int destinationIndex)
+    {
+        final double depth = modulator.getDepth ();
+        if (depth == 0)
+            return;
+
+        XMLUtils.setIntegerAttribute (zoneElement, MOD_LFO + lfoIndex + "_dest", destinationIndex);
+        setDoubleValueAttribute (document, zoneElement, MOD_LFO + lfoIndex + "_amt", (depth - 0.5) * 2);
+
+        final ILfo lfo = modulator.getSource ();
+        XMLUtils.setIntegerAttribute (zoneElement, MOD_LFO + lfoIndex + "_type", LFO_WAVE_FORMS.getOrDefault (lfo.getWaveform (), Integer.valueOf (0)).intValue ());
+        setDoubleValueAttribute (document, zoneElement, MOD_LFO + lfoIndex + "_del", normalizeLfoTime (lfo.getDelay ()));
+        double startPhase = lfo.isKeySync () ? lfo.getStartPhase () : 1.0;
+        if (startPhase < 0)
+            startPhase = 1.0;
+        setDoubleValueAttribute (document, zoneElement, MOD_LFO + lfoIndex + "_phs", startPhase);
+        setDoubleValueAttribute (document, zoneElement, MOD_LFO + lfoIndex + "_rat", lfoFrequencyToRate (lfo.getRate ()));
+    }
+
+
+    private static double lfoFrequencyToRate (final double hz)
+    {
+        if (hz < 0)
+            return 0.7;
+        return 1 + (Math.log (hz / 220.5) / Math.log (2)) / 14;
     }
 }

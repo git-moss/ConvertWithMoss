@@ -222,7 +222,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
         try (final InputStream in = zipFile.getInputStream (entry))
         {
-            final String content = this.readPresetContent (in, name);
+            final String content = this.readPresetContent (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (FileUtils.getNameWithoutType (presetFile), file, parent, true, document);
         }
@@ -251,11 +251,10 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      * Read the XML document of a preset.
      *
      * @param input The stream of the preset or of its entry in a library
-     * @param name The name of the preset file
      * @return The XML document
      * @throws IOException Could not read the preset
      */
-    private String readPresetContent (final InputStream input, final String name) throws IOException
+    private String readPresetContent (final InputStream input) throws IOException
     {
         return this.fixInvalidXML (StreamUtils.readUtf8 (input));
     }
@@ -350,7 +349,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     {
         try (final FileInputStream in = new FileInputStream (file))
         {
-            final String content = this.readPresetContent (in, file.getName ());
+            final String content = this.readPresetContent (in);
             final Document document = XMLUtils.parseDocument (new InputSource (new StringReader (content)));
             return this.parseMetadataFile (FileUtils.getNameWithoutType (file), file, file.getParent (), false, document);
         }

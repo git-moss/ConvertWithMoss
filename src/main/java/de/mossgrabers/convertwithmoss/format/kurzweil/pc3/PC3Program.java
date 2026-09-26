@@ -21,129 +21,130 @@ import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilProgram;
  * 'PC3' signatures with the version numbers, the program parameters, the effect chain references
  * and the KB3 organ block) followed by one fixed size record per layer and a trailing block with
  * the controller information of the program. A layer record holds the segments known from the
- * K2000/K2500/K2600 programs in a fixed order (layer, ASRs, FUNs, LFOs, envelope control, the
- * three envelopes, the keymap/pitch block and five DSP records), each opened by its tag byte,
- * followed by the layer effect reference and the layer name.
+ * K2000/K2500/K2600 programs in a fixed order (layer, ASRs, FUNs, LFOs, envelope control, the three
+ * envelopes, the keymap/pitch block and five DSP records), each opened by its tag byte, followed by
+ * the layer effect reference and the layer name.
  *
  * The five DSP records hold the four function blocks of the algorithm between its PITCH and AMP
- * blocks - F1 and F2 in the first two records, F3 and F4 in the last two - and the amplifier in
- * the third record. A 2-block function (e.g. the 2-pole low-pass with its resonance) occupies its
+ * blocks - F1 and F2 in the first two records, F3 and F4 in the last two - and the amplifier in the
+ * third record. A 2-block function (e.g. the 2-pole low-pass with its resonance) occupies its
  * record and the following one, whose function byte is then not significant. The records of
  * algorithm 1 are [2-block F1/F2] [1-block F3] [1-block F4], the layout written for a filter.
  *
  * A program which is created for writing copies the header and the trailing block of the default
- * program of the target device generation and the layer record of a program written by a PC3K,
- * and sets only the fields which the conversion controls.
+ * program of the target device generation and the layer record of a program written by a PC3K, and
+ * sets only the fields which the conversion controls.
  *
  * @author Jürgen Moßgraber
  */
 public class PC3Program
 {
     /** The velocity tracking of the amplifier in dB which the devices give a new layer. */
-    public static final int       DEFAULT_VELOCITY_TRACKING = 35;
+    public static final int        DEFAULT_VELOCITY_TRACKING     = 35;
     /** A full cutoff velocity modulation is 8 octaves (the SFZ 'fil_veltrack' range). */
-    public static final int       MAX_VELOCITY_MODULATION_CENTS = 9600;
+    public static final int        MAX_VELOCITY_MODULATION_CENTS = 9600;
 
     /** The length of the fixed header which precedes the layer records. */
-    private static final int      HEADER_LENGTH           = 229;
+    private static final int       HEADER_LENGTH                 = 229;
     /** The length of a layer record. */
-    private static final int      LAYER_LENGTH            = 318;
+    private static final int       LAYER_LENGTH                  = 318;
     /** The position of the number of layers in the header. */
-    private static final int      NUM_LAYERS_OFFSET       = 40;
+    private static final int       NUM_LAYERS_OFFSET             = 40;
 
     // The positions in a layer record
-    private static final int      LAYER_TAG               = 9;
-    private static final int      LYR_ENABLE_LOW          = 1;
-    private static final int      LYR_LOW_KEY             = 2;
-    private static final int      LYR_HIGH_KEY            = 3;
-    private static final int      LYR_VELOCITY            = 4;
-    private static final int      LYR_ENABLE              = 5;
-    private static final int      LYR_FLAGS               = 6;
-    private static final int      LYR_MORE_FLAGS          = 7;
-    private static final int      LYR_TRIGGER             = 8;
-    private static final int      LYR_ENABLE_HIGH         = 9;
-    private static final int      LYR_DELAY               = 10;
-    private static final int      LYR_CROSSFADE           = 13;
-    private static final int      ENVC_OFFSET             = 61;
-    private static final int      ENV1_OFFSET             = 82;
-    private static final int      ENV2_OFFSET             = 98;
-    private static final int      CAL_OFFSET              = 130;
-    private static final int      CAL_TRANSPOSE           = 2;
-    private static final int      CAL_KEYMAP_2            = 8;
-    private static final int      CAL_KEYMAP              = 12;
-    private static final int      CAL_LAYER_COUNTER       = 17;
-    private static final int      CAL_ALGORITHM           = 30;
-    private static final int      PAGES_OFFSET            = 162;
-    private static final int      PAGE_LENGTH             = 22;
+    private static final int       LAYER_TAG                     = 9;
+    private static final int       LYR_ENABLE_LOW                = 1;
+    private static final int       LYR_LOW_KEY                   = 2;
+    private static final int       LYR_HIGH_KEY                  = 3;
+    private static final int       LYR_VELOCITY                  = 4;
+    private static final int       LYR_ENABLE                    = 5;
+    private static final int       LYR_FLAGS                     = 6;
+    private static final int       LYR_MORE_FLAGS                = 7;
+    private static final int       LYR_TRIGGER                   = 8;
+    private static final int       LYR_ENABLE_HIGH               = 9;
+    private static final int       LYR_DELAY                     = 10;
+    private static final int       LYR_CROSSFADE                 = 13;
+    private static final int       ENVC_OFFSET                   = 61;
+    private static final int       ENV1_OFFSET                   = 82;
+    private static final int       ENV2_OFFSET                   = 98;
+    private static final int       CAL_OFFSET                    = 130;
+    private static final int       CAL_TRANSPOSE                 = 2;
+    private static final int       CAL_KEYMAP_2                  = 8;
+    private static final int       CAL_KEYMAP                    = 12;
+    private static final int       CAL_LAYER_COUNTER             = 17;
+    private static final int       CAL_ALGORITHM                 = 30;
+    private static final int       PAGES_OFFSET                  = 162;
+    private static final int       PAGE_LENGTH                   = 22;
 
     // The five DSP records
-    private static final int      RECORD_F1               = 0;
-    private static final int      RECORD_F2               = 1;
-    private static final int      RECORD_AMPLIFIER        = 2;
-    private static final int      RECORD_F3               = 3;
-    private static final int      RECORD_F4               = 4;
+    private static final int       RECORD_F1                     = 0;
+    private static final int       RECORD_F2                     = 1;
+    private static final int       RECORD_AMPLIFIER              = 2;
+    private static final int       RECORD_F3                     = 3;
+    private static final int       RECORD_F4                     = 4;
 
     // The fields of a DSP record
-    private static final int      PAGE_FUNCTION           = 1;
-    private static final int      PAGE_COARSE             = 2;
-    private static final int      PAGE_SOURCE_1           = 6;
-    private static final int      PAGE_DEPTH_1            = 7;
-    private static final int      PAGE_VELOCITY_TRACKING  = 5;
-    private static final int      PAGE_TYPE               = 12;
-    private static final int      PAGE_OUTPUT             = 14;
+    private static final int       PAGE_FUNCTION                 = 1;
+    private static final int       PAGE_COARSE                   = 2;
+    private static final int       PAGE_SOURCE_1                 = 6;
+    private static final int       PAGE_DEPTH_1                  = 7;
+    private static final int       PAGE_VELOCITY_TRACKING        = 5;
+    private static final int       PAGE_TYPE                     = 12;
+    private static final int       PAGE_OUTPUT                   = 14;
 
     /** The type field of the record of a 2-block function. */
-    private static final int      PAGE_TYPE_TWO_BLOCK     = 0x0200;
+    private static final int       PAGE_TYPE_TWO_BLOCK           = 0x0200;
     /** The type field of the record of a 1-block function. */
-    private static final int      PAGE_TYPE_ONE_BLOCK     = 0x0300;
+    private static final int       PAGE_TYPE_ONE_BLOCK           = 0x0300;
 
     /** The algorithm whose F1 slot takes a 2-block function, followed by two 1-block slots. */
-    private static final int      ALGORITHM_TWO_BLOCK     = 1;
+    private static final int       ALGORITHM_TWO_BLOCK           = 1;
 
     /** The layer flag which is set on all layers written by the devices. */
-    private static final int      MORE_FLAGS_DEFAULT      = 0x04;
+    private static final int       MORE_FLAGS_DEFAULT            = 0x04;
     /** The layer plays its keymap in stereo: keymap 1 on the left, keymap 2 on the right. */
-    private static final int      MORE_FLAGS_STEREO       = 0x20;
+    private static final int       MORE_FLAGS_STEREO             = 0x20;
     /** The envelope control flag: the 'natural' envelope of the samples is used. */
-    private static final int      ENVC_NATURAL            = 0x01;
+    private static final int       ENVC_NATURAL                  = 0x01;
 
     /** The control source code 'OFF'. */
-    private static final int      CONTROL_SOURCE_OFF      = 0;
+    private static final int       CONTROL_SOURCE_OFF            = 0;
     /** The control source code 'ON'. */
-    private static final int      CONTROL_SOURCE_ON       = 0x7F;
+    private static final int       CONTROL_SOURCE_ON             = 0x7F;
     /** The control source code of the attack velocity. */
-    private static final int      CONTROL_SOURCE_VELOCITY = 100;
+    private static final int       CONTROL_SOURCE_VELOCITY       = 100;
     /** The control source code of the second envelope (ENV2). */
-    private static final int      CONTROL_SOURCE_ENV2     = 121;
+    private static final int       CONTROL_SOURCE_ENV2           = 121;
 
     // The DSP functions (the numbering of the K2000/K2500/K2600 functions)
-    private static final int      FUNCTION_NONE           = 0;
-    private static final int      FUNCTION_LOW_PASS_2P    = 2;
-    private static final int      FUNCTION_BAND_PASS_2P   = 3;
-    private static final int      FUNCTION_NOTCH_2P       = 4;
-    private static final int      FUNCTION_LOW_PASS_1P    = 15;
-    private static final int      FUNCTION_HIGH_PASS_1P   = 16;
-    private static final int      FUNCTION_LOW_PASS_4P    = 50;
-    private static final int      FUNCTION_HIGH_PASS_4P   = 54;
-    private static final int      FUNCTION_BAND_PASS_4P   = 55;
-    private static final int      FUNCTION_NOTCH_4P       = 56;
+    private static final int       FUNCTION_NONE                 = 0;
+    private static final int       FUNCTION_LOW_PASS_2P          = 2;
+    private static final int       FUNCTION_BAND_PASS_2P         = 3;
+    private static final int       FUNCTION_NOTCH_2P             = 4;
+    private static final int       FUNCTION_LOW_PASS_1P          = 15;
+    private static final int       FUNCTION_HIGH_PASS_1P         = 16;
+    private static final int       FUNCTION_LOW_PASS_4P          = 50;
+    private static final int       FUNCTION_HIGH_PASS_4P         = 54;
+    private static final int       FUNCTION_BAND_PASS_4P         = 55;
+    private static final int       FUNCTION_NOTCH_4P             = 56;
     /** The function byte which the devices write into the second record of a 2-block function. */
-    private static final int      FUNCTION_SECOND_BLOCK   = 60;
+    private static final int       FUNCTION_SECOND_BLOCK         = 60;
 
     /**
      * The width of the 2-pole bandpass and notch filters on their second record - the value of most
      * factory layers.
      */
-    private static final int      BAND_WIDTH_DEFAULT      = 53;
+    private static final int       BAND_WIDTH_DEFAULT            = 53;
 
     /** The envelope times of the first codes of the time list: 0, 2, 5 and 10 milliseconds. */
-    private static final double[] SHORT_TIMES             =
+    private static final double [] SHORT_TIMES                   =
     {
         0,
         0.002,
         0.005,
         0.01
     };
+
 
     /**
      * The program layout of a device generation: the header (229 bytes) and the trailing block of
@@ -157,7 +158,8 @@ public class PC3Program
         /** Forte and Forte SE (program version 4.9, the default program of the Forte OS 4.4). */
         FORTE("50433304095043330303140000000000136b6579776f7264312c206b6579776f72643200030508050104374000000000000000000000000000003700000001000011000000000019091c5a1500000000001b000000030351000000000000007f7f030352000000000000007f7f030353000000000000007f7f50726f6772616d524655303132353637000000000000000000000000000000000000000000000000000000000000000000000000000000006e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000048616d6d", "000102000f00000040ffff00085375737461696e00000000160000000f416d7020456e762041747461636b000000001700000010416d7020456e762052656c65617365000000001c0000000e52657665726220416d6f756e7400000000520000000f416d7020456e7620496d70616374000000000b007f000b45787072657373696f6e000000005a0000000e52657665726220456e61626c65000000000c007f000f4c502046696c746572204672657100000000500000000c566172696174696f6e203200000000510000000c566172696174696f6e203300000000530000001b52656c656173652053616d706c6573204f6e2f4f6666202020200000000042ffff000b536f7374656e75746f20000000000d0000000f4c502046696c74657220526573200000000043ffff000b536f667420506564616c0000000080000000194b75727a7765696c20466163746f72792050726f6772616d2e0003001801160016011700170140ff40011c001c01520052010bff0b015a005a0150005001510051015300530142ff42010c7f0c010d000d0143ff43020900090456005604194019041a401a04570057041b0f1b04590059041d001d040400040401000100020109007f000000000000000800640000016400001802000000000000000400000000000000000000000000000001000000000001000000000001000000000000000000010000000000010000007100000014000000013c3d3e3f4041424300010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000124000000010000000000002ee00000000400000004000000000000000000000000000000000000000000000000000000010000000c0000000000000064000000000000000000000000000000000000000000000000000000000000007f0000004000000060000000400000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff000000060000012800000001000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606000000000000000000000000000000000ffffffffffffffffffffff"),
         /** PC4, PC4 SE and K2700 (program version 4.9, the default program of the OS 4.5). */
-        K2700("504333040950433303030d0000000000136b6579776f7264312c206b6579776f726432000305080501003740000000000000000000000000000037000000010000110000000000190000001500000000001b000000030351000000000000007f7f030352000000000000007f7f030353000000000000007f7f50726f6772616d524655303132353637000000000000000000000000000000000000000000000000000000000000000000000000000000006e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000048616d6d", "000102001000000040ffff00085375737461696e00000000160000000741747461636b00000000170000000852656c65617365000000001c0000000e52657665726220416d6f756e74000000005200000007496d70616374000000000b007f000b45787072657373696f6e000000005a0000000e52657665726220456e61626c65000000000c007f000c46696c74657220467265710000000042ffff000b536f7374656e75746f20000000000d0000000c46696c74657220526573200000000043ffff0006536f667420000000000a0040008050616e007765696c20466163746f72792050726f6772616d2e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000085669627261746f000000004500000007467265657a650000000015ffff0080417578205069746368000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000003002401160016011700170140ff40011c001c01520052010bff0b015a005a0142ff42010c7f0c010d000d0143ff43010a400a01010001014500530209100904190019041a001a041b001b0410001004030003044f404f0448404804494049044740470450005004464046044e404e04120012045700570459005904560056041100110418001804550055040e000e0451005100020109007f000000000000000800640000016400001802000000000000000400000000000000000000000000000001000000000001000000000001000000000000000000010000000000010000007100000014000000013c3d3e3f4041424300010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000124000000010000000000002ee00000000400000004000000000000000000000000000000000000000000000000000000010000000c0000000000000064000000000000000000000000000000000000000000000000000000000000007f0000004000000060000000400000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff000000060000012800000001000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060000000000000000000000000000000006060606060606060606060");
+        K2700("504333040950433303030d0000000000136b6579776f7264312c206b6579776f726432000305080501003740000000000000000000000000000037000000010000110000000000190000001500000000001b000000030351000000000000007f7f030352000000000000007f7f030353000000000000007f7f50726f6772616d524655303132353637000000000000000000000000000000000000000000000000000000000000000000000000000000006e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000048616d6d",
+                "000102001000000040ffff00085375737461696e00000000160000000741747461636b00000000170000000852656c65617365000000001c0000000e52657665726220416d6f756e74000000005200000007496d70616374000000000b007f000b45787072657373696f6e000000005a0000000e52657665726220456e61626c65000000000c007f000c46696c74657220467265710000000042ffff000b536f7374656e75746f20000000000d0000000c46696c74657220526573200000000043ffff0006536f667420000000000a0040008050616e007765696c20466163746f72792050726f6772616d2e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000085669627261746f000000004500000007467265657a650000000015ffff0080417578205069746368000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000003002401160016011700170140ff40011c001c01520052010bff0b015a005a0142ff42010c7f0c010d000d0143ff43010a400a01010001014500530209100904190019041a001a041b001b0410001004030003044f404f0448404804494049044740470450005004464046044e404e04120012045700570459005904560056041100110418001804550055040e000e0451005100020109007f000000000000000800640000016400001802000000000000000400000000000000000000000000000001000000000001000000000001000000000000000000010000000000010000007100000014000000013c3d3e3f4041424300010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000124000000010000000000002ee00000000400000004000000000000000000000000000000000000000000000000000000010000000c0000000000000064000000000000000000000000000000000000000000000000000000000000007f0000004000000060000000400000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff0000000000000000000000000000006400000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff000000060000012800000001000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060606060000000000000000000000000000000006060606060606060606060");
 
 
         private final byte [] header;
@@ -176,14 +178,15 @@ public class PC3Program
      * A layer record written by a PC3K which plays a RAM sample keymap straight through the
      * amplifier (algorithm 5 without DSP functions).
      */
-    private static final byte []  LAYER_TEMPLATE          = HexFormat.of ().parseHex ("09f834600082001400d100000064030500006a0000107f01353535117f01353535180100001902000014002e00000415002e0000041a0300001b0400002001000000490000004800f1004800270000004600210064000000000064000000000000002200640000000000640000000000000023006400000000006400000000000000407f00002b000000040900400409000000020000000000000100000000000500500000000000000001000000030000000000000100005100000000000000010000000000000000000001000053000140002d00000100000000002000000000010000520000000000000001000000000003000000000100005400000000000000000000000300000000000001c040030351000000000000007f7f00000000001420202020202020202020202020202020202020204c61796572524655");
+    private static final byte [] LAYER_TEMPLATE = HexFormat.of ().parseHex ("09f834600082001400d100000064030500006a0000107f01353535117f01353535180100001902000014002e00000415002e0000041a0300001b0400002001000000490000004800f1004800270000004600210064000000000064000000000000002200640000000000640000000000000023006400000000006400000000000000407f00002b000000040900400409000000020000000000000100000000000500500000000000000001000000030000000000000100005100000000000000010000000000000000000001000053000140002d00000100000000002000000000010000520000000000000001000000000003000000000100005400000000000000000000000300000000000001c040030351000000000000007f7f00000000001420202020202020202020202020202020202020204c61796572524655");
 
     /** The envelope control segment: user envelope, no real-time control of the envelope rates. */
-    private static final byte []  ENVC_TEMPLATE           = HexFormat.of ().parseHex ("200000000049000000480000004800");
+    private static final byte [] ENVC_TEMPLATE  = HexFormat.of ().parseHex ("200000000049000000480000004800");
+
 
     /**
-     * One layer of a program: a keymap mapped to a key and velocity range with its envelope and
-     * DSP settings.
+     * One layer of a program: a keymap mapped to a key and velocity range with its envelope and DSP
+     * settings.
      */
     public static class Layer
     {
@@ -221,29 +224,29 @@ public class PC3Program
         /**
          * Constructor. Decodes a layer record.
          *
-         * @param record The layer record
+         * @param layerRecord The layer record
          */
-        Layer (final byte [] record)
+        Layer (final byte [] layerRecord)
         {
-            this.lowKey = record[LYR_LOW_KEY] & 0x7F;
-            this.highKey = record[LYR_HIGH_KEY] & 0x7F;
+            this.lowKey = layerRecord[LYR_LOW_KEY] & 0x7F;
+            this.highKey = layerRecord[LYR_HIGH_KEY] & 0x7F;
             // The velocity window: the low mark in bits 3-5, the high mark inverted in bits 0-2
-            final int window = record[LYR_VELOCITY] & 0xFF;
+            final int window = layerRecord[LYR_VELOCITY] & 0xFF;
             this.velocityLow = Math.max (1, (window >> 3 & 7) * 16);
             this.velocityHigh = (7 - (window & 7)) * 16 + 15;
-            this.isEnabled = (record[LYR_ENABLE] & 0xFF) != CONTROL_SOURCE_OFF;
-            this.isStereo = (record[LYR_MORE_FLAGS] & MORE_FLAGS_STEREO) != 0;
+            this.isEnabled = (layerRecord[LYR_ENABLE] & 0xFF) != CONTROL_SOURCE_OFF;
+            this.isStereo = (layerRecord[LYR_MORE_FLAGS] & MORE_FLAGS_STEREO) != 0;
 
-            this.isNaturalEnvelope = (record[ENVC_OFFSET + 1] & ENVC_NATURAL) != 0;
-            this.amplitudeEnvelope = readEnvelope (record, ENV1_OFFSET);
-            this.filterEnvelope = readEnvelope (record, ENV2_OFFSET);
+            this.isNaturalEnvelope = (layerRecord[ENVC_OFFSET + 1] & ENVC_NATURAL) != 0;
+            this.amplitudeEnvelope = readEnvelope (layerRecord, ENV1_OFFSET);
+            this.filterEnvelope = readEnvelope (layerRecord, ENV2_OFFSET);
 
-            this.transpose = record[CAL_OFFSET + CAL_TRANSPOSE];
-            this.secondKeymapID = readUnsigned16 (record, CAL_OFFSET + CAL_KEYMAP_2);
-            this.keymapID = readUnsigned16 (record, CAL_OFFSET + CAL_KEYMAP);
+            this.transpose = layerRecord[CAL_OFFSET + CAL_TRANSPOSE];
+            this.secondKeymapID = readUnsigned16 (layerRecord, CAL_OFFSET + CAL_KEYMAP_2);
+            this.keymapID = readUnsigned16 (layerRecord, CAL_OFFSET + CAL_KEYMAP);
 
             // The amplifier: its velocity tracking in dB
-            this.velocityTracking = record[PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_VELOCITY_TRACKING];
+            this.velocityTracking = layerRecord[PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_VELOCITY_TRACKING];
 
             // The filter: the first function block which holds one of the filter functions of the
             // K2x00 family. F2 and F4 are blocks of their own only when F1 and F3 hold a 1-block
@@ -258,19 +261,19 @@ public class PC3Program
             })
             {
                 final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
-                if ((rec == RECORD_F2 || rec == RECORD_F4) && !isOneBlockFunction (record[offset - PAGE_LENGTH + PAGE_FUNCTION] & 0xFF))
+                if ((rec == RECORD_F2 || rec == RECORD_F4) && !isOneBlockFunction (layerRecord[offset - PAGE_LENGTH + PAGE_FUNCTION] & 0xFF))
                     continue;
-                final int function = record[offset + PAGE_FUNCTION] & 0xFF;
+                final int function = layerRecord[offset + PAGE_FUNCTION] & 0xFF;
                 if (!isFilterFunction (function))
                     continue;
                 this.filterFunction = function;
-                this.cutoff = record[offset + PAGE_COARSE];
-                this.cutoffModulationSource = record[offset + PAGE_SOURCE_1] & 0xFF;
-                this.cutoffModulationDepth = KurzweilProgram.decodeModulationDepth (record[offset + PAGE_DEPTH_1]);
+                this.cutoff = layerRecord[offset + PAGE_COARSE];
+                this.cutoffModulationSource = layerRecord[offset + PAGE_SOURCE_1] & 0xFF;
+                this.cutoffModulationDepth = KurzweilProgram.decodeModulationDepth (layerRecord[offset + PAGE_DEPTH_1]);
                 if (hasResonance (function) && (rec == RECORD_F1 || rec == RECORD_F3))
                 {
                     // 0.5dB steps in the range of the Res parameter (-12 to 24 dB)
-                    final int value = record[offset + PAGE_LENGTH + PAGE_COARSE];
+                    final int value = layerRecord[offset + PAGE_LENGTH + PAGE_COARSE];
                     if (value >= -24 && value <= 48)
                         this.secondParameter = value;
                 }
@@ -286,22 +289,22 @@ public class PC3Program
          */
         byte [] createRecord ()
         {
-            final byte [] record = LAYER_TEMPLATE.clone ();
+            final byte [] layerRecord = LAYER_TEMPLATE.clone ();
 
-            record[LYR_ENABLE_LOW] = 0;
-            record[LYR_LOW_KEY] = (byte) Math.clamp (this.lowKey, 0, 127);
-            record[LYR_HIGH_KEY] = (byte) Math.clamp (this.highKey, 0, 127);
-            record[LYR_VELOCITY] = (byte) encodeVelocityRange (this.velocityLow, this.velocityHigh);
-            record[LYR_ENABLE] = (byte) CONTROL_SOURCE_ON;
-            record[LYR_FLAGS] = 0;
-            record[LYR_MORE_FLAGS] = (byte) (MORE_FLAGS_DEFAULT | (this.isStereo ? MORE_FLAGS_STEREO : 0));
-            record[LYR_TRIGGER] = 0;
-            record[LYR_ENABLE_HIGH] = 0;
+            layerRecord[LYR_ENABLE_LOW] = 0;
+            layerRecord[LYR_LOW_KEY] = (byte) Math.clamp (this.lowKey, 0, 127);
+            layerRecord[LYR_HIGH_KEY] = (byte) Math.clamp (this.highKey, 0, 127);
+            layerRecord[LYR_VELOCITY] = (byte) encodeVelocityRange (this.velocityLow, this.velocityHigh);
+            layerRecord[LYR_ENABLE] = (byte) CONTROL_SOURCE_ON;
+            layerRecord[LYR_FLAGS] = 0;
+            layerRecord[LYR_MORE_FLAGS] = (byte) (MORE_FLAGS_DEFAULT | (this.isStereo ? MORE_FLAGS_STEREO : 0));
+            layerRecord[LYR_TRIGGER] = 0;
+            layerRecord[LYR_ENABLE_HIGH] = 0;
             for (int i = LYR_DELAY; i <= LYR_CROSSFADE; i++)
-                record[i] = 0;
+                layerRecord[i] = 0;
 
             // The user envelope replaces the natural one of the samples
-            System.arraycopy (ENVC_TEMPLATE, 0, record, ENVC_OFFSET, ENVC_TEMPLATE.length);
+            System.arraycopy (ENVC_TEMPLATE, 0, layerRecord, ENVC_OFFSET, ENVC_TEMPLATE.length);
             KurzweilEnvelope envelope = this.amplitudeEnvelope;
             if (envelope == null)
             {
@@ -310,42 +313,42 @@ public class PC3Program
                 envelope.setStage (0, 0, 100);
                 envelope.setStage (3, 0, 100);
             }
-            writeEnvelope (record, ENV1_OFFSET, envelope);
+            writeEnvelope (layerRecord, ENV1_OFFSET, envelope);
 
             // The keymap block: a stereo layer plays the same keymap on both sides
-            record[CAL_OFFSET + CAL_TRANSPOSE] = (byte) this.transpose;
-            writeUnsigned16 (record, CAL_OFFSET + CAL_KEYMAP_2, this.keymapID);
-            writeUnsigned16 (record, CAL_OFFSET + CAL_KEYMAP, this.keymapID);
-            record[CAL_OFFSET + CAL_LAYER_COUNTER] = 0;
+            layerRecord[CAL_OFFSET + CAL_TRANSPOSE] = (byte) this.transpose;
+            writeUnsigned16 (layerRecord, CAL_OFFSET + CAL_KEYMAP_2, this.keymapID);
+            writeUnsigned16 (layerRecord, CAL_OFFSET + CAL_KEYMAP, this.keymapID);
+            layerRecord[CAL_OFFSET + CAL_LAYER_COUNTER] = 0;
 
             // The filter uses algorithm 1: a 2-block function (the 2-pole filters with their
             // resonance or width) takes the slot F1/F2, a 1-block function (the 1-pole filters)
             // the slot F3; the other slots stay empty
             if (this.filterFunction != FUNCTION_NONE)
             {
-                record[CAL_OFFSET + CAL_ALGORITHM] = (byte) ALGORITHM_TWO_BLOCK;
+                layerRecord[CAL_OFFSET + CAL_ALGORITHM] = (byte) ALGORITHM_TWO_BLOCK;
                 if (isOneBlockFunction (this.filterFunction))
                 {
-                    writePage (record, RECORD_F1, FUNCTION_NONE, 0, PAGE_TYPE_ONE_BLOCK);
-                    writePage (record, RECORD_F2, FUNCTION_NONE, 0, 0);
-                    this.writeFilterPage (record, RECORD_F3, PAGE_TYPE_ONE_BLOCK);
+                    writePage (layerRecord, RECORD_F1, FUNCTION_NONE, 0, PAGE_TYPE_ONE_BLOCK);
+                    writePage (layerRecord, RECORD_F2, FUNCTION_NONE, 0, 0);
+                    this.writeFilterPage (layerRecord, RECORD_F3, PAGE_TYPE_ONE_BLOCK);
                 }
                 else
                 {
-                    this.writeFilterPage (record, RECORD_F1, PAGE_TYPE_TWO_BLOCK);
-                    writePage (record, RECORD_F2, FUNCTION_SECOND_BLOCK, this.secondParameter, 0);
-                    writePage (record, RECORD_F3, FUNCTION_NONE, 0, PAGE_TYPE_ONE_BLOCK);
+                    this.writeFilterPage (layerRecord, RECORD_F1, PAGE_TYPE_TWO_BLOCK);
+                    writePage (layerRecord, RECORD_F2, FUNCTION_SECOND_BLOCK, this.secondParameter, 0);
+                    writePage (layerRecord, RECORD_F3, FUNCTION_NONE, 0, PAGE_TYPE_ONE_BLOCK);
                 }
-                writePage (record, RECORD_F4, FUNCTION_NONE, 0, PAGE_TYPE_ONE_BLOCK);
+                writePage (layerRecord, RECORD_F4, FUNCTION_NONE, 0, PAGE_TYPE_ONE_BLOCK);
 
                 if (this.getFilterEnvelope () != null)
-                    writeEnvelope (record, ENV2_OFFSET, this.filterEnvelope);
+                    writeEnvelope (layerRecord, ENV2_OFFSET, this.filterEnvelope);
             }
 
             // The amplifier: the velocity tracking
-            record[PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_VELOCITY_TRACKING] = (byte) Math.clamp (this.velocityTracking, 0, 96);
+            layerRecord[PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_VELOCITY_TRACKING] = (byte) Math.clamp (this.velocityTracking, 0, 96);
 
-            return record;
+            return layerRecord;
         }
 
 
@@ -353,18 +356,18 @@ public class PC3Program
          * Write the DSP record of the filter: the function, the cutoff and the modulation of the
          * cutoff by the filter envelope or the attack velocity.
          *
-         * @param record The layer record
+         * @param layerRecord The layer record
          * @param rec The index of the DSP record
          * @param type The type field of the record
          */
-        private void writeFilterPage (final byte [] record, final int rec, final int type)
+        private void writeFilterPage (final byte [] layerRecord, final int rec, final int type)
         {
-            writePage (record, rec, this.filterFunction, this.cutoff, type);
+            writePage (layerRecord, rec, this.filterFunction, this.cutoff, type);
             if (this.cutoffModulationSource == CONTROL_SOURCE_OFF || this.cutoffModulationDepth == 0)
                 return;
             final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
-            record[offset + PAGE_SOURCE_1] = (byte) this.cutoffModulationSource;
-            record[offset + PAGE_DEPTH_1] = (byte) KurzweilProgram.encodeModulationDepth (this.cutoffModulationDepth);
+            layerRecord[offset + PAGE_SOURCE_1] = (byte) this.cutoffModulationSource;
+            layerRecord[offset + PAGE_DEPTH_1] = (byte) KurzweilProgram.encodeModulationDepth (this.cutoffModulationDepth);
         }
 
 
@@ -951,15 +954,15 @@ public class PC3Program
     /**
      * Read an envelope segment: the tag, a flags byte and 7 (level, time) byte pairs.
      *
-     * @param record The layer record
+     * @param layerRecord The layer record
      * @param offset The offset of the segment
      * @return The envelope
      */
-    private static KurzweilEnvelope readEnvelope (final byte [] record, final int offset)
+    private static KurzweilEnvelope readEnvelope (final byte [] layerRecord, final int offset)
     {
         final KurzweilEnvelope envelope = new KurzweilEnvelope ();
         for (int stage = 0; stage < KurzweilEnvelope.NUM_STAGES; stage++)
-            envelope.setStage (stage, decodeTime (record[offset + 3 + stage * 2] & 0xFF), record[offset + 2 + stage * 2]);
+            envelope.setStage (stage, decodeTime (layerRecord[offset + 3 + stage * 2] & 0xFF), layerRecord[offset + 2 + stage * 2]);
         return envelope;
     }
 
@@ -967,41 +970,41 @@ public class PC3Program
     /**
      * Write an envelope segment: the flags byte and 7 (level, time) byte pairs behind the tag.
      *
-     * @param record The layer record
+     * @param layerRecord The layer record
      * @param offset The offset of the segment
      * @param envelope The envelope
      */
-    private static void writeEnvelope (final byte [] record, final int offset, final KurzweilEnvelope envelope)
+    private static void writeEnvelope (final byte [] layerRecord, final int offset, final KurzweilEnvelope envelope)
     {
         // No envelope loop
-        record[offset + 1] = 0;
+        layerRecord[offset + 1] = 0;
         for (int stage = 0; stage < KurzweilEnvelope.NUM_STAGES; stage++)
         {
-            record[offset + 2 + stage * 2] = (byte) Math.clamp (envelope.getLevel (stage), 0, 100);
-            record[offset + 3 + stage * 2] = (byte) encodeTime (envelope.getTime (stage));
+            layerRecord[offset + 2 + stage * 2] = (byte) Math.clamp (envelope.getLevel (stage), 0, 100);
+            layerRecord[offset + 3 + stage * 2] = (byte) encodeTime (envelope.getTime (stage));
         }
     }
 
 
     /**
-     * Write the function and the main parameter of a DSP record and clear its modulation and
-     * output fields. The tag and the pan fields of the template are kept.
+     * Write the function and the main parameter of a DSP record and clear its modulation and output
+     * fields. The tag and the pan fields of the template are kept.
      *
-     * @param record The layer record
+     * @param layerRecord The layer record
      * @param rec The index of the DSP record
      * @param function The DSP function
      * @param coarse The main parameter
      * @param type The type field of the record
      */
-    private static void writePage (final byte [] record, final int rec, final int function, final int coarse, final int type)
+    private static void writePage (final byte [] layerRecord, final int rec, final int function, final int coarse, final int type)
     {
         final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
-        record[offset + PAGE_FUNCTION] = (byte) function;
-        record[offset + PAGE_COARSE] = (byte) coarse;
+        layerRecord[offset + PAGE_FUNCTION] = (byte) function;
+        layerRecord[offset + PAGE_COARSE] = (byte) coarse;
         for (int i = PAGE_COARSE + 1; i < PAGE_TYPE; i++)
-            record[offset + i] = 0;
-        writeUnsigned16 (record, offset + PAGE_TYPE, type);
-        writeUnsigned16 (record, offset + PAGE_OUTPUT, 0);
+            layerRecord[offset + i] = 0;
+        writeUnsigned16 (layerRecord, offset + PAGE_TYPE, type);
+        writeUnsigned16 (layerRecord, offset + PAGE_OUTPUT, 0);
     }
 
 

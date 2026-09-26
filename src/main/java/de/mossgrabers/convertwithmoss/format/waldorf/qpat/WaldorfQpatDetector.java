@@ -899,7 +899,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             return;
 
         final File sampleFile = new File (parentFolder, samplePath);
-        final ISampleData sampleData = createSampleData (sampleFile, this.notifier);
+        final ISampleData sampleData = AbstractDetector.createSampleData (sampleFile, this.notifier);
 
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
         group.addSampleZone (zone);

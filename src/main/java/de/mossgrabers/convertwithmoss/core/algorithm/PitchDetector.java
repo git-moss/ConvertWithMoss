@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 
@@ -176,7 +177,10 @@ public final class PitchDetector
         try
         {
             signal = LoopZeroSnapper.readMonoSignal (zone);
-            sampleRate = zone.getSampleData ().get ().getAudioMetadata ().getSampleRate ();
+            final Optional<ISampleData> sampleData = zone.getSampleData ();
+            if (!sampleData.isPresent ())
+                return Double.NaN;
+            sampleRate = sampleData.get ().getAudioMetadata ().getSampleRate ();
         }
         catch (final Exception _)
         {

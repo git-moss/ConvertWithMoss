@@ -276,7 +276,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         final String zoneName;
         if (sampleFile != null)
         {
-            sampleData = createSampleData (sampleFile, this.notifier);
+            sampleData = AbstractDetector.createSampleData (sampleFile, this.notifier);
             zoneName = FileUtils.getNameWithoutType (sampleFile);
         }
         else
@@ -769,7 +769,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         final Map<Integer, IGroup> groups = new LinkedHashMap<> ();
         for (final ParsedZone parsedZone: parsedZones)
         {
-            final ISampleData sampleData = createSampleData (parsedZone.file, this.notifier);
+            final ISampleData sampleData = AbstractDetector.createSampleData (parsedZone.file, this.notifier);
             final ISampleZone zone = new DefaultSampleZone (parsedZone.name, sampleData);
             zone.setKeyRoot (parsedZone.rootKey);
             zone.setKeyLow (parsedZone.keyLow);

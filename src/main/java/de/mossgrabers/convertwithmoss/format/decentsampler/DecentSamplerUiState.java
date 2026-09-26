@@ -24,15 +24,17 @@ import de.mossgrabers.tools.ui.Functions;
 /**
  * Applies the values of the controls of the user interface of a DecentSampler preset to the
  * parameters which they are bound to. DecentSampler sends the value of a control through its
- * bindings when a preset is loaded (unless a binding is disabled for loading), therefore the
- * stored control values decide how a preset sounds and not only the attributes of its groups,
- * samples, tags, effects and modulators. The resolved values are written into these attributes of
- * the preset document, from which the detector reads them.
+ * bindings when a preset is loaded (unless a binding is disabled for loading), therefore the stored
+ * control values decide how a preset sounds and not only the attributes of its groups, samples,
+ * tags, effects and modulators. The resolved values are written into these attributes of the preset
+ * document, from which the detector reads them.
  *
  * @author Jürgen Moßgraber
  */
 final class DecentSamplerUiState
 {
+    private static final String              TAG_ENABLED            = "ENABLED";
+
     private static final String              FEATURE_CONTROL        = "IDS_DS_FEATURE_CONTROL";
 
     private static final String              CONTROL                = "control";
@@ -113,12 +115,12 @@ final class DecentSamplerUiState
         AMP_PARAMETERS.put ("GROUP_TUNING", DecentSamplerTag.GROUP_TUNING);
         AMP_PARAMETERS.put ("PITCH_KEY_TRACK", DecentSamplerTag.PITCH_KEY_TRACK);
         AMP_PARAMETERS.put ("AMP_VEL_TRACK", DecentSamplerTag.AMP_VELOCITY_TRACK);
-        AMP_PARAMETERS.put ("ENABLED", DecentSamplerTag.ENABLED);
+        AMP_PARAMETERS.put (TAG_ENABLED, DecentSamplerTag.ENABLED);
         AMP_PARAMETERS.put ("AMP_ENV_ENABLED", DecentSamplerTag.AMP_ENV_ENABLED);
         AMP_PARAMETERS.put ("SILENCING_MODE", DecentSamplerTag.SILENCING_MODE);
         AMP_PARAMETERS.put ("SILENCING_DECAY", DecentSamplerTag.SILENCING_DECAY);
 
-        EFFECT_PARAMETERS.put ("ENABLED", DecentSamplerTag.ENABLED);
+        EFFECT_PARAMETERS.put (TAG_ENABLED, DecentSamplerTag.ENABLED);
         EFFECT_PARAMETERS.put ("FX_FILTER_FREQUENCY", DecentSamplerTag.EFFECT_FREQUENCY);
         EFFECT_PARAMETERS.put ("FX_FILTER_RESONANCE", DecentSamplerTag.EFFECT_RESONANCE);
         EFFECT_PARAMETERS.put ("FX_MIX", DecentSamplerTag.EFFECT_MIX);
@@ -130,7 +132,7 @@ final class DecentSamplerUiState
 
         TAG_PARAMETERS.put (PARAMETER_VOLUME, DecentSamplerTag.VOLUME);
         TAG_PARAMETERS.put ("TAG_VOLUME", DecentSamplerTag.VOLUME);
-        TAG_PARAMETERS.put ("ENABLED", DecentSamplerTag.ENABLED);
+        TAG_PARAMETERS.put (TAG_ENABLED, DecentSamplerTag.ENABLED);
         TAG_PARAMETERS.put ("TAG_ENABLED", DecentSamplerTag.ENABLED);
         TAG_PARAMETERS.put ("TAG_POLYPHONY", DecentSamplerTag.TAG_POLYPHONY);
 
@@ -327,37 +329,37 @@ final class DecentSamplerUiState
                 return false;
             targets = getTags (root, binding);
         }
-        else if (TYPE_AMP.equals (type) || TYPE_GENERAL.equals (type))
-        {
-            attribute = getAmpAttribute (parameter, level);
-            if (attribute == null || !isInstrumentOrGroup)
-                return false;
-            targets = getGroupTargets (root, binding, level);
-        }
-        else if (TYPE_EFFECT.equals (type))
-        {
-            // Only filters and the gain effect are converted, the other effects are reported by
-            // the detector anyway
-            attribute = EFFECT_PARAMETERS.get (parameter);
-            if (attribute == null)
-                return true;
-            if (!isInstrumentOrGroup)
-                return false;
-            targets = getEffectTargets (root, binding, level);
-        }
-        else if (TYPE_MODULATOR.equals (type))
-        {
-            attribute = MODULATOR_PARAMETERS.get (parameter);
-            if (attribute == null)
-                return false;
-            final Element modulators = XMLUtils.getChildElementByName (root, DecentSamplerTag.MODULATORS);
-            targets = modulators == null ? Collections.emptyList () : select (XMLUtils.getChildElements (modulators), binding, BINDING_POSITION, MODULATOR_TAGS, true);
-        }
         else
-        {
-            // Bindings to the user interface, notes, key colors, arpeggiators, etc.
-            return true;
-        }
+            switch (type)
+            {
+                case TYPE_AMP, TYPE_GENERAL -> {
+                    attribute = getAmpAttribute (parameter, level);
+                    if (attribute == null || !isInstrumentOrGroup)
+                        return false;
+                    targets = getGroupTargets (root, binding, level);
+                }
+                case TYPE_EFFECT -> {
+                    // Only filters and the gain effect are converted, the other effects are
+                    // reported by
+                    // the detector anyway
+                    attribute = EFFECT_PARAMETERS.get (parameter);
+                    if (attribute == null)
+                        return true;
+                    if (!isInstrumentOrGroup)
+                        return false;
+                    targets = getEffectTargets (root, binding, level);
+                }
+                case TYPE_MODULATOR -> {
+                    attribute = MODULATOR_PARAMETERS.get (parameter);
+                    if (attribute == null)
+                        return false;
+                    final Element modulators = XMLUtils.getChildElementByName (root, DecentSamplerTag.MODULATORS);
+                    targets = modulators == null ? Collections.emptyList () : select (XMLUtils.getChildElements (modulators), binding, BINDING_POSITION, MODULATOR_TAGS, true);
+                }
+                case null, default -> {
+                    return true;
+                }
+            }
 
         // A binding without a target does not change anything in DecentSampler either
         if (targets.isEmpty ())
@@ -385,8 +387,8 @@ final class DecentSamplerUiState
 
 
     /**
-     * Get the attribute of the groups or of a group element which an amplitude or general
-     * parameter sets.
+     * Get the attribute of the groups or of a group element which an amplitude or general parameter
+     * sets.
      *
      * @param parameter The parameter of the binding
      * @param level The level of the binding
@@ -407,8 +409,7 @@ final class DecentSamplerUiState
 
 
     /**
-     * Get the groups element (the instrument level) or the group elements which a binding
-     * targets.
+     * Get the groups element (the instrument level) or the group elements which a binding targets.
      *
      * @param root The root element of the preset
      * @param binding The binding
@@ -430,8 +431,7 @@ final class DecentSamplerUiState
 
     /**
      * Get the effect elements which a binding targets. The effects of the instrument are selected
-     * by the position or the effect index, the effects of groups by the group and the effect
-     * index.
+     * by the position or the effect index, the effects of groups by the group and the effect index.
      *
      * @param root The root element of the preset
      * @param binding The binding
@@ -465,8 +465,8 @@ final class DecentSamplerUiState
 
 
     /**
-     * Get the tag elements which a binding on the tag level targets. A tag which is not defined
-     * yet is added, since its parameters have default values.
+     * Get the tag elements which a binding on the tag level targets. A tag which is not defined yet
+     * is added, since its parameters have default values.
      *
      * @param root The root element of the preset
      * @param binding The binding
@@ -474,7 +474,7 @@ final class DecentSamplerUiState
      */
     private static List<Element> getTags (final Element root, final Element binding)
     {
-        final String names = binding.hasAttribute (BINDING_IDENTIFIER) ? binding.getAttribute (BINDING_IDENTIFIER) : binding.getAttribute (BINDING_TAGS);
+        final String names = binding.getAttribute (binding.hasAttribute (BINDING_IDENTIFIER) ? BINDING_IDENTIFIER : BINDING_TAGS);
         Element tags = XMLUtils.getChildElementByName (root, DecentSamplerTag.TAGS);
         final List<Element> result = new ArrayList<> ();
         for (final String n: names.split (","))
@@ -519,7 +519,7 @@ final class DecentSamplerUiState
      */
     private static List<Element> select (final List<Element> candidates, final Element binding, final String indexAttribute, final String tagsAttribute, final boolean usePosition)
     {
-        final String tags = binding.hasAttribute (tagsAttribute) ? binding.getAttribute (tagsAttribute) : binding.getAttribute (BINDING_TAGS);
+        final String tags = binding.getAttribute (binding.hasAttribute (tagsAttribute) ? tagsAttribute : BINDING_TAGS);
         if (!tags.isBlank ())
         {
             final List<String> names = Arrays.stream (tags.split (",")).map (String::trim).toList ();

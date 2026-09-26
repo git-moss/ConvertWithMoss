@@ -45,9 +45,9 @@ import de.mossgrabers.tools.FileUtils;
 /**
  * Detects recursively Kurzweil PC3 series, Forte, PC4 and K2700 object files in folders. Files must
  * end with <i>.pc3</i>, <i>.p3k</i>, <i>.k2p</i>, <i>.p3a</i>, <i>.ple</i>, <i>.for</i>,
- * <i>.fse</i>, <i>.pc4</i>, <i>.p4s</i> or <i>.k27</i>. Each program in a file becomes one multi-sample;
- * keymaps and samples which are not referenced by a program are added as multi-samples of their
- * own.
+ * <i>.fse</i>, <i>.pc4</i>, <i>.p4s</i> or <i>.k27</i>. Each program in a file becomes one
+ * multi-sample; keymaps and samples which are not referenced by a program are added as
+ * multi-samples of their own.
  *
  * @author Jürgen Moßgraber
  */
@@ -275,8 +275,8 @@ public class PC3Detector extends AbstractDetector<MetadataSettingsUI>
      * @param usedSampleIDs All sample IDs referenced from keymaps are added to this set
      * @param reportedRomSampleIDs The IDs of the ROM samples which were already reported
      * @param reportProblems If true, missing or ROM sample references are logged
-     * @param panning The panning of the mono zones: -1 for the left keymap of a stereo layer, 1
-     *            for the right one, 0 otherwise
+     * @param panning The panning of the mono zones: -1 for the left keymap of a stereo layer, 1 for
+     *            the right one, 0 otherwise
      */
     private void createGroupsFromKeymap (final PC3File pc3File, final KurzweilKeymap keymap, final PC3Program.Layer layer, final List<IGroup> groups, final Map<Long, ISampleData> sampleDataCache, final Set<Integer> usedSampleIDs, final Set<Integer> reportedRomSampleIDs, final boolean reportProblems, final int panning)
     {
@@ -295,13 +295,11 @@ public class PC3Detector extends AbstractDetector<MetadataSettingsUI>
                     missingSampleIDs.add (Integer.valueOf (entry.getSampleID ()));
             }
         if (reportProblems)
-        {
             if (!hasSamples && !missingSampleIDs.isEmpty ())
                 this.notifier.log ("IDS_PC3_ROM_KEYMAP", keymap.getName ());
             else
                 for (final Integer sampleID: missingSampleIDs)
                     this.notifier.log ("IDS_KURZWEIL_SAMPLE_MISSING", sampleID.toString (), keymap.getName ());
-        }
         if (!hasSamples)
             return;
 

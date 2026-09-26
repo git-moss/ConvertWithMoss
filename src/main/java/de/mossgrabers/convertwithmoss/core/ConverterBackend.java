@@ -695,8 +695,8 @@ public class ConverterBackend
      * any resampling of the destination format. If the loops were snapped, the note reports the
      * loops which still click and does not recommend the snapping again. If the loops which still
      * click were cross-faded, only loops which start at the beginning of their sample are left,
-     * which have no audio for a cross-fade. Nothing is changed and a sample which cannot be read
-     * is simply skipped.
+     * which have no audio for a cross-fade. Nothing is changed and a sample which cannot be read is
+     * simply skipped.
      *
      * @param multisampleSource The multi-sample to check
      */

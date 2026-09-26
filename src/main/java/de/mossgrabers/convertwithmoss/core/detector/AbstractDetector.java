@@ -891,7 +891,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     protected ISampleZone createSampleZone (final File sampleFile) throws IOException
     {
-        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), createSampleData (sampleFile, this.notifier));
+        return new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), AbstractDetector.createSampleData (sampleFile, this.notifier));
     }
 
 

@@ -79,8 +79,8 @@ public class AbletonCoreLibrary
 
 
     /**
-     * Find the Core Libraries in the standard macOS and Windows installation locations. Only
-     * the installation folders themselves are listed; the sample trees are never searched.
+     * Find the Core Libraries in the standard macOS and Windows installation locations. Only the
+     * installation folders themselves are listed; the sample trees are never searched.
      *
      * @return The library folders
      */
@@ -103,9 +103,9 @@ public class AbletonCoreLibrary
 
 
     /**
-     * Add the libraries from a folder which contains Live installations. Prefer release builds
-     * over betas, then the most recently installed copy. The source's own library is always
-     * checked before these fallbacks.
+     * Add the libraries from a folder which contains Live installations. Prefer release builds over
+     * betas, then the most recently installed copy. The source's own library is always checked
+     * before these fallbacks.
      *
      * @param libraries Where to add the library folders
      * @param parent The parent of the Live installation folders
@@ -117,7 +117,7 @@ public class AbletonCoreLibrary
         final File [] installations = parent.listFiles (file -> file.isDirectory () && file.getName ().startsWith (prefix));
         if (installations == null)
             return;
-        Arrays.sort (installations, Comparator.comparing ((File file) -> Boolean.valueOf (file.getName ().toLowerCase (Locale.US).contains ("beta"))).thenComparing (Comparator.comparingLong (File::lastModified).reversed ()).thenComparing (File::getName));
+        Arrays.sort (installations, Comparator.comparing ((final File file) -> Boolean.valueOf (file.getName ().toLowerCase (Locale.US).contains ("beta"))).thenComparing (Comparator.comparingLong (File::lastModified).reversed ()).thenComparing (File::getName));
         for (final File installation: installations)
         {
             final File library = new File (installation, libraryPath);

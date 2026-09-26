@@ -143,7 +143,9 @@ public class DecentSamplerTag
     public static final String                    GROUP_VOLUME         = "groupVolume";
     /** The pan offset of a group, which is added to the pan. */
     public static final String                    GROUP_PAN            = "groupPan";
-    /** The attribute which turns the amplitude envelope off, which plays the samples as one-shots. */
+    /**
+     * The attribute which turns the amplitude envelope off, which plays the samples as one-shots.
+     */
     public static final String                    AMP_ENV_ENABLED      = "ampEnvEnabled";
     /** The tags which stop a sample when a sample with one of them is triggered. */
     public static final String                    SILENCED_BY_TAGS     = "silencedByTags";

@@ -25,10 +25,9 @@ import de.mossgrabers.tools.ui.Functions;
 /**
  * Decodes the binary format in which Ableton Live stores objects, e.g. the table of contents of a
  * Live Pack. The format describes itself: a record starts with the definitions of the types which
- * its object uses - the names and the types of their fields - followed by the values of the
- * object. The elements of a list are followed by an empty type name. The number of elements which
- * is stored in front of them is not used, since it can be larger than the number of elements
- * which follow.
+ * its object uses - the names and the types of their fields - followed by the values of the object.
+ * The elements of a list are followed by an empty type name. The number of elements which is stored
+ * in front of them is not used, since it can be larger than the number of elements which follow.
  *
  * @author Jürgen Moßgraber
  */
@@ -261,7 +260,6 @@ public class AbletonBinaryDecoder
     private Object readValue (final Type type) throws IOException
     {
         if (type.isPrimitive ())
-        {
             switch (type.primitive ())
             {
                 case TYPE_BOOLEAN:
@@ -275,7 +273,6 @@ public class AbletonBinaryDecoder
                 default:
                     throw new IOException (Functions.getMessage (ERR_UNKNOWN_TYPE, String.format ("0x%02X", Integer.valueOf (type.primitive ()))));
             }
-        }
 
         if (!this.genericTypes.contains (type.name ()))
             return this.readObject (type.name ());

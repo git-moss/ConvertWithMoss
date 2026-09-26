@@ -56,9 +56,9 @@ import de.mossgrabers.tools.XMLUtils;
  * which is understood by all firmware versions.
  * <p>
  * The Deluge has no loop cross-fade parameter of its own. Like the Renoise creator, a loop
- * cross-fade - set with the 'Cross-fade loops' processing option or read from the source -
- * is therefore baked into the looped sample audio. No extra option is needed for this; the
- * cross-fade is applied automatically whenever a forward loop carries one.
+ * cross-fade - set with the 'Cross-fade loops' processing option or read from the source - is
+ * therefore baked into the looped sample audio. No extra option is needed for this; the cross-fade
+ * is applied automatically whenever a forward loop carries one.
  *
  * @author Jürgen Moßgraber
  */

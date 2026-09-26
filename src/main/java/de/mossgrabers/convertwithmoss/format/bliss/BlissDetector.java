@@ -59,6 +59,8 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    private static final String                    MOD_LFO                              = "mod_lfo";
+
     private static final String                    VALUE                                = "value";
 
     private static final String                    IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND = "IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND";
@@ -399,24 +401,26 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         if (modulator == null)
             return;
 
+        final double amount = getDoubleValueAttribute (zoneElement, MOD_LFO + lfoIndex + "_amt", 0);
+        if (amount == 0)
+            return;
+        modulator.setDepth (amount / 2.0 + 0.5);
+
         final ILfo lfo = modulator.getSource ();
+        final int lfoType = XMLUtils.getIntegerAttribute (zoneElement, MOD_LFO + lfoIndex + "_type", 0);
+        lfo.setWaveform (LFO_WAVE_FORMS.getOrDefault (Integer.valueOf (lfoType), LfoWaveform.SINE));
+        // IMPROVE In sync mode it's round(1 + x * 255) 16th notes
 
-        final int lfoType = XMLUtils.getIntegerAttribute (zoneElement, "mod_lfo" + lfoIndex + "_type", 0);
-        final LfoWaveform waveform = LFO_WAVE_FORMS.getOrDefault (Integer.valueOf (lfoType), LfoWaveform.SINE);
-        lfo.setWaveform (waveform);
+        lfo.setDelay (denormalizeLfoTime (getDoubleValueAttribute (zoneElement, MOD_LFO + lfoIndex + "_del", 0.0)));
+        final double phase = getDoubleValueAttribute (zoneElement, MOD_LFO + lfoIndex + "_phs", 1.0);
+        final boolean isKeySync = phase <= 0.99725;
+        lfo.setKeySync (isKeySync);
+        lfo.setStartPhase (isKeySync ? phase : 0.0);
+        lfo.setRate (lfoRateToFrequency (getDoubleValueAttribute (zoneElement, MOD_LFO + lfoIndex + "_rat", 0.7)));
 
-        final int lfoSync = XMLUtils.getIntegerAttribute (zoneElement, "mod_lfo" + lfoIndex + "_syn", 0);
-        lfo.setKeySync (lfoSync == 1);
-
-        // TODO
-
-        // <mod_lfo1_rat value="0.7" sense="0.5"/>
-        //
-        // | `mod_lfo1_del` | 0.0 | 0.5 | LFO 1 delay |
-        // | `mod_lfo1_phs` | 1.0 | 0.5 | LFO 1 phase |
-        // | `mod_lfo1_rat` | 0.7 | 0.5 | LFO 1 rate |
-        // | `mod_lfo1_amt` | 0.0 | 0.5 | LFO 1 amount |
-
+        // IMPROVE If clock sync for LFO is supported
+        // XMLUtils.getIntegerAttribute (zoneElement, "mod_lfo" + lfoIndex + "_syn", 0) == 1
+        // Rate is calculated in Sync mode like this: round(1 + (1 - x) * 255) 16th notes per cycle
     }
 
 
@@ -457,7 +461,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
             }
             try
             {
-                sampleData = createSampleData (sampleFile, this.notifier);
+                sampleData = AbstractDetector.createSampleData (sampleFile, this.notifier);
             }
             catch (final IOException ex2)
             {
@@ -494,6 +498,12 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
+    private static double denormalizeLfoTime (final double normalizedValue)
+    {
+        return Math.pow (normalizedValue, 4) * 16.0;
+    }
+
+
     // 0..1 (0.0: concave (slow start, fast end), 0.5: linear, 1.0: convex (fast start, slow end))
     // -> -1..1 (logarithmic..exponential)
     private static double denormalizeSlope (final double normalizedValue)
@@ -516,6 +526,12 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         if (version.supportsIntegerDestinations ())
             return Integer.parseInt (value);
         return (int) Math.floor (Float.parseFloat (value) * 14.0);
+    }
+
+
+    private static double lfoRateToFrequency (final double x)
+    {
+        return 220.5 * Math.pow (2, -14 * (1 - x));
     }
 
 

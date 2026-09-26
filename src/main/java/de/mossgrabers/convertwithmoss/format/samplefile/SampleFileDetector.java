@@ -165,7 +165,7 @@ public class SampleFileDetector extends AbstractDetector<SampleFileDetectorUI>
 
             try
             {
-                sampleData.add (createSampleData (file, this.notifier));
+                sampleData.add (AbstractDetector.createSampleData (file, this.notifier));
                 progress.notifyProgress ();
             }
             catch (final IOException ex)

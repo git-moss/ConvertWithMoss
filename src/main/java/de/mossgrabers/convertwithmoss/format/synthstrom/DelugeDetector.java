@@ -395,7 +395,7 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
         final ISampleData sampleData;
         try
         {
-            sampleData = createSampleData (sampleFile, this.notifier);
+            sampleData = AbstractDetector.createSampleData (sampleFile, this.notifier);
         }
         catch (final IOException ex)
         {

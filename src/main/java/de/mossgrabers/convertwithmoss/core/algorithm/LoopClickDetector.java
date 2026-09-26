@@ -221,7 +221,8 @@ public final class LoopClickDetector
 
 
     /**
-     * Check if the wrap of a loop breaks the curve of the waveform, measured like the snapping does.
+     * Check if the wrap of a loop breaks the curve of the waveform, measured like the snapping
+     * does.
      *
      * @param channels The audio of all channels
      * @param loop The loop to check
