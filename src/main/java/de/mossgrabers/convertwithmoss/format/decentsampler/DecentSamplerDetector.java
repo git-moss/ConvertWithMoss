@@ -64,7 +64,7 @@ import de.mossgrabers.tools.ui.Functions;
 
 /**
  * Detects recursively DecentSampler preset and library files in folders. Files must end with
- * <i>.dspreset</i>, <i>.dsproduct</i> or <i>.dslibrary</i>.
+ * <i>.dspreset</i> or <i>.dslibrary</i>.
  *
  * @author Jürgen Moßgraber
  */
@@ -140,7 +140,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      */
     public DecentSamplerDetector (final INotifier notifier)
     {
-        super (DECENT_SAMPLER, DECENT_SAMPLER, notifier, new DecentSamplerDetectorUI (DECENT_SAMPLER), ENDING_DSPRESET, ENDING_DSPRODUCT, ENDING_DSLIBRARY);
+        super (DECENT_SAMPLER, DECENT_SAMPLER, notifier, new DecentSamplerDetectorUI (DECENT_SAMPLER), ENDING_DSPRESET, ENDING_DSLIBRARY);
     }
 
 
