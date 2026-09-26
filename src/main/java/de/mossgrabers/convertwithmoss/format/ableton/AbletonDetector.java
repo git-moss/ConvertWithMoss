@@ -93,9 +93,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         FILTER_TYPES.put ("3", FilterType.BAND_REJECTION);
     }
 
-    private File                                 previousSampleFolder;
+    private File                               previousSampleFolder;
     /** The Live Packs which were opened by the current detection, by their files. */
-    private final Map<String, AbletonLivePack>   livePacks           = new HashMap<> ();
+    private final Map<String, AbletonLivePack> livePacks = new HashMap<> ();
 
 
     /**
@@ -169,7 +169,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 // The samples of a Live Set are stored relative to its project folder, which
                 // contains the Live Set
                 final File projectFolder = file.getParentFile ();
-                final List<IMultisampleSource> multisampleSources = this.parseLiveSet (top.get (), name, sourceFactory, fileRef -> this.getSampleData (file, fileRef, projectFolder));
+                final List<IMultisampleSource> multisampleSources = AbletonDetector.parseLiveSet (top.get (), name, sourceFactory, fileRef -> this.getSampleData (file, fileRef, projectFolder));
                 if (multisampleSources.isEmpty ())
                     this.notifier.logError ("IDS_ADV_NO_SAMPLER_IN_SET");
                 return multisampleSources;
@@ -182,7 +182,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 return Collections.emptyList ();
             }
             final File rootPath = getRootPath (file, devices.get ().getKey ());
-            return this.parsePresetDevices (top.get (), devices.get ().getValue (), name, sourceFactory, fileRef -> this.getSampleData (file, fileRef, rootPath));
+            return AbletonDetector.parsePresetDevices (top.get (), devices.get ().getValue (), name, sourceFactory, fileRef -> this.getSampleData (file, fileRef, rootPath));
         }
         catch (final SAXException ex)
         {
@@ -239,11 +239,11 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 final ISampleLoader sampleLoader = fileRef -> this.getPackSampleData (pack, folder, fileRef);
                 final List<IMultisampleSource> sources;
                 if (isSet)
-                    sources = this.parseLiveSet (top, name, sourceFactory, sampleLoader);
+                    sources = AbletonDetector.parseLiveSet (top, name, sourceFactory, sampleLoader);
                 else
                 {
                     final Optional<Pair<Element, List<Element>>> devices = getPresetDevices (top);
-                    sources = devices.isEmpty () ? Collections.emptyList () : this.parsePresetDevices (top, devices.get ().getValue (), name, sourceFactory, sampleLoader);
+                    sources = devices.isEmpty () ? Collections.emptyList () : AbletonDetector.parsePresetDevices (top, devices.get ().getValue (), name, sourceFactory, sampleLoader);
                 }
                 if (sources.isEmpty ())
                     numberWithoutDevices++;
@@ -309,8 +309,8 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
      * Read the XML document of a preset or Live Set.
      *
      * @param content The content of the file
-     * @return The top element of the document, empty if the file is not supported, which is
-     *         already reported
+     * @return The top element of the document, empty if the file is not supported, which is already
+     *         reported
      * @throws IOException Could not de-compress the file
      * @throws SAXException Could not parse the XML document
      */
@@ -344,7 +344,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
      * @return The multi-samples
      * @throws IOException Could not parse a device
      */
-    private List<IMultisampleSource> parsePresetDevices (final Element top, final List<Element> devices, final String name, final Function<String, IMultisampleSource> sourceFactory, final ISampleLoader sampleLoader) throws IOException
+    private static List<IMultisampleSource> parsePresetDevices (final Element top, final List<Element> devices, final String name, final Function<String, IMultisampleSource> sourceFactory, final ISampleLoader sampleLoader) throws IOException
     {
         final String creator = top.getAttribute (AbletonTag.ATTR_CREATOR);
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
@@ -352,7 +352,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         for (int i = 0; i < devices.size (); i++)
         {
             final IMultisampleSource multiSample = sourceFactory.apply (name);
-            this.parseSampler (multiSample, devices.get (i), sampleLoader, creator);
+            parseSampler (multiSample, devices.get (i), sampleLoader, creator);
             multisampleSources.add (multiSample);
             // Create unique names if there are multiple ones
             if (multiple)
@@ -374,7 +374,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
      * @return The multi-samples
      * @throws IOException Could not parse a device
      */
-    private List<IMultisampleSource> parseLiveSet (final Element top, final String setName, final Function<String, IMultisampleSource> sourceFactory, final ISampleLoader sampleLoader) throws IOException
+    private static List<IMultisampleSource> parseLiveSet (final Element top, final String setName, final Function<String, IMultisampleSource> sourceFactory, final ISampleLoader sampleLoader) throws IOException
     {
         final Element liveSetElement = XMLUtils.getChildElementByName (top, AbletonTag.TAG_LIVE_SET);
         final Element tracksElement = liveSetElement == null ? null : XMLUtils.getChildElementByName (liveSetElement, AbletonTag.TAG_TRACKS);
@@ -407,7 +407,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
                 if (devices.size () > 1)
                     name.append (' ').append (i + 1);
                 final IMultisampleSource multiSample = sourceFactory.apply (name.toString ());
-                this.parseSampler (multiSample, devices.get (i), sampleLoader, creator);
+                parseSampler (multiSample, devices.get (i), sampleLoader, creator);
                 multisampleSources.add (multiSample);
             }
         }
@@ -416,9 +416,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Create a multi-sample source for a preset or Live Set of a Live Pack. The folders of the
-     * pack are used like the folders of the file system, as if the pack was unpacked into a folder
-     * which is named like the pack file, which is what Live does.
+     * Create a multi-sample source for a preset or Live Set of a Live Pack. The folders of the pack
+     * are used like the folders of the file system, as if the pack was unpacked into a folder which
+     * is named like the pack file, which is what Live does.
      *
      * @param packFile The pack file
      * @param folder The path of the folder in the pack which contains the preset or Live Set
@@ -446,9 +446,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Get the sample of a file reference of a preset or Live Set of a Live Pack. The path of a
      * sample is relative to a folder which contains the preset - its project folder or the folder
-     * of its library - from where it continues with e.g. 'Samples/Imported'. It is therefore
-     * looked up from the folder of the preset upwards to the root of the pack. If it is not found
-     * there, the sample with the name of the file which is closest to the preset is taken.
+     * of its library - from where it continues with e.g. 'Samples/Imported'. It is therefore looked
+     * up from the folder of the preset upwards to the root of the pack. If it is not found there,
+     * the sample with the name of the file which is closest to the preset is taken.
      *
      * @param pack The pack
      * @param presetFolder The path of the folder in the pack which contains the preset
@@ -495,10 +495,10 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
      * @param creator The creator value
      * @throws IOException Could not parse the device
      */
-    private void parseSampler (final IMultisampleSource multisampleSource, final Element deviceElement, final ISampleLoader sampleLoader, final String creator) throws IOException
+    private static void parseSampler (final IMultisampleSource multisampleSource, final Element deviceElement, final ISampleLoader sampleLoader, final String creator) throws IOException
     {
         parseMetadata (deviceElement, multisampleSource.getMetadata (), creator);
-        this.parseMultiSample (multisampleSource, deviceElement, sampleLoader);
+        parseMultiSample (multisampleSource, deviceElement, sampleLoader);
     }
 
 
@@ -568,7 +568,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
      * @param sampleLoader Loads the samples of the zones
      * @throws IOException Could not access the sample
      */
-    private void parseMultiSample (final IMultisampleSource multisampleSource, final Element deviceElement, final ISampleLoader sampleLoader) throws IOException
+    private static void parseMultiSample (final IMultisampleSource multisampleSource, final Element deviceElement, final ISampleLoader sampleLoader) throws IOException
     {
         final Element playerElement = getRequiredElement (deviceElement, AbletonTag.TAG_PLAYER);
         final Element mapElement = getRequiredElement (playerElement, AbletonTag.TAG_MULTI_SAMPLE_MAP);
@@ -1116,8 +1116,8 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Get the Sampler and Simpler devices of a preset: the device of a device preset or all
-     * devices in a rack preset.
+     * Get the Sampler and Simpler devices of a preset: the device of a device preset or all devices
+     * in a rack preset.
      *
      * @param top The top element of the preset
      * @return The element of the device or rack, which references the preset file, and the Sampler
@@ -1146,8 +1146,8 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Collect all Sampler and Simpler devices which contain samples in the given element and in
-     * its children, e.g. in the racks of a track, in the order in which they are stored.
+     * Collect all Sampler and Simpler devices which contain samples in the given element and in its
+     * children, e.g. in the racks of a track, in the order in which they are stored.
      *
      * @param element The element to search
      * @param devices Where to add the found devices

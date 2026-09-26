@@ -64,7 +64,7 @@ import de.mossgrabers.tools.ui.Functions;
 
 /**
  * Detects recursively DecentSampler preset and library files in folders. Files must end with
- * <i>.dspreset</i>, <i>.dsproduct</i> or <i>.dslibrary</i>.
+ * <i>.dspreset</i> or <i>.dslibrary</i>.
  *
  * @author Jürgen Moßgraber
  */
@@ -77,7 +77,6 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     private static final String                  ENDING_DSBUNDLE       = ".dsbundle";
     private static final String                  ENDING_DSLIBRARY      = ".dslibrary";
     private static final String                  ENDING_DSPRESET       = ".dspreset";
-    private static final String                  ENDING_DSPRODUCT      = ".dsproduct";
     /**
      * A start tag or an empty-element tag with at least one attribute: name, attributes,
      * white-space, slash.
@@ -110,7 +109,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     }
 
     /** The attributes of the amplitude envelope. */
-    private static final String []               ENVELOPE_ATTRIBUTES   =
+    private static final String []      ENVELOPE_ATTRIBUTES  =
     {
         DecentSamplerTag.ENV_ATTACK,
         DecentSamplerTag.ENV_DECAY,
@@ -121,17 +120,17 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         DecentSamplerTag.ENV_RELEASE_CURVE
     };
 
-    private Element                              currentGroupsElement  = null;
-    private Element                              currentGroupElement   = null;
-    private Element                              currentSampleElement  = null;
+    private Element                     currentGroupsElement = null;
+    private Element                     currentGroupElement  = null;
+    private Element                     currentSampleElement = null;
     /** The playback features of the current preset which cannot be converted completely. */
-    private final Set<String>                    unsupportedPlayback   = new LinkedHashSet<> ();
+    private final Set<String>           unsupportedPlayback  = new LinkedHashSet<> ();
     /** The gain (in dB) of the tags of the current preset. */
-    private final Map<String, Double>            tagGains              = new HashMap<> ();
+    private final Map<String, Double>   tagGains             = new HashMap<> ();
     /** The disabled tags of the current preset. */
-    private final Set<String>                    disabledTags          = new HashSet<> ();
+    private final Set<String>           disabledTags         = new HashSet<> ();
     /** The exclusive groups of the sample elements of the current preset. */
-    private final Map<Element, Integer>          exclusiveGroups       = new HashMap<> ();
+    private final Map<Element, Integer> exclusiveGroups      = new HashMap<> ();
 
 
     /**
@@ -141,7 +140,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      */
     public DecentSamplerDetector (final INotifier notifier)
     {
-        super (DECENT_SAMPLER, DECENT_SAMPLER, notifier, new DecentSamplerDetectorUI (DECENT_SAMPLER), ENDING_DSPRESET, ENDING_DSPRODUCT, ENDING_DSLIBRARY);
+        super (DECENT_SAMPLER, DECENT_SAMPLER, notifier, new DecentSamplerDetectorUI (DECENT_SAMPLER), ENDING_DSPRESET, ENDING_DSLIBRARY);
     }
 
 
@@ -236,8 +235,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
 
     /**
-     * Test if a file is a preset, which is either a XML document (dspreset) or the same document in
-     * the binary container of a product (dsproduct).
+     * Test if a file is a preset, which is a XML document (dspreset).
      *
      * @param name The name of the file
      * @return True if it is a preset
@@ -245,7 +243,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     private static boolean isPreset (final String name)
     {
         final String lower = name.toLowerCase (Locale.ROOT);
-        return lower.endsWith (ENDING_DSPRESET) || lower.endsWith (ENDING_DSPRODUCT);
+        return lower.endsWith (ENDING_DSPRESET);
     }
 
 
@@ -259,7 +257,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
      */
     private String readPresetContent (final InputStream input, final String name) throws IOException
     {
-        return this.fixInvalidXML (name.toLowerCase (Locale.ROOT).endsWith (ENDING_DSPRODUCT) ? DecentSamplerProduct.read (input) : StreamUtils.readUtf8 (input));
+        return this.fixInvalidXML (StreamUtils.readUtf8 (input));
     }
 
 
@@ -574,12 +572,12 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
 
     /**
-     * Convert the silencing of samples by tags into exclusive groups. A sample stops playing when
-     * a sample which carries one of its silencing tags is triggered. An exclusive group of the
-     * model is mutual: each of its zones stops all the others. Therefore, a tag becomes an
-     * exclusive group only if it is the one silencing tag of every sample which carries it and if
-     * every sample which it silences carries it as well, e.g. several hi-hats which all carry and
-     * are silenced by the tag 'hihat'. Other silencing is reported since it cannot be converted.
+     * Convert the silencing of samples by tags into exclusive groups. A sample stops playing when a
+     * sample which carries one of its silencing tags is triggered. An exclusive group of the model
+     * is mutual: each of its zones stops all the others. Therefore, a tag becomes an exclusive
+     * group only if it is the one silencing tag of every sample which carries it and if every
+     * sample which it silences carries it as well, e.g. several hi-hats which all carry and are
+     * silenced by the tag 'hihat'. Other silencing is reported since it cannot be converted.
      *
      * @param groupsElement The groups element
      */
@@ -780,7 +778,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
         for (int i = 0; i < effectsElements.getLength (); i++)
         {
             int filters = 0;
-            for (final Element effectElement: XMLUtils.getChildElementsByName ((Element) effectsElements.item (i), DecentSamplerTag.EFFECTS_EFFECT, false))
+            for (final Element effectElement: XMLUtils.getChildElementsByName (effectsElements.item (i), DecentSamplerTag.EFFECTS_EFFECT, false))
             {
                 if (DecentSamplerUiState.isFalse (effectElement.getAttribute (DecentSamplerTag.ENABLED)))
                     continue;
