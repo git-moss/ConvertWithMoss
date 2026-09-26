@@ -29,7 +29,6 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.AbstractFileSampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
-import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -179,7 +178,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
     /**
      * Write the sample as a WAV file converted directly from the parsed AIFF chunks. Used for files
      * which the javax.sound SPI cannot read, e.g. AIFC files with plain PCM sound data ('sowt'
-     * marks it as little-endian, 'NONE'/'twos' as big-endian, 'fl32' as floating-point).
+     * marks it as little-endian, 'NONE'/'twos' as big-endian).
      *
      * @param outputStream Where to write the WAV file to
      * @throws IOException Could not convert the sound data
@@ -201,10 +200,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
             data = convertSigned8BitToUnsigned (data);
         else if (!commonChunk.isLittleEndian ())
             data = swapToLittleEndian (data, bytesPerSample);
-        final WaveFile waveFile = new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), data);
-        if (commonChunk.isFloatingPoint ())
-            waveFile.getFormatChunk ().setCompressionCode (FormatChunk.WAVE_FORMAT_IEEE_FLOAT);
-        waveFile.write (outputStream);
+        new WaveFile (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), data).write (outputStream);
     }
 
 

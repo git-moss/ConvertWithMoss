@@ -32,53 +32,54 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonBinaryDecoder.DecodedObject;
+import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.ui.Functions;
 
 
 /**
- * A Live Pack (*.alp) of Ableton Live: a folder with presets, Live Sets and samples which is stored
- * in one file. The file starts with 'pl-a' and the position of its table of contents, which follows
- * the content of all files at the end of the file. The table of contents is a tree of the files and
- * folders with the position and the size of the content of each file. Samples are compressed with
- * FLAC and carry '.flac' after their original name, e.g. 'Kick.wav.flac', all other files are
- * stored as they are. Most packs are additionally compressed as a whole with GZIP; since the table
- * of contents is at the end and the files are read from their positions, such a pack is
- * de-compressed into a temporary file first.
+ * A Live Pack (*.alp) of Ableton Live: a folder with presets, Live Sets and samples which is
+ * stored in one file. The file starts with 'pl-a' and the position of its table of contents, which
+ * follows the content of all files at the end of the file. The table of contents is a tree of the
+ * files and folders with the position and the size of the content of each file. Samples are
+ * compressed with FLAC and carry '.flac' after their original name, e.g. 'Kick.wav.flac', all
+ * other files are stored as they are. Most packs are additionally compressed as a whole with GZIP;
+ * since the table of contents is at the end and the files are read from their positions, such a
+ * pack is de-compressed into a temporary file first.
  *
  * @author Jürgen Moßgraber
  */
 public class AbletonLivePack
 {
-    private static final byte []           PACK_ID             =
+    private static final byte []  PACK_ID              =
     {
         'p',
         'l',
         '-',
         'a'
     };
-    private static final int               HEADER_SIZE         = 12;
+    private static final int      HEADER_SIZE          = 12;
     /** Files and the table of contents are only read into memory up to this size. */
-    private static final int               MAX_MEMORY_SIZE     = 256 * 1024 * 1024;
-    private static final String            FLAC_ENDING         = ".flac";
+    private static final int      MAX_MEMORY_SIZE      = 256 * 1024 * 1024;
+    private static final String   FLAC_ENDING          = ".flac";
 
-    private static final String            TYPE_CONTENT_INFO   = "PackageContentInfo";
-    private static final String            FIELD_ROOT_ITEM     = "RootItem";
-    private static final String            FIELD_NAME          = "Name";
-    private static final String            FIELD_CHILDREN      = "Children";
-    private static final String            FIELD_IS_DIR        = "IsDir";
-    private static final String            FIELD_OFFSET        = "FileDataOffset";
-    private static final String            FIELD_SIZE          = "FileSize";
-    private static final String            FIELD_IS_COMPRESSED = "IsCompressed";
+    private static final String   TYPE_CONTENT_INFO    = "PackageContentInfo";
+    private static final String   FIELD_ROOT_ITEM      = "RootItem";
+    private static final String   FIELD_NAME           = "Name";
+    private static final String   FIELD_CHILDREN       = "Children";
+    private static final String   FIELD_IS_DIR         = "IsDir";
+    private static final String   FIELD_OFFSET         = "FileDataOffset";
+    private static final String   FIELD_SIZE           = "FileSize";
+    private static final String   FIELD_IS_COMPRESSED  = "IsCompressed";
 
-    private final File                     packFile;
-    private final File                     dataFile;
-    private final boolean                  isTemporary;
-    private final List<Entry>              files               = new ArrayList<> ();
-    private final Map<String, Entry>       entries             = new HashMap<> ();
-    private final Map<String, Entry>       entriesIgnoreCase   = new HashMap<> ();
-    private final Map<String, List<Entry>> filesByName         = new HashMap<> ();
-    private final Map<String, File>        extractedFiles      = new HashMap<> ();
-    private File                           extractFolder;
+    private final File            packFile;
+    private final File            dataFile;
+    private final boolean         isTemporary;
+    private final List<Entry>     files                = new ArrayList<> ();
+    private final Map<String, Entry> entries           = new HashMap<> ();
+    private final Map<String, Entry> entriesIgnoreCase = new HashMap<> ();
+    private final Map<String, List<Entry>> filesByName = new HashMap<> ();
+    private final Map<String, File> extractedFiles     = new HashMap<> ();
+    private File                  extractFolder;
 
 
     /**

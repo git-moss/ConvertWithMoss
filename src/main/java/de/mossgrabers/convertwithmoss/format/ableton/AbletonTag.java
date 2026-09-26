@@ -75,6 +75,10 @@ public class AbletonTag
     public static final String TAG_RELATIVE_PATH           = "RelativePath";
     /** The name of the relative path type tag. */
     public static final String TAG_RELATIVE_PATH_TYPE      = "RelativePathType";
+    /** The name of the Live Pack which owns a file reference. */
+    public static final String TAG_LIVE_PACK_NAME          = "LivePackName";
+    /** The identifier of the Live Pack which owns a file reference. */
+    public static final String TAG_LIVE_PACK_ID            = "LivePackId";
     /** The name of the absolute path tag. */
     public static final String TAG_PATH                    = "Path";
     /** A folder of a relative path before Live 11. */
