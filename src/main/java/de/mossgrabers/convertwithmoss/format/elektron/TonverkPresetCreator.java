@@ -429,7 +429,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         {
             trimStartToEnd (wavFile, zone);
             TonverkMultiCreator.clampLoops (zone);
-            TonverkMultiCreator.limitLoopCrossfades (zone, this.notifier);
+            TonverkMultiCreator.fitLoopCrossfades (zone, this.notifier);
             TonverkMultiCreator.addFrameBehindLoop (wavFile, zone);
         }
 
