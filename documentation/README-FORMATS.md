@@ -356,6 +356,7 @@ Furthermore, even this basic setup has some limitations:
 * Velocity layers are fixed to the key-ranges (like on the modern Akai MPCs).
 * Duplicated velocity layers always result in round-robin of these samples (they do not sound at the same time).
 * Only 1 Pitch per key zone can be set which means you cannot tune individual samples.
+* A loop needs at least one frame of the sample behind its end and its cross-fade at most as much audio in front of the loop start as it is long, otherwise the Tonverk does not load the multi-sample, and neither a preset with such a loop. A sample whose loop ends on its last frame therefore gets the first frame of the loop appended, which keeps the sound, and a longer cross-fade is shortened.
 
 #### Destination Options
 

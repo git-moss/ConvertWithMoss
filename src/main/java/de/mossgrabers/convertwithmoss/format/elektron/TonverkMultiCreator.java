@@ -7,6 +7,7 @@ package de.mossgrabers.convertwithmoss.format.elektron;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -26,6 +27,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.CommonRiffChunkId;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.file.wav.WaveRiffChunkId;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
@@ -144,6 +147,8 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
         {
             trimStartToEnd (wavFile, zone);
             clampLoops (zone);
+            limitLoopCrossfades (zone, this.notifier);
+            addFrameBehindLoop (wavFile, zone);
         }
 
         // Update information chunks
@@ -359,6 +364,61 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
             loop.setStart (Math.clamp (loop.getStart (), 0, lastIndex));
             loop.setEnd (Math.clamp (loop.getEnd (), loop.getStart (), lastIndex));
         }
+    }
+
+
+    /**
+     * Shortens the cross-fades of the loops of the zone to the audio in front of the loop start.
+     * The Tonverk cross-fades the end of a loop with the audio in front of the loop start and does
+     * not load a preset whose cross-fade is longer than that audio. Must be called after the loops
+     * were clamped into the trimmed sample.
+     *
+     * @param zone The zone
+     * @param notifier Where to report a shortened cross-fade
+     */
+    static void limitLoopCrossfades (final ISampleZone zone, final INotifier notifier)
+    {
+        for (final ISampleLoop loop: zone.getLoops ())
+        {
+            final int crossfade = loop.getCrossfadeInSamples ();
+            final int maxCrossfade = Math.max (0, loop.getStart ());
+            if (crossfade <= maxCrossfade)
+                continue;
+            loop.setCrossfadeInSamples (maxCrossfade);
+            notifier.log ("IDS_TONVERK_LOOP_CROSSFADE_SHORTENED", zone.getName (), Integer.toString (crossfade), Integer.toString (maxCrossfade));
+        }
+    }
+
+
+    /**
+     * Makes sure that the sample continues behind the end of its loop. The Tonverk does not load a
+     * preset whose loop ends on the last frame of its sample; the loops of the factory samples end
+     * at least one frame before it. Such a sample is extended by the frame which follows the loop
+     * end when it is played - the first frame of the loop - which keeps the loop and the sound as
+     * they are. Must be called after the loops were clamped into the trimmed sample.
+     *
+     * @param wavFile The WAV file with the trimmed sample data
+     * @param zone The zone, its stop is moved to the new end of the sample
+     */
+    static void addFrameBehindLoop (final WaveFile wavFile, final ISampleZone zone)
+    {
+        if (!hasLoop (zone) || zone.isOneShot ())
+            return;
+
+        final FormatChunk formatChunk = wavFile.getFormatChunk ();
+        final byte [] data = wavFile.getDataChunk ().getData ();
+        final int bytesPerFrame = formatChunk.calculateBytesPerSample ();
+        final int numFrames = data.length / bytesPerFrame;
+        final ISampleLoop loop = zone.getLoops ().get (0);
+        if (loop.getEnd () < numFrames - 1)
+            return;
+
+        final byte [] extendedData = Arrays.copyOf (data, (numFrames + 1) * bytesPerFrame);
+        System.arraycopy (data, Math.max (0, loop.getStart ()) * bytesPerFrame, extendedData, numFrames * bytesPerFrame, bytesPerFrame);
+        final DataChunk extendedDataChunk = new DataChunk (formatChunk, numFrames + 1);
+        extendedDataChunk.setData (extendedData);
+        wavFile.setDataChunk (extendedDataChunk);
+        zone.setStop (numFrames + 1);
     }
 
 
