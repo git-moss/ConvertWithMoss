@@ -31,6 +31,12 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
  * not reach the required coverage and is not measured at all, and a multi-sample only gets a result
  * if its zones agree with each other, which sorts out phrase and multi-instrument kits whose zones
  * are each rooted differently.
+ * <p>
+ * A multi-sample of only one or two zones - typically one recording stretched across the keyboard -
+ * has no majority which could outvote a misreading. It only gets a result if all of its zones are
+ * measured and sound a whole number of octaves away from their root keys: a root key set in another
+ * octave than the one of the recording is the common case, and moving it by octaves keeps the keys
+ * in tune, while a chord or an inharmonic sound can produce any other interval.
  *
  * @author Jürgen Moßgraber
  */
@@ -41,7 +47,11 @@ public final class PitchDetector
      * the keyboard cannot decide the result alone.
      */
     private static final int    MAXIMUM_MEASURED_ZONES = 12;
-    /** At least this many zones must be measurable, otherwise a single odd sample could decide. */
+    /**
+     * At least this many zones must be measurable, otherwise a single odd sample could decide. A
+     * multi-sample which has fewer zones must have all of them measured and is only trusted with a
+     * whole number of octaves.
+     */
     private static final int    MINIMUM_MEASURED_ZONES = 3;
     /** This part of the measured zones must agree with the median offset. */
     private static final double MINIMUM_AGREEMENT      = 0.8;
@@ -112,18 +122,21 @@ public final class PitchDetector
      * skipped, the measurement never fails.
      *
      * @param groups The groups whose zones to measure
-     * @return The result, empty if too few zones could be measured or they do not agree
+     * @return The result, empty if too few zones could be measured or they do not agree, or if a
+     *         multi-sample of fewer than three zones does not sound a whole number of octaves away
      */
     public static Optional<Result> detect (final List<IGroup> groups)
     {
+        final List<ISampleZone> zones = selectZones (groups);
         final List<Double> offsets = new ArrayList<> ();
-        for (final ISampleZone zone: selectZones (groups))
+        for (final ISampleZone zone: zones)
         {
             final double offset = measure (zone);
             if (!Double.isNaN (offset))
                 offsets.add (Double.valueOf (offset));
         }
-        if (offsets.size () < MINIMUM_MEASURED_ZONES)
+        final boolean hasFewZones = zones.size () < MINIMUM_MEASURED_ZONES;
+        if (offsets.isEmpty () || offsets.size () < (hasFewZones ? zones.size () : MINIMUM_MEASURED_ZONES))
             return Optional.empty ();
 
         final double median = median (offsets);
@@ -132,6 +145,9 @@ public final class PitchDetector
             if (Math.abs (offset.doubleValue () - median) <= AGREEMENT_RANGE)
                 agreeingZones++;
         if (agreeingZones < MINIMUM_AGREEMENT * offsets.size ())
+            return Optional.empty ();
+        // Rounded like the transposition which moves the root keys onto the pitch
+        if (hasFewZones && Math.round (-median) % 12 != 0)
             return Optional.empty ();
         return Optional.of (new Result (median, agreeingZones, offsets.size ()));
     }
