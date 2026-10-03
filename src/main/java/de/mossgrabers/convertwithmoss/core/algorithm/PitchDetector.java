@@ -32,6 +32,13 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
  * if its zones agree with each other, which sorts out phrase and multi-instrument kits whose zones
  * are each rooted differently.
  * <p>
+ * A chord is the exception: its notes are harmonic series of their own, and the only fundamental
+ * which explains all of them lies below its lowest note - an octave below a fifth, two octaves
+ * below a major triad - and does not sound itself. A chord of two or three notes is recognised by
+ * the harmonics of that fundamental which belong to none of its notes and stay empty, and it is
+ * measured at its root, its note at the pitch class of the fundamental; a chord whose root cannot
+ * be told is not measured.
+ * <p>
  * A multi-sample of only one or two zones - typically one recording stretched across the keyboard -
  * has no majority which could outvote a misreading. It only gets a result if all of its zones are
  * measured and sound a whole number of octaves away from their root keys: a root key set in another
@@ -83,6 +90,24 @@ public final class PitchDetector
     private static final double CANDIDATE_DISTANCE     = 5;
     /** The harmonics over which the found fundamental is measured exactly. */
     private static final int    REFINED_HARMONICS      = 8;
+    /** The harmonics of a fundamental which are checked for the notes of a chord. */
+    private static final int    CHORD_HARMONICS        = 24;
+    /** Chords of up to this many notes are recognised. */
+    private static final int    MAXIMUM_CHORD_NOTES    = 3;
+    /**
+     * A harmonic is missing if it holds less than this part of the power of its neighbours - in
+     * a chord only noise is left there.
+     */
+    private static final double MISSING_HARMONIC       = 0.03;
+    /** A harmonic needs this part of the power of all harmonics to start the series of a note. */
+    private static final double NOTE_HARMONIC          = 0.02;
+    /**
+     * Harmonics above the last one which holds this part of the power of all harmonics are only
+     * noise.
+     */
+    private static final double AUDIBLE_HARMONIC       = 0.001;
+    /** A chord leaves at least this many harmonics empty besides the fundamental. */
+    private static final int    MINIMUM_CHORD_GAPS     = 2;
     /** The analysis window is padded to a power of two of at least this size. */
     private static final int    MINIMUM_FFT_SIZE       = 4096;
     /** ... and of at most this size, which keeps the cost of a long segment in hand. */
@@ -300,8 +325,111 @@ public final class PitchDetector
 
         for (final double candidate: candidates (power, binWidth, firstBin, lastBin, notatedFrequency, sampleRate))
             if (coverage (power, binWidth, firstBin, lastBin, total, candidate) >= MINIMUM_COVERAGE)
-                return refine (power, binWidth, firstBin, lastBin, candidate);
+            {
+                final double fundamental = refine (power, binWidth, firstBin, lastBin, candidate);
+                final int root = findChordRoot (power, binWidth, firstBin, lastBin, fundamental);
+                return root > 0 ? root * fundamental : -1;
+            }
         return -1;
+    }
+
+
+    /**
+     * Check if a fundamental is the common fundamental of a chord instead of the pitch of a single
+     * note. Each note of a chord is a harmonic series of its own, so the only fundamental which
+     * explains all of them lies below the lowest note and does not sound itself, and the harmonics
+     * of it which belong to none of the notes stay empty - those of a fifth are the harmonics 2 and
+     * 3 of the fundamental, so the harmonics 1, 5 and 7 are missing. A single note whose
+     * fundamental is weak or filtered away still has these harmonics, which tells the two apart.
+     * The root of the chord is its note at the pitch class of the fundamental, the harmonic 2, 4 or
+     * 8 - which it is for a fifth, a fourth, a major third and a major triad in all of its
+     * inversions.
+     *
+     * @param power The power spectrum
+     * @param binWidth The frequency of one bin
+     * @param firstBin The first bin of the analysed band
+     * @param lastBin The last bin of the analysed band
+     * @param fundamental The fundamental to check
+     * @return 1 if the fundamental is the pitch of a single note, the harmonic of it which is the
+     *         root of the chord, or 0 for a chord whose root cannot be told
+     */
+    private static int findChordRoot (final double [] power, final double binWidth, final int firstBin, final int lastBin, final double fundamental)
+    {
+        final int count = (int) Math.min (CHORD_HARMONICS, lastBin * binWidth / fundamental);
+        if (count < 4)
+            return 1;
+
+        // The power of each harmonic, with an empty one above the last for its neighbour
+        final double [] harmonics = new double [count + 2];
+        final double toleranceFactor = Math.pow (2, TOLERANCE_CENTS / 1200) - 1;
+        double total = 0;
+        for (int bin = firstBin; bin <= lastBin; bin++)
+        {
+            final double frequency = bin * binWidth;
+            final int harmonic = (int) Math.max (1, Math.round (frequency / fundamental));
+            if (harmonic > count)
+                break;
+            if (Math.abs (frequency - harmonic * fundamental) <= Math.min (frequency * toleranceFactor, fundamental / 4))
+            {
+                harmonics[harmonic] += power[bin];
+                total += power[bin];
+            }
+        }
+        double strongest = 0;
+        for (int harmonic = 2; harmonic <= count; harmonic++)
+            strongest = Math.max (strongest, harmonics[harmonic]);
+        // The fundamental sounds, it is a single note
+        if (harmonics[1] >= MISSING_HARMONIC * strongest)
+            return 1;
+
+        // Above the last harmonic which carries power only noise is left, which tells nothing
+        int last = count;
+        while (last > 2 && harmonics[last] < AUDIBLE_HARMONIC * total)
+            last--;
+
+        // Each harmonic which is not part of the series of a note found so far is either missing or
+        // starts the series of another note
+        final List<Integer> notes = new ArrayList<> ();
+        int missing = 0;
+        for (int harmonic = 2; harmonic <= last; harmonic++)
+        {
+            if (isInSeries (harmonic, notes))
+                continue;
+            if (harmonics[harmonic] < AUDIBLE_HARMONIC * total || harmonics[harmonic] < MISSING_HARMONIC * (harmonics[harmonic - 1] + harmonics[harmonic + 1]) / 2)
+                missing++;
+            else if (harmonics[harmonic] >= NOTE_HARMONIC * total)
+            {
+                notes.add (Integer.valueOf (harmonic));
+                // A whole harmonic series is a single note whose fundamental is missing
+                if (notes.size () > MAXIMUM_CHORD_NOTES)
+                    return 1;
+            }
+            else
+                // A weak harmonic which belongs to none of the notes is part of a single note
+                return 1;
+        }
+        if (notes.size () < 2 || missing < MINIMUM_CHORD_GAPS)
+            return 1;
+        for (final Integer note: notes)
+            if (Integer.bitCount (note.intValue ()) == 1)
+                return note.intValue ();
+        return 0;
+    }
+
+
+    /**
+     * Check if a harmonic is part of the harmonic series of one of the given notes.
+     *
+     * @param harmonic The harmonic of the common fundamental
+     * @param notes The notes as harmonics of the common fundamental
+     * @return True if it is a multiple of one of them
+     */
+    private static boolean isInSeries (final int harmonic, final List<Integer> notes)
+    {
+        for (final Integer note: notes)
+            if (harmonic % note.intValue () == 0)
+                return true;
+        return false;
     }
 
 
