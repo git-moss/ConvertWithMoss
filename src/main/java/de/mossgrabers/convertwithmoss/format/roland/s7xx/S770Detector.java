@@ -74,6 +74,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         SAMPLING_FREQUENCIES[1] = 44100;
         SAMPLING_FREQUENCIES[2] = 24000;
         SAMPLING_FREQUENCIES[3] = 22050;
+        // Following rates are from S-550/5-330/W-30 disks
         SAMPLING_FREQUENCIES[4] = 30000;
         SAMPLING_FREQUENCIES[5] = 15000;
 
@@ -418,9 +419,9 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static void applyParameters (final ISampleZone sampleZone, final S770Patch patch, final S770Partial partial, final SampleSection sampleSection, final S770Sample sample)
+    private void applyParameters (final ISampleZone sampleZone, final S770Patch patch, final S770Partial partial, final SampleSection sampleSection, final S770Sample sample)
     {
-        sampleZone.setSampleData (createSampleData (sample));
+        sampleZone.setSampleData (this.createSampleData (sample));
         sampleZone.setVelocityLow (sampleSection.getSmtVelocityLower ());
         sampleZone.setVelocityCrossfadeLow (sampleSection.getSmtFadeWidthLower ());
         sampleZone.setVelocityHigh (sampleSection.getSmtVelocityUpper ());
@@ -485,10 +486,16 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static ISampleData createSampleData (final S770Sample sample)
+    private ISampleData createSampleData (final S770Sample sample)
     {
         final byte [] waveData = sample.getWaveData ();
-        final int sampleRate = SAMPLING_FREQUENCIES[sample.getSampleFrequency () & 0xF];
+        int sampleRateIndex = sample.getSampleFrequency () & 0xF;
+        if (sampleRateIndex >= SAMPLING_FREQUENCIES.length)
+        {
+            this.notifier.logError ("IDS_S7XX_UNKNOWN_SAMPLE_FREQUENCY", Integer.toString (sampleRateIndex), sample.getSampleName (), Integer.toString (SAMPLING_FREQUENCIES[sampleRateIndex % SAMPLING_FREQUENCIES.length]));
+            sampleRateIndex %= SAMPLING_FREQUENCIES.length;
+        }
+        final int sampleRate = SAMPLING_FREQUENCIES[sampleRateIndex];
         return new InMemorySampleData (new DefaultAudioMetadata (1, sampleRate, 16, waveData.length / 2), waveData);
     }
 
