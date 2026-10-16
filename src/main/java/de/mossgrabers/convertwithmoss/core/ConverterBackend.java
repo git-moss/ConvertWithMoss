@@ -157,6 +157,8 @@ public class ConverterBackend
 
     /** The MIDI note at the middle of the keyboard. */
     private static final int               MIDDLE_KEY                  = 60;
+    /** The largest fixed transposition which the processing options offer, in semitones. */
+    private static final int               MAXIMUM_TRANSPOSE           = 24;
     /** Samples which sound at least this many semitones from their root keys are reported. */
     private static final double            MINIMUM_PITCH_OFFSET        = 0.5;
     private static final String []         NOTE_NAMES                  =
@@ -625,9 +627,10 @@ public class ConverterBackend
     private void processSource (final IMultisampleSource multisampleSource)
     {
         ensureSafeSampleFileNames (multisampleSource);
+        final int sourceMiddleRoot = getMiddleRoot (multisampleSource);
         this.processSamples (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
-        this.checkOffCenterMapping (multisampleSource);
+        this.checkOffCenterMapping (multisampleSource, sourceMiddleRoot);
         this.checkSamplePitch (multisampleSource);
         this.checkLoopClicks (multisampleSource);
     }
@@ -645,8 +648,9 @@ public class ConverterBackend
      */
     private void checkSamplePitch (final IMultisampleSource multisampleSource)
     {
-        // The transposition to the measured pitch has already reported it
-        if (this.detectionSettings.transposeToPitch && this.detectionSettings.needsProcessing ())
+        // The transposition to the measured pitch has already reported it - but analysing does not
+        // transpose
+        if (!this.onlyAnalyse && this.detectionSettings.transposeToPitch && this.detectionSettings.needsProcessing ())
             return;
 
         final Optional<PitchDetector.Result> result = PitchDetector.detect (multisampleSource.getGroups ());
@@ -725,16 +729,21 @@ public class ConverterBackend
      * an octave or more transposed. Vintage phrase and vocal presets - one recording or its
      * velocity layers stretched across the keyboard - are often rooted far off-center, since they
      * were triggered from drum machines and sequencers rather than played on keys. The conversion
-     * keeps the mapping faithfully; the note prevents mistaking it for a conversion error. A preset
-     * with more than two distinct roots is a crafted multi-sample whose placement is a design
-     * decision and gets no note.
+     * keeps the mapping faithfully; the note prevents mistaking it for a conversion error and names
+     * the fixed transposition which plays the samples as recorded closest to the middle, in whole
+     * octaves, which keep the keys in tune. A preset with more than two distinct roots is a crafted
+     * multi-sample whose placement is a design decision and gets no note, nor does a mapping which
+     * the processing changed - a transposition which was asked for, fixed or measured, is no
+     * surprise.
      *
      * @param multisampleSource The multi-sample to check
+     * @param sourceMiddleRoot The root key which the source plays at the middle of the keyboard,
+     *            before the processing
      */
-    private void checkOffCenterMapping (final IMultisampleSource multisampleSource)
+    private void checkOffCenterMapping (final IMultisampleSource multisampleSource, final int sourceMiddleRoot)
     {
         final int middleRoot = getMiddleRoot (multisampleSource);
-        if (middleRoot < 0 || Math.abs (middleRoot - MIDDLE_KEY) < 12)
+        if (middleRoot < 0 || middleRoot != sourceMiddleRoot || Math.abs (middleRoot - MIDDLE_KEY) < 12)
             return;
 
         final Set<Integer> distinctRoots = new HashSet<> ();
@@ -745,8 +754,11 @@ public class ConverterBackend
                 if (root >= 0 && zone.getKeyTracking () != 0)
                     distinctRoots.add (Integer.valueOf (root));
             }
-        if (distinctRoots.size () <= 2)
-            this.notifier.log ("IDS_NOTIFY_OFF_CENTER_MAPPING", multisampleSource.getName (), formatNote (middleRoot));
+        if (distinctRoots.size () > 2)
+            return;
+
+        final int transpose = Math.clamp (Math.round ((middleRoot - MIDDLE_KEY) / 12.0) * 12, -MAXIMUM_TRANSPOSE, MAXIMUM_TRANSPOSE);
+        this.notifier.log ("IDS_NOTIFY_OFF_CENTER_MAPPING", multisampleSource.getName (), formatNote (middleRoot), String.format (Locale.US, "%+d", Integer.valueOf (transpose)), formatNote (middleRoot - transpose));
     }
 
 

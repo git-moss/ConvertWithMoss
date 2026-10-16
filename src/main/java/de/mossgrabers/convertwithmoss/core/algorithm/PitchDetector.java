@@ -27,10 +27,23 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
  * spectrum. That rule cannot fall for an octave too low - such a candidate explains the same
  * partials but predicts harmonics between them which are not there - and it only reports an octave
  * too high if the odd harmonics of the sound are practically absent, in which case that is the
- * pitch which is heard. Material which is not clearly pitched - drums, noise, sound effects - does
- * not reach the required coverage and is not measured at all, and a multi-sample only gets a result
- * if its zones agree with each other, which sorts out phrase and multi-instrument kits whose zones
- * are each rooted differently.
+ * pitch which is heard; the noise in a sample does not change that decision. Material which is not
+ * clearly pitched - drums, noise, sound effects - does not reach the required coverage and is not
+ * measured at all, and a multi-sample only gets a result if its zones agree with each other, which
+ * sorts out phrase and multi-instrument kits whose zones are each rooted differently.
+ * <p>
+ * A chord is the exception: its notes are harmonic series of their own, and the only fundamental
+ * which explains all of them lies below its lowest note - an octave below a fifth, two octaves
+ * below a major triad - and does not sound itself. A chord of two or three notes is recognised by
+ * the harmonics of that fundamental which belong to none of its notes and stay empty, and it is
+ * measured at its root, its note at the pitch class of the fundamental; a chord whose root cannot
+ * be told is not measured.
+ * <p>
+ * A multi-sample of only one or two zones - typically one recording stretched across the keyboard -
+ * has no majority which could outvote a misreading. It only gets a result if all of its zones are
+ * measured and sound a whole number of octaves away from their root keys: a root key set in another
+ * octave than the one of the recording is the common case, and moving it by octaves keeps the keys
+ * in tune, while a chord or an inharmonic sound can produce any other interval.
  *
  * @author Jürgen Moßgraber
  */
@@ -41,7 +54,11 @@ public final class PitchDetector
      * the keyboard cannot decide the result alone.
      */
     private static final int    MAXIMUM_MEASURED_ZONES = 12;
-    /** At least this many zones must be measurable, otherwise a single odd sample could decide. */
+    /**
+     * At least this many zones must be measurable, otherwise a single odd sample could decide. A
+     * multi-sample which has fewer zones must have all of them measured and is only trusted with a
+     * whole number of octaves.
+     */
     private static final int    MINIMUM_MEASURED_ZONES = 3;
     /** This part of the measured zones must agree with the median offset. */
     private static final double MINIMUM_AGREEMENT      = 0.8;
@@ -73,6 +90,32 @@ public final class PitchDetector
     private static final double CANDIDATE_DISTANCE     = 5;
     /** The harmonics over which the found fundamental is measured exactly. */
     private static final int    REFINED_HARMONICS      = 8;
+    /**
+     * The harmonics of a fundamental which are examined for its octave and for the notes of a
+     * chord.
+     */
+    private static final int    EXAMINED_HARMONICS     = 24;
+    /**
+     * The octave above a fundamental is the pitch if the odd harmonics, which it does not explain,
+     * hold less than this part of the power on the harmonics.
+     */
+    private static final double MAXIMUM_ODD_HARMONICS  = 0.05;
+    /** Chords of up to this many notes are recognised. */
+    private static final int    MAXIMUM_CHORD_NOTES    = 3;
+    /**
+     * A harmonic is missing if it holds less than this part of the power of its neighbours - in
+     * a chord only noise is left there.
+     */
+    private static final double MISSING_HARMONIC       = 0.03;
+    /** A harmonic needs this part of the power of all harmonics to start the series of a note. */
+    private static final double NOTE_HARMONIC          = 0.02;
+    /**
+     * Harmonics above the last one which holds this part of the power of all harmonics are only
+     * noise.
+     */
+    private static final double AUDIBLE_HARMONIC       = 0.001;
+    /** A chord leaves at least this many harmonics empty besides the fundamental. */
+    private static final int    MINIMUM_CHORD_GAPS     = 2;
     /** The analysis window is padded to a power of two of at least this size. */
     private static final int    MINIMUM_FFT_SIZE       = 4096;
     /** ... and of at most this size, which keeps the cost of a long segment in hand. */
@@ -112,18 +155,21 @@ public final class PitchDetector
      * skipped, the measurement never fails.
      *
      * @param groups The groups whose zones to measure
-     * @return The result, empty if too few zones could be measured or they do not agree
+     * @return The result, empty if too few zones could be measured or they do not agree, or if a
+     *         multi-sample of fewer than three zones does not sound a whole number of octaves away
      */
     public static Optional<Result> detect (final List<IGroup> groups)
     {
+        final List<ISampleZone> zones = selectZones (groups);
         final List<Double> offsets = new ArrayList<> ();
-        for (final ISampleZone zone: selectZones (groups))
+        for (final ISampleZone zone: zones)
         {
             final double offset = measure (zone);
             if (!Double.isNaN (offset))
                 offsets.add (Double.valueOf (offset));
         }
-        if (offsets.size () < MINIMUM_MEASURED_ZONES)
+        final boolean hasFewZones = zones.size () < MINIMUM_MEASURED_ZONES;
+        if (offsets.isEmpty () || offsets.size () < (hasFewZones ? zones.size () : MINIMUM_MEASURED_ZONES))
             return Optional.empty ();
 
         final double median = median (offsets);
@@ -132,6 +178,9 @@ public final class PitchDetector
             if (Math.abs (offset.doubleValue () - median) <= AGREEMENT_RANGE)
                 agreeingZones++;
         if (agreeingZones < MINIMUM_AGREEMENT * offsets.size ())
+            return Optional.empty ();
+        // Rounded like the transposition which moves the root keys onto the pitch
+        if (hasFewZones && Math.round (-median) % 12 != 0)
             return Optional.empty ();
         return Optional.of (new Result (median, agreeingZones, offsets.size ()));
     }
@@ -189,11 +238,18 @@ public final class PitchDetector
         if (sampleRate <= 0)
             return Double.NaN;
 
-        final double [] segment = pickSegment (signal, sampleRate, zone);
-        if (segment == null)
-            return Double.NaN;
+        // The loop is what the destination plays while a key is held - if it has no clear pitch,
+        // e.g. because it is noisy, the loudest part after the attack is measured instead
         final double notatedFrequency = noteToFrequency (zone.getKeyRoot ());
-        final double pitch = estimatePitch (segment, sampleRate, notatedFrequency);
+        final double [] loop = pickLoop (signal, sampleRate, zone);
+        double pitch = loop == null ? -1 : estimatePitch (loop, sampleRate, notatedFrequency);
+        if (pitch < 0)
+        {
+            final double [] segment = pickLoudestPart (signal, sampleRate, zone);
+            if (segment == null)
+                return Double.NaN;
+            pitch = estimatePitch (segment, sampleRate, notatedFrequency);
+        }
         if (pitch <= 0)
             return Double.NaN;
         // The tuning of the zone shifts the playback, so it is part of what the root key sounds
@@ -202,33 +258,47 @@ public final class PitchDetector
 
 
     /**
-     * Pick the part of a sample which carries its pitch: the loop, which is what the destination
-     * plays while a key is held, otherwise the loudest part after the attack.
+     * Pick the loop of a sample, which is what the destination plays while a key is held. A loop
+     * which is shorter than the analysed part is repeated, exactly as the device repeats it.
      *
      * @param signal The mono signal of the sample
      * @param sampleRate The sample rate
      * @param zone The zone of the sample
-     * @return The segment, null if the sample is too short
+     * @return The segment, null if the zone has no loop which can be measured
      */
-    private static double [] pickSegment (final int [] signal, final int sampleRate, final ISampleZone zone)
+    private static double [] pickLoop (final int [] signal, final int sampleRate, final ISampleZone zone)
     {
         final int start = Math.clamp (zone.getStart (), 0, signal.length);
-        final int stop = zone.getStop () <= start ? signal.length : Math.min (zone.getStop (), signal.length);
+        final int stop = getStop (signal, zone, start);
         final int maximumLength = (int) (MAXIMUM_SEGMENT * sampleRate);
-
         for (final ISampleLoop loop: zone.getLoops ())
         {
             final int loopStart = loop.getStart ();
             final int loopLength = loop.getEnd () - loopStart + 1;
             if (loopStart < start || loopStart + loopLength > stop || loopLength < MINIMUM_LOOP * sampleRate)
                 continue;
-            // A loop which is shorter than the window is repeated, exactly as the device repeats it
             final double [] segment = new double [Math.min (maximumLength, Math.max (loopLength, MINIMUM_SEGMENT_FRAMES))];
             for (int i = 0; i < segment.length; i++)
                 segment[i] = signal[loopStart + i % loopLength];
             return segment;
         }
+        return null;
+    }
 
+
+    /**
+     * Pick the loudest part of a sample after the attack.
+     *
+     * @param signal The mono signal of the sample
+     * @param sampleRate The sample rate
+     * @param zone The zone of the sample
+     * @return The segment, null if the sample is too short
+     */
+    private static double [] pickLoudestPart (final int [] signal, final int sampleRate, final ISampleZone zone)
+    {
+        final int start = Math.clamp (zone.getStart (), 0, signal.length);
+        final int stop = getStop (signal, zone, start);
+        final int maximumLength = (int) (MAXIMUM_SEGMENT * sampleRate);
         final int frameLength = Math.max (1, sampleRate / 50);
         final int frames = (stop - start) / frameLength;
         if (frames < 4)
@@ -251,20 +321,39 @@ public final class PitchDetector
         while (last > loudest && levels[last] < levels[loudest] / 10000)
             last--;
         final int segmentStart = Math.min (start + (loudest + 3) * frameLength, Math.max (start, stop - MINIMUM_SEGMENT_FRAMES));
-        final int segmentStop = Math.min (Math.min (start + (last + 1) * frameLength, stop), segmentStart + maximumLength);
+        // A sound which is still loud in the last frame lasts until the end, also the rest which is
+        // shorter than a frame
+        final int segmentStop = Math.min (last == frames - 1 ? stop : Math.min (start + (last + 1) * frameLength, stop), segmentStart + maximumLength);
         return segmentStop - segmentStart >= MINIMUM_SEGMENT_FRAMES ? copy (signal, segmentStart, segmentStop - segmentStart) : null;
     }
 
 
     /**
+     * Get the end of the play-back of a zone.
+     *
+     * @param signal The mono signal of the sample
+     * @param zone The zone of the sample
+     * @param start The start of the play-back
+     * @return The frame behind the last one which is played
+     */
+    private static int getStop (final int [] signal, final ISampleZone zone, final int start)
+    {
+        // The stop of a zone is the last frame which is played
+        return zone.getStop () <= start ? signal.length : Math.min (zone.getStop () + 1, signal.length);
+    }
+
+
+    /**
      * Estimate the pitch of a segment: the highest candidate fundamental whose harmonics hold at
-     * least {@link #MINIMUM_COVERAGE} of the power of the analysed band.
+     * least {@link #MINIMUM_COVERAGE} of the power of the analysed band, or an octave of it above
+     * if its odd harmonics are practically absent.
      *
      * @param segment The audio to analyse
      * @param sampleRate The sample rate
      * @param notatedFrequency The frequency of the root key, which limits the search to three
      *            octaves around it
-     * @return The pitch in Hertz, -1 if the segment is not clearly pitched
+     * @return The pitch in Hertz, 0 for a chord whose root cannot be told, -1 if the segment is not
+     *         clearly pitched
      */
     private static double estimatePitch (final double [] segment, final int sampleRate, final double notatedFrequency)
     {
@@ -282,10 +371,162 @@ public final class PitchDetector
         if (total <= 0)
             return -1;
 
+        final double highest = Math.min (BAND_LIMIT * sampleRate, notatedFrequency * 8);
         for (final double candidate: candidates (power, binWidth, firstBin, lastBin, notatedFrequency, sampleRate))
             if (coverage (power, binWidth, firstBin, lastBin, total, candidate) >= MINIMUM_COVERAGE)
-                return refine (power, binWidth, firstBin, lastBin, candidate);
+            {
+                // Noise lowers the coverage of the octave above as well, which must not decide the
+                // octave: it is the pitch if the odd harmonics, which it does not explain, are
+                // practically absent
+                double octave = candidate;
+                while (2 * octave <= highest && getOddHarmonicsPart (power, binWidth, firstBin, lastBin, octave) < MAXIMUM_ODD_HARMONICS)
+                    octave *= 2;
+                final double fundamental = refine (power, binWidth, firstBin, lastBin, octave);
+                final int root = findChordRoot (power, binWidth, firstBin, lastBin, fundamental);
+                return root > 0 ? root * fundamental : 0;
+            }
         return -1;
+    }
+
+
+    /**
+     * Get the part of the power on the harmonics of a fundamental which lies on its odd harmonics.
+     *
+     * @param power The power spectrum
+     * @param binWidth The frequency of one bin
+     * @param firstBin The first bin of the analysed band
+     * @param lastBin The last bin of the analysed band
+     * @param fundamental The fundamental
+     * @return The part in the range of [0..1], 1 if the harmonics carry no power
+     */
+    private static double getOddHarmonicsPart (final double [] power, final double binWidth, final int firstBin, final int lastBin, final double fundamental)
+    {
+        final double [] harmonics = getHarmonics (power, binWidth, firstBin, lastBin, fundamental);
+        double odd = 0;
+        double all = 0;
+        for (int harmonic = 1; harmonic < harmonics.length; harmonic++)
+        {
+            all += harmonics[harmonic];
+            if (harmonic % 2 == 1)
+                odd += harmonics[harmonic];
+        }
+        return all > 0 ? odd / all : 1;
+    }
+
+
+    /**
+     * Get the power of the first harmonics of a fundamental, as far as they lie in the analysed
+     * band.
+     *
+     * @param power The power spectrum
+     * @param binWidth The frequency of one bin
+     * @param firstBin The first bin of the analysed band
+     * @param lastBin The last bin of the analysed band
+     * @param fundamental The fundamental
+     * @return The power of each harmonic at the index of its number, followed by an empty one
+     */
+    private static double [] getHarmonics (final double [] power, final double binWidth, final int firstBin, final int lastBin, final double fundamental)
+    {
+        final int count = (int) Math.clamp (lastBin * binWidth / fundamental, 0, EXAMINED_HARMONICS);
+        final double [] harmonics = new double [count + 2];
+        final double toleranceFactor = Math.pow (2, TOLERANCE_CENTS / 1200) - 1;
+        for (int bin = firstBin; bin <= lastBin; bin++)
+        {
+            final double frequency = bin * binWidth;
+            final int harmonic = (int) Math.max (1, Math.round (frequency / fundamental));
+            if (harmonic > count)
+                break;
+            if (Math.abs (frequency - harmonic * fundamental) <= Math.min (frequency * toleranceFactor, fundamental / 4))
+                harmonics[harmonic] += power[bin];
+        }
+        return harmonics;
+    }
+
+
+    /**
+     * Check if a fundamental is the common fundamental of a chord instead of the pitch of a single
+     * note. Each note of a chord is a harmonic series of its own, so the only fundamental which
+     * explains all of them lies below the lowest note and does not sound itself, and the harmonics
+     * of it which belong to none of the notes stay empty - those of a fifth are the harmonics 2 and
+     * 3 of the fundamental, so the harmonics 1, 5 and 7 are missing. A single note whose
+     * fundamental is weak or filtered away still has these harmonics, which tells the two apart.
+     * The root of the chord is its note at the pitch class of the fundamental, the harmonic 2, 4 or
+     * 8 - which it is for a fifth, a fourth, a major third and a major triad in all of its
+     * inversions.
+     *
+     * @param power The power spectrum
+     * @param binWidth The frequency of one bin
+     * @param firstBin The first bin of the analysed band
+     * @param lastBin The last bin of the analysed band
+     * @param fundamental The fundamental to check
+     * @return 1 if the fundamental is the pitch of a single note, the harmonic of it which is the
+     *         root of the chord, or 0 for a chord whose root cannot be told
+     */
+    private static int findChordRoot (final double [] power, final double binWidth, final int firstBin, final int lastBin, final double fundamental)
+    {
+        // The power of each harmonic, with an empty one above the last for its neighbour
+        final double [] harmonics = getHarmonics (power, binWidth, firstBin, lastBin, fundamental);
+        final int count = harmonics.length - 2;
+        if (count < 4)
+            return 1;
+        double total = 0;
+        for (int harmonic = 1; harmonic <= count; harmonic++)
+            total += harmonics[harmonic];
+        double strongest = 0;
+        for (int harmonic = 2; harmonic <= count; harmonic++)
+            strongest = Math.max (strongest, harmonics[harmonic]);
+        // The fundamental sounds, it is a single note
+        if (harmonics[1] >= MISSING_HARMONIC * strongest)
+            return 1;
+
+        // Above the last harmonic which carries power only noise is left, which tells nothing
+        int last = count;
+        while (last > 2 && harmonics[last] < AUDIBLE_HARMONIC * total)
+            last--;
+
+        // Each harmonic which is not part of the series of a note found so far is either missing or
+        // starts the series of another note
+        final List<Integer> notes = new ArrayList<> ();
+        int missing = 0;
+        for (int harmonic = 2; harmonic <= last; harmonic++)
+        {
+            if (isInSeries (harmonic, notes))
+                continue;
+            if (harmonics[harmonic] < AUDIBLE_HARMONIC * total || harmonics[harmonic] < MISSING_HARMONIC * (harmonics[harmonic - 1] + harmonics[harmonic + 1]) / 2)
+                missing++;
+            else if (harmonics[harmonic] >= NOTE_HARMONIC * total)
+            {
+                notes.add (Integer.valueOf (harmonic));
+                // A whole harmonic series is a single note whose fundamental is missing
+                if (notes.size () > MAXIMUM_CHORD_NOTES)
+                    return 1;
+            }
+            else
+                // A weak harmonic which belongs to none of the notes is part of a single note
+                return 1;
+        }
+        if (notes.size () < 2 || missing < MINIMUM_CHORD_GAPS)
+            return 1;
+        for (final Integer note: notes)
+            if (Integer.bitCount (note.intValue ()) == 1)
+                return note.intValue ();
+        return 0;
+    }
+
+
+    /**
+     * Check if a harmonic is part of the harmonic series of one of the given notes.
+     *
+     * @param harmonic The harmonic of the common fundamental
+     * @param notes The notes as harmonics of the common fundamental
+     * @return True if it is a multiple of one of them
+     */
+    private static boolean isInSeries (final int harmonic, final List<Integer> notes)
+    {
+        for (final Integer note: notes)
+            if (harmonic % note.intValue () == 0)
+                return true;
+        return false;
     }
 
 
