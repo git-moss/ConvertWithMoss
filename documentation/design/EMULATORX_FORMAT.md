@@ -170,6 +170,10 @@ The payload is a sequence of chunks:
 | `LIST E5VL` | *n*  | The voices, one `E5V1` chunk each                                 |
 | `EXEd`      | 92   | Editor state, optional                                            |
 
+The voice lists of the ZERO-G banks claim 92 bytes more than their preset holds - the size of the
+optional `EXEd` chunk, which these presets do not contain - while their voices end with the preset.
+A chunk which runs past the end of its parent therefore has to be cut there, not dropped.
+
 `Phdr` is:
 
 | Offset | Size | Content                                                            |
