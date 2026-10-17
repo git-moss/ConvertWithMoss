@@ -11,10 +11,11 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 
 /**
  * One sample file (*.ebl) of an Emulator X sample pool. The file is a container with a table of
- * contents of exactly one 'E5S1' chunk. Its payload holds a 188 byte header followed by 16 bit
- * little-endian PCM data, which is stored one channel after the other instead of interleaved, and
- * optionally a trailer with the loop markers. All numeric fields of the header are little-endian
- * except the format marker. See documentation/design/EMULATORX_FORMAT.md for the layout.
+ * contents of exactly one 'E5S1' chunk. Its payload holds a 188 byte header followed by the audio
+ * data - 16 bit little-endian PCM or 32 bit little-endian floating-point values - which is stored
+ * one channel after the other instead of interleaved, and optionally a trailer with the loop
+ * markers. All numeric fields of the header are little-endian except the format marker. See
+ * documentation/design/EMULATORX_FORMAT.md for the layout.
  *
  * @author Jürgen Moßgraber
  */
@@ -24,6 +25,7 @@ public class EmulatorXSampleFile
     private int     sampleRate = 44100;
     private int     numChannels;
     private int     numFrames;
+    private boolean isFloat;
     private byte [] pcm;
     private boolean hasLoop;
     private int     loopStart;
@@ -66,6 +68,11 @@ public class EmulatorXSampleFile
         if (sample.sampleRate <= 0)
             throw new ParseException ("IDS_EXB_MALFORMED_SAMPLE");
 
+        // 16 bit samples store 2 bytes per sample; samples which were recorded, imported or
+        // processed in a higher resolution store 32 bit floating-point values
+        sample.isFloat = fileData[payload + EmulatorXConstants.SAMPLE_BYTES_PER_SAMPLE] == EmulatorXConstants.BYTES_PER_FLOAT_FRAME;
+        final int bytesPerSample = sample.isFloat ? EmulatorXConstants.BYTES_PER_FLOAT_FRAME : EmulatorXConstants.BYTES_PER_FRAME;
+
         final int leftStart = (int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_START);
         final int leftEnd = (int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_END);
         final int rightStart = (int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_RIGHT_START);
@@ -80,14 +87,14 @@ public class EmulatorXSampleFile
             throw new ParseException ("IDS_EXB_MALFORMED_SAMPLE");
 
         sample.numChannels = isStereo ? 2 : 1;
-        sample.numFrames = leftLength / EmulatorXConstants.BYTES_PER_FRAME;
-        sample.pcm = isStereo ? interleave (fileData, payload + leftStart, payload + rightStart, sample.numFrames) : extract (fileData, payload + leftStart, sample.numFrames * EmulatorXConstants.BYTES_PER_FRAME);
+        sample.numFrames = leftLength / bytesPerSample;
+        sample.pcm = isStereo ? interleave (fileData, payload + leftStart, payload + rightStart, sample.numFrames, bytesPerSample) : extract (fileData, payload + leftStart, sample.numFrames * bytesPerSample);
 
         if (EmulatorXConstants.getU16LE (fileData, payload + EmulatorXConstants.SAMPLE_LOOP_FLAG) > 0)
         {
-            final int start = ((int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_START) - leftStart) / EmulatorXConstants.BYTES_PER_FRAME;
+            final int start = ((int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_START) - leftStart) / bytesPerSample;
             // The stored loop end addresses the last frame of the loop, like the end of the model
-            final int end = ((int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_END) - leftStart) / EmulatorXConstants.BYTES_PER_FRAME;
+            final int end = ((int) EmulatorXConstants.getU32LE (fileData, payload + EmulatorXConstants.SAMPLE_LEFT_LOOP_END) - leftStart) / bytesPerSample;
             if (start >= 0 && end > start && start < sample.numFrames)
             {
                 sample.hasLoop = true;
@@ -228,17 +235,16 @@ public class EmulatorXSampleFile
      * @param leftOffset The offset of the left channel
      * @param rightOffset The offset of the right channel
      * @param numFrames The number of sample frames
-     * @return The interleaved 16 bit little-endian data
+     * @param bytesPerSample The number of bytes of one sample of one channel
+     * @return The interleaved data
      */
-    private static byte [] interleave (final byte [] data, final int leftOffset, final int rightOffset, final int numFrames)
+    private static byte [] interleave (final byte [] data, final int leftOffset, final int rightOffset, final int numFrames, final int bytesPerSample)
     {
-        final byte [] result = new byte [numFrames * 4];
+        final byte [] result = new byte [numFrames * 2 * bytesPerSample];
         for (int frame = 0; frame < numFrames; frame++)
         {
-            result[frame * 4] = data[leftOffset + frame * 2];
-            result[frame * 4 + 1] = data[leftOffset + frame * 2 + 1];
-            result[frame * 4 + 2] = data[rightOffset + frame * 2];
-            result[frame * 4 + 3] = data[rightOffset + frame * 2 + 1];
+            System.arraycopy (data, leftOffset + frame * bytesPerSample, result, 2 * frame * bytesPerSample, bytesPerSample);
+            System.arraycopy (data, rightOffset + frame * bytesPerSample, result, (2 * frame + 1) * bytesPerSample, bytesPerSample);
         }
         return result;
     }
@@ -338,7 +344,30 @@ public class EmulatorXSampleFile
 
 
     /**
-     * Get the interleaved 16 bit little-endian PCM data.
+     * Check if the audio data consists of 32 bit floating-point values instead of 16 bit PCM.
+     *
+     * @return True if it is floating-point data
+     */
+    public boolean isFloat ()
+    {
+        return this.isFloat;
+    }
+
+
+    /**
+     * Get the resolution of the audio data.
+     *
+     * @return 32 for floating-point data, otherwise 16
+     */
+    public int getBitsPerSample ()
+    {
+        return 8 * (this.isFloat ? EmulatorXConstants.BYTES_PER_FLOAT_FRAME : EmulatorXConstants.BYTES_PER_FRAME);
+    }
+
+
+    /**
+     * Get the interleaved little-endian audio data: 16 bit PCM or, if {@link #isFloat()} is true,
+     * 32 bit floating-point values.
      *
      * @return The data
      */
@@ -357,6 +386,7 @@ public class EmulatorXSampleFile
     public void setPcm (final byte [] pcm, final int numChannels)
     {
         this.pcm = pcm;
+        this.isFloat = false;
         this.numChannels = numChannels;
         this.numFrames = pcm.length / (EmulatorXConstants.BYTES_PER_FRAME * numChannels);
     }
