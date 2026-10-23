@@ -320,7 +320,10 @@ public final class AudioFileUtils
                 }
             }
 
-            final AudioFormat newAudioFormat = new AudioFormat (sampleRate, bitResolution, audioFormat.getChannels (), encoding == Encoding.PCM_SIGNED, audioFormat.isBigEndian ());
+            // WAV stores 8 bit samples unsigned and all others signed, whatever the source does. An
+            // 8 bit source would otherwise be converted e.g. to unsigned 16 bit samples, which are
+            // read as signed ones: full-scale noise
+            final AudioFormat newAudioFormat = new AudioFormat (sampleRate, bitResolution, audioFormat.getChannels (), bitResolution > 8, audioFormat.isBigEndian ());
             return doConvertToWav (audioInputStream, newAudioFormat);
         }
         catch (final UnsupportedAudioFileException ex)
