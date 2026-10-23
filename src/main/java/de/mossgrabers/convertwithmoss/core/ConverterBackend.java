@@ -30,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonCreator;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
 import de.mossgrabers.convertwithmoss.format.akai.akp.AkpDetector;
@@ -140,6 +141,7 @@ import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxDetector;
 import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatCreator;
 import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcDetector;
 import de.mossgrabers.tools.ui.Functions;
@@ -624,6 +626,7 @@ public class ConverterBackend
 
     private void processSource (final IMultisampleSource multisampleSource)
     {
+        this.limitTruncatedSamples (multisampleSource);
         ensureSafeSampleFileNames (multisampleSource);
         this.processSamples (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
@@ -939,6 +942,83 @@ public class ConverterBackend
             crossfaded++;
         }
         return crossfaded;
+    }
+
+
+    /**
+     * Keep the zones whose sample file is cut off - it ends before its audio does, e.g. after an
+     * interrupted copy - inside of the audio which is present. The end of that audio was already
+     * faded out when the file was read, so that it does not click. The play range of a zone ends
+     * with the audio, and a zone which only plays the missing part is left out. A loop which
+     * reaches into the faded out or missing part is removed, since it would repeat the fade and
+     * jump from silence back to the loop start, which clicks at every repeat.
+     *
+     * @param multisampleSource The multi-sample source
+     */
+    private void limitTruncatedSamples (final IMultisampleSource multisampleSource)
+    {
+        for (final IGroup group: multisampleSource.getGroups ())
+        {
+            final List<ISampleZone> zones = group.getSampleZones ();
+            final List<ISampleZone> keptZones = new ArrayList<> (zones.size ());
+            for (final ISampleZone zone: zones)
+            {
+                final Optional<WaveFile> waveFile = getTruncatedWaveFile (zone);
+                if (waveFile.isEmpty () || this.limitToPresentAudio (zone, waveFile.get ()))
+                    keptZones.add (zone);
+                else
+                    this.notifier.log ("IDS_WAV_TRUNCATED_ZONE_REMOVED", zone.getName ());
+            }
+            if (keptZones.size () != zones.size ())
+                group.setSampleZones (keptZones);
+        }
+    }
+
+
+    /**
+     * Limit the play range and the loops of a zone to the audio which is present in its truncated
+     * sample file.
+     *
+     * @param zone The zone
+     * @param waveFile The truncated sample file of the zone
+     * @return False if the zone only plays the missing part of the sample
+     */
+    private boolean limitToPresentAudio (final ISampleZone zone, final WaveFile waveFile)
+    {
+        final int presentFrames = waveFile.getFormatChunk ().calculateLength (waveFile.getDataChunk ().getData ());
+        if (zone.getStart () >= presentFrames)
+            return false;
+        if (zone.getStop () > presentFrames)
+            zone.setStop (presentFrames);
+
+        // A loop without an end loops to the end of the sample, which is faded out now
+        final int fadeOutStart = waveFile.getFadeOutStart ();
+        if (zone.getLoops ().removeIf (loop -> loop.getEnd () <= 0 || loop.getEnd () >= fadeOutStart))
+            this.notifier.log ("IDS_WAV_TRUNCATED_LOOP_REMOVED", zone.getName ());
+        return true;
+    }
+
+
+    /**
+     * Get the sample file of a zone if it is a WAV file which is truncated.
+     *
+     * @param zone The zone
+     * @return The WAV file, empty if it is not truncated or the zone has no WAV file
+     */
+    private static Optional<WaveFile> getTruncatedWaveFile (final ISampleZone zone)
+    {
+        if (zone.getSampleData ().orElse (null) instanceof final WavFileSampleData wavFileSampleData)
+            try
+            {
+                final WaveFile waveFile = wavFileSampleData.getWaveFile ();
+                if (waveFile.isTruncated ())
+                    return Optional.of (waveFile);
+            }
+            catch (final IOException _)
+            {
+                // A sample which cannot be read is reported by the conversion
+            }
+        return Optional.empty ();
     }
 
 
