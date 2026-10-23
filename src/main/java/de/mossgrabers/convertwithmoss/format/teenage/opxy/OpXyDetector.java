@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.teenage.opxy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -92,12 +93,17 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
 
         final JsonNode regionsNode = root.get (OpXyTag.TAG_REGIONS);
         if (regionsNode != null)
+        {
+            final List<Integer> highKeys = new ArrayList<> ();
+            for (final JsonNode regionNode: regionsNode)
+                highKeys.add (Integer.valueOf (getHighKey (regionNode)));
             for (final JsonNode regionNode: regionsNode)
             {
-                final ISampleZone zone = this.parseRegion (presetFolder, regionNode);
+                final ISampleZone zone = this.parseRegion (presetFolder, regionNode, highKeys);
                 if (zone != null)
                     group.addSampleZone (zone);
             }
+        }
 
         if (group.getSampleZones ().isEmpty ())
         {
@@ -118,10 +124,11 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param presetFolder The folder which contains the samples
      * @param regionNode The region to parse
+     * @param highKeys The highest keys of all regions of the preset
      * @return The zone or null if the sample could not be found
      * @throws IOException Could not read the sample
      */
-    private ISampleZone parseRegion (final File presetFolder, final JsonNode regionNode) throws IOException
+    private ISampleZone parseRegion (final File presetFolder, final JsonNode regionNode, final List<Integer> highKeys) throws IOException
     {
         final String sampleName = getText (regionNode, OpXyTag.TAG_SAMPLE, null);
         if (sampleName == null || sampleName.isBlank ())
@@ -136,8 +143,9 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
         final ISampleData sampleData = AbstractDetector.createSampleData (sampleFile, this.notifier);
         final ISampleZone zone = new DefaultSampleZone (FileUtils.getNameWithoutType (sampleFile), sampleData);
 
-        zone.setKeyLow (Math.clamp (getInt (regionNode, OpXyTag.TAG_LOW_KEY, 0), 0, 127));
-        zone.setKeyHigh (Math.clamp (getInt (regionNode, OpXyTag.TAG_HIGH_KEY, 127), 0, 127));
+        final int highKey = getHighKey (regionNode);
+        zone.setKeyLow (Math.clamp (getInt (regionNode, OpXyTag.TAG_LOW_KEY, getLowKey (highKey, highKeys)), 0, 127));
+        zone.setKeyHigh (highKey);
         zone.setKeyRoot (Math.clamp (getInt (regionNode, OpXyTag.TAG_KEY_CENTER, 60), 0, 127));
         zone.setTuning (getInt (regionNode, OpXyTag.TAG_TUNE, 0));
         zone.setGain (getInt (regionNode, OpXyTag.TAG_GAIN, 0));
@@ -202,6 +210,37 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
                 envelope.setReleaseTime (OpXyTag.toEnvelopeTime (getInt (ampNode, OpXyTag.TAG_RELEASE, 0)));
             }
         }
+    }
+
+
+    /**
+     * Get the highest key of a region.
+     *
+     * @param regionNode The region
+     * @return The highest key
+     */
+    private static int getHighKey (final JsonNode regionNode)
+    {
+        return Math.clamp (getInt (regionNode, OpXyTag.TAG_HIGH_KEY, 127), 0, 127);
+    }
+
+
+    /**
+     * Get the lowest key of a region which does not store it. The presets which the device saves
+     * store only the highest key of each region, a region starts on the key above the highest key
+     * of the region below it, the lowest one on the lowest key of the keyboard.
+     *
+     * @param highKey The highest key of the region
+     * @param highKeys The highest keys of all regions of the preset
+     * @return The lowest key
+     */
+    private static int getLowKey (final int highKey, final List<Integer> highKeys)
+    {
+        int lowKey = 0;
+        for (final Integer otherHighKey: highKeys)
+            if (otherHighKey.intValue () < highKey)
+                lowKey = Math.max (lowKey, otherHighKey.intValue () + 1);
+        return lowKey;
     }
 
 
