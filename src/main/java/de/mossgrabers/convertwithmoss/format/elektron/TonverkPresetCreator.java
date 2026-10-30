@@ -140,7 +140,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         // The preset must be created after the samples were written since trimming updates the
         // zone/loop positions
         final TonverkPresetFile preset = drum ? this.buildDrumPreset (multisampleSource, presetName) : buildMultiPreset (multisampleSource);
-        applyMetadata (preset, multisampleSource);
+        applyMetadata (preset, multisampleSource, drum);
 
         // The Tonverk only resolves a preset's samples through an absolute '/mnt/sdcard/...' path
         // a bare file name (as used by the elmulti format) is not found
@@ -361,18 +361,15 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     }
 
 
-    private static void applyMetadata (final TonverkPresetFile preset, final IMultisampleSource multisampleSource)
+    private static void applyMetadata (final TonverkPresetFile preset, final IMultisampleSource multisampleSource, final boolean drum)
     {
+        // The device only knows its two main categories and its own tags, the category and the
+        // keywords of the source (e.g. 'Bell', 'analog') are therefore mapped onto them
         final IMetadata metadata = multisampleSource.getMetadata ();
         final String category = metadata.getCategory ();
-        preset.category = category == null ? "" : category;
-
+        preset.category = TonverkTags.getCategory (category, drum);
         preset.tags.clear ();
-        final String [] keywords = metadata.getKeywords ();
-        if (keywords != null)
-            for (final String keyword: keywords)
-                if (keyword != null && !keyword.isBlank ())
-                    preset.tags.add (keyword);
+        preset.tags.addAll (TonverkTags.getTags (category, metadata.getKeywords ()));
     }
 
 
