@@ -291,7 +291,10 @@ public class TonverkPresetFile
         out.add ("version = " + this.version);
         if (this.category != null && !this.category.isEmpty ())
             out.add ("category = " + quote (this.category));
-        if (!this.tags.isEmpty ())
+        // The device always writes the tags, also when there are none
+        if (this.tags.isEmpty ())
+            out.add ("tags = []");
+        else
         {
             out.add ("tags = [");
             for (final String tag: this.tags)
