@@ -1178,9 +1178,17 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
      */
     public static File findFile (final INotifier notifier, final File folder, final File previousFolder, final String fileName, final int levels, final String fileType)
     {
-        final File localFile = findLocalFile (notifier, folder, previousFolder, fileName, levels, fileType);
+        File localFile = findLocalFile (notifier, folder, previousFolder, fileName, levels, fileType);
         if (localFile.exists ())
             return localFile;
+
+        // Workaround for filenames with quotes which got replace with a dash on Windows
+        if (fileName.contains ("\""))
+        {
+            localFile = findLocalFile (notifier, folder, previousFolder, fileName.replace ('"', '_'), levels, fileType);
+            if (localFile.exists ())
+                return localFile;
+        }
 
         // The optimized method below does not search downwards in the start directory, therefore,
         // do this first

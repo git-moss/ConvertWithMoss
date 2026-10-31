@@ -135,7 +135,12 @@ public class EXS24File
                     // Tagged records of float values which do not belong to the multi-sample
                     break;
 
-                case EXS24Block.TYPE_UNKNOWN:
+                case EXS24Block.TYPE_UNKNOWN_1:
+                    // Unknown block of size 48 - the blocks name is the name of the sound, the data
+                    // is fully zero
+                    break;
+
+                case EXS24Block.TYPE_UNKNOWN_2:
                     // No idea what that is but it is 4 bytes long and they are always 0
                     break;
 
