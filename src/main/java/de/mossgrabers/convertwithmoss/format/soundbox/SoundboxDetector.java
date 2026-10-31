@@ -395,7 +395,8 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
             else if (volumeRatio <= 0)
                 zone.setGain (-96);
 
-            zone.setPanning (Math.clamp (sound.panning + layerState.panning, -1, 1));
+            // The panning of the layer is not applied by the plug-in, only the one of the sound
+            zone.setPanning (Math.clamp (sound.panning, -1, 1));
             zone.setTuning (sound.tuneSemitones + engineSettings.transposeSemitones + (engineSettings.octaveIndex - SoundboxEngineSettings.OCTAVE_CENTER) * 12.0 + engineSettings.fineTuneCents / 100.0);
 
             if (filter != null)

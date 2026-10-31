@@ -28,7 +28,7 @@ public class SoundboxLayerState
     public boolean             solo           = false;
     /** True if the layer is linked. */
     public boolean             link           = false;
-    /** The panning (-1..1). */
+    /** The panning (-1..1). Not applied by plug-in 1.2.1, the sounds carry the panning. */
     public double              panning        = 0;
     /** The volume (0..1, default 0.75). */
     public double              volume         = DEFAULT_VOLUME;

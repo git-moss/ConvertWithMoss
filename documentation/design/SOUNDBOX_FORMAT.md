@@ -101,10 +101,10 @@ Field names follow the plug-in's setter symbols (`AMSoundsManager::set…`).
 | 0x26   | u32  | key low              | MIDI note, inclusive                                    |
 | 0x2A   | u32  | key high, exclusive  | first key *not* played (drum maps use low+1; max 127)   |
 | 0x2E   | u8   | reverse              | 0/1                                                     |
-| 0x2F   | f32  | pan                  | assumed; always 0 in the corpus                         |
+| 0x2F   | f32  | ?                    | always 0                                                |
 | 0x33   | f32  | (speed?)             | always 1.0 (a single sample: 0.3136)                    |
 | 0x37   | u32  | volume percent       | `setSoundVolume(int)`; 100 = full, corpus also has 80   |
-| 0x3B   | u32  | ?                    | always 0                                                |
+| 0x3B   | f32  | pan                  | -1..1, left to right; editor shows L50..R50 (verified)  |
 | 0x3F   | i32  | tune semi-tones      | `setSoundTune(int)`; corpus: 0 and -12                  |
 | 0x43   | u32  | velocity low         | inclusive, 0..127 (paired splits like 20/21 in corpus)  |
 | 0x47   | u32  | velocity high        | inclusive                                               |
@@ -142,7 +142,7 @@ read (all Cosmo groups imported by plug-in 1.2.x keep their 75 byte blobs).
 | 0x00   | u8   | active | 0/1                            |
 | 0x01   | u8   | solo   | always 0 in corpus             |
 | 0x02   | u8   | link   | always 0 in corpus             |
-| 0x03   | f32  | pan    | -1..1                          |
+| 0x03   | f32  | pan    | -1..1, not applied (see below) |
 | 0x07   | f32  | volume | 0..1, default 0.75             |
 
 ### Layer `settings` blob — 33 bytes (`AMSamplerEngineMPE` parameters)
@@ -203,8 +203,13 @@ constant default as found in Cosmo (see `SoundboxCreator`).
 ## Mapping notes (ConvertWithMoss)
 
 - One preset = one `IMultisampleSource`. Every active layer with a non-empty group becomes one
-  `IGroup`; layer volume (relative to the 0.75 default), pan, fine tune/transpose/octave and ADSR
+  `IGroup`; layer volume (relative to the 0.75 default), fine tune/transpose/octave and ADSR
   are folded into the zones of that group.
+- Panning: only the pan of the sound (0x3B) is applied. Verified with plug-in 1.2.1: a preset
+  whose two layers had the layer pan -1 and +1 and sounds with pan 0 played both layers in the
+  center; panning the sounds in the sample editor (L20 = -0.4, R8 = 0.16, hard left/right = -1/+1)
+  changed only the float at 0x3B. The layer pan is therefore ignored when reading and written as
+  0, the pan of each zone is written into its sound.
 - Key high and velocity ranges: key high is stored exclusive, velocity is inclusive.
 - Loop/sample positions are fractions of the sample frame count, so a sound cannot be read
   without the length of its sample. The frame count has to come from the audio metadata:

@@ -23,6 +23,8 @@
   * New: Live Sets (ALS) are read: every Sampler and Simpler on the tracks of a Live Set, also in racks, becomes a multi-sample named after the Live Set and its track.
   * Fixed: Presets which are stored as plain XML instead of compressed XML could not be read ('Not in GZIP format'), e.g. all 23 drum kits of the '80s hits' pack of Subsocial Studios.
   * Fixed: The samples of presets and Live Sets which were saved with Live 10 or earlier were not found, since these versions store the path of a sample as a list of folders with the name of the file separately.
+* Audiomodern Soundbox
+  * Fixed: The panning of the samples was not converted, all samples played in the center. E.g. split stereo samples - two mono samples of one recording, hard panned left and right - played layered in the center instead of in stereo. The panning is now written to the value which the sample editor of the plug-in sets, for every sample, and read from it.
 * discoDSP Bliss
   * New: Added support for reading/writing version 3.8 - 3.20 features (round-robin, one-shot). Writing now always uses version 3.20.
   * Fixed: Read version is now logged in decimal not hexadecimal.

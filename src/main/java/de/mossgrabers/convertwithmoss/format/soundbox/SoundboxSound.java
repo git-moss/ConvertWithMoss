@@ -46,7 +46,7 @@ public class SoundboxSound
     public double            loopCrossfade = 0;
     /** True if the sample is played reversed. */
     public boolean           reverse       = false;
-    /** The panning (-1..1). */
+    /** The panning (-1..1, left to right), the editor displays it as L50..R50. */
     public double            panning       = 0;
     /** The volume in percent (0..100). */
     public int               volumePercent = 100;
@@ -86,9 +86,9 @@ public class SoundboxSound
         sound.keyLow = buffer.getInt (0x26);
         sound.keyHighExcl = buffer.getInt (0x2A);
         sound.reverse = buffer.get (0x2E) != 0;
-        sound.panning = buffer.getFloat (0x2F);
-        // 0x33: play-back speed (always 1.0), 0x3B: unknown (always 0)
+        // 0x2F: unknown (always 0), 0x33: play-back speed (always 1.0)
         sound.volumePercent = buffer.getInt (0x37);
+        sound.panning = buffer.getFloat (0x3B);
         sound.tuneSemitones = buffer.getInt (0x3F);
         sound.velocityLow = buffer.getInt (0x43);
         sound.velocityHigh = buffer.getInt (0x47);
@@ -118,10 +118,10 @@ public class SoundboxSound
         buffer.putInt (0x26, this.keyLow);
         buffer.putInt (0x2A, this.keyHighExcl);
         buffer.put (0x2E, (byte) (this.reverse ? 1 : 0));
-        buffer.putFloat (0x2F, (float) this.panning);
+        buffer.putFloat (0x2F, 0);
         buffer.putFloat (0x33, 1.0f);
         buffer.putInt (0x37, this.volumePercent);
-        buffer.putInt (0x3B, 0);
+        buffer.putFloat (0x3B, (float) this.panning);
         buffer.putInt (0x3F, this.tuneSemitones);
         buffer.putInt (0x43, this.velocityLow);
         buffer.putInt (0x47, this.velocityHigh);

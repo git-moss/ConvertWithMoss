@@ -58,34 +58,34 @@ There are no absolute offsets anywhere; the format is purely sequential.
 
 Mostly opaque global settings, copied verbatim by the creator. Known/derived fields:
 
-| offset | type | value in specimen | meaning |
-|-------:|------|------------------:|---------|
-| 0x00 | char[4] | `DwPr` | magic |
-| 0x04 | u32 | 38 | version (38 = FL Studio 20.x specimen, 37 = FL Studio Mobile factory files) |
-| 0x08 | u32 | 6 | unknown |
-| 0x0C | u32 | 16 | unknown |
-| 0x24 | u32 | 1 | unknown (program count?) |
-| 0x28 | u32 | 47259 | **file size − 48** (verified in all seven specimens); patched by the creator |
-| 0x30 | u32 | 100 | unknown (a volume?) |
-| 0x34 | u32 | 30 | unknown |
-| 0x42 | f32 | 1.0 | unknown, probably the master volume (1.0 in five factory files, 0.83/0.45 elsewhere) |
-| 0x4A | u32 | 48 | **the number of sample containers** - verified in all seven specimens. DirectWave trusts this count: writing a wrong value crashes FL Studio with an access violation when the program is loaded (observed with FL Studio 2026 on macOS), so it must always match the number of 0x0003 blocks. |
+| offset | type    | value in specimen | meaning                  |
+|-------:|---------|------------------:|--------------------------|
+| 0x00   | char[4] | `DwPr`            | magic                    |
+| 0x04   | u32     | 38                | version (38 = FL Studio 20.x specimen, 37 = FL Studio Mobile factory files) |
+| 0x08   | u32     | 6                 | unknown                  |
+| 0x0C   | u32     | 16                | unknown                  |
+| 0x24   | u32     | 1                 | unknown (program count?) |
+| 0x28   | u32     | 47259             | **file size − 48** (verified in all seven specimens); patched by the creator |
+| 0x30   | u32     | 100               | unknown (a volume?)      |
+| 0x34   | u32     | 30                | unknown                  |
+| 0x42   | f32     | 1.0               | unknown, probably the master volume (1.0 in five factory files, 0.83/0.45 elsewhere) |
+| 0x4A   | u32     | 48                | **the number of sample containers** - verified in all seven specimens. DirectWave trusts this count: writing a wrong value crashes FL Studio with an access violation when the program is loaded (observed with FL Studio 2026 on macOS), so it must always match the number of 0x0003 blocks. |
 
 The remaining bytes are unknown and kept as-is from the factory files.
 
 ## Top-level blocks (in file order)
 
-| tag | count | length | content |
-|----:|------:|-------:|---------|
-| 0x0066 | 1 | n | instrument name (ASCII, no terminator) |
-| 0x0067 | 1 | n | path of the .dwp itself, single backslashes: `G:\5\Instrument.dwp` |
-| 0x0068 | 1 | 10 | zeroed (fixed size - it matching the name length in the first specimen was a coincidence) |
-| 0x0069 | 1 | 18 | `u16 0` and the four floats `0.75, 0.75, 0.5, 0.75` |
-| 0x006A | 1 | 17 | `u8 0` and the four floats `0.25, 0.5, 0.75, 0.25` |
-| 0x006B | 1 | 17 | `u8 0` and the four floats `0.25, 0.5, 0.25, 0.0` |
-| 0x006C | 2 | 20 | `u32 0` and the floats `0.1, 1.0, 0.0, 0.0` |
-| 0x006D | 4 | 4 | zeroed |
-| 0x006E | 100 | 13 | parameter slot: `u32 id, u8 0, f32 1.0, u32 0` with the ids 0..99 |
+| tag    | count | length | content |
+|-------:|------:|-------:|---------|
+| 0x0066 | 1     | n      | instrument name (ASCII, no terminator) |
+| 0x0067 | 1     | n      | path of the .dwp itself, single backslashes: `G:\5\Instrument.dwp` |
+| 0x0068 | 1     | 10     | zeroed (fixed size - it matching the name length in the first specimen was a coincidence) |
+| 0x0069 | 1     | 18     | `u16 0` and the four floats `0.75, 0.75, 0.5, 0.75` |
+| 0x006A | 1     | 17     | `u8 0` and the four floats `0.25, 0.5, 0.75, 0.25` |
+| 0x006B | 1     | 17     | `u8 0` and the four floats `0.25, 0.5, 0.25, 0.0` |
+| 0x006C | 2     | 20     | `u32 0` and the floats `0.1, 1.0, 0.0, 0.0` |
+| 0x006D | 4     | 4      | zeroed |
+| 0x006E | 100   | 13     | parameter slot: `u32 id, u8 0, f32 1.0, u32 0` with the ids 0..99 |
 
 The blocks 0x0069 to 0x006C are **program parameters, not metadata** - all 117 available
 programs of all three format versions carry exactly the payloads above (the version 0x24
@@ -99,23 +99,23 @@ but does not sound like its source; that was how the values were found.
 
 The payload is a nested block stream with the same envelope. Blocks in order:
 
-| tag | length | content |
-|----:|-------:|---------|
-| 0x01F4 | 25 | zone mapping, see below |
-| 0x01F5 | n | sample name without extension, e.g. `Instrument_C3_127` |
-| 0x01F6 | n | sample path, single backslashes: `D:\Instrument\Instrument_C3_127.wav` |
-| 0x01F7 | 40 | audio format, see below |
-| 0x01F8 | 8 | `f32 0.5, u8 0, u8 0, u8 100, u8 0` (identical in all seven specimens) |
-| 0x01F9 | 14 | opaque parameters (zeroed in the 0x26 specimen; `0, 0.5, 0.5, 1.0` floats in the factory files) |
-| 0x01FA | 48 | opaque parameters (factory: `0.5, 0.5, 0.5, 1.0` floats then zeros; the 0x26 specimen instead holds zeros, 1.0 at +12 and what looks like uninitialized heap noise) |
-| 0x01FB | 20 | **filter 1 / filter 2** (twice), see below |
-| 0x01FC | 2 | zeroed |
-| 0x01FD | 16 | **the amplitude envelope**: 4 floats attack, decay, sustain, release (see below) |
+| tag    | length | content |
+|-------:|-------:|---------|
+| 0x01F4 | 25     | zone mapping, see below |
+| 0x01F5 | n      | sample name without extension, e.g. `Instrument_C3_127` |
+| 0x01F6 | n      | sample path, single backslashes: `D:\Instrument\Instrument_C3_127.wav` |
+| 0x01F7 | 40     | audio format, see below |
+| 0x01F8 | 8      | `f32 0.5, u8 0, u8 0, u8 100, u8 0` (identical in all seven specimens) |
+| 0x01F9 | 14     | opaque parameters (zeroed in the 0x26 specimen; `0, 0.5, 0.5, 1.0` floats in the factory files) |
+| 0x01FA | 48     | opaque parameters (factory: `0.5, 0.5, 0.5, 1.0` floats then zeros; the 0x26 specimen instead holds zeros, 1.0 at +12 and what looks like uninitialized heap noise) |
+| 0x01FB | 20     | **filter 1 / filter 2** (twice), see below |
+| 0x01FC | 2      | zeroed |
+| 0x01FD | 16     | **the amplitude envelope**: 4 floats attack, decay, sustain, release (see below) |
 | 0x01FE-0x0201 | 9 | opaque parameters (one each) |
-| 0x0202 | 16 | opaque parameters (twice) |
-| 0x0203 | 20 | opaque, varies per program (twice) |
-| 0x0204 | 8 | 16 of them: `u16, u16, f32` triples, opaque parameters |
-| 0x0004 | 0 | container terminator |
+| 0x0202 | 16     | opaque parameters (twice) |
+| 0x0203 | 20     | opaque, varies per program (twice) |
+| 0x0204 | 8      | 16 of them: `u16, u16, f32` triples, opaque parameters |
+| 0x0004 | 0      | container terminator |
 
 The creator copies all opaque blocks verbatim from the first sample container of the
 factory 'Nylon Guitar' program, so written files stay inside the byte patterns of the six

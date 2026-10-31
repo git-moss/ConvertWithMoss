@@ -293,7 +293,6 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 zones.addAll (robinZones);
 
             layerPlan.state.active = true;
-            layerPlan.state.panning = calculateCommonPanning (zones);
             layerPlan.state.volume = Math.clamp (SoundboxLayerState.DEFAULT_VOLUME * calculateCommonGainRatio (zones), 0, 1);
             layerPlan.settings.fineTuneCents = Math.clamp (calculateCommonFineTuneCents (zones), -100, 100);
 
@@ -351,23 +350,6 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 return 0;
         }
         return commonFraction == null ? 0 : commonFraction.doubleValue () * 100.0;
-    }
-
-
-    /**
-     * Calculates the panning if it is identical for all zones. A common panning is stored in the
-     * layer, different values in the sounds.
-     *
-     * @param zones The zones of the layer
-     * @return The common panning or 0 if the zones have different values
-     */
-    private static double calculateCommonPanning (final List<ISampleZone> zones)
-    {
-        final double commonPanning = zones.get (0).getPanning ();
-        for (final ISampleZone zone: zones)
-            if (Math.abs (zone.getPanning () - commonPanning) > 0.001)
-                return 0;
-        return Math.clamp (commonPanning, -1, 1);
     }
 
 
@@ -559,13 +541,15 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         sound.velocityLow = limitToDefault (zone.getVelocityLow (), 0);
         sound.velocityHigh = limitToDefault (zone.getVelocityHigh (), 127);
         sound.reverse = zone.isReversed ();
-        sound.panning = Math.clamp (zone.getPanning () - layerPlan.state.panning, -1, 1);
+        // The panning of the layer is not applied by the plug-in, therefore it is always stored in
+        // the sound
+        sound.panning = Math.clamp (zone.getPanning (), -1, 1);
 
         // The fractional part of the tuning is stored in the fine tune of the layer
         sound.tuneSemitones = (int) Math.round (zone.getTuning () - layerPlan.settings.fineTuneCents / 100.0);
 
         // The volume can only be lowered (100% is the maximum), a gain which is common to all
-        // zones is stored lossless in the layer volume instead
+        // zones is stored loss-less in the layer volume instead
         final double layerRatio = layerPlan.state.volume / SoundboxLayerState.DEFAULT_VOLUME;
         final double volumeRatio = Math.pow (10, zone.getGain () / 20.0) / (layerRatio > 0 ? layerRatio : 1);
         sound.volumePercent = Math.clamp (Math.round (volumeRatio * 100.0), 0, 100);
