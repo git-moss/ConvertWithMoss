@@ -176,7 +176,7 @@ public final class AudioFileUtils
         try
         {
             final WaveFile waveFile = new WaveFile (wavFile, true);
-            checkSampleFile (wavFile.getAbsolutePath (), waveFile, notifier);
+            return checkSampleFile (wavFile.getAbsolutePath (), waveFile, notifier);
         }
         catch (final IOException | ParseException | RuntimeException ex)
         {
@@ -184,8 +184,6 @@ public final class AudioFileUtils
                 notifier.logError (BROKEN_WAV, wavFile.getAbsolutePath (), ex.getMessage ());
             return false;
         }
-
-        return true;
     }
 
 
@@ -212,6 +210,17 @@ public final class AudioFileUtils
             notifier.logError ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), filename);
             return false;
         }
+
+        // The data chunk of a truncated file is missing as well, if not even one sample frame of it
+        // is present or if its audio cannot be faded out where the file ends
+        if (waveFile.getDataChunk () == null)
+        {
+            notifier.logError ("IDS_WAV_NO_AUDIO_DATA", filename);
+            return false;
+        }
+
+        if (waveFile.isTruncated ())
+            notifier.log ("IDS_WAV_TRUNCATED", filename, Integer.toString (formatChunk.calculateLength (waveFile.getDataChunk ().getData ())), Integer.toString (waveFile.getStatedNumberOfFrames ()));
 
         return true;
     }

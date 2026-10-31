@@ -53,6 +53,20 @@ public interface RIFFVisitor
 
 
     /**
+     * This method is invoked when the file ends before the data of a data chunk does. Such a chunk
+     * is skipped, unless the visitor can use the part of the data which is present: it then visits
+     * the chunk shortened to that part, see {@link RawRIFFChunk#isTruncated()}.
+     *
+     * @param chunk The chunk which is cut off, its size is still the one which its header states
+     * @return True to visit the chunk with the data which is present
+     */
+    default boolean acceptsTruncatedChunk (final RawRIFFChunk chunk)
+    {
+        return false;
+    }
+
+
+    /**
      * Check if the top chunk is acceptable.
      *
      * @param type The type of the top chunk

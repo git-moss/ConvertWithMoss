@@ -382,7 +382,13 @@ public class RIFFParser
             // Note: this can only read up to 2GB!
             final byte [] chunkData = this.in.readNBytes (size);
             if (chunkData.length != size && this.ignoreChunkErrors)
-                return true;
+            {
+                // The file ends before the chunk does - only a visitor which can use the data
+                // which is present gets the chunk, shortened to that data
+                if (chunkData.length == 0 || !this.visitor.acceptsTruncatedChunk (chunk))
+                    return true;
+                chunk.truncate (chunkData.length);
+            }
             chunk.setData (chunkData);
             this.visitor.visitChunk (parent, chunk);
             return true;
