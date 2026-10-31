@@ -229,7 +229,13 @@ public class RIFFPrimitivesInputStream extends FilterInputStream
         {
             final int result = this.in.read (b, offset + count, length - count);
             if (result == -1)
-                return -1;
+            {
+                // The bytes in front of the end of the stream were read as well and must not get
+                // lost, e.g. the data of a chunk which the end of the file cuts off
+                if (count == 0)
+                    return -1;
+                break;
+            }
             count += result;
         }
         this.position += count;

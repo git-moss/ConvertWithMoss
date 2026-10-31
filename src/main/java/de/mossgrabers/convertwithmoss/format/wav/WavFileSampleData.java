@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.exception.CombinationNotPossibleException;
 import de.mossgrabers.convertwithmoss.exception.CompressionNotSupportedException;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.BroadcastAudioExtensionChunk;
+import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk.SampleChunkLoop;
@@ -155,7 +156,13 @@ public class WavFileSampleData extends AbstractFileSampleData
         if (this.hasWavSourceFile && !sourceFile.doesRequireRewrite ())
             super.writeSample (outputStream);
         else
+        {
+            // Without the audio data, e.g. of a file which is cut off in front of it, only a broken
+            // file could be written
+            if (sourceFile.getDataChunk () == null)
+                throw new IOException (Functions.getMessage ("IDS_WAV_NO_AUDIO_DATA", this.filename));
             sourceFile.write (outputStream);
+        }
     }
 
 
@@ -190,6 +197,9 @@ public class WavFileSampleData extends AbstractFileSampleData
     {
         final WaveFile wavFile = this.getWaveFile ();
         final FormatChunk formatChunk = wavFile.getFormatChunk ();
+        final DataChunk dataChunk = wavFile.getDataChunk ();
+        if (formatChunk == null || dataChunk == null)
+            throw new IOException (Functions.getMessage ("IDS_WAV_NO_AUDIO_DATA", this.filename));
         final int numberOfChannels = formatChunk.getNumberOfChannels ();
         if (numberOfChannels > 2)
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), this.sampleFile.getAbsolutePath ()));
@@ -199,7 +209,7 @@ public class WavFileSampleData extends AbstractFileSampleData
         try
         {
             if (zone.getStop () <= 0)
-                zone.setStop (wavFile.getDataChunk ().calculateLength (formatChunk));
+                zone.setStop (dataChunk.calculateLength (formatChunk));
         }
         catch (final CompressionNotSupportedException ex)
         {
@@ -269,11 +279,15 @@ public class WavFileSampleData extends AbstractFileSampleData
         {
             final WaveFile wavFile = this.getWaveFile ();
             final FormatChunk formatChunk = wavFile.getFormatChunk ();
-            this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels (), formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), wavFile.getDataChunk ().calculateLength (formatChunk));
+            final DataChunk dataChunk = wavFile.getDataChunk ();
+            if (formatChunk == null || dataChunk == null)
+                throw new IOException (Functions.getMessage ("IDS_WAV_NO_AUDIO_DATA", this.filename));
+            this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels (), formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), dataChunk.calculateLength (formatChunk));
         }
         catch (final IOException | CompressionNotSupportedException _)
         {
-            // Fall back to javax.sound for compressed WAV files
+            // Fall back to javax.sound for compressed WAV files and for ones whose chunks the RIFF
+            // parser could not read
             super.createAudioMetadata ();
         }
     }

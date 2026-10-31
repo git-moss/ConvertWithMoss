@@ -40,7 +40,9 @@ class EXS24Block
      */
     public static final int          TYPE_TAGGED_RECORDS        = 0x05;
     /** An unknown block. */
-    public static final int          TYPE_UNKNOWN               = 0x08;
+    public static final int          TYPE_UNKNOWN_1             = 0x07;
+    /** Another unknown block. */
+    public static final int          TYPE_UNKNOWN_2             = 0x08;
     /** A BPLIST with the layout configuration of Sampler. */
     public static final int          TYPE_BPLIST_SAMPLER_LAYOUT = 0x0A;
     /** Contains a MacOS PLIST structure in byte format with information about the sample files. */

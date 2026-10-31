@@ -50,8 +50,11 @@ public class EmulatorXChunk
 
 
     /**
-     * Parse the chunks in a section of a buffer. Parsing stops at the first malformed chunk, which
-     * makes the result of a truncated file the part which could be read.
+     * Parse the chunks in a section of a buffer. A chunk which claims more bytes than the section
+     * has left is cut at its end, which makes the result of a truncated file the part which could
+     * be read. Some banks store such a chunk although they are complete: every voice list of the
+     * ZERO-G library claims 92 bytes more than its preset holds, while the voices in it end with
+     * the preset.
      *
      * @param data The buffer to parse
      * @param offset The offset to start at
@@ -66,10 +69,11 @@ public class EmulatorXChunk
         while (position + HEADER_SIZE <= end)
         {
             final int size = (int) EmulatorXConstants.getU32BE (data, position + 4);
-            if (size < 0 || position + HEADER_SIZE + size > end)
+            if (size < 0)
                 break;
-            chunks.add (new EmulatorXChunk (data, new String (data, position, 4, StandardCharsets.US_ASCII), position + HEADER_SIZE, size));
-            position += HEADER_SIZE + size;
+            final int available = Math.min (size, end - position - HEADER_SIZE);
+            chunks.add (new EmulatorXChunk (data, new String (data, position, 4, StandardCharsets.US_ASCII), position + HEADER_SIZE, available));
+            position += HEADER_SIZE + available;
         }
         return chunks;
     }

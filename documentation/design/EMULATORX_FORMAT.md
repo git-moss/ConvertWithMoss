@@ -116,7 +116,7 @@ payload; `108 + offset` is the position in the file.
 | 112    | 1    |        | Always 1                                                       |
 | 113    | 1    |        | Number of channels minus one: 0 for mono, 1 for stereo         |
 | 114    | 1    |        | Mask of the used channels: 1 for mono, 3 for stereo            |
-| 115    | 1    |        | Always 2                                                       |
+| 115    | 1    |        | Bytes per sample of one channel: 2 for 16-bit PCM, 4 for 32-bit floating-point data |
 | 116    | 64   |        | Comment, UTF-16; names the sound set a sample was taken from   |
 | 180    | 1    |        | Zero                                                           |
 | 181    | 4    | LE     | Offset of the trailer, 0 if there is none (version 2 only)     |
@@ -136,7 +136,10 @@ byte-identical to its source even though the audio data is:
 
 The audio data follows at the offset given by the start of the left channel, which is 184 for
 version 1 and 188 for version 2. It is 16-bit signed little-endian PCM, that is, the raw content of
-a WAV data chunk.
+a WAV data chunk, unless offset 115 holds 4: then it is 32-bit little-endian IEEE floating-point
+data, which is how the Emulator X stores samples with a resolution above 16 bit - the X3 manual
+notes that '24-bit samples are stored on disk using 32-bits'. The channel starts and ends and the
+loop points of the header count bytes of that width; the `MARK` trailer counts frames either way.
 
 The two channels are stored one after the other, not interleaved. A sample is mono if the right
 channel is empty, which the factory banks express in two ways: version 1 sets the right channel
@@ -169,6 +172,10 @@ The payload is a sequence of chunks:
 | `LIST CrdL` | 292  | Preset modulation cords, 16 `E5Cd` chunks                         |
 | `LIST E5VL` | *n*  | The voices, one `E5V1` chunk each                                 |
 | `EXEd`      | 92   | Editor state, optional                                            |
+
+The voice lists of the ZERO-G banks claim 92 bytes more than their preset holds - the size of the
+optional `EXEd` chunk, which these presets do not contain - while their voices end with the preset.
+A chunk which runs past the end of its parent therefore has to be cut there, not dropped.
 
 `Phdr` is:
 

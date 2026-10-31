@@ -222,8 +222,8 @@ public class AiffFile
                             // Ignore: MarkerID marker
                             in.skipNBytes (2);
                             final int length = StreamUtils.readUnsigned16 (in, true);
-                            final String comment = StreamUtils.readAscii (in, length).trim ();
-                            if (comment.length () % 2 == 1)
+                            final String comment = StreamUtils.readAscii (in, length);
+                            if (length % 2 == 1)
                                 in.skipNBytes (1);
                             if (!comment.isBlank ())
                                 this.metadata.put ("Comment" + (i + 1), comment);

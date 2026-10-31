@@ -356,6 +356,7 @@ Furthermore, even this basic setup has some limitations:
 * Velocity layers are fixed to the key-ranges (like on the modern Akai MPCs).
 * Duplicated velocity layers always result in round-robin of these samples (they do not sound at the same time).
 * Only 1 Pitch per key zone can be set which means you cannot tune individual samples.
+* A loop needs at least one frame of the sample behind its end and its cross-fade at most as much audio in front of the loop start as it is long, otherwise the Tonverk does not load the multi-sample, and neither a preset with such a loop. A sample whose loop ends on its last frame therefore gets the first frame of the loop appended, which keeps the sound, and the start of a loop whose cross-fade does not fit is moved forward to make room for it; the cross-fade is limited to half of the loop. The start of a single-cycle loop is kept and its cross-fade shortened instead.
 
 #### Destination Options
 
@@ -372,7 +373,7 @@ In contrast to the mapping files, a Tonverk preset is a full sound that also con
 
 The amplitude envelope (AHD or ADSR), the multi-mode filter together with its envelope, the sample loops, gain and panning are converted. The remaining, synthesizer-specific parameters (arpeggiator, effects, global LFOs and the modulation matrix) have no equivalent in the multi-sample model and are therefore not converted.
 
-When writing, the samples are stored next to the preset and referenced by their relative file name, so the preset can be copied anywhere onto the SD card. The full parameter block is created from a neutral factory template (effects bypassed, LFOs, arpeggiator and modulation neutralized) and only the converted parameters above are filled in from the source.
+When writing, the output folder mirrors the SD card of the Tonverk: the preset is written to *User/Presets* and its samples to *User/Multi-sampled Instruments/&lt;preset name&gt;*, from where the preset references them by their absolute path on the card. Copy the presets and the sample folders into the folders of the same names on the SD card; the sample folders must end up exactly there, otherwise the preset does not find its samples. The full parameter block is created from a neutral factory template (effects bypassed, LFOs, arpeggiator and modulation neutralized) and only the converted parameters above are filled in from the source. The preset gets one of the two main categories of the Tonverk, DRUMS for a drum kit or a drum source and KEYS otherwise, and the category and the keywords of the source which match a tag of the Tonverk (e.g. BASS, PAD, STRINGS, SOUND FX, DARK) become its tags.
 
 Note: the Tonverk stores envelope times and the filter cut-off frequency as normalized values using internal, non-published curves. ConvertWithMoss uses documented approximations for these. A Tonverk-to-Tonverk conversion is therefore loss-less, while a conversion to or from a unit-based format (such as Waldorf Quantum/Iridium or the Synthstrom Deluge) is a close approximation.
 
@@ -1072,7 +1073,7 @@ The decay is the exception to the time law of the envelopes above: it approaches
 
 The OP-XY is a portable sampler and sequencer from Teenage Engineering. Its multi-sample presets are open: a preset is a folder with the ending *.preset* which contains all samples as WAV files and a *patch.json* file with the mapping and the settings of the synthesizer engine.
 
-Reading a preset gives the key range, root key, tuning, gain, play range and loop (with its cross-fade and release behavior) of every region, plus the amplitude envelope, the velocity sensitivity and the pitch bend range which the device stores once for the whole preset.
+Reading a preset gives the key range, root key, tuning, gain, play range and loop (with its cross-fade and release behavior) of every region, plus the amplitude envelope, the velocity sensitivity and the pitch bend range which the device stores once for the whole preset. Presets which are saved on the device store only the upper key of each region; such a region starts one key above the region below it, as the device plays it.
 
 Writing creates such a folder, which only needs to be copied to the device. Note the limits which the device manual states: a preset holds at most 24 zones, a sample may be at most 20 seconds long (longer ones are reported), and multiple velocities are not supported - of several zones which cover the same keys only the one which plays at the highest velocity is kept. The regions are written as the device expects them, i.e. covering the keyboard without gaps: a region ends at its own upper key and starts one key above the previous one. Samples are written as 16 bit WAV files with at most 44.1 kHz. The velocity sensitivity is filled from the source; if the source states nothing, the default of the device (displayed as 64) is used.
 
