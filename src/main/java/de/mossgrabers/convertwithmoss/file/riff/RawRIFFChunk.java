@@ -41,6 +41,7 @@ public class RawRIFFChunk implements IRiffChunk
 
     private String                                parserMessage;
     private boolean                               tooLarge         = false;
+    private long                                  statedSize       = -1;
 
 
     /**
@@ -587,6 +588,42 @@ public class RawRIFFChunk implements IRiffChunk
     public void markTooLarge ()
     {
         this.tooLarge = true;
+    }
+
+
+    /**
+     * Shortens the chunk to the data which is present, since the file ends before the chunk does.
+     * The size which the header of the chunk states is kept, see {@link #getStatedSize()}.
+     *
+     * @param presentSize The number of bytes which are present
+     */
+    public void truncate (final long presentSize)
+    {
+        if (this.statedSize < 0)
+            this.statedSize = this.size;
+        this.size = presentSize;
+    }
+
+
+    /**
+     * Check if the file ends before the chunk does, see {@link #truncate(long)}.
+     *
+     * @return True if the chunk contains less data than its header states
+     */
+    public boolean isTruncated ()
+    {
+        return this.statedSize > this.size;
+    }
+
+
+    /**
+     * Get the size which the header of the chunk states.
+     *
+     * @return The size, which is larger than the size of the chunk if it is truncated
+     */
+    public long getStatedSize ()
+    {
+        return this.statedSize < 0 ? this.size : this.statedSize;
     }
 
 

@@ -111,6 +111,17 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
             return Collections.emptyList ();
         }
 
+        // A zone references its sample by the index of the sample. A zone without a sample is
+        // stored with an index of -1 and plays nothing in Logic, e.g. the zones on the keys without
+        // a sound in 'Applause and Laugher' of the Logic library. Only if not a single zone
+        // references a sample, the zones are expected to play the samples in their order
+        if (zones.stream ().noneMatch (zone -> zone.sampleIndex >= 0))
+            for (final EXS24Zone zone: zones)
+                zone.sampleIndex = zone.id;
+        final long emptyZones = zones.stream ().filter (zone -> zone.sampleIndex < 0).count ();
+        if (emptyZones > 0)
+            this.notifier.log ("IDS_EXS_EMPTY_ZONES", Long.toString (emptyZones));
+
         final Optional<IMultisampleSource> multisample = this.createMultisample (file, exs24File);
         if (multisample.isEmpty ())
             return Collections.emptyList ();
@@ -237,19 +248,16 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
      * @param exs24Samples All samples of the EXS24 file
      * @param loadedSamples The samples which were already looked up, indexed by their EXS24 sample
      *            index; a null value marks a sample which could not be found
-     * @return The created zone and the folder in which its sample was found, empty if the sample is
-     *         not available
+     * @return The created zone and the folder in which its sample was found, empty if the zone has
+     *         no sample or the sample is not available
      * @throws IOException Could not read the sample file
      */
     private Optional<Pair<ISampleZone, File>> createAndCheckSampleZone (final File parentFile, final File previousFolder, final EXS24Zone exs24Zone, final List<EXS24Sample> exs24Samples, final Map<Integer, Pair<ISampleData, File>> loadedSamples) throws IOException
     {
-        // If sample index is not set, use the zone id (index)
-        int sampleIndex = exs24Zone.sampleIndex;
+        // An empty zone, which has no sample, has already been reported
+        final int sampleIndex = exs24Zone.sampleIndex;
         if (sampleIndex < 0)
-        {
-            sampleIndex = exs24Zone.id;
-            exs24Zone.sampleIndex = sampleIndex;
-        }
+            return Optional.empty ();
 
         if (sampleIndex >= exs24Samples.size ())
         {

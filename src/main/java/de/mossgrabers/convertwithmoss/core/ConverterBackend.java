@@ -30,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
+import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonCreator;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
 import de.mossgrabers.convertwithmoss.format.akai.akp.AkpDetector;
@@ -140,6 +141,7 @@ import de.mossgrabers.convertwithmoss.format.tx16wx.TX16WxDetector;
 import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatCreator;
 import de.mossgrabers.convertwithmoss.format.waldorf.qpat.WaldorfQpatDetector;
 import de.mossgrabers.convertwithmoss.format.wav.WavCreator;
+import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcCreator;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.YamahaYsfcDetector;
 import de.mossgrabers.tools.ui.Functions;
@@ -157,6 +159,8 @@ public class ConverterBackend
 
     /** The MIDI note at the middle of the keyboard. */
     private static final int               MIDDLE_KEY                  = 60;
+    /** The largest fixed transposition which the processing options offer, in semitones. */
+    private static final int               MAXIMUM_TRANSPOSE           = 24;
     /** Samples which sound at least this many semitones from their root keys are reported. */
     private static final double            MINIMUM_PITCH_OFFSET        = 0.5;
     private static final String []         NOTE_NAMES                  =
@@ -624,10 +628,12 @@ public class ConverterBackend
 
     private void processSource (final IMultisampleSource multisampleSource)
     {
+        this.limitTruncatedSamples (multisampleSource);
         ensureSafeSampleFileNames (multisampleSource);
+        final int sourceMiddleRoot = getMiddleRoot (multisampleSource);
         this.processSamples (multisampleSource);
         this.applyDefaultEnvelope (multisampleSource);
-        this.checkOffCenterMapping (multisampleSource);
+        this.checkOffCenterMapping (multisampleSource, sourceMiddleRoot);
         this.checkSamplePitch (multisampleSource);
         this.checkLoopClicks (multisampleSource);
     }
@@ -645,8 +651,9 @@ public class ConverterBackend
      */
     private void checkSamplePitch (final IMultisampleSource multisampleSource)
     {
-        // The transposition to the measured pitch has already reported it
-        if (this.detectionSettings.transposeToPitch && this.detectionSettings.needsProcessing ())
+        // The transposition to the measured pitch has already reported it - but analysing does not
+        // transpose
+        if (!this.onlyAnalyse && this.detectionSettings.transposeToPitch && this.detectionSettings.needsProcessing ())
             return;
 
         final Optional<PitchDetector.Result> result = PitchDetector.detect (multisampleSource.getGroups ());
@@ -725,16 +732,21 @@ public class ConverterBackend
      * an octave or more transposed. Vintage phrase and vocal presets - one recording or its
      * velocity layers stretched across the keyboard - are often rooted far off-center, since they
      * were triggered from drum machines and sequencers rather than played on keys. The conversion
-     * keeps the mapping faithfully; the note prevents mistaking it for a conversion error. A preset
-     * with more than two distinct roots is a crafted multi-sample whose placement is a design
-     * decision and gets no note.
+     * keeps the mapping faithfully; the note prevents mistaking it for a conversion error and names
+     * the fixed transposition which plays the samples as recorded closest to the middle, in whole
+     * octaves, which keep the keys in tune. A preset with more than two distinct roots is a crafted
+     * multi-sample whose placement is a design decision and gets no note, nor does a mapping which
+     * the processing changed - a transposition which was asked for, fixed or measured, is no
+     * surprise.
      *
      * @param multisampleSource The multi-sample to check
+     * @param sourceMiddleRoot The root key which the source plays at the middle of the keyboard,
+     *            before the processing
      */
-    private void checkOffCenterMapping (final IMultisampleSource multisampleSource)
+    private void checkOffCenterMapping (final IMultisampleSource multisampleSource, final int sourceMiddleRoot)
     {
         final int middleRoot = getMiddleRoot (multisampleSource);
-        if (middleRoot < 0 || Math.abs (middleRoot - MIDDLE_KEY) < 12)
+        if (middleRoot < 0 || middleRoot != sourceMiddleRoot || Math.abs (middleRoot - MIDDLE_KEY) < 12)
             return;
 
         final Set<Integer> distinctRoots = new HashSet<> ();
@@ -745,8 +757,11 @@ public class ConverterBackend
                 if (root >= 0 && zone.getKeyTracking () != 0)
                     distinctRoots.add (Integer.valueOf (root));
             }
-        if (distinctRoots.size () <= 2)
-            this.notifier.log ("IDS_NOTIFY_OFF_CENTER_MAPPING", multisampleSource.getName (), formatNote (middleRoot));
+        if (distinctRoots.size () > 2)
+            return;
+
+        final int transpose = Math.clamp (Math.round ((middleRoot - MIDDLE_KEY) / 12.0) * 12, -MAXIMUM_TRANSPOSE, MAXIMUM_TRANSPOSE);
+        this.notifier.log ("IDS_NOTIFY_OFF_CENTER_MAPPING", multisampleSource.getName (), formatNote (middleRoot), String.format (Locale.US, "%+d", Integer.valueOf (transpose)), formatNote (middleRoot - transpose));
     }
 
 
@@ -939,6 +954,83 @@ public class ConverterBackend
             crossfaded++;
         }
         return crossfaded;
+    }
+
+
+    /**
+     * Keep the zones whose sample file is cut off - it ends before its audio does, e.g. after an
+     * interrupted copy - inside of the audio which is present. The end of that audio was already
+     * faded out when the file was read, so that it does not click. The play range of a zone ends
+     * with the audio, and a zone which only plays the missing part is left out. A loop which
+     * reaches into the faded out or missing part is removed, since it would repeat the fade and
+     * jump from silence back to the loop start, which clicks at every repeat.
+     *
+     * @param multisampleSource The multi-sample source
+     */
+    private void limitTruncatedSamples (final IMultisampleSource multisampleSource)
+    {
+        for (final IGroup group: multisampleSource.getGroups ())
+        {
+            final List<ISampleZone> zones = group.getSampleZones ();
+            final List<ISampleZone> keptZones = new ArrayList<> (zones.size ());
+            for (final ISampleZone zone: zones)
+            {
+                final Optional<WaveFile> waveFile = getTruncatedWaveFile (zone);
+                if (waveFile.isEmpty () || this.limitToPresentAudio (zone, waveFile.get ()))
+                    keptZones.add (zone);
+                else
+                    this.notifier.log ("IDS_WAV_TRUNCATED_ZONE_REMOVED", zone.getName ());
+            }
+            if (keptZones.size () != zones.size ())
+                group.setSampleZones (keptZones);
+        }
+    }
+
+
+    /**
+     * Limit the play range and the loops of a zone to the audio which is present in its truncated
+     * sample file.
+     *
+     * @param zone The zone
+     * @param waveFile The truncated sample file of the zone
+     * @return False if the zone only plays the missing part of the sample
+     */
+    private boolean limitToPresentAudio (final ISampleZone zone, final WaveFile waveFile)
+    {
+        final int presentFrames = waveFile.getFormatChunk ().calculateLength (waveFile.getDataChunk ().getData ());
+        if (zone.getStart () >= presentFrames)
+            return false;
+        if (zone.getStop () > presentFrames)
+            zone.setStop (presentFrames);
+
+        // A loop without an end loops to the end of the sample, which is faded out now
+        final int fadeOutStart = waveFile.getFadeOutStart ();
+        if (zone.getLoops ().removeIf (loop -> loop.getEnd () <= 0 || loop.getEnd () >= fadeOutStart))
+            this.notifier.log ("IDS_WAV_TRUNCATED_LOOP_REMOVED", zone.getName ());
+        return true;
+    }
+
+
+    /**
+     * Get the sample file of a zone if it is a WAV file which is truncated.
+     *
+     * @param zone The zone
+     * @return The WAV file, empty if it is not truncated or the zone has no WAV file
+     */
+    private static Optional<WaveFile> getTruncatedWaveFile (final ISampleZone zone)
+    {
+        if (zone.getSampleData ().orElse (null) instanceof final WavFileSampleData wavFileSampleData)
+            try
+            {
+                final WaveFile waveFile = wavFileSampleData.getWaveFile ();
+                if (waveFile.isTruncated ())
+                    return Optional.of (waveFile);
+            }
+            catch (final IOException _)
+            {
+                // A sample which cannot be read is reported by the conversion
+            }
+        return Optional.empty ();
     }
 
 

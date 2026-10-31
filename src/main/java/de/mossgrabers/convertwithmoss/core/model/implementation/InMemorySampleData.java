@@ -12,6 +12,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
+import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -24,6 +25,7 @@ import de.mossgrabers.tools.ui.Functions;
 public class InMemorySampleData implements ISampleData
 {
     private final IAudioMetadata audioMetadata;
+    private final boolean        isFloat;
     private byte []              sampleData;
 
 
@@ -35,8 +37,23 @@ public class InMemorySampleData implements ISampleData
      */
     public InMemorySampleData (final IAudioMetadata audioMetadata, final byte [] sampleData)
     {
+        this (audioMetadata, sampleData, false);
+    }
+
+
+    /**
+     * Constructor.
+     *
+     * @param audioMetadata The metadata description of the sample data
+     * @param sampleData The raw sample data, channels are interleaved
+     * @param isFloat True if the sample data consists of 32-bit floating-point values (little-endian)
+     *            instead of integer PCM
+     */
+    public InMemorySampleData (final IAudioMetadata audioMetadata, final byte [] sampleData, final boolean isFloat)
+    {
         this.audioMetadata = audioMetadata;
         this.sampleData = sampleData;
+        this.isFloat = isFloat;
     }
 
 
@@ -65,6 +82,8 @@ public class InMemorySampleData implements ISampleData
     public void writeSample (final OutputStream outputStream) throws IOException
     {
         final WaveFile wavFile = new WaveFile (this.audioMetadata);
+        if (this.isFloat)
+            wavFile.getFormatChunk ().setCompressionCode (FormatChunk.WAVE_FORMAT_IEEE_FLOAT);
         final DataChunk dataChunk = wavFile.getDataChunk ();
         final byte [] destinationData = dataChunk.getData ();
         if (destinationData.length < this.sampleData.length)
