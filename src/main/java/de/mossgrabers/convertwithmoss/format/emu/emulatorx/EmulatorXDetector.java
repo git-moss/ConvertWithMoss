@@ -436,7 +436,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static InMemorySampleData createSampleData (final EmulatorXSampleFile sampleFile)
     {
-        return new InMemorySampleData (new DefaultAudioMetadata (sampleFile.getNumChannels (), sampleFile.getSampleRate (), 16, sampleFile.getNumFrames ()), sampleFile.getPcm ());
+        return new InMemorySampleData (new DefaultAudioMetadata (sampleFile.getNumChannels (), sampleFile.getSampleRate (), sampleFile.getBitsPerSample (), sampleFile.getNumFrames ()), sampleFile.getPcm (), sampleFile.isFloat ());
     }
 
 

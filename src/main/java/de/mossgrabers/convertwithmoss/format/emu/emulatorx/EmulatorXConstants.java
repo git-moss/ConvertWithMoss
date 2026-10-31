@@ -253,6 +253,8 @@ public class EmulatorXConstants
     public static final int    SAMPLE_EXTRA_CHANNELS   = 113;
     /** The offset of the mask of the used channels inside the sample payload. */
     public static final int    SAMPLE_CHANNEL_MASK     = 114;
+    /** The offset of the number of bytes of one sample of one channel inside the sample payload. */
+    public static final int    SAMPLE_BYTES_PER_SAMPLE = 115;
     /** The offset of the comment inside the sample payload. */
     public static final int    SAMPLE_COMMENT          = 116;
     /** The offset of the trailer pointer inside the sample payload of a version 2 header. */
@@ -267,6 +269,8 @@ public class EmulatorXConstants
     public static final int    SAMPLE_TRAILER_SIZE     = 32;
     /** The number of bytes of one 16 bit sample frame of one channel. */
     public static final int    BYTES_PER_FRAME         = 2;
+    /** The number of bytes of one 32 bit floating-point sample frame of one channel. */
+    public static final int    BYTES_PER_FLOAT_FRAME   = 4;
 
     /**
      * The maximum number of presets of a bank. The real limit of the format is unknown, this is a
