@@ -77,9 +77,9 @@ public abstract class AbstractAkpChunk extends AbstractSpecificRIFFChunk
 
 
     /**
-     * Updates the data of the chunk with the current parameters. Needs to be called before the chunk
-     * is written. If the chunk was read and is written in the same version, the read data is used as
-     * the basis, otherwise the default data of the requested version.
+     * Updates the data of the chunk with the current parameters. Needs to be called before the
+     * chunk is written. If the chunk was read and is written in the same version, the read data is
+     * used as the basis, otherwise the default data of the requested version.
      *
      * @param generation The generation in which to write the chunk, if empty a read chunk keeps its
      *            version and a new chunk uses the default generation

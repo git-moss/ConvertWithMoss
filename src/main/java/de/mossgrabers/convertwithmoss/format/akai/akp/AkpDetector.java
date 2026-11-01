@@ -171,9 +171,9 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
      * Samples written by an Akai sampler contain an Akai specific block at the end of the sample
      * chunk which contains the root key (byte 2) and the semi-tone tuning (byte 3, signed) of the
      * sample. The sampler stores the root key plus the tuning as the MIDI unity note of the sample
-     * chunk but the pitch of such samples matches the root key minus the tuning (e.g. a sample
-     * with the pitch of C4 has a root key of C3 and a tuning of -12 semi-tones but a unity note of
-     * C2). Therefore, the root key is calculated from the Akai block if present.
+     * chunk but the pitch of such samples matches the root key minus the tuning (e.g. a sample with
+     * the pitch of C4 has a root key of C3 and a tuning of -12 semi-tones but a unity note of C2).
+     * Therefore, the root key is calculated from the Akai block if present.
      *
      * @param sampleData The sample data
      * @param sampleZone The zone in which to set the root key

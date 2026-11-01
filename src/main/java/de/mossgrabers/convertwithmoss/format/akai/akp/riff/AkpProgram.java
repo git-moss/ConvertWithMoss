@@ -4,7 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 
-
 /**
  * A S5000/S6000 program chunk.
  *

@@ -49,7 +49,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AbletonLivePack
 {
-    private static final String IDS_ADV_PACK_BROKEN = "IDS_ADV_PACK_BROKEN";
+    private static final String            IDS_ADV_PACK_BROKEN = "IDS_ADV_PACK_BROKEN";
     private static final byte []           PACK_ID             =
     {
         'p',

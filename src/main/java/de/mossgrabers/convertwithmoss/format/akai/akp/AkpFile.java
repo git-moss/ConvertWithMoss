@@ -136,8 +136,8 @@ public class AkpFile extends AbstractRIFFFile
 
 
     /**
-     * Write the AKP file in the given generation. Chunks which were read in a different version
-     * are converted, which means that their undocumented bytes are set to the default values of the
+     * Write the AKP file in the given generation. Chunks which were read in a different version are
+     * converted, which means that their undocumented bytes are set to the default values of the
      * generation. Use the write methods without the generation parameter to keep the versions of a
      * read file, new files are written in the default generation (3).
      *

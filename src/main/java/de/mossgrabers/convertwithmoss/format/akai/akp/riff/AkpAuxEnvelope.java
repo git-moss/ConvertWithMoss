@@ -129,7 +129,8 @@ public class AkpAuxEnvelope extends AbstractAkpChunk
     /**
      * Set the keyboard to rate 2 and 4 modulation in the range of [-100..100].
      *
-     * @param keyboardToRate2And4 The keyboard to rate 2 and 4 modulation in the range of [-100..100]
+     * @param keyboardToRate2And4 The keyboard to rate 2 and 4 modulation in the range of
+     *            [-100..100]
      */
     public void setKeyboardToRate2And4 (final int keyboardToRate2And4)
     {

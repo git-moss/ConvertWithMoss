@@ -148,8 +148,8 @@ public class AkpCreator extends AbstractWavCreator<AkpCreatorUI>
 
 
     /**
-     * Create a name which can be used as a file name and in the AKP file: only ASCII characters
-     * and limited to 20 characters.
+     * Create a name which can be used as a file name and in the AKP file: only ASCII characters and
+     * limited to 20 characters.
      *
      * @param name The name
      * @param defaultName The name to use if the given name is empty

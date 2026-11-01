@@ -12,8 +12,8 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 /**
  * The generations of the AKP format. The generations differ in the versions (and sizes) of some of
  * the chunks. Since there is no OS version in the file, the generations were identified from the
- * file dates of the analysed files: generation 1 = 1998, generation 2 = 1999, generation 3 = 2000
- * - 2002 (also written by the Z4/Z8). The chunks 'out ', 'mods' and 'env ' are version 1 in all
+ * file dates of the analysed files: generation 1 = 1998, generation 2 = 1999, generation 3 = 2000 -
+ * 2002 (also written by the Z4/Z8). The chunks 'out ', 'mods' and 'env ' are version 1 in all
  * generations.
  *
  * @author Jürgen Moßgraber

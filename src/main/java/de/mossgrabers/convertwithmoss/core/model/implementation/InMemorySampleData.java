@@ -46,8 +46,8 @@ public class InMemorySampleData implements ISampleData
      *
      * @param audioMetadata The metadata description of the sample data
      * @param sampleData The raw sample data, channels are interleaved
-     * @param isFloat True if the sample data consists of 32-bit floating-point values (little-endian)
-     *            instead of integer PCM
+     * @param isFloat True if the sample data consists of 32-bit floating-point values
+     *            (little-endian) instead of integer PCM
      */
     public InMemorySampleData (final IAudioMetadata audioMetadata, final byte [] sampleData, final boolean isFloat)
     {

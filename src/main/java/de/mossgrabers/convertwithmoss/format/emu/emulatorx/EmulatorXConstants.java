@@ -308,8 +308,8 @@ public class EmulatorXConstants
      * samples from a single sample pool file store an 'INFO' chunk in front of it.
      *
      * @param data The content of the file
-     * @return The offset of the first entry and the size of the table of contents in bytes, empty if
-     *         the file is not an Emulator X file or has no complete table of contents
+     * @return The offset of the first entry and the size of the table of contents in bytes, empty
+     *         if the file is not an Emulator X file or has no complete table of contents
      */
     public static Optional<int []> findTableOfContents (final byte [] data)
     {

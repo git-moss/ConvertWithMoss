@@ -103,8 +103,8 @@ public final class PitchDetector
     /** Chords of up to this many notes are recognised. */
     private static final int    MAXIMUM_CHORD_NOTES    = 3;
     /**
-     * A harmonic is missing if it holds less than this part of the power of its neighbours - in
-     * a chord only noise is left there.
+     * A harmonic is missing if it holds less than this part of the power of its neighbours - in a
+     * chord only noise is left there.
      */
     private static final double MISSING_HARMONIC       = 0.03;
     /** A harmonic needs this part of the power of all harmonics to start the series of a note. */
@@ -177,10 +177,8 @@ public final class PitchDetector
         for (final Double offset: offsets)
             if (Math.abs (offset.doubleValue () - median) <= AGREEMENT_RANGE)
                 agreeingZones++;
-        if (agreeingZones < MINIMUM_AGREEMENT * offsets.size ())
-            return Optional.empty ();
         // Rounded like the transposition which moves the root keys onto the pitch
-        if (hasFewZones && Math.round (-median) % 12 != 0)
+        if ((agreeingZones < MINIMUM_AGREEMENT * offsets.size ()) || (hasFewZones && Math.round (-median) % 12 != 0))
             return Optional.empty ();
         return Optional.of (new Result (median, agreeingZones, offsets.size ()));
     }

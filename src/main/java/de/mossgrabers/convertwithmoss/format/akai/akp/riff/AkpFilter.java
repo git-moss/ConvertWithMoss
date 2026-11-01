@@ -35,10 +35,10 @@ public class AkpFilter extends AbstractAkpChunk
      * Get the filter mode.
      *
      * @return 0 = 2-POLE LP, 1 = 4-POLE LP, 2 = 2-POLE LP+, 3 = 2-POLE BP, 4 = 4-POLE BP, 5 =
-     *         2-POLE BP+, 6 = 1-POLE HP, 7 = 2-POLE HP, 8 = 1-POLE HP+, 9 = LO<>HI, 10 =
-     *         LO<>BAND, 11 = BAND<>HI, 12 = NOTCH 1, 13 = NOTCH 2, 14 = NOTCH 3, 15 = WIDE NOTCH,
-     *         16 = BI-NOTCH, 17 = PEAK 1, 18 = PEAK 2, 19 = PEAK 3, 20 = WIDE PEAK, 21 = BI-PEAK,
-     *         22 = PHASER 1, 23 = PHASER 2, 24 = BI-PHASE, 25 = VOWELISER
+     *         2-POLE BP+, 6 = 1-POLE HP, 7 = 2-POLE HP, 8 = 1-POLE HP+, 9 = LO<>HI, 10 = LO<>BAND,
+     *         11 = BAND<>HI, 12 = NOTCH 1, 13 = NOTCH 2, 14 = NOTCH 3, 15 = WIDE NOTCH, 16 =
+     *         BI-NOTCH, 17 = PEAK 1, 18 = PEAK 2, 19 = PEAK 3, 20 = WIDE PEAK, 21 = BI-PEAK, 22 =
+     *         PHASER 1, 23 = PHASER 2, 24 = BI-PHASE, 25 = VOWELISER
      */
     public int getMode ()
     {

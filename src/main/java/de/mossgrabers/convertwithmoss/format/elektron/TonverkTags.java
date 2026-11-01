@@ -16,9 +16,9 @@ import de.mossgrabers.convertwithmoss.format.TagDetector;
 
 /**
  * The category and the tags of a Tonverk preset. The device knows two main categories, DRUMS and
- * KEYS, by which its LOAD PRESET menu filters, and a fixed set of upper-case tags. The category
- * and the keywords of the model are mapped onto them; whatever has no counterpart on the device is
- * left out.
+ * KEYS, by which its LOAD PRESET menu filters, and a fixed set of upper-case tags. The category and
+ * the keywords of the model are mapped onto them; whatever has no counterpart on the device is left
+ * out.
  *
  * @author Jürgen Moßgraber
  */

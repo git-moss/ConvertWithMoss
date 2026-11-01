@@ -388,7 +388,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
                         final String sampleName = sample.getSampleName ().trim ();
                         final ISampleZone sampleZone = new DefaultSampleZone (sampleName, lowKey, highKey);
-                        applyParameters (sampleZone, patch, partial, sampleSection, sample);
+                        this.applyParameters (sampleZone, patch, partial, sampleSection, sample);
                         groups.get (i).addSampleZone (sampleZone);
                     }
                 }

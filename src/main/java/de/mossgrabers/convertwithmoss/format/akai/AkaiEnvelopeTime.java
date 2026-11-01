@@ -6,9 +6,8 @@ package de.mossgrabers.convertwithmoss.format.akai;
 
 /**
  * Converts the settings of the envelope stages of the Akai samplers into times. The table is the
- * one of the S1000/S3000. The S5000/S6000 uses the same kind of settings (in the range of
- * [0..100]) but its curve is not documented, therefore the table of its predecessor is used for
- * it as well.
+ * one of the S1000/S3000. The S5000/S6000 uses the same kind of settings (in the range of [0..100])
+ * but its curve is not documented, therefore the table of its predecessor is used for it as well.
  *
  * @author Jürgen Moßgraber
  */

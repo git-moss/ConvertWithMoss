@@ -51,7 +51,7 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 {
-    private static final String MOD_LFO = "mod_lfo";
+    private static final String                    MOD_LFO                  = "mod_lfo";
 
     private static final String                    TAG_VALUE                = "value";
 

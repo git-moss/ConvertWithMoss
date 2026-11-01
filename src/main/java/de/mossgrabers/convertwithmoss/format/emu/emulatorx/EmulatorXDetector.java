@@ -52,8 +52,8 @@ import de.mossgrabers.tools.FileUtils;
  * per sample or, in banks which link their samples with 'EXSL' chunks, a single *.ebl file named
  * like the bank which holds all of them. A single *.ebl file is read as a multi-sample source with
  * one zone, which makes the sample pool of a bank usable on its own. The chunks of the format are
- * versioned and several generations exist, so their size is always taken from the chunk header.
- * The layout was reverse-engineered from 14 banks and the parameter ranges come from the Emulator X
+ * versioned and several generations exist, so their size is always taken from the chunk header. The
+ * layout was reverse-engineered from 14 banks and the parameter ranges come from the Emulator X
  * manuals, see documentation/design/EMULATORX_FORMAT.md.
  *
  * @author Jürgen Moßgraber
@@ -226,7 +226,8 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
                 missingSamples++;
             else if (EmulatorXConstants.hasTag (data, position, EmulatorXConstants.SAMPLE_POOL_LINK_TAG))
             {
-                // The payload starts with the number of the sample in the sample pool file, followed
+                // The payload starts with the number of the sample in the sample pool file,
+                // followed
                 // by a 16 byte ID which is the same for all samples of the pool
                 if (pool == null)
                     pool = this.readSamplePool (new File (samplePool, bankName + EmulatorXConstants.SAMPLE_ENDING));
@@ -288,8 +289,8 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Read the single sample pool file of a bank and locate the sample chunks in it. A file which is
-     * missing or cannot be read results in a pool without samples.
+     * Read the single sample pool file of a bank and locate the sample chunks in it. A file which
+     * is missing or cannot be read results in a pool without samples.
      *
      * @param poolFile The sample pool file
      * @return The sample pool

@@ -286,8 +286,8 @@ public class AkpZone extends AbstractAkpChunk
 
 
     /**
-     * Check if the zone is routed to one of the mono outputs. The panning of the zone has no
-     * effect in that case.
+     * Check if the zone is routed to one of the mono outputs. The panning of the zone has no effect
+     * in that case.
      *
      * @return True if routed to one of the mono outputs 1 to 16
      */

@@ -379,13 +379,13 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
 
     /**
      * Fits the cross-fades of the loops of the zone to the Tonverk, which cross-fades the end of a
-     * loop with the audio in front of the loop start and does not load a preset whose cross-fade
-     * is longer than that audio. A cross-fade which does not fit moves the loop start forward
-     * until it does, so the cross-fade blends the end of the loop into the audio which the loop
-     * skips, like a sampler which cross-fades into the start of the loop; it is limited to half of
-     * the remaining loop. The start of a single-cycle loop is not moved since its length is its
-     * pitch; its cross-fade is shortened instead. Must be called after the loops were clamped into
-     * the trimmed sample.
+     * loop with the audio in front of the loop start and does not load a preset whose cross-fade is
+     * longer than that audio. A cross-fade which does not fit moves the loop start forward until it
+     * does, so the cross-fade blends the end of the loop into the audio which the loop skips, like
+     * a sampler which cross-fades into the start of the loop; it is limited to half of the
+     * remaining loop. The start of a single-cycle loop is not moved since its length is its pitch;
+     * its cross-fade is shortened instead. Must be called after the loops were clamped into the
+     * trimmed sample.
      *
      * @param zone The zone
      * @param notifier Where to report a changed loop
