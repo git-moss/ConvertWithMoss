@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpKeygroup;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpLfo;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpModulations;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpOutput;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpProgram;
@@ -53,8 +54,11 @@ public class AkpFile extends AbstractRIFFFile
     private final AkpOutput         outputChunk   = new AkpOutput ();
     private final AkpModulations    modsChunk     = new AkpModulations ();
     private final AkpTuning         tuningChunk   = new AkpTuning ();
+    private final AkpLfo            lfo1Chunk     = new AkpLfo (true);
+    private final AkpLfo            lfo2Chunk     = new AkpLfo (false);
     private final List<AkpKeygroup> keygroups     = new ArrayList<> ();
-    private boolean                 isS5000Series;
+    private int                     lfoCounter    = 0;
+    private boolean                 isS5000Series = true;
 
 
     /**
@@ -96,14 +100,15 @@ public class AkpFile extends AbstractRIFFFile
         final RIFFParser riffParser = new RIFFParser (AKP_RIFF_CHUNK_IDS, AkpRiffChunkId.APRG_ID);
         riffParser.declareGroupChunk (AkpRiffChunkId.APRG_ID.getFourCC (), CommonRiffChunkId.RIFF_ID);
         riffParser.parse (inputStream, this);
-        this.isS5000Series = riffParser.hasEmptyTopSize ();
     }
 
 
     /**
-     * Check if the AKP/AKM format is for the old S-series models.
+     * Check if the AKP file was written by a S5000/S6000. Files written by a Z4/Z8 contain an
+     * additional 'z48 ' chunk. Note that the size of the RIFF chunk cannot be used for the
+     * detection: it is 0 in files written by the S5000/S6000 but also set by some PC software.
      *
-     * @return True if it is the first format
+     * @return True if written by a S5000/S6000, false if written by a Z4/Z8
      */
     public boolean isS5000Series ()
     {
@@ -167,6 +172,14 @@ public class AkpFile extends AbstractRIFFFile
     {
         final int id = chunk.getId ().getFourCC ();
 
+        if (id == AkpRiffChunkId.Z48_ID.getFourCC ())
+        {
+            // Only present in files written by a Z4/Z8. It contains the program in the Z4/Z8
+            // format which is not decoded since the S5000/S6000 chunks follow as well
+            this.isS5000Series = false;
+            return;
+        }
+
         if (id == AkpRiffChunkId.PRG_ID.getFourCC ())
         {
             this.programChunk.read (chunk);
@@ -186,8 +199,15 @@ public class AkpFile extends AbstractRIFFFile
         }
 
         if (id == AkpRiffChunkId.LFO_ID.getFourCC ())
-            // TODO Implement LFO support in combination with modsChunk
+        {
+            // There are always 2 LFO chunks, LFO 1 comes first
+            if (this.lfoCounter == 0)
+                this.lfo1Chunk.read (chunk);
+            else
+                this.lfo2Chunk.read (chunk);
+            this.lfoCounter++;
             return;
+        }
 
         if (id == AkpRiffChunkId.TUNE_ID.getFourCC ())
         {
@@ -197,7 +217,9 @@ public class AkpFile extends AbstractRIFFFile
 
         if (id == AkpRiffChunkId.KGRP_ID.getFourCC ())
         {
-            this.keygroups.add (new AkpKeygroup (chunk));
+            final AkpKeygroup keygroup = new AkpKeygroup ();
+            keygroup.read (chunk);
+            this.keygroups.add (keygroup);
             return;
         }
 
@@ -223,6 +245,6 @@ public class AkpFile extends AbstractRIFFFile
     public void checkTopChunk (final int type) throws ParseException
     {
         if (AkpRiffChunkId.APRG_ID.getFourCC () != type)
-            throw new ParseException ("Top chunk must be 'AMUL' but is '" + RiffChunkId.toASCII (type) + "'");
+            throw new ParseException ("Top chunk must be 'APRG' but is '" + RiffChunkId.toASCII (type) + "'");
     }
 }

@@ -23,6 +23,9 @@
   * New: Live Sets (ALS) are read: every Sampler and Simpler on the tracks of a Live Set, also in racks, becomes a multi-sample named after the Live Set and its track.
   * Fixed: Presets which are stored as plain XML instead of compressed XML could not be read ('Not in GZIP format'), e.g. all 23 drum kits of the '80s hits' pack of Subsocial Studios.
   * Fixed: The samples of presets and Live Sets which were saved with Live 10 or earlier were not found, since these versions store the path of a sample as a list of folders with the name of the file separately.
+* Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
+  * Fixed: Files written by a S5000/S6000 were reported as "Z4/Z8" when the RIFF size was set. Z4/Z8 files are now detected by their 'z48 ' chunk.
+  * Fixed: The pitch envelope modulation via 'Pitch Mod 2' was not detected.
 * Audiomodern Soundbox
   * Fixed: The panning of the samples was not converted, all samples played in the center. E.g. split stereo samples - two mono samples of one recording, hard panned left and right - played layered in the center instead of in stereo. The panning is now written to the value which the sample editor of the plug-in sets, for every sample, and read from it.
 * discoDSP Bliss

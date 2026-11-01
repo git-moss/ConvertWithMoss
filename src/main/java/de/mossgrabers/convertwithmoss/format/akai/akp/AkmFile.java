@@ -41,7 +41,7 @@ public class AkmFile extends AbstractRIFFFile
     private final Set<String>   ignoredChunks = new HashSet<> ();
     private final List<AkmPart> parts         = new ArrayList<> ();
     private String              version;
-    private boolean             isS5000Series;
+    private boolean             isS5000Series = true;
 
 
     /**
@@ -85,9 +85,11 @@ public class AkmFile extends AbstractRIFFFile
 
 
     /**
-     * Check if the AKP/AKM format is for the old S-series models.
+     * Check if the AKM file was written by a S5000/S6000. Files written by a Z4/Z8 contain an
+     * additional 'z48 ' chunk. Note that the size of the RIFF chunk cannot be used for the
+     * detection: it is 0 in files written by the S5000/S6000 but also set by some PC software.
      *
-     * @return True if it is the first format
+     * @return True if written by a S5000/S6000, false if written by a Z4/Z8
      */
     public boolean isS5000Series ()
     {
@@ -107,7 +109,6 @@ public class AkmFile extends AbstractRIFFFile
         final RIFFParser riffParser = new RIFFParser (AKM_RIFF_CHUNK_IDS, AkmRiffChunkId.AMUL_ID);
         riffParser.declareGroupChunk (AkmRiffChunkId.AMUL_ID.getFourCC (), CommonRiffChunkId.RIFF_ID);
         riffParser.parse (inputStream, this);
-        this.isS5000Series = riffParser.hasEmptyTopSize ();
     }
 
 
@@ -125,7 +126,15 @@ public class AkmFile extends AbstractRIFFFile
     {
         final int id = chunk.getId ().getFourCC ();
 
-        if (id == AkmRiffChunkId.FX_ID.getFourCC ())
+        if (id == AkmRiffChunkId.Z48_ID.getFourCC ())
+        {
+            // Only present in files written by a Z4/Z8. It contains the multi in the Z4/Z8
+            // format which is not decoded since the S5000/S6000 chunks follow as well
+            this.isS5000Series = false;
+            return;
+        }
+
+        if (id == AkmRiffChunkId.FX_ID.getFourCC () || id == AkmRiffChunkId.MPC_ID.getFourCC ())
             // Not used
             return;
 
@@ -163,6 +172,6 @@ public class AkmFile extends AbstractRIFFFile
     public void checkTopChunk (final int type) throws ParseException
     {
         if (AkmRiffChunkId.AMUL_ID.getFourCC () != type)
-            throw new ParseException ("Top chunk must be 'APRG' but is '" + RiffChunkId.toASCII (type) + "'");
+            throw new ParseException ("Top chunk must be 'AMUL' but is '" + RiffChunkId.toASCII (type) + "'");
     }
 }

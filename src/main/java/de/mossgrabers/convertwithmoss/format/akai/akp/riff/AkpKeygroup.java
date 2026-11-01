@@ -7,9 +7,11 @@ package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -21,12 +23,15 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
+import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpModulations.Slot;
 
 
 /**
- * A S5000/S6000 output chunk.
+ * A S5000/S6000 key-group chunk. It contains 9 sub-chunks: the location, the amplitude, filter and
+ * auxiliary envelopes, the filter and 4 velocity zones.
  *
  * @author Jürgen Moßgraber
  */
@@ -70,21 +75,154 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         FILTER_POLES.put (Integer.valueOf (15), Integer.valueOf (4));
     }
 
-    // Full key-group data
-    private final byte [] data;
+    /** The length of the Key-group structure with version 1 zones. */
+    private static final int          LENGTH_KGRP    = 336;
+
+    private final AkpKeygroupLocation location       = new AkpKeygroupLocation ();
+    private final AkpEnvelope         ampEnvelope    = new AkpEnvelope ();
+    private final AkpEnvelope         filterEnvelope = new AkpEnvelope ();
+    private final AkpAuxEnvelope      auxEnvelope    = new AkpAuxEnvelope ();
+    private final AkpFilter           filter         = new AkpFilter ();
+    private final List<AkpZone>       zones          = new ArrayList<> ();
 
 
     /**
-     * Default constructor. The length of the Output structure (including the 8 byte RIFF header) is
-     * 344 or 336.
-     *
-     * @param chunk The raw chunk
+     * Default constructor.
      */
-    public AkpKeygroup (final RawRIFFChunk chunk)
+    public AkpKeygroup ()
     {
-        super (AkpRiffChunkId.OUT_ID, chunk.getData ().length);
+        super (AkpRiffChunkId.KGRP_ID, LENGTH_KGRP);
+    }
 
-        this.data = chunk.getData ();
+
+    /**
+     * Get the location chunk which contains the note range and key-group settings.
+     *
+     * @return The location chunk
+     */
+    public AkpKeygroupLocation getLocation ()
+    {
+        return this.location;
+    }
+
+
+    /**
+     * Get the amplitude envelope.
+     *
+     * @return The amplitude envelope
+     */
+    public AkpEnvelope getAmpEnvelope ()
+    {
+        return this.ampEnvelope;
+    }
+
+
+    /**
+     * Get the filter envelope.
+     *
+     * @return The filter envelope
+     */
+    public AkpEnvelope getFilterEnvelope ()
+    {
+        return this.filterEnvelope;
+    }
+
+
+    /**
+     * Get the auxiliary envelope.
+     *
+     * @return The auxiliary envelope
+     */
+    public AkpAuxEnvelope getAuxEnvelope ()
+    {
+        return this.auxEnvelope;
+    }
+
+
+    /**
+     * Get the filter.
+     *
+     * @return The filter
+     */
+    public AkpFilter getFilter ()
+    {
+        return this.filter;
+    }
+
+
+    /**
+     * Get the velocity zones. These include the unused ones.
+     *
+     * @return The zones, normally 4
+     */
+    public List<AkpZone> getZones ()
+    {
+        return this.zones;
+    }
+
+
+    /**
+     * Reads the data from a chunk.
+     *
+     * @param chunk The chunk to read
+     * @throws ParseException Could not read the data
+     */
+    public void read (final RawRIFFChunk chunk) throws ParseException
+    {
+        final byte [] data = chunk.getData ();
+
+        int envelopeCounter = 0;
+        int position = 0;
+        while (position + 8 <= data.length)
+        {
+            final int fourCC = Byte.toUnsignedInt (data[position]) << 24 | Byte.toUnsignedInt (data[position + 1]) << 16 | Byte.toUnsignedInt (data[position + 2]) << 8 | Byte.toUnsignedInt (data[position + 3]);
+            final int size = Byte.toUnsignedInt (data[position + 4]) | Byte.toUnsignedInt (data[position + 5]) << 8 | Byte.toUnsignedInt (data[position + 6]) << 16 | Byte.toUnsignedInt (data[position + 7]) << 24;
+            final int start = position + 8;
+            if (size < 0 || start + size > data.length)
+                throw new ParseException ("Sub-chunk of key-group is larger than the key-group.");
+
+            final Optional<AkpRiffChunkId> id = AkpRiffChunkId.fromFourCC (fourCC);
+            if (id.isPresent ())
+            {
+                final RawRIFFChunk subChunk = new RawRIFFChunk (0, id.get (), size);
+                subChunk.setData (Arrays.copyOfRange (data, start, start + size));
+
+                switch (id.get ())
+                {
+                    case KGRP_LOC_ID:
+                        this.location.read (subChunk);
+                        break;
+
+                    case KGRP_ENV_ID:
+                        // The envelopes are always stored in the order amplitude, filter,
+                        // auxiliary
+                        if (envelopeCounter == 0)
+                            this.ampEnvelope.read (subChunk);
+                        else if (envelopeCounter == 1)
+                            this.filterEnvelope.read (subChunk);
+                        else
+                            this.auxEnvelope.read (subChunk);
+                        envelopeCounter++;
+                        break;
+
+                    case KGRP_FILTER_ID:
+                        this.filter.read (subChunk);
+                        break;
+
+                    case KGRP_ZONE_ID:
+                        final AkpZone zone = new AkpZone ();
+                        zone.read (subChunk);
+                        this.zones.add (zone);
+                        break;
+
+                    default:
+                        // Ignore other chunks
+                        break;
+                }
+            }
+
+            position = start + size + size % 2;
+        }
     }
 
 
@@ -101,180 +239,113 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
     {
         final List<ISampleZone> sampleZones = new ArrayList<> ();
 
-        final int lowNote = this.getValue (0xB2);
-        final int highNote = this.getValue (0xB3);
+        final int lowNote = this.location.getLowNote ();
+        final int highNote = this.location.getHighNote ();
 
-        // -36..36
-        final int globalSemiToneTune = tuningChunk.getValue (0x33);
-        // -50..50
-        final int globalFineTune = tuningChunk.getValue (0x34);
-        final double globalTuning = globalSemiToneTune + globalFineTune / 100.0;
+        final double globalTuning = tuningChunk.getSemitoneTune () + tuningChunk.getFineTune () / 100.0;
+        final double keygroupTuning = globalTuning + this.location.getSemitoneTune () + this.location.getFineTune () / 100.0;
 
-        // -36..36
-        final int keygroupSemiToneTune = this.getValue (0xB4);
-        // -50..50
-        final int keygroupFineTune = this.getValue (0xB5);
-        final double keygroupTuning = globalTuning + keygroupSemiToneTune + keygroupFineTune / 100.0;
+        final IEnvelope amplitudeEnvelope = new DefaultEnvelope ();
+        amplitudeEnvelope.setAttackTime (toSeconds (this.ampEnvelope.getAttack ()));
+        amplitudeEnvelope.setDecayTime (toSeconds (this.ampEnvelope.getDecay ()));
+        amplitudeEnvelope.setSustainLevel (this.ampEnvelope.getSustain () / 100.0);
+        amplitudeEnvelope.setReleaseTime (toSeconds (this.ampEnvelope.getRelease ()));
 
-        // All -100..100
-        final int pitchMod1 = this.getValue (0xB8);
-        final int pitchMod2 = this.getValue (0xB9);
+        final IEnvelope auxiliaryEnvelope = new DefaultEnvelope ();
+        auxiliaryEnvelope.setAttackTime (toSeconds (this.auxEnvelope.getRate (0)));
+        auxiliaryEnvelope.setHoldTime (toSeconds (this.auxEnvelope.getRate (1)));
+        auxiliaryEnvelope.setDecayTime (toSeconds (this.auxEnvelope.getRate (2)));
+        auxiliaryEnvelope.setReleaseTime (toSeconds (this.auxEnvelope.getRate (3)));
+        auxiliaryEnvelope.setStartLevel (this.auxEnvelope.getLevel (0) / 100.0);
+        auxiliaryEnvelope.setHoldLevel (this.auxEnvelope.getLevel (1) / 100.0);
+        auxiliaryEnvelope.setSustainLevel (this.auxEnvelope.getLevel (2) / 100.0);
+        auxiliaryEnvelope.setEndLevel (this.auxEnvelope.getLevel (3) / 100.0);
+        final int pitchEnvelopeDepth = this.getPitchEnvelopeDepth (modsChunk);
 
-        // All 0..100
-        final int ampEnvAttack = this.getUnsignedValue (0xC7);
-        final int ampEnvDecay = this.getUnsignedValue (0xC9);
-        final int ampEnvRelease = this.getUnsignedValue (0xCA);
-        final int ampEnvSustain = this.getUnsignedValue (0xCD);
-
-        final IEnvelope ampEnvelope = new DefaultEnvelope ();
-        ampEnvelope.setAttackTime (toSeconds (ampEnvAttack));
-        ampEnvelope.setDecayTime (toSeconds (ampEnvDecay));
-        ampEnvelope.setSustainLevel (ampEnvSustain / 100.0);
-        ampEnvelope.setReleaseTime (toSeconds (ampEnvRelease));
-
-        // All 0..100
-        final int filterEnvAttack = this.getUnsignedValue (0xE1);
-        final int filterEnvDecay = this.getUnsignedValue (0xE3);
-        final int filterEnvRelease = this.getUnsignedValue (0xE4);
-        final int filterEnvSustain = this.getUnsignedValue (0xE7);
-
-        // -100..100
-        final int filterEnvDepth = this.getValue (0xE9);
-
-        // All 0..100
-        final int auxEnvRate1 = this.getUnsignedValue (0xFB);
-        final int auxEnvRate2 = this.getUnsignedValue (0xFC);
-        final int auxEnvRate3 = this.getUnsignedValue (0xFD);
-        final int auxEnvRate4 = this.getUnsignedValue (0xFE);
-        final int auxEnvLevel1 = this.getUnsignedValue (0xFF);
-        final int auxEnvLevel2 = this.getUnsignedValue (0x100);
-        final int auxEnvLevel3 = this.getUnsignedValue (0x101);
-        final int auxEnvLevel4 = this.getUnsignedValue (0x102);
-        final IEnvelope auxEnvelope = new DefaultEnvelope ();
-        auxEnvelope.setAttackTime (toSeconds (auxEnvRate1));
-        auxEnvelope.setHoldTime (toSeconds (auxEnvRate2));
-        auxEnvelope.setDecayTime (toSeconds (auxEnvRate3));
-        auxEnvelope.setReleaseTime (toSeconds (auxEnvRate4));
-        auxEnvelope.setStartLevel (auxEnvLevel1 / 100.0);
-        auxEnvelope.setHoldLevel (auxEnvLevel2 / 100.0);
-        auxEnvelope.setSustainLevel (auxEnvLevel3 / 100.0);
-        auxEnvelope.setEndLevel (auxEnvLevel4 / 100.0);
-
-        // 0 = NO SOURCE, 1 = MODWHEEL, 2 = BEND, 3 = AFT'TOUCH, 4 = EXTERNAL, 5 = VELOCITY, 6 =
-        // KEYBOARD, 7 = LFO1, 8 = LFO2, 9 = AMP ENV, 10 = FILT ENV, 11 = AUX ENV, 12 = dMODWHEEL,
-        // 13 = dBEND, 14 = dEXTERNAL
-        final boolean pitchMod1UsesAuxEnv = modsChunk.getUnsignedValue (0x93) == 11;
-        final boolean pitchMod2UsesAuxEnv = modsChunk.getUnsignedValue (0x94) == 11;
-
-        final int pitchbendUp = tuningChunk.getUnsignedValue (0x41);
-        final int pitchbendDown = tuningChunk.getUnsignedValue (0x42);
-
-        final int filterMode = this.getUnsignedValue (0x115);
+        final int filterMode = this.filter.getMode ();
         final FilterType filterType = FILTER_TYPES.get (Integer.valueOf (filterMode));
-        // 0..100
-        final int filterCutoff = this.getUnsignedValue (0x116);
-        // 0..12
-        final int filterResonance = this.getUnsignedValue (0x117);
         final Integer filterPoles = FILTER_POLES.get (Integer.valueOf (filterMode));
-        final double cutoff = MathUtils.denormalizeFrequency (filterCutoff / 100.0, IFilter.MAX_FREQUENCY);
+        final double cutoff = MathUtils.denormalizeFrequency (this.filter.getCutoff () / 100.0, IFilter.MAX_FREQUENCY);
+        // +12 is the default and this tracks the filter octave for octave
+        final double filterKeyTracking = Math.clamp (this.filter.getKeyboardTrack () / 12.0, -1, 1);
 
-        // -36..36 - +12 is the default and this tracks the filter octave for octave
-        final double filterKeyTracking = Math.clamp (this.getValue (0x118) / 12.0, -1, 1);
-
-        int zonePosition = 0x11E;
-        for (int i = 0; i < 4; i++)
+        for (final AkpZone zone: this.zones)
         {
-            // Is there a 'zone' tag?
-            if (this.getValue (zonePosition) == 0)
-                break;
+            if (!zone.isUsed ())
+                continue;
 
-            // Found 0x2E and 0x30
-            final int sizeOfZone = this.getUnsignedValue (zonePosition + 4);
+            final ISampleZone sampleZone = new DefaultSampleZone ();
+            sampleZones.add (sampleZone);
+            sampleZone.setName (zone.getSampleName ());
+            sampleZone.setKeyLow (lowNote);
+            sampleZone.setKeyHigh (highNote);
+            sampleZone.setVelocityLow (zone.getLowVelocity ());
+            sampleZone.setVelocityHigh (zone.getHighVelocity ());
+            sampleZone.setTuning (keygroupTuning + zone.getSemitoneTune () + zone.getFineTune () / 100.0);
 
-            final int nameStart = zonePosition + 9;
-            final int sampleNameLength = this.getUnsignedValue (nameStart);
-            if (sampleNameLength > 0)
+            if (filterType != null)
             {
-                final StringBuilder sb = new StringBuilder ();
-                for (int n = 0; n < sampleNameLength; n++)
-                    sb.append ((char) this.getValue (nameStart + 1 + n));
-                final String sampleFileName = sb.toString ().trim ();
+                // Exponential resonance conversion to normalized 0..1 range and damped by
+                // factor 4
+                final double res = Math.pow (Math.clamp (this.filter.getResonance () / 12.0, 0, 1.0), 1.0 / 3.0) / 4.0;
+                final IFilter sampleFilter = new DefaultFilter (filterType, filterPoles.intValue (), cutoff, res);
+                sampleZone.setFilter (sampleFilter);
 
-                final ISampleZone sampleZone = new DefaultSampleZone ();
-                sampleZones.add (sampleZone);
-                sampleZone.setName (sampleFileName);
-                sampleZone.setKeyLow (lowNote);
-                sampleZone.setKeyHigh (highNote);
-                sampleZone.setVelocityLow (this.getUnsignedValue (zonePosition + 0x2A));
-                sampleZone.setVelocityHigh (this.getUnsignedValue (zonePosition + 0x2B));
-                // -50..50
-                final int fineTune = this.getValue (zonePosition + 0x2C);
-                // -36..36
-                final int semiToneTune = this.getValue (zonePosition + 0x2D);
-                sampleZone.setTuning (keygroupTuning + semiToneTune + fineTune / 100.0);
-
-                if (filterType != null)
-                {
-                    // Exponential resonance conversion to normalized 0..1 range and damped by
-                    // factor 4
-                    final double res = Math.pow (Math.clamp (filterResonance / 12.0, 0, 1.0), 1.0 / 3.0) / 4.0;
-                    final IFilter filter = new DefaultFilter (filterType, filterPoles.intValue (), cutoff, res);
-                    sampleZone.setFilter (filter);
-
-                    filter.setCutoffKeyTracking (filterKeyTracking);
-                    final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
-                    cutoffEnvelopeModulator.setDepth (filterEnvDepth / 100.0);
-                    final IEnvelope cutoffEnvelope = cutoffEnvelopeModulator.getSource ();
-                    cutoffEnvelope.setAttackTime (toSeconds (filterEnvAttack));
-                    cutoffEnvelope.setDecayTime (toSeconds (filterEnvDecay));
-                    cutoffEnvelope.setSustainLevel (filterEnvSustain / 100.0);
-                    cutoffEnvelope.setReleaseTime (toSeconds (filterEnvRelease));
-                }
-
-                // -50..50
-                sampleZone.setPanning (this.getValue (zonePosition + 0x2F) / 50.0);
-
-                // 0 = NO LOOPING, 1 = ONE SHOT, 2 = LOOP IN REL, 3 = LOOP UNTIL REL, 4 = AS SAMPLE
-                final int loopType = this.getUnsignedValue (zonePosition + 0x30);
-                // ONE SHOT ignores a note-off and always plays the sample up to its end
-                sampleZone.setOneShot (loopType == 1);
-                if (loopType > 1)
-                    sampleZone.getLoops ().add (new DefaultSampleLoop ());
-
-                // -100..100 -> since this is an offset assume -6..+6dB
-                sampleZone.setGain (this.getValue (zonePosition + 0x32) / 100.0 * 6.0);
-
-                final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();
-                amplitudeEnvelopeModulator.setDepth (1);
-                amplitudeEnvelopeModulator.setSource (ampEnvelope);
-                sampleZone.getAmplitudeVelocityModulator ().setDepth (outChunk.getVelocitySensitivity () / 100.0);
-
-                if (pitchMod1UsesAuxEnv || pitchMod2UsesAuxEnv)
-                {
-                    final IEnvelopeModulator pitchModulator = sampleZone.getPitchEnvelopeModulator ();
-                    pitchModulator.setDepth ((pitchMod1UsesAuxEnv ? pitchMod1 : pitchMod2) / 100.0);
-                    pitchModulator.setSource (auxEnvelope);
-                }
-                sampleZone.setBendUp (pitchbendUp * 100);
-                sampleZone.setBendDown (-pitchbendDown * 100);
+                sampleFilter.setCutoffKeyTracking (filterKeyTracking);
+                final IEnvelopeModulator cutoffEnvelopeModulator = sampleFilter.getCutoffEnvelopeModulator ();
+                cutoffEnvelopeModulator.setDepth (this.filterEnvelope.getDepth () / 100.0);
+                final IEnvelope cutoffEnvelope = cutoffEnvelopeModulator.getSource ();
+                cutoffEnvelope.setAttackTime (toSeconds (this.filterEnvelope.getAttack ()));
+                cutoffEnvelope.setDecayTime (toSeconds (this.filterEnvelope.getDecay ()));
+                cutoffEnvelope.setSustainLevel (this.filterEnvelope.getSustain () / 100.0);
+                cutoffEnvelope.setReleaseTime (toSeconds (this.filterEnvelope.getRelease ()));
             }
 
-            zonePosition += sizeOfZone + 8;
+            // -50..50
+            sampleZone.setPanning (zone.getPanning () / 50.0);
+
+            // ONE SHOT ignores a note-off and always plays the sample up to its end
+            final int playback = zone.getPlayback ();
+            sampleZone.setOneShot (playback == AkpZone.PLAYBACK_ONE_SHOT);
+            if (playback > AkpZone.PLAYBACK_ONE_SHOT)
+                sampleZone.getLoops ().add (new DefaultSampleLoop ());
+
+            // -100..100 -> since this is an offset assume -6..+6dB
+            sampleZone.setGain (zone.getLevel () / 100.0 * 6.0);
+
+            final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();
+            amplitudeEnvelopeModulator.setDepth (1);
+            amplitudeEnvelopeModulator.setSource (amplitudeEnvelope);
+            sampleZone.getAmplitudeVelocityModulator ().setDepth (outChunk.getVelocitySensitivity () / 100.0);
+
+            if (pitchEnvelopeDepth != 0)
+            {
+                final IEnvelopeModulator pitchModulator = sampleZone.getPitchEnvelopeModulator ();
+                pitchModulator.setDepth (pitchEnvelopeDepth / 100.0);
+                pitchModulator.setSource (auxiliaryEnvelope);
+            }
+            sampleZone.setBendUp (tuningChunk.getPitchbendUp () * 100);
+            sampleZone.setBendDown (-tuningChunk.getPitchbendDown () * 100);
         }
 
         return sampleZones;
     }
 
 
-    private int getValue (final int position)
+    /**
+     * Get the depth of the pitch modulation by the auxiliary envelope.
+     *
+     * @param modsChunk The modulations chunk which contains the modulation sources
+     * @return The depth in the range of [-100..100], 0 if the auxiliary envelope does not modulate
+     *         the pitch
+     */
+    private int getPitchEnvelopeDepth (final AkpModulations modsChunk)
     {
-        return this.data[position - 0xA6];
-    }
-
-
-    private int getUnsignedValue (final int position)
-    {
-        return Byte.toUnsignedInt (this.data[position - 0xA6]);
+        if (modsChunk.getSource (Slot.PITCH_MOD_1) == AkpModulations.SOURCE_AUX_ENV)
+            return this.location.getPitchMod1 ();
+        if (modsChunk.getSource (Slot.PITCH_MOD_2) == AkpModulations.SOURCE_AUX_ENV)
+            return this.location.getPitchMod2 ();
+        return 0;
     }
 
 

@@ -7,20 +7,16 @@ package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-
 
 /**
  * A S5000/S6000 part chunk.
  *
  * @author Jürgen Moßgraber
  */
-public class AkmPart extends AbstractSpecificRIFFChunk
+public class AkmPart extends AbstractAkpChunk
 {
     /** The length of the Part structure. There are 2 versions found: 0x28 and 0x30! */
-    private static final int LENGTH_OUT = 0x28;
+    private static final int LENGTH_PART = 0x28;
 
     private String           presetName;
     private int              midiChannel;
@@ -35,7 +31,7 @@ public class AkmPart extends AbstractSpecificRIFFChunk
      */
     public AkmPart ()
     {
-        super (AkmRiffChunkId.PART_ID, LENGTH_OUT);
+        super (AkmRiffChunkId.PART_ID, LENGTH_PART, 3);
     }
 
 
@@ -105,42 +101,30 @@ public class AkmPart extends AbstractSpecificRIFFChunk
     }
 
 
-    /**
-     * Reads the data from a chunk.
-     *
-     * @param chunk The chunk to read
-     * @throws ParseException Could not read the data
-     */
-    public void read (final RawRIFFChunk chunk) throws ParseException
+    /** {@inheritDoc} */
+    @Override
+    protected void readData (final byte [] data)
     {
-        if (chunk.getSize () < LENGTH_OUT)
-            throw new ParseException ("Unexpected size of Part chunk: " + chunk.getSize ());
-
-        this.presetName = chunk.getNullTerminatedString (2, 32, "");
+        // Byte 1 contains the length of the name in version 3 but the name is also zero
+        // terminated, which is used since older versions are unknown
+        final StringBuilder sb = new StringBuilder ();
+        for (int i = 0x02; i < 0x22 && data[i] != 0; i++)
+            sb.append ((char) getUnsigned (data, i));
+        this.presetName = sb.toString ();
 
         // 1A-16A, 1B-16B, no Omni-Mode!
-        this.midiChannel = chunk.getByteAsUnsignedInt (0x22);
-        this.panning = chunk.getByteAsSignedInt (0x23);
-        this.lowKey = chunk.getByteAsUnsignedInt (0x24);
-        this.highKey = chunk.getByteAsUnsignedInt (0x25);
-        this.volume = chunk.getByteAsUnsignedInt (0x26);
+        this.midiChannel = getUnsigned (data, 0x22);
+        this.panning = getSigned (data, 0x23);
+        this.lowKey = getUnsigned (data, 0x24);
+        this.highKey = getUnsigned (data, 0x25);
+        this.volume = getUnsigned (data, 0x26);
 
-        // TODO identify values
-
-        // -30, -25, -20, -15, -10, 0, 10, 20, 25, 30 - Fine tune?
-        chunk.getByteAsSignedInt (0x27);
-
-        // 0, 1, 2, 3, 4 - Output? - 0 = L/R; 14 = op1/2op7/8; 514 = L, R, op1-op8
-        chunk.getByteAsSignedInt (0x2A);
-
-        // 0 .. 60 ? PartLevel in 10×dB
-        chunk.getByteAsSignedInt (0x2B);
-
-        // 0 - Semi-tones (Transpose) or Mute/Solo?
-        chunk.getByteAsSignedInt (0x28);
-
-        // 0 - Semi-tones (Transpose) or Mute/Solo?
-        chunk.getByteAsSignedInt (0x29);
+        // TODO identify values:
+        // 0x27: -30, -25, -20, -15, -10, 0, 10, 20, 25, 30 - Fine tune?
+        // 0x28: 0 - Semi-tones (Transpose) or Mute/Solo?
+        // 0x29: 0 - Semi-tones (Transpose) or Mute/Solo?
+        // 0x2A: 0, 1, 2, 3, 4 - Output? - 0 = L/R; 14 = op1/2op7/8; 514 = L, R, op1-op8
+        // 0x2B: 0 .. 60 ? PartLevel in 10×dB
     }
 
 
@@ -153,14 +137,5 @@ public class AkmPart extends AbstractSpecificRIFFChunk
     public void write (final ByteArrayOutputStream out) throws IOException
     {
         // Not used
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public String infoText ()
-    {
-        // Not used
-        return "";
     }
 }

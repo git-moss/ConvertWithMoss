@@ -16,9 +16,11 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 public enum AkmRiffChunkId implements RiffChunkId
 {
     AMUL_ID("Akai Multi", "AMUL"),
+    Z48_ID("Z4/Z8 Multi", "z48 "),
+    MPC_ID("MPC", "mpc "),
     FX_ID("Effects", "fx  "),
     PART_ID("Part", "part"),
-    VERSION_ID("Multi Version", "mver ");
+    VERSION_ID("Multi Version", "mver");
 
 
     private final int    fourCC;

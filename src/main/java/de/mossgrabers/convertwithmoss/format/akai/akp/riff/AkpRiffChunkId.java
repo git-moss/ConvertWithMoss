@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 
+import java.util.Optional;
+
 import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 
 
@@ -16,6 +18,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 public enum AkpRiffChunkId implements RiffChunkId
 {
     APRG_ID("Akai Program", "APRG"),
+    Z48_ID("Z4/Z8 Program", "z48 "),
     PRG_ID("Program", "prg "),
     MODS_ID("Modulations", "mods"),
     OUT_ID("Output", "out "),
@@ -58,5 +61,20 @@ public enum AkpRiffChunkId implements RiffChunkId
     public String getDescription ()
     {
         return this.description;
+    }
+
+
+    /**
+     * Get the chunk ID which matches the given FourCC.
+     *
+     * @param fourCC The FourCC
+     * @return The matching ID if found
+     */
+    public static Optional<AkpRiffChunkId> fromFourCC (final int fourCC)
+    {
+        for (final AkpRiffChunkId id: values ())
+            if (id.fourCC == fourCC)
+                return Optional.of (id);
+        return Optional.empty ();
     }
 }

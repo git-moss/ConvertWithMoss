@@ -7,17 +7,13 @@ package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import de.mossgrabers.convertwithmoss.exception.ParseException;
-import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
-import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
-
 
 /**
  * A S5000/S6000 program chunk.
  *
  * @author Jürgen Moßgraber
  */
-public class AkpProgram extends AbstractSpecificRIFFChunk
+public class AkpProgram extends AbstractAkpChunk
 {
     /** The length of the Program structure. */
     private static final int LENGTH_PRG        = 6;
@@ -31,14 +27,14 @@ public class AkpProgram extends AbstractSpecificRIFFChunk
      */
     public AkpProgram ()
     {
-        super (AkpRiffChunkId.APRG_ID, LENGTH_PRG);
+        super (AkpRiffChunkId.PRG_ID, LENGTH_PRG, 1);
     }
 
 
     /**
-     * Get the program number of the preset in the bank.
+     * Get the MIDI program number of the preset.
      *
-     * @return The program number
+     * @return The program number, 0 = OFF
      */
     public int getProgramNumber ()
     {
@@ -60,7 +56,7 @@ public class AkpProgram extends AbstractSpecificRIFFChunk
     /**
      * Get the number of key-groups.
      *
-     * @return The bank index
+     * @return The number of key-groups in the range of [1..99]
      */
     public int getNumberOfKeygroups ()
     {
@@ -79,16 +75,12 @@ public class AkpProgram extends AbstractSpecificRIFFChunk
     }
 
 
-    /**
-     * Reads the data from a chunk.
-     *
-     * @param chunk The chunk to read
-     * @throws ParseException Could not read the data
-     */
-    public void read (final RawRIFFChunk chunk) throws ParseException
+    /** {@inheritDoc} */
+    @Override
+    protected void readData (final byte [] data)
     {
-        this.programNumber = chunk.getByteAsUnsignedInt (1);
-        this.numberOfKeygroups = chunk.getByteAsUnsignedInt (2);
+        this.programNumber = getUnsigned (data, 1);
+        this.numberOfKeygroups = getUnsigned (data, 2);
     }
 
 
@@ -106,14 +98,5 @@ public class AkpProgram extends AbstractSpecificRIFFChunk
         out.write (0);
         out.write (0);
         out.write (0);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public String infoText ()
-    {
-        // Not used
-        return "";
     }
 }
