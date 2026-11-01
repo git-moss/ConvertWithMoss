@@ -126,7 +126,7 @@ public class AkpFile extends AbstractRIFFFile
     {
         final IGroup group = new DefaultGroup ();
         for (final AkpKeygroup keygroup: this.keygroups)
-            for (final ISampleZone sampleZone: keygroup.createSampleZones (this.modsChunk, this.tuningChunk, this.outputChunk))
+            for (final ISampleZone sampleZone: keygroup.createSampleZones (this.modsChunk, this.tuningChunk, this.outputChunk, this.lfo1Chunk, this.lfo2Chunk))
                 group.addSampleZone (sampleZone);
         fixPanning (group);
         return group;

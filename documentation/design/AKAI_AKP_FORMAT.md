@@ -191,10 +191,16 @@ names the sources.
 | 0x1E   | 2 (Amp)              | 0x1F Amp Mod Src      | 5 (VELOCITY)   |
 | 0x20   | 9 (Filter)           | 0x21 Filter Mod 1 Src | 5 (VELOCITY)   |
 | 0x22   | 9 (Filter)           | 0x23 Filter Mod 2 Src | 8 (LFO2)       |
-| 0x24   | 9 (Filter)           | 0x25 Filter Mod 3 Src | 9 (AMP ENV)    |
+| 0x24   | 9 (Filter)           | 0x25 Filter Mod 3 Src | 10 (FILT ENV)  |
 
 The program level modulation amounts are in the `out` and `lfo ` chunks, the keygroup level
 amounts (pitch, amp, filter) in `kloc` and `filt`.
+
+*(obs.)* The specification lists 9 (AMP ENV) as the default source of Filter Mod 3 but all
+analysed files contain 10 (FILT ENV). Its amount (`filt` Mod Input 3) is the depth of the filter
+envelope: the Z4/Z8 writes the same value to `filt` 0x07 and to the Filt Env Depth of the filter
+envelope (`env` 0x09), the S5000/S6000 leaves `filt` 0x07 at 0. Readers must use the depth of the
+filter envelope.
 
 #### Modulation source
 
