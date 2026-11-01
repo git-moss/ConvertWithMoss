@@ -13,11 +13,12 @@ import de.mossgrabers.convertwithmoss.core.model.IFilter;
 /**
  * Constants, chunk templates and conversion helpers for the E-mu Emulator X bank format. A bank
  * consists of an *.exb file which holds all presets and the list of the samples it uses, and a
- * sibling folder named 'SamplePool' which holds one *.ebl file per sample. Both file types use the
- * same IFF-like 'FORM E5B0TOC2' container with a table of contents of 78 byte entries. All numbers
- * are big-endian except the numeric fields of the sample header. The layout was reverse-engineered
- * from 14 banks and the meaning and ranges of the parameters come from the Emulator X and Emulator
- * X3 manuals; see documentation/design/EMULATORX_FORMAT.md for the details.
+ * sibling folder named 'SamplePool' which holds one *.ebl file per sample or a single *.ebl file
+ * which holds all samples. Both file types use the same IFF-like 'FORM E5B0' container with a
+ * 'TOC2' table of contents of 78 byte entries. All numbers are big-endian except the numeric fields
+ * of the sample header. The layout was reverse-engineered from 14 banks and the meaning and ranges
+ * of the parameters come from the Emulator X and Emulator X3 manuals; see
+ * documentation/design/EMULATORX_FORMAT.md for the details.
  *
  * @author Jürgen Moßgraber
  */
@@ -25,12 +26,18 @@ public class EmulatorXConstants
 {
     /** The magic tag of the outer chunk. */
     public static final String FORM_MAGIC              = "FORM";
-    /** The form type of an Emulator X file. */
+    /** The form type of an Emulator X file followed by the tag of its table of contents. */
     public static final String FORM_TYPE               = "E5B0TOC2";
+    /** The form type of an Emulator X file. */
+    public static final String FORM_ID                 = "E5B0";
+    /** The tag of the table of contents chunk. */
+    public static final String TOC_TAG                 = "TOC2";
     /** The tag of a preset chunk. */
     public static final String PRESET_TAG              = "E5P1";
     /** The tag of a sample link chunk, which references a file of the sample pool. */
     public static final String SAMPLE_LINK_TAG         = "E5SL";
+    /** The tag of a sample link chunk, which references a sample of the single sample pool file. */
+    public static final String SAMPLE_POOL_LINK_TAG    = "EXSL";
     /** The tag of a sample chunk, the single chunk of an *.ebl file. */
     public static final String SAMPLE_TAG              = "E5S1";
     /** The tag of a list chunk, which starts with a 4 character list type. */
@@ -83,9 +90,11 @@ public class EmulatorXConstants
     /** The infix between the bank name and the index in the name of a sample file. */
     public static final String SAMPLE_FILE_INFIX       = "SL";
 
+    /** The size of the header of a top-level chunk: the tag and the size. */
+    public static final int    TOP_CHUNK_HEADER_SIZE   = 8;
     /** The size of a table of contents entry. */
     public static final int    TOC_ENTRY_SIZE          = 78;
-    /** The offset of the first table of contents entry. */
+    /** The offset of the first table of contents entry, if it is the first top-level chunk. */
     public static final int    TOC_OFFSET              = 20;
     /** The number of bytes a chunk occupies in addition to the size stored in the contents. */
     public static final int    CHUNK_OVERHEAD          = 10;
@@ -290,6 +299,40 @@ public class EmulatorXConstants
     private EmulatorXConstants ()
     {
         // Intentionally empty
+    }
+
+
+    /**
+     * Find the table of contents of an Emulator X file. It is the 'TOC2' chunk among the top-level
+     * chunks which follow the form type. Usually it is the first one, but banks which take their
+     * samples from a single sample pool file store an 'INFO' chunk in front of it.
+     *
+     * @param data The content of the file
+     * @return The offset of the first entry and the size of the table of contents in bytes, empty if
+     *         the file is not an Emulator X file or has no complete table of contents
+     */
+    public static Optional<int []> findTableOfContents (final byte [] data)
+    {
+        if (!hasTag (data, 0, FORM_MAGIC) || !hasTag (data, 8, FORM_ID))
+            return Optional.empty ();
+
+        long position = 12;
+        while (position + TOP_CHUNK_HEADER_SIZE <= data.length)
+        {
+            final int chunkStart = (int) position;
+            final long size = getU32BE (data, chunkStart + 4);
+            final long payload = position + TOP_CHUNK_HEADER_SIZE;
+            if (payload + size > data.length)
+                return Optional.empty ();
+            if (hasTag (data, chunkStart, TOC_TAG))
+                return Optional.of (new int []
+                {
+                    (int) payload,
+                    (int) size
+                });
+            position = payload + size;
+        }
+        return Optional.empty ();
     }
 
 

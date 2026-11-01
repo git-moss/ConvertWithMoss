@@ -22,6 +22,12 @@ The sample files are named `<bank name>SL<index>.ebl` with a three digit, 1-base
 index, e.g. `PROcussionSL018.ebl`. This naming convention is the only link between a bank and its
 samples; the bank stores no path. Sample indices may have gaps.
 
+A second variant stores all samples of a bank in a single sample pool file
+`SamplePool/<bank name>.ebl` and links them with `EXSL` instead of `E5SL` chunks, see
+[Sample pool link chunk](#sample-pool-link-chunk-exsl). It was found in the 'Sample Pools' edition of
+the *Planet Earth* sound set (2004), whose 'Single Samples' edition stores the same library with one
+file per sample.
+
 Numbers are **big-endian** unless noted otherwise. Only the numeric fields of the EBL sample header
 and the EBL trailer are little-endian. Strings are UTF-16LE in a fixed size field, padded with
 zeros; a field of 64 bytes therefore holds up to 32 characters.
@@ -34,16 +40,22 @@ Both file types use the same IFF-like container:
 |--------|------|--------------------------------------------------------------------|
 | 0      | 4    | `FORM`                                                             |
 | 4      | 4    | Size of everything that follows (file size - 8)                    |
-| 8      | 8    | `E5B0TOC2`                                                         |
+| 8      | 4    | `E5B0`                                                             |
+| 12     | 4    | `TOC2`                                                             |
 | 16     | 4    | Size of the table of contents                                      |
 | 20     | *n*  | Table of contents, 78 bytes per entry                              |
 | ...    |      | The chunks the table of contents points to                         |
+
+`TOC2` is usually the first of the top-level chunks which follow the form type `E5B0`. The banks
+which take their samples from a single sample pool file store a chunk `INFO` of 8 bytes in front of
+it, which holds `ROM1` and a zero 32-bit number; the table of contents then starts at offset 36. A
+reader should therefore walk the top-level chunks until it finds `TOC2`.
 
 A table of contents entry is:
 
 | Offset | Size | Content                                                            |
 |--------|------|--------------------------------------------------------------------|
-| 0      | 4    | Chunk tag, one of `E5P1` (preset), `E5SL` (sample link), `E5S1` (sample) |
+| 0      | 4    | Chunk tag, one of `E5P1` (preset), `E5SL` or `EXSL` (sample link), `E5S1` (sample) |
 | 4      | 4    | Size of the chunk payload                                          |
 | 8      | 4    | Offset of the chunk from the start of the file                     |
 | 12     | 2    | Index of the chunk (0-based for presets, 1-based for samples)      |
@@ -89,6 +101,20 @@ required.
 The payload is a single big-endian 32-bit number, the 1-based index of the sample. It is always
 identical to the chunk index and to the number in the file name of the `*.ebl` file. The name of the
 table of contents entry is the sample name and matches the name stored inside the `*.ebl` file.
+
+## Sample pool link chunk (`EXSL`)
+
+The payload is 20 bytes: a big-endian 32-bit number, the 1-based number of the sample in the single
+sample pool file `SamplePool/<bank name>.ebl`, followed by a 16 byte ID. All links of a bank hold the
+same ID, which does not appear in the sample pool file, so the file is found by its name only. In
+*Planet Earth* the number always equals the chunk index, which is the sample index the zones use.
+
+The sample pool file is the same container as a sample file, but its table of contents holds one
+`E5S1` entry per sample, whose index is the number of the sample. The payload of each chunk is a
+complete sample as described below; in *Planet Earth* all 755 of them use header version 1. The
+audio of the compared sample 'Bass Kalimba F1' is identical to the one of the 'Single Samples'
+edition, which uses header version 2, except that the version 1 sample holds one more frame at the
+start and at the end; its loop is therefore one frame later.
 
 ## Sample file (`*.ebl`)
 

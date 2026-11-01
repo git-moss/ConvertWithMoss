@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -48,11 +49,12 @@ import de.mossgrabers.tools.FileUtils;
  * zone, so the keyboard map is built from many voices while velocity layers are built from the
  * zones; all zones which cover the same velocity range are collected into one group. The samples
  * are not stored in the bank but in a sibling folder named 'SamplePool' which holds one *.ebl file
- * per sample. A single *.ebl file is read as a multi-sample source with one zone, which makes the
- * sample pool of a bank usable on its own. The chunks of the format are versioned and several
- * generations exist, so their size is always taken from the chunk header. The layout was
- * reverse-engineered from 14 banks and the parameter ranges come from the Emulator X manuals, see
- * documentation/design/EMULATORX_FORMAT.md.
+ * per sample or, in banks which link their samples with 'EXSL' chunks, a single *.ebl file named
+ * like the bank which holds all of them. A single *.ebl file is read as a multi-sample source with
+ * one zone, which makes the sample pool of a bank usable on its own. The chunks of the format are
+ * versioned and several generations exist, so their size is always taken from the chunk header.
+ * The layout was reverse-engineered from 14 banks and the parameter ranges come from the Emulator X
+ * manuals, see documentation/design/EMULATORX_FORMAT.md.
  *
  * @author Jürgen Moßgraber
  */
@@ -69,6 +71,20 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
      * @param high The high velocity value
      */
     private record VelocityRange (int low, int high)
+    {
+        // Intentionally empty
+    }
+
+
+    /**
+     * The single sample pool file of a bank, which holds all of its samples.
+     *
+     * @param file The sample pool file
+     * @param data The content of the file, null if it could not be read
+     * @param entries The offset and the size of the payload of each sample chunk by the 1-based
+     *            number of the sample
+     */
+    private record SamplePool (File file, byte [] data, Map<Integer, int []> entries)
     {
         // Intentionally empty
     }
@@ -100,7 +116,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         try
         {
             final byte [] data = Files.readAllBytes (sourceFile.toPath ());
-            if (!EmulatorXConstants.hasTag (data, 0, EmulatorXConstants.FORM_MAGIC) || !EmulatorXConstants.hasTag (data, 8, EmulatorXConstants.FORM_TYPE))
+            if (!EmulatorXConstants.hasTag (data, 0, EmulatorXConstants.FORM_MAGIC) || !EmulatorXConstants.hasTag (data, 8, EmulatorXConstants.FORM_ID))
             {
                 this.notifier.logError (isSampleFile ? "IDS_EXB_NOT_A_SAMPLE" : "IDS_EXB_NOT_A_BANK", sourceFile.getName ());
                 return Collections.emptyList ();
@@ -179,21 +195,23 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private List<IMultisampleSource> parseBank (final File sourceFile, final byte [] data)
     {
-        final int tocSize = (int) EmulatorXConstants.getU32BE (data, 16);
-        final int tocEnd = EmulatorXConstants.TOC_OFFSET + tocSize;
-        if (tocSize <= 0 || tocEnd > data.length)
+        final Optional<int []> toc = EmulatorXConstants.findTableOfContents (data);
+        if (toc.isEmpty () || toc.get ()[1] <= 0)
         {
             this.notifier.logError ("IDS_EXB_NOT_A_BANK", sourceFile.getName ());
             return Collections.emptyList ();
         }
+        final int tocStart = toc.get ()[0];
+        final int tocEnd = tocStart + toc.get ()[1];
 
         final File samplePool = new File (sourceFile.getParentFile (), EmulatorXConstants.SAMPLE_POOL_FOLDER);
         final String bankName = FileUtils.getNameWithoutType (sourceFile);
         final Map<Integer, EmulatorXSampleFile> samples = new HashMap<> ();
         final List<EmulatorXChunk> presets = new ArrayList<> ();
+        SamplePool pool = null;
 
         int missingSamples = 0;
-        for (int position = EmulatorXConstants.TOC_OFFSET; position + EmulatorXConstants.TOC_ENTRY_SIZE <= tocEnd; position += EmulatorXConstants.TOC_ENTRY_SIZE)
+        for (int position = tocStart; position + EmulatorXConstants.TOC_ENTRY_SIZE <= tocEnd; position += EmulatorXConstants.TOC_ENTRY_SIZE)
         {
             final int size = (int) EmulatorXConstants.getU32BE (data, position + 4);
             final int offset = (int) EmulatorXConstants.getU32BE (data, position + 8);
@@ -206,6 +224,16 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
                 presets.add (EmulatorXChunk.wrap (data, EmulatorXConstants.PRESET_TAG, offset + EmulatorXConstants.CHUNK_OVERHEAD, size));
             else if (EmulatorXConstants.hasTag (data, position, EmulatorXConstants.SAMPLE_LINK_TAG) && !this.loadSample (samplePool, bankName, index, samples))
                 missingSamples++;
+            else if (EmulatorXConstants.hasTag (data, position, EmulatorXConstants.SAMPLE_POOL_LINK_TAG))
+            {
+                // The payload starts with the number of the sample in the sample pool file, followed
+                // by a 16 byte ID which is the same for all samples of the pool
+                if (pool == null)
+                    pool = this.readSamplePool (new File (samplePool, bankName + EmulatorXConstants.SAMPLE_ENDING));
+                final int number = size < 4 ? 0 : (int) EmulatorXConstants.getU32BE (data, offset + EmulatorXConstants.CHUNK_OVERHEAD);
+                if (!this.loadPooledSample (pool, number, index, samples))
+                    missingSamples++;
+            }
         }
 
         if (missingSamples > 0)
@@ -254,6 +282,87 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         {
             this.notifier.logError ("IDS_EXB_MALFORMED_SAMPLE", file.getName ());
             samples.put (Integer.valueOf (index), null);
+            return false;
+        }
+    }
+
+
+    /**
+     * Read the single sample pool file of a bank and locate the sample chunks in it. A file which is
+     * missing or cannot be read results in a pool without samples.
+     *
+     * @param poolFile The sample pool file
+     * @return The sample pool
+     */
+    private SamplePool readSamplePool (final File poolFile)
+    {
+        final Map<Integer, int []> entries = new HashMap<> ();
+        if (!poolFile.exists ())
+            return new SamplePool (poolFile, null, entries);
+
+        final byte [] data;
+        try
+        {
+            data = Files.readAllBytes (poolFile.toPath ());
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            return new SamplePool (poolFile, null, entries);
+        }
+
+        final Optional<int []> toc = EmulatorXConstants.findTableOfContents (data);
+        if (toc.isEmpty ())
+        {
+            this.notifier.logError ("IDS_EXB_NOT_A_SAMPLE", poolFile.getName ());
+            return new SamplePool (poolFile, data, entries);
+        }
+
+        final int tocEnd = toc.get ()[0] + toc.get ()[1];
+        for (int position = toc.get ()[0]; position + EmulatorXConstants.TOC_ENTRY_SIZE <= tocEnd; position += EmulatorXConstants.TOC_ENTRY_SIZE)
+        {
+            if (!EmulatorXConstants.hasTag (data, position, EmulatorXConstants.SAMPLE_TAG))
+                continue;
+            final int size = (int) EmulatorXConstants.getU32BE (data, position + 4);
+            final int offset = (int) EmulatorXConstants.getU32BE (data, position + 8);
+            final int number = EmulatorXConstants.getU16BE (data, position + 12);
+            if (size >= 0 && offset >= 0 && (long) offset + EmulatorXConstants.CHUNK_OVERHEAD + size <= data.length)
+                entries.put (Integer.valueOf (number), new int []
+                {
+                    offset + EmulatorXConstants.CHUNK_OVERHEAD,
+                    size
+                });
+        }
+        return new SamplePool (poolFile, data, entries);
+    }
+
+
+    /**
+     * Load one sample from the single sample pool file of a bank.
+     *
+     * @param pool The sample pool
+     * @param number The 1-based number of the sample in the sample pool file
+     * @param index The 1-based index of the sample in the bank, which the zones reference
+     * @param samples Where to add the loaded sample
+     * @return True if the sample could be loaded
+     */
+    private boolean loadPooledSample (final SamplePool pool, final int number, final int index, final Map<Integer, EmulatorXSampleFile> samples)
+    {
+        // A sample which is listed by the bank but cannot be loaded is remembered with a null entry
+        // so that its zones do not report it a second time
+        final Integer sampleIndex = Integer.valueOf (index);
+        samples.put (sampleIndex, null);
+        final int [] entry = pool.entries ().get (Integer.valueOf (number));
+        if (entry == null)
+            return false;
+        try
+        {
+            samples.put (sampleIndex, EmulatorXSampleFile.read (pool.data (), entry[0], entry[1]));
+            return true;
+        }
+        catch (final ParseException _)
+        {
+            this.notifier.logError ("IDS_EXB_MALFORMED_SAMPLE", pool.file ().getName () + " #" + number);
             return false;
         }
     }
