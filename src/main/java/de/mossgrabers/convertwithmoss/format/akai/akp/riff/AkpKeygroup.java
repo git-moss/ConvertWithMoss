@@ -61,6 +61,13 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         FILTER_TYPES.put (Integer.valueOf (13), FilterType.BAND_REJECTION);
         FILTER_TYPES.put (Integer.valueOf (14), FilterType.BAND_REJECTION);
         FILTER_TYPES.put (Integer.valueOf (15), FilterType.BAND_REJECTION);
+        FILTER_TYPES.put (Integer.valueOf (16), FilterType.BAND_REJECTION);
+        // The peak filters boost a band around the cutoff, the closest match is a band-pass
+        FILTER_TYPES.put (Integer.valueOf (17), FilterType.BAND_PASS);
+        FILTER_TYPES.put (Integer.valueOf (18), FilterType.BAND_PASS);
+        FILTER_TYPES.put (Integer.valueOf (19), FilterType.BAND_PASS);
+        FILTER_TYPES.put (Integer.valueOf (20), FilterType.BAND_PASS);
+        FILTER_TYPES.put (Integer.valueOf (21), FilterType.BAND_PASS);
 
         FILTER_POLES.put (Integer.valueOf (0), Integer.valueOf (2));
         FILTER_POLES.put (Integer.valueOf (1), Integer.valueOf (4));
@@ -76,6 +83,12 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         FILTER_POLES.put (Integer.valueOf (13), Integer.valueOf (2));
         FILTER_POLES.put (Integer.valueOf (14), Integer.valueOf (2));
         FILTER_POLES.put (Integer.valueOf (15), Integer.valueOf (2));
+        FILTER_POLES.put (Integer.valueOf (16), Integer.valueOf (2));
+        FILTER_POLES.put (Integer.valueOf (17), Integer.valueOf (2));
+        FILTER_POLES.put (Integer.valueOf (18), Integer.valueOf (2));
+        FILTER_POLES.put (Integer.valueOf (19), Integer.valueOf (2));
+        FILTER_POLES.put (Integer.valueOf (20), Integer.valueOf (2));
+        FILTER_POLES.put (Integer.valueOf (21), Integer.valueOf (2));
     }
 
     /** The length of the Key-group structure with version 1 zones. */
@@ -253,6 +266,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         amplitudeEnvelope.setDecayTime (AkaiEnvelopeTime.toSecondsS5000 (this.ampEnvelope.getDecay ()));
         amplitudeEnvelope.setSustainLevel (this.ampEnvelope.getSustain () / 100.0);
         amplitudeEnvelope.setReleaseTime (AkaiEnvelopeTime.toSecondsS5000 (this.ampEnvelope.getRelease ()));
+        setTimeTracking (amplitudeEnvelope, this.ampEnvelope.getVelocityToAttack (), this.ampEnvelope.getKeyscale ());
 
         // The auxiliary envelope has 4 rates and 4 levels: rate 1 moves from 0 to level 1, rate 2
         // to level 2 and rate 3 to level 3 which is held while the note is pressed. After the
@@ -267,15 +281,12 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         auxiliaryEnvelope.setSustainLevel (this.auxEnvelope.getLevel (2) / 100.0);
         auxiliaryEnvelope.setReleaseTime (AkaiEnvelopeTime.toSecondsS5000 (this.auxEnvelope.getRate (3)));
         auxiliaryEnvelope.setEndLevel (this.auxEnvelope.getLevel (3) / 100.0);
+        setTimeTracking (auxiliaryEnvelope, this.auxEnvelope.getVelocityToRate1 (), this.auxEnvelope.getKeyboardToRate2And4 ());
         final int pitchEnvelopeDepth = this.getPitchEnvelopeDepth (modsChunk);
 
         final int filterMode = this.filter.getMode ();
         final FilterType filterType = FILTER_TYPES.get (Integer.valueOf (filterMode));
         final Integer filterPoles = FILTER_POLES.get (Integer.valueOf (filterMode));
-        // A fully opened low-pass without resonance, key-tracking and a closing envelope has no
-        // audible effect, therefore no filter is created in that case
-        final boolean isOpenLowPass = filterType == FilterType.LOW_PASS && this.filter.getCutoff () >= 100 && this.filter.getResonance () == 0 && this.filter.getKeyboardTrack () == 0 && this.filterEnvelope.getDepth () >= 0;
-        final double cutoff = MathUtils.denormalizeFrequency (this.filter.getCutoff () / 100.0, IFilter.MAX_FREQUENCY);
         // +12 is the default and this tracks the filter octave for octave
         final double filterKeyTracking = Math.clamp (this.filter.getKeyboardTrack () / 12.0, -1, 1);
 
@@ -292,9 +303,17 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
             sampleZone.setVelocityLow (zone.getLowVelocity ());
             sampleZone.setVelocityHigh (zone.getHighVelocity ());
             sampleZone.setTuning (keygroupTuning + zone.getSemitoneTune () + zone.getFineTune () / 100.0);
+            sampleZone.setKeyTracking (zone.isKeyboardTrack () ? 1 : 0);
+            sampleZone.setExclusiveGroup (this.location.getMuteGroup ());
 
+            // The filter value of the zone is an offset to the cutoff of the key-group
+            final int zoneCutoff = Math.clamp (this.filter.getCutoff () + zone.getFilter (), 0, 100);
+            // A fully opened low-pass without resonance, key-tracking and a closing envelope has
+            // no audible effect, therefore no filter is created in that case
+            final boolean isOpenLowPass = filterType == FilterType.LOW_PASS && zoneCutoff >= 100 && this.filter.getResonance () == 0 && this.filter.getKeyboardTrack () == 0 && this.filterEnvelope.getDepth () >= 0;
             if (filterType != null && !isOpenLowPass)
             {
+                final double cutoff = MathUtils.denormalizeFrequency (zoneCutoff / 100.0, IFilter.MAX_FREQUENCY);
                 // Exponential resonance conversion to normalized 0..1 range and damped by
                 // factor 4
                 final double res = Math.pow (Math.clamp (this.filter.getResonance () / 12.0, 0, 1.0), 1.0 / 3.0) / 4.0;
@@ -309,10 +328,11 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
                 cutoffEnvelope.setDecayTime (AkaiEnvelopeTime.toSecondsS5000 (this.filterEnvelope.getDecay ()));
                 cutoffEnvelope.setSustainLevel (this.filterEnvelope.getSustain () / 100.0);
                 cutoffEnvelope.setReleaseTime (AkaiEnvelopeTime.toSecondsS5000 (this.filterEnvelope.getRelease ()));
+                setTimeTracking (cutoffEnvelope, this.filterEnvelope.getVelocityToAttack (), this.filterEnvelope.getKeyscale ());
             }
 
-            // -50..50
-            sampleZone.setPanning (zone.getPanning () / 50.0);
+            // -50..50, the panning has no effect if the zone is routed to a mono output
+            sampleZone.setPanning (zone.isMonoOutput () ? 0 : zone.getPanning () / 50.0);
 
             // ONE SHOT ignores a note-off and always plays the sample up to its end
             final int playback = zone.getPlayback ();
@@ -363,6 +383,24 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         if (modsChunk.getSource (Slot.PITCH_MOD_2) == AkpModulations.SOURCE_AUX_ENV)
             return this.location.getPitchMod2 ();
         return 0;
+    }
+
+
+    /**
+     * Set the velocity and key tracking of the times of an envelope. The S5000/S6000 only scales
+     * some of the stages (e.g. Velo->Attack only the attack) while the model scales all times,
+     * which is the closest match. The direction is the same as on the S1000/S3000: positive values
+     * lengthen the times towards higher velocities and keys, the model uses the opposite
+     * direction.
+     *
+     * @param envelope The envelope to update
+     * @param velocityAmount The velocity to time modulation in the range of [-100..100]
+     * @param keyAmount The key to time modulation in the range of [-100..100]
+     */
+    private static void setTimeTracking (final IEnvelope envelope, final int velocityAmount, final int keyAmount)
+    {
+        envelope.setTimeVelocityTracking (Math.clamp (-velocityAmount / 100.0, -1, 1));
+        envelope.setTimeKeyTracking (Math.clamp (-keyAmount / 100.0, -1, 1));
     }
 
 

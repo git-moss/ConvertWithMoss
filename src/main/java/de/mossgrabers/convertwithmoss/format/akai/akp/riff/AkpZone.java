@@ -28,6 +28,10 @@ public class AkpZone extends AbstractAkpChunk
     private static final int LENGTH_ZONE                 = 46;
     /** The maximum length of the sample name. */
     private static final int MAX_NAME_LENGTH             = 20;
+    /** The output value of the first mono output. */
+    private static final int OUTPUT_MONO_FIRST           = 9;
+    /** The output value of the last mono output. */
+    private static final int OUTPUT_MONO_LAST            = 24;
 
     private String           sampleName                  = "";
     private int              lowVelocity                 = 0;
@@ -171,6 +175,18 @@ public class AkpZone extends AbstractAkpChunk
     public int getOutput ()
     {
         return this.output;
+    }
+
+
+    /**
+     * Check if the zone is routed to one of the mono outputs. The panning of the zone has no
+     * effect in that case.
+     *
+     * @return True if routed to one of the mono outputs 1 to 16
+     */
+    public boolean isMonoOutput ()
+    {
+        return this.output >= OUTPUT_MONO_FIRST && this.output <= OUTPUT_MONO_LAST;
     }
 
 

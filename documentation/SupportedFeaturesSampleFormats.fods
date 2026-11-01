@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:ooo="http://openoffice.org/2004/office" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:config="urn:oasis:names:tc:opendocument:xmlns:config:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:rpt="http://openoffice.org/2005/report" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:dr3d="urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:chart="urn:oasis:names:tc:opendocument:xmlns:chart:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:number="urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0" xmlns:ooow="http://openoffice.org/2004/writer" xmlns:oooc="http://openoffice.org/2004/calc" xmlns:field="urn:openoffice:names:experimental:ooo-ms-interop:xmlns:field:1.0" xmlns:of="urn:oasis:names:tc:opendocument:xmlns:of:1.2" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:tableooo="http://openoffice.org/2009/table" xmlns:calcext="urn:org:documentfoundation:names:experimental:calc:xmlns:calcext:1.0" xmlns:drawooo="http://openoffice.org/2010/draw" xmlns:loext="urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0" xmlns:math="http://www.w3.org/1998/Math/MathML" xmlns:form="urn:oasis:names:tc:opendocument:xmlns:form:1.0" xmlns:script="urn:oasis:names:tc:opendocument:xmlns:script:1.0" xmlns:dom="http://www.w3.org/2001/xml-events" xmlns:formx="urn:openoffice:names:experimental:ooxml-odf-interop:xmlns:form:1.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:grddl="http://www.w3.org/2003/g/data-view#" xmlns:css3t="http://www.w3.org/TR/css3-text/" xmlns:presentation="urn:oasis:names:tc:opendocument:xmlns:presentation:1.0" office:version="1.4" office:mimetype="application/vnd.oasis.opendocument.spreadsheet">
- <office:meta><meta:creation-date>2021-03-31T19:20:13Z</meta:creation-date><dc:date>2026-09-19T16:41:10.674905900</dc:date><meta:editing-cycles>1241</meta:editing-cycles><meta:editing-duration>P2DT21H4M15S</meta:editing-duration><meta:generator>LibreOffice/26.8.0.3$Windows_X86_64 LibreOffice_project/bce0998afefdbc355585ca324285661a2170ba77</meta:generator><meta:document-statistic meta:table-count="2" meta:cell-count="2494" meta:object-count="0"/></office:meta>
+ <office:meta><meta:creation-date>2021-03-31T19:20:13Z</meta:creation-date><dc:date>2026-11-01T11:27:40.128462200</dc:date><meta:editing-cycles>1244</meta:editing-cycles><meta:editing-duration>P2DT21H10M9S</meta:editing-duration><meta:generator>LibreOffice/26.8.2.2$Windows_X86_64 LibreOffice_project/9dea406ab7695df6325b11b0e19fdca8db4b7276</meta:generator><meta:document-statistic meta:table-count="2" meta:cell-count="2590" meta:object-count="0"/></office:meta>
  <office:settings>
   <config:config-item-set config:name="ooo:view-settings">
    <config:config-item config:name="VisibleAreaTop" config:type="int">0</config:config-item>
    <config:config-item config:name="VisibleAreaLeft" config:type="int">0</config:config-item>
    <config:config-item config:name="VisibleAreaWidth" config:type="int">296875</config:config-item>
-   <config:config-item config:name="VisibleAreaHeight" config:type="int">84684</config:config-item>
+   <config:config-item config:name="VisibleAreaHeight" config:type="int">92019</config:config-item>
    <config:config-item-map-indexed config:name="Views">
     <config:config-item-map-entry>
      <config:config-item config:name="ViewId" config:type="string">view1</config:config-item>
@@ -35,17 +35,17 @@
        <config:config-item config:name="UseTrailingEmptyLinesInLayout" config:type="boolean">false</config:config-item>
       </config:config-item-map-entry>
       <config:config-item-map-entry config:name="Preset">
-       <config:config-item config:name="CursorPositionX" config:type="int">67</config:config-item>
-       <config:config-item config:name="CursorPositionY" config:type="int">36</config:config-item>
+       <config:config-item config:name="CursorPositionX" config:type="int">37</config:config-item>
+       <config:config-item config:name="CursorPositionY" config:type="int">8</config:config-item>
        <config:config-item config:name="HorizontalSplitMode" config:type="short">2</config:config-item>
        <config:config-item config:name="VerticalSplitMode" config:type="short">2</config:config-item>
        <config:config-item config:name="HorizontalSplitPosition" config:type="int">1</config:config-item>
        <config:config-item config:name="VerticalSplitPosition" config:type="int">1</config:config-item>
        <config:config-item config:name="ActiveSplitRange" config:type="short">3</config:config-item>
        <config:config-item config:name="PositionLeft" config:type="int">0</config:config-item>
-       <config:config-item config:name="PositionRight" config:type="int">65</config:config-item>
+       <config:config-item config:name="PositionRight" config:type="int">34</config:config-item>
        <config:config-item config:name="PositionTop" config:type="int">0</config:config-item>
-       <config:config-item config:name="PositionBottom" config:type="int">22</config:config-item>
+       <config:config-item config:name="PositionBottom" config:type="int">1</config:config-item>
        <config:config-item config:name="ZoomType" config:type="short">0</config:config-item>
        <config:config-item config:name="ZoomValue" config:type="int">120</config:config-item>
        <config:config-item config:name="PageViewZoomValue" config:type="int">60</config:config-item>
@@ -524,31 +524,31 @@
    <style:table-row-properties style:row-height="1.626cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
   </style:style>
   <style:style style:name="ro10" style:family="table-row">
-   <style:table-row-properties style:row-height="0.788cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
+   <style:table-row-properties style:row-height="1.236cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
   </style:style>
   <style:style style:name="ro11" style:family="table-row">
-   <style:table-row-properties style:row-height="1.162cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
-  </style:style>
-  <style:style style:name="ro12" style:family="table-row">
    <style:table-row-properties style:row-height="1.034cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
-  <style:style style:name="ro13" style:family="table-row">
+  <style:style style:name="ro12" style:family="table-row">
    <style:table-row-properties style:row-height="1.228cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
+  <style:style style:name="ro13" style:family="table-row">
+   <style:table-row-properties style:row-height="2.027cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
+  </style:style>
   <style:style style:name="ro14" style:family="table-row">
-   <style:table-row-properties style:row-height="0.769cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+   <style:table-row-properties style:row-height="1.632cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
   </style:style>
   <style:style style:name="ro15" style:family="table-row">
-   <style:table-row-properties style:row-height="0.707cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+   <style:table-row-properties style:row-height="0.769cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ro16" style:family="table-row">
-   <style:table-row-properties style:row-height="0.485cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+   <style:table-row-properties style:row-height="0.707cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ro17" style:family="table-row">
-   <style:table-row-properties style:row-height="0.833cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
+   <style:table-row-properties style:row-height="0.485cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ro18" style:family="table-row">
-   <style:table-row-properties style:row-height="1.236cm" fo:break-before="auto" style:use-optimal-row-height="true"/>
+   <style:table-row-properties style:row-height="0.833cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
   </style:style>
   <style:style style:name="ro19" style:family="table-row">
    <style:table-row-properties style:row-height="0.811cm" fo:break-before="auto" style:use-optimal-row-height="false"/>
@@ -805,7 +805,7 @@
      <text:p><text:sheet-name>???</text:sheet-name><text:s/>(<text:title>???</text:title>)</text:p>
     </style:region-left>
     <style:region-right>
-     <text:p><text:date style:data-style-name="N2" text:date-value="2026-09-19">00.00.0000</text:date>, <text:time style:data-style-name="N2" text:time-value="16:27:04.851743200">00:00:00</text:time></text:p>
+     <text:p><text:date style:data-style-name="N2" text:date-value="2026-11-01">00.00.0000</text:date>, <text:time style:data-style-name="N2" text:time-value="11:21:47.014034100">00:00:00</text:time></text:p>
     </style:region-right>
    </style:header>
    <style:header-left style:display="false"/>
@@ -1847,7 +1847,10 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>semitone-tune / fine tune</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>isKeyboardTrack</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>(relative) gain</text:p>
      </table:table-cell>
@@ -1859,7 +1862,9 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>Zone loop type ONE SHOT</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>MuteGroup</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>sustain loop</text:p>
@@ -1880,7 +1885,12 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:table-cell table:style-name="ce14"/>
-     <table:table-cell table:style-name="ce39" table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>AmpEnvelopeKeyScale</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>VelocityToAttack</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Check for support</text:p>
      </table:table-cell>
@@ -2923,8 +2933,7 @@
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Read</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>dspreset</text:p><text:p>dsproduct (read only)</text:p>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>dspreset</text:p><text:p>dsproduct (read only)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>dslibrary/dsbundle</text:p>
@@ -4784,7 +4793,7 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro10">
+    <table:table-row table:style-name="ro2">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -5001,7 +5010,7 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro11">
+    <table:table-row table:style-name="ro10">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -5125,7 +5134,7 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro4">
+    <table:table-row table:style-name="ro10">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
       <text:p>Ensoniq EPS/EPS16+/ASR-10</text:p>
      </table:table-cell>
@@ -5533,7 +5542,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro12">
+    <table:table-row table:style-name="ro11">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
       <text:p>EXS24</text:p>
      </table:table-cell>
@@ -5703,7 +5712,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro12">
+    <table:table-row table:style-name="ro11">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
       <text:p>Fairlight CMI</text:p>
      </table:table-cell>
@@ -5778,7 +5787,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro13">
+    <table:table-row table:style-name="ro12">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>FL Studio DirectWave</text:p>
      </table:table-cell>
@@ -5963,7 +5972,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro18">
+    <table:table-row table:style-name="ro13">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Groove Synthesis 3rd Wave</text:p>
      </table:table-cell>
@@ -6083,7 +6092,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro11">
+    <table:table-row table:style-name="ro13">
      <table:covered-table-cell/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -6626,16 +6635,14 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-<table:table-row table:style-name="ro4">
+    <table:table-row table:style-name="ro14">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Kurzweil PC3/Forte</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Read</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
-      <text:p>pc3, p3k, p3a, ple, for,</text:p>
-      <text:p>fse, pc4, p4s, k27</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>pc3, p3k, p3a, ple, for,</text:p><text:p>fse, pc4, p4s, k27</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>File with several programs</text:p>
@@ -6682,18 +6689,14 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
-      <text:p>Entry tuning + layer transpose</text:p>
-      <text:p>+ sample pitch adjust</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Entry tuning + layer transpose</text:p><text:p>+ sample pitch adjust</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Sample + entry VolumeAdjust</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
-      <text:p>Stereo layer with two keymaps</text:p>
-      <text:p>(left / right)</text:p>
+     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string"><text:p>Stereo layer with two keymaps</text:p><text:p>(left / right)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -6715,12 +6718,12 @@
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>AMPENV (3 attack, decay,</text:p>
-      <text:p>3 release stages)</text:p>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>AMPENV (3 attack, decay,</text:p><text:p>3 release stages)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce17" table:number-columns-spanned="1" table:number-rows-spanned="2" office:value-type="string" calcext:value-type="string"><text:p>Amplifier velocity tracking (dB)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Amplifier velocity tracking (dB)</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
@@ -6736,38 +6739,32 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce37"/>
      <table:table-cell table:style-name="ce5"/>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
-      <text:p>DSP record with a K2x00 filter: 1-/2-pole low-pass, 1-pole high-pass, 2-pole bandpass and notch, 4-pole filters</text:p>
-      <text:p>low-pass, high-pass, bandpass, notch</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>DSP record with a K2x00 filter: 1-/2-pole low-pass, 1-pole high-pass, 2-pole bandpass and notch, 4-pole filters</text:p><text:p>low-pass, high-pass, bandpass, notch</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>1 / 2 / 4</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
-      <text:p>Page frequency</text:p>
-      <text:p>(16Hz - 25kHz)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Page frequency</text:p><text:p>(16Hz - 25kHz)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>Next page resonance (0-24dB)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>ENV2 segment + depth</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
-      <text:p>Attack velocity</text:p>
-      <text:p>source + depth</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Attack velocity</text:p><text:p>source + depth</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-<table:table-row table:style-name="ro4">
+    <table:table-row table:style-name="ro4">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>p3k</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>File with several programs</text:p><text:p>(split when the object IDs run out)</text:p>
@@ -6785,9 +6782,7 @@
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
-      <text:p>One layer per group</text:p>
-      <text:p>(32 layers)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>One layer per group</text:p><text:p>(32 layers)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce28"/>
      <table:covered-table-cell table:style-name="ce26"/>
@@ -6812,9 +6807,9 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>Baked into the entry tunings</text:p>
      </table:table-cell>
-     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="2"/>
+     <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce28"/>
-     <table:covered-table-cell table:style-name="ce26" table:number-columns-repeated="4"/>
+     <table:covered-table-cell table:number-columns-repeated="4" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
@@ -6835,12 +6830,24 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce37"/>
      <table:table-cell table:style-name="ce5"/>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>1-/2-pole low-pass, 1-pole high-pass, 2-pole bandpass, 2-pole notch</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>1 / 2</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Page frequency (16Hz - 25kHz)</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Next page resonance (0-24dB)</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>ENV2 segment + depth</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce17" office:value-type="string" calcext:value-type="string"><text:p>Attack velocity source + depth (without envelope)</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>1-/2-pole low-pass, 1-pole high-pass, 2-pole bandpass, 2-pole notch</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>1 / 2</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Page frequency (16Hz - 25kHz)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Next page resonance (0-24dB)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>ENV2 segment + depth</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Attack velocity source + depth (without envelope)</text:p>
+     </table:table-cell>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce39"/>
      <table:table-cell table:number-columns-repeated="67"/>
@@ -7229,7 +7236,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro14">
+    <table:table-row table:style-name="ro15">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p><text:span text:style-name="T1">Native Instruments </text:span>Maschine 1</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
@@ -7355,7 +7362,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro15">
+    <table:table-row table:style-name="ro16">
      <table:covered-table-cell table:style-name="ce8"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -7409,7 +7416,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro15">
+    <table:table-row table:style-name="ro16">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Native Instruments Maschine 2 / 3</text:p>
      </table:table-cell>
@@ -7540,7 +7547,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro16">
+    <table:table-row table:style-name="ro17">
      <table:covered-table-cell table:style-name="ce8"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -8887,7 +8894,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro17">
+    <table:table-row table:style-name="ro18">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string">
       <text:p>Roland S-10/S-220/MKS-100</text:p>
      </table:table-cell>
@@ -9338,7 +9345,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro10">
+    <table:table-row table:style-name="ro2">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Roland ZEN-Core</text:p>
      </table:table-cell>
@@ -9453,7 +9460,7 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro10">
+    <table:table-row table:style-name="ro2">
      <table:covered-table-cell table:style-name="ce9"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -9568,7 +9575,7 @@
      <table:table-cell/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro18">
+    <table:table-row table:style-name="ro10">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Sequential Prophet X</text:p>
      </table:table-cell>
@@ -9679,7 +9686,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro11">
+    <table:table-row table:style-name="ro10">
      <table:covered-table-cell/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -10173,7 +10180,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro10">
+    <table:table-row table:style-name="ro2">
      <table:table-cell table:style-name="ce2" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Synclavier Regen</text:p>
      </table:table-cell>
@@ -11380,7 +11387,7 @@
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro10">
+    <table:table-row table:style-name="ro2">
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Write</text:p>
@@ -11798,7 +11805,7 @@
      <table:table-cell table:number-columns-repeated="131"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
-    <table:table-row table:style-name="ro6" table:number-rows-repeated="1048473">
+    <table:table-row table:style-name="ro6" table:number-rows-repeated="1048469">
      <table:table-cell table:number-columns-repeated="137"/>
      <table:table-cell table:style-name="ce4" table:number-columns-repeated="16247"/>
     </table:table-row>
