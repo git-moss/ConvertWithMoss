@@ -6,6 +6,7 @@ package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -31,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
+import de.mossgrabers.convertwithmoss.file.riff.IRiffChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.format.akai.AkaiEnvelopeTime;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpModulations.Slot;
@@ -105,6 +108,12 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
     private static final double       LFO_CUTOFF_FULL_DEPTH_CENTS = 4800;
     /** The amplitude modulation of the maximum LFO depth and amount in dB. */
     private static final double       LFO_AMPLITUDE_FULL_DEPTH_DB = 12;
+    /** The modulator depth of the maximum LFO depth and amount of the pitch. */
+    private static final double       PITCH_LFO_FULL_DEPTH        = LFO_PITCH_FULL_DEPTH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH;
+    /** The modulator depth of the maximum LFO depth and amount of the filter cutoff. */
+    private static final double       CUTOFF_LFO_FULL_DEPTH       = LFO_CUTOFF_FULL_DEPTH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH;
+    /** The modulator depth of the maximum LFO depth and amount of the amplitude. */
+    private static final double       AMPLITUDE_LFO_FULL_DEPTH    = LFO_AMPLITUDE_FULL_DEPTH_DB / ILfoModulator.MAX_VOLUME_DEPTH;
     /** The lowest LFO rate in Hertz, used for the value 0. */
     private static final double       LFO_RATE_MIN_HZ             = 0.01;
     /** The LFO rate of the value 100 in Hertz. */
@@ -117,6 +126,8 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
     /** The length of the Key-group structure with version 1 zones. */
     private static final int          LENGTH_KGRP                 = 336;
+    /** The number of velocity zones of a key-group. */
+    private static final int          NUMBER_OF_ZONES             = 4;
 
     private final AkpKeygroupLocation location                    = new AkpKeygroupLocation ();
     private final AkpEnvelope         ampEnvelope                 = new AkpEnvelope ();
@@ -124,14 +135,24 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
     private final AkpAuxEnvelope      auxEnvelope                 = new AkpAuxEnvelope ();
     private final AkpFilter           filter                      = new AkpFilter ();
     private final List<AkpZone>       zones                       = new ArrayList<> ();
+    private final List<IRiffChunk>    subChunks                   = new ArrayList<> ();
 
 
     /**
-     * Default constructor.
+     * Default constructor. Creates a key-group with the default values and 4 unused zones.
      */
     public AkpKeygroup ()
     {
         super (AkpRiffChunkId.KGRP_ID, LENGTH_KGRP);
+
+        for (int i = 0; i < NUMBER_OF_ZONES; i++)
+            this.zones.add (new AkpZone ());
+        this.subChunks.add (this.location);
+        this.subChunks.add (this.ampEnvelope);
+        this.subChunks.add (this.filterEnvelope);
+        this.subChunks.add (this.auxEnvelope);
+        this.subChunks.add (this.filter);
+        this.subChunks.addAll (this.zones);
     }
 
 
@@ -211,6 +232,10 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
     {
         final byte [] data = chunk.getData ();
 
+        // The sub-chunks are kept in the order of the file for writing
+        this.zones.clear ();
+        this.subChunks.clear ();
+
         int envelopeCounter = 0;
         int position = 0;
         while (position + 8 <= data.length)
@@ -231,38 +256,45 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
                 {
                     case KGRP_LOC_ID:
                         this.location.read (subChunk);
+                        this.subChunks.add (this.location);
                         break;
 
                     case KGRP_ENV_ID:
                         // The envelopes are always stored in the order amplitude, filter,
                         // auxiliary
-                        if (envelopeCounter == 0)
-                            this.ampEnvelope.read (subChunk);
-                        else if (envelopeCounter == 1)
-                            this.filterEnvelope.read (subChunk);
-                        else
-                            this.auxEnvelope.read (subChunk);
+                        final AbstractAkpChunk envelope = switch (envelopeCounter)
+                        {
+                            case 0 -> this.ampEnvelope;
+                            case 1 -> this.filterEnvelope;
+                            default -> this.auxEnvelope;
+                        };
+                        envelope.read (subChunk);
+                        this.subChunks.add (envelope);
                         envelopeCounter++;
                         break;
 
                     case KGRP_FILTER_ID:
                         this.filter.read (subChunk);
+                        this.subChunks.add (this.filter);
                         break;
 
                     case KGRP_ZONE_ID:
                         final AkpZone zone = new AkpZone ();
                         zone.read (subChunk);
                         this.zones.add (zone);
+                        this.subChunks.add (zone);
                         break;
 
                     default:
-                        // Ignore other chunks
+                        // Other chunks are not expected but kept for writing
+                        this.subChunks.add (subChunk);
                         break;
                 }
             }
 
             position = start + size + size % 2;
         }
+
     }
 
 
@@ -399,7 +431,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
             sampleZone.setExclusiveGroup (this.location.getMuteGroup ());
 
             // The filter value of the zone is an offset to the cutoff of the key-group
-            final int zoneCutoff = Math.clamp (this.filter.getCutoff () + zone.getFilter (), 0, 100);
+            final int zoneCutoff = Math.clamp (this.filter.getCutoff () + (long) zone.getFilter (), 0, 100);
             // A fully opened low-pass without resonance, key-tracking, a closing envelope and an
             // LFO has no audible effect, therefore no filter is created in that case
             final boolean isOpenLowPass = filterType == FilterType.LOW_PASS && zoneCutoff >= 100 && this.filter.getResonance () == 0 && this.filter.getKeyboardTrack () == 0 && cutoffEnvelopeDepth >= 0 && cutoffLfoModulation.isEmpty ();
@@ -462,6 +494,406 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         }
 
         return sampleZones;
+    }
+
+
+    /**
+     * Set the program level parameters from a sample zone. This is the inverse of the program level
+     * part of createSampleZones: the velocity sensitivity, the pitch-bend range and the LFOs. LFO 1
+     * is used for the pitch LFO (it is the default source of Pitch Mod 1), LFO 2 for the cutoff LFO
+     * (default source of Filter Mod 2). The amplitude LFO uses LFO 2 as well via Amp Mod 2 if there
+     * is no cutoff LFO or if both use the same LFO settings, otherwise it is dropped. The depth of
+     * a modulation is the product of the LFO depth and the amount of the destination, the LFO depth
+     * is set as low as possible to keep the precision of the amounts.
+     *
+     * @param sampleZones All sample zones of the program, the velocity sensitivity and pitch-bend
+     *            range are taken from the first one
+     * @param modsChunk The modulations chunk
+     * @param tuningChunk The tuning chunk
+     * @param outChunk The output chunk
+     * @param lfo1Chunk The chunk of LFO 1
+     * @param lfo2Chunk The chunk of LFO 2
+     */
+    public static void setProgramParameters (final List<ISampleZone> sampleZones, final AkpModulations modsChunk, final AkpTuning tuningChunk, final AkpOutput outChunk, final AkpLfo lfo1Chunk, final AkpLfo lfo2Chunk)
+    {
+        final ISampleZone zone = sampleZones.get (0);
+        outChunk.setVelocitySensitivity (toAmount (zone.getAmplitudeVelocityModulator ().getDepth ()));
+        tuningChunk.setPitchbendUp (Math.clamp (Math.round (Math.abs (zone.getBendUp ()) / 100.0), 0, 24));
+        tuningChunk.setPitchbendDown (Math.clamp (Math.round (Math.abs (zone.getBendDown ()) / 100.0), 0, 24));
+
+        // The LFOs are program parameters, they are taken from the first zone which uses them
+        final Optional<ILfoModulator> pitchLfoModulator = findLfoModulator (sampleZones, ISampleZone::getPitchLfoModulator);
+        if (pitchLfoModulator.isPresent ())
+            setLfo (lfo1Chunk, pitchLfoModulator.get ().getSource (), toLfoDepth (pitchLfoModulator.get ().getDepth (), PITCH_LFO_FULL_DEPTH));
+
+        final Optional<ILfoModulator> cutoffLfoModulator = findLfoModulator (sampleZones, sampleZone -> sampleZone.getFilter ().isPresent () ? sampleZone.getFilter ().get ().getCutoffLfoModulator () : null);
+        final Optional<ILfoModulator> amplitudeLfoModulator = findLfoModulator (sampleZones, ISampleZone::getAmplitudeLfoModulator);
+        final boolean hasAmplitudeLfo = amplitudeLfoModulator.isPresent () && (cutoffLfoModulator.isEmpty () || isSameLfo (cutoffLfoModulator.get ().getSource (), amplitudeLfoModulator.get ().getSource ()));
+
+        // Both modulations share the depth of LFO 2, therefore use the one which needs the larger
+        // depth
+        final int cutoffLfoDepth = cutoffLfoModulator.isPresent () ? toLfoDepth (cutoffLfoModulator.get ().getDepth (), CUTOFF_LFO_FULL_DEPTH) : 0;
+        final int amplitudeLfoDepth = hasAmplitudeLfo ? toLfoDepth (amplitudeLfoModulator.get ().getDepth (), AMPLITUDE_LFO_FULL_DEPTH) : 0;
+        if (cutoffLfoModulator.isPresent ())
+            setLfo (lfo2Chunk, cutoffLfoModulator.get ().getSource (), Math.max (cutoffLfoDepth, amplitudeLfoDepth));
+        else if (hasAmplitudeLfo)
+            setLfo (lfo2Chunk, amplitudeLfoModulator.get ().getSource (), amplitudeLfoDepth);
+        if (hasAmplitudeLfo)
+        {
+            modsChunk.setSource (Slot.AMP_MOD_2, AkpModulations.SOURCE_LFO2);
+            outChunk.setAmpMod2 (toLfoAmount (amplitudeLfoModulator.get ().getDepth (), AMPLITUDE_LFO_FULL_DEPTH, lfo2Chunk.getDepth ()));
+        }
+    }
+
+
+    /**
+     * Set the parameters of the key-group from sample zones. This is the inverse of the key-group
+     * and zone part of createSampleZones. The key range, envelopes, filter and modulation amounts
+     * are taken from the first zone since they are set per key-group.
+     *
+     * @param sampleZones The sample zones of the key-group, 1 to 4 zones with the same key range
+     * @param lfo1Chunk The chunk of LFO 1 which already contains the program parameters
+     * @param lfo2Chunk The chunk of LFO 2 which already contains the program parameters
+     */
+    public void setSampleZones (final List<ISampleZone> sampleZones, final AkpLfo lfo1Chunk, final AkpLfo lfo2Chunk)
+    {
+        final ISampleZone firstZone = sampleZones.get (0);
+
+        this.location.setLowNote (Math.clamp (firstZone.getKeyLow (), AkpKeygroupLocation.LOWEST_NOTE, 127));
+        this.location.setHighNote (Math.clamp (firstZone.getKeyHigh (), AkpKeygroupLocation.LOWEST_NOTE, 127));
+        // The range of the mute groups is not documented
+        this.location.setMuteGroup (Math.clamp (firstZone.getExclusiveGroup (), 0, 127));
+
+        // Pitch Mod 1 uses LFO 1. If the program has no pitch LFO, the default amount is kept since
+        // the LFO depth is 0 and the mod-wheel then adds a vibrato as usual. If only other
+        // key-groups have a pitch LFO, the amount needs to be 0
+        final ILfoModulator pitchLfoModulator = firstZone.getPitchLfoModulator ();
+        if (pitchLfoModulator.getDepth () != 0 && lfo1Chunk.getDepth () > 0)
+            this.location.setPitchMod1 (toLfoAmount (pitchLfoModulator.getDepth (), PITCH_LFO_FULL_DEPTH, lfo1Chunk.getDepth ()));
+        else if (lfo1Chunk.getDepth () > 0)
+            this.location.setPitchMod1 (0);
+
+        // Pitch Mod 2 uses the auxiliary envelope
+        final IEnvelopeModulator pitchEnvelopeModulator = firstZone.getPitchEnvelopeModulator ();
+        if (pitchEnvelopeModulator.getDepth () != 0)
+        {
+            this.location.setPitchMod2 (toAmount (pitchEnvelopeModulator.getDepth ()));
+            setAuxEnvelope (this.auxEnvelope, pitchEnvelopeModulator.getSource ());
+        }
+
+        setEnvelope (this.ampEnvelope, firstZone.getAmplitudeEnvelopeModulator ().getSource ());
+
+        final Optional<IFilter> optionalFilter = firstZone.getFilter ();
+        final int keygroupCutoff;
+        if (optionalFilter.isPresent ())
+        {
+            final IFilter sampleFilter = optionalFilter.get ();
+            this.filter.setMode (getFilterMode (sampleFilter));
+            keygroupCutoff = getCutoff (sampleFilter);
+            this.filter.setCutoff (keygroupCutoff);
+            // Inverse of the exponential conversion of createSampleZones
+            final double resonance = Math.clamp (sampleFilter.getResonance () * 4.0, 0, 1);
+            this.filter.setResonance (Math.clamp (Math.round (12.0 * resonance * resonance * resonance), 0, 12));
+            this.filter.setKeyboardTrack (Math.clamp (Math.round (sampleFilter.getCutoffKeyTracking () * 12.0), -36, 36));
+
+            // The depth of the filter envelope is stored in the filter envelope itself
+            final IEnvelopeModulator cutoffEnvelopeModulator = sampleFilter.getCutoffEnvelopeModulator ();
+            setEnvelope (this.filterEnvelope, cutoffEnvelopeModulator.getSource ());
+            this.filterEnvelope.setDepth (toAmount (cutoffEnvelopeModulator.getDepth ()));
+
+            // Filter Mod 2 uses LFO 2
+            final ILfoModulator cutoffLfoModulator = sampleFilter.getCutoffLfoModulator ();
+            if (cutoffLfoModulator.getDepth () != 0 && lfo2Chunk.getDepth () > 0)
+                this.filter.setModInput (1, toLfoAmount (cutoffLfoModulator.getDepth (), CUTOFF_LFO_FULL_DEPTH, lfo2Chunk.getDepth ()));
+        }
+        else
+            keygroupCutoff = this.filter.getCutoff ();
+
+        for (int i = 0; i < sampleZones.size () && i < NUMBER_OF_ZONES; i++)
+            setZone (this.zones.get (i), sampleZones.get (i), keygroupCutoff);
+    }
+
+
+    /**
+     * Check if another key-group has the same key-group level parameters: the location (key range,
+     * tuning, modulation amounts, mute group), the envelopes and the filter. The velocity zones are
+     * not compared.
+     *
+     * @param other The other key-group
+     * @return True if all key-group level parameters are identical
+     */
+    public boolean hasSameParameters (final AkpKeygroup other)
+    {
+        final AbstractAkpChunk [] chunks =
+        {
+            this.location,
+            this.ampEnvelope,
+            this.filterEnvelope,
+            this.auxEnvelope,
+            this.filter
+        };
+        final AbstractAkpChunk [] otherChunks =
+        {
+            other.location,
+            other.ampEnvelope,
+            other.filterEnvelope,
+            other.auxEnvelope,
+            other.filter
+        };
+        final Optional<AkpGeneration> generation = Optional.of (AbstractAkpChunk.DEFAULT_GENERATION);
+        for (int i = 0; i < chunks.length; i++)
+        {
+            chunks[i].updateData (generation);
+            otherChunks[i].updateData (generation);
+            if (!Arrays.equals (chunks[i].getData (), otherChunks[i].getData ()))
+                return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * Set the parameters of a velocity zone from a sample zone.
+     *
+     * @param zone The velocity zone to fill
+     * @param sampleZone The sample zone
+     * @param keygroupCutoff The cutoff of the key-group in the range of [0..100]
+     */
+    private static void setZone (final AkpZone zone, final ISampleZone sampleZone, final int keygroupCutoff)
+    {
+        zone.setSampleName (sampleZone.getName ());
+        zone.setLowVelocity (Math.clamp (sampleZone.getVelocityLow (), 0, 127));
+        zone.setHighVelocity (Math.clamp (sampleZone.getVelocityHigh (), 0, 127));
+
+        final double tuning = sampleZone.getTuning ();
+        final int semitones = Math.clamp (Math.round (tuning), -36, 36);
+        zone.setSemitoneTune (semitones);
+        zone.setFineTune (Math.clamp (Math.round ((tuning - semitones) * 100.0), -50, 50));
+
+        zone.setPanning (Math.clamp (Math.round (sampleZone.getPanning () * 50.0), -50, 50));
+        // The level is an offset, -100..100 is assumed to be -6..+6dB
+        zone.setLevel (Math.clamp (Math.round (sampleZone.getGain () / 6.0 * 100.0), -100, 100));
+        zone.setKeyboardTrack (sampleZone.getKeyTracking () > 0);
+
+        // The filter value of the zone is an offset to the cutoff of the key-group
+        final Optional<IFilter> sampleFilter = sampleZone.getFilter ();
+        final int zoneCutoff = sampleFilter.isPresent () ? getCutoff (sampleFilter.get ()) : 100;
+        zone.setFilter (Math.clamp (zoneCutoff - (long) keygroupCutoff, -100, 100));
+
+        // The loop itself is written to the sample chunk of the WAV file
+        final List<ISampleLoop> loops = sampleZone.getLoops ();
+        if (sampleZone.isOneShot ())
+            zone.setPlayback (AkpZone.PLAYBACK_ONE_SHOT);
+        else if (loops.isEmpty ())
+            zone.setPlayback (AkpZone.PLAYBACK_NO_LOOPING);
+        else
+            zone.setPlayback (loops.get (0).isLoopUntilRelease () ? AkpZone.PLAYBACK_LOOP_UNTIL_RELEASE : AkpZone.PLAYBACK_LOOP_IN_RELEASE);
+    }
+
+
+    /**
+     * Set the parameters of an amplitude or filter envelope chunk from an envelope. Values which
+     * are not set keep the default of the chunk.
+     *
+     * @param envelopeChunk The envelope chunk to fill
+     * @param envelope The envelope
+     */
+    private static void setEnvelope (final AkpEnvelope envelopeChunk, final IEnvelope envelope)
+    {
+        if (envelope.getAttackTime () >= 0)
+            envelopeChunk.setAttack (AkaiEnvelopeTime.fromSecondsS5000 (envelope.getAttackTime ()));
+        if (envelope.getDecayTime () >= 0)
+            envelopeChunk.setDecay (AkaiEnvelopeTime.fromSecondsS5000 (envelope.getDecayTime ()));
+        if (envelope.getSustainLevel () >= 0)
+            envelopeChunk.setSustain (toLevel (envelope.getSustainLevel ()));
+        if (envelope.getReleaseTime () >= 0)
+            envelopeChunk.setRelease (AkaiEnvelopeTime.fromSecondsS5000 (envelope.getReleaseTime ()));
+        envelopeChunk.setVelocityToAttack (toAmount (-envelope.getTimeVelocityTracking ()));
+        envelopeChunk.setKeyscale (toAmount (-envelope.getTimeKeyTracking ()));
+    }
+
+
+    /**
+     * Set the parameters of the auxiliary envelope chunk from an envelope. The inverse of
+     * createSampleZones: rate 1 is the attack to the hold level, rate 2 the decay to the sustain
+     * level, rate 3 is not needed and therefore the fastest one, rate 4 is the release to the end
+     * level. A decay which is longer than the longest stage is split onto rate 2 and 3.
+     *
+     * @param envelopeChunk The auxiliary envelope chunk to fill
+     * @param envelope The envelope
+     */
+    private static void setAuxEnvelope (final AkpAuxEnvelope envelopeChunk, final IEnvelope envelope)
+    {
+        if (envelope.getAttackTime () >= 0)
+            envelopeChunk.setRate (0, AkaiEnvelopeTime.fromSecondsS5000 (envelope.getAttackTime ()));
+        final int holdLevel = envelope.getHoldLevel () >= 0 ? toLevel (envelope.getHoldLevel ()) : 100;
+        envelopeChunk.setLevel (0, holdLevel);
+        final int sustain = envelope.getSustainLevel () >= 0 ? toLevel (envelope.getSustainLevel ()) : 100;
+        final double decay = envelope.getDecayTime ();
+        if (decay > AkaiEnvelopeTime.toSecondsS5000 (100))
+        {
+            final int rate = AkaiEnvelopeTime.fromSecondsS5000 (decay / 2.0);
+            envelopeChunk.setRate (1, rate);
+            envelopeChunk.setLevel (1, (holdLevel + sustain) / 2);
+            envelopeChunk.setRate (2, rate);
+        }
+        else
+        {
+            if (decay >= 0)
+                envelopeChunk.setRate (1, AkaiEnvelopeTime.fromSecondsS5000 (decay));
+            envelopeChunk.setLevel (1, sustain);
+            envelopeChunk.setRate (2, 0);
+        }
+        envelopeChunk.setLevel (2, sustain);
+        if (envelope.getReleaseTime () >= 0)
+            envelopeChunk.setRate (3, AkaiEnvelopeTime.fromSecondsS5000 (envelope.getReleaseTime ()));
+        envelopeChunk.setLevel (3, envelope.getEndLevel () >= 0 ? toLevel (envelope.getEndLevel ()) : 0);
+        envelopeChunk.setVelocityToRate1 (toAmount (-envelope.getTimeVelocityTracking ()));
+        envelopeChunk.setKeyboardToRate2And4 (toAmount (-envelope.getTimeKeyTracking ()));
+    }
+
+
+    /**
+     * Set the parameters of an LFO chunk from an LFO.
+     *
+     * @param lfoChunk The LFO chunk to fill
+     * @param lfo The LFO
+     * @param depth The depth of the LFO in the range of [1..100]
+     */
+    private static void setLfo (final AkpLfo lfoChunk, final ILfo lfo, final int depth)
+    {
+        lfoChunk.setWaveform (switch (lfo.getWaveform ())
+        {
+            case SINE -> AkpLfo.SINE;
+            case SQUARE -> AkpLfo.SQUARE;
+            case SAWTOOTH_UP -> AkpLfo.SAW_UP;
+            case SAWTOOTH_DOWN -> AkpLfo.SAW_DOWN;
+            case RANDOM -> AkpLfo.RANDOM;
+            default -> AkpLfo.TRIANGLE;
+        });
+        // Inverse of the power curve of createLfo
+        lfoChunk.setRate (Math.clamp (Math.round (100.0 * Math.pow (Math.max (lfo.getRate (), 0) / LFO_RATE_MAX_HZ, 1.0 / LFO_RATE_EXPONENT)), 0, 100));
+        lfoChunk.setDelay (lfo.getDelay () > 0 ? AkaiEnvelopeTime.fromSecondsS5000 (lfo.getDelay ()) : 0);
+        lfoChunk.setDepth (depth);
+        if (!lfoChunk.isFirst ())
+            lfoChunk.setRetrigger (lfo.isKeySync ());
+    }
+
+
+    /**
+     * Find the first LFO modulator with a depth.
+     *
+     * @param sampleZones The sample zones to search
+     * @param getter Gets the LFO modulator from a zone, may return null
+     * @return The modulator if found
+     */
+    private static Optional<ILfoModulator> findLfoModulator (final List<ISampleZone> sampleZones, final Function<ISampleZone, ILfoModulator> getter)
+    {
+        for (final ISampleZone sampleZone: sampleZones)
+        {
+            final ILfoModulator modulator = getter.apply (sampleZone);
+            if (modulator != null && modulator.getDepth () != 0)
+                return Optional.of (modulator);
+        }
+        return Optional.empty ();
+    }
+
+
+    /**
+     * Check if two LFOs have the same settings.
+     *
+     * @param lfo1 The first LFO
+     * @param lfo2 The second LFO
+     * @return True if they are identical or have the same waveform, rate, delay and key sync
+     */
+    private static boolean isSameLfo (final ILfo lfo1, final ILfo lfo2)
+    {
+        return lfo1 == lfo2 || lfo1.getWaveform () == lfo2.getWaveform () && lfo1.getRate () == lfo2.getRate () && lfo1.getDelay () == lfo2.getDelay () && lfo1.isKeySync () == lfo2.isKeySync ();
+    }
+
+
+    /**
+     * Get the filter mode which matches the type and poles of a filter.
+     *
+     * @param sampleFilter The filter
+     * @return The filter mode
+     */
+    private static int getFilterMode (final IFilter sampleFilter)
+    {
+        final int poles = sampleFilter.getPoles ();
+        return switch (sampleFilter.getType ())
+        {
+            case HIGH_PASS -> poles <= 1 ? 6 : 7;
+            case BAND_PASS -> poles >= 3 ? 4 : 3;
+            case BAND_REJECTION -> 12;
+            default -> poles >= 3 ? 1 : 0;
+        };
+    }
+
+
+    /**
+     * Get the cutoff of a filter.
+     *
+     * @param sampleFilter The filter
+     * @return The cutoff in the range of [0..100]
+     */
+    private static int getCutoff (final IFilter sampleFilter)
+    {
+        return Math.clamp (Math.round (MathUtils.normalizeFrequency (sampleFilter.getCutoff (), IFilter.MAX_FREQUENCY) * 100.0), 0, 100);
+    }
+
+
+    /**
+     * Convert a normalized modulation depth to a modulation amount.
+     *
+     * @param depth The depth in the range of [-1..1]
+     * @return The amount in the range of [-100..100]
+     */
+    private static int toAmount (final double depth)
+    {
+        return Math.clamp (Math.round (depth * 100.0), -100, 100);
+    }
+
+
+    /**
+     * Convert a normalized level to a level of the envelope chunks.
+     *
+     * @param level The level in the range of [0..1]
+     * @return The level in the range of [0..100]
+     */
+    private static int toLevel (final double level)
+    {
+        return Math.clamp (Math.round (level * 100.0), 0, 100);
+    }
+
+
+    /**
+     * Get the lowest LFO depth which allows to set the depth of an LFO modulator with an amount of
+     * up to 100. Inverse of setLfoModulation.
+     *
+     * @param depth The depth of the modulator in the range of [-1..1]
+     * @param fullDepth The modulator depth of the maximum LFO depth and amount
+     * @return The LFO depth in the range of [1..100]
+     */
+    private static int toLfoDepth (final double depth, final double fullDepth)
+    {
+        final double product = Math.abs (depth) / fullDepth * 10000.0;
+        return (int) Math.clamp (Math.ceil (product / 100.0 - 1e-9), 1, 100);
+    }
+
+
+    /**
+     * Convert the depth of an LFO modulator to the amount of the modulation destination. Inverse of
+     * setLfoModulation.
+     *
+     * @param depth The depth of the modulator in the range of [-1..1]
+     * @param fullDepth The modulator depth of the maximum LFO depth and amount
+     * @param lfoDepth The depth of the LFO in the range of [1..100]
+     * @return The amount in the range of [-100..100]
+     */
+    private static int toLfoAmount (final double depth, final double fullDepth, final int lfoDepth)
+    {
+        return Math.clamp (Math.round (depth / fullDepth * 10000.0 / lfoDepth), -100, 100);
     }
 
 
@@ -594,8 +1026,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
      * Set the velocity and key tracking of the times of an envelope. The S5000/S6000 only scales
      * some of the stages (e.g. Velo->Attack only the attack) while the model scales all times,
      * which is the closest match. The direction is the same as on the S1000/S3000: positive values
-     * lengthen the times towards higher velocities and keys, the model uses the opposite
-     * direction.
+     * lengthen the times towards higher velocities and keys, the model uses the opposite direction.
      *
      * @param envelope The envelope to update
      * @param velocityAmount The velocity to time modulation in the range of [-100..100]
@@ -609,14 +1040,30 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
 
     /**
-     * Write the data to a stream.
+     * Updates the data of the key-group chunk from all sub-chunks. Needs to be called before the
+     * chunk is written.
      *
-     * @param out The output stream to write to
-     * @throws IOException Could not write the data
+     * @param generation The generation in which to write the sub-chunks, if empty read sub-chunks
+     *            keep their version
      */
-    public void write (final ByteArrayOutputStream out) throws IOException
+    public void updateData (final Optional<AkpGeneration> generation)
     {
-        // Not used
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        try
+        {
+            for (final IRiffChunk subChunk: this.subChunks)
+            {
+                if (subChunk instanceof final AbstractAkpChunk akpChunk)
+                    akpChunk.updateData (generation);
+                subChunk.write (out);
+            }
+        }
+        catch (final IOException ex)
+        {
+            // Cannot happen since it is written to memory
+            throw new UncheckedIOException (ex);
+        }
+        this.rawRiffChunk.setData (out.toByteArray ());
     }
 
 

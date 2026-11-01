@@ -172,4 +172,33 @@ public class AkaiEnvelopeTime
     {
         return toSeconds ((int) Math.round (Math.clamp (value, 0, 100) * 0.99));
     }
+
+
+    /**
+     * Convert a time into the setting of an envelope stage of the S5000/S6000. The inverse of
+     * toSecondsS5000.
+     *
+     * @param seconds The time in seconds
+     * @return The setting in the range of [0..100] whose time is the closest to the given one
+     */
+    public static int fromSecondsS5000 (final double seconds)
+    {
+        if (seconds <= 0)
+            return 0;
+
+        // The times grow exponentially, therefore compare on a logarithmic scale
+        final double logSeconds = Math.log (seconds);
+        int bestValue = 0;
+        double bestDistance = Double.MAX_VALUE;
+        for (int value = 0; value <= 100; value++)
+        {
+            final double distance = Math.abs (Math.log (toSecondsS5000 (value)) - logSeconds);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestValue = value;
+            }
+        }
+        return bestValue;
+    }
 }

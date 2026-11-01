@@ -13,6 +13,8 @@ public class AkpKeygroupLocation extends AbstractAkpChunk
 {
     /** The length of the Location structure. */
     private static final int LENGTH_KLOC     = 16;
+    /** The lowest note of a key-group. */
+    public static final int  LOWEST_NOTE     = 21;
 
     private int              lowNote         = 21;
     private int              highNote        = 127;
@@ -48,6 +50,17 @@ public class AkpKeygroupLocation extends AbstractAkpChunk
 
 
     /**
+     * Set the lowest note of the key-group [21..127].
+     *
+     * @param lowNote The lowest note of the key-group [21..127]
+     */
+    public void setLowNote (final int lowNote)
+    {
+        this.lowNote = lowNote;
+    }
+
+
+    /**
      * Get the highest note of the key-group.
      *
      * @return The note in the range of [21..127]
@@ -55,6 +68,17 @@ public class AkpKeygroupLocation extends AbstractAkpChunk
     public int getHighNote ()
     {
         return this.highNote;
+    }
+
+
+    /**
+     * Set the highest note of the key-group [21..127].
+     *
+     * @param highNote The highest note of the key-group [21..127]
+     */
+    public void setHighNote (final int highNote)
+    {
+        this.highNote = highNote;
     }
 
 
@@ -114,6 +138,17 @@ public class AkpKeygroupLocation extends AbstractAkpChunk
 
 
     /**
+     * Set the amount of the pitch modulation 1 in the range of [-100..100].
+     *
+     * @param pitchMod1 The amount of the pitch modulation 1 in the range of [-100..100]
+     */
+    public void setPitchMod1 (final int pitchMod1)
+    {
+        this.pitchMod1 = pitchMod1;
+    }
+
+
+    /**
      * Get the amount of the pitch modulation 2. The source is set in the modulations chunk.
      *
      * @return The amount in the range of [-100..100]
@@ -125,6 +160,17 @@ public class AkpKeygroupLocation extends AbstractAkpChunk
 
 
     /**
+     * Set the amount of the pitch modulation 2 in the range of [-100..100].
+     *
+     * @param pitchMod2 The amount of the pitch modulation 2 in the range of [-100..100]
+     */
+    public void setPitchMod2 (final int pitchMod2)
+    {
+        this.pitchMod2 = pitchMod2;
+    }
+
+
+    /**
      * Get the amount of the amplitude modulation. The source is set in the modulations chunk.
      *
      * @return The amount in the range of [-100..100]
@@ -132,6 +178,17 @@ public class AkpKeygroupLocation extends AbstractAkpChunk
     public int getAmpMod ()
     {
         return this.ampMod;
+    }
+
+
+    /**
+     * Set the amount of the amplitude modulation in the range of [-100..100].
+     *
+     * @param ampMod The amount of the amplitude modulation in the range of [-100..100]
+     */
+    public void setAmpMod (final int ampMod)
+    {
+        this.ampMod = ampMod;
     }
 
 
@@ -157,6 +214,17 @@ public class AkpKeygroupLocation extends AbstractAkpChunk
     }
 
 
+    /**
+     * Set the mute group, 0 = OFF.
+     *
+     * @param muteGroup The mute group, 0 = OFF
+     */
+    public void setMuteGroup (final int muteGroup)
+    {
+        this.muteGroup = muteGroup;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     protected void readData (final byte [] data)
@@ -172,5 +240,34 @@ public class AkpKeygroupLocation extends AbstractAkpChunk
         this.ampMod = getSigned (data, 0x0C);
         this.isZoneCrossfade = getBoolean (data, 0x0D);
         this.muteGroup = getUnsigned (data, 0x0E);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeDefaults (final byte [] data, final int targetVersion)
+    {
+        // Undocumented but always 3, 1, 4
+        data[0x01] = 3;
+        data[0x02] = 1;
+        data[0x03] = 4;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeData (final byte [] data, final int targetVersion)
+    {
+        setByte (data, 0x04, this.lowNote);
+        setByte (data, 0x05, this.highNote);
+        setByte (data, 0x06, this.semitoneTune);
+        setByte (data, 0x07, this.fineTune);
+        setByte (data, 0x08, this.overrideFx);
+        setByte (data, 0x09, this.fxSendLevel);
+        setByte (data, 0x0A, this.pitchMod1);
+        setByte (data, 0x0B, this.pitchMod2);
+        setByte (data, 0x0C, this.ampMod);
+        setBoolean (data, 0x0D, this.isZoneCrossfade);
+        setByte (data, 0x0E, this.muteGroup);
     }
 }

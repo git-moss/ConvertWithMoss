@@ -58,6 +58,18 @@ public class AkpAuxEnvelope extends AbstractAkpChunk
 
 
     /**
+     * Set the rate of a stage.
+     *
+     * @param stage The index of the stage [0..3]
+     * @param rate The rate in the range of [0..100]
+     */
+    public void setRate (final int stage, final int rate)
+    {
+        this.rates[stage] = rate;
+    }
+
+
+    /**
      * Get the level of a stage.
      *
      * @param stage The stage in the range of [0..3]
@@ -66,6 +78,18 @@ public class AkpAuxEnvelope extends AbstractAkpChunk
     public int getLevel (final int stage)
     {
         return this.levels[stage];
+    }
+
+
+    /**
+     * Set the level of a stage.
+     *
+     * @param stage The index of the stage [0..3]
+     * @param level The level in the range of [0..100]
+     */
+    public void setLevel (final int stage, final int level)
+    {
+        this.levels[stage] = level;
     }
 
 
@@ -81,6 +105,17 @@ public class AkpAuxEnvelope extends AbstractAkpChunk
 
 
     /**
+     * Set the velocity to rate 1 modulation in the range of [-100..100].
+     *
+     * @param velocityToRate1 The velocity to rate 1 modulation in the range of [-100..100]
+     */
+    public void setVelocityToRate1 (final int velocityToRate1)
+    {
+        this.velocityToRate1 = velocityToRate1;
+    }
+
+
+    /**
      * Get the keyboard to rate 2 and 4 modulation.
      *
      * @return The amount in the range of [-100..100]
@@ -88,6 +123,17 @@ public class AkpAuxEnvelope extends AbstractAkpChunk
     public int getKeyboardToRate2And4 ()
     {
         return this.keyboardToRate2And4;
+    }
+
+
+    /**
+     * Set the keyboard to rate 2 and 4 modulation in the range of [-100..100].
+     *
+     * @param keyboardToRate2And4 The keyboard to rate 2 and 4 modulation in the range of [-100..100]
+     */
+    public void setKeyboardToRate2And4 (final int keyboardToRate2And4)
+    {
+        this.keyboardToRate2And4 = keyboardToRate2And4;
     }
 
 
@@ -138,5 +184,22 @@ public class AkpAuxEnvelope extends AbstractAkpChunk
         this.velocityToRate4 = getSigned (data, 0x0E);
         this.offVelocityToRate4 = getSigned (data, 0x0F);
         this.velocityToOutLevel = getSigned (data, 0x10);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeData (final byte [] data, final int targetVersion)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            setByte (data, 0x01 + i, this.rates[i]);
+            setByte (data, 0x05 + i, this.levels[i]);
+        }
+        setByte (data, 0x0A, this.velocityToRate1);
+        setByte (data, 0x0C, this.keyboardToRate2And4);
+        setByte (data, 0x0E, this.velocityToRate4);
+        setByte (data, 0x0F, this.offVelocityToRate4);
+        setByte (data, 0x10, this.velocityToOutLevel);
     }
 }

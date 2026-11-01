@@ -13,39 +13,41 @@ package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 public class AkpLfo extends AbstractAkpChunk
 {
     /** The length of the LFO structure (version 1). */
-    private static final int LENGTH_LFO  = 12;
+    private static final int LENGTH_LFO   = 12;
+    /** The length of the LFO structure since version 2. */
+    private static final int LENGTH_LFO_2 = 14;
 
     /** Waveform: SINE. */
-    public static final int  SINE        = 0;
+    public static final int  SINE         = 0;
     /** Waveform: TRIANGLE. */
-    public static final int  TRIANGLE    = 1;
+    public static final int  TRIANGLE     = 1;
     /** Waveform: SQUARE. */
-    public static final int  SQUARE      = 2;
+    public static final int  SQUARE       = 2;
     /** Waveform: SQUARE+. */
-    public static final int  SQUARE_POS  = 3;
+    public static final int  SQUARE_POS   = 3;
     /** Waveform: SQUARE-. */
-    public static final int  SQUARE_NEG  = 4;
+    public static final int  SQUARE_NEG   = 4;
     /** Waveform: SAW BI. */
-    public static final int  SAW_BI      = 5;
+    public static final int  SAW_BI       = 5;
     /** Waveform: SAW UP. */
-    public static final int  SAW_UP      = 6;
+    public static final int  SAW_UP       = 6;
     /** Waveform: SAW DOWN. */
-    public static final int  SAW_DOWN    = 7;
+    public static final int  SAW_DOWN     = 7;
     /** Waveform: RANDOM. */
-    public static final int  RANDOM      = 8;
+    public static final int  RANDOM       = 8;
 
     private final boolean    isFirst;
     private int              waveform;
     private int              rate;
-    private int              delay       = 0;
-    private int              depth       = 0;
-    private boolean          isSync      = false;
-    private boolean          isRetrigger = false;
+    private int              delay        = 0;
+    private int              depth        = 0;
+    private boolean          isSync       = false;
+    private boolean          isRetrigger  = false;
     private int              modwheel;
-    private int              aftertouch  = 0;
-    private int              rateMod     = 0;
-    private int              delayMod    = 0;
-    private int              depthMod    = 0;
+    private int              aftertouch   = 0;
+    private int              rateMod      = 0;
+    private int              delayMod     = 0;
+    private int              depthMod     = 0;
 
 
     /**
@@ -87,6 +89,17 @@ public class AkpLfo extends AbstractAkpChunk
 
 
     /**
+     * Set the waveform, see the waveform constants.
+     *
+     * @param waveform The waveform, see the waveform constants
+     */
+    public void setWaveform (final int waveform)
+    {
+        this.waveform = waveform;
+    }
+
+
+    /**
      * Get the rate.
      *
      * @return The rate in the range of [0..100]
@@ -94,6 +107,17 @@ public class AkpLfo extends AbstractAkpChunk
     public int getRate ()
     {
         return this.rate;
+    }
+
+
+    /**
+     * Set the rate in the range of [0..100].
+     *
+     * @param rate The rate in the range of [0..100]
+     */
+    public void setRate (final int rate)
+    {
+        this.rate = rate;
     }
 
 
@@ -109,6 +133,17 @@ public class AkpLfo extends AbstractAkpChunk
 
 
     /**
+     * Set the delay in the range of [0..100].
+     *
+     * @param delay The delay in the range of [0..100]
+     */
+    public void setDelay (final int delay)
+    {
+        this.delay = delay;
+    }
+
+
+    /**
      * Get the depth.
      *
      * @return The depth in the range of [0..100]
@@ -116,6 +151,17 @@ public class AkpLfo extends AbstractAkpChunk
     public int getDepth ()
     {
         return this.depth;
+    }
+
+
+    /**
+     * Set the depth in the range of [0..100].
+     *
+     * @param depth The depth in the range of [0..100]
+     */
+    public void setDepth (final int depth)
+    {
+        this.depth = depth;
     }
 
 
@@ -138,6 +184,17 @@ public class AkpLfo extends AbstractAkpChunk
     public boolean isRetrigger ()
     {
         return this.isRetrigger;
+    }
+
+
+    /**
+     * Set if the LFO is re-triggered by a note (only LFO 2).
+     *
+     * @param isRetrigger True if the LFO is re-triggered by a note (only LFO 2)
+     */
+    public void setRetrigger (final boolean isRetrigger)
+    {
+        this.isRetrigger = isRetrigger;
     }
 
 
@@ -217,5 +274,51 @@ public class AkpLfo extends AbstractAkpChunk
         this.rateMod = getSigned (data, 0x09);
         this.delayMod = getSigned (data, 0x0A);
         this.depthMod = getSigned (data, 0x0B);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected int getSize (final int targetVersion)
+    {
+        return targetVersion >= 2 ? LENGTH_LFO_2 : LENGTH_LFO;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeDefaults (final byte [] data, final int targetVersion)
+    {
+        // Undocumented values which are always set
+        if (this.isFirst)
+            data[0x06] = 1;
+        else
+        {
+            data[0x05] = 1;
+            if (targetVersion >= 2)
+                data[0x0D] = 5;
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeData (final byte [] data, final int targetVersion)
+    {
+        setByte (data, 0x01, this.waveform);
+        setByte (data, 0x02, this.rate);
+        setByte (data, 0x03, this.delay);
+        setByte (data, 0x04, this.depth);
+        if (this.isFirst)
+        {
+            setBoolean (data, 0x05, this.isSync);
+            setByte (data, 0x07, this.modwheel);
+            setByte (data, 0x08, this.aftertouch);
+        }
+        else
+            setBoolean (data, 0x06, this.isRetrigger);
+        setByte (data, 0x09, this.rateMod);
+        setByte (data, 0x0A, this.delayMod);
+        setByte (data, 0x0B, this.depthMod);
     }
 }

@@ -240,7 +240,7 @@ public abstract class AbstractRIFFFile implements RIFFVisitor
      *
      * @return The size of the whole RIFF file
      */
-    private long calculateFileSize ()
+    protected long calculateFileSize ()
     {
         int fullSize = 4;
         for (final IRiffChunk chunk: this.chunkStack)

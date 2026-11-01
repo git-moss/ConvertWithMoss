@@ -4,9 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 
 /**
  * A S5000/S6000 output chunk.
@@ -81,6 +78,17 @@ public class AkpOutput extends AbstractAkpChunk
 
 
     /**
+     * Set the amount of the amplitude modulation 2 in the range of [-100..100].
+     *
+     * @param ampMod2 The amount of the amplitude modulation 2 in the range of [-100..100]
+     */
+    public void setAmpMod2 (final int ampMod2)
+    {
+        this.ampMod2 = ampMod2;
+    }
+
+
+    /**
      * Get the panning modulation 1 amount.
      *
      * @return The panning modulation amount in the range of [-100..100]
@@ -124,6 +132,17 @@ public class AkpOutput extends AbstractAkpChunk
     }
 
 
+    /**
+     * Set the velocity sensitivity in the range of [-100..100].
+     *
+     * @param velocitySensitivity The velocity sensitivity in the range of [-100..100]
+     */
+    public void setVelocitySensitivity (final int velocitySensitivity)
+    {
+        this.velocitySensitivity = velocitySensitivity;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     protected void readData (final byte [] data)
@@ -140,21 +159,16 @@ public class AkpOutput extends AbstractAkpChunk
     }
 
 
-    /**
-     * Write the data to a stream.
-     *
-     * @param out The output stream to write to
-     * @throws IOException Could not write the data
-     */
-    public void write (final ByteArrayOutputStream out) throws IOException
+    /** {@inheritDoc} */
+    @Override
+    protected void writeData (final byte [] data, final int targetVersion)
     {
-        out.write (0);
-        out.write (this.loudness);
-        out.write (this.ampMod1);
-        out.write (this.ampMod2);
-        out.write (this.panMod1);
-        out.write (this.panMod2);
-        out.write (this.panMod3);
-        out.write (this.velocitySensitivity);
+        setByte (data, 1, this.loudness);
+        setByte (data, 2, this.ampMod1);
+        setByte (data, 3, this.ampMod2);
+        setByte (data, 4, this.panMod1);
+        setByte (data, 5, this.panMod2);
+        setByte (data, 6, this.panMod3);
+        setByte (data, 7, this.velocitySensitivity);
     }
 }

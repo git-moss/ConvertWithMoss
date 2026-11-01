@@ -4,9 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 
 /**
  * A S5000/S6000 part chunk.
@@ -15,15 +12,21 @@ import java.io.IOException;
  */
 public class AkmPart extends AbstractAkpChunk
 {
-    /** The length of the Part structure. There are 2 versions found: 0x28 and 0x30! */
-    private static final int LENGTH_PART = 0x28;
+    /** The minimum length of the Part structure. */
+    private static final int LENGTH_PART     = 0x28;
+    /** The length of the Part structure in version 2. */
+    private static final int LENGTH_PART_2   = 0x2E;
+    /** The length of the Part structure in version 3. */
+    private static final int LENGTH_PART_3   = 0x30;
+    /** The maximum length of the preset name. */
+    private static final int MAX_NAME_LENGTH = 32;
 
-    private String           presetName;
-    private int              midiChannel;
-    private int              lowKey;
-    private int              highKey;
-    private int              panning;
-    private int              volume;
+    private String           presetName      = "";
+    private int              midiChannel     = 0;
+    private int              lowKey          = 21;
+    private int              highKey         = 127;
+    private int              panning         = 0;
+    private int              volume          = 100;
 
 
     /**
@@ -105,12 +108,7 @@ public class AkmPart extends AbstractAkpChunk
     @Override
     protected void readData (final byte [] data)
     {
-        // Byte 1 contains the length of the name in version 3 but the name is also zero
-        // terminated, which is used since older versions are unknown
-        final StringBuilder sb = new StringBuilder ();
-        for (int i = 0x02; i < 0x22 && data[i] != 0; i++)
-            sb.append ((char) getUnsigned (data, i));
-        this.presetName = sb.toString ();
+        this.presetName = readPresetName (data);
 
         // 1A-16A, 1B-16B, no Omni-Mode!
         this.midiChannel = getUnsigned (data, 0x22);
@@ -128,14 +126,47 @@ public class AkmPart extends AbstractAkpChunk
     }
 
 
-    /**
-     * Write the data to a stream.
-     *
-     * @param out The output stream to write to
-     * @throws IOException Could not write the data
-     */
-    public void write (final ByteArrayOutputStream out) throws IOException
+    /** {@inheritDoc} */
+    @Override
+    protected int getSize (final int targetVersion)
     {
-        // Not used
+        return targetVersion >= 3 ? LENGTH_PART_3 : LENGTH_PART_2;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeData (final byte [] data, final int targetVersion)
+    {
+        // Only write the name if it is different to keep the content of unused parts
+        if (!this.presetName.equals (readPresetName (data)))
+        {
+            final int nameLength = Math.min (this.presetName.length (), MAX_NAME_LENGTH);
+            setByte (data, 0x01, nameLength);
+            for (int i = 0; i < MAX_NAME_LENGTH; i++)
+                setByte (data, 0x02 + i, i < nameLength ? this.presetName.charAt (i) : 0);
+        }
+
+        setByte (data, 0x22, this.midiChannel);
+        setByte (data, 0x23, this.panning);
+        setByte (data, 0x24, this.lowKey);
+        setByte (data, 0x25, this.highKey);
+        setByte (data, 0x26, this.volume);
+    }
+
+
+    /**
+     * Read the preset name from the chunk data. Byte 1 contains the length of the name in version 3
+     * but the name is also zero terminated, which is used since older versions are unknown.
+     *
+     * @param data The data of the chunk
+     * @return The name, empty if the part is not used
+     */
+    private static String readPresetName (final byte [] data)
+    {
+        final StringBuilder sb = new StringBuilder ();
+        for (int i = 0x02; i < 0x02 + MAX_NAME_LENGTH && data[i] != 0; i++)
+            sb.append ((char) getUnsigned (data, i));
+        return sb.toString ();
     }
 }

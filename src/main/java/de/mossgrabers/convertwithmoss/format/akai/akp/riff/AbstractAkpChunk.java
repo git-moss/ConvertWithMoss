@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 
+import java.util.Optional;
+
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
@@ -13,14 +15,19 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 /**
  * Base class for the chunks of AKP and AKM files. The first data byte of each chunk contains the
  * version of the chunk structure. Newer versions extend some chunks by a few bytes but keep the
- * position of the existing parameters.
+ * position of the existing parameters. The data of a read chunk is kept, therefore writing the
+ * chunk in the same version only replaces the known parameters and keeps all undocumented bytes.
  *
  * @author Jürgen Moßgraber
  */
 public abstract class AbstractAkpChunk extends AbstractSpecificRIFFChunk
 {
-    private final int minimumSize;
-    protected int     version;
+    /** The generation which is used for writing chunks which were not read from a file. */
+    public static final AkpGeneration DEFAULT_GENERATION = AkpGeneration.GENERATION_3;
+
+    private final int                 minimumSize;
+    protected int                     version;
+    private byte []                   originalData       = null;
 
 
     /**
@@ -64,6 +71,40 @@ public abstract class AbstractAkpChunk extends AbstractSpecificRIFFChunk
 
         this.version = Byte.toUnsignedInt (data[0]);
         this.readData (data);
+        this.originalData = data.clone ();
+        this.rawRiffChunk.setData (data.clone ());
+    }
+
+
+    /**
+     * Updates the data of the chunk with the current parameters. Needs to be called before the chunk
+     * is written. If the chunk was read and is written in the same version, the read data is used as
+     * the basis, otherwise the default data of the requested version.
+     *
+     * @param generation The generation in which to write the chunk, if empty a read chunk keeps its
+     *            version and a new chunk uses the default generation
+     */
+    public void updateData (final Optional<AkpGeneration> generation)
+    {
+        final int targetVersion;
+        if (generation.isPresent ())
+            targetVersion = generation.get ().getVersion (this.getId (), this.version);
+        else if (this.originalData != null)
+            targetVersion = this.version;
+        else
+            targetVersion = DEFAULT_GENERATION.getVersion (this.getId (), this.version);
+
+        final byte [] data;
+        if (this.originalData != null && targetVersion == this.version)
+            data = this.originalData.clone ();
+        else
+        {
+            data = new byte [this.getSize (targetVersion)];
+            this.writeDefaults (data, targetVersion);
+        }
+        data[0] = (byte) targetVersion;
+        this.writeData (data, targetVersion);
+        this.rawRiffChunk.setData (data);
     }
 
 
@@ -73,6 +114,42 @@ public abstract class AbstractAkpChunk extends AbstractSpecificRIFFChunk
      * @param data The data of the chunk
      */
     protected abstract void readData (final byte [] data);
+
+
+    /**
+     * Write the parameters into the chunk data. The data either contains the read data (if the
+     * version is the same) or the default data of the version.
+     *
+     * @param data The data of the chunk
+     * @param targetVersion The version of the chunk structure which is written
+     */
+    protected abstract void writeData (final byte [] data, final int targetVersion);
+
+
+    /**
+     * Get the size of the chunk data in the given version. Overwrite for chunks which were extended
+     * in newer versions.
+     *
+     * @param targetVersion The version of the chunk structure
+     * @return The size in bytes
+     */
+    protected int getSize (final int targetVersion)
+    {
+        return this.minimumSize;
+    }
+
+
+    /**
+     * Set the undocumented bytes of a new chunk to their default values. The parameters are written
+     * afterwards with writeData. Overwrite if a chunk contains undocumented bytes which are not 0.
+     *
+     * @param data The data of the chunk which is filled with zeros
+     * @param targetVersion The version of the chunk structure which is written
+     */
+    protected void writeDefaults (final byte [] data, final int targetVersion)
+    {
+        // Intentionally empty
+    }
 
 
     /** {@inheritDoc} */
@@ -120,5 +197,31 @@ public abstract class AbstractAkpChunk extends AbstractSpecificRIFFChunk
     protected static boolean getBoolean (final byte [] data, final int offset)
     {
         return data[offset] != 0;
+    }
+
+
+    /**
+     * Set a byte value. Works for signed and unsigned values.
+     *
+     * @param data The data
+     * @param offset The offset of the byte
+     * @param value The value in the range of [-128..255]
+     */
+    protected static void setByte (final byte [] data, final int offset, final int value)
+    {
+        data[offset] = (byte) value;
+    }
+
+
+    /**
+     * Set a boolean byte value.
+     *
+     * @param data The data
+     * @param offset The offset of the byte
+     * @param value True to set 1 otherwise 0
+     */
+    protected static void setBoolean (final byte [] data, final int offset, final boolean value)
+    {
+        data[offset] = (byte) (value ? 1 : 0);
     }
 }

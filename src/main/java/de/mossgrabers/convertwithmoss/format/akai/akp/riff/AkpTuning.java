@@ -13,6 +13,8 @@ public class AkpTuning extends AbstractAkpChunk
 {
     /** The length of the Tuning structure (version 1). */
     private static final int LENGTH_TUNE   = 22;
+    /** The length of the Tuning structure since version 2. */
+    private static final int LENGTH_TUNE_2 = 24;
 
     private int              semitoneTune  = 0;
     private int              fineTune      = 0;
@@ -78,6 +80,17 @@ public class AkpTuning extends AbstractAkpChunk
 
 
     /**
+     * Set the pitch-bend up range in semi-tones [0..24].
+     *
+     * @param pitchbendUp The pitch-bend up range in semi-tones [0..24]
+     */
+    public void setPitchbendUp (final int pitchbendUp)
+    {
+        this.pitchbendUp = pitchbendUp;
+    }
+
+
+    /**
      * Get the pitch-bend down range.
      *
      * @return The range in semi-tones in the range of [0..24]
@@ -85,6 +98,17 @@ public class AkpTuning extends AbstractAkpChunk
     public int getPitchbendDown ()
     {
         return this.pitchbendDown;
+    }
+
+
+    /**
+     * Set the pitch-bend down range in semi-tones [0..24].
+     *
+     * @param pitchbendDown The pitch-bend down range in semi-tones [0..24]
+     */
+    public void setPitchbendDown (final int pitchbendDown)
+    {
+        this.pitchbendDown = pitchbendDown;
     }
 
 
@@ -122,5 +146,38 @@ public class AkpTuning extends AbstractAkpChunk
         this.pitchbendDown = getUnsigned (data, 0x10);
         this.isBendHeld = getBoolean (data, 0x11);
         this.aftertouch = getSigned (data, 0x12);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected int getSize (final int targetVersion)
+    {
+        return targetVersion >= 2 ? LENGTH_TUNE_2 : LENGTH_TUNE;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeDefaults (final byte [] data, final int targetVersion)
+    {
+        // Undocumented, mostly 1 since version 2
+        if (targetVersion >= 2)
+            data[0x14] = 1;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeData (final byte [] data, final int targetVersion)
+    {
+        setByte (data, 0x01, this.semitoneTune);
+        setByte (data, 0x02, this.fineTune);
+        for (int i = 0; i < this.detunes.length; i++)
+            setByte (data, 0x03 + i, this.detunes[i]);
+        setByte (data, 0x0F, this.pitchbendUp);
+        setByte (data, 0x10, this.pitchbendDown);
+        setBoolean (data, 0x11, this.isBendHeld);
+        setByte (data, 0x12, this.aftertouch);
     }
 }

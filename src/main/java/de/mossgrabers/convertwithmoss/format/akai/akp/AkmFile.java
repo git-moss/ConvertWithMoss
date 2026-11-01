@@ -13,11 +13,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFFile;
 import de.mossgrabers.convertwithmoss.file.riff.CommonRiffChunkId;
+import de.mossgrabers.convertwithmoss.file.riff.IRiffChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RIFFParser;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
@@ -26,7 +28,8 @@ import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkmRiffChunkId;
 
 
 /**
- * Read/write a Akai S5000/S6000 AKM file.
+ * Read/write a Akai S5000/S6000 AKM file. Since the effects chunk is not decoded, only read files
+ * can be written.
  *
  * @author Jürgen Moßgraber
  */
@@ -38,10 +41,12 @@ public class AkmFile extends AbstractRIFFFile
         Collections.addAll (AKM_RIFF_CHUNK_IDS, CommonRiffChunkId.class, AkmRiffChunkId.class);
     }
 
-    private final Set<String>   ignoredChunks = new HashSet<> ();
-    private final List<AkmPart> parts         = new ArrayList<> ();
-    private String              version;
-    private boolean             isS5000Series = true;
+    private final Set<String>      ignoredChunks   = new HashSet<> ();
+    private final List<AkmPart>    parts           = new ArrayList<> ();
+    private final List<IRiffChunk> chunks          = new ArrayList<> ();
+    private String                 version;
+    private boolean                isS5000Series   = true;
+    private boolean                hasEmptyTopSize = false;
 
 
     /**
@@ -109,6 +114,7 @@ public class AkmFile extends AbstractRIFFFile
         final RIFFParser riffParser = new RIFFParser (AKM_RIFF_CHUNK_IDS, AkmRiffChunkId.AMUL_ID);
         riffParser.declareGroupChunk (AkmRiffChunkId.AMUL_ID.getFourCC (), CommonRiffChunkId.RIFF_ID);
         riffParser.parse (inputStream, this);
+        this.hasEmptyTopSize = riffParser.hasEmptyTopSize ();
     }
 
 
@@ -126,6 +132,11 @@ public class AkmFile extends AbstractRIFFFile
     {
         final int id = chunk.getId ().getFourCC ();
 
+        // The chunk order differs between the S5000/S6000 and the Z4/Z8, therefore all chunks are
+        // kept in the read order for writing
+        if (id != AkmRiffChunkId.PART_ID.getFourCC ())
+            this.chunks.add (chunk);
+
         if (id == AkmRiffChunkId.Z48_ID.getFourCC ())
         {
             // Only present in files written by a Z4/Z8. It contains the multi in the Z4/Z8
@@ -142,6 +153,7 @@ public class AkmFile extends AbstractRIFFFile
         {
             final AkmPart part = new AkmPart ();
             part.read (chunk);
+            this.chunks.add (part);
             if (!part.getPresetName ().isBlank ())
                 this.parts.add (part);
             return;
@@ -163,7 +175,22 @@ public class AkmFile extends AbstractRIFFFile
     @Override
     protected void fillChunkStack ()
     {
-        // Not used since writing is not supported
+        this.chunkStack.clear ();
+        for (final IRiffChunk chunk: this.chunks)
+        {
+            if (chunk instanceof final AkmPart part)
+                part.updateData (Optional.empty ());
+            this.chunkStack.add (chunk);
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected long calculateFileSize ()
+    {
+        // The S5000/S6000 writes 0 as the size of the RIFF chunk, keep it for read files
+        return this.hasEmptyTopSize ? 0 : super.calculateFileSize ();
     }
 
 

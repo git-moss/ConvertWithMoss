@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonCreator;
 import de.mossgrabers.convertwithmoss.format.ableton.AbletonDetector;
+import de.mossgrabers.convertwithmoss.format.akai.akp.AkpCreator;
 import de.mossgrabers.convertwithmoss.format.akai.akp.AkpDetector;
 import de.mossgrabers.convertwithmoss.format.akai.mesa.AkaiMesaDetector;
 import de.mossgrabers.convertwithmoss.format.akai.mpc.MPCKeygroupCreator;
@@ -277,6 +278,7 @@ public class ConverterBackend
         this.creators.add (new BentoCreator (notifier));
         this.creators.add (new Music1010Creator (notifier));
         this.creators.add (new AbletonCreator (notifier));
+        this.creators.add (new AkpCreator (notifier));
         this.creators.add (new MPCKeygroupCreator (notifier));
         this.creators.add (new SynclavierVCreator (notifier));
         this.creators.add (new SoundboxCreator (notifier));

@@ -47,6 +47,17 @@ public class AkpEnvelope extends AbstractAkpChunk
 
 
     /**
+     * Set the attack in the range of [0..100].
+     *
+     * @param attack The attack in the range of [0..100]
+     */
+    public void setAttack (final int attack)
+    {
+        this.attack = attack;
+    }
+
+
+    /**
      * Get the decay.
      *
      * @return The decay in the range of [0..100]
@@ -54,6 +65,17 @@ public class AkpEnvelope extends AbstractAkpChunk
     public int getDecay ()
     {
         return this.decay;
+    }
+
+
+    /**
+     * Set the decay in the range of [0..100].
+     *
+     * @param decay The decay in the range of [0..100]
+     */
+    public void setDecay (final int decay)
+    {
+        this.decay = decay;
     }
 
 
@@ -69,6 +91,17 @@ public class AkpEnvelope extends AbstractAkpChunk
 
 
     /**
+     * Set the release in the range of [0..100].
+     *
+     * @param release The release in the range of [0..100]
+     */
+    public void setRelease (final int release)
+    {
+        this.release = release;
+    }
+
+
+    /**
      * Get the sustain.
      *
      * @return The sustain in the range of [0..100]
@@ -76,6 +109,17 @@ public class AkpEnvelope extends AbstractAkpChunk
     public int getSustain ()
     {
         return this.sustain;
+    }
+
+
+    /**
+     * Set the sustain level in the range of [0..100].
+     *
+     * @param sustain The sustain level in the range of [0..100]
+     */
+    public void setSustain (final int sustain)
+    {
+        this.sustain = sustain;
     }
 
 
@@ -91,6 +135,17 @@ public class AkpEnvelope extends AbstractAkpChunk
 
 
     /**
+     * Set the depth (only filter envelope) in the range of [-100..100].
+     *
+     * @param depth The depth (only filter envelope) in the range of [-100..100]
+     */
+    public void setDepth (final int depth)
+    {
+        this.depth = depth;
+    }
+
+
+    /**
      * Get the velocity to attack modulation.
      *
      * @return The amount in the range of [-100..100]
@@ -102,6 +157,17 @@ public class AkpEnvelope extends AbstractAkpChunk
 
 
     /**
+     * Set the velocity to attack modulation in the range of [-100..100].
+     *
+     * @param velocityToAttack The velocity to attack modulation in the range of [-100..100]
+     */
+    public void setVelocityToAttack (final int velocityToAttack)
+    {
+        this.velocityToAttack = velocityToAttack;
+    }
+
+
+    /**
      * Get the key-scale modulation.
      *
      * @return The amount in the range of [-100..100]
@@ -109,6 +175,17 @@ public class AkpEnvelope extends AbstractAkpChunk
     public int getKeyscale ()
     {
         return this.keyscale;
+    }
+
+
+    /**
+     * Set the keyboard scaling of the times in the range of [-100..100].
+     *
+     * @param keyscale The keyboard scaling of the times in the range of [-100..100]
+     */
+    public void setKeyscale (final int keyscale)
+    {
+        this.keyscale = keyscale;
     }
 
 
@@ -147,5 +224,21 @@ public class AkpEnvelope extends AbstractAkpChunk
         this.keyscale = getSigned (data, 0x0C);
         this.onVelocityToRelease = getSigned (data, 0x0E);
         this.offVelocityToRelease = getSigned (data, 0x0F);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeData (final byte [] data, final int targetVersion)
+    {
+        setByte (data, 0x01, this.attack);
+        setByte (data, 0x03, this.decay);
+        setByte (data, 0x04, this.release);
+        setByte (data, 0x07, this.sustain);
+        setByte (data, 0x09, this.depth);
+        setByte (data, 0x0A, this.velocityToAttack);
+        setByte (data, 0x0C, this.keyscale);
+        setByte (data, 0x0E, this.onVelocityToRelease);
+        setByte (data, 0x0F, this.offVelocityToRelease);
     }
 }

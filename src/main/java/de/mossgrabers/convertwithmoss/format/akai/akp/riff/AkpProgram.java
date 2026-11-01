@@ -4,9 +4,6 @@
 
 package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-
 
 /**
  * A S5000/S6000 program chunk.
@@ -84,19 +81,20 @@ public class AkpProgram extends AbstractAkpChunk
     }
 
 
-    /**
-     * Write the data to a stream.
-     *
-     * @param out The output stream to write to
-     * @throws IOException Could not write the data
-     */
-    public void write (final ByteArrayOutputStream out) throws IOException
+    /** {@inheritDoc} */
+    @Override
+    protected void writeDefaults (final byte [] data, final int targetVersion)
     {
-        out.write (0);
-        out.write (this.programNumber);
-        out.write (this.numberOfKeygroups);
-        out.write (0);
-        out.write (0);
-        out.write (0);
+        // Undocumented but always 2
+        data[0x04] = 2;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected void writeData (final byte [] data, final int targetVersion)
+    {
+        setByte (data, 1, this.programNumber);
+        setByte (data, 2, this.numberOfKeygroups);
     }
 }

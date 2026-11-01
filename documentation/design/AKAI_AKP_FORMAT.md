@@ -360,18 +360,21 @@ Keyboard Track = 1 and High Velocity = 0, but leaves memory garbage in the unuse
 
 #### Playback
 
-| Value | Zone version 1 | Zone version 2/3 *(obs.)* |
-|-------|----------------|---------------------------|
-| 0     | NO LOOPING     | NO LOOPING                |
-| 1     | ONE SHOT       | ONE SHOT                  |
-| 2     | LOOP IN REL    | LOOP IN REL               |
-| 3     | LOOP UNTIL REL | LOOP UNTIL REL            |
-| 4     | AS SAMPLE      | unknown                   |
-| 5     | –              | unknown                   |
-| 6     | –              | AS SAMPLE                 |
+| Value | Zone version 1     | Zone version 2/3 *(obs.)* |
+|-------|--------------------|---------------------------|
+| 0     | NO LOOPING         | NO LOOPING                |
+| 1     | ONE SHOT           | ONE SHOT                  |
+| 2     | LOOP IN REL        | LOOP IN REL               |
+| 3     | LOOP UNTIL REL     | LOOP UNTIL REL            |
+| 4     | AS SAMPLE          | unknown                   |
+| 5     | –                  | unknown                   |
+| 6     | *(obs.)* AS SAMPLE | AS SAMPLE                 |
 
 Since zone version 2 the value 6 is used by all unused zones and most used zones (like 4 in
 version 1), hence it is AS SAMPLE. 4 and 5 were not found.
+
+*(obs.)* Files created by PC software (Roland XV library) contain 6 in version 1 zones as well.
+Readers treat it as AS SAMPLE in all versions.
 
 #### Output
 

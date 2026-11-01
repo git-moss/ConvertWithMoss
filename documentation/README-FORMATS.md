@@ -44,7 +44,7 @@ The following multi-sample formats are supported:
 * [1010music bento](#1010music-bento)
 * [1010music blackbox, tangerine, bitbox](#1010music-blackbox-tangerine-bitbox)
 * [Ableton Sampler](#ableton-sampler)
-* [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000) - read only
+* [Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)](#akai-akpakm-s5000s6000z4z8mpc4000)
 * [Akai MESA](#akai-mesa) - read only
 * [Akai MPC Modern](#akai-mpc-modern)
 * [Akai MPC60](#akai-mpc60) - read only
@@ -170,7 +170,20 @@ Round-robin is supported in both representations: the native round-robin flag of
 
 This format uses a chunk based binary format with the ending AKP. It supports up to 99 key-groups. A key-group covers a note range with up to 4 velocity layers. AKM files are a multi configuration of up to 32 AKP preset files. The AKP files are only referenced from the AKM. Available parameters are the MIDI channel, panning, volume and key-range.
 AKP files are used if destination is Preset or Preset Library. AKM files are used if destination is Performance or Performance Library. 
-Only reading of the AKP/AKM formats is supported.
+AKP files can be read and written, AKM files can only be read.
+
+Each written program is stored in its own folder together with its samples (16-bit WAV files with up to 48kHz) since the samples are only referenced by their name and need to be in the same folder as the program. The program contains no root key and no loops, they are stored in the sample chunk of the WAV files. Names of programs and samples are limited to 20 characters. Written files are not yet verified on hardware.
+
+### Destination Options
+
+* File Format Generation: The AKP format was extended with newer operating system versions. Generation 1 is the format of the first S5000/S6000 operating systems, generation 2 extends the LFOs and generation 3 the tuning and the zones. Generation 3 is also written by the Z4/Z8. Select the generation which matches the operating system of the sampler; generation 3 is the default. On the command line use the parameter `S5000Generation` with the value 1, 2 or 3.
+
+### Destination Restrictions
+
+* A key-group covers a key range with up to 4 velocity zones. Zones with the same key range share a key-group if their envelopes, filter and modulations are identical, otherwise additional overlapping key-groups are created.
+* Only 99 key-groups are allowed. An error is displayed in this case and the remaining key-groups are dropped.
+* The lowest note of a key-group is 21 (A0). Zones below are limited to it.
+* The envelopes, the filter and the modulation amounts are set per key-group, the velocity sensitivity, the pitch-bend range and the LFOs per program. They are taken from the first zone of the key-group respectively the program. The pitch LFO is mapped to LFO 1, the filter and volume LFOs to LFO 2 (the volume LFO is dropped if it differs from the filter LFO).
 
 ## Akai S900/S950 series disk image
 
