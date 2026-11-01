@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.file.wav;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.exception.ParseException;
@@ -306,6 +307,20 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
     public int getSamplerData ()
     {
         return this.rawRiffChunk.getFourBytesAsUnsignedInt (0x20);
+    }
+
+
+    /**
+     * Get the manufacturer specific data which follows the list of the sample loops. The sampler
+     * data value is not used to calculate the size since it is not set consistently.
+     *
+     * @return The data, an empty array if there is none
+     */
+    public byte [] getSamplerSpecificData ()
+    {
+        final byte [] data = this.rawRiffChunk.getData ();
+        final int start = CHUNK_SIZE + this.getNumSampleLoops () * LOOP_SIZE;
+        return start < data.length ? Arrays.copyOfRange (data, start, data.length) : new byte [0];
     }
 
 

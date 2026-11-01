@@ -17,6 +17,7 @@ import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
@@ -26,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.riff.AbstractSpecificRIFFChunk;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
+import de.mossgrabers.convertwithmoss.format.akai.AkaiEnvelopeTime;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpModulations.Slot;
 
 
@@ -69,10 +71,11 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         FILTER_POLES.put (Integer.valueOf (6), Integer.valueOf (1));
         FILTER_POLES.put (Integer.valueOf (7), Integer.valueOf (2));
         FILTER_POLES.put (Integer.valueOf (8), Integer.valueOf (1));
-        FILTER_POLES.put (Integer.valueOf (12), Integer.valueOf (1));
+        // The notch filters differ in their bandwidth, not in the number of poles
+        FILTER_POLES.put (Integer.valueOf (12), Integer.valueOf (2));
         FILTER_POLES.put (Integer.valueOf (13), Integer.valueOf (2));
-        FILTER_POLES.put (Integer.valueOf (14), Integer.valueOf (3));
-        FILTER_POLES.put (Integer.valueOf (15), Integer.valueOf (4));
+        FILTER_POLES.put (Integer.valueOf (14), Integer.valueOf (2));
+        FILTER_POLES.put (Integer.valueOf (15), Integer.valueOf (2));
     }
 
     /** The length of the Key-group structure with version 1 zones. */
@@ -246,25 +249,32 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         final double keygroupTuning = globalTuning + this.location.getSemitoneTune () + this.location.getFineTune () / 100.0;
 
         final IEnvelope amplitudeEnvelope = new DefaultEnvelope ();
-        amplitudeEnvelope.setAttackTime (toSeconds (this.ampEnvelope.getAttack ()));
-        amplitudeEnvelope.setDecayTime (toSeconds (this.ampEnvelope.getDecay ()));
+        amplitudeEnvelope.setAttackTime (AkaiEnvelopeTime.toSecondsS5000 (this.ampEnvelope.getAttack ()));
+        amplitudeEnvelope.setDecayTime (AkaiEnvelopeTime.toSecondsS5000 (this.ampEnvelope.getDecay ()));
         amplitudeEnvelope.setSustainLevel (this.ampEnvelope.getSustain () / 100.0);
-        amplitudeEnvelope.setReleaseTime (toSeconds (this.ampEnvelope.getRelease ()));
+        amplitudeEnvelope.setReleaseTime (AkaiEnvelopeTime.toSecondsS5000 (this.ampEnvelope.getRelease ()));
 
+        // The auxiliary envelope has 4 rates and 4 levels: rate 1 moves from 0 to level 1, rate 2
+        // to level 2 and rate 3 to level 3 which is held while the note is pressed. After the
+        // note-off rate 4 moves to level 4. Since there is only 1 decay stage, level 2 is skipped
+        // and the times of rate 2 and 3 are combined
         final IEnvelope auxiliaryEnvelope = new DefaultEnvelope ();
-        auxiliaryEnvelope.setAttackTime (toSeconds (this.auxEnvelope.getRate (0)));
-        auxiliaryEnvelope.setHoldTime (toSeconds (this.auxEnvelope.getRate (1)));
-        auxiliaryEnvelope.setDecayTime (toSeconds (this.auxEnvelope.getRate (2)));
-        auxiliaryEnvelope.setReleaseTime (toSeconds (this.auxEnvelope.getRate (3)));
-        auxiliaryEnvelope.setStartLevel (this.auxEnvelope.getLevel (0) / 100.0);
-        auxiliaryEnvelope.setHoldLevel (this.auxEnvelope.getLevel (1) / 100.0);
+        auxiliaryEnvelope.setStartLevel (0);
+        auxiliaryEnvelope.setAttackTime (AkaiEnvelopeTime.toSecondsS5000 (this.auxEnvelope.getRate (0)));
+        auxiliaryEnvelope.setHoldLevel (this.auxEnvelope.getLevel (0) / 100.0);
+        auxiliaryEnvelope.setHoldTime (0);
+        auxiliaryEnvelope.setDecayTime (AkaiEnvelopeTime.toSecondsS5000 (this.auxEnvelope.getRate (1)) + AkaiEnvelopeTime.toSecondsS5000 (this.auxEnvelope.getRate (2)));
         auxiliaryEnvelope.setSustainLevel (this.auxEnvelope.getLevel (2) / 100.0);
+        auxiliaryEnvelope.setReleaseTime (AkaiEnvelopeTime.toSecondsS5000 (this.auxEnvelope.getRate (3)));
         auxiliaryEnvelope.setEndLevel (this.auxEnvelope.getLevel (3) / 100.0);
         final int pitchEnvelopeDepth = this.getPitchEnvelopeDepth (modsChunk);
 
         final int filterMode = this.filter.getMode ();
         final FilterType filterType = FILTER_TYPES.get (Integer.valueOf (filterMode));
         final Integer filterPoles = FILTER_POLES.get (Integer.valueOf (filterMode));
+        // A fully opened low-pass without resonance, key-tracking and a closing envelope has no
+        // audible effect, therefore no filter is created in that case
+        final boolean isOpenLowPass = filterType == FilterType.LOW_PASS && this.filter.getCutoff () >= 100 && this.filter.getResonance () == 0 && this.filter.getKeyboardTrack () == 0 && this.filterEnvelope.getDepth () >= 0;
         final double cutoff = MathUtils.denormalizeFrequency (this.filter.getCutoff () / 100.0, IFilter.MAX_FREQUENCY);
         // +12 is the default and this tracks the filter octave for octave
         final double filterKeyTracking = Math.clamp (this.filter.getKeyboardTrack () / 12.0, -1, 1);
@@ -283,7 +293,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
             sampleZone.setVelocityHigh (zone.getHighVelocity ());
             sampleZone.setTuning (keygroupTuning + zone.getSemitoneTune () + zone.getFineTune () / 100.0);
 
-            if (filterType != null)
+            if (filterType != null && !isOpenLowPass)
             {
                 // Exponential resonance conversion to normalized 0..1 range and damped by
                 // factor 4
@@ -295,10 +305,10 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
                 final IEnvelopeModulator cutoffEnvelopeModulator = sampleFilter.getCutoffEnvelopeModulator ();
                 cutoffEnvelopeModulator.setDepth (this.filterEnvelope.getDepth () / 100.0);
                 final IEnvelope cutoffEnvelope = cutoffEnvelopeModulator.getSource ();
-                cutoffEnvelope.setAttackTime (toSeconds (this.filterEnvelope.getAttack ()));
-                cutoffEnvelope.setDecayTime (toSeconds (this.filterEnvelope.getDecay ()));
+                cutoffEnvelope.setAttackTime (AkaiEnvelopeTime.toSecondsS5000 (this.filterEnvelope.getAttack ()));
+                cutoffEnvelope.setDecayTime (AkaiEnvelopeTime.toSecondsS5000 (this.filterEnvelope.getDecay ()));
                 cutoffEnvelope.setSustainLevel (this.filterEnvelope.getSustain () / 100.0);
-                cutoffEnvelope.setReleaseTime (toSeconds (this.filterEnvelope.getRelease ()));
+                cutoffEnvelope.setReleaseTime (AkaiEnvelopeTime.toSecondsS5000 (this.filterEnvelope.getRelease ()));
             }
 
             // -50..50
@@ -307,8 +317,15 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
             // ONE SHOT ignores a note-off and always plays the sample up to its end
             final int playback = zone.getPlayback ();
             sampleZone.setOneShot (playback == AkpZone.PLAYBACK_ONE_SHOT);
-            if (playback > AkpZone.PLAYBACK_ONE_SHOT)
-                sampleZone.getLoops ().add (new DefaultSampleLoop ());
+            // The loop itself is read from the sample chunk of the WAV file, the added loop only
+            // signals that a loop is required and if it is left on the note-off
+            final boolean isLoopUntilRelease = playback == AkpZone.PLAYBACK_LOOP_UNTIL_RELEASE;
+            if (isLoopUntilRelease || playback == AkpZone.PLAYBACK_LOOP_IN_RELEASE || zone.isPlaybackAsSample ())
+            {
+                final ISampleLoop loop = new DefaultSampleLoop ();
+                loop.setLoopUntilRelease (isLoopUntilRelease);
+                sampleZone.getLoops ().add (loop);
+            }
 
             // -100..100 -> since this is an offset assume -6..+6dB
             sampleZone.setGain (zone.getLevel () / 100.0 * 6.0);
@@ -346,13 +363,6 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         if (modsChunk.getSource (Slot.PITCH_MOD_2) == AkpModulations.SOURCE_AUX_ENV)
             return this.location.getPitchMod2 ();
         return 0;
-    }
-
-
-    private static double toSeconds (final int value)
-    {
-        // No real idea, assume 6 seconds max
-        return value / 100.0 * 6.0;
     }
 
 

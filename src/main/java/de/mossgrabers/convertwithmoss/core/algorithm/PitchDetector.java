@@ -187,6 +187,27 @@ public final class PitchDetector
 
 
     /**
+     * Measure the pitch of the sample of one zone, e.g. to find the root key of a sample whose file
+     * does not contain one. Unlike {@link #detect(List)} the measurement does not depend on the
+     * root key of the zone.
+     *
+     * @param zone The zone whose sample to measure, its sample data, start, stop and loops must be
+     *            set
+     * @param expectedNote The note around which the pitch is expected, e.g. the middle of the key
+     *            range of the zone; the search is limited to three octaves around it
+     * @return The pitch as a MIDI note including the fraction of a semitone, empty if the sample
+     *         could not be read or is not clearly pitched
+     */
+    public static Optional<Double> measurePitch (final ISampleZone zone, final int expectedNote)
+    {
+        final double pitch = measureFrequency (zone, noteToFrequency (expectedNote));
+        if (Double.isNaN (pitch))
+            return Optional.empty ();
+        return Optional.of (Double.valueOf (CONCERT_PITCH_NOTE + 12 * MathUtils.log2 (pitch / CONCERT_PITCH)));
+    }
+
+
+    /**
      * Get the zones to measure: those which follow the keyboard, spread over the multi-sample.
      *
      * @param groups The groups whose zones to select from
@@ -221,6 +242,25 @@ public final class PitchDetector
      */
     private static double measure (final ISampleZone zone)
     {
+        final double notatedFrequency = noteToFrequency (zone.getKeyRoot ());
+        final double pitch = measureFrequency (zone, notatedFrequency);
+        if (Double.isNaN (pitch))
+            return Double.NaN;
+        // The tuning of the zone shifts the playback, so it is part of what the root key sounds
+        return 12 * MathUtils.log2 (pitch / notatedFrequency) + zone.getTuning ();
+    }
+
+
+    /**
+     * Measure the frequency of the sample of one zone.
+     *
+     * @param zone The zone to measure
+     * @param notatedFrequency The frequency around which the pitch is expected, which limits the
+     *            search to three octaves around it
+     * @return The pitch in Hertz, not a number if it could not be measured
+     */
+    private static double measureFrequency (final ISampleZone zone, final double notatedFrequency)
+    {
         final int [] signal;
         final int sampleRate;
         try
@@ -240,7 +280,6 @@ public final class PitchDetector
 
         // The loop is what the destination plays while a key is held - if it has no clear pitch,
         // e.g. because it is noisy, the loudest part after the attack is measured instead
-        final double notatedFrequency = noteToFrequency (zone.getKeyRoot ());
         final double [] loop = pickLoop (signal, sampleRate, zone);
         double pitch = loop == null ? -1 : estimatePitch (loop, sampleRate, notatedFrequency);
         if (pitch < 0)
@@ -250,10 +289,7 @@ public final class PitchDetector
                 return Double.NaN;
             pitch = estimatePitch (segment, sampleRate, notatedFrequency);
         }
-        if (pitch <= 0)
-            return Double.NaN;
-        // The tuning of the zone shifts the playback, so it is part of what the root key sounds
-        return 12 * MathUtils.log2 (pitch / notatedFrequency) + zone.getTuning ();
+        return pitch <= 0 ? Double.NaN : pitch;
     }
 
 

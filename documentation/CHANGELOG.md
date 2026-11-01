@@ -24,8 +24,14 @@
   * Fixed: Presets which are stored as plain XML instead of compressed XML could not be read ('Not in GZIP format'), e.g. all 23 drum kits of the '80s hits' pack of Subsocial Studios.
   * Fixed: The samples of presets and Live Sets which were saved with Live 10 or earlier were not found, since these versions store the path of a sample as a list of folders with the name of the file separately.
 * Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
+  * Improved: A fully opened low-pass filter without any effect is no longer added to the converted zones.
   * Fixed: Files written by a S5000/S6000 were reported as "Z4/Z8" when the RIFF size was set. Z4/Z8 files are now detected by their 'z48 ' chunk.
   * Fixed: The pitch envelope modulation via 'Pitch Mod 2' was not detected.
+  * Fixed: Programs which use the key-group or zone tuning to transpose samples by full semi-tones (e.g. +12) now move the root key instead of keeping a large pitch offset.
+  * Fixed: The auxiliary (pitch) envelope stages were shifted by one stage.
+  * Fixed: Playback mode LOOP UNTIL REL is now converted as a loop which ends on note-off; unknown playback values no longer create a loop.
+  * Fixed: Envelope times were much too long, they now use the curve of the S1000/S3000.
+  * Fixed: Samples written by an Akai sampler with a sample tuning were mapped 2 octaves too high since the root key was read from the generic part of the WAV sample chunk instead of the Akai specific data.
 * Audiomodern Soundbox
   * Fixed: The panning of the samples was not converted, all samples played in the center. E.g. split stereo samples - two mono samples of one recording, hard panned left and right - played layered in the center instead of in stereo. The panning is now written to the value which the sample editor of the plug-in sets, for every sample, and read from it.
 * discoDSP Bliss
