@@ -19,6 +19,8 @@ public class Bank
 {
     private String name;
     private int [] midiChannels;
+    private float  masterVolume = 1.0f;
+    private float  masterTune   = 1.0f;
 
 
     /**
@@ -38,6 +40,28 @@ public class Bank
     public String getName ()
     {
         return this.name;
+    }
+
+
+    /**
+     * Get the master volume of the bank.
+     *
+     * @return The master volume as a linear factor, 1.0 = 0dB
+     */
+    public float getMasterVolume ()
+    {
+        return this.masterVolume;
+    }
+
+
+    /**
+     * Get the master tuning of the bank.
+     *
+     * @return The master tuning as a frequency ratio, 1.0 = no tuning
+     */
+    public float getMasterTune ()
+    {
+        return this.masterTune;
     }
 
 
@@ -78,11 +102,9 @@ public class Bank
     {
         final ByteArrayInputStream in = new ByteArrayInputStream (data);
 
-        // The master volume
-        StreamUtils.readFloatLE (in);
-        // The master tune
-        StreamUtils.readFloatLE (in);
-        // The master tempo
+        this.masterVolume = StreamUtils.readFloatLE (in);
+        this.masterTune = StreamUtils.readFloatLE (in);
+        // The master tempo, always 0 in the analysed files
         StreamUtils.readUnsigned32 (in, false);
 
         this.name = StreamUtils.readUtf16WithLength (in);
@@ -110,6 +132,7 @@ public class Bank
         for (int i = 0; i < numMidiChannels; i++)
             this.midiChannels[i] = StreamUtils.readUnsigned16 (in, false);
 
-        // More unknown data, could be mute, solo and sends like in MultiConfiguration
+        // More unknown data: in Kontakt 4.2 the 64 MIDI channels are followed by 128 bytes (most
+        // likely the mute and solo states) and the aux send levels of the slots
     }
-}
+}

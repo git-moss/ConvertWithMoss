@@ -14,10 +14,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
@@ -32,9 +36,13 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Bank;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.ExternalModulator;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Group;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.InternalModulator;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.KontaktPresetAccessor;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.MultiConfiguration;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.MultiInstrument;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Program;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Zone;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.ZoneLoop;
@@ -75,9 +83,31 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
      * @param isMonolith True if all files are stored in a monolith
      * @throws IOException Error finding samples
      */
-    @SuppressWarnings("null")
     public void fillInto (final IMultisampleSource multiSample, final Program program, final String [] parts, final List<String> filePaths, final boolean isMonolith) throws IOException
     {
+        this.fillInto (multiSample, program, parts, filePaths, isMonolith, false);
+    }
+
+
+    /**
+     * Fill the given multi-sample instance with data from the program.
+     *
+     * @param multiSample The multi-sample to fill
+     * @param program The program from which to get the data
+     * @param parts Parts of the name for category detection
+     * @param filePaths All file paths
+     * @param isMonolith True if all files are stored in a monolith
+     * @param isMultiPart True if the program is part of a multi (NKM). In that case the volume and
+     *            panning of the program are not applied to the zones but to the instrument of the
+     *            performance
+     * @throws IOException Error finding samples
+     */
+    @SuppressWarnings("null")
+    public void fillInto (final IMultisampleSource multiSample, final Program program, final String [] parts, final List<String> filePaths, final boolean isMonolith, final boolean isMultiPart) throws IOException
+    {
+        final float instrumentVolume = isMultiPart ? 1.0f : program.getInstrumentVolume ();
+        final float instrumentPan = isMultiPart ? 0.0f : program.getInstrumentPan ();
+
         setMetadata (multiSample, program, parts);
 
         final List<File> files = this.lookupFiles (filePaths, multiSample.getSourceFile ().getParent (), isMonolith);
@@ -117,9 +147,9 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             final int rootKey = kontaktZone.getRootKey ();
             zone.setKeyRoot (rootKey);
 
-            final float volume = program.getInstrumentVolume () * kontaktGroup.getVolume () * kontaktZone.getZoneVolume ();
+            final float volume = instrumentVolume * kontaktGroup.getVolume () * kontaktZone.getZoneVolume ();
             zone.setGain (MathUtils.valueToDb (volume));
-            zone.setPanning (Math.clamp (program.getInstrumentPan () + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
+            zone.setPanning (Math.clamp (instrumentPan + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
 
             zone.setTuning (calculateTune (kontaktZone.getZoneTune (), kontaktGroup.getTune (), program.getInstrumentTune ()));
             zone.setKeyTracking (kontaktGroup.isKeyTracking () ? 1 : 0);
@@ -226,6 +256,73 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
         for (final Pair<IGroup, Group> pair: indexedGroups.values ())
             sampleGroups.add (pair.getKey ());
         multiSample.setGroups (sampleGroups);
+    }
+
+
+    /**
+     * Create a performance from the programs of a multi (NKM). The programs must have been
+     * converted with isMultiPart set to true, since the volume and panning of the programs are
+     * applied to the instruments. The master volume of the multi is added to the gain of all
+     * instruments and the master tuning to the tuning of all sample zones. Muted instruments are
+     * not added; if any instrument is soloed, only the soloed instruments are added.
+     *
+     * @param sourceFile The source file of the multi
+     * @param presetAccessor Contains the read multi-configuration and bank
+     * @param sources The converted programs with their source program
+     * @return The performance or empty if the multi contains no multi-configuration
+     */
+    protected Optional<IPerformanceSource> createPerformanceSource (final File sourceFile, final KontaktPresetAccessor presetAccessor, final List<Pair<IMultisampleSource, Program>> sources)
+    {
+        final MultiConfiguration multiConfiguration = presetAccessor.getMultiConfiguration ();
+        if (multiConfiguration == null)
+            return Optional.empty ();
+
+        double masterGain = 0;
+        double masterTuning = 0;
+        final Optional<Bank> bank = presetAccessor.getBank ();
+        if (bank.isPresent ())
+        {
+            masterGain = MathUtils.valueToDb (bank.get ().getMasterVolume ());
+            // The tuning is stored as a frequency ratio
+            masterTuning = 12.0 * Math.log (bank.get ().getMasterTune ()) / Math.log (2);
+        }
+
+        final List<MultiInstrument> multiInstruments = multiConfiguration.getMultiInstruments ();
+        final boolean hasSoloedInstrument = multiInstruments.stream ().anyMatch (MultiInstrument::isSoloed);
+
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
+        for (final Pair<IMultisampleSource, Program> source: sources)
+        {
+            final IMultisampleSource multisampleSource = source.getKey ();
+            final Program program = source.getValue ();
+
+            // The slot indices are not continuous
+            final int slotIndex = program.getSlotIndex ();
+            final MultiInstrument multiInstrument = slotIndex >= 0 && slotIndex < multiInstruments.size () ? multiInstruments.get (slotIndex) : null;
+            if (multiInstrument != null && (hasSoloedInstrument ? !multiInstrument.isSoloed () : multiInstrument.isMuted ()))
+            {
+                this.notifier.log ("IDS_NKM_INSTRUMENT_MUTED", program.getName ());
+                continue;
+            }
+
+            // The MIDI channel is stored as 0 = Omni, 1 = A1 ... 64 = D16
+            final int midiChannel = multiInstrument == null ? 0 : multiInstrument.getMidiChannel () - 1;
+            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
+            instrumentSource.setClipKeyLow (program.getClipKeyLow ());
+            instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
+            instrumentSource.setTranspose (program.getMidiTranspose ());
+            instrumentSource.setGain (MathUtils.valueToDb (program.getInstrumentVolume ()) + masterGain);
+            instrumentSource.setPanning (Math.clamp (program.getInstrumentPan (), -1.0, 1.0));
+
+            if (masterTuning != 0)
+                for (final IGroup group: multisampleSource.getGroups ())
+                    for (final ISampleZone zone: group.getSampleZones ())
+                        zone.setTuning (zone.getTuning () + masterTuning);
+
+            performanceSource.addInstrument (instrumentSource);
+        }
+        return Optional.of (performanceSource);
     }
 
 

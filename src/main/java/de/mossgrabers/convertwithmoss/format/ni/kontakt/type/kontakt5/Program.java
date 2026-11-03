@@ -80,6 +80,17 @@ public class Program
 
 
     /**
+     * Get the MIDI transposition of the instrument.
+     *
+     * @return The transposition in semi-tones in the range of [-24..24]
+     */
+    public int getMidiTranspose ()
+    {
+        return this.midiTranspose;
+    }
+
+
+    /**
      * The lower note which should limit the key-range (this note should still sound).
      *
      * @return The note [0..127]
@@ -772,4 +783,4 @@ public class Program
         }
         return sb.toString ();
     }
-}
+}

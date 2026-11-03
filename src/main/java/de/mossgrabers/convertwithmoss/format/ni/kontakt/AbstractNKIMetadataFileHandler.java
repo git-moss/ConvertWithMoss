@@ -30,6 +30,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -99,6 +100,7 @@ public abstract class AbstractNKIMetadataFileHandler
     protected final AbstractTagsAndAttributes tags;
     protected final INotifier                 notifier;
     private final Map<String, String>         absolutePathLookupSuccess = new HashMap<> ();
+    protected boolean                         isMulti                   = false;
 
 
     /**
@@ -131,19 +133,17 @@ public abstract class AbstractNKIMetadataFileHandler
         final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
 
-        final Map<String, String> topParameters = this.readParameters (top);
-        final List<IInstrumentSource> instrumentSources = this.parseInstrumentSources (sourceFolder, sourceFile, top, metadataConfig, monolithSamples);
-        final List<IInstrumentSource> instruments = performanceSource.getInstruments ();
-        for (int i = 0; i < instrumentSources.size (); i++)
+        // The volume and panning of the programs are applied to the instruments instead of the
+        // zones
+        this.isMulti = true;
+        try
         {
-            final IInstrumentSource instrumentSource = instrumentSources.get (i);
-
-            // Only K2
-            final String midiChannelStr = topParameters.get (String.format ("midiChannel_slot0%02d", Integer.valueOf (i)));
-            if (midiChannelStr != null)
-                instrumentSource.setMidiChannel ((Integer.parseInt (midiChannelStr) - 1) % 16);
-
-            instruments.add (instrumentSource);
+            final Map<String, String> topParameters = this.readParameters (top);
+            performanceSource.getInstruments ().addAll (this.parseInstrumentSources (sourceFolder, sourceFile, top, metadataConfig, monolithSamples, Optional.of (topParameters)));
+        }
+        finally
+        {
+            this.isMulti = false;
         }
         return Optional.of (performanceSource);
     }
@@ -163,7 +163,7 @@ public abstract class AbstractNKIMetadataFileHandler
     public List<IMultisampleSource> parseInstruments (final File sourceFolder, final File sourceFile, final String xmlCode, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
     {
         final Element top = this.getTopLevelElement (xmlCode);
-        final List<IInstrumentSource> instrumentSources = this.parseInstrumentSources (sourceFolder, sourceFile, top, metadataConfig, monolithSamples);
+        final List<IInstrumentSource> instrumentSources = this.parseInstrumentSources (sourceFolder, sourceFile, top, metadataConfig, monolithSamples, Optional.empty ());
         final List<IMultisampleSource> multisampleSource = new ArrayList<> (instrumentSources.size ());
         for (final IInstrumentSource instrumentSource: instrumentSources)
             multisampleSource.add (instrumentSource.getMultisampleSource ());
@@ -171,7 +171,19 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    private List<IInstrumentSource> parseInstrumentSources (final File sourceFolder, final File sourceFile, final Element top, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples) throws IOException
+    /**
+     * Parses all programs of the XML description file.
+     *
+     * @param sourceFolder The top source folder for the detection
+     * @param sourceFile The source file which contains the XML document
+     * @param top The top element of the XML document
+     * @param metadataConfig Default metadata
+     * @param monolithSamples The samples that are contained in the NKI monolith otherwise null
+     * @param topParameters The parameters of the multi, only present when reading a multi
+     * @return The parsed instruments
+     * @throws IOException An error occurred parsing the XML document
+     */
+    private List<IInstrumentSource> parseInstrumentSources (final File sourceFolder, final File sourceFile, final Element top, final IMetadataConfig metadataConfig, final Map<String, ISampleData> monolithSamples, final Optional<Map<String, String>> topParameters) throws IOException
     {
         final List<Element> programElements = this.findProgramElements (top);
         if (programElements.isEmpty ())
@@ -181,17 +193,68 @@ public abstract class AbstractNKIMetadataFileHandler
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
 
         final List<IInstrumentSource> instrumentSources = new ArrayList<> ();
-        for (final Element programElement: programElements)
+        for (int i = 0; i < programElements.size (); i++)
         {
+            final Element programElement = programElements.get (i);
             final IMultisampleSource multisampleSource = new DefaultMultisampleSource (sourceFile, parts, null);
             final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, 0);
             if (this.parseProgram (programElement, instrumentSource, monolithSamples))
             {
                 updateMetadata (metadataConfig, parts, multisampleSource.getMetadata ());
+
+                // Only K2 multis: the MIDI channel of the slot, 0 = Omni
+                if (topParameters.isPresent ())
+                {
+                    final String midiChannelStr = topParameters.get ().get (String.format ("midiChannel_slot0%02d", Integer.valueOf (getSlotIndex (programElement, i))));
+                    if (midiChannelStr != null)
+                        instrumentSource.setMidiChannel (convertMidiChannel (Integer.parseInt (midiChannelStr)));
+                }
+
                 instrumentSources.add (instrumentSource);
             }
         }
         return instrumentSources;
+    }
+
+
+    /**
+     * Get the slot index of a program in a multi. In K2 each program is stored in its own
+     * container which contains the index of the slot. Otherwise the position of the program is
+     * used.
+     *
+     * @param programElement The program element
+     * @param position The position of the program element in the list of all program elements
+     * @return The slot index
+     */
+    private static int getSlotIndex (final Element programElement, final int position)
+    {
+        final Node programsNode = programElement.getParentNode ();
+        final Node containerNode = programsNode == null ? null : programsNode.getParentNode ();
+        if (containerNode instanceof final Element containerElement && containerElement.hasAttribute ("index"))
+        {
+            try
+            {
+                return Integer.parseInt (containerElement.getAttribute ("index"));
+            }
+            catch (final NumberFormatException ex)
+            {
+                // Use the position instead
+            }
+        }
+        return position;
+    }
+
+
+    /**
+     * Convert a Kontakt MIDI channel to the MIDI channel of an instrument.
+     *
+     * @param midiChannel The Kontakt MIDI channel: 0 = Omni, 1-16 = channel 1-16 of port A, 17-64
+     *            = ports B-D
+     * @return The MIDI channel of the instrument
+     */
+    protected static int convertMidiChannel (final int midiChannel)
+    {
+        return midiChannel <= 0 ? IInstrumentSource.MIDI_CHANNEL_OMNI : (midiChannel - 1) % 16;
     }
 
 
@@ -618,7 +681,9 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Read additional parameter like the MIDI channel which are specific to the instrument.
+     * Read additional parameters which are specific to the instrument. The volume and panning are
+     * only applied to the instrument when reading a multi, otherwise they are applied to the zones.
+     * The tuning is always applied to the zones since it is a pitch shift.
      *
      * @param instrumentSource The instrument source
      * @param programParameters The program parameter
@@ -631,6 +696,20 @@ public abstract class AbstractNKIMetadataFileHandler
         final String highKey = programParameters.get ("highKey");
         if (highKey != null)
             instrumentSource.setClipKeyHigh (Integer.parseInt (highKey));
+
+        final String transpose = programParameters.get ("transpose");
+        if (transpose != null)
+            instrumentSource.setTranspose (Integer.parseInt (transpose));
+
+        if (!this.isMulti)
+            return;
+
+        final String volume = programParameters.get (this.tags.progVolParam ());
+        if (volume != null)
+            instrumentSource.setGain (MathUtils.valueToDb (Double.parseDouble (volume)));
+        final String pan = programParameters.get (this.tags.progPanParam ());
+        if (pan != null)
+            instrumentSource.setPanning (Math.clamp (this.normalizePanning (Double.parseDouble (pan)), -1.0, 1.0));
     }
 
 
@@ -1001,7 +1080,8 @@ public abstract class AbstractNKIMetadataFileHandler
 
             final double zoneVol = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zoneVolParam ());
             final double groupVol = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupVolParam ());
-            final double progVol = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progVolParam ());
+            // In a multi the program volume is applied to the instrument
+            final double progVol = this.isMulti ? 1.0 : AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progVolParam ());
             zone.setGain (20.0d * Math.log10 (zoneVol * groupVol * progVol));
 
             final double zoneTune = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zoneTuneParam ());
@@ -1011,8 +1091,9 @@ public abstract class AbstractNKIMetadataFileHandler
 
             final double zonePan = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zonePanParam ());
             final double groupPan = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupPanParam ());
-            final double progPan = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progPanParam ());
-            final double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + this.normalizePanning (progPan);
+            // In a multi the program panning is applied to the instrument
+            final double progPan = this.isMulti ? 0 : this.normalizePanning (AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progPanParam ()));
+            final double totalPan = this.normalizePanning (zonePan) + this.normalizePanning (groupPan) + progPan;
             zone.setPanning (Math.clamp (totalPan, -1.0d, 1.0d));
 
             if (ampVelocityMod >= 0)

@@ -17,7 +17,9 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 public class MultiInstrument
 {
-    private int midiChannel;
+    private int     midiChannel;
+    private boolean isMuted  = false;
+    private boolean isSoloed = false;
 
 
     /**
@@ -43,6 +45,28 @@ public class MultiInstrument
 
 
     /**
+     * Is the instrument muted?
+     *
+     * @return True if muted
+     */
+    public boolean isMuted ()
+    {
+        return this.isMuted;
+    }
+
+
+    /**
+     * Is the instrument soloed?
+     *
+     * @return True if soloed
+     */
+    public boolean isSoloed ()
+    {
+        return this.isSoloed;
+    }
+
+
+    /**
      * Parse the multi-instrument data.
      *
      * @param in Where to read the data from
@@ -52,13 +76,11 @@ public class MultiInstrument
     {
         this.midiChannel = StreamUtils.readUnsigned16 (in, false);
 
-        // Is muted?
-        in.read ();
-        // Is soloed?
-        in.read ();
-        // The number of sends
+        this.isMuted = in.read () > 0;
+        this.isSoloed = in.read () > 0;
+        // The number of aux sends, the levels are not used
         final int numSends = (int) StreamUtils.readUnsigned32 (in, false);
         for (int i = 0; i < numSends; i++)
             StreamUtils.readFloatLE (in);
     }
-}
+}

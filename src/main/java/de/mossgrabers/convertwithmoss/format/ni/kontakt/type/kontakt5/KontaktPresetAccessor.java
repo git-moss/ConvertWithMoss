@@ -23,6 +23,7 @@ public class KontaktPresetAccessor
     private final List<KontaktPresetChunk> presetChunks       = new ArrayList<> ();
     private final List<Program>            programs           = new ArrayList<> ();
     private final MultiConfiguration       multiConfiguration = new MultiConfiguration ();
+    private Optional<Bank>                 bank               = Optional.empty ();
 
 
     /**
@@ -107,6 +108,17 @@ public class KontaktPresetAccessor
 
 
     /**
+     * Get the bank which contains the programs of a multi.
+     *
+     * @return The bank, only present in multis (NKM)
+     */
+    public Optional<Bank> getBank ()
+    {
+        return this.bank;
+    }
+
+
+    /**
      * Find all chunks of the given type.
      *
      * @param topChunks The chunks to search in
@@ -156,6 +168,7 @@ public class KontaktPresetAccessor
     private void readProgramsFromChunks () throws IOException
     {
         this.programs.clear ();
+        this.bank = Optional.empty ();
 
         // Read all top level programs
         for (final KontaktPresetChunk programChunk: findAllChunks (this.presetChunks, KontaktPresetChunkID.PROGRAM))
@@ -172,6 +185,7 @@ public class KontaktPresetAccessor
         final KontaktPresetChunk bankChunk = bankChunkOpt.get ();
         final Bank bank = new Bank ();
         bank.parse (bankChunk);
+        this.bank = Optional.of (bank);
 
         boolean hasMultiConfiguration = false;
 

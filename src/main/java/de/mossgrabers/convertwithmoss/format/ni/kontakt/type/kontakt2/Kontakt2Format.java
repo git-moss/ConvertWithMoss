@@ -25,9 +25,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultMetadata;
@@ -43,8 +41,6 @@ import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.AbstractKontaktForm
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.KontaktIcon;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt2.monolith.Kontakt2Monolith;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.KontaktPresetAccessor;
-import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.MultiConfiguration;
-import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.MultiInstrument;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Program;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
@@ -141,7 +137,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
             StreamUtils.skipNBytes (fileAccess, 32);
 
             this.handleFastLZ (fileAccess, header.getCompressedLength (), decompressedLength, crc32Hash);
-            final List<Pair<IMultisampleSource, Program>> sources = this.getMultisampleSources (sourceFolder, sourceFile, metadataConfig);
+            final List<Pair<IMultisampleSource, Program>> sources = this.getMultisampleSources (sourceFolder, sourceFile, metadataConfig, false);
             multisampleSources = new ArrayList<> (sources.size ());
             for (final Pair<IMultisampleSource, Program> source: sources)
                 multisampleSources.add (source.getKey ());
@@ -189,25 +185,8 @@ public class Kontakt2Format extends AbstractKontaktFormat
 
     private Optional<IPerformanceSource> getPerformanceSource (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
     {
-        final List<Pair<IMultisampleSource, Program>> sources = this.getMultisampleSources (sourceFolder, sourceFile, metadataConfig);
-        final MultiConfiguration multiConfiguration = this.programAccessor.getMultiConfiguration ();
-        if (multiConfiguration == null)
-            return Optional.empty ();
-
-        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
-        performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
-        final List<MultiInstrument> multiInstruments = multiConfiguration.getMultiInstruments ();
-        for (int i = 0; i < sources.size (); i++)
-        {
-            final Pair<IMultisampleSource, Program> source = sources.get (i);
-            final Program program = source.getValue ();
-            final int midiChannel = i < multiInstruments.size () ? multiInstruments.get (program.getSlotIndex ()).getMidiChannel () - 1 : 0;
-            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (source.getKey (), midiChannel);
-            instrumentSource.setClipKeyLow (program.getClipKeyLow ());
-            instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
-            performanceSource.addInstrument (instrumentSource);
-        }
-        return Optional.of (performanceSource);
+        final List<Pair<IMultisampleSource, Program>> sources = this.getMultisampleSources (sourceFolder, sourceFile, metadataConfig, true);
+        return this.createPerformanceSource (sourceFile, this.programAccessor, sources);
     }
 
 
@@ -217,10 +196,11 @@ public class Kontakt2Format extends AbstractKontaktFormat
      * @param sourceFolder The top source folder for the detection
      * @param sourceFile The source file
      * @param metadataConfig Default metadata
+     * @param isMulti True if the programs are read from a multi (NKM)
      * @return All parsed multi-samples
      * @throws IOException Could decode the multi-samples
      */
-    private List<Pair<IMultisampleSource, Program>> getMultisampleSources (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig) throws IOException
+    private List<Pair<IMultisampleSource, Program>> getMultisampleSources (final File sourceFolder, final File sourceFile, final IMetadataConfig metadataConfig, final boolean isMulti) throws IOException
     {
         final String n = metadataConfig.isPreferFolderName () ? sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), sourceFolder, n);
@@ -236,7 +216,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
             this.fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName
-            } : parts, filePaths, false);
+            } : parts, filePaths, false, isMulti);
             results.add (new Pair<> (multisampleSource, program));
         }
         return results;

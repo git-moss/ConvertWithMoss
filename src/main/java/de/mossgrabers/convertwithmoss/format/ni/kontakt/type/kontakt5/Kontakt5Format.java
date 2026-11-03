@@ -22,9 +22,7 @@ import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
-import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -120,32 +118,8 @@ public class Kontakt5Format extends AbstractKontaktFormat
         if (presetAccessor.isEmpty ())
             return Optional.empty ();
 
-        final List<Pair<IMultisampleSource, Program>> sources = this.convertPrograms (presetAccessor.get (), niContainerItem, sourceFile, metadataConfig, monolithSamples);
-        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
-        performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
-        return readMultiConfiguration (presetAccessor.get (), sources, performanceSource) ? Optional.of (performanceSource) : Optional.empty ();
-    }
-
-
-    private static boolean readMultiConfiguration (final KontaktPresetAccessor presetAccessor, final List<Pair<IMultisampleSource, Program>> sources, final IPerformanceSource performanceSource)
-    {
-        final MultiConfiguration multiConfiguration = presetAccessor.getMultiConfiguration ();
-        if (multiConfiguration == null)
-            return false;
-
-        final List<MultiInstrument> multiInstruments = multiConfiguration.getMultiInstruments ();
-        for (int i = 0; i < sources.size (); i++)
-        {
-            final Pair<IMultisampleSource, Program> source = sources.get (i);
-            final IMultisampleSource multisampleSource = source.getKey ();
-            final Program program = source.getValue ();
-            final int midiChannel = i < multiInstruments.size () ? multiInstruments.get (program.getSlotIndex ()).getMidiChannel () - 1 : 0;
-            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
-            instrumentSource.setClipKeyLow (program.getClipKeyLow ());
-            instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
-            performanceSource.addInstrument (instrumentSource);
-        }
-        return true;
+        final List<Pair<IMultisampleSource, Program>> sources = this.convertPrograms (presetAccessor.get (), niContainerItem, sourceFile, metadataConfig, monolithSamples, true);
+        return this.createPerformanceSource (sourceFile, presetAccessor.get (), sources);
     }
 
 
@@ -179,7 +153,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         if (presetAccessor.isPresent ())
         {
-            final List<Pair<IMultisampleSource, Program>> sources = this.convertPrograms (presetAccessor.get (), niContainerItem, sourceFile, metadataConfig, monolithSamples);
+            final List<Pair<IMultisampleSource, Program>> sources = this.convertPrograms (presetAccessor.get (), niContainerItem, sourceFile, metadataConfig, monolithSamples, false);
             for (final Pair<IMultisampleSource, Program> source: sources)
                 multisampleSources.add (source.getKey ());
         }
@@ -294,10 +268,11 @@ public class Kontakt5Format extends AbstractKontaktFormat
      * @param sourceFile The source file to convert
      * @param metadataConfig Default metadata
      * @param monolithSamples If the NKI is inside a monolith, these are the sample files
+     * @param isMulti True if the programs are read from a multi (NKM)
      * @return The multi-sample sources with their source program
      * @throws IOException Could not convert the program
      */
-    private List<Pair<IMultisampleSource, Program>> convertPrograms (final KontaktPresetAccessor presetAccessor, final NIContainerItem niContainerItem, final File sourceFile, final IMetadataConfig metadataConfig, final Map<Long, ISampleZone> monolithSamples) throws IOException
+    private List<Pair<IMultisampleSource, Program>> convertPrograms (final KontaktPresetAccessor presetAccessor, final NIContainerItem niContainerItem, final File sourceFile, final IMetadataConfig metadataConfig, final Map<Long, ISampleZone> monolithSamples, final boolean isMulti) throws IOException
     {
         final String n = metadataConfig.isPreferFolderName () ? this.sourceFolder.getName () : FileUtils.getNameWithoutType (sourceFile);
         final String [] parts = AudioFileUtils.createPathParts (sourceFile.getParentFile (), this.sourceFolder, n);
@@ -312,7 +287,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
             this.fillInto (multisampleSource, program, programs.size () > 1 ? new String []
             {
                 programName
-            } : parts, filePaths, monolithSamples != null);
+            } : parts, filePaths, monolithSamples != null, isMulti);
             results.add (new Pair<> (multisampleSource, program));
 
             updateMetadata (niContainerItem, multisampleSource, metadataConfig, parts);

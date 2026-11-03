@@ -56,38 +56,10 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     @Override
     protected void readInstrumentParameters (final IInstrumentSource instrumentSource, final Map<String, String> programParameters)
     {
+        // The MIDI channel is stored in the program: 0 = Omni, 1-16 = channel 1-16
         final String midiChannel = programParameters.get ("midiChannel");
         if (midiChannel != null)
-            instrumentSource.setMidiChannel ((Integer.parseInt (midiChannel) - 1) % 16);
-
-        final String transposeParameter = programParameters.get ("transpose");
-        if (transposeParameter != null)
-        {
-            final int transpose = Integer.parseInt (transposeParameter);
-            instrumentSource.setTranspose (transpose);
-        }
-
-        final String masterVolumeParameter = programParameters.get ("masterVolume");
-        if (masterVolumeParameter != null)
-        {
-            final double masterVolume = Double.parseDouble (masterVolumeParameter);
-            if (masterVolume != 1)
-                instrumentSource.setGain (20.0d * Math.log10 (masterVolume));
-        }
-
-        final String masterPanParameter = programParameters.get ("masterPan");
-        if (masterPanParameter != null)
-        {
-            final double masterPan = Double.parseDouble (masterPanParameter);
-            instrumentSource.setPanning (masterPan * 2.0 - 1.0);
-        }
-
-        final String masterTuneParameter = programParameters.get ("masterTune");
-        if (masterTuneParameter != null)
-        {
-            final double masterTune = Double.parseDouble (masterTuneParameter);
-            instrumentSource.setTuning ((int) Math.round (Math.clamp (this.tags.calculateTune (masterTune, 1.0, 1.0) * 100.0, -50, 50)));
-        }
+            instrumentSource.setMidiChannel (convertMidiChannel (Integer.parseInt (midiChannel)));
 
         super.readInstrumentParameters (instrumentSource, programParameters);
     }
