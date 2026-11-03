@@ -28,6 +28,8 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.SampleChunk;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkmPart;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkmZ48Chunk;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkmZ48Part;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
 
@@ -235,8 +237,15 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
             final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
             performanceSource.setName (FileUtils.getNameWithoutType (file));
 
-            for (final AkmPart part: akmFile.getParts ())
+            // Files written by a Z4/Z8 contain the parts in the Z4/Z8 format as well which have a
+            // higher resolution
+            final Optional<AkmZ48Chunk> z48Chunk = akmFile.getZ48Chunk ();
+            final List<AkmZ48Part> z48Parts = z48Chunk.isPresent () ? z48Chunk.get ().getParts () : Collections.emptyList ();
+
+            final List<AkmPart> parts = akmFile.getParts ();
+            for (int i = 0; i < parts.size (); i++)
             {
+                final AkmPart part = parts.get (i);
                 final String presetName = part.getPresetName ().trim ();
                 if (presetName.isBlank ())
                     continue;
@@ -247,7 +256,8 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
                     continue;
                 }
 
-                final Optional<IInstrumentSource> instrumentSource = this.readPresetFileAsInstrument (presetFile, part);
+                final Optional<AkmZ48Part> z48Part = i < z48Parts.size () && z48Parts.get (i).isUsed () ? Optional.of (z48Parts.get (i)) : Optional.empty ();
+                final Optional<IInstrumentSource> instrumentSource = this.readPresetFileAsInstrument (presetFile, part, z48Part);
                 if (instrumentSource.isPresent ())
                     performanceSource.addInstrument (instrumentSource.get ());
             }
@@ -262,7 +272,16 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private Optional<IInstrumentSource> readPresetFileAsInstrument (final File sourceFile, final AkmPart part)
+    /**
+     * Read a preset file of a multi part as an instrument and apply the parameters of the part.
+     *
+     * @param sourceFile The preset file
+     * @param part The S5000/S6000 part
+     * @param z48Part The Z4/Z8 part if present, its parameters are used instead of the S5000/S6000
+     *            part
+     * @return The instrument
+     */
+    private Optional<IInstrumentSource> readPresetFileAsInstrument (final File sourceFile, final AkmPart part, final Optional<AkmZ48Part> z48Part)
     {
         if (this.waitForDelivery ())
             return Optional.empty ();
@@ -271,21 +290,52 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
         if (multisampleSources.isEmpty ())
             return Optional.empty ();
 
-        final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSources.get (0), part.getMidiChannel () % 16);
+        final int midiChannel;
+        final int lowKey;
+        final int highKey;
+        final int panning;
+        final double gain;
+        final int transpose;
+        final int tuning;
+        if (z48Part.isPresent ())
+        {
+            final AkmZ48Part zPart = z48Part.get ();
+            midiChannel = zPart.getMidiChannel ();
+            lowKey = zPart.getLowKey ();
+            highKey = zPart.getHighKey ();
+            panning = zPart.getPanning ();
+            gain = zPart.getLevel ();
+            // The tuning is in cents, split it into semi-tones and the remaining [-50..50] cents
+            transpose = (int) Math.round (zPart.getTune () / 100.0);
+            tuning = zPart.getTune () - transpose * 100;
+        }
+        else
+        {
+            midiChannel = part.getMidiChannel ();
+            lowKey = part.getLowKey ();
+            highKey = part.getHighKey ();
+            panning = part.getPanning ();
+            gain = MathUtils.valueToDb (part.getVolume () / 100.0);
+            transpose = part.getTranspose ();
+            tuning = part.getFineTune ();
+        }
+
+        final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSources.get (0), midiChannel % 16);
         instrumentSource.setName (part.getPresetName ());
-        instrumentSource.setClipKeyLow (part.getLowKey ());
-        instrumentSource.setClipKeyHigh (part.getHighKey ());
+        instrumentSource.setClipKeyLow (lowKey);
+        instrumentSource.setClipKeyHigh (highKey);
 
         final List<IGroup> groups = instrumentSource.getMultisampleSource ().getGroups ();
         if (groups.isEmpty ())
             return Optional.empty ();
 
-        final double panningOffset = part.getPanning () / 50.0;
+        final double panningOffset = panning / 50.0;
         if (panningOffset != 0)
             instrumentSource.setPanning (Math.clamp (panningOffset, -1.0, 1.0));
-        final double volumeOffset = MathUtils.valueToDb (part.getVolume () / 100.0);
-        if (volumeOffset != 0)
-            instrumentSource.setGain (volumeOffset);
+        if (gain != 0)
+            instrumentSource.setGain (gain);
+        instrumentSource.setTranspose (transpose);
+        instrumentSource.setTuning (tuning);
 
         return Optional.of (instrumentSource);
     }

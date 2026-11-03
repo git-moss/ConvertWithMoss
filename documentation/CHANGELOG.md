@@ -24,6 +24,9 @@
   * Fixed: Presets which are stored as plain XML instead of compressed XML could not be read ('Not in GZIP format'), e.g. all 23 drum kits of the '80s hits' pack of Subsocial Studios.
   * Fixed: The samples of presets and Live Sets which were saved with Live 10 or earlier were not found, since these versions store the path of a sample as a list of folders with the name of the file separately.
 * Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
+  * New: The transpose and fine tune of AKM parts are applied.
+  * New: AKM files written by a Z4/Z8 use the more exact Z4/Z8 part settings (level in 0.1dB, tune in cents).
+  * New: Performances can be written as AKM multis (up to 32 parts) together with their programs and samples.
   * New: AKP programs are written (destination 'Akai AKP', on the command line `-d s5000`), in one of the 3 file format generations of the S5000/S6000 operating systems (generation 3 is also used by the Z4/Z8). Each program is stored in a folder together with its samples. Key ranges, velocity zones, tuning, panning, level, playback mode, the envelopes, the filter, the pitch envelope and the LFOs are converted.
   * New: The keyboard tracking of the zones, the mute group of the key-groups and the filter offset of the zones are converted.
   * New: The velocity and keyboard scaling of the envelope times (Velo->Attack, Keyscale, Vel->Rate 1, Keyboard->R2/R4) are converted.
@@ -32,6 +35,7 @@
   * New: The amplitude, filter and auxiliary envelopes are converted as pitch and filter cutoff modulators, depending on the modulation sources of the program. Before, only the auxiliary envelope was converted as a pitch modulator.
   * Improved: Zones routed to a mono output are no longer panned.
   * Improved: A fully opened low-pass filter without any effect is no longer added to the converted zones.
+  * Fixed: The panning of AKM parts was read from the wrong position.
   * Fixed: Samples of programs created by PC software (e.g. the Roland XV library) which contain the playback value 6 (AS SAMPLE) in version 1 zones were not looped.
   * Fixed: Files written by a S5000/S6000 were reported as "Z4/Z8" when the RIFF size was set. Z4/Z8 files are now detected by their 'z48 ' chunk.
   * Fixed: The pitch envelope modulation via 'Pitch Mod 2' was not detected.

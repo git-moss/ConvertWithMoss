@@ -168,11 +168,11 @@ Round-robin is supported in both representations: the native round-robin flag of
 
 ## Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
 
-This format uses a chunk based binary format with the ending AKP. It supports up to 99 key-groups. A key-group covers a note range with up to 4 velocity layers. AKM files are a multi configuration of up to 32 AKP preset files. The AKP files are only referenced from the AKM. Available parameters are the MIDI channel, panning, volume and key-range.
-AKP files are used if destination is Preset or Preset Library. AKM files are used if destination is Performance or Performance Library. 
-AKP files can be read and written, AKM files can only be read.
+This format uses a chunk based binary format with the ending AKP. It supports up to 99 key-groups. A key-group covers a note range with up to 4 velocity layers. AKM files are a multi configuration of up to 32 AKP preset files. The AKP files are only referenced from the AKM. Available parameters are the MIDI channel, panning, volume, transpose, fine tune and key-range. AKM files written by a Z4/Z8 contain additional Z4/Z8 parts with a higher resolution of the volume and tuning, which are used if present.
+AKP files are used if destination is Preset or Preset Library. AKM files are used if destination is Performance or Performance Library.
+AKP and AKM files can be read and written. Performances are written as AKM files (Performance only, not Performance Library).
 
-Each written program is stored in its own folder together with its samples (16-bit WAV files with up to 48kHz) since the samples are only referenced by their name and need to be in the same folder as the program. The program contains no root key and no loops, they are stored in the sample chunk of the WAV files. Names of programs and samples are limited to 20 characters. Written files are not yet verified on hardware.
+Each written program is stored in its own folder together with its samples (16-bit WAV files with up to 48kHz) since the samples are only referenced by their name and need to be in the same folder as the program. The program contains no root key and no loops, they are stored in the sample chunk of the WAV files. Names of programs and samples are limited to 20 characters. A written multi (AKM) is stored in its own folder together with all its programs and samples. A multi supports up to 32 parts, the remaining instruments are dropped. Since there is no OMNI mode, instruments without a MIDI channel are set to channel 1A. Generation 3 multis contain the additional Z4/Z8 parts. Written files are not yet verified on hardware.
 
 ### Destination Options
 

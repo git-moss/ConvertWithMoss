@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.file.riff.AbstractRIFFFile;
 import de.mossgrabers.convertwithmoss.file.riff.RawRIFFChunk;
 import de.mossgrabers.convertwithmoss.format.akai.akp.AkmFile;
 import de.mossgrabers.convertwithmoss.format.akai.akp.AkpFile;
+import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkmZ48Chunk;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpGeneration;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpKeygroupLocation;
 import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpZone;
@@ -47,6 +48,9 @@ import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpZone;
  * <li>AKP files are additionally written in all 3 generations. Reading these files again must
  * result in the same parameters as the original file and writing them again in the same generation
  * must result in identical bytes.</li>
+ * <li>AKM files are written in all 3 generations as well. Since generation 3 adds and generations
+ * 1 and 2 remove the 'z48 ' chunk, only the parameters of the parts are compared (the Z4/Z8 parts
+ * only for generation 3 if the original file contains them).</li>
  * <li>AKP files are converted to sample zones, from which a new AKP file is created in all 3
  * generations (like the creator does it). Reading that file must result in the same sample
  * zones.</li>
@@ -153,15 +157,20 @@ public class AkpRoundTrip
             this.compareParameters (file, "unchanged", originalParameters, dumpParameters (reread));
 
             // 2. All generations
-            if (isAkp)
-                for (final AkpGeneration generation: AkpGeneration.values ())
-                {
-                    final String step = generation.name ();
-                    final byte [] converted = write (riffFile, Optional.of (generation));
-                    final AbstractRIFFFile convertedFile = read (converted, true);
+            for (final AkpGeneration generation: AkpGeneration.values ())
+            {
+                final String step = generation.name ();
+                final byte [] converted = write (riffFile, Optional.of (generation));
+                final AbstractRIFFFile convertedFile = read (converted, isAkp);
+                if (isAkp)
                     this.compareParameters (file, step, originalParameters, dumpParameters (convertedFile));
-                    this.compareBytes (file, step + " written twice", converted, write (convertedFile, Optional.of (generation)));
+                else
+                {
+                    final boolean includeZ48 = generation == AkpGeneration.GENERATION_3 && ((AkmFile) riffFile).getZ48Chunk ().isPresent ();
+                    this.compareParameters (file, step, dumpPartParameters ((AkmFile) riffFile, includeZ48), dumpPartParameters ((AkmFile) convertedFile, includeZ48));
                 }
+                this.compareBytes (file, step + " written twice", converted, write (convertedFile, Optional.of (generation)));
+            }
 
             // 3. Via the sample zones
             if (isAkp)
@@ -298,7 +307,7 @@ public class AkpRoundTrip
 
 
     /**
-     * Checks that a new AKP file can be written and read again in all generations.
+     * Checks that a new AKP and AKM file can be written and read again in all generations.
      */
     private void checkNewFile ()
     {
@@ -313,6 +322,19 @@ public class AkpRoundTrip
         catch (final IOException | ParseException | RuntimeException ex)
         {
             this.failures.add ("New AKP file: " + ex.getClass ().getSimpleName () + " - " + ex.getMessage ());
+        }
+
+        try
+        {
+            final AkmFile akmFile = new AkmFile ();
+            final Map<String, String> parameters = dumpPartParameters (akmFile, false);
+            this.compareParameters (new File ("New AKM file"), "default", parameters, dumpPartParameters ((AkmFile) read (write (akmFile, Optional.empty ()), false), false));
+            for (final AkpGeneration generation: AkpGeneration.values ())
+                this.compareParameters (new File ("New AKM file"), generation.name (), parameters, dumpPartParameters ((AkmFile) read (write (akmFile, Optional.of (generation)), false), false));
+        }
+        catch (final IOException | ParseException | RuntimeException ex)
+        {
+            this.failures.add ("New AKM file: " + ex.getClass ().getSimpleName () + " - " + ex.getMessage ());
         }
     }
 
@@ -395,7 +417,12 @@ public class AkpRoundTrip
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         if (generation.isPresent ())
-            ((AkpFile) riffFile).write (out, generation.get ());
+        {
+            if (riffFile instanceof final AkpFile akpFile)
+                akpFile.write (out, generation.get ());
+            else
+                ((AkmFile) riffFile).write (out, generation.get ());
+        }
         else
             riffFile.write (out);
         return out.toByteArray ();
@@ -436,6 +463,26 @@ public class AkpRoundTrip
     {
         final Map<String, String> parameters = new LinkedHashMap<> ();
         dumpObject (riffFile, "", parameters);
+        return parameters;
+    }
+
+
+    /**
+     * Get the parameters of the parts of an AKM file.
+     *
+     * @param akmFile The file
+     * @param includeZ48 True to include the parts of the 'z48 ' chunk
+     * @return The parameters mapped to their path
+     */
+    private static Map<String, String> dumpPartParameters (final AkmFile akmFile, final boolean includeZ48)
+    {
+        final Map<String, String> parameters = new LinkedHashMap<> ();
+        dumpValue (akmFile.getParts (), "/parts", parameters);
+        if (includeZ48)
+        {
+            final Optional<AkmZ48Chunk> z48Chunk = akmFile.getZ48Chunk ();
+            dumpValue (z48Chunk.isPresent () ? z48Chunk.get ().getParts () : null, "/z48Parts", parameters);
+        }
         return parameters;
     }
 
@@ -546,7 +593,7 @@ public class AkpRoundTrip
                 return name + " header";
             if (offset < dataStart + size)
             {
-                if ("kgrp".equals (id))
+                if ("kgrp".equals (id) || "z48".equals (id))
                     return describeOffset (data, dataStart, dataStart + size, offset, name + "/");
                 return String.format ("%s + 0x%X", name, Integer.valueOf (offset - dataStart));
             }

@@ -386,30 +386,131 @@ Readers treat it as AS SAMPLE in all versions.
 
 ## AKM - Multi (.akm)
 
-Not required for writing programs; documented as far as known. RIFF form type `AMUL`, RIFF
-size 0 (S6000) or the real size (Z8).
+RIFF form type `AMUL`. Like programs, the RIFF size is 0 in files written by the S5000/S6000
+and the real size in files written by the Z4/Z8. A multi references its programs by name; the
+AKP files must be in the same folder. Additions which were verified by loading test files on a
+Z8 and saving them again are marked with *(Z8)*.
 
 | Chunk  | Size | Version | Content                                                    |
 |--------|------|---------|------------------------------------------------------------|
-| `z48 ` | var. | –       | Z4/Z8 only: Z-native multi (nested `mult`, `qlnk`, ...)    |
+| `z48 ` | var. | –       | Z4/Z8 only: Z-native multi, see [z48](#z48---z4z8-multi)   |
 | `mpc ` | 114  | –       | Found in 1 Z8 file, not decoded                            |
 | `mver` | 4    | 1       | Always `01 20 xx 00`; xx = 0 - 28, not the number of parts |
 | `fx  ` | 530  | 2       | Effects, not decoded                                       |
 | `part` | 48   | 3       | Part, always 32                                            |
 
 Order S6000: `fx  `, 32 x `part`, `mver`. Order Z8: `z48 `, (`mpc `), `mver`, `fx  `, 32 x `part`.
-`mver` does not identify model or OS: S6000 and Z8 files contain the same `01 20`.
+`mver` does not identify model or OS: S6000 and Z8 files contain the same `01 20`. The model is
+detected by the presence of the `z48 ` chunk.
+
+When writing (`AkmFile`), generation 3 is written in the chunk order of the Z8 including the
+`z48 ` chunk. If a read file has no `z48 ` chunk, it is created from the S5000/S6000 parts (tune
+= transpose x 100 + fine tune, level and send level converted with the formula in
+[Part level](#part-level), effects channels FX1, FX2, RV3, RV4 mapped to A, B, C, D, priority
+NORMAL). Generations 1 and 2 are written in the chunk order of the S6000 without the `z48 ` and
+`mpc ` chunks. Since no AKM files of generation 1 and 2 are known, all chunks are written in the
+same versions. New files contain the `fx  ` chunk of the factory multi *GM PERC KIT1* (S6000) and
+the `z48 ` effects of a multi created on the Z8.
+
+*(obs.)* The `fx  ` chunk consists of 14 header bytes, 4 blocks of 128 bytes (most likely the
+effect channels FX1, FX2, RV3 and RV4) and 4 trailing bytes. The Z8 writes 0 into the 4 blocks *(Z8)*.
 
 ### part - Part (48 bytes)
 
-| Offset      | Parameter           | Range                                           |
-|-------------|---------------------|-------------------------------------------------|
-| 0x00        | Chunk version       | 3                                               |
-| 0x01        | Program name length | 0 - 32, 0 = unused part                         |
-| 0x02 - 0x21 | Program name        | ASCII, padded with 0x00                         |
-| 0x22        | MIDI channel        | 0 - 31 = 1A - 16A, 1B - 16B                     |
-| 0x23        | Pan                 | -50 - 50                                        |
-| 0x24        | Low Key             | 0 - 127                                         |
-| 0x25        | High Key            | 0 - 127                                         |
-| 0x26        | Volume              | 0 - 100 (-60 - +6 dB)                           |
-| 0x27 - 0x2F | –                   | not decoded, *(obs.)* 0x2A: 0 - 4, 0x2B: 0 - 60 |
+The Z4/Z8 writes its settings into this chunk as well (as far as the S5000/S6000 knows the
+parameter), except for the effects settings and the priority which are only stored in the
+`z48 ` chunk.
+
+| Offset      | Parameter           | Range                                           | Default         |
+|-------------|---------------------|-------------------------------------------------|-----------------|
+| 0x00        | Chunk version       | 3                                               | 3               |
+| 0x01        | Program name length | 0 - 32, 0 = unused part                         | 0               |
+| 0x02 - 0x21 | Program name        | ASCII, padded with 0x00                         | 0               |
+| 0x22        | MIDI channel        | 0 - 31 = 1A - 16A, 1B - 16B                     | index of part   |
+| 0x23        | Transpose *(Z8)*    | -36 - 36 semitones                              | 0               |
+| 0x24        | Low Key             | 0 - 127                                         | 21              |
+| 0x25        | High Key            | 0 - 127                                         | 127             |
+| 0x26        | Level               | 0 - 101, see [Part level](#part-level)          | 100             |
+| 0x27        | Pan *(Z8)*          | -50 - 50 = L50 - R50                            | 0               |
+| 0x28        | –                   | *(obs.)* 0, no visible effect *(Z8)*            | 0               |
+| 0x29        | Fine Tune *(Z8)*    | -50 - 50 cents                                  | 0               |
+| 0x2A        | Effects Channel     | 0 = OFF, 1 = FX1, 2 = FX2, 3 = RV3, 4 = RV4     | 0               |
+| 0x2B        | Effects Send Level  | 0 - 100                                         | 0               |
+| 0x2C        | Output *(Z8)*       | see [Part output](#part-output)                 | 0               |
+| 0x2D        | –                   | *(obs.)* 0, no visible effect *(Z8)*            | 0               |
+| 0x2E        | Mute *(Z8)*         | 0 = OFF, 1 = ON                                 | 0               |
+| 0x2F        | –                   | *(obs.)* garbage, see below                     | 0               |
+
+* The Z8 shows transpose and fine tune combined as *Tune* (e.g. `+02.01`).
+* The effects channel and send level could not be verified on the Z8 since it has a different
+  effects architecture and always writes 0. They correspond to *Override FX* and *FX Send
+  Level* of the keygroup and the factory S6000 multis contain plausible values (e.g. pianos
+  with RV3 and a send level of 30 - 35, a drum kit with OFF).
+* Solo is not stored *(Z8)*.
+* 0x2F contains the same random value (e.g. 0, 40, 111, 255) in all 32 parts of an S6000 file,
+  most likely uninitialized memory.
+* The *No.* shown for a part on the Z8 is the MIDI program number of the referenced program,
+  which is stored in the `prg ` chunk of the AKP file and not in the multi *(Z8)*.
+
+#### Part level
+
+The level is roughly a linear gain factor with 100 = 0dB (dB = 20 x log10(value / 100)). When
+loading a S5000/S6000 multi, the Z8 shows the level 100 as 0dB *(Z8)*. But when saving, it
+converts its part level (in dB) as follows *(Z8)*:
+
+| Z8 level | -60 dB | -50 dB | -40 dB | -30 dB | -20 dB | -10 dB | -1 dB | 0 dB | +6 dB |
+|----------|--------|--------|--------|--------|--------|--------|-------|------|-------|
+| Value    | 0      | 0      | 1      | 3      | 10     | 30     | 84    | 91   | 101   |
+
+#### Part output
+
+Verified on a Z8 with 8 outputs *(Z8)*. The values 5 - 7 and above 17 show L-R on the Z8; on
+an S6000 (or an S5000 with output expander) they might be used for the additional outputs.
+
+| Value   | Output                     |
+|---------|----------------------------|
+| 0       | L-R                        |
+| 1 - 4   | stereo pairs 1-2 ... 7-8   |
+| 5 - 7   | unused                     |
+| 8, 9    | L, R                       |
+| 10 - 17 | mono outputs 1 - 8         |
+
+### z48 - Z4/Z8 multi
+
+Contains the Z-native multi as nested chunks. Sub-chunks with an odd size are padded with one
+byte.
+
+| Sub-chunk | Size | Content                                                               |
+|-----------|------|-----------------------------------------------------------------------|
+| `mult`    | 3    | Version (1), – (0), number of parts (32)                              |
+| `qlnk`    | 65   | Version (1), 8 Q-Links with 8 bytes each (*obs.* contain -100 / 100)  |
+| `mflt`    | 409  | Version (1), MIDI filter                                              |
+| `fx  `    | 360  | Effects, nested `mhdr`, `chdn`, `modu`, `chpr`, `fxda`; not decoded   |
+| `part`    | 49   | Part, one per part (32)                                               |
+
+#### part - Z4/Z8 part (49 bytes)
+
+All parameters verified on a Z8. Multi-byte values are signed 16 bit, little-endian.
+
+| Offset      | Parameter          | Range                                                  | Default       |
+|-------------|--------------------|--------------------------------------------------------|---------------|
+| 0x00        | Chunk version      | 1                                                      | 1             |
+| 0x01 - 0x20 | Program name       | ASCII, padded with 0x00, empty = unused part           | 0             |
+| 0x21 - 0x22 | Tune               | cents (-3600 - 3600), e.g. 201 = `+02.01`              | 0             |
+| 0x23        | –                  | *(obs.)* 0                                             | 0             |
+| 0x24        | MIDI channel       | 0 - 31 = 1A - 16A, 1B - 16B                            | index of part |
+| 0x25 - 0x26 | Level              | 10 x dB, -600 - 60 (-60.0 - +6.0 dB)                   | 0             |
+| 0x27        | Pan                | -50 - 50 = L50 - R50                                   | 0             |
+| 0x28        | Output             | 0 = L-R, 1 - 4 = 1-2 ... 7-8, 5 - 14 = L, R, 1 - 8     | 0             |
+| 0x29        | Effects            | 0 = OFF, 1 = A, 2 = B, 3 = C, 4 = D, 5 = AB, 6 = CD    | 0             |
+| 0x2A - 0x2B | Effects Send Level | 10 x dB, -400 - 60 (-40.0 - +6.0 dB)                   | -400          |
+| 0x2C        | Low Key            | 0 - 127                                                | 21            |
+| 0x2D        | High Key           | 0 - 127                                                | 127           |
+| 0x2E        | Priority           | 1 = NORMAL, 2 = HIGH, 3 = HOLD                         | 1             |
+| 0x2F        | –                  | *(obs.)* 0                                             | 0             |
+| 0x30        | Mute               | 0 = OFF, 1 = ON                                        | 0             |
+
+The output values 1 - 4 are verified (3 = 5-6), the mono outputs are taken from the Z4/Z8
+SysEx specification (*Set Part Output*). Note that the numbering differs from the S5000/S6000
+part. The priority values differ from the SysEx specification (0 = HOLD, 1 = HIGH, 2 = NORM,
+3 = LOW).

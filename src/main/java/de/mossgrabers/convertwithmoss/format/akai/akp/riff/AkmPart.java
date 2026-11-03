@@ -5,7 +5,8 @@
 package de.mossgrabers.convertwithmoss.format.akai.akp.riff;
 
 /**
- * A S5000/S6000 part chunk.
+ * A S5000/S6000 part chunk of a multi. The format is described in
+ * documentation/design/AKAI_AKP_FORMAT.md.
  *
  * @author Jürgen Moßgraber
  */
@@ -22,10 +23,16 @@ public class AkmPart extends AbstractAkpChunk
 
     private String           presetName      = "";
     private int              midiChannel     = 0;
+    private int              transpose       = 0;
     private int              lowKey          = 21;
     private int              highKey         = 127;
-    private int              panning         = 0;
     private int              volume          = 100;
+    private int              panning         = 0;
+    private int              fineTune        = 0;
+    private int              effectsChannel  = 0;
+    private int              effectsSend     = 0;
+    private int              output          = 0;
+    private boolean          isMuted         = false;
 
 
     /**
@@ -38,9 +45,20 @@ public class AkmPart extends AbstractAkpChunk
 
 
     /**
+     * Is the part used, which means that a preset is assigned?
+     *
+     * @return True if used
+     */
+    public boolean isUsed ()
+    {
+        return !this.presetName.isBlank ();
+    }
+
+
+    /**
      * Get the name of the referenced preset.
      *
-     * @return The name
+     * @return The name, empty if the part is not used
      */
     public String getPresetName ()
     {
@@ -49,13 +67,57 @@ public class AkmPart extends AbstractAkpChunk
 
 
     /**
-     * Get the MIDI of the part.
+     * Set the name of the referenced preset.
      *
-     * @return The index, 1A-16A, 1B-16B, no Omni-Mode!
+     * @param presetName The name, empty if the part is not used, maximum 32 characters
+     */
+    public void setPresetName (final String presetName)
+    {
+        this.presetName = presetName;
+    }
+
+
+    /**
+     * Get the MIDI channel of the part.
+     *
+     * @return The channel in the range of [0..31] = 1A-16A, 1B-16B, no Omni-Mode!
      */
     public int getMidiChannel ()
     {
         return this.midiChannel;
+    }
+
+
+    /**
+     * Set the MIDI channel of the part.
+     *
+     * @param midiChannel The channel in the range of [0..31] = 1A-16A, 1B-16B
+     */
+    public void setMidiChannel (final int midiChannel)
+    {
+        this.midiChannel = midiChannel;
+    }
+
+
+    /**
+     * Get the transposition of the part.
+     *
+     * @return The transposition in the range of [-36..36] semi-tones
+     */
+    public int getTranspose ()
+    {
+        return this.transpose;
+    }
+
+
+    /**
+     * Set the transposition of the part.
+     *
+     * @param transpose The transposition in the range of [-36..36] semi-tones
+     */
+    public void setTranspose (final int transpose)
+    {
+        this.transpose = transpose;
     }
 
 
@@ -71,6 +133,17 @@ public class AkmPart extends AbstractAkpChunk
 
 
     /**
+     * Set the lower key bound.
+     *
+     * @param lowKey The lower key in the range of [0..127]
+     */
+    public void setLowKey (final int lowKey)
+    {
+        this.lowKey = lowKey;
+    }
+
+
+    /**
      * Get the upper key bound.
      *
      * @return The upper key
@@ -82,13 +155,36 @@ public class AkmPart extends AbstractAkpChunk
 
 
     /**
+     * Set the upper key bound.
+     *
+     * @param highKey The upper key in the range of [0..127]
+     */
+    public void setHighKey (final int highKey)
+    {
+        this.highKey = highKey;
+    }
+
+
+    /**
      * Get the volume of the part.
      *
-     * @return The volume in the range of [0..100] (–60.0 to +6.0dB)
+     * @return The volume in the range of [0..101], roughly a linear gain factor with 100 = 0dB
      */
     public int getVolume ()
     {
         return this.volume;
+    }
+
+
+    /**
+     * Set the volume of the part.
+     *
+     * @param volume The volume in the range of [0..101], roughly a linear gain factor with 100 =
+     *            0dB
+     */
+    public void setVolume (final int volume)
+    {
+        this.volume = volume;
     }
 
 
@@ -103,25 +199,150 @@ public class AkmPart extends AbstractAkpChunk
     }
 
 
+    /**
+     * Set the panning of the part.
+     *
+     * @param panning The panning in the range of [-50..50] (L50–MID–R50)
+     */
+    public void setPanning (final int panning)
+    {
+        this.panning = panning;
+    }
+
+
+    /**
+     * Get the fine tuning of the part.
+     *
+     * @return The fine tuning in the range of [-50..50] cents
+     */
+    public int getFineTune ()
+    {
+        return this.fineTune;
+    }
+
+
+    /**
+     * Set the fine tuning of the part.
+     *
+     * @param fineTune The fine tuning in the range of [-50..50] cents
+     */
+    public void setFineTune (final int fineTune)
+    {
+        this.fineTune = fineTune;
+    }
+
+
+    /**
+     * Get the effects channel of the part.
+     *
+     * @return The effects channel: 0 = OFF, 1 = FX1, 2 = FX2, 3 = RV3, 4 = RV4
+     */
+    public int getEffectsChannel ()
+    {
+        return this.effectsChannel;
+    }
+
+
+    /**
+     * Set the effects channel of the part.
+     *
+     * @param effectsChannel The effects channel: 0 = OFF, 1 = FX1, 2 = FX2, 3 = RV3, 4 = RV4
+     */
+    public void setEffectsChannel (final int effectsChannel)
+    {
+        this.effectsChannel = effectsChannel;
+    }
+
+
+    /**
+     * Get the effects send level of the part.
+     *
+     * @return The send level in the range of [0..100]
+     */
+    public int getEffectsSend ()
+    {
+        return this.effectsSend;
+    }
+
+
+    /**
+     * Set the effects send level of the part.
+     *
+     * @param effectsSend The send level in the range of [0..100]
+     */
+    public void setEffectsSend (final int effectsSend)
+    {
+        this.effectsSend = effectsSend;
+    }
+
+
+    /**
+     * Get the output of the part.
+     *
+     * @return The output: 0 = L-R, 1-4 = 1-2..7-8, 8 = L, 9 = R, 10-17 = 1..8
+     */
+    public int getOutput ()
+    {
+        return this.output;
+    }
+
+
+    /**
+     * Set the output of the part.
+     *
+     * @param output The output: 0 = L-R, 1-4 = 1-2..7-8, 8 = L, 9 = R, 10-17 = 1..8
+     */
+    public void setOutput (final int output)
+    {
+        this.output = output;
+    }
+
+
+    /**
+     * Is the part muted?
+     *
+     * @return True if muted
+     */
+    public boolean isMuted ()
+    {
+        return this.isMuted;
+    }
+
+
+    /**
+     * Mute the part.
+     *
+     * @param isMuted True to mute
+     */
+    public void setMuted (final boolean isMuted)
+    {
+        this.isMuted = isMuted;
+    }
+
+
     /** {@inheritDoc} */
     @Override
     protected void readData (final byte [] data)
     {
         this.presetName = readPresetName (data);
-
-        // 1A-16A, 1B-16B, no Omni-Mode!
         this.midiChannel = getUnsigned (data, 0x22);
-        this.panning = getSigned (data, 0x23);
+        this.transpose = getSigned (data, 0x23);
         this.lowKey = getUnsigned (data, 0x24);
         this.highKey = getUnsigned (data, 0x25);
         this.volume = getUnsigned (data, 0x26);
+        this.panning = getSigned (data, 0x27);
 
-        // TODO identify values:
-        // 0x27: -30, -25, -20, -15, -10, 0, 10, 20, 25, 30 - Fine tune?
-        // 0x28: 0 - Semi-tones (Transpose) or Mute/Solo?
-        // 0x29: 0 - Semi-tones (Transpose) or Mute/Solo?
-        // 0x2A: 0, 1, 2, 3, 4 - Output? - 0 = L/R; 14 = op1/2op7/8; 514 = L, R, op1-op8
-        // 0x2B: 0 .. 60 ? PartLevel in 10×dB
+        // The minimum size of the chunk ends with the panning
+        if (data.length < LENGTH_PART_2)
+            return;
+        this.fineTune = getSigned (data, 0x29);
+        this.effectsChannel = getUnsigned (data, 0x2A);
+        this.effectsSend = getUnsigned (data, 0x2B);
+        this.output = getUnsigned (data, 0x2C);
+
+        // The mute state is only present in version 3
+        if (data.length > 0x2E)
+            this.isMuted = getBoolean (data, 0x2E);
     }
 
 
@@ -147,10 +368,17 @@ public class AkmPart extends AbstractAkpChunk
         }
 
         setByte (data, 0x22, this.midiChannel);
-        setByte (data, 0x23, this.panning);
+        setByte (data, 0x23, this.transpose);
         setByte (data, 0x24, this.lowKey);
         setByte (data, 0x25, this.highKey);
         setByte (data, 0x26, this.volume);
+        setByte (data, 0x27, this.panning);
+        setByte (data, 0x29, this.fineTune);
+        setByte (data, 0x2A, this.effectsChannel);
+        setByte (data, 0x2B, this.effectsSend);
+        setByte (data, 0x2C, this.output);
+        if (data.length > 0x2E)
+            setBoolean (data, 0x2E, this.isMuted);
     }
 
 
