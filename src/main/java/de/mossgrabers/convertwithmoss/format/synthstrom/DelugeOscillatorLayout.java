@@ -26,6 +26,7 @@ import java.util.TreeSet;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -52,7 +53,8 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
  * not a layer either. A zone which is far quieter than the loudest zone of the multi-sample, often
  * a layer which the source switched off by its volume, is near-silent: it is neither counted nor
  * written. A multi-sample in which more than two layers sound together on a note does not fit
- * onto the two oscillators, see {@link #hasTooManyLayers()}.
+ * onto the two oscillators, and neither do two layers whose attack times are more than 2 seconds
+ * apart, since the two oscillators share one amplitude envelope, see {@link #getSkipReason()}.
  * <p>
  * Since a Deluge key map has no gaps, an oscillator plays a silent sample on the notes on which
  * only the layer of the other oscillator sounds; otherwise the zone next to these notes would be
@@ -62,6 +64,18 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
  */
 class DelugeOscillatorLayout
 {
+    /** Why a multi-sample does not fit onto the two oscillators. */
+    enum SkipReason
+    {
+        /** It fits. */
+        NONE,
+        /** More than two layers sound together on a note. */
+        TOO_MANY_LAYERS,
+        /** The attack times of two layers which sound together are too far apart. */
+        DIFFERENT_ATTACKS
+    }
+
+
     /** One range of the key map of an oscillator: a zone and the highest note which plays it. */
     static final class SampleRange
     {
@@ -135,12 +149,16 @@ class DelugeOscillatorLayout
     private static final int        DEFAULT_SAMPLE_RATE  = 44100;
     private static final double     TOLERANCE            = 0.0001;
 
+    /** The largest difference of the attack times of two layers which sound together in seconds. */
+    static final double             MAX_ATTACK_GAP       = 2.0;
+
     private final List<SampleRange> oscillator1;
     private final List<SampleRange> oscillator2;
     private final int               numberOfLayers;
     private final int               crowdedNoteLow;
     private final int               crowdedNoteHigh;
     private final List<ISampleZone> nearSilentZones;
+    private final SkipReason        skipReason;
 
 
     /**
@@ -149,12 +167,13 @@ class DelugeOscillatorLayout
      * @param oscillator1 The key map of the first oscillator
      * @param oscillator2 The key map of the second oscillator, empty if it is silent
      * @param numberOfLayers The largest number of layers which sound together on a note
-     * @param crowdedNoteLow The lowest note of the first run of notes on which most layers sound
-     *            together, -1 if not relevant
-     * @param crowdedNoteHigh The highest note of that run, -1 if not relevant
+     * @param crowdedNoteLow The lowest note on which the multi-sample does not fit onto the two
+     *            oscillators, -1 if it fits
+     * @param crowdedNoteHigh The highest note of these notes, -1 if it fits
      * @param nearSilentZones The near-silent zones which are left out
+     * @param skipReason Why the multi-sample does not fit onto the two oscillators
      */
-    private DelugeOscillatorLayout (final List<SampleRange> oscillator1, final List<SampleRange> oscillator2, final int numberOfLayers, final int crowdedNoteLow, final int crowdedNoteHigh, final List<ISampleZone> nearSilentZones)
+    private DelugeOscillatorLayout (final List<SampleRange> oscillator1, final List<SampleRange> oscillator2, final int numberOfLayers, final int crowdedNoteLow, final int crowdedNoteHigh, final List<ISampleZone> nearSilentZones, final SkipReason skipReason)
     {
         this.oscillator1 = oscillator1;
         this.oscillator2 = oscillator2;
@@ -162,6 +181,7 @@ class DelugeOscillatorLayout
         this.crowdedNoteLow = crowdedNoteLow;
         this.crowdedNoteHigh = crowdedNoteHigh;
         this.nearSilentZones = nearSilentZones;
+        this.skipReason = skipReason;
     }
 
 
@@ -189,7 +209,21 @@ class DelugeOscillatorLayout
         final List<SampleRange> ranges = new ArrayList<> (zones.size ());
         for (final ISampleZone zone: zones)
             ranges.add (new SampleRange (zone, AbstractCreator.limitToDefault (zone.getKeyHigh (), 127), false));
-        return new DelugeOscillatorLayout (ranges, Collections.emptyList (), 1, -1, -1, nearSilentZones);
+        return new DelugeOscillatorLayout (ranges, Collections.emptyList (), 1, -1, -1, nearSilentZones, SkipReason.NONE);
+    }
+
+
+    /**
+     * Create a layout without oscillators for a multi-sample which does not fit onto them.
+     *
+     * @param skipReason Why it does not fit
+     * @param numberOfLayers The largest number of layers which sound together on a note
+     * @param analysis The analysis which knows the notes on which it does not fit
+     * @return The layout
+     */
+    private static DelugeOscillatorLayout createSkipped (final SkipReason skipReason, final int numberOfLayers, final LayerAnalysis analysis)
+    {
+        return new DelugeOscillatorLayout (Collections.emptyList (), Collections.emptyList (), numberOfLayers, analysis.crowdedNoteLow, analysis.crowdedNoteHigh, Collections.emptyList (), skipReason);
     }
 
 
@@ -197,9 +231,9 @@ class DelugeOscillatorLayout
      * Create a layout in which the second oscillator plays the zones which sound together with
      * those of the first one. Near-silent zones are left out. A multi-sample in which no zones
      * sound together gets the single oscillator layout of the given key map, or - if near-silent
-     * zones were left out - of the key map of the other zones. A multi-sample in which more than
-     * two layers sound together on a note gets a layout without oscillators which only tells how
-     * many layers sound together and on which notes, see {@link #hasTooManyLayers()}.
+     * zones were left out - of the key map of the other zones. A multi-sample which does not fit
+     * onto the two oscillators gets a layout without oscillators which only tells why and on which
+     * notes, see {@link #getSkipReason()}.
      *
      * @param multisampleSource The multi-sample source
      * @param mappedZones The key map which a single oscillator plays, one zone per range
@@ -236,11 +270,15 @@ class DelugeOscillatorLayout
         if (numberOfLayers <= 1)
             return nearSilentZones.isEmpty () ? createSingle (mappedZones) : createSingle (DelugeCreator.getMappedZones (zones), nearSilentZones);
         if (numberOfLayers > 2)
-            return new DelugeOscillatorLayout (Collections.emptyList (), Collections.emptyList (), numberOfLayers, analysis.crowdedNoteLow, analysis.crowdedNoteHigh, Collections.emptyList ());
+            return createSkipped (SkipReason.TOO_MANY_LAYERS, numberOfLayers, analysis);
 
         final Optional<List<List<ISampleZone>>> distribution = analysis.distribute ();
         if (distribution.isEmpty ())
-            return new DelugeOscillatorLayout (Collections.emptyList (), Collections.emptyList (), 3, analysis.crowdedNoteLow, analysis.crowdedNoteHigh, Collections.emptyList ());
+            return createSkipped (SkipReason.TOO_MANY_LAYERS, 3, analysis);
+
+        // The two oscillators share the amplitude envelope of the sound
+        if (analysis.findDifferentAttacks ())
+            return createSkipped (SkipReason.DIFFERENT_ATTACKS, 2, analysis);
 
         final ISampleZone [] notes1 = selectNoteZones (distribution.get ().get (0));
         final ISampleZone [] notes2 = selectNoteZones (distribution.get ().get (1));
@@ -257,7 +295,7 @@ class DelugeOscillatorLayout
             else
                 notes1[note] = silence;
         }
-        return new DelugeOscillatorLayout (createRanges (notes1, silence), createRanges (notes2, silence), 2, -1, -1, nearSilentZones);
+        return new DelugeOscillatorLayout (createRanges (notes1, silence), createRanges (notes2, silence), 2, -1, -1, nearSilentZones, SkipReason.NONE);
     }
 
 
@@ -273,14 +311,16 @@ class DelugeOscillatorLayout
 
 
     /**
-     * Test if more layers sound together on a note than the two oscillators can play. Such a
-     * layout has no oscillators.
+     * Get why the multi-sample does not fit onto the two oscillators: more layers sound together
+     * on a note than the two oscillators can play, or the attack times of two layers which sound
+     * together are more than 2 seconds apart, while the oscillators share one amplitude envelope.
+     * Such a layout has no oscillators.
      *
-     * @return True if there are more than two layers
+     * @return The reason, NONE if it fits
      */
-    boolean hasTooManyLayers ()
+    SkipReason getSkipReason ()
     {
-        return this.numberOfLayers > 2;
+        return this.skipReason;
     }
 
 
@@ -296,9 +336,11 @@ class DelugeOscillatorLayout
 
 
     /**
-     * Get the lowest note of the first run of notes on which the most layers sound together.
+     * Get the lowest note on which the multi-sample does not fit onto the two oscillators: of the
+     * first run of notes on which the most layers sound together, or of the notes on which two
+     * layers with attack times which are too far apart sound together.
      *
-     * @return The note, -1 if there are not more than two layers
+     * @return The note, -1 if the multi-sample fits
      */
     int getCrowdedNoteLow ()
     {
@@ -307,9 +349,10 @@ class DelugeOscillatorLayout
 
 
     /**
-     * Get the highest note of the first run of notes on which the most layers sound together.
+     * Get the highest note on which the multi-sample does not fit onto the two oscillators, see
+     * {@link #getCrowdedNoteLow()}.
      *
-     * @return The note, -1 if there are not more than two layers
+     * @return The note, -1 if the multi-sample fits
      */
     int getCrowdedNoteHigh ()
     {
@@ -824,6 +867,41 @@ class DelugeOscillatorLayout
                         return;
                     }
                 }
+        }
+
+
+        /**
+         * Check if two zones which sound together - and therefore play on the two oscillators -
+         * have attack times which are so far apart that the shared amplitude envelope of the
+         * oscillators cannot play them: a layer which fades in over seconds would start with the
+         * note, or a layer which starts with the note would fade in. A time which is not set is 0,
+         * like it is written. The notes on which such zones sound together are remembered.
+         * Different decay, sustain or release settings only change how long the second layer
+         * plays, and different filters how bright it is, so they do not count.
+         *
+         * @return True if two such zones sound together
+         */
+        boolean findDifferentAttacks ()
+        {
+            int noteLow = Integer.MAX_VALUE;
+            int noteHigh = -1;
+            for (int i = 0; i < this.size; i++)
+                for (int j = i + 1; j < this.size; j++)
+                {
+                    if (!this.together[i][j])
+                        continue;
+                    final IEnvelope envelopeA = this.zones.get (i).getAmplitudeEnvelopeModulator ().getSource ();
+                    final IEnvelope envelopeB = this.zones.get (j).getAmplitudeEnvelopeModulator ().getSource ();
+                    if (Math.abs (Math.max (0, envelopeA.getAttackTime ()) - Math.max (0, envelopeB.getAttackTime ())) <= MAX_ATTACK_GAP)
+                        continue;
+                    noteLow = Math.min (noteLow, Math.max (this.keyLow[i], this.keyLow[j]));
+                    noteHigh = Math.max (noteHigh, Math.min (this.keyHigh[i], this.keyHigh[j]));
+                }
+            if (noteHigh < 0)
+                return false;
+            this.crowdedNoteLow = noteLow;
+            this.crowdedNoteHigh = noteHigh;
+            return true;
         }
 
 

@@ -124,7 +124,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             return true;
 
         final DelugeOscillatorLayout layout = this.getDualLayout (multisampleSource);
-        if (layout.hasTooManyLayers ())
+        if (layout.getSkipReason () != DelugeOscillatorLayout.SkipReason.NONE)
         {
             this.logSkipped (multisampleSource, layout);
             return false;
@@ -144,15 +144,16 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         final boolean createKit = this.settingsConfiguration.getOutputType () == DelugeCreatorUI.OutputType.KIT;
 
         // In the dual oscillator mode the second oscillator of a synth plays the zones which sound
-        // together with those of the first one. A preset in which more layers sound together than
-        // the two oscillators can play is not written, since it would sound different from its
-        // source. This is normally already checked before anything is written for the preset, see
-        // canCreatePreset.
+        // together with those of the first one. A preset which does not fit onto the two
+        // oscillators - more layers sound together than they can play, or the attack times of two
+        // layers are too far apart for the one amplitude envelope which they share - is not
+        // written, since it would sound different from its source. This is normally already
+        // checked before anything is written for the preset, see canCreatePreset.
         DelugeOscillatorLayout dualLayout = null;
         if (this.isDualOscillatorMode ())
         {
             dualLayout = this.getDualLayout (multisampleSource);
-            if (dualLayout.hasTooManyLayers ())
+            if (dualLayout.getSkipReason () != DelugeOscillatorLayout.SkipReason.NONE)
             {
                 this.logSkipped (multisampleSource, dualLayout);
                 return;
@@ -361,8 +362,9 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
 
     /**
-     * Report a preset which is not written because more layers sound together on a note than the
-     * two oscillators can play.
+     * Report a preset which is not written because it does not fit onto the two oscillators: more
+     * layers sound together on a note than they can play, or the attack times of two layers are
+     * too far apart for the one amplitude envelope which they share.
      *
      * @param multisampleSource The multi-sample source
      * @param layout The layout of the source
@@ -370,13 +372,28 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
     private void logSkipped (final IMultisampleSource multisampleSource, final DelugeOscillatorLayout layout)
     {
         final String name = multisampleSource.getName ();
+        final String noteLow = Integer.toString (layout.getCrowdedNoteLow ());
+        final String noteHigh = Integer.toString (layout.getCrowdedNoteHigh ());
+        final boolean isOneKey = layout.getCrowdedNoteLow () == layout.getCrowdedNoteHigh ();
         final String layers = Integer.toString (layout.getNumberOfLayers ());
-        final int noteLow = layout.getCrowdedNoteLow ();
-        final int noteHigh = layout.getCrowdedNoteHigh ();
-        if (noteLow == noteHigh)
-            this.notifier.logError ("IDS_DELUGE_SKIPPED_LAYERS", name, layers, Integer.toString (noteLow));
-        else
-            this.notifier.logError ("IDS_DELUGE_SKIPPED_LAYERS_RANGE", name, layers, Integer.toString (noteLow), Integer.toString (noteHigh));
+        switch (layout.getSkipReason ())
+        {
+            case TOO_MANY_LAYERS:
+                if (isOneKey)
+                    this.notifier.logError ("IDS_DELUGE_SKIPPED_LAYERS", name, layers, noteLow);
+                else
+                    this.notifier.logError ("IDS_DELUGE_SKIPPED_LAYERS_RANGE", name, layers, noteLow, noteHigh);
+                break;
+            case DIFFERENT_ATTACKS:
+                final String seconds = String.format (Locale.US, "%.0f", Double.valueOf (DelugeOscillatorLayout.MAX_ATTACK_GAP));
+                if (isOneKey)
+                    this.notifier.logError ("IDS_DELUGE_SKIPPED_ATTACKS", name, seconds, noteLow);
+                else
+                    this.notifier.logError ("IDS_DELUGE_SKIPPED_ATTACKS_RANGE", name, seconds, noteLow, noteHigh);
+                break;
+            default:
+                break;
+        }
     }
 
 
