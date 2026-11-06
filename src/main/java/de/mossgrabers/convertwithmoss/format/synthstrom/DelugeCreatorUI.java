@@ -22,7 +22,7 @@ import javafx.scene.layout.Pane;
 
 /**
  * Settings for the Synthstrom Deluge creator. Adds the choice to write a synth (sound) preset or a
- * drum kit to the shared WAV chunk options.
+ * drum kit and how many oscillators of a synth play samples to the shared WAV chunk options.
  *
  * @author Jürgen Moßgraber
  */
@@ -38,14 +38,30 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     }
 
 
+    /** How many of the two oscillators of a synth (sound) play samples. */
+    public enum OscillatorMode
+    {
+        /** The first oscillator plays the loudest layer, the second one is silent. */
+        SINGLE,
+        /**
+         * Both oscillators play samples: two layers which sound together or the softest and the
+         * loudest velocity layer.
+         */
+        DUAL
+    }
+
+
     private static final String OUTPUT_TYPE      = "OutputType";
+    private static final String OSCILLATOR_MODE  = "OscillatorMode";
     private static final String CONSOLIDATE_KIT  = "ConsolidateKit";
     private static final String SHORTEN_KIT_NAME = "ShortenKitName";
 
     private ComboBox<String>    outputTypeBox;
+    private ComboBox<String>    oscillatorModeBox;
     private CheckBox            consolidateKitBox;
     private CheckBox            shortenKitNameBox;
     private OutputType          outputType       = OutputType.SOUND;
+    private OscillatorMode      oscillatorMode   = OscillatorMode.SINGLE;
     private boolean             consolidateKit;
     private boolean             shortenKitName;
 
@@ -72,6 +88,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
         this.outputTypeBox.getItems ().addAll (Functions.getText ("@IDS_DELUGE_TYPE_SOUND"), Functions.getText ("@IDS_DELUGE_TYPE_KIT"));
         this.outputTypeBox.setMaxWidth (Double.MAX_VALUE);
         panel.addComponent (this.outputTypeBox);
+        this.oscillatorModeBox = panel.createComboBox ("@IDS_DELUGE_OSCILLATOR_MODE", List.of (Functions.getText ("@IDS_DELUGE_OSCILLATOR_MODE_SINGLE"), Functions.getText ("@IDS_DELUGE_OSCILLATOR_MODE_DUAL")));
         this.consolidateKitBox = panel.createCheckBox ("@IDS_DELUGE_CONSOLIDATE_KIT", "@IDS_DELUGE_CONSOLIDATE_KIT_TOOLTIP");
         this.shortenKitNameBox = panel.createCheckBox ("@IDS_DELUGE_SHORTEN_KIT_NAME", "@IDS_DELUGE_SHORTEN_KIT_NAME_TOOLTIP");
 
@@ -85,6 +102,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     public void loadSettings (final BasicConfig config)
     {
         this.outputTypeBox.getSelectionModel ().select (config.getInteger (this.prefix + OUTPUT_TYPE, 0));
+        this.oscillatorModeBox.getSelectionModel ().select (config.getInteger (this.prefix + OSCILLATOR_MODE, 0));
         this.consolidateKitBox.setSelected (config.getBoolean (this.prefix + CONSOLIDATE_KIT, false));
         this.shortenKitNameBox.setSelected (config.getBoolean (this.prefix + SHORTEN_KIT_NAME, false));
 
@@ -97,6 +115,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     public void saveSettings (final BasicConfig config)
     {
         config.setInteger (this.prefix + OUTPUT_TYPE, this.outputTypeBox.getSelectionModel ().getSelectedIndex ());
+        config.setInteger (this.prefix + OSCILLATOR_MODE, this.oscillatorModeBox.getSelectionModel ().getSelectedIndex ());
         config.setBoolean (this.prefix + CONSOLIDATE_KIT, this.consolidateKitBox.isSelected ());
         config.setBoolean (this.prefix + SHORTEN_KIT_NAME, this.shortenKitNameBox.isSelected ());
 
@@ -112,6 +131,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
             return false;
 
         this.outputType = indexToType (this.outputTypeBox.getSelectionModel ().getSelectedIndex ());
+        this.oscillatorMode = indexToOscillatorMode (this.oscillatorModeBox.getSelectionModel ().getSelectedIndex ());
         this.consolidateKit = this.consolidateKitBox.isSelected ();
         this.shortenKitName = this.shortenKitNameBox.isSelected ();
         return true;
@@ -126,6 +146,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
             return false;
 
         this.outputType = parseType (parameters.remove (this.prefix + OUTPUT_TYPE));
+        this.oscillatorMode = parseOscillatorMode (parameters.remove (this.prefix + OSCILLATOR_MODE));
         this.consolidateKit = "1".equals (parameters.remove (this.prefix + CONSOLIDATE_KIT));
         this.shortenKitName = "1".equals (parameters.remove (this.prefix + SHORTEN_KIT_NAME));
         return true;
@@ -138,6 +159,7 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     {
         final List<String> parameterNames = new ArrayList<> (Arrays.asList (super.getCLIParameterNames ()));
         parameterNames.add (this.prefix + OUTPUT_TYPE);
+        parameterNames.add (this.prefix + OSCILLATOR_MODE);
         parameterNames.add (this.prefix + CONSOLIDATE_KIT);
         parameterNames.add (this.prefix + SHORTEN_KIT_NAME);
         return parameterNames.toArray (new String [parameterNames.size ()]);
@@ -152,6 +174,18 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     public OutputType getOutputType ()
     {
         return this.outputType;
+    }
+
+
+    /**
+     * Get the selected oscillator mode, which applies to a synth (sound) preset. A drum of a kit
+     * always plays a single sample.
+     *
+     * @return The oscillator mode
+     */
+    public OscillatorMode getOscillatorMode ()
+    {
+        return this.oscillatorMode;
     }
 
 
@@ -186,5 +220,17 @@ public class DelugeCreatorUI extends WavChunkSettingsUI
     private static OutputType parseType (final String value)
     {
         return value != null && "kit".equalsIgnoreCase (value.trim ()) ? OutputType.KIT : OutputType.SOUND;
+    }
+
+
+    private static OscillatorMode indexToOscillatorMode (final int index)
+    {
+        return index == 1 ? OscillatorMode.DUAL : OscillatorMode.SINGLE;
+    }
+
+
+    private static OscillatorMode parseOscillatorMode (final String value)
+    {
+        return value != null && "dual".equalsIgnoreCase (value.trim ()) ? OscillatorMode.DUAL : OscillatorMode.SINGLE;
     }
 }

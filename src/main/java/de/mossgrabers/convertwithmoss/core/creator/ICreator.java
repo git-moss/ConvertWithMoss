@@ -25,6 +25,22 @@ import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 public interface ICreator<T extends ICoreTaskSettings> extends ICoreTask<T>
 {
     /**
+     * Check if a preset can be created from a multi-sample source. This is called before anything
+     * is written for the preset - also before its output folder is created - so that a source
+     * which the destination cannot play does not leave an empty folder behind. A creator which
+     * declines a source logs the reason.
+     *
+     * @param multisampleSource The multi-sample source from which to create the preset
+     * @return True if the preset can be created
+     * @throws IOException Could not check the source
+     */
+    default boolean canCreatePreset (final IMultisampleSource multisampleSource) throws IOException
+    {
+        return true;
+    }
+
+
+    /**
      * Create and store a multi-sample file.
      *
      * @param destinationFolder Where to store the created file

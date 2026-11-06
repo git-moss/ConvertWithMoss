@@ -286,6 +286,23 @@ public final class DelugeValues
 
 
     /**
+     * Convert a gain relative to the full volume of an oscillator into the 32-bit value of its
+     * volume parameter (oscAVolume, oscBVolume). The firmware squares the volume of an
+     * oscillator: the parameter value p, scaled to the range of [-1..1], plays the oscillator with
+     * the amplitude (1 + p)^2. The full volume therefore plays it 4 times as loud as the middle
+     * position (user value 25, -12 dB), and half of the full amplitude (-6 dB) is p = sqrt(2) - 1.
+     *
+     * @param gain The linear gain relative to the full volume in the range of [0..1]
+     * @return The parameter value
+     */
+    public static int gainToOscillatorVolume (final double gain)
+    {
+        final double position = 2.0 * Math.sqrt (Math.clamp (gain, 0, 1)) - 1.0;
+        return Math.clamp (Math.round (position * 2147483648.0), PARAM_MIN, PARAM_MAX);
+    }
+
+
+    /**
      * Convert an attack time in seconds to a 32-bit parameter value using the firmware attack rate
      * table.
      *
