@@ -43,18 +43,20 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
  * plays its own key map - a list of sample ranges, each one ending on its top note - while both
  * share the envelopes and the filters of the sound. A Deluge key map selects its samples by the
  * note only, therefore an oscillator plays one zone on each note: velocity layers and round-robins
- * are reduced to the loudest zone of the note, as in the single oscillator mode.
+ * are reduced to the loudest zone of the note, as in the single oscillator mode. A sample range
+ * has no level of its own either, so a zone which is far quieter than the loudest zone of the
+ * multi-sample - often a layer which the source switched off by its volume - would play at the
+ * full level: such a near-silent zone is left out in both modes.
  * <p>
  * In the dual oscillator mode the second oscillator plays the zones which sound together with
  * those of the first oscillator on the same note, e.g. a swell on top of a body. Only zones which
  * sound together count as layers: key ranges which follow each other, velocity layers,
  * round-robins and the two channels of a stereo recording all fit onto one oscillator, and an
  * overlapping copy of a zone - the same sample with the same root note, tuning and panning - is
- * not a layer either. A zone which is far quieter than the loudest zone of the multi-sample, often
- * a layer which the source switched off by its volume, is near-silent: it is neither counted nor
- * written. A multi-sample in which more than two layers sound together on a note does not fit
- * onto the two oscillators, and neither do two layers whose attack times are more than 2 seconds
- * apart, since the two oscillators share one amplitude envelope, see {@link #getSkipReason()}.
+ * not a layer either, nor is a near-silent zone. A multi-sample in which more than two layers
+ * sound together on a note does not fit onto the two oscillators, and neither do two layers whose
+ * attack times are more than 2 seconds apart, since the two oscillators share one amplitude
+ * envelope, see {@link #getSkipReason()}.
  * <p>
  * Since a Deluge key map has no gaps, an oscillator plays a silent sample on the notes on which
  * only the layer of the other oscillator sounds; otherwise the zone next to these notes would be
@@ -136,8 +138,8 @@ class DelugeOscillatorLayout
 
 
     /**
-     * A zone whose gain is this many dB or more below the loudest zone of the multi-sample is
-     * near-silent.
+     * A zone whose gain is this many dB or more below the loudest zone of the multi-sample which
+     * starts to play with the note is near-silent.
      */
     static final double             NEAR_SILENT_DECIBELS = 40.0;
 
@@ -182,6 +184,25 @@ class DelugeOscillatorLayout
         this.crowdedNoteHigh = crowdedNoteHigh;
         this.nearSilentZones = nearSilentZones;
         this.skipReason = skipReason;
+    }
+
+
+    /**
+     * Create the layout of the single oscillator mode: the first oscillator plays the key map of
+     * the zones of the multi-sample - the loudest zone of each range - without its near-silent
+     * zones.
+     *
+     * @param multisampleSource The multi-sample source
+     * @return The layout
+     */
+    static DelugeOscillatorLayout createSingle (final IMultisampleSource multisampleSource)
+    {
+        final List<ISampleZone> allZones = new ArrayList<> ();
+        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
+            allZones.addAll (group.getSampleZones ());
+        final List<ISampleZone> zones = new ArrayList<> ();
+        final List<ISampleZone> nearSilentZones = separateNearSilentZones (allZones, zones);
+        return createSingle (DelugeCreator.getMappedZones (zones), nearSilentZones);
     }
 
 
@@ -251,19 +272,9 @@ class DelugeOscillatorLayout
         if (allZones.isEmpty ())
             return createSingle (mappedZones);
 
-        // A zone which is far quieter than the loudest one is hardly heard, often a layer which
-        // the source switched off by its volume, and is neither counted nor written (the gain of
-        // a group is part of the gain of its zones)
-        double loudest = Double.NEGATIVE_INFINITY;
-        for (final ISampleZone zone: allZones)
-            loudest = Math.max (loudest, zone.getGain ());
+        // Near-silent zones are neither counted nor written
         final List<ISampleZone> zones = new ArrayList<> ();
-        final List<ISampleZone> nearSilentZones = new ArrayList<> ();
-        for (final ISampleZone zone: allZones)
-            if (zone.getGain () <= loudest - NEAR_SILENT_DECIBELS)
-                nearSilentZones.add (zone);
-            else
-                zones.add (zone);
+        final List<ISampleZone> nearSilentZones = separateNearSilentZones (allZones, zones);
 
         final LayerAnalysis analysis = new LayerAnalysis (zones);
         final int numberOfLayers = analysis.countLayers ();
@@ -296,6 +307,32 @@ class DelugeOscillatorLayout
                 notes1[note] = silence;
         }
         return new DelugeOscillatorLayout (createRanges (notes1, silence), createRanges (notes2, silence), 2, -1, -1, nearSilentZones, SkipReason.NONE);
+    }
+
+
+    /**
+     * Separate the near-silent zones from the others. A zone which is far quieter than the loudest
+     * zone which starts to play with the note is hardly heard, often a layer which the source
+     * switched off by its volume, but would play at the full level, since a sample range has no
+     * level of its own (the gain of a group is part of the gain of its zones).
+     *
+     * @param zones The zones
+     * @param otherZones Where to add the zones which are not near-silent, in their order
+     * @return The near-silent zones, empty if there are none
+     */
+    private static List<ISampleZone> separateNearSilentZones (final List<ISampleZone> zones, final List<ISampleZone> otherZones)
+    {
+        double loudest = Double.NEGATIVE_INFINITY;
+        for (final ISampleZone zone: zones)
+            if (zone.getTrigger () != TriggerType.RELEASE)
+                loudest = Math.max (loudest, zone.getGain ());
+        final List<ISampleZone> nearSilentZones = new ArrayList<> ();
+        for (final ISampleZone zone: zones)
+            if (zone.getGain () <= loudest - NEAR_SILENT_DECIBELS)
+                nearSilentZones.add (zone);
+            else
+                otherZones.add (zone);
+        return nearSilentZones;
     }
 
 

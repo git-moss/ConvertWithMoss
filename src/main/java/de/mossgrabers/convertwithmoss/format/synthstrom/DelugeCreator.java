@@ -189,7 +189,18 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             zones.subList (MAX_KIT_DRUMS, zones.size ()).clear ();
         }
 
-        final DelugeOscillatorLayout layout = dualLayout == null ? DelugeOscillatorLayout.createSingle (zones) : dualLayout;
+        // The single oscillator of a synth leaves out the near-silent zones, which it would play at
+        // the full level since a sample range has no level of its own; a kit keeps all of its drums
+        final DelugeOscillatorLayout layout;
+        if (dualLayout != null)
+            layout = dualLayout;
+        else if (createKit)
+            layout = DelugeOscillatorLayout.createSingle (zones);
+        else
+        {
+            layout = DelugeOscillatorLayout.createSingle (multisampleSource);
+            this.logNearSilentZones (multisampleSource, layout);
+        }
 
         // The zones of the drums of a kit or the zones which the oscillators of a synth play
         final List<ISampleZone> writtenZones = createKit ? zones : layout.getZones ();
