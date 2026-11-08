@@ -1,0 +1,11 @@
+        <NiSS_IntMod index="3" version="0.50">
+          <V name="target" value="pitch"/>
+          <V name="intensity" value="%LFO_INTENSITY%"/>
+          <V name="bypass" value="no"/>
+          <V name="frequency" value="%LFO_FREQUENCY%"/>
+          <V name="pulseWidth" value="0.5"/>
+          <V name="retrigger" value="%LFO_RETRIGGER%"/>
+          <LFO type="%LFO_TYPE%" version="0.50">
+            <V name="delay" value="%LFO_DELAY%"/>
+          </LFO>
+        </NiSS_IntMod>

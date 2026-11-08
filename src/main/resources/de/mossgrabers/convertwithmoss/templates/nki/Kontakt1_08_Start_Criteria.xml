@@ -1,0 +1,5 @@
+        <StartCriteria index="0" version="0.70">
+          <V name="mode" value="%START_CRITERIA_MODE%"/>
+          <V name="cycleClass" value="%START_CRITERIA_CYCLE_CLASS%"/>
+          <V name="nextCriteria" value="and"/>
+        </StartCriteria>

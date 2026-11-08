@@ -9,9 +9,11 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -29,8 +31,10 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Kontakt2Monolith
 {
-    private final Map<Long, Directory> directories = new TreeMap<> ();
-    private final List<byte []>        sampleData  = new ArrayList<> ();
+    private static final String        IR_SAMPLES_DIRECTORY = "IR Samples";
+
+    private final Map<Long, Directory> directories          = new TreeMap<> ();
+    private final List<byte []>        sampleData           = new ArrayList<> ();
 
 
     /**
@@ -56,7 +60,9 @@ public class Kontakt2Monolith
     {
         final Map<String, ISampleData> multiSamples = new HashMap<> ();
 
-        final List<DirectoryEntry> sampleItems = this.findItems (DirectoryEntryType.SAMPLE);
+        // The impulse response samples are stored in their own directory and their data is not
+        // read, therefore they need to be excluded to keep the order of names and data in sync
+        final List<DirectoryEntry> sampleItems = this.findItems (DirectoryEntryType.SAMPLE, this.findIRDirectories ());
         for (int i = 0; i < sampleItems.size (); i++)
         {
             final byte [] data = this.sampleData.get (i);
@@ -108,29 +114,31 @@ public class Kontakt2Monolith
                     StreamUtils.readUnsigned16 (fileAccess, isBigEndian);
                     fileAccess.skipBytes (13);
                     final long sampleLength = StreamUtils.readUnsigned32 (fileAccess, isBigEndian);
-                    fileAccess.skipBytes (8);
-                    final byte [] data = StreamUtils.readNBytes (fileAccess, (int) sampleLength);
-                    this.sampleData.add (data);
+                    // The size of the waveform overview block which follows the sample data. It is
+                    // 0 for impulse response samples, which have no overview
+                    final long overviewLength = StreamUtils.readUnsigned32 (fileAccess, isBigEndian);
+                    // Padding
+                    fileAccess.skipBytes (4);
+                    // The impulse response samples are not needed
+                    if (overviewLength == 0)
+                        fileAccess.skipBytes ((int) sampleLength);
+                    else
+                        this.sampleData.add (StreamUtils.readNBytes (fileAccess, (int) sampleLength));
+                    // Skip the waveform overview
+                    fileAccess.skipBytes ((int) overviewLength);
                     break;
 
                 case Magic.KONTAKT2_NKR_SAMPLE_RAW_ID:
-                    fileAccess.skipBytes (4);
-                    // Version
-                    StreamUtils.readUnsigned16 (fileAccess, isBigEndian);
-                    fileAccess.skipBytes (18);
-
-                    // Brute force method to skip this block, since we do not know where the length
-                    // of it is stored...
-                    long nextSamplePos = findNextSampleBlock (fileAccess, isBigEndian);
-                    if (nextSamplePos < 0)
-                    {
-                        final List<DirectoryEntry> nkiItems = this.findItems (DirectoryEntryType.NKI);
-                        if (nkiItems.isEmpty ())
-                            throw new IOException (Functions.getMessage ("IDS_NKI_NO_NKI_FILES"));
-                        final DirectoryEntry directoryEntry = nkiItems.get (0);
-                        nextSamplePos = directoryEntry.getPointer ();
-                    }
-                    fileAccess.seek (nextSamplePos);
+                    // A waveform overview which is not announced by the preceding sample block (it
+                    // is normally skipped there). Skip magic, version and 2 unknown bytes
+                    fileAccess.skipBytes (8);
+                    final long bitsPerValue = StreamUtils.readUnsigned32 (fileAccess, isBigEndian);
+                    final long numChannels = StreamUtils.readUnsigned32 (fileAccess, isBigEndian);
+                    final long numPoints = StreamUtils.readUnsigned32 (fileAccess, isBigEndian);
+                    // Skip the sample rate, frames per point, file type and 4 unknown bytes
+                    fileAccess.skipBytes (16);
+                    // Each point contains 2 values (minimum and maximum) per channel
+                    fileAccess.skipBytes ((int) (numPoints * numChannels * 2 * (bitsPerValue / 8)));
                     break;
 
                 default:
@@ -140,11 +148,20 @@ public class Kontakt2Monolith
     }
 
 
-    private final List<DirectoryEntry> findItems (final DirectoryEntryType type)
+    /**
+     * Find all entries of a certain type.
+     *
+     * @param type The type of the entries
+     * @param excludedDirectories The positions of directories to ignore
+     * @return The found entries in the order of the directories in the file
+     */
+    private final List<DirectoryEntry> findItems (final DirectoryEntryType type, final Set<Long> excludedDirectories)
     {
         final List<DirectoryEntry> results = new ArrayList<> ();
         for (final Entry<Long, Directory> e: this.directories.entrySet ())
         {
+            if (excludedDirectories.contains (e.getKey ()))
+                continue;
             final Directory directory = e.getValue ();
             for (final DirectoryEntry item: directory.getEntries ())
                 if (item.getReferenceType () == type)
@@ -154,14 +171,19 @@ public class Kontakt2Monolith
     }
 
 
-    private static long findNextSampleBlock (final RandomAccessFile fileAccess, final boolean isBigEndian) throws IOException
+    /**
+     * Find the directories which contain the impulse response samples. They are referenced by a
+     * directory entry with the name 'IR Samples'.
+     *
+     * @return The positions of the directories
+     */
+    private Set<Long> findIRDirectories ()
     {
-        for (long i = fileAccess.getFilePointer (); i < fileAccess.length () - 4; i++)
-        {
-            fileAccess.seek (i);
-            if (StreamUtils.readUnsigned32 (fileAccess, isBigEndian) == Magic.KONTAKT2_NKR_SAMPLE_ID && StreamUtils.readUnsigned16 (fileAccess, isBigEndian) == 0x110)
-                return i;
-        }
-        return -1;
+        final Set<Long> irDirectories = new HashSet<> ();
+        for (final Directory directory: this.directories.values ())
+            for (final DirectoryEntry item: directory.getEntries ())
+                if (item.getReferenceType () == DirectoryEntryType.DIRECTORY && IR_SAMPLES_DIRECTORY.equals (item.asWideString ()))
+                    irDirectories.add (Long.valueOf (item.getPointer ()));
+        return irDirectories;
     }
 }

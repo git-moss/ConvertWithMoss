@@ -14,7 +14,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,16 +46,21 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.IMetadataConfig;
@@ -82,25 +86,63 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public abstract class AbstractNKIMetadataFileHandler
 {
-    protected static final String                TEMPLATE_FOLDER     = "de/mossgrabers/convertwithmoss/templates/nki/";
-    protected static final String                XML_HEADER          = "<?xml version=\"1.0\"?>\n";
+    private static final String               LFO_SAWTOOTH              = "sawtooth";
+    protected static final String             TEMPLATE_FOLDER           = "de/mossgrabers/convertwithmoss/templates/nki/";
+    protected static final String             XML_HEADER                = "<?xml version=\"1.0\"?>\n";
 
-    private static final String                  NULL_ENTRY          = "(null)";
-    private static final Pattern                 FILTER_TYPE_PATTERN = Pattern.compile ("^(lp|hp|bp)(\\d+)pole$");
-    private static final Pattern                 UTF_PATTERN         = Pattern.compile ("%([0-9a-fA-F]{4})");
+    private static final String               NULL_ENTRY                = "(null)";
+    private static final String               PRO52_FILTER_TYPE         = "pro52";
+    private static final String               LADDER_FILTER_TYPE        = "ladder";
+    private static final Pattern              FILTER_TYPE_PATTERN       = Pattern.compile ("^(lp|hp|bp|br)(\\d+)pole$");
 
-    private static final Map<FilterType, String> FILTER_PREFIXES     = new EnumMap<> (FilterType.class);
-    static
+    // Effects which can be placed in the filter slot but which cannot be mapped to a filter
+    private static final Pattern              EFFECT_TYPE_PATTERN       = Pattern.compile ("^(eq\\d+band|phaser|versatile|vowel\\w|sampleAndHold)$");
+    private static final Pattern              UTF_PATTERN               = Pattern.compile ("%([0-9a-fA-F]{4})");
+
+    // The cutoff frequencies displayed by Kontakt for the normalized cutoff values 0, 0.1, ..., 1.0
+    // of the low-pass filters as well as of the high-, band-pass and band-reject filters
+    // (independent of the number of poles). The curves cannot be expressed by a simple formula,
+    // therefore the values are interpolated logarithmically
+    private static final double []            LOW_PASS_CUTOFFS          =
     {
-        FILTER_PREFIXES.put (FilterType.LOW_PASS, "lp");
-        FILTER_PREFIXES.put (FilterType.HIGH_PASS, "hp");
-        FILTER_PREFIXES.put (FilterType.BAND_PASS, "bp");
-    }
+        43.6,
+        91.2,
+        179.3,
+        342.2,
+        642.9,
+        1200,
+        2200,
+        4000,
+        7200,
+        12600,
+        21800
+    };
+    private static final double []            HIGH_PASS_CUTOFFS         =
+    {
+        36.1,
+        75.5,
+        148.5,
+        283.4,
+        532.5,
+        990.3,
+        1800,
+        3300,
+        5900,
+        10500,
+        18100
+    };
+
+    // The pitch intensity of Kontakt (1.0) covers 1 octave
+    private static final double               PITCH_INTENSITY_CENTS     = 1200.0;
+
+    private static final String               CYCLE_ROUND_ROBIN         = "cycle_round_robin";
+    private static final String               CYCLE_RANDOM              = "cycle_random";
 
     protected final AbstractTagsAndAttributes tags;
     protected final INotifier                 notifier;
     private final Map<String, String>         absolutePathLookupSuccess = new HashMap<> ();
     protected boolean                         isMulti                   = false;
+    private boolean                           isAdditiveTuning          = false;
 
 
     /**
@@ -218,9 +260,8 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Get the slot index of a program in a multi. In K2 each program is stored in its own
-     * container which contains the index of the slot. Otherwise the position of the program is
-     * used.
+     * Get the slot index of a program in a multi. In K2 each program is stored in its own container
+     * which contains the index of the slot. Otherwise the position of the program is used.
      *
      * @param programElement The program element
      * @param position The position of the program element in the list of all program elements
@@ -231,16 +272,14 @@ public abstract class AbstractNKIMetadataFileHandler
         final Node programsNode = programElement.getParentNode ();
         final Node containerNode = programsNode == null ? null : programsNode.getParentNode ();
         if (containerNode instanceof final Element containerElement && containerElement.hasAttribute ("index"))
-        {
             try
             {
                 return Integer.parseInt (containerElement.getAttribute ("index"));
             }
-            catch (final NumberFormatException ex)
+            catch (final NumberFormatException _)
             {
                 // Use the position instead
             }
-        }
         return position;
     }
 
@@ -248,8 +287,8 @@ public abstract class AbstractNKIMetadataFileHandler
     /**
      * Convert a Kontakt MIDI channel to the MIDI channel of an instrument.
      *
-     * @param midiChannel The Kontakt MIDI channel: 0 = Omni, 1-16 = channel 1-16 of port A, 17-64
-     *            = ports B-D
+     * @param midiChannel The Kontakt MIDI channel: 0 = Omni, 1-16 = channel 1-16 of port A, 17-64 =
+     *            ports B-D
      * @return The MIDI channel of the instrument
      */
     protected static int convertMidiChannel (final int midiChannel)
@@ -381,13 +420,15 @@ public abstract class AbstractNKIMetadataFileHandler
         final String groupTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_02_Group.xml");
         final String zoneTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_04_Zone.xml");
         final String loopTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_05_Loop.xml");
+        // Optional templates which are only used if the group template contains the placeholder
+        final String lfoTemplate = groupTemplate.contains ("%PITCH_LFO%") ? Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_07_Lfo.xml") : "";
+        final String startCriteriaTemplate = groupTemplate.contains ("%GROUP_START_CRITERIA%") ? Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_08_Start_Criteria.xml") : "";
 
         final StringBuilder groupsText = new StringBuilder ();
         final StringBuilder zonesText = new StringBuilder ();
 
         // Samples are numbered across all groups!
         int sampleCount = 0;
-        boolean isReverse = false;
 
         for (int groupCount = 0; groupCount < groups.size (); groupCount++)
         {
@@ -413,8 +454,6 @@ public abstract class AbstractNKIMetadataFileHandler
                     if (loopIndex > 0)
                         loopsContent.append ("\r\n");
                     loopsContent.append (loopContent);
-
-                    isReverse = loop.getType () == LoopType.BACKWARDS;
                 }
                 // A one-shot which has no loop is described by a loop entry with the one-shot mode
                 if (loops.isEmpty () && zone.isOneShot ())
@@ -435,7 +474,10 @@ public abstract class AbstractNKIMetadataFileHandler
             // If the amplitude envelope ignores note-off events the sample is always played back to
             // its end, which means it is a one-shot. Only supported by the Kontakt 2 template.
             final boolean isOneShot = firstZone != null && firstZone.isOneShot ();
+            final boolean isReverse = firstZone != null && firstZone.isReversed ();
             groupContent = addModulators (firstZone, groupContent);
+            groupContent = groupContent.replace ("%PITCH_LFO%", createPitchLfo (firstZone, lfoTemplate));
+            groupContent = groupContent.replace ("%GROUP_START_CRITERIA%", createStartCriteria (firstZone, startCriteriaTemplate));
             groupContent = groupContent.replace ("%AMP_VELOCITY_MOD%", formatDouble (ampVelocityMod));
             groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
             groupContent = groupContent.replace ("%GROUP_ONE_SHOT%", isOneShot ? "yes" : "no");
@@ -451,6 +493,82 @@ public abstract class AbstractNKIMetadataFileHandler
         }
 
         return groupsText.toString () + Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_03_Groups_Zones.xml") + zonesText.toString ();
+    }
+
+
+    /**
+     * Creates the first start criteria of a group which contains the round-robin or random
+     * playback.
+     *
+     * @param zone The zone from which to take the play logic, might be null
+     * @param template The template of a start criteria
+     * @return The filled template
+     */
+    private static String createStartCriteria (final ISampleZone zone, final String template)
+    {
+        int cycleClass = 0;
+        String mode = "always";
+
+        if (zone != null)
+            switch (zone.getPlayLogic ())
+            {
+                case PlayLogic.ROUND_ROBIN:
+                    // The cycle class is the zero based position in the round-robin cycle, the
+                    // model starts with 1
+                    cycleClass = Math.max (0, zone.getSequencePosition () - 1);
+                    mode = CYCLE_ROUND_ROBIN;
+                    break;
+
+                case PlayLogic.RANDOM:
+                    mode = CYCLE_RANDOM;
+                    break;
+
+                default:
+                case PlayLogic.ALWAYS:
+                    break;
+            }
+
+        return template.replace ("%START_CRITERIA_MODE%", mode).replace ("%START_CRITERIA_CYCLE_CLASS%", Integer.toString (cycleClass));
+    }
+
+
+    /**
+     * Creates an internal modulator for the pitch oscillator (vibrato).
+     *
+     * @param zone The zone from which to take the oscillator, might be null
+     * @param template The template of an oscillator modulator
+     * @return The filled template or an empty text if there is no vibrato
+     */
+    private static String createPitchLfo (final ISampleZone zone, final String template)
+    {
+        if (zone == null || template.isEmpty ())
+            return "";
+        final ILfoModulator modulator = zone.getPitchLfoModulator ();
+        final ILfo lfo = modulator.getSource ();
+        double intensity = modulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / PITCH_INTENSITY_CENTS;
+        if (intensity == 0 || lfo.getRate () <= 0)
+            return "";
+
+        final String type = switch (lfo.getWaveform ())
+        {
+            case TRIANGLE -> "triangle";
+            case SQUARE -> "rectangle";
+            case RANDOM -> "random";
+            // The sawtooth of Kontakt starts at the maximum and decreases
+            case SAWTOOTH_DOWN -> LFO_SAWTOOTH;
+            case SAWTOOTH_UP -> {
+                intensity = -intensity;
+                yield LFO_SAWTOOTH;
+            }
+            default -> "sine";
+        };
+
+        String content = template.replace ("%LFO_TYPE%", type);
+        content = content.replace ("%LFO_INTENSITY%", formatDouble (Math.clamp (intensity, -1.0, 1.0)));
+        content = content.replace ("%LFO_FREQUENCY%", formatDouble (lfo.getRate ()));
+        content = content.replace ("%LFO_RETRIGGER%", lfo.isKeySync () ? "yes" : "no");
+        // The delay is stored in milliseconds
+        return content.replace ("%LFO_DELAY%", formatDouble (Math.max (0, lfo.getDelay ()) * 1000.0));
     }
 
 
@@ -550,13 +668,15 @@ public abstract class AbstractNKIMetadataFileHandler
 
         final IEnvelopeModulator pitchModulator = sampleMetadata == null ? new DefaultEnvelopeModulator (0) : sampleMetadata.getPitchEnvelopeModulator ();
         final IEnvelope pitchEnvelope = pitchModulator.getSource ();
-        groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (pitchModulator.getDepth ()));
+        // The depth of the model is relative to MAX_ENVELOPE_DEPTH cents
+        final double pitchIntensity = pitchModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / PITCH_INTENSITY_CENTS;
+        groupContent = groupContent.replace ("%PITCH_ENVELOPE_INTENSITY%", formatDouble (Math.clamp (pitchIntensity, -1.0, 1.0)));
         groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK_CURVE%", formatDouble (-pitchEnvelope.getAttackSlope ()));
 
-        // If the start level is not 0 (which is normally the case for a pitch envelope, we assume
-        // it to be the attack level and then only use the decay value, since this is the most
-        // common application for pitch envelopes.
-        if (pitchEnvelope.getStartLevel () != 0)
+        // If the start level is set and not 0 (which is normally the case for a pitch envelope),
+        // we assume it to be the attack level and then only use the decay value, since this is the
+        // most common application for pitch envelopes. A negative value means 'not set'
+        if (pitchEnvelope.getStartLevel () > 0)
         {
             groupContent = groupContent.replace ("%PITCH_ENVELOPE_ATTACK%", formatDouble (0));
             groupContent = groupContent.replace ("%PITCH_ENVELOPE_DECAY%", formatDouble (limitToDefault (pitchEnvelope.getAttackTime (), 0) * 1000.0d));
@@ -576,9 +696,8 @@ public abstract class AbstractNKIMetadataFileHandler
         final Optional<IFilter> filterOpt = sampleMetadata == null ? Optional.empty () : sampleMetadata.getFilter ();
         final IFilter filter = filterOpt.isPresent () ? filterOpt.get () : new DefaultFilter (FilterType.LOW_PASS, 2, IFilter.MAX_FREQUENCY, 0);
         groupContent = groupContent.replace ("%FILTER_TYPE%", createFilterType (filter));
-
-        final double legacyCutoff = MathUtils.normalizeFrequency (Math.clamp (filter.getCutoff (), 43.6, 21800), 21800.0);
-        groupContent = groupContent.replace ("%FILTER_CUTOFF%", formatDouble (legacyCutoff));
+        groupContent = groupContent.replace ("%FILTER_BYPASS%", filterOpt.isPresent () ? "no" : "yes");
+        groupContent = groupContent.replace ("%FILTER_CUTOFF%", formatDouble (normalizeCutoff (filter.getType (), filter.getCutoff ())));
         groupContent = groupContent.replace ("%FILTER_RESONANCE%", formatDouble (filter.getResonance ()));
 
         final IEnvelopeModulator filterCutoffModulator = filter.getCutoffEnvelopeModulator ();
@@ -598,9 +717,43 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
+    /**
+     * Get the Kontakt filter type which is the closest to the given filter. Kontakt offers only
+     * specific numbers of poles for each filter type.
+     *
+     * @param filter The filter
+     * @return The Kontakt filter type
+     */
     private static String createFilterType (final IFilter filter)
     {
-        return FILTER_PREFIXES.getOrDefault (filter.getType (), "lp") + filter.getPoles () + "pole";
+        final int poles = filter.getPoles ();
+        return switch (filter.getType ())
+        {
+            case HIGH_PASS -> "hp" + (poles <= 1 ? 1 : poles <= 3 ? 2 : 4) + "pole";
+            case BAND_PASS -> poles <= 3 ? "bp2pole" : "bp4pole";
+            case BAND_REJECTION -> "br4pole";
+            default -> "lp" + (poles <= 1 ? 1 : poles <= 3 ? 2 : poles <= 5 ? 4 : 6) + "pole";
+        };
+    }
+
+
+    /**
+     * Convert a cutoff frequency to the normalized cutoff of Kontakt. This is the inverse of
+     * denormalizeCutoff.
+     *
+     * @param filterType The type of the filter
+     * @param cutoff The cutoff frequency in Hertz
+     * @return The normalized cutoff in the range of [0..1]
+     */
+    private static double normalizeCutoff (final FilterType filterType, final double cutoff)
+    {
+        final double [] cutoffs = filterType == FilterType.LOW_PASS ? LOW_PASS_CUTOFFS : HIGH_PASS_CUTOFFS;
+        final double frequency = Math.clamp (cutoff, cutoffs[0], cutoffs[cutoffs.length - 1]);
+        int index = 0;
+        while (index < cutoffs.length - 2 && frequency > cutoffs[index + 1])
+            index++;
+        final double fraction = Math.log (frequency / cutoffs[index]) / Math.log (cutoffs[index + 1] / cutoffs[index]);
+        return (index + fraction) / (cutoffs.length - 1);
     }
 
 
@@ -656,6 +809,8 @@ public abstract class AbstractNKIMetadataFileHandler
 
         // Present only in K1
         this.readInstrumentParameters (instrumentSource, programParameters);
+        this.readPolyphony (programElement, multisampleSource);
+        this.isAdditiveTuning = this.isAdditiveTuning (programElement);
 
         final List<Element> groupElements = this.getGroupElements (programElement);
         final List<Element> zoneElements = this.getZoneElements (programElement);
@@ -710,6 +865,77 @@ public abstract class AbstractNKIMetadataFileHandler
         final String pan = programParameters.get (this.tags.progPanParam ());
         if (pan != null)
             instrumentSource.setPanning (Math.clamp (this.normalizePanning (Double.parseDouble (pan)), -1.0, 1.0));
+    }
+
+
+    /**
+     * Read the maximum number of voices of the instrument. It is stored in the first voice group of
+     * the program, which is the voice group of the whole instrument.
+     *
+     * @param programElement The program element
+     * @param multisampleSource Where to store the polyphony
+     */
+    private void readPolyphony (final Element programElement, final IMultisampleSource multisampleSource)
+    {
+        final Element polyphonyElement = XMLUtils.getChildElementByName (programElement, this.tags.polyphonyElement ());
+        if (polyphonyElement == null)
+            return;
+
+        for (final Element voiceGroupElement: XMLUtils.getChildElementsByName (polyphonyElement, this.tags.voiceGroupElement ()))
+            if (XMLUtils.getIntegerAttribute (voiceGroupElement, this.tags.indexAttribute (), -1) == 0)
+            {
+                final int maxNumVoices = parseIndex (this.readValueMap (voiceGroupElement).get (this.tags.maxNumVoicesParam ()));
+                if (maxNumVoices > 0)
+                    multisampleSource.setPolyphony (maxNumVoices);
+                return;
+            }
+    }
+
+
+    /**
+     * Check if the program and group tuning values are stored as an offset (0 is neutral) instead
+     * of a frequency ratio (1 is neutral).
+     *
+     * @param programElement The program element
+     * @return True if the tuning values are stored as an offset
+     */
+    protected boolean isAdditiveTuning (final Element programElement)
+    {
+        return false;
+    }
+
+
+    /**
+     * Convert a program or group tuning value to a frequency ratio. If the value is stored as an
+     * offset it is in octaves, which matches the frequency ratio 2^octaves of the later formats.
+     *
+     * @param tune The program or group tuning value
+     * @return The tuning as a frequency ratio, 1 is neutral
+     */
+    private double toTuneRatio (final double tune)
+    {
+        return this.isAdditiveTuning ? Math.pow (2.0, tune) : tune;
+    }
+
+
+    /**
+     * Parse an integer index or count.
+     *
+     * @param value The text to parse, might be null
+     * @return The parsed value or -1 if it is not present or cannot be parsed
+     */
+    protected static int parseIndex (final String value)
+    {
+        if (value == null || value.isBlank ())
+            return -1;
+        try
+        {
+            return Integer.parseInt (value.trim ());
+        }
+        catch (final NumberFormatException _)
+        {
+            return -1;
+        }
     }
 
 
@@ -845,19 +1071,26 @@ public abstract class AbstractNKIMetadataFileHandler
      */
     private Optional<IGroup> getGroup (final Map<String, String> programParameters, final Element groupElement, final List<Element> zoneElements, final String sourcePath, final Map<String, ISampleData> monolithSamples) throws IOException
     {
-        if (groupElement == null)
+        // Groups which can only be triggered by the (slice) sequencer cannot be played from the
+        // keyboard
+        if (groupElement == null || this.isSequencerOnly (groupElement))
             return Optional.empty ();
 
         final IGroup group = new DefaultGroup ();
         group.setName (this.getGroupName (groupElement));
         final Map<String, String> groupParameters = this.readParameters (groupElement);
         this.readGroupValues (group, groupParameters);
-        final Optional<IFilter> filter = this.readFilter (groupElement);
+        final Optional<GroupFilter> groupFilter = this.readFilter (groupElement);
+        final int filterEffectIndex = groupFilter.isPresent () ? groupFilter.get ().effectIndex () : -1;
+        final Optional<IFilter> filter = groupFilter.isPresent () ? Optional.of (groupFilter.get ().filter ()) : Optional.empty ();
 
-        final Map<String, IEnvelopeModulator> groupInternalModulators = this.readGroupInternalModulators (groupElement);
+        final Map<String, IEnvelopeModulator> groupInternalModulators = this.readGroupInternalModulators (groupElement, filterEffectIndex);
         final List<ExternalModulation> extModulators = this.readExtModulators (groupElement);
+        final Map<String, ILfoModulator> groupLfoModulators = this.readGroupLfoModulators (groupElement, filterEffectIndex, extModulators);
         final int pitchBend = this.readGroupPitchBend (extModulators);
         final double ampVelocityMod = this.readGroupAmplitudeVelocityModulator (extModulators);
+        if (groupFilter.isPresent ())
+            this.applyFilterModulation (groupFilter.get (), extModulators, groupLfoModulators);
 
         group.setTrigger (this.getTriggerTypeFromGroupElement (groupParameters));
         final Element [] groupZones = this.findGroupZones (groupElement, zoneElements);
@@ -865,9 +1098,14 @@ public abstract class AbstractNKIMetadataFileHandler
         group.setSampleZones (zones);
         // The one-shot setting is stored on the group's amplitude envelope but the model keeps it
         // on the zone
-        if (this.readGroupOneShot (groupElement))
-            for (final ISampleZone zone: zones)
+        final boolean isOneShot = this.readGroupOneShot (groupElement);
+        for (final ISampleZone zone: zones)
+        {
+            if (isOneShot)
                 zone.setOneShot (true);
+            applyLfoModulator (groupLfoModulators.get (this.tags.targetVolValue ()), zone.getAmplitudeLfoModulator ());
+            applyLfoModulator (groupLfoModulators.get (this.tags.targetPitchValue ()), zone.getPitchLfoModulator ());
+        }
         this.parseRoundRobin (groupElement, zones);
         return Optional.of (group);
     }
@@ -909,7 +1147,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
         try
         {
-            final double groupTune = this.tags.calculateGroupTune (AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ()));
+            final double groupTune = this.tags.calculateGroupTune (this.toTuneRatio (AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ())));
             if (groupTune != 0)
                 group.setTuning (groupTune);
         }
@@ -947,7 +1185,74 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
-    protected abstract void parseRoundRobin (final Element groupElement, final List<ISampleZone> zones);
+    /**
+     * Get the parameters of all start criteria of a group. Up to 4 criteria are present which are
+     * combined with each other.
+     *
+     * @param groupElement The group element
+     * @return The parameters of all start criteria which have parameters
+     */
+    private List<Map<String, String>> getStartCriteria (final Element groupElement)
+    {
+        final Element groupStartElement = XMLUtils.getChildElementByName (groupElement, this.tags.groupStart ());
+        if (groupStartElement == null)
+            return Collections.emptyList ();
+
+        final List<Map<String, String>> startCriteria = new ArrayList<> ();
+        for (final Element startCriteriaElement: XMLUtils.getChildElementsByName (groupStartElement, this.tags.startCriteria ()))
+        {
+            final Map<String, String> values = this.readValueMap (startCriteriaElement);
+            if (!values.isEmpty ())
+                startCriteria.add (values);
+        }
+        return startCriteria;
+    }
+
+
+    /**
+     * Check if the group is only triggered by the sequencer (e.g. slices of a loop) but not by
+     * notes played on the keyboard.
+     *
+     * @param groupElement The group element
+     * @return True if only the sequencer triggers the group
+     */
+    private boolean isSequencerOnly (final Element groupElement)
+    {
+        for (final Map<String, String> startCriteria: this.getStartCriteria (groupElement))
+            if (this.tags.yes ().equals (startCriteria.get (this.tags.sequencerOnlyParam ())))
+                return true;
+        return false;
+    }
+
+
+    /**
+     * Set the round-robin play logic on the zones if any of the start criteria of the group is a
+     * cycle mode (e.g. 'cycle_round_robin').
+     *
+     * @param groupElement The group element
+     * @param zones The zones of the group
+     */
+    private void parseRoundRobin (final Element groupElement, final List<ISampleZone> zones)
+    {
+        for (final Map<String, String> startCriteria: this.getStartCriteria (groupElement))
+        {
+            final String mode = startCriteria.get (this.tags.startModeParam ());
+            if (mode == null || !mode.startsWith (this.tags.cycleModePrefix ()))
+                continue;
+
+            // The cycle class is the zero based position in the round-robin cycle, the model starts
+            // with 1
+            final int roundRobinPosition = parseIndex (startCriteria.get (this.tags.cycleClassParam ()));
+            final PlayLogic playLogic = CYCLE_RANDOM.equals (mode) ? PlayLogic.RANDOM : PlayLogic.ROUND_ROBIN;
+            for (final ISampleZone zone: zones)
+            {
+                zone.setPlayLogic (playLogic);
+                if (roundRobinPosition > -1)
+                    zone.setSequencePosition (roundRobinPosition + 1);
+            }
+            return;
+        }
+    }
 
 
     /**
@@ -1068,11 +1373,14 @@ public abstract class AbstractNKIMetadataFileHandler
             final int sampleStart = AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.sampleStartParam ());
             final int sampleEnd = AbstractNKIMetadataFileHandler.getInt (zoneParameters, this.tags.sampleEndParam ());
 
-            if (sampleEnd > sampleStart)
-            {
+            // The stop of the zone was already set to the length of the sample (if available). A
+            // positive end is an absolute position, 0 is the end of the sample and a negative end
+            // is the number of frames counted backwards from the end of the sample
+            if (sampleStart > 0)
                 zone.setStart (sampleStart);
-                zone.setStop (sampleEnd);
-            }
+            final int sampleStop = sampleEnd < 0 && zone.getStop () > 0 ? zone.getStop () + sampleEnd : sampleEnd;
+            if (sampleStop > zone.getStart ())
+                zone.setStop (sampleStop);
 
             final String keyTracking = AbstractNKIMetadataFileHandler.getString (groupParameters, this.tags.keyTrackingParam ());
             final double keyTrackingValue = keyTracking.equals (this.tags.yes ()) ? 1.0d : 0.0d;
@@ -1085,8 +1393,8 @@ public abstract class AbstractNKIMetadataFileHandler
             zone.setGain (20.0d * Math.log10 (zoneVol * groupVol * progVol));
 
             final double zoneTune = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zoneTuneParam ());
-            final double groupTune = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ());
-            final double progTune = AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progTuneParam ());
+            final double groupTune = this.toTuneRatio (AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ()));
+            final double progTune = this.toTuneRatio (AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progTuneParam ()));
             zone.setTuning (this.tags.calculateTune (zoneTune, groupTune, progTune));
 
             final double zonePan = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zonePanParam ());
@@ -1496,7 +1804,10 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param groupParameters The group element to retrieve the TriggerType from
      * @return The TriggerType that could be retrieved. In doubt, TriggerType.ATTACK is returned.
      */
-    protected abstract TriggerType getTriggerTypeFromGroupElement (final Map<String, String> groupParameters);
+    private TriggerType getTriggerTypeFromGroupElement (final Map<String, String> groupParameters)
+    {
+        return this.tags.yes ().equals (groupParameters.get (this.tags.releaseTriggerParam ())) ? TriggerType.RELEASE : TriggerType.ATTACK;
+    }
 
 
     /**
@@ -1516,9 +1827,11 @@ public abstract class AbstractNKIMetadataFileHandler
      * Reads all modulator envelopes from a group element.
      *
      * @param groupElement The group element
+     * @param filterEffectIndex The index of the effect slot which contains the filter of the group,
+     *            -1 if not known
      * @return The found envelopes
      */
-    private Map<String, IEnvelopeModulator> readGroupInternalModulators (final Element groupElement)
+    private Map<String, IEnvelopeModulator> readGroupInternalModulators (final Element groupElement, final int filterEffectIndex)
     {
         final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.intModulatorsElement ());
         if (modulatorsElement == null)
@@ -1531,7 +1844,7 @@ public abstract class AbstractNKIMetadataFileHandler
             if (envElement != null && !this.hasNameValuePairs (modulatorElement, this.tags.bypassParam (), this.tags.yes ()))
             {
                 final Optional<String> modulationTarget = this.getModulationTarget (modulatorElement);
-                if (modulationTarget.isPresent ())
+                if (modulationTarget.isPresent () && this.isModulatingGroupFilter (modulatorElement, modulationTarget.get (), filterEffectIndex))
                 {
                     final double modulationIntensity = this.getModulationIntensity (modulatorElement);
                     if (modulationIntensity != 0)
@@ -1540,7 +1853,12 @@ public abstract class AbstractNKIMetadataFileHandler
                         if (modulatorOpt.isPresent ())
                         {
                             final IEnvelopeModulator modulator = modulatorOpt.get ();
-                            modulator.setDepth (modulationIntensity);
+                            // The pitch intensity of Kontakt covers 1 octave, the depth of the
+                            // model is relative to MAX_ENVELOPE_DEPTH cents
+                            if (this.tags.targetPitchValue ().equals (modulationTarget.get ()))
+                                modulator.setDepth (Math.clamp (modulationIntensity * PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH, -1.0, 1.0));
+                            else
+                                modulator.setDepth (modulationIntensity);
                             modulators.put (modulationTarget.get (), modulator);
                         }
                     }
@@ -1552,52 +1870,305 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Reads the filter settings from a group element. Only present for Kontakt 1.
+     * Reads all low frequency oscillator modulators from a group element.
      *
      * @param groupElement The group element
-     * @return The filter or null if none is found
+     * @param filterEffectIndex The index of the effect slot which contains the filter of the group,
+     *            -1 if not known
+     * @param extModulators All external modulators of the group
+     * @return The found modulators mapped to their modulation target
      */
-    private Optional<IFilter> readFilter (final Element groupElement)
+    private Map<String, ILfoModulator> readGroupLfoModulators (final Element groupElement, final int filterEffectIndex, final List<ExternalModulation> extModulators)
+    {
+        final Element modulatorsElement = XMLUtils.getChildElementByName (groupElement, this.tags.intModulatorsElement ());
+        if (modulatorsElement == null)
+            return Collections.emptyMap ();
+
+        final Map<String, ILfoModulator> modulators = new HashMap<> ();
+        for (final Element modulatorElement: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.intModulatorElement ()))
+        {
+            final Element lfoElement = XMLUtils.getChildElementByName (modulatorElement, this.tags.lfoElement ());
+            // If the intensity is controlled by an external modulator (e.g. a tremolo or vibrato
+            // which is controlled by the modulation wheel), the oscillator is not active by default
+            if (lfoElement == null || this.hasNameValuePairs (modulatorElement, this.tags.bypassParam (), this.tags.yes ()) || this.isIntensityModulated (XMLUtils.getIntegerAttribute (modulatorElement, this.tags.indexAttribute (), -1), extModulators))
+                continue;
+            final Optional<String> modulationTarget = this.getModulationTarget (modulatorElement);
+            if (modulationTarget.isEmpty () || !this.isModulatingGroupFilter (modulatorElement, modulationTarget.get (), filterEffectIndex))
+                continue;
+            final double modulationIntensity = this.getModulationIntensity (modulatorElement);
+            if (modulationIntensity == 0)
+                continue;
+            final Optional<ILfoModulator> modulator = this.readLfoFromElement (modulatorElement, lfoElement, modulationTarget.get (), modulationIntensity);
+            if (modulator.isPresent ())
+                modulators.put (modulationTarget.get (), modulator.get ());
+        }
+        return modulators;
+    }
+
+
+    /**
+     * Reads a low frequency oscillator modulator.
+     *
+     * @param modulatorElement The internal modulator element
+     * @param lfoElement The oscillator element of the modulator
+     * @param target The modulation target
+     * @param intensity The modulation intensity
+     * @return The modulator if it could be read
+     */
+    private Optional<ILfoModulator> readLfoFromElement (final Element modulatorElement, final Element lfoElement, final String target, final double intensity)
+    {
+        final Optional<LfoWaveform> waveform = getLfoWaveform (lfoElement.getAttribute (this.tags.envTypeAttribute ()));
+        if (waveform.isEmpty ())
+            return Optional.empty ();
+
+        // Kontakt 1 stores the frequency in the modulator, Kontakt 2 in the oscillator element
+        final Map<String, String> lfoParameters = new HashMap<> (this.readValueMap (modulatorElement));
+        lfoParameters.putAll (this.readValueMap (lfoElement));
+        final double frequency = parseDouble (lfoParameters.get (this.tags.frequencyParam ()), -1);
+        if (frequency <= 0)
+            return Optional.empty ();
+
+        // The pitch intensity of Kontakt covers 1 octave (same as the pitch-bend), the model uses
+        // the range of the pitch envelope
+        final double depth = this.tags.targetPitchValue ().equals (target) ? intensity * PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH : intensity;
+        final ILfoModulator modulator = new DefaultLfoModulator (Math.clamp (depth, -1.0, 1.0));
+        final ILfo lfo = modulator.getSource ();
+        lfo.setWaveform (waveform.get ());
+        lfo.setRate (frequency);
+        // The delay is stored in milliseconds
+        lfo.setDelay (Math.max (0, parseDouble (lfoParameters.get (this.tags.delayParam ()), 0)) / 1000.0);
+        final double startPhase = parseDouble (lfoParameters.get (this.tags.startPhaseParam ()), -1);
+        if (startPhase >= 0)
+            lfo.setStartPhase (Math.clamp (startPhase, 0, 1));
+        lfo.setKeySync (this.tags.yes ().equals (lfoParameters.get (this.tags.retriggerParam ())));
+        return Optional.of (modulator);
+    }
+
+
+    /**
+     * Get the waveform for the type of a low frequency oscillator.
+     *
+     * @param type The type of the oscillator
+     * @return The waveform, empty if the type is not supported (e.g. 'multi')
+     */
+    private static Optional<LfoWaveform> getLfoWaveform (final String type)
+    {
+        return switch (type)
+        {
+            case "sine" -> Optional.of (LfoWaveform.SINE);
+            case "triangle" -> Optional.of (LfoWaveform.TRIANGLE);
+            case "rectangle", "square" -> Optional.of (LfoWaveform.SQUARE);
+            // The sawtooth starts at the maximum and decreases
+            case LFO_SAWTOOTH -> Optional.of (LfoWaveform.SAWTOOTH_DOWN);
+            case "random" -> Optional.of (LfoWaveform.RANDOM);
+            default -> Optional.empty ();
+        };
+    }
+
+
+    /**
+     * Check if the intensity of an internal modulator is controlled by an external modulator.
+     *
+     * @param modulatorIndex The index of the internal modulator
+     * @param extModulators All external modulators of the group
+     * @return True if the intensity is controlled
+     */
+    private boolean isIntensityModulated (final int modulatorIndex, final List<ExternalModulation> extModulators)
+    {
+        if (modulatorIndex < 0)
+            return false;
+        for (final ExternalModulation extModulator: extModulators)
+            if (this.tags.intensityValue ().equals (extModulator.target) && extModulator.targetIndex == modulatorIndex)
+                return true;
+        return false;
+    }
+
+
+    /**
+     * Copy the settings of a low frequency oscillator modulator.
+     *
+     * @param source The modulator to copy, might be null
+     * @param destination The modulator to set
+     */
+    private static void applyLfoModulator (final ILfoModulator source, final ILfoModulator destination)
+    {
+        if (source == null)
+            return;
+        destination.setDepth (source.getDepth ());
+        destination.setSource (source.getSource ());
+    }
+
+
+    /**
+     * Applies the modulations of the filter cutoff to the filter of the group.
+     *
+     * @param groupFilter The filter of the group
+     * @param extModulators All external modulators of the group
+     * @param lfoModulators The low frequency oscillator modulators of the group
+     */
+    private void applyFilterModulation (final GroupFilter groupFilter, final List<ExternalModulation> extModulators, final Map<String, ILfoModulator> lfoModulators)
+    {
+        final IFilter filter = groupFilter.filter ();
+        applyLfoModulator (lfoModulators.get (this.tags.targetFilterCutoffValue ()), filter.getCutoffLfoModulator ());
+
+        for (final ExternalModulation extModulator: extModulators)
+        {
+            // Kontakt 2 can have several filters, check that the modulation targets the used one
+            if (!this.tags.targetFilterCutoffValue ().equals (extModulator.target) || (extModulator.targetIndex >= 0 && groupFilter.effectIndex () >= 0 && extModulator.targetIndex != groupFilter.effectIndex ()))
+                continue;
+
+            final double depth = Math.clamp (extModulator.intensity, -1.0, 1.0);
+            if (this.tags.velocityValue ().equals (extModulator.source))
+                filter.getCutoffVelocityModulator ().setDepth (depth);
+            else if (this.tags.keyPositionValue ().equals (extModulator.source))
+                filter.setCutoffKeyTracking (depth);
+            else if (this.tags.midiCCValue ().equals (extModulator.source) && extModulator.ccNumber == 1)
+                filter.getCutoffModWheelModulator ().setDepth (depth);
+        }
+    }
+
+
+    /**
+     * Check if a modulator can be applied. This is always the case except for a modulation of the
+     * cutoff of a different filter than the one which is used for the group.
+     *
+     * @param modulatorElement The modulator element
+     * @param target The modulation target
+     * @param filterEffectIndex The index of the effect slot which contains the filter of the group,
+     *            -1 if not known
+     * @return True if the modulator can be applied
+     */
+    private boolean isModulatingGroupFilter (final Element modulatorElement, final String target, final int filterEffectIndex)
+    {
+        if (!this.tags.targetFilterCutoffValue ().equals (target) || filterEffectIndex < 0)
+            return true;
+        final int targetIndex = this.getModulationTargetIndex (modulatorElement);
+        return targetIndex < 0 || targetIndex == filterEffectIndex;
+    }
+
+
+    /**
+     * Reads the filter settings from a group element. Kontakt 1 stores one filter directly in the
+     * group, Kontakt 2 stores filters in the insert effect slots of the group.
+     *
+     * @param groupElement The group element
+     * @return The filter if one is found
+     */
+    private Optional<GroupFilter> readFilter (final Element groupElement)
     {
         final Element filterElement = XMLUtils.getChildElementByName (groupElement, this.tags.groupFilter ());
-        if (filterElement == null)
-            return Optional.empty ();
-        final Map<String, String> valueMap = this.readValueMap (filterElement);
-        if (valueMap.isEmpty ())
-            return Optional.empty ();
-        final String type = valueMap.get ("type");
-        if (type == null)
-            return Optional.empty ();
-        final Matcher matcher = FILTER_TYPE_PATTERN.matcher (type);
-        if (!matcher.matches ())
+        if (filterElement != null)
         {
-            this.notifier.logError ("IDS_NKI_UNKNOWN_FILTER_TYPE", type);
-            return Optional.empty ();
-        }
-        FilterType filterType;
-        switch (matcher.group (1))
-        {
-            case "lp":
-                filterType = FilterType.LOW_PASS;
-                break;
-            case "hp":
-                filterType = FilterType.HIGH_PASS;
-                break;
-            case "bp":
-                filterType = FilterType.BAND_PASS;
-                break;
-            default:
+            final Map<String, String> valueMap = this.readValueMap (filterElement);
+            if (this.tags.yes ().equals (valueMap.get (this.tags.bypassParam ())))
                 return Optional.empty ();
+            final Optional<IFilter> filter = this.createFilter (valueMap.get (this.tags.filterType ()), valueMap);
+            return filter.isPresent () ? Optional.of (new GroupFilter (filter.get (), -1)) : Optional.empty ();
         }
 
-        // The cutoff is stored logarithmically normalized to [0..1] (see the writing side),
-        // 1.0 is the fully open filter at 21.8 kHz
-        final String cutoffText = valueMap.get ("cutoff");
-        final double normalizedCutoff = cutoffText == null ? 1.0 : Double.parseDouble (cutoffText);
-        final double cutoff = MathUtils.denormalizeFrequency (Math.clamp (normalizedCutoff, 0, 1), 21800.0);
-        final String resonanceText = valueMap.get ("resonance");
-        final double resonance = resonanceText == null ? 0 : Double.parseDouble (resonanceText);
-        return Optional.of (new DefaultFilter (filterType, Integer.parseInt (matcher.group (2)), cutoff, resonance));
+        final Element insertEffectsElement = XMLUtils.getChildElementByName (groupElement, this.tags.groupInsertEffectsElement ());
+        if (insertEffectsElement == null)
+            return Optional.empty ();
+        // Several filters can be chained. Since only one filter is supported, a low-pass is
+        // preferred since it has the most influence on the sound, otherwise the first one is used
+        Optional<GroupFilter> firstFilter = Optional.empty ();
+        for (final Element effectElement: XMLUtils.getChildElementsByName (insertEffectsElement, this.tags.effectElement ()))
+        {
+            final Element effectFilterElement = XMLUtils.getChildElementByName (effectElement, this.tags.groupFilter ());
+            if (effectFilterElement == null || this.hasNameValuePairs (effectElement, this.tags.bypassParam (), this.tags.yes ()))
+                continue;
+            final Optional<IFilter> filter = this.createFilter (effectFilterElement.getAttribute (this.tags.filterType ()), this.readValueMap (effectFilterElement));
+            if (filter.isEmpty ())
+                continue;
+            final GroupFilter groupFilter = new GroupFilter (filter.get (), XMLUtils.getIntegerAttribute (effectElement, this.tags.indexAttribute (), -1));
+            if (filter.get ().getType () == FilterType.LOW_PASS)
+                return Optional.of (groupFilter);
+            if (firstFilter.isEmpty ())
+                firstFilter = Optional.of (groupFilter);
+        }
+        return firstFilter;
+    }
+
+
+    /**
+     * Creates a filter.
+     *
+     * @param type The Kontakt filter type, e.g. 'lp4pole'
+     * @param valueMap The parameters of the filter
+     * @return The filter or empty if the type is not supported
+     */
+    private Optional<IFilter> createFilter (final String type, final Map<String, String> valueMap)
+    {
+        if (type == null || type.isBlank ())
+            return Optional.empty ();
+
+        final FilterType filterType;
+        final int poles;
+        if (PRO52_FILTER_TYPE.equals (type) || LADDER_FILTER_TYPE.equals (type))
+        {
+            // The filter of the Pro-52 and the 4-stage ladder filter are 4 pole low-passes
+            filterType = FilterType.LOW_PASS;
+            poles = 4;
+        }
+        else
+        {
+            final Matcher matcher = FILTER_TYPE_PATTERN.matcher (type);
+            if (!matcher.matches ())
+            {
+                // Effects like an equalizer can be placed in the filter slot as well
+                if (!EFFECT_TYPE_PATTERN.matcher (type).matches ())
+                    this.notifier.logError ("IDS_NKI_UNKNOWN_FILTER_TYPE", type);
+                return Optional.empty ();
+            }
+            switch (matcher.group (1))
+            {
+                case "lp":
+                    filterType = FilterType.LOW_PASS;
+                    break;
+                case "hp":
+                    filterType = FilterType.HIGH_PASS;
+                    break;
+                case "bp":
+                    filterType = FilterType.BAND_PASS;
+                    break;
+                case "br":
+                    filterType = FilterType.BAND_REJECTION;
+                    break;
+                default:
+                    return Optional.empty ();
+            }
+            poles = Integer.parseInt (matcher.group (2));
+        }
+
+        final double cutoff = denormalizeCutoff (type, filterType, parseDouble (valueMap.get ("cutoff"), 1.0));
+        final double resonance = parseDouble (valueMap.get ("resonance"), 0);
+        return Optional.of (new DefaultFilter (filterType, poles, cutoff, resonance));
+    }
+
+
+    /**
+     * Converts a normalized cutoff value to Hertz. The curve depends on the filter type.
+     *
+     * @param type The Kontakt filter type, e.g. 'lp4pole'
+     * @param filterType The filter type
+     * @param normalizedCutoff The normalized cutoff in the range of [0..1]
+     * @return The cutoff in Hertz
+     */
+    private static double denormalizeCutoff (final String type, final FilterType filterType, final double normalizedCutoff)
+    {
+        final double value = Math.clamp (normalizedCutoff, 0, 1);
+
+        // The cutoff of the Pro-52 and the ladder filter covers 100 semi-tones starting at MIDI
+        // note
+        // 20 (26Hz)
+        if (PRO52_FILTER_TYPE.equals (type) || LADDER_FILTER_TYPE.equals (type))
+            return 440.0 * Math.pow (2, (20.0 + value * 100.0 - 69.0) / 12.0);
+
+        // Only the low-pass filters use a different curve
+        final double [] cutoffs = filterType == FilterType.LOW_PASS ? LOW_PASS_CUTOFFS : HIGH_PASS_CUTOFFS;
+        final double position = value * (cutoffs.length - 1);
+        final int index = Math.min ((int) position, cutoffs.length - 2);
+        return cutoffs[index] * Math.pow (cutoffs[index + 1] / cutoffs[index], position - index);
     }
 
 
@@ -1610,7 +2181,11 @@ public abstract class AbstractNKIMetadataFileHandler
     private Optional<IEnvelopeModulator> readModulatorFromElement (final Element envElement)
     {
         final String envType = envElement.getAttribute (this.tags.envTypeAttribute ());
-        if (envType == null)
+        final Map<String, String> envParams = this.readValueMap (envElement);
+        if (this.tags.dbdEnvTypeValue ().equals (envType))
+            return this.readDecayBreakDecayEnvelope (envParams);
+        final boolean isAHD = this.tags.ahdEnvTypeValue ().equals (envType);
+        if (!isAHD && !this.tags.ahdsrEnvTypeValue ().equals (envType))
             return Optional.empty ();
 
         try
@@ -1618,17 +2193,51 @@ public abstract class AbstractNKIMetadataFileHandler
             final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (0);
             final IEnvelope env = modulator.getSource ();
 
-            final Map<String, String> envParams = this.readValueMap (envElement);
-            env.setAttackSlope (-getDouble (envParams, this.tags.attackCurveParam ()));
+            // The attack curve is not present in the envelopes of Kontakt 1.0 (version 0.50)
+            env.setAttackSlope (-parseDouble (envParams.get (this.tags.attackCurveParam ()), 0));
             env.setAttackTime (getDouble (envParams, this.tags.attackParam ()) / 1000.0d);
             env.setHoldTime (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.holdParam ()) / 1000.0d);
             env.setDecayTime (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.decayParam ()) / 1000.0d);
 
-            if (!envType.equals (this.tags.ahdEnvTypeValue ()))
+            if (!isAHD)
             {
                 env.setSustainLevel (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.sustainParam ()));
                 env.setReleaseTime (AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.releaseParam ()) / 1000.0d);
             }
+            return Optional.of (modulator);
+        }
+        catch (final ValueNotAvailableException _)
+        {
+            return Optional.empty ();
+        }
+    }
+
+
+    /**
+     * Reads a decay-break-decay envelope. It starts at the maximum level, falls to the break level
+     * during the first decay and from there to zero during the second decay, independent of the
+     * note being held. Since the model does not support this shape it is approximated by an
+     * envelope without attack and sustain which decays during the sum of both decay times. This
+     * keeps the end level of zero (e.g. no lasting detune of a pitch envelope).
+     *
+     * @param envParams The parameters of the envelope
+     * @return The envelope if all parameters are present
+     */
+    private Optional<IEnvelopeModulator> readDecayBreakDecayEnvelope (final Map<String, String> envParams)
+    {
+        try
+        {
+            final double decay1 = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.decay1Param ()) / 1000.0d;
+            final double breakLevel = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.breakParam ());
+            final double decay2 = AbstractNKIMetadataFileHandler.getDouble (envParams, this.tags.decay2Param ()) / 1000.0d;
+
+            final IEnvelopeModulator modulator = new DefaultEnvelopeModulator (0);
+            final IEnvelope env = modulator.getSource ();
+            env.setAttackTime (0);
+            env.setHoldTime (0);
+            env.setDecayTime (breakLevel == 0 ? decay1 : decay1 + decay2);
+            env.setSustainLevel (0);
+            env.setReleaseTime (0);
             return Optional.of (modulator);
         }
         catch (final ValueNotAvailableException _)
@@ -1690,6 +2299,28 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
+     * Parse a double value.
+     *
+     * @param value The text to parse, might be null
+     * @param defaultValue The value to return if the text is not present or cannot be parsed
+     * @return The parsed value
+     */
+    private static double parseDouble (final String value, final double defaultValue)
+    {
+        if (value == null || value.isBlank ())
+            return defaultValue;
+        try
+        {
+            return Double.parseDouble (value.trim ());
+        }
+        catch (final NumberFormatException _)
+        {
+            return defaultValue;
+        }
+    }
+
+
+    /**
      * Retrieves the target from the given modulator element.
      *
      * @param modulator The modulator element
@@ -1705,6 +2336,19 @@ public abstract class AbstractNKIMetadataFileHandler
      * @return The intensity value, 0 if not present or could parsed
      */
     protected abstract double getModulationIntensity (Element modulator);
+
+
+    /**
+     * Retrieves the index of the modulated effect (e.g. one of several filters) from the given
+     * modulator element.
+     *
+     * @param modulator The modulator element
+     * @return The index or -1 if not present
+     */
+    protected int getModulationTargetIndex (final Element modulator)
+    {
+        return -1;
+    }
 
 
     /**
@@ -1840,6 +2484,12 @@ public abstract class AbstractNKIMetadataFileHandler
         final ExternalModulation extModulator = new ExternalModulation ();
         extModulator.source = source;
         extModulator.target = targetElementParams.get (this.tags.targetParam ());
+        // Kontakt 2 stores the index of the modulated effect or internal modulator in the target,
+        // Kontakt 1 only the index of the modulated internal modulator in the modulator
+        extModulator.targetIndex = parseIndex (targetElementParams.get (this.tags.targetObjectIndexParam ()));
+        if (extModulator.targetIndex < 0)
+            extModulator.targetIndex = parseIndex (targetElementParams.get (this.tags.targetModIndexParam ()));
+        extModulator.ccNumber = parseIndex (modulatorElementParams.get (this.tags.ccNumberParam ()));
         try
         {
             extModulator.intensity = Double.parseDouble (targetElementParams.get (this.tags.intensityParam ()));
@@ -1906,5 +2556,20 @@ public abstract class AbstractNKIMetadataFileHandler
         String source;
         String target;
         double intensity;
+        int    targetIndex = -1;
+        int    ccNumber    = -1;
+    }
+
+
+    /**
+     * The filter of a group.
+     *
+     * @param filter The filter
+     * @param effectIndex The index of the insert effect slot which contains the filter (only
+     *            Kontakt 2), otherwise -1
+     */
+    private record GroupFilter (IFilter filter, int effectIndex)
+    {
+        // Intentionally empty
     }
 }

@@ -22,8 +22,8 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 
 /**
  * The 'z48 ' chunk of a multi which is only written by the Z4/Z8. It contains the multi in the
- * Z4/Z8 format as sub-chunks: 'mult', 'qlnk', 'mflt', 'fx  ' and one 'part' per part. Only the
- * parts are decoded, the other sub-chunks are kept as they are. The format is described in
+ * Z4/Z8 format as sub-chunks: 'mult', 'qlnk', 'mflt', 'fx ' and one 'part' per part. Only the parts
+ * are decoded, the other sub-chunks are kept as they are. The format is described in
  * documentation/design/AKAI_AKP_FORMAT.md.
  *
  * @author Jürgen Moßgraber

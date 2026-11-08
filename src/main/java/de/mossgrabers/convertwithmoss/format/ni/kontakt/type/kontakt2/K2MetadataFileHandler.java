@@ -13,9 +13,6 @@ import java.util.Optional;
 import org.w3c.dom.Element;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.tools.XMLUtils;
 
@@ -104,45 +101,36 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
 
     /** {@inheritDoc} */
     @Override
-    protected TriggerType getTriggerTypeFromGroupElement (final Map<String, String> groupParameters)
+    protected int getModulationTargetIndex (final Element modulator)
     {
-        final String releaseTrigParam = groupParameters.get (K2Tag.K2_RELEASE_TRIGGER_PARAM);
-        return releaseTrigParam != null && releaseTrigParam.equals (this.tags.yes ()) ? TriggerType.RELEASE : TriggerType.ATTACK;
+        final Element targetsElement = XMLUtils.getChildElementByName (modulator, K2Tag.K2_TARGETS_ELEMENT);
+        if (targetsElement == null)
+            return -1;
+        for (final Element targetElement: XMLUtils.getChildElementsByName (targetsElement, K2Tag.K2_TARGET_ELEMENT, false))
+        {
+            // We only support 1 target!
+            final Map<String, String> targetParameters = this.readValueMap (targetElement);
+            if (targetParameters.containsKey (this.tags.targetParam ()))
+                return parseIndex (targetParameters.get (this.tags.targetObjectIndexParam ()));
+        }
+        return -1;
     }
 
 
     /** {@inheritDoc} */
     @Override
-    protected void parseRoundRobin (final Element groupElement, final List<ISampleZone> zones)
+    protected boolean isAdditiveTuning (final Element programElement)
     {
-        final Element groupStartElement = XMLUtils.getChildElementByName (groupElement, K2Tag.K2_GROUP_START);
-        if (groupStartElement == null)
-            return;
-        final Element startCriteriaElement = XMLUtils.getChildElementByName (groupStartElement, K2Tag.K2_START_CRITERIA);
-        if (startCriteriaElement == null)
-            return;
-
-        final Map<String, String> values = this.readValueMap (startCriteriaElement);
-        final String mode = values.get ("mode");
-        if (mode == null || !mode.startsWith ("cycle"))
-            return;
-
-        final String cycleClassValue = values.get ("cycleClass");
-        int roundRobinPosition;
+        // Kontakt 2 (program version 0.60) stores the program and group tuning as a frequency ratio
+        // (1 is neutral) but Kontakt 3 and 4.1 (program version 0.80) store it as an offset (0 is
+        // neutral). The zone tuning is always a frequency ratio
         try
         {
-            roundRobinPosition = cycleClassValue != null ? Integer.parseInt (cycleClassValue) : -1;
+            return Double.parseDouble (programElement.getAttribute (this.tags.versionAttribute ())) >= 0.8;
         }
         catch (final NumberFormatException _)
         {
-            roundRobinPosition = -1;
-        }
-
-        for (final ISampleZone zone: zones)
-        {
-            zone.setPlayLogic (PlayLogic.ROUND_ROBIN);
-            if (roundRobinPosition > -1)
-                zone.setSequencePosition (roundRobinPosition);
+            return false;
         }
     }
 

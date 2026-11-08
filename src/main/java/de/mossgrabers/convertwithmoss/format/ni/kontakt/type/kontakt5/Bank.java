@@ -135,4 +135,4 @@ public class Bank
         // More unknown data: in Kontakt 4.2 the 64 MIDI channels are followed by 128 bytes (most
         // likely the mute and solo states) and the aux send levels of the slots
     }
-}
+}

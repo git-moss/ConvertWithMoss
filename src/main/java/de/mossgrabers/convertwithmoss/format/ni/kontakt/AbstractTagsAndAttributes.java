@@ -219,6 +219,87 @@ public abstract class AbstractTagsAndAttributes
     /** The group filter element. */
     private static final String GROUP_FILTER               = "Filter";
 
+    /** The filter type parameter (Kontakt 1) or attribute (Kontakt 2). */
+    private static final String FILTER_TYPE                = "type";
+
+    /** The element which contains the insert effects of a group (only Kontakt 2). */
+    private static final String GROUP_INSERT_FX_ELEMENT    = "GroupInsertFX";
+
+    /** The element which contains the start criteria of a group. */
+    private static final String GROUP_START                = "GroupStart";
+
+    /** One start criteria of a group. */
+    private static final String START_CRITERIA             = "StartCriteria";
+
+    /** The mode parameter of a start criteria. */
+    private static final String START_MODE_PARAM           = "mode";
+
+    /** The prefix of all cycle (round-robin) modes of a start criteria. */
+    private static final String CYCLE_MODE_PREFIX          = "cycle";
+
+    /** The position of the group in a round-robin cycle. */
+    private static final String CYCLE_CLASS_PARAM          = "cycleClass";
+
+    /** The parameter which indicates that a group is only triggered by the sequencer. */
+    private static final String SEQUENCER_ONLY_PARAM       = "sequencerOnly";
+
+    /** The release trigger parameter of a group. */
+    private static final String RELEASE_TRIGGER_PARAM      = "releaseTrigger";
+
+    /** The polyphony element of a program. */
+    private static final String POLYPHONY_ELEMENT          = "Polyphony";
+
+    /** A voice group element of the polyphony element. */
+    private static final String VOICE_GROUP_ELEMENT        = "VoiceGroup";
+
+    /** The maximum number of voices of a voice group. */
+    private static final String MAX_NUM_VOICES_PARAM       = "maxNumVoices";
+
+    /** The low frequency oscillator element of an internal modulator. */
+    private static final String LFO_ELEMENT                = "LFO";
+
+    /** The frequency parameter of a low frequency oscillator. */
+    private static final String FREQUENCY_PARAM            = "frequency";
+
+    /** The delay parameter of a low frequency oscillator. */
+    private static final String DELAY_PARAM                = "delay";
+
+    /** The start phase parameter of a low frequency oscillator (only Kontakt 2). */
+    private static final String START_PHASE_PARAM          = "startPhase";
+
+    /** The retrigger parameter of an internal modulator. */
+    private static final String RETRIGGER_PARAM            = "retrigger";
+
+    /** The decay-break-decay envelope type value. */
+    private static final String DBD_ENV_TYPE_VALUE         = "dbd";
+
+    /** The first decay parameter of a decay-break-decay envelope. */
+    private static final String DECAY1_PARAM               = "decay1";
+
+    /** The break level parameter of a decay-break-decay envelope. */
+    private static final String BREAK_PARAM                = "break";
+
+    /** The second decay parameter of a decay-break-decay envelope. */
+    private static final String DECAY2_PARAM               = "decay2";
+
+    /** The key position source value of an external modulator. */
+    private static final String KEY_POSITION_VALUE         = "keyPos";
+
+    /** The MIDI CC source value of an external modulator. */
+    private static final String MIDI_CC_VALUE              = "midiCC";
+
+    /** The MIDI CC number parameter of an external modulator. */
+    private static final String CC_NUMBER_PARAM            = "ccNumber";
+
+    /** The index of the modulated effect (e.g. a filter) of a modulation target (Kontakt 2). */
+    private static final String TARGET_OBJECT_INDEX_PARAM  = "targetObjIdx";
+
+    /** The index of the modulated internal modulator of an external modulator (Kontakt 1). */
+    private static final String TARGET_MOD_INDEX_PARAM     = "targetModIdx";
+
+    /** The version attribute of an element. */
+    private static final String VERSION_ATTRIBUTE          = "version";
+
 
     /**
      * Get the program tag.
@@ -1058,7 +1139,7 @@ public abstract class AbstractTagsAndAttributes
 
 
     /**
-     * Get the group filter tag (only Kontakt 1).
+     * Get the filter tag. Kontakt 1 stores it in the group, Kontakt 2 in a group insert effect.
      *
      * @return The tag
      */
@@ -1066,6 +1147,312 @@ public abstract class AbstractTagsAndAttributes
     {
         return GROUP_FILTER;
     }
+
+
+    /**
+     * Get the filter type parameter (Kontakt 1) or attribute (Kontakt 2) tag.
+     *
+     * @return The tag
+     */
+    public String filterType ()
+    {
+        return FILTER_TYPE;
+    }
+
+
+    /**
+     * Get the tag of the element which contains the insert effects of a group (only Kontakt 2).
+     *
+     * @return The tag
+     */
+    public String groupInsertEffectsElement ()
+    {
+        return GROUP_INSERT_FX_ELEMENT;
+    }
+
+
+    /**
+     * Get the tag of the element which contains the start criteria of a group.
+     *
+     * @return The tag
+     */
+    public String groupStart ()
+    {
+        return GROUP_START;
+    }
+
+
+    /**
+     * Get the start criteria tag.
+     *
+     * @return The tag
+     */
+    public String startCriteria ()
+    {
+        return START_CRITERIA;
+    }
+
+
+    /**
+     * Get the mode parameter tag of a start criteria.
+     *
+     * @return The tag
+     */
+    public String startModeParam ()
+    {
+        return START_MODE_PARAM;
+    }
+
+
+    /**
+     * Get the prefix of all cycle (round-robin) modes of a start criteria.
+     *
+     * @return The value
+     */
+    public String cycleModePrefix ()
+    {
+        return CYCLE_MODE_PREFIX;
+    }
+
+
+    /**
+     * Get the cycle class (round-robin position) parameter tag of a start criteria.
+     *
+     * @return The tag
+     */
+    public String cycleClassParam ()
+    {
+        return CYCLE_CLASS_PARAM;
+    }
+
+
+    /**
+     * Get the sequencer only parameter tag of a start criteria.
+     *
+     * @return The tag
+     */
+    public String sequencerOnlyParam ()
+    {
+        return SEQUENCER_ONLY_PARAM;
+    }
+
+
+    /**
+     * Get the release trigger parameter tag of a group.
+     *
+     * @return The tag
+     */
+    public String releaseTriggerParam ()
+    {
+        return RELEASE_TRIGGER_PARAM;
+    }
+
+
+    /**
+     * Get the polyphony element tag.
+     *
+     * @return The tag
+     */
+    public String polyphonyElement ()
+    {
+        return POLYPHONY_ELEMENT;
+    }
+
+
+    /**
+     * Get the voice group element tag.
+     *
+     * @return The tag
+     */
+    public String voiceGroupElement ()
+    {
+        return VOICE_GROUP_ELEMENT;
+    }
+
+
+    /**
+     * Get the maximum number of voices parameter tag.
+     *
+     * @return The tag
+     */
+    public String maxNumVoicesParam ()
+    {
+        return MAX_NUM_VOICES_PARAM;
+    }
+
+
+    /**
+     * Get the low frequency oscillator element tag.
+     *
+     * @return The tag
+     */
+    public String lfoElement ()
+    {
+        return LFO_ELEMENT;
+    }
+
+
+    /**
+     * Get the frequency parameter tag of a low frequency oscillator.
+     *
+     * @return The tag
+     */
+    public String frequencyParam ()
+    {
+        return FREQUENCY_PARAM;
+    }
+
+
+    /**
+     * Get the delay parameter tag of a low frequency oscillator.
+     *
+     * @return The tag
+     */
+    public String delayParam ()
+    {
+        return DELAY_PARAM;
+    }
+
+
+    /**
+     * Get the start phase parameter tag of a low frequency oscillator.
+     *
+     * @return The tag
+     */
+    public String startPhaseParam ()
+    {
+        return START_PHASE_PARAM;
+    }
+
+
+    /**
+     * Get the retrigger parameter tag of an internal modulator.
+     *
+     * @return The tag
+     */
+    public String retriggerParam ()
+    {
+        return RETRIGGER_PARAM;
+    }
+
+
+    /**
+     * Get the decay-break-decay envelope type value.
+     *
+     * @return The value
+     */
+    public String dbdEnvTypeValue ()
+    {
+        return DBD_ENV_TYPE_VALUE;
+    }
+
+
+    /**
+     * Get the first decay parameter tag of a decay-break-decay envelope.
+     *
+     * @return The tag
+     */
+    public String decay1Param ()
+    {
+        return DECAY1_PARAM;
+    }
+
+
+    /**
+     * Get the break level parameter tag of a decay-break-decay envelope.
+     *
+     * @return The tag
+     */
+    public String breakParam ()
+    {
+        return BREAK_PARAM;
+    }
+
+
+    /**
+     * Get the second decay parameter tag of a decay-break-decay envelope.
+     *
+     * @return The tag
+     */
+    public String decay2Param ()
+    {
+        return DECAY2_PARAM;
+    }
+
+
+    /**
+     * Get the key position source value of an external modulator.
+     *
+     * @return The value
+     */
+    public String keyPositionValue ()
+    {
+        return KEY_POSITION_VALUE;
+    }
+
+
+    /**
+     * Get the MIDI CC source value of an external modulator.
+     *
+     * @return The value
+     */
+    public String midiCCValue ()
+    {
+        return MIDI_CC_VALUE;
+    }
+
+
+    /**
+     * Get the MIDI CC number parameter tag of an external modulator.
+     *
+     * @return The tag
+     */
+    public String ccNumberParam ()
+    {
+        return CC_NUMBER_PARAM;
+    }
+
+
+    /**
+     * Get the tag of the parameter which contains the index of the modulated effect (Kontakt 2).
+     *
+     * @return The tag
+     */
+    public String targetObjectIndexParam ()
+    {
+        return TARGET_OBJECT_INDEX_PARAM;
+    }
+
+
+    /**
+     * Get the tag of the parameter which contains the index of the modulated internal modulator
+     * (Kontakt 1).
+     *
+     * @return The tag
+     */
+    public String targetModIndexParam ()
+    {
+        return TARGET_MOD_INDEX_PARAM;
+    }
+
+
+    /**
+     * Get the version attribute tag.
+     *
+     * @return The tag
+     */
+    public String versionAttribute ()
+    {
+        return VERSION_ATTRIBUTE;
+    }
+
+
+    /**
+     * Get the tag of an effect element (only Kontakt 2).
+     *
+     * @return The tag
+     */
+    public abstract String effectElement ();
 
 
     /**

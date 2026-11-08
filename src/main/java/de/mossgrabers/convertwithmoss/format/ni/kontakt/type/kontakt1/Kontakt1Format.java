@@ -123,7 +123,8 @@ public class Kontakt1Format extends AbstractKontaktFormat
     public void writeNKI (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int sizeOfSamples) throws IOException
     {
         final String xmlCode = this.handler.createProgram (safeSampleFolderName, multisampleSource, 0);
-        final long timestamp = multisampleSource.getMetadata ().getCreationDateTime ().getTime ();
+        final Date creationDateTime = multisampleSource.getMetadata ().getCreationDateTime ();
+        final long timestamp = creationDateTime == null ? System.currentTimeMillis () : creationDateTime.getTime ();
         writeNKx (out, Magic.KONTAKT1_INSTRUMENT_BE, xmlCode, timestamp, sizeOfSamples);
     }
 
@@ -149,8 +150,9 @@ public class Kontakt1Format extends AbstractKontaktFormat
         // Header version. Always 0x50.
         StreamUtils.writeUnsigned16 (out, 0x50, false);
 
-        // Unknown. Always 0x01 or 0x02.
-        StreamUtils.writeUnsigned16 (out, 0x01, false);
+        // The platform on which the file was created: 0x01 = Mac, 0x02 = Windows. Since the
+        // sample paths use backslashes, it is a Windows file
+        StreamUtils.writeUnsigned16 (out, 0x02, false);
 
         // Unknown. Always 8 empty bytes.
         StreamUtils.writeUnsigned32 (out, 0x00, false);
@@ -183,7 +185,7 @@ public class Kontakt1Format extends AbstractKontaktFormat
         // Header version. Always 0x50.
         StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
 
-        // Unknown. Always 0x01 or 0x02.
+        // The platform on which the file was created: 0x01 = Mac, 0x02 = Windows
         StreamUtils.readUnsigned16 (fileAccess, this.isBigEndian);
 
         // Unknown. Always 8 empty bytes.

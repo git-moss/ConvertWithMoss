@@ -43,18 +43,18 @@ import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpGeneration;
 public class AkmFile extends AbstractRIFFFile
 {
     /** The number of parts of a multi. */
-    public static final int                                       NUMBER_OF_PARTS      = AkmZ48Chunk.NUMBER_OF_PARTS;
+    public static final int                                       NUMBER_OF_PARTS    = AkmZ48Chunk.NUMBER_OF_PARTS;
 
-    private static final Collection<Class<? extends RiffChunkId>> AKM_RIFF_CHUNK_IDS   = new ArrayList<> ();
+    private static final Collection<Class<? extends RiffChunkId>> AKM_RIFF_CHUNK_IDS = new ArrayList<> ();
     static
     {
         Collections.addAll (AKM_RIFF_CHUNK_IDS, CommonRiffChunkId.class, AkmRiffChunkId.class);
     }
 
     /** The effects chunk of the factory multi GM PERC KIT1 of the S6000. */
-    private static final String                                   DEFAULT_EFFECTS_FILE = "AkmEffects.bin";
+    private static final String      DEFAULT_EFFECTS_FILE = "AkmEffects.bin";
     /** The content of the multi version chunk, found in all analysed files. */
-    private static final byte []                                  DEFAULT_VERSION      =
+    private static final byte []     DEFAULT_VERSION      =
     {
         1,
         0x20,
@@ -62,17 +62,17 @@ public class AkmFile extends AbstractRIFFFile
         0
     };
 
-    private final Set<String>                                     ignoredChunks        = new HashSet<> ();
-    private final List<AkmPart>                                   parts                = new ArrayList<> ();
-    private Optional<AkmZ48Chunk>                                 z48Chunk             = Optional.empty ();
-    private RawRIFFChunk                                          effectsChunk;
-    private RawRIFFChunk                                          versionChunk;
-    private final List<RawRIFFChunk>                              otherChunks          = new ArrayList<> ();
-    private final List<IRiffChunk>                                readChunks           = new ArrayList<> ();
-    private String                                                version              = "1.32.0.0";
-    private boolean                                               isS5000Series        = true;
-    private boolean                                               hasEmptyTopSize      = false;
-    private Optional<AkpGeneration>                               writeGeneration      = Optional.empty ();
+    private final Set<String>        ignoredChunks        = new HashSet<> ();
+    private final List<AkmPart>      parts                = new ArrayList<> ();
+    private Optional<AkmZ48Chunk>    z48Chunk             = Optional.empty ();
+    private RawRIFFChunk             effectsChunk;
+    private RawRIFFChunk             versionChunk;
+    private final List<RawRIFFChunk> otherChunks          = new ArrayList<> ();
+    private final List<IRiffChunk>   readChunks           = new ArrayList<> ();
+    private String                   version              = "1.32.0.0";
+    private boolean                  isS5000Series        = true;
+    private boolean                  hasEmptyTopSize      = false;
+    private Optional<AkpGeneration>  writeGeneration      = Optional.empty ();
 
 
     /**

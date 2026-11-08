@@ -33,9 +33,6 @@ public class K2Tag extends AbstractTagsAndAttributes
     /** A K2 Zone element of a program. */
     public static final String K2_ZONE                     = "K2_Zone";
 
-    /** The release trigger parameter */
-    public static final String K2_RELEASE_TRIGGER_PARAM    = "releaseTrigger";
-
     /** The sample file attribute. */
     public static final String K2_SAMPLE_FILE_ATTRIBUTE    = "file_ex2";
 
@@ -63,13 +60,8 @@ public class K2Tag extends AbstractTagsAndAttributes
     /** The target element. */
     public static final String K2_TARGET_ELEMENT           = "Target";
 
-    // -----------------------------------------------------------
-    // Only Kontakt 2 (not in 1)
-
-    /** Criteria to start a group. */
-    public static final String K2_GROUP_START              = "GroupStart";
-    /** Criteria to start a group. */
-    public static final String K2_START_CRITERIA           = "StartCriteria";
+    /** An effect element, e.g. one of the insert effects of a group. */
+    public static final String K2_EFFECT_ELEMENT           = "K2_Effect";
 
 
     /** {@inheritDoc} */
@@ -157,6 +149,14 @@ public class K2Tag extends AbstractTagsAndAttributes
     public String rootContainer ()
     {
         return K2_ROOT_CONTAINER;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String effectElement ()
+    {
+        return K2_EFFECT_ELEMENT;
     }
 
 

@@ -48,6 +48,9 @@ public class NiSSTag extends AbstractTagsAndAttributes
     /** The program pan parameter. */
     public static final String NISS_PROG_PAN_PARAM           = "masterPan";
 
+    /** An effect element. Not used since Kontakt 1 groups have no insert effects. */
+    public static final String NISS_EFFECT_ELEMENT           = "NiSS_Effect";
+
 
     /** {@inheritDoc} */
     @Override
@@ -134,6 +137,14 @@ public class NiSSTag extends AbstractTagsAndAttributes
     public String rootContainer ()
     {
         return NISS_ROOT_CONTAINER;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public String effectElement ()
+    {
+        return NISS_EFFECT_ELEMENT;
     }
 
 

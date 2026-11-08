@@ -13,8 +13,6 @@ import org.w3c.dom.Element;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
-import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
-import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.tools.XMLUtils;
 
@@ -96,22 +94,6 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
                 }
             }
         return 0;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    protected void parseRoundRobin (final Element groupElement, final List<ISampleZone> zones)
-    {
-        // No round robin information in Kontakt 1
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    protected TriggerType getTriggerTypeFromGroupElement (final Map<String, String> groupParameters)
-    {
-        return TriggerType.ATTACK;
     }
 
 

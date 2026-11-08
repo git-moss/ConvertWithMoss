@@ -21,7 +21,7 @@
       <LoopOffset version="0.50"/>
       <SendLevels version="0.50"/>
       <GroupStart>
-        <StartCriteria index="0" version="0.70"/>
+%GROUP_START_CRITERIA%
         <StartCriteria index="1" version="0.70"/>
         <StartCriteria index="2" version="0.70"/>
         <StartCriteria index="3" version="0.70"/>
@@ -30,7 +30,7 @@
       <Filter version="0.70">
         <V name="type" value="%FILTER_TYPE%"/>
         <V name="executionOrder" value="1"/>
-        <V name="bypass" value="no"/>
+        <V name="bypass" value="%FILTER_BYPASS%"/>
         <V name="cutoff" value="%FILTER_CUTOFF%"/>
         <V name="resonance" value="%FILTER_RESONANCE%"/>
       </Filter>
@@ -83,6 +83,7 @@
             <V name="sustain" value="%PITCH_ENVELOPE_SUSTAIN%"/>
           </Envelope>
         </NiSS_IntMod>
+%PITCH_LFO%
       </IntModulators>
       <ExtModulators>
         <NiSS_ExtMod index="0" version="0.80">

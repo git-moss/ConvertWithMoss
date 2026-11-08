@@ -48,8 +48,8 @@ import de.mossgrabers.convertwithmoss.format.akai.akp.riff.AkpZone;
  * <li>AKP files are additionally written in all 3 generations. Reading these files again must
  * result in the same parameters as the original file and writing them again in the same generation
  * must result in identical bytes.</li>
- * <li>AKM files are written in all 3 generations as well. Since generation 3 adds and generations
- * 1 and 2 remove the 'z48 ' chunk, only the parameters of the parts are compared (the Z4/Z8 parts
+ * <li>AKM files are written in all 3 generations as well. Since generation 3 adds and generations 1
+ * and 2 remove the 'z48 ' chunk, only the parameters of the parts are compared (the Z4/Z8 parts
  * only for generation 3 if the original file contains them).</li>
  * <li>AKP files are converted to sample zones, from which a new AKP file is created in all 3
  * generations (like the creator does it). Reading that file must result in the same sample
