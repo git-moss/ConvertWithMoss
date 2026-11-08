@@ -12,7 +12,9 @@ import java.util.Optional;
 
 import org.w3c.dom.Element;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.tools.XMLUtils;
 
@@ -157,5 +159,91 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
     protected String getTemplatePrefix ()
     {
         return "Kontakt2";
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected String replaceMetadataPlaceholders (final String text, final IMetadata metadata)
+    {
+        final String [] keywords = metadata.getKeywords ();
+        return text.replace ("%PROGRAM_CATEGORY_1%", Integer.toString (Kontakt2Header.getCategory1Index (metadata.getCategory ()))).replace ("%PROGRAM_CATEGORY_2%", Integer.toString (Kontakt2Header.getCategory2Index (keywords))).replace ("%PROGRAM_CATEGORY_3%", Integer.toString (Kontakt2Header.getCategory3Index (keywords)));
+    }
+
+
+    /**
+     * {@inheritDoc}
+     *
+     * Kontakt 2 stores the parameters of all 64 slots in the bank. The MIDI channel of an empty
+     * slot is its number.
+     */
+    @Override
+    protected String createBankSlotParameters (final List<IInstrumentSource> instrumentSources)
+    {
+        final StringBuilder sb = new StringBuilder ();
+        for (int i = 0; i < 64; i++)
+        {
+            final int midiChannel = i < instrumentSources.size () ? toKontaktMidiChannel (instrumentSources.get (i)) : i + 1;
+            final String slot = String.format ("%03d", Integer.valueOf (i));
+            appendValue (sb, "midiChannel_slot" + slot, Integer.toString (midiChannel));
+            appendValue (sb, "solo_slot" + slot, "no");
+            appendValue (sb, "mute_slot" + slot, "no");
+            for (int aux = 0; aux < 4; aux++)
+                appendValue (sb, "auxSendLevel" + aux + "_slot" + slot, "0");
+            appendValue (sb, "reorderIdx_" + slot, Integer.toString (i % 16));
+        }
+        return sb.toString ();
+    }
+
+
+    private static void appendValue (final StringBuilder sb, final String name, final String value)
+    {
+        if (!sb.isEmpty ())
+            sb.append ("\r\n");
+        sb.append ("    <V name=\"").append (name).append ("\" value=\"").append (value).append ("\"/>");
+    }
+
+
+    /**
+     * {@inheritDoc}
+     *
+     * Kontakt 2 encodes the path: it starts with '@', each folder is stored as 'd' followed by the
+     * 3-digit length of its name and the name. The file name is stored as 'F' followed by 11
+     * characters ('-0001', the 3-digit length of the name and '000') and the name.
+     */
+    @Override
+    protected String formatSampleFileName (final String safeSampleFolderName, final String sampleFileName)
+    {
+        final StringBuilder sb = new StringBuilder ("@");
+        for (final String folder: safeSampleFolderName.replace ('\\', '/').split ("/"))
+            if (!folder.isEmpty ())
+            {
+                final String encodedFolder = encodeCharacters (folder);
+                sb.append ('d').append (String.format ("%03d", Integer.valueOf (encodedFolder.length ()))).append (encodedFolder);
+            }
+        final String encodedFileName = encodeCharacters (sampleFileName);
+        sb.append ("F-0001").append (String.format ("%03d", Integer.valueOf (encodedFileName.length ()))).append ("000").append (encodedFileName);
+        return sb.toString ();
+    }
+
+
+    /**
+     * Encodes all non-ASCII characters as '%' followed by the 4-digit hexadecimal code.
+     *
+     * @param text The text to encode
+     * @return The encoded text
+     */
+    private static String encodeCharacters (final String text)
+    {
+        final StringBuilder sb = new StringBuilder ();
+        for (int i = 0; i < text.length (); i++)
+        {
+            final char c = text.charAt (i);
+            if (c < 0x20 || c > 0x7E || c == '%')
+                sb.append (String.format ("%%%04x", Integer.valueOf (c)));
+            else
+                sb.append (c);
+        }
+        return sb.toString ();
     }
 }

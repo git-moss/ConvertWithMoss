@@ -1,0 +1,32 @@
+        <K2_Zone index="%ZONE_INDEX%" groupIdx="%GROUP_INDEX%" version="0.70">
+          <Parameters>
+            <V name="sampleStart" value="%ZONE_SAMPLE_START%"/>
+            <V name="sampleEnd" value="%ZONE_SAMPLE_END%"/>
+            <V name="lowVelocity" value="%ZONE_VEL_LOW%"/>
+            <V name="highVelocity" value="%ZONE_VEL_HIGH%"/>
+            <V name="lowKey" value="%ZONE_KEY_LOW%"/>
+            <V name="highKey" value="%ZONE_KEY_HIGH%"/>
+            <V name="fadeLowVelo" value="%ZONE_VEL_CROSS_LOW%"/>
+            <V name="fadeHighVelo" value="%ZONE_VEL_CROSS_HIGH%"/>
+            <V name="fadeLowKey" value="%ZONE_KEY_CROSS_LOW%"/>
+            <V name="fadeHighKey" value="%ZONE_KEY_CROSS_HIGH%"/>
+            <V name="rootKey" value="%ZONE_KEY_ROOT%"/>
+            <V name="zoneVolume" value="%ZONE_VOLUME%"/>
+            <V name="zonePan" value="%ZONE_PAN%"/>
+            <V name="zoneTune" value="%ZONE_TUNE%"/>
+            <V name="slicerSens" value="0"/>
+            <V name="isReferenceZone" value="yes"/>
+            <V name="selected" value="no"/>
+            <V name="zoomScaleX" value="1"/>
+            <V name="zoomScaleY" value="1"/>
+            <V name="selectedLoopIdx" value="-1"/>
+          </Parameters>
+          <Loops>
+%ZONE_LOOPS%
+          </Loops>
+          <Sample>
+            <V name="file_ex2" value="%ZONE_SAMPLE_NAME%"/>
+            <V name="purged" value="no"/>
+          </Sample>
+          <Slices/>
+        </K2_Zone>

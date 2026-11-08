@@ -29,10 +29,22 @@ import javafx.scene.layout.Pane;
  */
 public class KontaktCreatorUI extends WavChunkSettingsUI
 {
+    /** The supported output formats in the order of the radio buttons. */
+    public enum OutputFormat
+    {
+        /** Kontakt 1 (NiSS). */
+        KONTAKT_1,
+        /** Kontakt 2 (K2). */
+        KONTAKT_2,
+        /** Kontakt 6.8. */
+        KONTAKT_6_8
+    }
+
+
     private static final String NKI_OUTPUT_FORMAT = "NkiOutputFormat";
 
     private ToggleGroup         outputFormatGroup;
-    private boolean             outputFormat;
+    private OutputFormat        outputFormat      = OutputFormat.KONTAKT_1;
 
 
     /**
@@ -58,11 +70,14 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
         final RadioButton order1 = panel.createRadioButton ("@IDS_NKI_KONTAKT_1");
         order1.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order1.setToggleGroup (this.outputFormatGroup);
-        final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_6_8");
+        final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_2");
         order2.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order2.setToggleGroup (this.outputFormatGroup);
+        final RadioButton order3 = panel.createRadioButton ("@IDS_NKI_KONTAKT_6_8");
+        order3.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
+        order3.setToggleGroup (this.outputFormatGroup);
         // TODO remove if implementation is finished
-        order2.setDisable (true);
+        order3.setDisable (true);
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
 
@@ -76,7 +91,9 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
     {
         final int formatIndex = config.getInteger (NKI_OUTPUT_FORMAT, 0);
         final ObservableList<Toggle> toggles = this.outputFormatGroup.getToggles ();
-        this.outputFormatGroup.selectToggle (toggles.get (formatIndex < toggles.size () ? formatIndex : 0));
+        final Toggle toggle = toggles.get (formatIndex >= 0 && formatIndex < toggles.size () ? formatIndex : 0);
+        // Do not select a format which is not available
+        this.outputFormatGroup.selectToggle (toggle instanceof final RadioButton radioButton && radioButton.isDisabled () ? toggles.get (0) : toggle);
 
         super.loadSettings (config);
     }
@@ -105,7 +122,9 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsUI (notifier))
             return false;
 
-        this.outputFormat = this.outputFormatGroup.getToggles ().get (0).isSelected ();
+        final int selected = Functions.getSelectedToggleIndex (this.outputFormatGroup);
+        final OutputFormat [] formats = OutputFormat.values ();
+        this.outputFormat = selected < 0 || selected >= formats.length ? OutputFormat.KONTAKT_1 : formats[selected];
         return true;
     }
 
@@ -117,10 +136,17 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        // TODO Currently only Kontakt 1 supported...
-        @SuppressWarnings("unused")
+        // The output format is the Kontakt version: 1 or 2, Kontakt 1 is the default
         final String value = parameters.remove (NKI_OUTPUT_FORMAT);
-        this.outputFormat = true;
+        if (value == null || value.isBlank () || "1".equals (value.trim ()))
+            this.outputFormat = OutputFormat.KONTAKT_1;
+        else if ("2".equals (value.trim ()))
+            this.outputFormat = OutputFormat.KONTAKT_2;
+        else
+        {
+            notifier.logError ("IDS_CLI_UNKNOWN_OUTPUT_FORMAT", value);
+            return false;
+        }
 
         return true;
     }
@@ -137,11 +163,11 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
 
 
     /**
-     * Should Kontakt 1 format be created?
+     * Get the format to create.
      *
-     * @return True to create Kontakt 1
+     * @return The output format
      */
-    public boolean isKontakt1 ()
+    public OutputFormat getOutputFormat ()
     {
         return this.outputFormat;
     }

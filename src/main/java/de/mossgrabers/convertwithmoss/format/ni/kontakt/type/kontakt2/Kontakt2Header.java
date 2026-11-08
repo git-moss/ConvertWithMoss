@@ -4,15 +4,19 @@
 
 package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt2;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
@@ -32,6 +36,56 @@ public class Kontakt2Header
     public static final String       CATEGORY_OTHER           = "Other";
 
     private static final int         HEADER_KONTAKT_2         = 0x100;
+    /** The size of a Kontakt 2 - 4.1 header including the file ID. */
+    private static final int         HEADER_SIZE              = 0xAA;
+    private static final int         CHECKSUM_OFFSET          = 0xA2;
+    private static final int         PATCH_TYPE_NKM           = 0;
+    private static final int         PATCH_TYPE_NKI           = 1;
+
+    /** The offsets and sizes of all 2 and 4 byte values of the header (for the byte order). */
+    private static final int [] []   HEADER_VALUES            =
+    {
+        { 0x00, 4 },
+        { 0x04, 4 },
+        { 0x08, 2 },
+        { 0x0A, 4 },
+        { 0x0E, 2 },
+        { 0x10, 4 },
+        { 0x14, 4 },
+        { 0x18, 4 },
+        { 0x1C, 2 },
+        { 0x1E, 2 },
+        { 0x20, 2 },
+        { 0x22, 2 },
+        { 0x24, 2 },
+        { 0x26, 4 },
+        { 0x2A, 4 },
+        { 0x2E, 4 },
+        { 0x32, 4 },
+        { 0x36, 4 },
+        { 0x9A, 2 },
+        { 0x9C, 2 },
+        { 0x9E, 4 },
+        { 0xA2, 4 },
+        { 0xA6, 4 }
+    };
+
+    // Kontakt 2.2.3.006 (the bytes in little-endian order)
+    private static final byte []     KONTAKT_2_VERSION        =
+    {
+        6,
+        3,
+        2,
+        2
+    };
+    // Kontakt 2.2.0.008 (the bytes in little-endian order)
+    private static final byte []     KONTAKT_2_MIN_VERSION    =
+    {
+        8,
+        0,
+        2,
+        2
+    };
     private static final int         HEADER_KONTAKT_42        = 0x110;
     private static final String      NULL_ENTRY               = "(null)";
 
@@ -100,6 +154,47 @@ public class Kontakt2Header
         "Small",
         "Soft"
     };
+
+    /** Maps the categories of the TagDetector to the index of the 1st instrument category. */
+    private static final Map<String, Integer> TAG_CATEGORY_TO_CATEGORY_1 = new HashMap<> ();
+    static
+    {
+        final String [] [] mapping =
+        {
+            { "Piano", "Piano" },
+            { "Guitar", "Guitar" },
+            { "Bass", "Bass" },
+            { "Drum", "Drums" },
+            { "Acoustic Drum", "Drums" },
+            { "Kick", "Drums" },
+            { "Snare", "Drums" },
+            { "Hi-Hat", "Drums" },
+            { "Clap", "Drums" },
+            { "Keyboard", "Keyboard" },
+            { "Synth", "Synthesizer" },
+            { "Monosynth", "Synthesizer" },
+            { "Chip", "Synthesizer" },
+            { "Strings", "Strings" },
+            { "Orchestral", "Strings" },
+            { "Brass", "Brass" },
+            { "Organ", "Organ" },
+            { "Pipe", "Organ" },
+            { "Vocal", "Vocal" },
+            { "Chromatic Percussion", "Mallet" },
+            { "Bell", "Mallet" },
+            { "Drone", "Athmosphere" },
+            { "Loops", "Loop/Beat" },
+            { "Pad", "Pad" },
+            { "Lead", "Lead" },
+            { "FX", "Soundeffect" },
+            { "Destruction", "Soundeffect" },
+            { "Hits", "Soundeffect" },
+            { "Winds", "Woodwinds" },
+            { "Percussion", "Percussion" }
+        };
+        for (final String [] entry: mapping)
+            TAG_CATEGORY_TO_CATEGORY_1.put (entry[0].toLowerCase (Locale.US), Integer.valueOf (findCategoryIndex (K2_INSTRUMENT_CATEGORY_1, entry[1])));
+    }
 
     private static final Set<String> KNOWN_LIBRARY_IDS        = new HashSet<> ();
     static
@@ -211,10 +306,226 @@ public class Kontakt2Header
 
 
     /**
-     * Write a Kontakt 2 - 4.2 header.
+     * Set all values to write a Kontakt 2 multi (NKM) header.
+     *
+     * @param compressedLength The length of the compressed XML document
+     * @param numberOfLines The number of lines of the XML document
+     * @param zones The number of zones of all instruments
+     * @param groups The number of groups of all instruments
+     * @param instruments The number of instruments
+     * @param sampleSize The size of all samples in bytes
+     * @param creation The creation date
+     */
+    public void setMultiValues (final int compressedLength, final int numberOfLines, final int zones, final int groups, final int instruments, final long sampleSize, final Date creation)
+    {
+        this.setInstrumentValues (compressedLength, numberOfLines, zones, groups, sampleSize, creation, 0, "");
+        this.patchType = PATCH_TYPE_NKM;
+        this.instruments = instruments;
+    }
+
+
+    /**
+     * Set all values to write a Kontakt 2 instrument (NKI) header.
+     *
+     * @param compressedLength The length of the compressed XML document
+     * @param numberOfLines The number of lines of the XML document
+     * @param zones The number of zones
+     * @param groups The number of groups
+     * @param sampleSize The size of all samples in bytes
+     * @param creation The creation date
+     * @param iconID The ID of the instrument icon
+     * @param author The author of the instrument (max. 8 characters are stored)
+     */
+    public void setInstrumentValues (final int compressedLength, final int numberOfLines, final int zones, final int groups, final long sampleSize, final Date creation, final int iconID, final String author)
+    {
+        this.compressedLength = compressedLength;
+        this.headerVersion = HEADER_KONTAKT_2;
+        this.isFourDotTwo = false;
+        this.patchType = PATCH_TYPE_NKI;
+        System.arraycopy (KONTAKT_2_VERSION, 0, this.kontaktVersionBuffer, 0, 4);
+        if (this.isBigEndian)
+            StreamUtils.reverseArray (this.kontaktVersionBuffer);
+        this.libraryID = "Kon2";
+        this.creation = creation;
+        // The lower 16 bits of the number of lines of the XML document
+        this.unknownA = numberOfLines & 0xFFFF;
+        this.zones = zones;
+        this.groups = groups;
+        this.instruments = 1;
+        this.sampleSize = (int) (sampleSize & 0xFFFFFFFFL);
+        this.isMonolith = false;
+        System.arraycopy (KONTAKT_2_MIN_VERSION, 0, this.minSupportedVersionBuffer, 0, 4);
+        if (this.isBigEndian)
+            StreamUtils.reverseArray (this.minSupportedVersionBuffer);
+        // The upper 32 bits of the sample size
+        this.unknownB = (int) (sampleSize >>> 32);
+        this.iconID = iconID;
+        this.author = author == null ? "" : author;
+        this.category1 = 0;
+        this.category2 = 0;
+        this.category3 = 0;
+        this.website = "";
+        this.flags = 0;
+        this.checksum = 0;
+        this.svnRevision = 0;
+    }
+
+
+    /**
+     * Set the 3 instrument categories.
+     *
+     * @param category1 The index of the 1st category, see getCategory1Index
+     * @param category2 The index of the 2nd category, see getCategory2Index
+     * @param category3 The index of the 3rd category, see getCategory3Index
+     */
+    public void setCategories (final int category1, final int category2, final int category3)
+    {
+        this.category1 = category1;
+        this.category2 = category2;
+        this.category3 = category3;
+    }
+
+
+    /**
+     * Get the index of the 1st instrument category (the instrument type) which matches the given
+     * category.
+     *
+     * @param category A category of the TagDetector or the name of a category
+     * @return The index, 0 (Other) if there is no matching category
+     */
+    public static int getCategory1Index (final String category)
+    {
+        if (category == null || category.isBlank ())
+            return 0;
+        final Integer index = TAG_CATEGORY_TO_CATEGORY_1.get (category.trim ().toLowerCase (Locale.US));
+        return index == null ? findCategoryIndex (K2_INSTRUMENT_CATEGORY_1, category) : index.intValue ();
+    }
+
+
+    /**
+     * Get the index of the 2nd instrument category (e.g. Acoustic, Electric) which matches one of
+     * the given keywords.
+     *
+     * @param keywords The keywords
+     * @return The index of the first matching keyword, 0 (Other) if no keyword matches
+     */
+    public static int getCategory2Index (final String [] keywords)
+    {
+        return findCategoryIndex (K2_INSTRUMENT_CATEGORY_2, keywords);
+    }
+
+
+    /**
+     * Get the index of the 3rd instrument category (e.g. Dark, Soft) which matches one of the given
+     * keywords.
+     *
+     * @param keywords The keywords
+     * @return The index of the first matching keyword, 0 (Other) if no keyword matches
+     */
+    public static int getCategory3Index (final String [] keywords)
+    {
+        return findCategoryIndex (K2_INSTRUMENT_CATEGORY_3, keywords);
+    }
+
+
+    private static int findCategoryIndex (final String [] categories, final String [] keywords)
+    {
+        if (keywords != null)
+            for (final String keyword: keywords)
+            {
+                final int index = findCategoryIndex (categories, keyword);
+                if (index > 0)
+                    return index;
+            }
+        return 0;
+    }
+
+
+    private static int findCategoryIndex (final String [] categories, final String name)
+    {
+        if (name != null)
+            // Index 0 is 'Other'
+            for (int i = 1; i < categories.length; i++)
+                if (categories[i].trim ().equalsIgnoreCase (name.trim ()))
+                    return i;
+        return 0;
+    }
+
+
+    /**
+     * Write a Kontakt 2 - 4.1 header including the file ID and the checksum.
      *
      * @param out The output stream to write to
-     * @throws IOException Error reading the header
+     * @param fileID The file ID (the first 4 bytes of the file)
+     * @throws IOException Error writing the header
+     */
+    public void write (final OutputStream out, final int fileID) throws IOException
+    {
+        final ByteArrayOutputStream headerOut = new ByteArrayOutputStream ();
+        StreamUtils.writeUnsigned32 (headerOut, fileID, this.isBigEndian);
+        this.checksum = 0;
+        this.write (headerOut);
+        final byte [] header = headerOut.toByteArray ();
+
+        this.checksum = calculateChecksum (header, this.isBigEndian);
+        final ByteArrayOutputStream checksumOut = new ByteArrayOutputStream ();
+        StreamUtils.writeUnsigned32 (checksumOut, this.checksum, this.isBigEndian);
+        System.arraycopy (checksumOut.toByteArray (), 0, header, CHECKSUM_OFFSET, 4);
+        out.write (header);
+    }
+
+
+    /**
+     * Calculates the checksum of a Kontakt 2 - 4.1 header. It is calculated over the header in
+     * big-endian byte order with the checksum set to 0.
+     *
+     * @param header The 170 bytes of the header including the file ID
+     * @param isBigEndian True if the header is stored in big-endian byte order
+     * @return The checksum
+     */
+    public static int calculateChecksum (final byte [] header, final boolean isBigEndian)
+    {
+        final byte [] data = Arrays.copyOf (header, HEADER_SIZE);
+        if (!isBigEndian)
+            for (final int [] value: HEADER_VALUES)
+                for (int i = 0; i < value[1] / 2; i++)
+                {
+                    final int pos1 = value[0] + i;
+                    final int pos2 = value[0] + value[1] - 1 - i;
+                    final byte b = data[pos1];
+                    data[pos1] = data[pos2];
+                    data[pos2] = b;
+                }
+        Arrays.fill (data, CHECKSUM_OFFSET, CHECKSUM_OFFSET + 4, (byte) 0);
+
+        int sum = 0;
+        for (int j = 0; j < HEADER_SIZE; j++)
+        {
+            final int a = (j + 9) % 7;
+            final int b = (j + 1) % 18;
+            final int c = (a + j) % 17;
+            // At the end of the header the last read byte is used again
+            int v = data[j] & 0xFF;
+            sum += v << j % 13;
+            if (j + 1 < HEADER_SIZE)
+                v = data[j + 1] & 0xFF;
+            sum += v << a;
+            if (j + 2 < HEADER_SIZE)
+                v = data[j + 2] & 0xFF;
+            sum += v << b;
+            if (j + 3 < HEADER_SIZE)
+                v = data[j + 3] & 0xFF;
+            sum += v << c;
+        }
+        return sum;
+    }
+
+
+    /**
+     * Write a Kontakt 2 - 4.2 header (without the file ID).
+     *
+     * @param out The output stream to write to
+     * @throws IOException Error writing the header
      */
     public void write (final OutputStream out) throws IOException
     {

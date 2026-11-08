@@ -1,17 +1,17 @@
-<?xml version="1.0"?>
-<K2_Container index="0" name="(null)" type="single_program" version="0.50">
+<K2_Container index="%PROGRAM_INDEX%" name="(null)" type="single_program" version="0.50">
   <Parameters>
     <V name="loadPurged" value="no"/>
     <V name="tableOpen" value="no"/>
     <V name="smallRackUnit" value="no"/>
     <V name="auxSendsVisible" value="no"/>
+    <V name="libraryID" value="0"/>
+    <V name="loadingFlags" value="0"/>
     <V name="curProgramChangeNum" value="0"/>
     <V name="outputMask" value="131072"/>
     <V name="volume" value="0.5"/>
-    <V name="pan" value="0."/>
+    <V name="pan" value="0"/>
     <V name="origSaveMode" value="0"/>
-    <V name="origAbsolutePaths" value="yes"/>
-    <V name="origCompressedSamples" value="no"/>
+    <V name="origAbsolutePaths" value="no"/>
     <V name="hasBeenSaved" value="yes"/>
   </Parameters>
   <Automation/>
@@ -25,22 +25,21 @@
     </VoiceGroup>
   </Polyphony>
   <Programs>
-    <K2_Program index="0" name="%PROGRAM_NAME%" version="0.80">
+    <K2_Program index="0" name="%PROGRAM_NAME%" version="0.60">
       <Parameters>
-        <V name="numBytesSamplesTotal" value="0."/>
-        <V name="transpose" value="0"/>
-        <V name="volume" value="0.5"/>
-        <V name="pan" value="0."/>
-        <V name="tune" value="0."/>
+        <V name="numBytesSamplesTotal" value="0"/>
+        <V name="transpose" value="%MASTER_TRANSPOSE%"/>
+        <V name="volume" value="%MASTER_VOLUME%"/>
+        <V name="pan" value="%MASTER_PANNING%"/>
+        <V name="tune" value="%MASTER_TUNE%"/>
         <V name="lowVelocity" value="1"/>
         <V name="highVelocity" value="127"/>
-        <V name="lowKey" value="0"/>
-        <V name="highKey" value="127"/>
+        <V name="lowKey" value="%MASTER_LOW_KEY%"/>
+        <V name="highKey" value="%MASTER_HIGH_KEY%"/>
         <V name="defaultKeyKeySwitch" value="-1"/>
         <V name="dfdChannelPreloadSize" value="61440"/>
         <V name="libraryID" value="0"/>
         <V name="loadingFlags" value="0"/>
-        <V name="groupSolo" value="no"/>
         <V name="cc64Mode" value="cc64_mode_sustain_plus_controller"/>
         <V name="useStdCC_7_10" value="yes"/>
         <V name="useStdCC_120_123" value="yes"/>
@@ -61,37 +60,52 @@
         <V name="editorOpenGroup" value="no"/>
         <V name="editorOpenScript" value="no"/>
         <V name="editorOpenProp" value="no"/>
-        <V name="mapEditSelGroupsOnly" value="no"/>
-        <V name="ifxVisible" value="yes"/>
-        <V name="sfxVisible" value="yes"/>
-        <V name="modVisible" value="yes"/>
+        <V name="ifxVisible" value="no"/>
+        <V name="sfxVisible" value="no"/>
+        <V name="modVisible" value="no"/>
         <V name="masterZoneIdx" value="-1"/>
         <V name="batteryNumRowsVisible" value="-1"/>
         <V name="batteryNumColumnsVisible" value="-1"/>
         <V name="batteryIRCVisible" value="no"/>
-        <V name="perfViewScriptIdx" value="-1"/>
-        <V name="catIconIdx" value="28"/>
-        <V name="instrumentCredits" value=""/>
-        <V name="instrumentAuthor" value=""/>
-        <V name="instrumentURL" value=""/>
-        <V name="instrumentCat1" value="0"/>
-        <V name="instrumentCat2" value="0"/>
-        <V name="instrumentCat3" value="0"/>
+        <V name="catIconIdx" value="%PROGRAM_ICON%"/>
+        <V name="instrumentCredits" value="%PROGRAM_CREDITS%"/>
+        <V name="instrumentAuthor" value="%PROGRAM_AUTHOR%"/>
+        <V name="instrumentURL" value="(null)"/>
+        <V name="instrumentCat1" value="%PROGRAM_CATEGORY_1%"/>
+        <V name="instrumentCat2" value="%PROGRAM_CATEGORY_2%"/>
+        <V name="instrumentCat3" value="%PROGRAM_CATEGORY_3%"/>
       </Parameters>
       <Scripts/>
       <Automation/>
-      <MorphGroups/>
-      <MorphMaps/>
       <Polyphony>
         <VoiceGroup index="0" version="0.60">
           <V name="name" value="&lt;instrument>"/>
           <V name="mode" value="kill_oldest"/>
           <V name="preferReleased" value="yes"/>
-          <V name="maxNumVoices" value="32"/>
+          <V name="maxNumVoices" value="%PROGRAM_MAX_VOICES%"/>
           <V name="msFadeTime" value="10"/>
           <V name="exclusionGroup" value="-1"/>
         </VoiceGroup>
       </Polyphony>
-      <ProgramInsertFX/>
+      <ProgramInsertFX>
+        <K2_Effect index="7" version="0.50">
+          <V name="routersOpen" value="no"/>
+          <V name="classID" value="0"/>
+          <V name="bypass" value="no"/>
+          <V name="outLevel" value="1"/>
+          <V name="outLevelDry" value="1"/>
+          <V name="sendFXOutPartition" value="-1"/>
+          <SendLevels version="0.50">
+            <V name="level_0" value="1"/>
+            <V name="level_1" value="1"/>
+            <V name="level_2" value="1"/>
+            <V name="level_3" value="1"/>
+            <V name="level_4" value="1"/>
+            <V name="level_5" value="1"/>
+            <V name="level_6" value="1"/>
+            <V name="level_7" value="1"/>
+          </SendLevels>
+        </K2_Effect>
+      </ProgramInsertFX>
       <ProgramSendFX/>
       <Groups>

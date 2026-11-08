@@ -21,6 +21,7 @@ import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.IKontaktFormat;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt1.Kontakt1Format;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt2.Kontakt2Format;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Kontakt5Format;
 import de.mossgrabers.tools.StringUtils;
 
@@ -69,8 +70,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             return;
         }
 
-        final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
-        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Format (this.notifier, false) : new Kontakt5Format (this.notifier);
+        final IKontaktFormat kontaktType = this.createKontaktFormat ();
 
         final String multisampleName = SafeFileNames.create (multisampleSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, multisampleName, "nki");
@@ -106,10 +106,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             instrumentSources.add (instrumentSource);
         }
 
-        final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
-        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Format (this.notifier, false) : new Kontakt5Format (this.notifier);
-
-        this.createNKM (destinationFolder, instrumentSources, libraryName, kontaktType);
+        this.createNKM (destinationFolder, instrumentSources, libraryName);
     }
 
 
@@ -122,14 +119,14 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             return;
 
         final String libraryName = SafeFileNames.create (performanceSource.getName ());
-        final boolean isKontakt1 = this.settingsConfiguration.isKontakt1 ();
-        final IKontaktFormat kontaktType = isKontakt1 ? new Kontakt1Format (this.notifier, false) : new Kontakt5Format (this.notifier);
-        this.createNKM (destinationFolder, instruments, libraryName, kontaktType);
+        this.createNKM (destinationFolder, instruments, libraryName);
     }
 
 
-    private void createNKM (final File destinationFolder, final List<IInstrumentSource> instrumentSources, final String libraryName, final IKontaktFormat kontaktType) throws IOException
+    private void createNKM (final File destinationFolder, final List<IInstrumentSource> instrumentSources, final String libraryName) throws IOException
     {
+        final IKontaktFormat kontaktType = this.createKontaktFormat ();
+
         final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "nkm");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
@@ -172,6 +169,22 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
         }
 
         this.progress.notifyDone ();
+    }
+
+
+    /**
+     * Create the Kontakt format which is selected in the settings.
+     *
+     * @return The format
+     */
+    private IKontaktFormat createKontaktFormat ()
+    {
+        return switch (this.settingsConfiguration.getOutputFormat ())
+        {
+            case KONTAKT_1 -> new Kontakt1Format (this.notifier, false);
+            case KONTAKT_2 -> new Kontakt2Format (this.notifier, false);
+            default -> new Kontakt5Format (this.notifier);
+        };
     }
 
 

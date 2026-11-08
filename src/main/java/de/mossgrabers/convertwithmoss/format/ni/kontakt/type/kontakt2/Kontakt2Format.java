@@ -12,7 +12,10 @@ import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
@@ -44,7 +48,6 @@ import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.KontaktPre
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Program;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
-import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -112,7 +115,32 @@ public class Kontakt2Format extends AbstractKontaktFormat
     @Override
     public void writeNKM (final OutputStream out, final String bankName, final List<String> safeSampleFolderNames, final List<IInstrumentSource> instrumentSources, final int sizeOfSamples) throws IOException
     {
-        // Not supported
+        if (instrumentSources.isEmpty ())
+            return;
+
+        final String result = this.handler.createBank (bankName, safeSampleFolderNames, instrumentSources);
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream ();
+        CompressionUtils.writeZLIB (bout, result, 1);
+        final byte [] zlibContent = bout.toByteArray ();
+
+        // A bank contains max. 64 instruments
+        final int numInstruments = Math.min (64, instrumentSources.size ());
+        int numZones = 0;
+        int numGroups = 0;
+        for (int i = 0; i < numInstruments; i++)
+        {
+            final List<IGroup> groups = instrumentSources.get (i).getMultisampleSource ().getNonEmptyGroups (false);
+            numGroups += groups.size ();
+            for (final IGroup group: groups)
+                numZones += group.getSampleZones ().size ();
+        }
+
+        final Date creationDateTime = instrumentSources.get (0).getMetadata ().getCreationDateTime ();
+        final Kontakt2Header header = new Kontakt2Header (this.notifier, this.isBigEndian);
+        header.setMultiValues (zlibContent.length, countLines (result), numZones, numGroups, numInstruments, sizeOfSamples, creationDateTime == null ? new Date () : creationDateTime);
+        // Kontakt 2 uses the same file ID for multis
+        header.write (out, Magic.KONTAKT2_INSTRUMENT_BE);
+        out.write (zlibContent);
     }
 
 
@@ -162,24 +190,40 @@ public class Kontakt2Format extends AbstractKontaktFormat
         CompressionUtils.writeZLIB (bout, result, 1);
         final byte [] zlibContent = bout.toByteArray ();
 
-        StreamUtils.writeUnsigned32 (out, Magic.KONTAKT2_INSTRUMENT_LE, false);
-        StreamUtils.writeUnsigned32 (out, zlibContent.length, false);
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
+        int numZones = 0;
+        for (final IGroup group: groups)
+            numZones += group.getSampleZones ().size ();
 
-        // Since we still do not understand how to calculate the checksum, go with a static header
-        // with no metadata at all --> this does not work since e.g. the number of zones/groups
-        // needs to be set
-        out.write (Functions.rawFileFor ("de/mossgrabers/convertwithmoss/templates/nki/Kontakt2_Static_Header.bin"));
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        final Date creationDateTime = metadata.getCreationDateTime ();
+        final String category = metadata.getCategory ();
+        final Kontakt2Header header = new Kontakt2Header (this.notifier, this.isBigEndian);
+        header.setInstrumentValues (zlibContent.length, countLines (result), numZones, groups.size (), sizeOfSamples, creationDateTime == null ? new Date () : creationDateTime, KontaktIcon.getID (category == null ? "" : category), metadata.getCreator ());
+        header.setCategories (Kontakt2Header.getCategory1Index (category), Kontakt2Header.getCategory2Index (metadata.getKeywords ()), Kontakt2Header.getCategory3Index (metadata.getKeywords ()));
+        header.write (out, Magic.KONTAKT2_INSTRUMENT_BE);
 
         out.write (zlibContent);
 
         StreamUtils.writeUnsigned32 (out, Magic.SOUNDINFO_HEADER_LE, false);
         StreamUtils.writeUnsigned32 (out, Magic.SOUNDINFO_HEADER_VERSION_LE, false);
 
-        final IMetadata m = multisampleSource.getMetadata ();
-        final SoundinfoDocument soundinfoDocument = new SoundinfoDocument (m.getCreator (), m.getCategory ());
+        final SoundinfoDocument soundinfoDocument = new SoundinfoDocument (metadata.getCreator (), metadata.getCategory ());
         final byte [] data = soundinfoDocument.createDocument (multisampleSource.getName ()).getBytes (StandardCharsets.UTF_8);
         StreamUtils.writeUnsigned32 (out, data.length, false);
         out.write (data);
+    }
+
+
+    /**
+     * Count the lines of a text.
+     *
+     * @param text The text
+     * @return The number of lines
+     */
+    private static int countLines (final String text)
+    {
+        return (int) text.chars ().filter (c -> c == '\n').count () + (text.endsWith ("\n") ? 0 : 1);
     }
 
 
@@ -365,11 +409,20 @@ public class Kontakt2Format extends AbstractKontaktFormat
                 metadata.setCreator (creator);
             if (!isMulti && (metadata.getCategory () == null || metadata.getCategory ().isBlank ()))
                 metadata.setCategory (category);
+            if (metadata.getCreationDateTime () == null && headerMetadata.getCreationDateTime () != null)
+                metadata.setCreationDateTime (headerMetadata.getCreationDateTime ());
 
             final List<String> soundCategories = new ArrayList<> ();
             soundCategories.addAll (categories);
             Collections.addAll (soundCategories, metadata.getKeywords ());
-            metadata.setKeywords (TagDetector.detectKeywords (soundCategories.toArray (new String [soundCategories.size ()])));
+            // The 2nd and 3rd instrument category of the header are taken as they are since most of
+            // them are not known keywords
+            final Set<String> keywords = new LinkedHashSet<> (Arrays.asList (TagDetector.detectKeywords (soundCategories.toArray (new String [soundCategories.size ()]))));
+            final String [] headerKeywords = headerMetadata.getKeywords ();
+            if (headerKeywords != null)
+                for (final String headerKeyword: headerKeywords)
+                    keywords.add (headerKeyword.trim ());
+            metadata.setKeywords (keywords.toArray (new String [keywords.size ()]));
 
             // Update the description
             final String description = headerMetadata.getDescription ();

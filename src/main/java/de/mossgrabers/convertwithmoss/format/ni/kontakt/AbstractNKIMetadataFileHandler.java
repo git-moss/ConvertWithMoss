@@ -135,6 +135,9 @@ public abstract class AbstractNKIMetadataFileHandler
     // The pitch intensity of Kontakt (1.0) covers 1 octave
     private static final double               PITCH_INTENSITY_CENTS     = 1200.0;
 
+    // The default number of voices if the source does not specify the polyphony
+    private static final int                  DEFAULT_MAX_VOICES        = 64;
+
     private static final String               CYCLE_ROUND_ROBIN         = "cycle_round_robin";
     private static final String               CYCLE_RANDOM              = "cycle_random";
 
@@ -362,7 +365,8 @@ public abstract class AbstractNKIMetadataFileHandler
         final String templatePrefix = this.getTemplatePrefix ();
         final StringBuilder sb = new StringBuilder (XML_HEADER);
         final String header = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Bank_Start.xml");
-        sb.append (header.replace ("%BANK_NAME%", bankName));
+        final String bankSlotParameters = this.createBankSlotParameters (instrumentSources.subList (0, numInstruments));
+        sb.append (header.replace ("%BANK_NAME%", XMLUtils.escapeAttribute (bankName)).replace ("%BANK_SLOT_PARAMETERS%", bankSlotParameters));
         for (int i = 0; i < numInstruments; i++)
             sb.append (this.createRawProgram (safeSampleFolderNames.get (i), instrumentSources.get (i), i));
         sb.append (Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_06_Bank_End.xml"));
@@ -385,6 +389,51 @@ public abstract class AbstractNKIMetadataFileHandler
     }
 
 
+    /**
+     * Replaces format specific metadata placeholders of the program template. This default
+     * implementation does nothing.
+     *
+     * @param text The text of the program template
+     * @param metadata The metadata of the program
+     * @return The text with the replaced placeholders
+     */
+    protected String replaceMetadataPlaceholders (final String text, final IMetadata metadata)
+    {
+        return text;
+    }
+
+
+    /**
+     * Creates the parameters of the slots of a bank (multi), e.g. the MIDI channels. This default
+     * implementation returns an empty text since the parameters are stored in the programs.
+     *
+     * @param instrumentSources The instruments in the slots of the bank
+     * @return The parameters of the slots
+     */
+    protected String createBankSlotParameters (final List<IInstrumentSource> instrumentSources)
+    {
+        return "";
+    }
+
+
+    /**
+     * Converts the MIDI channel of an instrument to the Kontakt value.
+     *
+     * @param instrumentSource The instrument
+     * @return 0 = Omni, 1-16 = channel 1-16 (port A), 17-32 = port B
+     */
+    protected static int toKontaktMidiChannel (final IInstrumentSource instrumentSource)
+    {
+        final int midiChannel = instrumentSource.getMidiChannel ();
+        if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI)
+            return 0;
+        // B1 since there is no off-state
+        if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OFF)
+            return 17;
+        return midiChannel + 1;
+    }
+
+
     private String createRawProgram (final String safeSampleFolderName, final IInstrumentSource instrumentSource, final int programIndex) throws IOException
     {
         final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
@@ -393,18 +442,26 @@ public abstract class AbstractNKIMetadataFileHandler
 
         String text = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_01_Program_Start.xml");
         text = text.replace ("%PROGRAM_INDEX%", Integer.toString (programIndex));
-        text = text.replace ("%PROGRAM_NAME%", multisampleSource.getName ());
-        int midiChannel = instrumentSource.getMidiChannel ();
-        if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OFF)
-            midiChannel = 16; // B1 since there is no off-state
-        text = text.replace ("%PROGRAM_MIDI_CHANNEL%", Integer.toString (midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI ? 0 : midiChannel + 1));
+        text = text.replace ("%PROGRAM_NAME%", XMLUtils.escapeAttribute (multisampleSource.getName ()));
+        text = text.replace ("%PROGRAM_MIDI_CHANNEL%", Integer.toString (toKontaktMidiChannel (instrumentSource)));
 
         text = text.replace ("%MASTER_VOLUME%", formatDouble (Math.pow (10, instrumentSource.getGain () / 20.0d)));
-        text = text.replace ("%MASTER_PANNING%", String.format (Locale.US, "%.02f", Double.valueOf ((instrumentSource.getPanning () + 1.0) / 2.0)));
+        text = text.replace ("%MASTER_PANNING%", formatDouble (this.denormalizePanning (instrumentSource.getPanning ())));
         text = text.replace ("%MASTER_TRANSPOSE%", Integer.toString (instrumentSource.getTranspose ()));
         text = text.replace ("%MASTER_TUNE%", formatDouble (Math.pow (2.0, instrumentSource.getTuning () / 12.0)));
         text = text.replace ("%MASTER_LOW_KEY%", Integer.toString (instrumentSource.getClipKeyLow ()));
         text = text.replace ("%MASTER_HIGH_KEY%", Integer.toString (instrumentSource.getClipKeyHigh ()));
+
+        final IMetadata metadata = multisampleSource.getMetadata ();
+        final String category = metadata.getCategory ();
+        text = text.replace ("%PROGRAM_ICON%", Integer.toString (KontaktIcon.getID (category == null ? "" : category)));
+        final String creator = metadata.getCreator ();
+        text = text.replace ("%PROGRAM_AUTHOR%", creator == null || creator.isBlank () ? NULL_ENTRY : XMLUtils.escapeAttribute (creator));
+        final String description = metadata.getDescription ();
+        text = text.replace ("%PROGRAM_CREDITS%", description == null || description.isBlank () ? NULL_ENTRY : XMLUtils.escapeAttribute (description));
+        text = this.replaceMetadataPlaceholders (text, metadata);
+        final int polyphony = multisampleSource.getPolyphony ();
+        text = text.replace ("%PROGRAM_MAX_VOICES%", Integer.toString (polyphony > 0 ? polyphony : DEFAULT_MAX_VOICES));
 
         // Add all groups
         final String result = this.addGroups (templatePrefix, safeSampleFolderName, multisampleSource.getNonEmptyGroups (false));
@@ -438,7 +495,7 @@ public abstract class AbstractNKIMetadataFileHandler
             String name = group.getName ();
             if (name == null || name.isBlank ())
                 name = "Group " + (groupCount + 1);
-            String groupContent = groupTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%GROUP_NAME%", name);
+            String groupContent = groupTemplate.replace ("%GROUP_INDEX%", Integer.toString (groupCount)).replace ("%GROUP_NAME%", XMLUtils.escapeAttribute (name));
 
             final List<ISampleZone> zones = group.getSampleZones ();
             for (final ISampleZone zone: zones)
@@ -611,10 +668,24 @@ public abstract class AbstractNKIMetadataFileHandler
         zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.pow (2.0, zone.getTuning () / 12.0)));
         zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (zone.getPanning ())));
 
+        final String formattedFilename = this.formatSampleFileName (safeSampleFolderName, zoneName + ".wav");
+        return zoneContent.replace ("%ZONE_SAMPLE_NAME%", XMLUtils.escapeAttribute (formattedFilename));
+    }
+
+
+    /**
+     * Format the path of a sample file as it is stored in the sample file attribute. This default
+     * implementation creates a relative path with backward slashes.
+     *
+     * @param safeSampleFolderName The folder (relative to the NKI file) which contains the samples
+     * @param sampleFileName The name of the sample file including the extension
+     * @return The formatted path
+     */
+    protected String formatSampleFileName (final String safeSampleFolderName, final String sampleFileName)
+    {
         // Note: we need to use backward slashes otherwise Kontakt can read but not save the file
         // again!
-        final String formattedFilename = new StringBuilder (safeSampleFolderName).append ('\\').append (zoneName).append (".wav").toString ().replace ('/', '\\');
-        return zoneContent.replace ("%ZONE_SAMPLE_NAME%", formattedFilename);
+        return new StringBuilder (safeSampleFolderName).append ('\\').append (sampleFileName).toString ().replace ('/', '\\');
     }
 
 

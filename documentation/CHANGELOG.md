@@ -71,25 +71,30 @@
   * Fixed: Zones without a sample played the sample of another zone - the one whose number matched the index of the zone - or logged 'Sample index out of bounds'. Logic stores a zone without a sample, which plays nothing, with the sample number -1. Zones without a sample are now left out and counted in one message. Only if not a single zone of a file references a sample, the zones still play the samples in their order.
   * Fixed: Sample names which originally contained double quotes in their filenames but got automatically replaced with dashes on Windows are now found.
 * NI Kontakt
-  * New: Kontakt 1: Read release trigger groups and round-robin.
-  * New: Kontakt 1-4.1: Decay-break-decay envelopes are approximated.
-  * New: Kontakt 1-4.1: Read LFOs (volume, pitch, filter cutoff), the velocity, key and modulation wheel modulation of the filter cutoff and the polyphony.
-  * New: Kontakt 2-4.1: Read the filter from the group insert effects.
-  * New: NKM multis (Kontakt 4.2+): the master volume and master tune of the multi as well as the MIDI transpose, volume and panning of the instruments are read into the performance.
-  * New: Muted instruments of a NKM are not converted; if instruments are soloed, only these are converted.
-  * New: NKM multis of Kontakt 1/2: the volume and panning are read into the instruments of the performance, Omni is detected, Kontakt 2 programs read the MIDI transpose.
-  * Improved: Groups which can only be triggered by the sequencer are ignored.
-  * Fixed: Kontakt 1.0: Envelopes were ignored (e.g. Kontakt 1.5 library).
-  * Fixed: Kontakt 1: Bypassed filters were applied.
-  * Fixed: Kontakt 1-4.1: The sample start was ignored if no sample end was set and negative sample ends were not supported (e.g. loop slices).
-  * Fixed: Kontakt 1-4.1: Removed "Unknown filter type" errors for effects like equalizers.
-  * Fixed: Kontakt 1-4.1: Round-robin was only detected in the first group start criteria.
-  * Fixed: Kontakt 1-4.1: The filter cutoff frequency was much too low (e.g. 5Hz instead of 143Hz).
-  * Fixed: Kontakt 1-4.1: A sawtooth LFO was read as ascending instead of descending.
-  * Fixed: Kontakt 2-4.1 monolith: Instruments with an impulse response sample (convolution) assigned the wrong sample to all zones.
-  * Fixed: Kontakt 3-4.1: Group and instrument tuning was wrong and the zone tuning was lost.
-  * Fixed: The MIDI channel of NKM instruments could be taken from the wrong slot.
-  * Fixed: NKM multis of Kontakt 1: the volume, panning and tuning of the instruments were applied twice.
+  * Kontakt 1
+    * New: Read release trigger groups and round-robin.
+    * Fixed: Kontakt 1.0: Envelopes were ignored (e.g. Kontakt 1.5 library).
+    * Fixed: Kontakt 1: Bypassed filters were applied.
+  * Kontakt 1-4.1
+    * New: Decay-break-decay envelopes are approximated.
+    * New: Read LFOs (volume, pitch, filter cutoff), the velocity, key and modulation wheel modulation of the filter cutoff and the polyphony.
+    * Fixed: The sample start was ignored if no sample end was set and negative sample ends were not supported (e.g. loop slices).
+    * Fixed: Removed "Unknown filter type" errors for effects like equalizers.
+    * Fixed: Round-robin was only detected in the first group start criteria.
+    * Fixed: The filter cutoff frequency was much too low (e.g. 5Hz instead of 143Hz).
+    * Fixed: A sawtooth LFO was read as ascending instead of descending.
+  * Kontakt 2-4.1
+    * New: Read the filter from the group insert effects.
+    * Improved: Groups which can only be triggered by the sequencer are ignored.
+    * Fixed: monolith: Instruments with an impulse response sample (convolution) assigned the wrong sample to all zones.
+    * Fixed: Kontakt 3-4.1: Group and instrument tuning was wrong and the zone tuning was lost.
+  * Added write support for Kontakt 2 (NKI + NKM).
+  * NKM multis
+    * New: (Kontakt 1/2) the volume and panning are read into the instruments of the performance, Omni is detected, Kontakt 2 programs read the MIDI transpose.
+    * New: (Kontakt 4.2+) the master volume and master tune of the multi as well as the MIDI transpose, volume and panning of the instruments are read into the performance.
+    * New: Muted instruments are not converted; if instruments are soloed, only these are converted.
+    * Fixed: The MIDI channel of NKM instruments could be taken from the wrong slot.
+    * Fixed: (Kontakt 1) the volume, panning and tuning of the instruments were applied twice.
 * SFZ
   * New: Exclusive groups are read and written ('group' and 'off_by').
 * Roland S-7xx

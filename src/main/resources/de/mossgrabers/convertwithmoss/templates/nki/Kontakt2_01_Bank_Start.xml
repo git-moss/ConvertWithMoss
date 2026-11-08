@@ -1,0 +1,135 @@
+<K2_Bank name="%BANK_NAME%" version="0.60">
+  <Parameters>
+    <V name="loadPurged" value="no"/>
+    <V name="libraryID" value="0"/>
+    <V name="loadingFlags" value="0"/>
+%BANK_SLOT_PARAMETERS%
+    <V name="origSaveMode" value="0"/>
+    <V name="origAbsolutePaths" value="no"/>
+  </Parameters>
+  <Scripts/>
+  <Outputs>
+    <Parameters>
+      <V name="physOutMapping_0" value="0"/>
+      <V name="physOutMapping_1" value="1"/>
+      <V name="physOutMapping_2" value="2"/>
+      <V name="physOutMapping_3" value="3"/>
+      <V name="physOutMapping_4" value="4"/>
+      <V name="physOutMapping_5" value="5"/>
+      <V name="physOutMapping_6" value="6"/>
+      <V name="physOutMapping_7" value="7"/>
+      <V name="physOutMapping_8" value="8"/>
+      <V name="physOutMapping_9" value="9"/>
+      <V name="physOutMapping_10" value="10"/>
+      <V name="physOutMapping_11" value="11"/>
+      <V name="physOutMapping_12" value="12"/>
+      <V name="physOutMapping_13" value="13"/>
+      <V name="physOutMapping_14" value="14"/>
+      <V name="physOutMapping_15" value="15"/>
+      <V name="physOutMapping_16" value="16"/>
+      <V name="physOutMapping_17" value="17"/>
+      <V name="physOutMapping_18" value="18"/>
+      <V name="physOutMapping_19" value="19"/>
+      <V name="physOutMapping_20" value="20"/>
+      <V name="physOutMapping_21" value="21"/>
+      <V name="physOutMapping_22" value="22"/>
+      <V name="physOutMapping_23" value="23"/>
+      <V name="physOutMapping_24" value="24"/>
+      <V name="physOutMapping_25" value="25"/>
+      <V name="physOutMapping_26" value="26"/>
+      <V name="physOutMapping_27" value="27"/>
+      <V name="physOutMapping_28" value="28"/>
+      <V name="physOutMapping_29" value="29"/>
+      <V name="physOutMapping_30" value="30"/>
+      <V name="physOutMapping_31" value="31"/>
+      <V name="physOutMapping_32" value="64"/>
+      <V name="physOutMapping_33" value="64"/>
+      <V name="physOutMapping_34" value="64"/>
+      <V name="physOutMapping_35" value="64"/>
+      <V name="physOutMapping_36" value="64"/>
+      <V name="physOutMapping_37" value="64"/>
+      <V name="physOutMapping_38" value="64"/>
+      <V name="physOutMapping_39" value="64"/>
+      <V name="physOutMapping_40" value="64"/>
+      <V name="physOutMapping_41" value="64"/>
+      <V name="physOutMapping_42" value="64"/>
+      <V name="physOutMapping_43" value="64"/>
+      <V name="physOutMapping_44" value="64"/>
+      <V name="physOutMapping_45" value="64"/>
+      <V name="physOutMapping_46" value="64"/>
+      <V name="physOutMapping_47" value="64"/>
+      <V name="physOutMapping_48" value="64"/>
+      <V name="physOutMapping_49" value="64"/>
+      <V name="physOutMapping_50" value="64"/>
+      <V name="physOutMapping_51" value="64"/>
+      <V name="physOutMapping_52" value="64"/>
+      <V name="physOutMapping_53" value="64"/>
+      <V name="physOutMapping_54" value="64"/>
+      <V name="physOutMapping_55" value="64"/>
+      <V name="physOutMapping_56" value="64"/>
+      <V name="physOutMapping_57" value="64"/>
+      <V name="physOutMapping_58" value="64"/>
+      <V name="physOutMapping_59" value="64"/>
+      <V name="physOutMapping_60" value="64"/>
+      <V name="physOutMapping_61" value="64"/>
+      <V name="physOutMapping_62" value="64"/>
+      <V name="physOutMapping_63" value="64"/>
+    </Parameters>
+    <Output index="0" name="st. 1" version="0.60">
+      <Parameters>
+        <V name="numChannels" value="2"/>
+        <V name="auxIdx" value="-1"/>
+        <V name="volume" value="1"/>
+      </Parameters>
+      <FXChain/>
+    </Output>
+    <Output index="1" name="st. 2" version="0.60">
+      <Parameters>
+        <V name="numChannels" value="2"/>
+        <V name="auxIdx" value="-1"/>
+        <V name="volume" value="1"/>
+      </Parameters>
+      <FXChain/>
+    </Output>
+    <Output index="2" name="surr. 5.1" version="0.60">
+      <Parameters>
+        <V name="numChannels" value="6"/>
+        <V name="auxIdx" value="-1"/>
+        <V name="volume" value="1"/>
+      </Parameters>
+      <FXChain/>
+    </Output>
+    <Output index="3" name="aux 1" version="0.60">
+      <Parameters>
+        <V name="numChannels" value="2"/>
+        <V name="auxIdx" value="0"/>
+        <V name="volume" value="1"/>
+      </Parameters>
+      <FXChain/>
+    </Output>
+    <Output index="4" name="aux 2" version="0.60">
+      <Parameters>
+        <V name="numChannels" value="2"/>
+        <V name="auxIdx" value="1"/>
+        <V name="volume" value="1"/>
+      </Parameters>
+      <FXChain/>
+    </Output>
+    <Output index="5" name="aux 3" version="0.60">
+      <Parameters>
+        <V name="numChannels" value="2"/>
+        <V name="auxIdx" value="2"/>
+        <V name="volume" value="1"/>
+      </Parameters>
+      <FXChain/>
+    </Output>
+    <Output index="6" name="aux 4" version="0.60">
+      <Parameters>
+        <V name="numChannels" value="2"/>
+        <V name="auxIdx" value="3"/>
+        <V name="volume" value="1"/>
+      </Parameters>
+      <FXChain/>
+    </Output>
+  </Outputs>
+  <Slots>

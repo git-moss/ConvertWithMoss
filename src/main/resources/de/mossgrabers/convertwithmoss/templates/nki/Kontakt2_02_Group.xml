@@ -1,8 +1,8 @@
-        <K2_Group index="%GROUP_INDEX%" name="%GROUP_NAME%" version="0.90">
+        <K2_Group index="%GROUP_INDEX%" name="%GROUP_NAME%" version="0.80">
           <Parameters>
-            <V name="volume" value="1."/>
-            <V name="pan" value="0."/>
-            <V name="tune" value="0."/>
+            <V name="volume" value="1"/>
+            <V name="pan" value="0"/>
+            <V name="tune" value="1"/>
             <V name="keyTracking" value="%GROUP_KEY_TRACKING%"/>
             <V name="reverse" value="%GROUP_REVERSE%"/>
             <V name="releaseTrigger" value="%GROUP_RELEASE_TRIGGER%"/>
@@ -11,24 +11,24 @@
             <V name="outputMask" value="-1"/>
             <V name="midiChannel" value="-1"/>
             <V name="voiceGroup" value="%GROUP_VOICE_GROUP%"/>
-            <V name="outRouting_1" value="0000000000000000"/>
-            <V name="outRouting_2" value="00000000000000000000000000000000"/>
-            <V name="outRouting_3" value="000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_4" value="0000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_5" value="00000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_6" value="000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_7" value="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_8" value="00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_9" value="000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_10" value="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_11" value="00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_12" value="000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_13" value="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_14" value="00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_15" value="000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
-            <V name="outRouting_16" value="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
+            <V name="outRouting_1" value="0000000000000004"/>
+            <V name="outRouting_2" value="00000000000000040000000000000040"/>
+            <V name="outRouting_3" value="000000000000000400000000000000400000000000000004"/>
+            <V name="outRouting_4" value="0000000000000004000000000000004000000000000000040000000000000040"/>
+            <V name="outRouting_5" value="00000000000000040000000000000040000000000000000400000000000000400000000000000004"/>
+            <V name="outRouting_6" value="000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040"/>
+            <V name="outRouting_7" value="0000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004"/>
+            <V name="outRouting_8" value="00000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040"/>
+            <V name="outRouting_9" value="000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004"/>
+            <V name="outRouting_10" value="0000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040"/>
+            <V name="outRouting_11" value="00000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004"/>
+            <V name="outRouting_12" value="000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040"/>
+            <V name="outRouting_13" value="0000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004"/>
+            <V name="outRouting_14" value="00000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040"/>
+            <V name="outRouting_15" value="000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004"/>
+            <V name="outRouting_16" value="0000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040000000000000000400000000000000400000000000000004000000000000004000000000000000040000000000000040"/>
             <V name="fxIdxAmpSplitPoint" value="6"/>
-            <V name="selectedForEdit" value="yes"/>
+            <V name="selectedForEdit" value="no"/>
             <V name="selectedInGroupEditor" value="no"/>
             <V name="zonesVisibleInMapListView" value="yes"/>
             <V name="batteryCellColor" value="0"/>
@@ -36,42 +36,46 @@
             <V name="batteryHighKey" value="0"/>
             <V name="fxBeingEdited" value="no"/>
             <V name="idxFXBeingEdited" value="0"/>
-            <V name="grooveBoxID" value="-1"/>
             <V name="interpQuality" value="normal"/>
             <V name="muted" value="no"/>
             <V name="soloed" value="no"/>
           </Parameters>
           <Automation/>
-        <PlayPosOffset version="0.50"/>
-        <LoopOffset version="0.50"/>
-          <GroupStart/>
-          <PlaybackMode version="1.0">
-            <V name="type" value="streaming"/>
-            <V name="speed" value="1."/>
-            <V name="legato" value="no"/>
-            <V name="zoneLockedSpeed" value="no"/>
-          </PlaybackMode>
-          <GroupInsertFX/>
+          <PlayPosOffset version="0.50"/>
+          <LoopOffset version="0.50"/>
+          <GroupStart>
+%GROUP_START_CRITERIA%
+          </GroupStart>
+          <PlaybackMode version="0.90"/>
+          <GroupInsertFX>
+            <K2_Effect index="0" version="0.50">
+              <V name="routersOpen" value="no"/>
+              <V name="classID" value="0"/>
+              <V name="bypass" value="%FILTER_BYPASS%"/>
+              <V name="outLevel" value="1"/>
+              <V name="outLevelDry" value="1"/>
+              <V name="sendFXOutPartition" value="-1"/>
+              <Filter type="%FILTER_TYPE%" version="0.70">
+                <V name="cutoff" value="%FILTER_CUTOFF%"/>
+                <V name="resonance" value="%FILTER_RESONANCE%"/>
+              </Filter>
+            </K2_Effect>
+          </GroupInsertFX>
           <IntModulators>
-            <K2_IntMod index="0" version="0.80">
+            <K2_IntMod index="0" version="0.60">
               <Targets>
                 <Target index="0">
                   <V name="target" value="volume"/>
                   <V name="intensity" value="%ENVELOPE_INTENSITY%"/>
-                  <V name="slotIdx" value="-1"/>
-                  <V name="flags" value="20"/>
-                  <V name="smoothingCoef" value="0"/>
-                  <V name="name" value="ENV_AHDSR_VOLUME"/>
-                  <V name="tableOpen" value="no"/>
                 </Target>
               </Targets>
               <V name="routersOpen" value="no"/>
               <V name="bypass" value="no"/>
               <V name="retrigger" value="yes"/>
-              <V name="simulateK2DFDVolModulation" value="yes"/>
-              <V name="classID" value="0"/>
-              <V name="name" value="ENV_AHDSR"/>
-              <Envelope type="ahdsr" version="0.90">
+              <V name="legacyVolumeEnvBehaviour" value="yes"/>
+              <V name="classID" value="-1"/>
+              <V name="name" value="envelope (ahdsr)"/>
+              <Envelope type="ahdsr" version="0.70">
                 <V name="atkCurving" value="%ENVELOPE_ATTACK_CURVE%"/>
                 <V name="attack" value="%ENVELOPE_ATTACK%"/>
                 <V name="decay" value="%ENVELOPE_DECAY%"/>
@@ -81,47 +85,102 @@
                 <V name="noteOffLessMode" value="%GROUP_ONE_SHOT%"/>
               </Envelope>
             </K2_IntMod>
+            <K2_IntMod index="1" version="0.60">
+              <Targets>
+                <Target index="0">
+                  <V name="target" value="filterCutoff"/>
+                  <V name="intensity" value="%FILTER_CUTOFF_ENVELOPE_INTENSITY%"/>
+                  <V name="targetObjIdx" value="0"/>
+                </Target>
+              </Targets>
+              <V name="routersOpen" value="no"/>
+              <V name="bypass" value="no"/>
+              <V name="retrigger" value="yes"/>
+              <V name="legacyVolumeEnvBehaviour" value="no"/>
+              <V name="classID" value="-1"/>
+              <V name="name" value="envelope (ahdsr)"/>
+              <Envelope type="ahdsr" version="0.70">
+                <V name="atkCurving" value="%FILTER_CUTOFF_ENVELOPE_ATTACK_CURVE%"/>
+                <V name="attack" value="%FILTER_CUTOFF_ENVELOPE_ATTACK%"/>
+                <V name="decay" value="%FILTER_CUTOFF_ENVELOPE_DECAY%"/>
+                <V name="hold" value="%FILTER_CUTOFF_ENVELOPE_HOLD%"/>
+                <V name="release" value="%FILTER_CUTOFF_ENVELOPE_RELEASE%"/>
+                <V name="sustain" value="%FILTER_CUTOFF_ENVELOPE_SUSTAIN%"/>
+              </Envelope>
+            </K2_IntMod>
+            <K2_IntMod index="2" version="0.60">
+              <Targets>
+                <Target index="0">
+                  <V name="target" value="pitch"/>
+                  <V name="intensity" value="%PITCH_ENVELOPE_INTENSITY%"/>
+                </Target>
+              </Targets>
+              <V name="routersOpen" value="no"/>
+              <V name="bypass" value="no"/>
+              <V name="retrigger" value="yes"/>
+              <V name="legacyVolumeEnvBehaviour" value="no"/>
+              <V name="classID" value="-1"/>
+              <V name="name" value="envelope (ahdsr)"/>
+              <Envelope type="ahdsr" version="0.70">
+                <V name="atkCurving" value="%PITCH_ENVELOPE_ATTACK_CURVE%"/>
+                <V name="attack" value="%PITCH_ENVELOPE_ATTACK%"/>
+                <V name="decay" value="%PITCH_ENVELOPE_DECAY%"/>
+                <V name="hold" value="%PITCH_ENVELOPE_HOLD%"/>
+                <V name="release" value="%PITCH_ENVELOPE_RELEASE%"/>
+                <V name="sustain" value="%PITCH_ENVELOPE_SUSTAIN%"/>
+              </Envelope>
+            </K2_IntMod>
+%PITCH_LFO%
           </IntModulators>
           <ExtModulators>
-            <K2_ExtMod index="0" version="1.0">
+            <K2_ExtMod index="0" version="0.90">
               <Targets>
                 <Target index="0">
                   <V name="target" value="volume"/>
                   <V name="intensity" value="%AMP_VELOCITY_MOD%"/>
-                  <V name="slotIdx" value="-1"/>
-                  <V name="flags" value="20"/>
-                  <V name="smoothingCoef" value="0"/>
-                  <V name="name" value=""/>
-                  <V name="tableOpen" value="no"/>
                 </Target>
               </Targets>
-              <V name="type" value="extMod"/>
+              <V name="tableOpen" value="no"/>
               <V name="source" value="velocity"/>
-              <V name="initialValue" value="-1"/>
               <V name="bypass" value="no"/>
-              <V name="simulateK2EnvTimeModulation" value="yes"/>
-              <V name="classID" value="1"/>
-              <V name="name" value="VEL_VOLUME"/>
+              <V name="legacyStatModBehaviour" value="yes"/>
+              <V name="delay" value="0"/>
+              <V name="classID" value="-1"/>
+              <V name="name" value="External Mod."/>
+              <V name="initialValue" value="-1"/>
             </K2_ExtMod>
-            <K2_ExtMod index="1" version="1.0">
+            <K2_ExtMod index="1" version="0.90">
               <Targets>
                 <Target index="0">
                   <V name="target" value="pitch"/>
                   <V name="intensity" value="%PITCH_BEND%"/>
-                  <V name="slotIdx" value="-1"/>
-                  <V name="flags" value="20"/>
-                  <V name="smoothingCoef" value="250"/>
-                  <V name="name" value=""/>
-                  <V name="tableOpen" value="no"/>
                 </Target>
               </Targets>
-              <V name="type" value="extMod"/>
+              <V name="tableOpen" value="no"/>
               <V name="source" value="pitchBend"/>
-              <V name="initialValue" value="-1"/>
               <V name="bypass" value="no"/>
-              <V name="simulateK2EnvTimeModulation" value="yes"/>
-              <V name="classID" value="2"/>
-              <V name="name" value="PB_PITCH"/>
+              <V name="legacyStatModBehaviour" value="yes"/>
+              <V name="delay" value="0"/>
+              <V name="classID" value="-1"/>
+              <V name="name" value="External Mod."/>
+              <V name="initialValue" value="-1"/>
+            </K2_ExtMod>
+            <K2_ExtMod index="2" version="0.90">
+              <Targets>
+                <Target index="0">
+                  <V name="target" value="filterCutoff"/>
+                  <V name="intensity" value="%FILTER_CUTOFF_VELOCITY_MOD%"/>
+                  <V name="targetObjIdx" value="0"/>
+                </Target>
+              </Targets>
+              <V name="tableOpen" value="no"/>
+              <V name="source" value="velocity"/>
+              <V name="bypass" value="no"/>
+              <V name="legacyStatModBehaviour" value="no"/>
+              <V name="delay" value="0"/>
+              <V name="classID" value="-1"/>
+              <V name="name" value="External Mod."/>
+              <V name="initialValue" value="-1"/>
             </K2_ExtMod>
           </ExtModulators>
         </K2_Group>

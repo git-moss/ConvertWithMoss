@@ -22,7 +22,7 @@
       <V name="name" value="&lt;instrument>"/>
       <V name="mode" value="kill_oldest"/>
       <V name="preferReleased" value="yes"/>
-      <V name="maxNumVoices" value="128"/>
+      <V name="maxNumVoices" value="%PROGRAM_MAX_VOICES%"/>
       <V name="msFadeTime" value="10"/>
       <V name="exclusionGroup" value="-1"/>
     </VoiceGroup>

@@ -1,0 +1,19 @@
+            <K2_IntMod index="3" version="0.60">
+              <Targets>
+                <Target index="0">
+                  <V name="target" value="pitch"/>
+                  <V name="intensity" value="%LFO_INTENSITY%"/>
+                </Target>
+              </Targets>
+              <V name="routersOpen" value="no"/>
+              <V name="bypass" value="no"/>
+              <V name="retrigger" value="%LFO_RETRIGGER%"/>
+              <V name="legacyVolumeEnvBehaviour" value="no"/>
+              <V name="classID" value="-1"/>
+              <V name="name" value="LFO (%LFO_TYPE%)"/>
+              <V name="frequency" value="%LFO_FREQUENCY%"/>
+              <V name="pulseWidth" value="0.5"/>
+              <LFO type="%LFO_TYPE%" version="0.50">
+                <V name="delay" value="%LFO_DELAY%"/>
+              </LFO>
+            </K2_IntMod>
