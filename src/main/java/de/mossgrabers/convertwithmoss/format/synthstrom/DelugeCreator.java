@@ -13,6 +13,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -26,6 +28,7 @@ import org.w3c.dom.Element;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.SafeFileNames;
+import de.mossgrabers.convertwithmoss.core.ZoneChannels;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
@@ -38,6 +41,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
 import de.mossgrabers.convertwithmoss.file.wav.FormatChunk;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -49,7 +53,8 @@ import de.mossgrabers.tools.XMLUtils;
  * Creator for Synthstrom Deluge synth (sound) preset files. A preset is an XML file (placed in a
  * <i>SYNTHS</i> folder) which references its samples (placed in a <i>SAMPLES</i> folder) by a path
  * relative to the SD card root. The multi-sample is written as a single sample oscillator with one
- * sample range per zone.
+ * sample range per zone. In the dual oscillator mode the second oscillator plays the zones which
+ * sound together with those of the first one, see {@link DelugeOscillatorLayout}.
  * <p>
  * Only features available on the official v4 firmware are written so that the created instruments
  * load on both the official and the community firmware. The element based file structure is used
@@ -94,6 +99,11 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
     /** Splits a name into segments on the common separators (surrounded by spaces). */
     private static final Pattern NAME_SEPARATOR           = Pattern.compile ("\\s+[-/:|]\\s+");
 
+    /** The source whose dual oscillator layout was calculated when it was checked. */
+    private IMultisampleSource     checkedSource;
+    /** The dual oscillator layout of the checked source. */
+    private DelugeOscillatorLayout checkedLayout;
+
 
     /**
      * Constructor.
@@ -108,9 +118,48 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
     /** {@inheritDoc} */
     @Override
+    public boolean canCreatePreset (final IMultisampleSource multisampleSource) throws IOException
+    {
+        if (!this.isDualOscillatorMode ())
+            return true;
+
+        final DelugeOscillatorLayout layout = this.getDualLayout (multisampleSource);
+        if (layout.getSkipReason () != DelugeOscillatorLayout.SkipReason.NONE)
+        {
+            this.logSkipped (multisampleSource, layout);
+            return false;
+        }
+
+        // Keep the layout for writing the preset
+        this.checkedSource = multisampleSource;
+        this.checkedLayout = layout;
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
         final boolean createKit = this.settingsConfiguration.getOutputType () == DelugeCreatorUI.OutputType.KIT;
+
+        // In the dual oscillator mode the second oscillator of a synth plays the zones which sound
+        // together with those of the first one. A preset which does not fit onto the two
+        // oscillators - more layers sound together than they can play, or the attack times of two
+        // layers are too far apart for the one amplitude envelope which they share - is not
+        // written, since it would sound different from its source. This is normally already
+        // checked before anything is written for the preset, see canCreatePreset.
+        DelugeOscillatorLayout dualLayout = null;
+        if (this.isDualOscillatorMode ())
+        {
+            dualLayout = this.getDualLayout (multisampleSource);
+            if (dualLayout.getSkipReason () != DelugeOscillatorLayout.SkipReason.NONE)
+            {
+                this.logSkipped (multisampleSource, dualLayout);
+                return;
+            }
+            this.logNearSilentZones (multisampleSource, dualLayout);
+        }
 
         // Both a synth and a kit use one zone per note: the synth maps that single layer across
         // the keyboard, a kit turns each note into its own drum. Velocity layers and round-robins
@@ -140,7 +189,22 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             zones.subList (MAX_KIT_DRUMS, zones.size ()).clear ();
         }
 
-        makeUniqueSampleNames (zones);
+        // The single oscillator of a synth leaves out the near-silent zones, which it would play at
+        // the full level since a sample range has no level of its own; a kit keeps all of its drums
+        final DelugeOscillatorLayout layout;
+        if (dualLayout != null)
+            layout = dualLayout;
+        else if (createKit)
+            layout = DelugeOscillatorLayout.createSingle (zones);
+        else
+        {
+            layout = DelugeOscillatorLayout.createSingle (multisampleSource);
+            this.logNearSilentZones (multisampleSource, layout);
+        }
+
+        // The zones of the drums of a kit or the zones which the oscillators of a synth play
+        final List<ISampleZone> writtenZones = createKit ? zones : layout.getZones ();
+        makeUniqueSampleNames (writtenZones);
 
         // The Deluge resolves sample paths (SAMPLES/...) relative to the SD card root, and presets
         // live in a SYNTHS (or KITS) folder directly below that root. If the chosen output folder
@@ -183,10 +247,10 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         // Write the samples into <card root>/SAMPLES/<sub-path>/<name>/
         final File sampleFolder = new File (cardRootFolder, relativeSampleFolder);
         safeCreateDirectory (sampleFolder);
-        this.writeSamples (sampleFolder, multisampleSource, zones, DESTINATION_FORMAT);
+        this.writeSamples (sampleFolder, multisampleSource, writtenZones, DESTINATION_FORMAT);
 
         // Create and store the XML document referencing the samples by their card-relative path
-        final Optional<String> metadata = createKit ? this.createKitDocument (zones, relativeSampleFolder, this.settingsConfiguration.isConsolidateKit ()) : this.createSoundDocument (zones, relativeSampleFolder, getPolyphonyMode (multisampleSource));
+        final Optional<String> metadata = createKit ? this.createKitDocument (zones, relativeSampleFolder, this.settingsConfiguration.isConsolidateKit ()) : this.createSoundDocument (layout, relativeSampleFolder, getPolyphonyMode (multisampleSource));
         if (metadata.isEmpty ())
             return;
         try (final FileWriter writer = new FileWriter (presetFile, StandardCharsets.UTF_8))
@@ -195,6 +259,152 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         }
 
         this.progress.notifyDone ();
+    }
+
+
+    /**
+     * Is a synth written in the dual oscillator mode?
+     *
+     * @return True if a synth (not a kit) with two sample oscillators is written
+     */
+    private boolean isDualOscillatorMode ()
+    {
+        return this.settingsConfiguration.getOutputType () != DelugeCreatorUI.OutputType.KIT && this.settingsConfiguration.getOscillatorMode () == DelugeCreatorUI.OscillatorMode.DUAL;
+    }
+
+
+    /**
+     * Get the dual oscillator layout of a source: the one which was calculated when the source
+     * was checked or otherwise a new one. The two channels of stereo recordings are combined into
+     * stereo zones first, since one oscillator plays both.
+     *
+     * @param multisampleSource The multi-sample source
+     * @return The layout
+     * @throws IOException Could not combine the channels of a stereo recording
+     */
+    private DelugeOscillatorLayout getDualLayout (final IMultisampleSource multisampleSource) throws IOException
+    {
+        final DelugeOscillatorLayout layout = this.checkedSource == multisampleSource ? this.checkedLayout : null;
+        this.checkedSource = null;
+        this.checkedLayout = null;
+        if (layout != null)
+            return layout;
+
+        this.combineStereoPairs (multisampleSource);
+        return DelugeOscillatorLayout.createDual (multisampleSource, getMappedZones (multisampleSource));
+    }
+
+
+    /**
+     * Combine the two channels of stereo recordings - mono zones panned hard left and right which
+     * are mapped alike - into stereo zones, so that one oscillator plays both channels. Unlike the
+     * combination of a split stereo multi-sample, other zones may play together with them, e.g. a
+     * mono layer on top of a stereo piano.
+     *
+     * @param multisampleSource The multi-sample source, whose groups are updated
+     * @throws IOException Could not combine the samples
+     */
+    private void combineStereoPairs (final IMultisampleSource multisampleSource) throws IOException
+    {
+        final List<IGroup> groups = multisampleSource.getNonEmptyGroups (true);
+        final List<ISampleZone> leftZones = new ArrayList<> ();
+        final List<ISampleZone> rightZones = new ArrayList<> ();
+        for (final IGroup group: groups)
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final Optional<ISampleData> sampleData = zone.getSampleData ();
+                if (sampleData.isEmpty () || sampleData.get ().getAudioMetadata ().getChannels () != 1)
+                    continue;
+                final double panning = zone.getPanning ();
+                if (panning <= -1)
+                    leftZones.add (zone);
+                else if (panning >= 1)
+                    rightZones.add (zone);
+            }
+        if (leftZones.isEmpty () || leftZones.size () != rightZones.size ())
+            return;
+
+        final IGroup pairs = new DefaultGroup ();
+        for (final ISampleZone zone: leftZones)
+            pairs.addSampleZone (zone);
+        for (final ISampleZone zone: rightZones)
+            pairs.addSampleZone (zone);
+        if (!ZoneChannels.isSplitStereo (Collections.singletonList (pairs)))
+        {
+            this.notifier.log ("IDS_NOTIFY_PANNED_LAYERS_NOT_COMBINED");
+            return;
+        }
+        if (ZoneChannels.combineSplitStereo (leftZones, rightZones).isEmpty ())
+        {
+            this.notifier.logError ("IDS_NOTIFY_NOT_COMBINED_TO_STEREO");
+            return;
+        }
+
+        // The zones of the left channels now play the stereo samples
+        final Set<ISampleZone> combinedZones = Collections.newSetFromMap (new IdentityHashMap<> ());
+        combinedZones.addAll (rightZones);
+        for (final IGroup group: groups)
+        {
+            final List<ISampleZone> remainingZones = new ArrayList<> (group.getSampleZones ());
+            remainingZones.removeIf (combinedZones::contains);
+            group.setSampleZones (remainingZones);
+        }
+        this.notifier.log ("IDS_NOTIFY_COMBINED_TO_STEREO");
+    }
+
+
+    /**
+     * Report the near-silent zones which are left out of a preset.
+     *
+     * @param multisampleSource The multi-sample source
+     * @param layout The layout of the source
+     */
+    private void logNearSilentZones (final IMultisampleSource multisampleSource, final DelugeOscillatorLayout layout)
+    {
+        final List<ISampleZone> nearSilentZones = layout.getNearSilentZones ();
+        if (nearSilentZones.isEmpty ())
+            return;
+        final Set<String> names = new LinkedHashSet<> ();
+        for (final ISampleZone zone: nearSilentZones)
+            names.add (zone.getName ());
+        final String decibels = String.format (Locale.US, "%.0f", Double.valueOf (DelugeOscillatorLayout.NEAR_SILENT_DECIBELS));
+        this.notifier.log ("IDS_DELUGE_LEFT_OUT_NEAR_SILENT", multisampleSource.getName (), decibels, String.join (", ", names));
+    }
+
+
+    /**
+     * Report a preset which is not written because it does not fit onto the two oscillators: more
+     * layers sound together on a note than they can play, or the attack times of two layers are
+     * too far apart for the one amplitude envelope which they share.
+     *
+     * @param multisampleSource The multi-sample source
+     * @param layout The layout of the source
+     */
+    private void logSkipped (final IMultisampleSource multisampleSource, final DelugeOscillatorLayout layout)
+    {
+        final String name = multisampleSource.getName ();
+        final String noteLow = Integer.toString (layout.getCrowdedNoteLow ());
+        final String noteHigh = Integer.toString (layout.getCrowdedNoteHigh ());
+        final boolean isOneKey = layout.getCrowdedNoteLow () == layout.getCrowdedNoteHigh ();
+        final String layers = Integer.toString (layout.getNumberOfLayers ());
+        switch (layout.getSkipReason ())
+        {
+            case TOO_MANY_LAYERS:
+                if (isOneKey)
+                    this.notifier.logError ("IDS_DELUGE_SKIPPED_LAYERS", name, layers, noteLow);
+                else
+                    this.notifier.logError ("IDS_DELUGE_SKIPPED_LAYERS_RANGE", name, layers, noteLow, noteHigh);
+                break;
+            case DIFFERENT_ATTACKS:
+                final String seconds = String.format (Locale.US, "%.0f", Double.valueOf (DelugeOscillatorLayout.MAX_ATTACK_GAP));
+                if (isOneKey)
+                    this.notifier.logError ("IDS_DELUGE_SKIPPED_ATTACKS", name, seconds, noteLow);
+                else
+                    this.notifier.logError ("IDS_DELUGE_SKIPPED_ATTACKS_RANGE", name, seconds, noteLow, noteHigh);
+                break;
+            default:
+                break;
+        }
     }
 
 
@@ -234,7 +444,20 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         final List<ISampleZone> allZones = new ArrayList<> ();
         for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
             allZones.addAll (group.getSampleZones ());
+        return getMappedZones (allZones);
+    }
 
+
+    /**
+     * Map zones onto the key map of a single oscillator: if several zones share the same upper
+     * key, only the one with the highest velocity is kept.
+     *
+     * @param zones The zones
+     * @return The zones sorted by their upper key
+     */
+    static List<ISampleZone> getMappedZones (final List<ISampleZone> zones)
+    {
+        final List<ISampleZone> allZones = new ArrayList<> (zones);
         allZones.sort (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getKeyHigh (), 127)).thenComparing (Comparator.comparingInt ((final ISampleZone zone) -> limitToDefault (zone.getVelocityHigh (), 127)).reversed ()));
 
         final List<ISampleZone> result = new ArrayList<> ();
@@ -534,12 +757,12 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
     /**
      * Create the XML structure of the synth preset.
      *
-     * @param zones The zones to write
+     * @param layout The samples which the oscillators play
      * @param relativeSampleFolder The card-relative path of the sample folder
      * @param polyphonyMode The value for the polyphonic tag
      * @return The XML document as a string
      */
-    private Optional<String> createSoundDocument (final List<ISampleZone> zones, final String relativeSampleFolder, final String polyphonyMode)
+    private Optional<String> createSoundDocument (final DelugeOscillatorLayout layout, final String relativeSampleFolder, final String polyphonyMode)
     {
         final Optional<Document> optionalDocument = this.createXMLDocument ();
         if (optionalDocument.isEmpty ())
@@ -552,7 +775,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         soundElement.setAttribute (DelugeTag.FIRMWARE_VERSION, DelugeTag.FIRMWARE_VERSION_VALUE);
         soundElement.setAttribute (DelugeTag.EARLIEST_COMPATIBLE_FIRMWARE, DelugeTag.EARLIEST_COMPATIBLE_VALUE);
 
-        writeSound (document, soundElement, zones, relativeSampleFolder, false, polyphonyMode);
+        writeSound (document, soundElement, layout, relativeSampleFolder, false, polyphonyMode);
 
         return this.createXMLString (document);
     }
@@ -597,7 +820,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             XMLUtils.addTextElement (document, drumSound, DelugeTag.NAME, drumName);
             // A drum is one pad of the kit. The polyphony of the source instrument describes the
             // whole instrument and not a single pad, therefore the drums stay polyphonic.
-            writeSound (document, drumSound, Collections.singletonList (zone), relativeSampleFolder, true, DelugeTag.POLYPHONIC_POLY);
+            writeSound (document, drumSound, DelugeOscillatorLayout.createSingle (Collections.singletonList (zone)), relativeSampleFolder, true, DelugeTag.POLYPHONIC_POLY);
         }
 
         return this.createXMLString (document);
@@ -606,57 +829,27 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
     /**
      * Write the body of one sound (a synth preset or one drum of a kit): the sample oscillator(s),
-     * a silent second oscillator and the default parameters.
+     * a silent second oscillator if it does not play samples and the default parameters.
      *
      * @param document The XML document
      * @param soundElement The sound element (the root sound or a drum's {@code <sound>})
-     * @param zones The zones of this sound (several key ranges for a synth, a single sample for a
-     *            drum)
+     * @param layout The samples which the oscillators of this sound play (several key ranges for a
+     *            synth, a single sample for a drum)
      * @param relativeSampleFolder The card-relative path of the sample folder
      * @param isKit True if the sound is one drum of a kit
      * @param polyphonyMode The value for the polyphonic tag
      */
-    private static void writeSound (final Document document, final Element soundElement, final List<ISampleZone> zones, final String relativeSampleFolder, final boolean isKit, final String polyphonyMode)
+    private static void writeSound (final Document document, final Element soundElement, final DelugeOscillatorLayout layout, final String relativeSampleFolder, final boolean isKit, final String polyphonyMode)
     {
-        final boolean anyLoop = zones.stream ().anyMatch (zone -> !zone.getLoops ().isEmpty ());
-        // A one-shot ignores a note-off and always plays the sample to its end which is the 'ONCE'
-        // mode. Since the loop mode is a property of the oscillator and not of the individual
-        // samples, it is only applied if all zones of the sound are one-shots.
-        final boolean allOneShot = zones.stream ().allMatch (ISampleZone::isOneShot);
-        final boolean reversed = zones.stream ().anyMatch (ISampleZone::isReversed);
-
         // Oscillator 1 with the sample(s)
-        final Element osc1 = XMLUtils.addElement (document, soundElement, DelugeTag.OSC1);
-        XMLUtils.addTextElement (document, osc1, DelugeTag.TYPE, DelugeTag.TYPE_SAMPLE);
-        final int loopMode;
-        if (anyLoop && !allOneShot)
-            loopMode = DelugeTag.LOOP_MODE_LOOP;
-        else
-            // 'ONCE' ignores a note-off, therefore an instrument which is not a one-shot must use
-            // 'CUT' which stops the play-back on a note-off
-            loopMode = allOneShot ? DelugeTag.LOOP_MODE_ONCE : DelugeTag.LOOP_MODE_CUT;
-        XMLUtils.addTextElement (document, osc1, DelugeTag.LOOP_MODE, Integer.toString (loopMode));
-        XMLUtils.addTextElement (document, osc1, DelugeTag.REVERSED, reversed ? "1" : "0");
-        XMLUtils.addTextElement (document, osc1, DelugeTag.TIME_STRETCH_ENABLE, "0");
-        XMLUtils.addTextElement (document, osc1, DelugeTag.TIME_STRETCH_AMOUNT, "0");
+        writeSampleOscillator (document, XMLUtils.addElement (document, soundElement, DelugeTag.OSC1), layout.getOscillator1 (), relativeSampleFolder, isKit);
 
-        if (zones.size () == 1)
-            writeZone (document, osc1, zones.get (0), relativeSampleFolder, -1, isKit);
-        else
-        {
-            final Element sampleRanges = XMLUtils.addElement (document, osc1, DelugeTag.SAMPLE_RANGES);
-            for (int i = 0; i < zones.size (); i++)
-            {
-                final Element sampleRange = XMLUtils.addElement (document, sampleRanges, DelugeTag.SAMPLE_RANGE);
-                // The last (highest) range does not store the top note - it covers everything above
-                final int topNote = i == zones.size () - 1 ? -1 : limitToDefault (zones.get (i).getKeyHigh (), 127);
-                writeZone (document, sampleRange, zones.get (i), relativeSampleFolder, topNote, isKit);
-            }
-        }
-
-        // Silent second oscillator
+        // Oscillator 2 with the sample(s) of a second layer, otherwise silent
         final Element osc2 = XMLUtils.addElement (document, soundElement, DelugeTag.OSC2);
-        XMLUtils.addTextElement (document, osc2, DelugeTag.TYPE, DelugeTag.TYPE_SQUARE);
+        if (layout.getOscillator2 ().isEmpty ())
+            XMLUtils.addTextElement (document, osc2, DelugeTag.TYPE, DelugeTag.TYPE_SQUARE);
+        else
+            writeSampleOscillator (document, osc2, layout.getOscillator2 (), relativeSampleFolder, isKit);
 
         XMLUtils.addTextElement (document, soundElement, DelugeTag.POLYPHONIC, polyphonyMode);
         XMLUtils.addTextElement (document, soundElement, DelugeTag.VOICE_PRIORITY, "1");
@@ -667,7 +860,59 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         XMLUtils.addTextElement (document, unison, DelugeTag.UNISON_NUM, "1");
         XMLUtils.addTextElement (document, unison, DelugeTag.UNISON_DETUNE, "8");
 
-        writeDefaultParams (document, soundElement, zones.get (0));
+        writeDefaultParams (document, soundElement, layout);
+    }
+
+
+    /**
+     * Write a sample oscillator: its loop mode, the reverse flag and its sample(s) - a single
+     * sample or a key map of sample ranges.
+     *
+     * @param document The XML document
+     * @param osc The oscillator element
+     * @param ranges The key map which the oscillator plays
+     * @param relativeSampleFolder The card-relative path of the sample folder
+     * @param isKit True if the sound is one drum of a kit
+     */
+    private static void writeSampleOscillator (final Document document, final Element osc, final List<DelugeOscillatorLayout.SampleRange> ranges, final String relativeSampleFolder, final boolean isKit)
+    {
+        final List<ISampleZone> zones = ranges.stream ().map (DelugeOscillatorLayout.SampleRange::getZone).toList ();
+        // The silent sample, which keeps the oscillator quiet where only the other one plays,
+        // must not change how the oscillator plays its samples
+        final List<ISampleZone> playedZones = ranges.stream ().filter (range -> !range.isSilent ()).map (DelugeOscillatorLayout.SampleRange::getZone).toList ();
+        final boolean anyLoop = playedZones.stream ().anyMatch (zone -> !zone.getLoops ().isEmpty ());
+        // A one-shot ignores a note-off and always plays the sample to its end which is the 'ONCE'
+        // mode. Since the loop mode is a property of the oscillator and not of the individual
+        // samples, it is only applied if all zones of the oscillator are one-shots.
+        final boolean allOneShot = playedZones.stream ().allMatch (ISampleZone::isOneShot);
+        final boolean reversed = playedZones.stream ().anyMatch (ISampleZone::isReversed);
+
+        XMLUtils.addTextElement (document, osc, DelugeTag.TYPE, DelugeTag.TYPE_SAMPLE);
+        final int loopMode;
+        if (anyLoop && !allOneShot)
+            loopMode = DelugeTag.LOOP_MODE_LOOP;
+        else
+            // 'ONCE' ignores a note-off, therefore an instrument which is not a one-shot must use
+            // 'CUT' which stops the play-back on a note-off
+            loopMode = allOneShot ? DelugeTag.LOOP_MODE_ONCE : DelugeTag.LOOP_MODE_CUT;
+        XMLUtils.addTextElement (document, osc, DelugeTag.LOOP_MODE, Integer.toString (loopMode));
+        XMLUtils.addTextElement (document, osc, DelugeTag.REVERSED, reversed ? "1" : "0");
+        XMLUtils.addTextElement (document, osc, DelugeTag.TIME_STRETCH_ENABLE, "0");
+        XMLUtils.addTextElement (document, osc, DelugeTag.TIME_STRETCH_AMOUNT, "0");
+
+        if (ranges.size () == 1)
+            writeZone (document, osc, zones.get (0), relativeSampleFolder, -1, isKit);
+        else
+        {
+            final Element sampleRanges = XMLUtils.addElement (document, osc, DelugeTag.SAMPLE_RANGES);
+            for (int i = 0; i < ranges.size (); i++)
+            {
+                final Element sampleRange = XMLUtils.addElement (document, sampleRanges, DelugeTag.SAMPLE_RANGE);
+                // The last (highest) range does not store the top note - it covers everything above
+                final int topNote = i == ranges.size () - 1 ? -1 : ranges.get (i).getTopNote ();
+                writeZone (document, sampleRange, zones.get (i), relativeSampleFolder, topNote, isKit);
+            }
+        }
     }
 
 
@@ -751,14 +996,18 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      *
      * @param document The XML document
      * @param soundElement The sound element
-     * @param firstZone The first zone (used for the amplitude envelope and filter)
+     * @param layout The samples which the oscillators play; the envelopes and the filter are taken
+     *            from its main zone
      */
-    private static void writeDefaultParams (final Document document, final Element soundElement, final ISampleZone firstZone)
+    private static void writeDefaultParams (final Document document, final Element soundElement, final DelugeOscillatorLayout layout)
     {
         final Element defaultParams = XMLUtils.addElement (document, soundElement, DelugeTag.DEFAULT_PARAMS);
 
-        XMLUtils.addTextElement (document, defaultParams, DelugeTag.OSC_A_VOLUME, DelugeValues.formatHex (DelugeValues.PARAM_MAX));
-        XMLUtils.addTextElement (document, defaultParams, DelugeTag.OSC_B_VOLUME, DelugeValues.formatHex (DelugeValues.PARAM_MIN));
+        final int [] oscillatorVolumes = getOscillatorVolumes (layout);
+        XMLUtils.addTextElement (document, defaultParams, DelugeTag.OSC_A_VOLUME, DelugeValues.formatHex (oscillatorVolumes[0]));
+        XMLUtils.addTextElement (document, defaultParams, DelugeTag.OSC_B_VOLUME, DelugeValues.formatHex (oscillatorVolumes[1]));
+
+        final ISampleZone firstZone = layout.getMainZone ();
 
         // ------------------------------------
         // Amplifier
@@ -791,6 +1040,41 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         // Filter
 
         writeFilter (document, defaultParams, firstZone.getFilter (), patchCables);
+    }
+
+
+    /**
+     * Get the volumes of the two oscillators. A single sample oscillator plays at the full volume
+     * and the second oscillator is silent. Two oscillators share the amplitude of one oscillator
+     * at full volume, so that the layers which sound together cannot exceed it - two equally loud
+     * layers play at half of the amplitude (-6 dB) each - and keep their balance: if the zones of
+     * one oscillator are quieter in the source than those of the other - by their average gain -
+     * it plays quieter by the difference.
+     *
+     * @param layout The samples which the oscillators play
+     * @return The volume parameter values of the first and the second oscillator
+     */
+    private static int [] getOscillatorVolumes (final DelugeOscillatorLayout layout)
+    {
+        if (layout.getOscillator2 ().isEmpty ())
+            return new int []
+            {
+                DelugeValues.PARAM_MAX,
+                DelugeValues.PARAM_MIN
+            };
+
+        // The amplitudes of the two oscillators relative to the louder one
+        final double gain1 = DelugeOscillatorLayout.getAverageGain (layout.getOscillator1 ());
+        final double gain2 = DelugeOscillatorLayout.getAverageGain (layout.getOscillator2 ());
+        final double louder = Math.max (gain1, gain2);
+        final double amplitude1 = Math.pow (10.0, (gain1 - louder) / 20.0);
+        final double amplitude2 = Math.pow (10.0, (gain2 - louder) / 20.0);
+        final double sum = amplitude1 + amplitude2;
+        return new int []
+        {
+            DelugeValues.gainToOscillatorVolume (amplitude1 / sum),
+            DelugeValues.gainToOscillatorVolume (amplitude2 / sum)
+        };
     }
 
 
