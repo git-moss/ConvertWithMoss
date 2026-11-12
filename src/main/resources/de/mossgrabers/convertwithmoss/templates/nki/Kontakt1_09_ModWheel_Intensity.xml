@@ -1,0 +1,9 @@
+        <NiSS_ExtMod index="%EXT_MOD_INDEX%" version="0.80">
+          <V name="target" value="intensity"/>
+          <V name="intensity" value="%EXT_MOD_INTENSITY%"/>
+          <V name="targetModIdx" value="%EXT_MOD_TARGET_INDEX%"/>
+          <V name="bypass" value="no"/>
+          <V name="delay" value="0"/>
+          <V name="source" value="midiCC"/>
+          <V name="ccNumber" value="1"/>
+        </NiSS_ExtMod>

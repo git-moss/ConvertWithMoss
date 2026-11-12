@@ -434,14 +434,13 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         // Pitch LFO (vibrato)
 
         final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
-        final double lfoDepth = pitchLfoModulator.getDepth ();
-        if (lfoDepth != 0)
+        if (pitchLfoModulator.isActive ())
         {
             final StringBuilder lfoStr = new StringBuilder ();
             // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is
-            // limited
-            // to +-1200 cent
-            lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append ((int) Math.round (Math.clamp (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH, -1200, 1200)));
+            // limited to +-1200 cent
+            lfoStr.append (SfzOpcode.PITCHLFO_DEPTH).append ('=').append (toLfoCents (pitchLfoModulator.getDepth ()));
+            addLfoModWheelAttribute (lfoStr, SfzOpcode.PITCHLFO_DEPTH_CC1, pitchLfoModulator, true);
 
             final ILfo pitchLfo = pitchLfoModulator.getSource ();
             addLfoTimeAttribute (lfoStr, SfzOpcode.PITCHLFO_FREQ, Math.clamp (pitchLfo.getRate (), 0, 20));
@@ -582,12 +581,11 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         // Amplitude LFO (tremolo)
 
         final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
-        final double lfoDepth = amplitudeLfoModulator.getDepth ();
-        if (lfoDepth != 0)
+        if (amplitudeLfoModulator.isActive ())
         {
             final StringBuilder lfoStr = new StringBuilder ();
-            final double value = Math.clamp (lfoDepth * ILfoModulator.MAX_VOLUME_DEPTH, -10.0, 10.0);
-            lfoStr.append (SfzOpcode.AMPLFO_DEPTH).append ('=').append (formatDouble (value, 2));
+            lfoStr.append (SfzOpcode.AMPLFO_DEPTH).append ('=').append (formatDouble (toLfoDecibels (amplitudeLfoModulator.getDepth ()), 2));
+            addLfoModWheelAttribute (lfoStr, SfzOpcode.AMPLFO_DEPTH_CC1, amplitudeLfoModulator, false);
 
             final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
             addLfoTimeAttribute (lfoStr, SfzOpcode.AMPLFO_FREQ, Math.clamp (amplitudeLfo.getRate (), 0, 20));
@@ -698,14 +696,13 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
 
         // LFO Modulation
         final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
-        final double lfoDepth = cutoffLfoModulator.getDepth ();
-        if (lfoDepth != 0)
+        if (cutoffLfoModulator.isActive ())
         {
             final StringBuilder lfoStr = new StringBuilder ();
             // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent, the opcode is
-            // limited
-            // to +-1200 cent
-            lfoStr.append (SfzOpcode.FILLFO_DEPTH).append ('=').append ((int) Math.round (Math.clamp (lfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH, -1200, 1200)));
+            // limited to +-1200 cent
+            lfoStr.append (SfzOpcode.FILLFO_DEPTH).append ('=').append (toLfoCents (cutoffLfoModulator.getDepth ()));
+            addLfoModWheelAttribute (lfoStr, SfzOpcode.FILLFO_DEPTH_CC1, cutoffLfoModulator, true);
 
             final ILfo pitchLfo = cutoffLfoModulator.getSource ();
             addLfoTimeAttribute (lfoStr, SfzOpcode.FILLFO_FREQ, Math.clamp (pitchLfo.getRate (), 0, 20));
@@ -748,6 +745,52 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         if (!sb.isEmpty ())
             sb.append (' ');
         sb.append (opcode).append ('=').append (formatAsFloat (Math.clamp (value * 100.0, 0.0, 100.0)));
+    }
+
+
+    /**
+     * Adds the opcode for the modulation of the LFO depth by the modulation wheel, if set.
+     *
+     * @param sb Where to add the opcode
+     * @param opcode The opcode
+     * @param lfoModulator The LFO modulator
+     * @param isCents True if the depth is in cent (pitch and cutoff), false for decibels (volume)
+     */
+    private static void addLfoModWheelAttribute (final StringBuilder sb, final String opcode, final ILfoModulator lfoModulator, final boolean isCents)
+    {
+        final double depth = lfoModulator.getDepthModWheelModulator ().getDepth ();
+        if (depth == 0)
+            return;
+        sb.append (' ').append (opcode).append ('=');
+        if (isCents)
+            sb.append (toLfoCents (depth));
+        else
+            sb.append (formatDouble (toLfoDecibels (depth), 2));
+    }
+
+
+    /**
+     * Convert the depth of a pitch or cutoff LFO to cents. The depth of the model covers
+     * IEnvelope#MAX_ENVELOPE_DEPTH cent, the SFZ opcodes are limited to +-1200 cent.
+     *
+     * @param depth The depth in the range of [-1..1]
+     * @return The depth in cent
+     */
+    private static int toLfoCents (final double depth)
+    {
+        return (int) Math.round (Math.clamp (depth * IEnvelope.MAX_ENVELOPE_DEPTH, -1200, 1200));
+    }
+
+
+    /**
+     * Convert the depth of a volume LFO to decibels. The SFZ opcodes are limited to +-10 dB.
+     *
+     * @param depth The depth in the range of [-1..1]
+     * @return The depth in decibels
+     */
+    private static double toLfoDecibels (final double depth)
+    {
+        return Math.clamp (depth * ILfoModulator.MAX_VOLUME_DEPTH, -10.0, 10.0);
     }
 
 

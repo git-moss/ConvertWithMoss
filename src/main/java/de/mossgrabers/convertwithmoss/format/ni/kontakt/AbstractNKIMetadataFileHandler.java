@@ -90,6 +90,11 @@ import de.mossgrabers.tools.ui.Functions;
 public abstract class AbstractNKIMetadataFileHandler
 {
     private static final String               LFO_SAWTOOTH              = "sawtooth";
+    // The index of the first oscillator in the internal and external modulators of the templates
+    private static final int                  FIRST_LFO_MODULATOR_INDEX = 3;
+    private static final int                  FIRST_LFO_EXT_MOD_INDEX   = 3;
+    // Kontakt 2 references the filter (insert effect at index 0) in the target of the modulator
+    private static final String               LFO_FILTER_TARGET_OBJECT  = "                  <V name=\"targetObjIdx\" value=\"0\"/>";
     protected static final String             TEMPLATE_FOLDER           = "de/mossgrabers/convertwithmoss/templates/nki/";
     protected static final String             XML_HEADER                = "<?xml version=\"1.0\"?>\n";
 
@@ -137,6 +142,10 @@ public abstract class AbstractNKIMetadataFileHandler
 
     // The pitch intensity of Kontakt (1.0) covers 1 octave
     private static final double               PITCH_INTENSITY_CENTS     = 1200.0;
+    // The pitch intensity of Kontakt covers 1 octave (same as the pitch-bend), the model uses the
+    // range of the pitch envelope
+    private static final LfoIntensityConverter PITCH_LFO_CONVERTER      = LfoIntensityConverter.linear (PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+    private static final LfoIntensityConverter CUTOFF_LFO_CONVERTER     = LfoIntensityConverter.linear (1.0);
 
     // The default number of voices if the source does not specify the polyphony
     private static final int                  DEFAULT_MAX_VOICES        = 64;
@@ -485,7 +494,9 @@ public abstract class AbstractNKIMetadataFileHandler
         final String zoneTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_04_Zone.xml");
         final String loopTemplate = Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_05_Loop.xml");
         // Optional templates which are only used if the group template contains the placeholder
-        final String lfoTemplate = groupTemplate.contains ("%PITCH_LFO%") ? Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_07_Lfo.xml") : "";
+        final boolean hasLfos = groupTemplate.contains ("%LFO_MODULATORS%");
+        final String lfoTemplate = hasLfos ? Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_07_Lfo.xml") : "";
+        final String modWheelTemplate = hasLfos ? Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_09_ModWheel_Intensity.xml") : "";
         final String startCriteriaTemplate = groupTemplate.contains ("%GROUP_START_CRITERIA%") ? Functions.textFileFor (TEMPLATE_FOLDER + templatePrefix + "_08_Start_Criteria.xml") : "";
 
         final StringBuilder groupsText = new StringBuilder ();
@@ -540,7 +551,9 @@ public abstract class AbstractNKIMetadataFileHandler
             final boolean isOneShot = firstZone != null && firstZone.isOneShot ();
             final boolean isReverse = firstZone != null && firstZone.isReversed ();
             groupContent = addModulators (firstZone, groupContent);
-            groupContent = groupContent.replace ("%PITCH_LFO%", createPitchLfo (firstZone, lfoTemplate));
+            final String [] lfoModulators = this.createLfoModulators (firstZone, lfoTemplate, modWheelTemplate);
+            groupContent = groupContent.replace ("%LFO_MODULATORS%", lfoModulators[0]);
+            groupContent = groupContent.replace ("%LFO_MOD_WHEEL_MODULATORS%", lfoModulators[1]);
             groupContent = groupContent.replace ("%GROUP_START_CRITERIA%", createStartCriteria (firstZone, startCriteriaTemplate));
             groupContent = groupContent.replace ("%AMP_VELOCITY_MOD%", formatDouble (ampVelocityMod));
             groupContent = groupContent.replace ("%PITCH_BEND%", formatDouble (pitchBendUp / 1200));
@@ -598,22 +611,66 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Creates an internal modulator for the pitch oscillator (vibrato).
+     * Creates the internal modulators for the oscillators of the pitch (vibrato), the volume
+     * (tremolo) and the filter cutoff as well as the external modulators which control their
+     * intensity with the modulation wheel.
      *
-     * @param zone The zone from which to take the oscillator, might be null
-     * @param template The template of an oscillator modulator
-     * @return The filled template or an empty text if there is no vibrato
+     * @param zone The zone from which to take the oscillators, might be null
+     * @param lfoTemplate The template of an oscillator modulator
+     * @param modWheelTemplate The template of an external modulator which controls the intensity
+     *            of an internal modulator with the modulation wheel
+     * @return The internal modulators (index 0) and the external modulators (index 1)
      */
-    private static String createPitchLfo (final ISampleZone zone, final String template)
+    private String [] createLfoModulators (final ISampleZone zone, final String lfoTemplate, final String modWheelTemplate)
     {
-        if (zone == null || template.isEmpty ())
-            return "";
-        final ILfoModulator modulator = zone.getPitchLfoModulator ();
-        final ILfo lfo = modulator.getSource ();
-        double intensity = modulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / PITCH_INTENSITY_CENTS;
-        if (intensity == 0 || lfo.getRate () <= 0)
-            return "";
+        final StringBuilder lfoContent = new StringBuilder ();
+        final StringBuilder modWheelContent = new StringBuilder ();
+        if (zone != null && !lfoTemplate.isEmpty ())
+        {
+            // The indices of the next internal and external modulator
+            final int [] indices =
+            {
+                FIRST_LFO_MODULATOR_INDEX,
+                FIRST_LFO_EXT_MOD_INDEX
+            };
+            // The pitch intensity of Kontakt covers 1 octave (same as the pitch-bend), the model
+            // uses the range of the pitch envelope
+            createLfoModulator (zone.getPitchLfoModulator (), this.tags.targetPitchValue (), false, PITCH_LFO_CONVERTER, lfoTemplate, modWheelTemplate, indices, lfoContent, modWheelContent);
+            createLfoModulator (zone.getAmplitudeLfoModulator (), this.tags.targetVolValue (), false, LfoIntensityConverter.VOLUME, lfoTemplate, modWheelTemplate, indices, lfoContent, modWheelContent);
+            final Optional<IFilter> filter = zone.getFilter ();
+            if (filter.isPresent ())
+                createLfoModulator (filter.get ().getCutoffLfoModulator (), this.tags.targetFilterCutoffValue (), true, CUTOFF_LFO_CONVERTER, lfoTemplate, modWheelTemplate, indices, lfoContent, modWheelContent);
+        }
+        return new String []
+        {
+            lfoContent.toString (),
+            modWheelContent.toString ()
+        };
+    }
 
+
+    /**
+     * Creates an internal modulator for an oscillator and the external modulator which controls
+     * its intensity with the modulation wheel (if any).
+     *
+     * @param modulator The oscillator modulator
+     * @param target The modulation target
+     * @param isFilterTarget True if the target is the filter (insert effect at index 0)
+     * @param converter Converts the depth of the model to the intensity of Kontakt
+     * @param lfoTemplate The template of an oscillator modulator
+     * @param modWheelTemplate The template of an external modulator which controls the intensity
+     * @param indices The index of the next internal (index 0) and external (index 1) modulator,
+     *            updated if modulators are added
+     * @param lfoContent Where to add the internal modulator
+     * @param modWheelContent Where to add the external modulator
+     */
+    private static void createLfoModulator (final ILfoModulator modulator, final String target, final boolean isFilterTarget, final LfoIntensityConverter converter, final String lfoTemplate, final String modWheelTemplate, final int [] indices, final StringBuilder lfoContent, final StringBuilder modWheelContent)
+    {
+        final ILfo lfo = modulator.getSource ();
+        if (!modulator.isActive () || lfo.getRate () <= 0)
+            return;
+
+        double sign = 1;
         final String type = switch (lfo.getWaveform ())
         {
             case TRIANGLE -> "triangle";
@@ -622,18 +679,35 @@ public abstract class AbstractNKIMetadataFileHandler
             // The sawtooth of Kontakt starts at the maximum and decreases
             case SAWTOOTH_DOWN -> LFO_SAWTOOTH;
             case SAWTOOTH_UP -> {
-                intensity = -intensity;
+                sign = -1;
                 yield LFO_SAWTOOTH;
             }
             default -> "sine";
         };
 
-        String content = template.replace ("%LFO_TYPE%", type);
-        content = content.replace ("%LFO_INTENSITY%", formatDouble (Math.clamp (intensity, -1.0, 1.0)));
+        final int lfoIndex = indices[0]++;
+        String content = lfoTemplate.replace ("%LFO_INDEX%", Integer.toString (lfoIndex));
+        content = content.replace ("%LFO_TARGET%", target);
+        content = content.replace ("%LFO_TARGET_OBJECT%", isFilterTarget ? "\r\n" + LFO_FILTER_TARGET_OBJECT : "");
+        content = content.replace ("%LFO_TYPE%", type);
+        content = content.replace ("%LFO_INTENSITY%", formatDouble (sign * converter.toIntensity (modulator.getDepth ())));
         content = content.replace ("%LFO_FREQUENCY%", formatDouble (lfo.getRate ()));
         content = content.replace ("%LFO_RETRIGGER%", lfo.isKeySync () ? "yes" : "no");
         // The delay is stored in milliseconds
-        return content.replace ("%LFO_DELAY%", formatDouble (Math.max (0, lfo.getDelay ()) * 1000.0));
+        content = content.replace ("%LFO_DELAY%", formatDouble (Math.max (0, lfo.getDelay ()) * 1000.0));
+        if (!lfoContent.isEmpty ())
+            lfoContent.append ("\r\n");
+        lfoContent.append (content);
+
+        final double modWheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
+        if (modWheelDepth == 0 || modWheelTemplate.isEmpty ())
+            return;
+        String modWheel = modWheelTemplate.replace ("%EXT_MOD_INDEX%", Integer.toString (indices[1]++));
+        modWheel = modWheel.replace ("%EXT_MOD_TARGET_INDEX%", Integer.toString (lfoIndex));
+        modWheel = modWheel.replace ("%EXT_MOD_INTENSITY%", formatDouble (sign * converter.toModWheelIntensity (modulator.getDepth (), modWheelDepth)));
+        if (!modWheelContent.isEmpty ())
+            modWheelContent.append ("\r\n");
+        modWheelContent.append (modWheel);
     }
 
 
@@ -1471,7 +1545,7 @@ public abstract class AbstractNKIMetadataFileHandler
         {
             this.notifier.logError ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED_LONG", ex.getMessage (), sampleFile.getName ());
         }
-        catch (final NoSuchFileException _)
+        catch (final NoSuchFileException | FileNotFoundException _)
         {
             this.notifier.logError ("IDS_ERR_SAMPLE_FILE_DOES_NOT_EXIST", sampleFile.getAbsolutePath ());
         }
@@ -2032,17 +2106,21 @@ public abstract class AbstractNKIMetadataFileHandler
         for (final Element modulatorElement: XMLUtils.getChildElementsByName (modulatorsElement, this.tags.intModulatorElement ()))
         {
             final Element lfoElement = XMLUtils.getChildElementByName (modulatorElement, this.tags.lfoElement ());
-            // If the intensity is controlled by an external modulator (e.g. a tremolo or vibrato
-            // which is controlled by the modulation wheel), the oscillator is not active by default
-            if (lfoElement == null || this.hasNameValuePairs (modulatorElement, this.tags.bypassParam (), this.tags.yes ()) || this.isIntensityModulated (XMLUtils.getIntegerAttribute (modulatorElement, this.tags.indexAttribute (), -1), extModulators))
+            if (lfoElement == null || this.hasNameValuePairs (modulatorElement, this.tags.bypassParam (), this.tags.yes ()))
+                continue;
+            // The intensity can be controlled by external modulators (e.g. a tremolo or vibrato
+            // which is controlled by the modulation wheel). Only the modulation wheel is supported,
+            // the oscillator is ignored if its intensity is controlled by other sources
+            final Optional<Double> modWheelIntensity = this.getModWheelIntensity (XMLUtils.getIntegerAttribute (modulatorElement, this.tags.indexAttribute (), -1), extModulators);
+            if (modWheelIntensity.isEmpty ())
                 continue;
             final Optional<String> modulationTarget = this.getModulationTarget (modulatorElement);
             if (modulationTarget.isEmpty () || !this.isModulatingGroupFilter (modulatorElement, modulationTarget.get (), filterEffectIndex))
                 continue;
             final double modulationIntensity = this.getModulationIntensity (modulatorElement);
-            if (modulationIntensity == 0)
+            if (modulationIntensity == 0 && modWheelIntensity.get ().doubleValue () == 0)
                 continue;
-            final Optional<ILfoModulator> modulator = this.readLfoFromElement (modulatorElement, lfoElement, modulationTarget.get (), modulationIntensity);
+            final Optional<ILfoModulator> modulator = this.readLfoFromElement (modulatorElement, lfoElement, modulationTarget.get (), modulationIntensity, modWheelIntensity.get ().doubleValue ());
             if (modulator.isPresent ())
                 modulators.put (modulationTarget.get (), modulator.get ());
         }
@@ -2057,9 +2135,10 @@ public abstract class AbstractNKIMetadataFileHandler
      * @param lfoElement The oscillator element of the modulator
      * @param target The modulation target
      * @param intensity The modulation intensity
+     * @param modWheelIntensity The intensity which is added by the modulation wheel
      * @return The modulator if it could be read
      */
-    private Optional<ILfoModulator> readLfoFromElement (final Element modulatorElement, final Element lfoElement, final String target, final double intensity)
+    private Optional<ILfoModulator> readLfoFromElement (final Element modulatorElement, final Element lfoElement, final String target, final double intensity, final double modWheelIntensity)
     {
         final Optional<LfoWaveform> waveform = getLfoWaveform (lfoElement.getAttribute (this.tags.envTypeAttribute ()));
         if (waveform.isEmpty ())
@@ -2072,10 +2151,15 @@ public abstract class AbstractNKIMetadataFileHandler
         if (frequency <= 0)
             return Optional.empty ();
 
-        // The pitch intensity of Kontakt covers 1 octave (same as the pitch-bend), the model uses
-        // the range of the pitch envelope
-        final double depth = this.tags.targetPitchValue ().equals (target) ? intensity * PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH : intensity;
-        final ILfoModulator modulator = new DefaultLfoModulator (Math.clamp (depth, -1.0, 1.0));
+        final LfoIntensityConverter converter;
+        if (this.tags.targetPitchValue ().equals (target))
+            converter = PITCH_LFO_CONVERTER;
+        else if (this.tags.targetVolValue ().equals (target))
+            converter = LfoIntensityConverter.VOLUME;
+        else
+            converter = CUTOFF_LFO_CONVERTER;
+        final ILfoModulator modulator = new DefaultLfoModulator (converter.toDepth (intensity));
+        modulator.getDepthModWheelModulator ().setDepth (converter.toModWheelDepth (intensity, modWheelIntensity));
         final ILfo lfo = modulator.getSource ();
         lfo.setWaveform (waveform.get ());
         lfo.setRate (frequency);
@@ -2111,20 +2195,28 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Check if the intensity of an internal modulator is controlled by an external modulator.
+     * Get the intensity which the modulation wheel adds to the intensity of an internal modulator.
      *
      * @param modulatorIndex The index of the internal modulator
      * @param extModulators All external modulators of the group
-     * @return True if the intensity is controlled
+     * @return The sum of the intensities of all modulation wheel modulators which control the
+     *         intensity (0 if there are none) or empty if the intensity is controlled by another
+     *         source
      */
-    private boolean isIntensityModulated (final int modulatorIndex, final List<ExternalModulation> extModulators)
+    private Optional<Double> getModWheelIntensity (final int modulatorIndex, final List<ExternalModulation> extModulators)
     {
+        double intensity = 0;
         if (modulatorIndex < 0)
-            return false;
+            return Optional.of (Double.valueOf (intensity));
         for (final ExternalModulation extModulator: extModulators)
-            if (this.tags.intensityValue ().equals (extModulator.target) && extModulator.targetIndex == modulatorIndex)
-                return true;
-        return false;
+        {
+            if (!this.tags.intensityValue ().equals (extModulator.target) || extModulator.targetIndex != modulatorIndex)
+                continue;
+            if (!this.tags.midiCCValue ().equals (extModulator.source) || extModulator.ccNumber != 1)
+                return Optional.empty ();
+            intensity += extModulator.intensity;
+        }
+        return Optional.of (Double.valueOf (intensity));
     }
 
 
@@ -2139,6 +2231,7 @@ public abstract class AbstractNKIMetadataFileHandler
         if (source == null)
             return;
         destination.setDepth (source.getDepth ());
+        destination.getDepthModWheelModulator ().setDepth (source.getDepthModWheelModulator ().getDepth ());
         destination.setSource (source.getSource ());
     }
 

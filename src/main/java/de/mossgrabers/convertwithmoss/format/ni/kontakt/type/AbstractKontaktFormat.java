@@ -40,6 +40,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.LfoIntensityConverter;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt2.Kontakt2Header;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Bank;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.ExternalModulator;
@@ -65,6 +66,10 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
 {
     // The pitch intensity of Kontakt (1.0) covers 1 octave
     private static final double PITCH_INTENSITY_CENTS = 1200.0;
+    // The pitch intensity of Kontakt (1.0) covers 1 octave, the depth of the model is relative to
+    // MAX_ENVELOPE_DEPTH cents
+    private static final LfoIntensityConverter PITCH_LFO_CONVERTER  = LfoIntensityConverter.linear (PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+    private static final LfoIntensityConverter CUTOFF_LFO_CONVERTER = LfoIntensityConverter.linear (1.0);
     // The volume values of Kontakt double every 6 dB
     private static final double DB_PER_DOUBLING       = 6.0;
     private static final double MINIMUM_DB            = -150.0;
@@ -278,14 +283,13 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
                         cutoffModulator.setDepth (kontaktCutoffModulator.getDepth ());
                         cutoffModulator.setSource (kontaktCutoffModulator.getSource ());
                     }
-                    applyLfoModulator (modulator.getFilterCutoffLfo (), filter.getCutoffLfoModulator (), 1.0);
+                    applyLfoModulator (modulator.getFilterCutoffLfo (), filter.getCutoffLfoModulator (), CUTOFF_LFO_CONVERTER);
                 }
 
-                applyLfoModulator (modulator.getVolumeLfo (), zone.getAmplitudeLfoModulator (), 1.0);
-                // The pitch intensity of Kontakt (1.0) covers 1 octave, the depth of the model is
-                // relative to MAX_ENVELOPE_DEPTH cents
-                applyLfoModulator (modulator.getPitchLfo (), zone.getPitchLfoModulator (), PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+                applyLfoModulator (modulator.getVolumeLfo (), zone.getAmplitudeLfoModulator (), LfoIntensityConverter.VOLUME);
+                applyLfoModulator (modulator.getPitchLfo (), zone.getPitchLfoModulator (), PITCH_LFO_CONVERTER);
             }
+            applyModWheelLfoModulation (kontaktGroup, zone, filter);
 
             for (final ZoneLoop zoneLoop: kontaktZone.getLoops ())
             {
@@ -344,18 +348,70 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
 
 
     /**
+     * Applies the modulation of the intensity of the oscillators by the modulation wheel. The
+     * intensity of the external modulator is added to the intensity of the oscillator.
+     *
+     * @param kontaktGroup The group which contains the modulators
+     * @param zone The zone to which to apply the modulation
+     * @param filter The filter of the zone, might be null (shared by all zones of the group)
+     */
+    private static void applyModWheelLfoModulation (final Group kontaktGroup, final ISampleZone zone, final IFilter filter)
+    {
+        double volumeIntensity = 0;
+        double pitchIntensity = 0;
+        double cutoffIntensity = 0;
+        for (final ExternalModulator extModulator: kontaktGroup.getExternalModulators ())
+        {
+            if (!ExternalModulator.TARGET_INTENSITY.equals (extModulator.getTargetName ()) || extModulator.getSourceType () != ExternalModulator.SOURCE_MIDI_CC || extModulator.getCCNumber () != 1)
+                continue;
+            for (final InternalModulator modulator: kontaktGroup.getInternalModulators ())
+            {
+                if (modulator.getSlotIndex () != extModulator.getTargetIndex ())
+                    continue;
+                final double intensity = extModulator.getIntensity ();
+                if (modulator.getVolumeLfo ().isPresent ())
+                    volumeIntensity += intensity;
+                else if (modulator.getPitchLfo ().isPresent ())
+                    pitchIntensity += intensity;
+                else if (modulator.getFilterCutoffLfo ().isPresent ())
+                    cutoffIntensity += intensity;
+            }
+        }
+
+        applyModWheelIntensity (zone.getAmplitudeLfoModulator (), volumeIntensity, LfoIntensityConverter.VOLUME);
+        applyModWheelIntensity (zone.getPitchLfoModulator (), pitchIntensity, PITCH_LFO_CONVERTER);
+        if (filter != null)
+            applyModWheelIntensity (filter.getCutoffLfoModulator (), cutoffIntensity, CUTOFF_LFO_CONVERTER);
+    }
+
+
+    /**
+     * Set the depth of the modulation wheel modulator of an oscillator modulator.
+     *
+     * @param lfoModulator The oscillator modulator
+     * @param modWheelIntensity The intensity which the modulation wheel adds in Kontakt
+     * @param converter Converts the intensity to the depth
+     */
+    private static void applyModWheelIntensity (final ILfoModulator lfoModulator, final double modWheelIntensity, final LfoIntensityConverter converter)
+    {
+        if (modWheelIntensity != 0)
+            lfoModulator.getDepthModWheelModulator ().setDepth (converter.toModWheelDepth (converter.toIntensity (lfoModulator.getDepth ()), modWheelIntensity));
+    }
+
+
+    /**
      * Copy the settings of a low frequency oscillator modulator.
      *
      * @param source The modulator to copy
      * @param destination The modulator to set
-     * @param scale The factor to scale the depth
+     * @param converter Converts the intensity of Kontakt to the depth
      */
-    private static void applyLfoModulator (final Optional<ILfoModulator> source, final ILfoModulator destination, final double scale)
+    private static void applyLfoModulator (final Optional<ILfoModulator> source, final ILfoModulator destination, final LfoIntensityConverter converter)
     {
         if (source.isEmpty ())
             return;
         final ILfoModulator lfoModulator = source.get ();
-        destination.setDepth (Math.clamp (lfoModulator.getDepth () * scale, -1.0, 1.0));
+        destination.setDepth (converter.toDepth (lfoModulator.getDepth ()));
         destination.setSource (lfoModulator.getSource ());
     }
 

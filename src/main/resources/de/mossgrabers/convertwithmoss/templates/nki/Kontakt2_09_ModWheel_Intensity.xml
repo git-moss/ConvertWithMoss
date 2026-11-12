@@ -1,0 +1,18 @@
+            <K2_ExtMod index="%EXT_MOD_INDEX%" version="0.90">
+              <Targets>
+                <Target index="0">
+                  <V name="target" value="intensity"/>
+                  <V name="intensity" value="%EXT_MOD_INTENSITY%"/>
+                  <V name="targetObjIdx" value="%EXT_MOD_TARGET_INDEX%"/>
+                </Target>
+              </Targets>
+              <V name="tableOpen" value="no"/>
+              <V name="source" value="midiCC"/>
+              <V name="ccNumber" value="1"/>
+              <V name="bypass" value="no"/>
+              <V name="legacyStatModBehaviour" value="no"/>
+              <V name="delay" value="0"/>
+              <V name="classID" value="-1"/>
+              <V name="name" value="External Mod."/>
+              <V name="initialValue" value="0"/>
+            </K2_ExtMod>

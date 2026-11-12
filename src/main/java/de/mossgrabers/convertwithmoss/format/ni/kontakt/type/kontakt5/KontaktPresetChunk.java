@@ -329,6 +329,17 @@ public class KontaktPresetChunk
 
 
     /**
+     * Get the index of the slot if the chunk is stored in a fixed array.
+     *
+     * @return The index or -1 if not stored in a fixed array
+     */
+    public int getSlotIndex ()
+    {
+        return this.slotIndex;
+    }
+
+
+    /**
      * Get the ID of the object.
      *
      * @return the id

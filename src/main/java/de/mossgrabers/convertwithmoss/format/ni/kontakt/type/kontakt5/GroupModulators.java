@@ -19,6 +19,7 @@ import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.LfoIntensityConverter;
 
 
 /**
@@ -34,8 +35,14 @@ final class GroupModulators
 
     // Flag of a modulated parameter which inverts the modulation
     private static final int     FLAG_INVERT             = 0x02;
+    // The modulation is added to the parameter instead of scaling it, e.g. 'Intensity (add)'
+    private static final int     FLAG_ADD                = 0x04;
     // The pitch intensity of Kontakt (1.0) covers 1 octave
     private static final double  PITCH_INTENSITY_CENTS   = 1200.0;
+    // The pitch intensity of Kontakt (1.0) covers 1 octave, the depth of the model is relative to
+    // MAX_ENVELOPE_DEPTH cents
+    private static final LfoIntensityConverter PITCH_LFO_CONVERTER  = LfoIntensityConverter.linear (PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+    private static final LfoIntensityConverter CUTOFF_LFO_CONVERTER = LfoIntensityConverter.linear (1.0);
 
     //@formatter:off
     // An AHDSR envelope which modulates the pitch, taken from a file saved by Kontakt 7
@@ -71,6 +78,7 @@ final class GroupModulators
     private static final String  TARGET_VOLUME           = "volume";
     private static final String  TARGET_PITCH            = "pitch";
     private static final String  TARGET_CUTOFF           = "filterCutoff";
+    private static final String  TARGET_INTENSITY        = "intensity";
     private static final int     FLAGS_DEFAULT           = 0x10;
 
     // The index of the modulation source type of internal modulators
@@ -82,7 +90,11 @@ final class GroupModulators
     private static final String  SOURCE_AHDSR            = "ENV_AHDSR";
 
     // The source types of external modulators
+    private static final int     SOURCE_MIDI_CC          = 4;
     private static final int     SOURCE_KEY_POSITION     = 5;
+    private static final int     MOD_WHEEL_CC            = 1;
+    private static final int     MAX_SOURCE_NAME_LENGTH  = 64;
+    private static final int     MAX_PARAMETER_TRAILER   = 4;
     private static final int     SOURCE_VELOCITY         = 6;
 
     // The offsets in the LFO block
@@ -160,7 +172,7 @@ final class GroupModulators
 
         // The depth of the model is relative to MAX_ENVELOPE_DEPTH cents
         final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
-        final double pitchIntensity = Math.clamp (pitchModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / PITCH_INTENSITY_CENTS, -1.0, 1.0);
+        final double pitchIntensity = getPitchEnvelopeIntensity (zone);
         if (pitchIntensity != 0)
         {
             final IEnvelope pitchEnvelope = pitchModulator.getSource ();
@@ -180,7 +192,7 @@ final class GroupModulators
         if (filterOpt.isPresent ())
         {
             final IEnvelopeModulator cutoffModulator = filterOpt.get ().getCutoffEnvelopeModulator ();
-            final double cutoffIntensity = Math.clamp (cutoffModulator.getDepth (), -1.0, 1.0);
+            final double cutoffIntensity = getCutoffEnvelopeIntensity (zone);
             if (cutoffIntensity != 0)
             {
                 final IEnvelope cutoffEnvelope = cutoffModulator.getSource ();
@@ -191,11 +203,13 @@ final class GroupModulators
         }
 
         // The pitch intensity is relative to 1 octave, volume and cutoff use the depth directly
-        addLfo (modulators, TARGET_PITCH, "PITCH", zone.getPitchLfoModulator (), IEnvelope.MAX_ENVELOPE_DEPTH / PITCH_INTENSITY_CENTS);
-        addLfo (modulators, TARGET_VOLUME, "VOLUME", zone.getAmplitudeLfoModulator (), 1);
+        addLfo (modulators, TARGET_PITCH, "PITCH", zone.getPitchLfoModulator (), PITCH_LFO_CONVERTER);
+        addLfo (modulators, TARGET_VOLUME, "VOLUME", zone.getAmplitudeLfoModulator (), LfoIntensityConverter.VOLUME);
         if (filterOpt.isPresent ())
-            addLfo (modulators, TARGET_CUTOFF, "FILTERCUTOFF", filterOpt.get ().getCutoffLfoModulator (), 1);
+            addLfo (modulators, TARGET_CUTOFF, "FILTERCUTOFF", filterOpt.get ().getCutoffLfoModulator (), CUTOFF_LFO_CONVERTER);
 
+        // The IDs of the internal modulators are their indices
+        setModulatorIds (modulators, true, 0);
         return createParameterArray (KontaktPresetChunkID.PARAMETER_ARRAY_16, modulators);
     }
 
@@ -232,6 +246,23 @@ final class GroupModulators
             if (keyTracking != 0)
                 modulators.add (createExternalModulator (velocityTemplate, TARGET_CUTOFF, keyTracking, "KP_CUTOFF", SOURCE_KEY_POSITION));
         }
+
+        // The modulation wheel controls the intensity of the oscillators. The internal modulators
+        // are referenced by their slot index: the amplitude envelope, the optional pitch and cutoff
+        // envelopes followed by the oscillators (see createInternalModulators)
+        int slot = 1;
+        if (getPitchEnvelopeIntensity (zone) != 0)
+            slot++;
+        if (getCutoffEnvelopeIntensity (zone) != 0)
+            slot++;
+        slot = addModWheelModulator (modulators, velocityTemplate, zone.getPitchLfoModulator (), PITCH_LFO_CONVERTER, slot);
+        slot = addModWheelModulator (modulators, velocityTemplate, zone.getAmplitudeLfoModulator (), LfoIntensityConverter.VOLUME, slot);
+        if (filterOpt.isPresent ())
+            slot = addModWheelModulator (modulators, velocityTemplate, filterOpt.get ().getCutoffLfoModulator (), CUTOFF_LFO_CONVERTER, slot);
+
+        // The IDs of the external modulators follow the ones of the internal modulators, which
+        // are their slot indices (slot is now the number of internal modulators)
+        setModulatorIds (modulators, false, slot);
 
         return createParameterArray (KontaktPresetChunkID.PARAMETER_ARRAY_32, modulators);
     }
@@ -350,14 +381,14 @@ final class GroupModulators
      * @param target The name of the modulated parameter
      * @param targetDescription The target part of the modulator description
      * @param lfoModulator The LFO modulator of the model
-     * @param scale The factor to convert the depth to the intensity
+     * @param converter Converts the depth to the intensity
      */
-    private static void addLfo (final List<KontaktPresetChunk> modulators, final String target, final String targetDescription, final ILfoModulator lfoModulator, final double scale)
+    private static void addLfo (final List<KontaktPresetChunk> modulators, final String target, final String targetDescription, final ILfoModulator lfoModulator, final LfoIntensityConverter converter)
     {
-        final ILfo lfo = lfoModulator.getSource ();
-        double intensity = Math.clamp (lfoModulator.getDepth () * scale, -1.0, 1.0);
-        if (intensity == 0 || lfo.getRate () <= 0)
+        if (!isLfoWritten (lfoModulator))
             return;
+        final ILfo lfo = lfoModulator.getSource ();
+        final double intensity = getLfoSign (lfo) * converter.toIntensity (lfoModulator.getDepth ());
 
         final String sourceName;
         final int waveform;
@@ -375,8 +406,6 @@ final class GroupModulators
             case SAWTOOTH_DOWN, SAWTOOTH_UP:
                 sourceName = "LFO_SAWTOOTH";
                 waveform = 3;
-                if (lfo.getWaveform () == LfoWaveform.SAWTOOTH_UP)
-                    intensity = -intensity;
                 break;
             case RANDOM:
                 sourceName = "LFO_RANDOM";
@@ -417,7 +446,7 @@ final class GroupModulators
         try
         {
             final ByteArrayOutputStream block1 = new ByteArrayOutputStream ();
-            writeModulatedParameter (block1, target, description);
+            writeModulatedParameter (block1, target, description, -1);
             // Mod-section open, bypass, retrigger and 5 unknown bytes
             block1.write (1);
             block1.write (0);
@@ -450,6 +479,79 @@ final class GroupModulators
 
 
     /**
+     * Adds an external modulator which controls the intensity of an oscillator with the
+     * modulation wheel, if the oscillator is written and has a modulation wheel depth.
+     *
+     * @param modulators Where to add the modulator
+     * @param template The template for an external modulator
+     * @param lfoModulator The oscillator
+     * @param converter Converts the depth of the model to the intensity of Kontakt
+     * @param slot The slot index of the internal modulator of the oscillator, if it is written
+     * @return The slot index of the next internal modulator
+     */
+    private static int addModWheelModulator (final List<KontaktPresetChunk> modulators, final KontaktPresetChunk template, final ILfoModulator lfoModulator, final LfoIntensityConverter converter, final int slot)
+    {
+        if (!isLfoWritten (lfoModulator))
+            return slot;
+        final double intensity = getLfoSign (lfoModulator.getSource ()) * converter.toModWheelIntensity (lfoModulator.getDepth (), lfoModulator.getDepthModWheelModulator ().getDepth ());
+        if (intensity != 0)
+            modulators.add (createExternalModulator (template, TARGET_INTENSITY, slot, intensity, "CC_INTENSITY", SOURCE_MIDI_CC, MOD_WHEEL_CC));
+        return slot + 1;
+    }
+
+
+    /**
+     * Check if an internal modulator is written for the oscillator.
+     *
+     * @param lfoModulator The oscillator
+     * @return True if it is written
+     */
+    private static boolean isLfoWritten (final ILfoModulator lfoModulator)
+    {
+        return lfoModulator.isActive () && lfoModulator.getSource ().getRate () > 0;
+    }
+
+
+    /**
+     * The sawtooth of Kontakt starts at the maximum and decreases, an increasing sawtooth is
+     * created by inverting the intensity.
+     *
+     * @param lfo The oscillator
+     * @return -1 for an increasing sawtooth, otherwise 1
+     */
+    private static double getLfoSign (final ILfo lfo)
+    {
+        return lfo.getWaveform () == LfoWaveform.SAWTOOTH_UP ? -1 : 1;
+    }
+
+
+    /**
+     * Get the intensity of the pitch envelope, relative to 1 octave (the depth of the model is
+     * relative to MAX_ENVELOPE_DEPTH cents).
+     *
+     * @param zone The zone
+     * @return The intensity, 0 if no pitch envelope is written
+     */
+    private static double getPitchEnvelopeIntensity (final ISampleZone zone)
+    {
+        return Math.clamp (zone.getPitchEnvelopeModulator ().getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / PITCH_INTENSITY_CENTS, -1.0, 1.0);
+    }
+
+
+    /**
+     * Get the intensity of the filter cutoff envelope.
+     *
+     * @param zone The zone
+     * @return The intensity, 0 if there is no filter or no cutoff envelope is written
+     */
+    private static double getCutoffEnvelopeIntensity (final ISampleZone zone)
+    {
+        final Optional<IFilter> filterOpt = zone.getFilter ();
+        return filterOpt.isEmpty () ? 0 : Math.clamp (filterOpt.get ().getCutoffEnvelopeModulator ().getDepth (), -1.0, 1.0);
+    }
+
+
+    /**
      * Creates an external modulator from the velocity to volume template.
      *
      * @param template The template
@@ -460,6 +562,25 @@ final class GroupModulators
      * @return The chunk
      */
     private static KontaktPresetChunk createExternalModulator (final KontaktPresetChunk template, final String target, final double intensity, final String sourceName, final int sourceType)
+    {
+        return createExternalModulator (template, target, -1, intensity, sourceName, sourceType, -1);
+    }
+
+
+    /**
+     * Creates an external modulator from a template.
+     *
+     * @param template The template of an external modulator
+     * @param target The name of the modulated parameter
+     * @param targetIndex The slot index of the internal modulator if the target is its intensity,
+     *            otherwise -1
+     * @param intensity The modulation intensity
+     * @param sourceName The name of the source
+     * @param sourceType The type of the source
+     * @param ccNumber The number of the MIDI CC if the source is a MIDI CC, otherwise -1
+     * @return The modulator
+     */
+    private static KontaktPresetChunk createExternalModulator (final KontaktPresetChunk template, final String target, final int targetIndex, final double intensity, final String sourceName, final int sourceType, final int ccNumber)
     {
         final byte [] templateData = template.getPublicData ();
         final int blockSize = (int) readUnsigned32 (templateData, 3);
@@ -475,13 +596,21 @@ final class GroupModulators
         try
         {
             final ByteArrayOutputStream block = new ByteArrayOutputStream ();
-            writeModulatedParameter (block, target, "");
+            writeModulatedParameter (block, target, "", targetIndex);
             writeAscii (block, sourceName);
-            // 1 (32 bit) followed by the source type
+            // 1 (32 bit) followed by the source type and the CC number (8 bit) if it is a MIDI CC
             StreamUtils.writeUnsigned32 (block, 1, false);
             StreamUtils.writeUnsigned32 (block, sourceType, false);
+            int remaining = pos + 8;
+            if (ccNumber >= 0)
+            {
+                // Kontakt writes 4 zero bytes instead of 0xFFFF and the 2 flags after a MIDI CC
+                block.write (ccNumber);
+                block.write (new byte [4]);
+                remaining += 4;
+            }
             // The remaining bytes of the template
-            block.write (templateData, pos + 8, blockEnd - pos - 8);
+            block.write (templateData, remaining, blockEnd - remaining);
 
             final byte [] blockData = block.toByteArray ();
             final ByteArrayOutputStream out = new ByteArrayOutputStream ();
@@ -504,25 +633,33 @@ final class GroupModulators
 
     /**
      * Writes one modulated parameter: number of parameters (1), name, intensity (set later),
-     * 0xFFFF, flags, lag, description, the insert effect slot of the filter (only for the filter
-     * cutoff) and 2 zero bytes (no modulation shaper).
+     * 0xFFFF, flags (add-mode for the intensity of an internal modulator), lag, description, the insert effect slot of the filter (only for the filter
+     * cutoff) or the slot of the internal modulator (only for its intensity) and 2 zero bytes (no
+     * modulation shaper).
      *
      * @param out Where to write to
      * @param target The name of the modulated parameter
      * @param description The description
+     * @param targetIndex The slot index of the internal modulator whose intensity is modulated,
+     *            -1 if not used
      * @throws IOException Could not write
      */
-    private static void writeModulatedParameter (final ByteArrayOutputStream out, final String target, final String description) throws IOException
+    private static void writeModulatedParameter (final ByteArrayOutputStream out, final String target, final String description, final int targetIndex) throws IOException
     {
         StreamUtils.writeUnsigned32 (out, 1, false);
         writeAscii (out, target);
         StreamUtils.writeFloatLE (out, 0);
         StreamUtils.writeUnsigned16 (out, 0xFFFF, false);
-        out.write (FLAGS_DEFAULT);
+        // The intensity of an internal modulator is added to (not scaled by) the modulation
+        out.write (TARGET_INTENSITY.equals (target) ? FLAGS_DEFAULT | FLAG_ADD : FLAGS_DEFAULT);
         StreamUtils.writeUnsigned16 (out, 0, false);
         writeAscii (out, description);
+        // Parameters of other objects are followed by the index of that object: the insert effect
+        // slot of the filter and the slot of the internal modulator whose intensity is modulated
         if (TARGET_CUTOFF.equals (target))
             out.write (FILTER_SLOT);
+        else if (TARGET_INTENSITY.equals (target))
+            out.write (targetIndex);
         out.write (0);
         out.write (0);
     }
@@ -598,6 +735,97 @@ final class GroupModulators
         writeFloat (data, block2 + ENVELOPE_RELEASE, release * 1000.0);
         writeFloat (data, block2 + ENVELOPE_SUSTAIN, Math.clamp (sustain, 0.0, 1.0));
         data[block2 + ENVELOPE_AHD_ONLY] = 0;
+    }
+
+
+    /**
+     * Find the offset of the ID of a modulator. Each modulator of a group has a unique ID.
+     * Internal modulators store it in their first block directly before the name of the
+     * modulation source (which is followed by the index of the source). External modulators store
+     * it after the type of the source, the optional MIDI CC number (8 bit) and 4 unknown bytes.
+     *
+     * @param data The data of the modulator
+     * @param isInternal True for an internal modulator, false for an external one
+     * @return The offset of the ID (32 bit) or -1 if it could not be found
+     */
+    static int findModulatorIdOffset (final byte [] data, final boolean isInternal)
+    {
+        if (data.length < BLOCK1_OFFSET + 4)
+            return -1;
+        final long blockSize = readUnsigned32 (data, 3);
+        final int blockEnd = (int) Math.min (data.length, BLOCK1_OFFSET + blockSize);
+
+        if (isInternal)
+        {
+            // The block ends with the source name and the source index (32 bit)
+            final int nameEnd = blockEnd - 4;
+            for (int length = 1; length <= MAX_SOURCE_NAME_LENGTH; length++)
+            {
+                final int lengthOffset = nameEnd - length - 4;
+                if (lengthOffset - 4 < BLOCK1_OFFSET)
+                    break;
+                if (readUnsigned32 (data, lengthOffset) == length && isAscii (data, lengthOffset + 4, length))
+                    return lengthOffset - 4;
+            }
+            return -1;
+        }
+
+        // Number of parameters, name of the first parameter, intensity, 0xFFFF, flags, lag and
+        // description followed by 2-4 bytes (object index, unknown, modulation shaper) and the
+        // name of the source, 1 (32 bit) and the type of the source (32 bit)
+        int pos = BLOCK1_OFFSET + 4;
+        if (pos + 4 > blockEnd)
+            return -1;
+        pos += 4 + (int) readUnsigned32 (data, pos) + 9;
+        if (pos + 4 > blockEnd)
+            return -1;
+        pos += 4 + (int) readUnsigned32 (data, pos);
+        for (int skip = 0; skip <= MAX_PARAMETER_TRAILER; skip++)
+        {
+            final int nameOffset = pos + skip;
+            if (nameOffset + 4 > blockEnd)
+                break;
+            final long length = readUnsigned32 (data, nameOffset);
+            final int end = nameOffset + 4 + (int) length;
+            if (length < 1 || length > MAX_SOURCE_NAME_LENGTH || end + 8 > blockEnd || !isAscii (data, nameOffset + 4, (int) length) || readUnsigned32 (data, end) != 1)
+                continue;
+            final long sourceType = readUnsigned32 (data, end + 4);
+            final int idOffset = end + 8 + (sourceType == SOURCE_MIDI_CC ? 1 : 0) + 4;
+            return idOffset + 4 <= blockEnd ? idOffset : -1;
+        }
+        return -1;
+    }
+
+
+    private static boolean isAscii (final byte [] data, final int offset, final int length)
+    {
+        for (int i = 0; i < length; i++)
+        {
+            final int c = data[offset + i] & 0xFF;
+            if (c < 0x20 || c >= 0x7F)
+                return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * Assigns unique IDs to modulators.
+     *
+     * @param modulators The modulators
+     * @param isInternal True for internal modulators
+     * @param firstId The ID of the first modulator
+     */
+    private static void setModulatorIds (final List<KontaktPresetChunk> modulators, final boolean isInternal, final int firstId)
+    {
+        for (int i = 0; i < modulators.size (); i++)
+        {
+            final KontaktPresetChunk modulator = modulators.get (i);
+            final byte [] data = modulator.getPublicData ();
+            final int offset = findModulatorIdOffset (data, isInternal);
+            if (offset >= 0)
+                writeUnsigned32 (data, offset, firstId + (long) i);
+        }
     }
 
 

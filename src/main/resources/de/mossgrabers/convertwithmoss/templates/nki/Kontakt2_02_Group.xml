@@ -130,7 +130,7 @@
                 <V name="sustain" value="%PITCH_ENVELOPE_SUSTAIN%"/>
               </Envelope>
             </K2_IntMod>
-%PITCH_LFO%
+%LFO_MODULATORS%
           </IntModulators>
           <ExtModulators>
             <K2_ExtMod index="0" version="0.90">
@@ -182,5 +182,6 @@
               <V name="name" value="External Mod."/>
               <V name="initialValue" value="-1"/>
             </K2_ExtMod>
+%LFO_MOD_WHEEL_MODULATORS%
           </ExtModulators>
         </K2_Group>

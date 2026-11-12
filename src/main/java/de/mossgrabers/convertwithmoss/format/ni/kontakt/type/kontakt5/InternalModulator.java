@@ -69,6 +69,7 @@ public class InternalModulator
     private static final int               DBD_DECAY2_OFFSET                  = 42;
 
     private int                            version                            = 0x81;
+    private int                            slotIndex                          = -1;
     private final List<ModulatedParameter> modulatedParameters                = new ArrayList<> ();
 
     @SuppressWarnings("unused")
@@ -153,6 +154,18 @@ public class InternalModulator
     public Optional<IEnvelopeModulator> getPitchEnvelope ()
     {
         return this.createEnvelopeModulator (PARAMETER_NAME_PITCH);
+    }
+
+
+    /**
+     * Get the index of the slot in which the modulator is stored. External modulators reference
+     * internal modulators with this index, e.g. to modulate their intensity.
+     *
+     * @return The index or -1 if not known
+     */
+    public int getSlotIndex ()
+    {
+        return this.slotIndex;
     }
 
 
@@ -256,6 +269,7 @@ public class InternalModulator
         if (id != KontaktPresetChunkID.PAR_INTERNAL_MOD && id != KontaktPresetChunkID.PAR_MOD_BASE)
             throw new IOException (Functions.getMessage ("IDS_NKI_NOT_INTERNAL_MODULATION"));
 
+        this.slotIndex = chunk.getSlotIndex ();
         final ByteArrayInputStream in = new ByteArrayInputStream (chunk.getPublicData ());
 
         if (id == KontaktPresetChunkID.PAR_MOD_BASE)

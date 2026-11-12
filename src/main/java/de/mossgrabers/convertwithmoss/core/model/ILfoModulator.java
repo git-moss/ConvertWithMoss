@@ -9,6 +9,8 @@ package de.mossgrabers.convertwithmoss.core.model;
  * and of the filter cutoff modulation maps to -{@link IEnvelope#MAX_ENVELOPE_DEPTH}..
  * {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent, which is the same range as the one of the pitch and
  * cutoff envelope modulators. The modulation depth of the volume modulation maps to -96..96 dB.
+ * The depth can additionally be controlled by the modulation wheel, see
+ * {@link #getDepthModWheelModulator()}.
  *
  * @author Jürgen Moßgraber
  */
@@ -32,4 +34,27 @@ public interface ILfoModulator extends IModulator
      * @param source The modulation source
      */
     void setSource (ILfo source);
+
+
+    /**
+     * Get the modulator which controls the depth of the LFO with the modulation wheel. Its depth
+     * (-1..1, same units as the LFO depth) is added to the depth of this LFO modulator when the
+     * modulation wheel is fully up. With the modulation wheel fully down only the depth of this LFO
+     * modulator is applied.
+     *
+     * @return The modulator, never null
+     */
+    IModulator getDepthModWheelModulator ();
+
+
+    /**
+     * Check if the LFO has an effect, which is the case if the depth or the modulation wheel depth
+     * is not 0.
+     *
+     * @return True if active
+     */
+    default boolean isActive ()
+    {
+        return this.getDepth () != 0 || this.getDepthModWheelModulator ().getDepth () != 0;
+    }
 }

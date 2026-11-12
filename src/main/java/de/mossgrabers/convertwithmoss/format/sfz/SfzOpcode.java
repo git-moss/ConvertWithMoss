@@ -184,6 +184,10 @@ public class SfzOpcode
     public static final String AMPLFO_DELAY          = "amplfo_delay";
     /** SFZ v1. The amplitude LFO (tremolo) fade-in time in seconds. */
     public static final String AMPLFO_FADE           = "amplfo_fade";
+    /** SFZ v1. The amplitude LFO (tremolo) depth added by the modulation wheel in decibels. */
+    public static final String AMPLFO_DEPTH_CC1      = "amplfo_depthcc1";
+    /** SFZ v2 alias. The amplitude LFO (tremolo) depth added by the modulation wheel in decibels. */
+    public static final String AMPLFO_DEPTH_ONCC1    = "amplfo_depth_oncc1";
 
     // -----------------------------------------------------------
     // Filter opcodes
@@ -243,6 +247,10 @@ public class SfzOpcode
     public static final String FILLFO_DELAY          = "fillfo_delay";
     /** SFZ v1. The filter cutoff LFO fade-in time in seconds. */
     public static final String FILLFO_FADE           = "fillfo_fade";
+    /** SFZ v1. The filter cutoff LFO depth added by the modulation wheel in cent. */
+    public static final String FILLFO_DEPTH_CC1      = "fillfo_depthcc1";
+    /** SFZ v2 alias. The filter cutoff LFO depth added by the modulation wheel in cent. */
+    public static final String FILLFO_DEPTH_ONCC1    = "fillfo_depth_oncc1";
 
     /** Filter cutoff velocity tracking. */
     public static final String FIL_VELOCITY_TRACK    = "fil_veltrack";
@@ -307,6 +315,10 @@ public class SfzOpcode
     public static final String PITCHLFO_DELAY        = "pitchlfo_delay";
     /** SFZ v1. The pitch LFO (vibrato) fade-in time in seconds. */
     public static final String PITCHLFO_FADE         = "pitchlfo_fade";
+    /** SFZ v1. The pitch LFO (vibrato) depth added by the modulation wheel in cent. */
+    public static final String PITCHLFO_DEPTH_CC1    = "pitchlfo_depthcc1";
+    /** SFZ v2 alias. The pitch LFO (vibrato) depth added by the modulation wheel in cent. */
+    public static final String PITCHLFO_DEPTH_ONCC1  = "pitchlfo_depth_oncc1";
 
 
     /**

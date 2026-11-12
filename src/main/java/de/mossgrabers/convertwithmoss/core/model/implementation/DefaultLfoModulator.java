@@ -8,6 +8,7 @@ import java.util.Objects;
 
 import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
+import de.mossgrabers.convertwithmoss.core.model.IModulator;
 
 
 /**
@@ -17,7 +18,8 @@ import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
  */
 public class DefaultLfoModulator extends DefaultModulator implements ILfoModulator
 {
-    private ILfo source = new DefaultLfo ();
+    private ILfo             source                 = new DefaultLfo ();
+    private final IModulator depthModWheelModulator = new DefaultModulator (0);
 
 
     /**
@@ -52,11 +54,19 @@ public class DefaultLfoModulator extends DefaultModulator implements ILfoModulat
 
     /** {@inheritDoc} */
     @Override
+    public IModulator getDepthModWheelModulator ()
+    {
+        return this.depthModWheelModulator;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
     public int hashCode ()
     {
         final int prime = 31;
         int result = super.hashCode ();
-        result = prime * result + Objects.hash (this.source);
+        result = prime * result + Objects.hash (this.source, this.depthModWheelModulator);
         return result;
     }
 
@@ -70,6 +80,6 @@ public class DefaultLfoModulator extends DefaultModulator implements ILfoModulat
         if (!super.equals (obj) || this.getClass () != obj.getClass ())
             return false;
         final DefaultLfoModulator other = (DefaultLfoModulator) obj;
-        return Objects.equals (this.source, other.source);
+        return Objects.equals (this.source, other.source) && Objects.equals (this.depthModWheelModulator, other.depthModWheelModulator);
     }
 }

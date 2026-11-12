@@ -83,7 +83,7 @@
             <V name="sustain" value="%PITCH_ENVELOPE_SUSTAIN%"/>
           </Envelope>
         </NiSS_IntMod>
-%PITCH_LFO%
+%LFO_MODULATORS%
       </IntModulators>
       <ExtModulators>
         <NiSS_ExtMod index="0" version="0.80">
@@ -107,5 +107,6 @@
           <V name="delay" value="0"/>
           <V name="source" value="velocity"/>
         </NiSS_ExtMod>
+%LFO_MOD_WHEEL_MODULATORS%
       </ExtModulators>
     </NiSS_Group>

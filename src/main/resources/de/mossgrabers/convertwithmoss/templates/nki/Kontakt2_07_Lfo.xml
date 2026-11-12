@@ -1,8 +1,8 @@
-            <K2_IntMod index="3" version="0.60">
+            <K2_IntMod index="%LFO_INDEX%" version="0.60">
               <Targets>
                 <Target index="0">
-                  <V name="target" value="pitch"/>
-                  <V name="intensity" value="%LFO_INTENSITY%"/>
+                  <V name="target" value="%LFO_TARGET%"/>
+                  <V name="intensity" value="%LFO_INTENSITY%"/>%LFO_TARGET_OBJECT%
                 </Target>
               </Targets>
               <V name="routersOpen" value="no"/>

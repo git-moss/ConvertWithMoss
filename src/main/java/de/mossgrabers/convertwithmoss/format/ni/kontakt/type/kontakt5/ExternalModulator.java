@@ -35,6 +35,8 @@ public class ExternalModulator
     public static final String TARGET_PITCH         = "pitch";
     /** The cutoff of a filter as the modulation target. */
     public static final String TARGET_FILTER_CUTOFF = "filterCutoff";
+    /** The intensity of an internal modulator as the modulation target. */
+    public static final String TARGET_INTENSITY     = "intensity";
 
     // Flag of a modulated parameter which inverts the modulation
     private static final int   FLAG_INVERT          = 0x02;
@@ -50,6 +52,7 @@ public class ExternalModulator
     private long               sourceType           = -1;
     private String             sourceName           = "";
     private int                ccNumber             = -1;
+    private int                targetIndex          = -1;
     private float              intensity            = 1.0f;
 
 
@@ -108,6 +111,17 @@ public class ExternalModulator
 
 
     /**
+     * Get the index of the slot of the internal modulator whose intensity is modulated.
+     *
+     * @return The index or -1 if the target is not the intensity of an internal modulator
+     */
+    public int getTargetIndex ()
+    {
+        return this.targetIndex;
+    }
+
+
+    /**
      * Get the modulation intensity.
      *
      * @return The intensity [-1..1], negative if inverted, needs to be rounded after the 2nd
@@ -123,8 +137,9 @@ public class ExternalModulator
      * Read the external modulator data. The data starts with 3 bytes (version info?) followed by
      * the size of a block (32 bit) which contains: the number of modulated parameters (32 bit), for
      * each parameter: name, intensity (float), 0xFFFF, flags (byte), lag (16 bit), description, 0-2
-     * unknown bytes and the modulation shaper. After the parameters: 0-1 unknown byte, the name of
-     * the source, 1 (32 bit), the type of the source (32 bit) and the MIDI CC number (32 bit) if
+     * unknown bytes (the first one is the slot index of the modulated internal modulator if the
+     * parameter is its intensity) and the modulation shaper. After the parameters: 0-1 unknown byte, the name of
+     * the source, 1 (32 bit), the type of the source (32 bit) and the MIDI CC number (8 bit) if
      * the source is a MIDI CC.
      *
      * @param chunk The chunk from which to read the bank data
@@ -188,6 +203,10 @@ public class ExternalModulator
                 {
                     this.targetName = name;
                     this.intensity = (flags & FLAG_INVERT) > 0 ? -paramIntensity : paramIntensity;
+                    // The intensity of an internal modulator is followed by the slot index of
+                    // that modulator
+                    if (TARGET_INTENSITY.equals (name) && pos < data.length)
+                        this.targetIndex = data[pos] & 0xFF;
                 }
                 return true;
             }
@@ -213,8 +232,9 @@ public class ExternalModulator
             return false;
         this.sourceName = name;
         this.sourceType = readUnsigned32 (data, pos + 4);
-        if (this.sourceType == SOURCE_MIDI_CC && pos + 12 <= data.length)
-            this.ccNumber = (int) readUnsigned32 (data, pos + 8);
+        // Only the first byte contains the CC number, the following bytes are not always 0
+        if (this.sourceType == SOURCE_MIDI_CC && pos + 9 <= data.length)
+            this.ccNumber = data[pos + 8] & 0xFF;
         return true;
     }
 

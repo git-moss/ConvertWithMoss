@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
@@ -515,15 +516,19 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
 
         // Without a depth there is no modulation, therefore the oscillator is not read at all
         final double lfoDepth = this.getDoubleValue (SfzOpcode.PITCHLFO_DEPTH, 0);
-        if (lfoDepth != 0)
+        final double lfoWheelDepth = this.getModWheelValue (SfzOpcode.PITCHLFO_DEPTH_CC1, SfzOpcode.PITCHLFO_DEPTH_ONCC1);
+        if (lfoDepth != 0 || lfoWheelDepth != 0)
         {
             // The depth is given in cent, the depth of the model covers
             // IEnvelope#MAX_ENVELOPE_DEPTH cent
             final ILfoModulator pitchLfoModulator = sampleMetadata.getPitchLfoModulator ();
             pitchLfoModulator.setDepth (lfoDepth / IEnvelope.MAX_ENVELOPE_DEPTH);
+            pitchLfoModulator.getDepthModWheelModulator ().setDepth (lfoWheelDepth / IEnvelope.MAX_ENVELOPE_DEPTH);
 
             final ILfo pitchLfo = pitchLfoModulator.getSource ();
             pitchLfo.setRate (this.getDoubleValue (SfzOpcode.PITCHLFO_FREQ, -1));
+            // The LFOs of SFZ 1 use a sine wave
+            pitchLfo.setWaveform (LfoWaveform.SINE);
             pitchLfo.setDelay (this.getDoubleValue (SfzOpcode.PITCHLFO_DELAY, -1));
             pitchLfo.setFadeIn (this.getDoubleValue (SfzOpcode.PITCHLFO_FADE, -1));
         }
@@ -602,15 +607,19 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
 
         // Filter cutoff LFO modulation
         final double lfoDepth = this.getDoubleValue (SfzOpcode.FILLFO_DEPTH, 0);
-        if (lfoDepth != 0)
+        final double lfoWheelDepth = this.getModWheelValue (SfzOpcode.FILLFO_DEPTH_CC1, SfzOpcode.FILLFO_DEPTH_ONCC1);
+        if (lfoDepth != 0 || lfoWheelDepth != 0)
         {
             // The depth is given in cent, the depth of the model covers
             // IEnvelope#MAX_ENVELOPE_DEPTH cent
             final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
             cutoffLfoModulator.setDepth (lfoDepth / IEnvelope.MAX_ENVELOPE_DEPTH);
+            cutoffLfoModulator.getDepthModWheelModulator ().setDepth (lfoWheelDepth / IEnvelope.MAX_ENVELOPE_DEPTH);
 
             final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
             cutoffLfo.setRate (this.getDoubleValue (SfzOpcode.FILLFO_FREQ, -1));
+            // The LFOs of SFZ 1 use a sine wave
+            cutoffLfo.setWaveform (LfoWaveform.SINE);
             cutoffLfo.setDelay (this.getDoubleValue (SfzOpcode.FILLFO_DELAY, -1));
             cutoffLfo.setFadeIn (this.getDoubleValue (SfzOpcode.FILLFO_FADE, -1));
         }
@@ -755,17 +764,37 @@ public class SfzDetector extends AbstractDetector<SfzDetectorUI>
 
         // Without a depth there is no modulation, therefore the oscillator is not read at all
         final double lfoDepth = this.getDoubleValue (SfzOpcode.AMPLFO_DEPTH, 0);
-        if (lfoDepth != 0)
+        final double lfoWheelDepth = this.getModWheelValue (SfzOpcode.AMPLFO_DEPTH_CC1, SfzOpcode.AMPLFO_DEPTH_ONCC1);
+        if (lfoDepth != 0 || lfoWheelDepth != 0)
         {
             final ILfoModulator amplitudeLfoModulator = sampleZone.getAmplitudeLfoModulator ();
             // Input is in the range of [-10..10] dB
             amplitudeLfoModulator.setDepth (lfoDepth / ILfoModulator.MAX_VOLUME_DEPTH);
+            amplitudeLfoModulator.getDepthModWheelModulator ().setDepth (lfoWheelDepth / ILfoModulator.MAX_VOLUME_DEPTH);
 
             final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
             amplitudeLfo.setRate (this.getDoubleValue (SfzOpcode.AMPLFO_FREQ, -1));
+            // The LFOs of SFZ 1 use a sine wave
+            amplitudeLfo.setWaveform (LfoWaveform.SINE);
             amplitudeLfo.setDelay (this.getDoubleValue (SfzOpcode.AMPLFO_DELAY, -1));
             amplitudeLfo.setFadeIn (this.getDoubleValue (SfzOpcode.AMPLFO_FADE, -1));
         }
+    }
+
+
+    /**
+     * Get the value of an opcode which modulates a parameter with the modulation wheel. The value
+     * of the SFZ v1 opcode is used if present, otherwise the one of the SFZ v2 alias.
+     *
+     * @param opcode The SFZ v1 opcode
+     * @param alias The SFZ v2 alias
+     * @return The value or 0 if not set
+     */
+    private double getModWheelValue (final String opcode, final String alias)
+    {
+        final double value = this.getDoubleValue (opcode, 0);
+        final double aliasValue = this.getDoubleValue (alias, 0);
+        return value == 0 ? aliasValue : value;
     }
 
 
