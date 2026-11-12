@@ -13,6 +13,7 @@ import org.w3c.dom.Element;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.AbstractNKIMetadataFileHandler;
 import de.mossgrabers.tools.XMLUtils;
 
@@ -33,6 +34,18 @@ public class NiSSMetadataFileHandler extends AbstractNKIMetadataFileHandler
     public NiSSMetadataFileHandler (final INotifier notifier)
     {
         super (new NiSSTag (), notifier);
+    }
+
+
+    /**
+     * {@inheritDoc}
+     *
+     * Kontakt 1 cannot find sample files with non-ASCII characters in their name.
+     */
+    @Override
+    protected String createSampleFileName (final String zoneName)
+    {
+        return SafeFileNames.createAscii (zoneName) + ".wav";
     }
 
 

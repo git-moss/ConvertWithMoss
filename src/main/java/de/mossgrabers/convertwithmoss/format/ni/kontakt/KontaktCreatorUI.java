@@ -76,8 +76,6 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
         final RadioButton order3 = panel.createRadioButton ("@IDS_NKI_KONTAKT_6_8");
         order3.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
         order3.setToggleGroup (this.outputFormatGroup);
-        // TODO remove if implementation is finished
-        order3.setDisable (true);
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
 
@@ -136,12 +134,14 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        // The output format is the Kontakt version: 1 or 2, Kontakt 1 is the default
+        // The output format is the Kontakt version: 1, 2 or 6.8, Kontakt 1 is the default
         final String value = parameters.remove (NKI_OUTPUT_FORMAT);
         if (value == null || value.isBlank () || "1".equals (value.trim ()))
             this.outputFormat = OutputFormat.KONTAKT_1;
         else if ("2".equals (value.trim ()))
             this.outputFormat = OutputFormat.KONTAKT_2;
+        else if ("6.8".equals (value.trim ()))
+            this.outputFormat = OutputFormat.KONTAKT_6_8;
         else
         {
             notifier.logError ("IDS_CLI_UNKNOWN_OUTPUT_FORMAT", value);

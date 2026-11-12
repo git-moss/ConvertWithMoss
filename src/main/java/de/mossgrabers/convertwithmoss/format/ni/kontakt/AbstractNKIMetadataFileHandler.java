@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +39,7 @@ import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
-import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultMultisampleSource;
@@ -69,6 +71,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.aiff.AiffFileSampleData;
 import de.mossgrabers.convertwithmoss.file.ncw.NcwFileSampleData;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.AbstractKontaktFormat;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.DecodedPath;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.KontaktIcon;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt2.K2Tag;
@@ -137,6 +140,9 @@ public abstract class AbstractNKIMetadataFileHandler
 
     // The default number of voices if the source does not specify the polyphony
     private static final int                  DEFAULT_MAX_VOICES        = 64;
+    // There are up to 128 voice groups in addition to the voice group of the instrument
+    private static final int                  MAX_VOICE_GROUPS          = 128;
+    private static final String               PROGRAM_VOICE_GROUPS      = "%PROGRAM_VOICE_GROUPS%";
 
     private static final String               CYCLE_ROUND_ROBIN         = "cycle_round_robin";
     private static final String               CYCLE_RANDOM              = "cycle_random";
@@ -445,7 +451,7 @@ public abstract class AbstractNKIMetadataFileHandler
         text = text.replace ("%PROGRAM_NAME%", XMLUtils.escapeAttribute (multisampleSource.getName ()));
         text = text.replace ("%PROGRAM_MIDI_CHANNEL%", Integer.toString (toKontaktMidiChannel (instrumentSource)));
 
-        text = text.replace ("%MASTER_VOLUME%", formatDouble (Math.pow (10, instrumentSource.getGain () / 20.0d)));
+        text = text.replace ("%MASTER_VOLUME%", formatDouble (AbstractKontaktFormat.dbToValue (instrumentSource.getGain ())));
         text = text.replace ("%MASTER_PANNING%", formatDouble (this.denormalizePanning (instrumentSource.getPanning ())));
         text = text.replace ("%MASTER_TRANSPOSE%", Integer.toString (instrumentSource.getTranspose ()));
         text = text.replace ("%MASTER_TUNE%", formatDouble (Math.pow (2.0, instrumentSource.getTuning () / 12.0)));
@@ -462,6 +468,7 @@ public abstract class AbstractNKIMetadataFileHandler
         text = this.replaceMetadataPlaceholders (text, metadata);
         final int polyphony = multisampleSource.getPolyphony ();
         text = text.replace ("%PROGRAM_MAX_VOICES%", Integer.toString (polyphony > 0 ? polyphony : DEFAULT_MAX_VOICES));
+        text = createVoiceGroups (text, multisampleSource.getNonEmptyGroups (false));
 
         // Add all groups
         final String result = this.addGroups (templatePrefix, safeSampleFolderName, multisampleSource.getNonEmptyGroups (false));
@@ -542,10 +549,11 @@ public abstract class AbstractNKIMetadataFileHandler
             groupContent = groupContent.replace ("%GROUP_RELEASE_TRIGGER%", isReleaseTrigger ? "yes" : "no");
             groupContent = groupContent.replace ("%GROUP_REVERSE%", isReverse ? "yes" : "no");
             // The voice group can only be set on the group, therefore all of its zones need to
-            // agree on the exclusive group. The model uses 0 for 'no group' but Kontakt uses a zero
-            // based index with -1 for 'no group', therefore the index is shifted by one
+            // agree on the exclusive group. Voice group 0 is the instrument, therefore the
+            // exclusive group can be used as the index (with -1 for 'no group'). A voice group with
+            // 1 voice is created for each exclusive group (see createVoiceGroups).
             final int exclusiveGroup = getUniformExclusiveGroup (zones);
-            groupContent = groupContent.replace ("%GROUP_VOICE_GROUP%", Integer.toString (exclusiveGroup == 0 ? -1 : exclusiveGroup - 1));
+            groupContent = groupContent.replace ("%GROUP_VOICE_GROUP%", Integer.toString (exclusiveGroup <= 0 || exclusiveGroup > MAX_VOICE_GROUPS ? -1 : exclusiveGroup));
             groupsText.append (groupContent);
         }
 
@@ -630,6 +638,59 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
+     * Replaces the placeholder of the voice groups with a voice group for each exclusive group
+     * which is used by the given groups. Each voice group has 1 voice, which means that a new note
+     * stops the playing one. The index of the voice group is the number of the exclusive group
+     * since voice group 0 is the instrument.
+     *
+     * @param text The text which contains the placeholder, the line of the placeholder defines the
+     *            indentation
+     * @param groups The groups
+     * @return The text with the replaced placeholder
+     */
+    private static String createVoiceGroups (final String text, final List<IGroup> groups)
+    {
+        final int placeholderIndex = text.indexOf (PROGRAM_VOICE_GROUPS);
+        if (placeholderIndex < 0)
+            return text;
+        final int lineStart = text.lastIndexOf ('\n', placeholderIndex) + 1;
+        final String indent = text.substring (lineStart, placeholderIndex);
+
+        final Set<Integer> exclusiveGroups = new TreeSet<> ();
+        for (final IGroup group: groups)
+        {
+            final int exclusiveGroup = getUniformExclusiveGroup (group.getSampleZones ());
+            if (exclusiveGroup > 0 && exclusiveGroup <= MAX_VOICE_GROUPS)
+                exclusiveGroups.add (Integer.valueOf (exclusiveGroup));
+        }
+
+        final StringBuilder sb = new StringBuilder ();
+        for (final Integer exclusiveGroup: exclusiveGroups)
+        {
+            if (!sb.isEmpty ())
+                sb.append ("\r\n").append (indent);
+            sb.append ("<VoiceGroup index=\"").append (exclusiveGroup).append ("\" version=\"0.60\">\r\n");
+            sb.append (indent).append ("  <V name=\"name\" value=\"Exclusive Group ").append (exclusiveGroup).append ("\"/>\r\n");
+            sb.append (indent).append ("  <V name=\"mode\" value=\"kill_oldest\"/>\r\n");
+            sb.append (indent).append ("  <V name=\"preferReleased\" value=\"yes\"/>\r\n");
+            sb.append (indent).append ("  <V name=\"maxNumVoices\" value=\"1\"/>\r\n");
+            sb.append (indent).append ("  <V name=\"msFadeTime\" value=\"10\"/>\r\n");
+            sb.append (indent).append ("  <V name=\"exclusionGroup\" value=\"-1\"/>\r\n");
+            sb.append (indent).append ("</VoiceGroup>");
+        }
+
+        // Remove the whole line if there are no voice groups
+        if (sb.isEmpty ())
+        {
+            int lineEnd = text.indexOf ('\n', placeholderIndex);
+            lineEnd = lineEnd < 0 ? text.length () : lineEnd + 1;
+            return text.substring (0, lineStart) + text.substring (lineEnd);
+        }
+        return text.replace (PROGRAM_VOICE_GROUPS, sb.toString ());
+    }
+
+
+    /**
      * Get the exclusive group which is shared by all given zones.
      *
      * @param zones The zones to check
@@ -664,12 +725,24 @@ public abstract class AbstractNKIMetadataFileHandler
         zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_LOW%", Integer.toString (limitToDefault (zone.getNoteCrossfadeLow (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_CROSS_HIGH%", Integer.toString (limitToDefault (zone.getNoteCrossfadeHigh (), 0)));
         zoneContent = zoneContent.replace ("%ZONE_KEY_ROOT%", Integer.toString (limitToDefault (zone.getKeyRoot (), keyLow)));
-        zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (Math.pow (10, zone.getGain () / 20.0d)));
+        zoneContent = zoneContent.replace ("%ZONE_VOLUME%", formatDouble (AbstractKontaktFormat.dbToValue (zone.getGain ())));
         zoneContent = zoneContent.replace ("%ZONE_TUNE%", formatDouble (Math.pow (2.0, zone.getTuning () / 12.0)));
         zoneContent = zoneContent.replace ("%ZONE_PAN%", formatDouble (this.denormalizePanning (zone.getPanning ())));
 
-        final String formattedFilename = this.formatSampleFileName (safeSampleFolderName, zoneName + ".wav");
+        final String formattedFilename = this.formatSampleFileName (safeSampleFolderName, this.createSampleFileName (zoneName));
         return zoneContent.replace ("%ZONE_SAMPLE_NAME%", XMLUtils.escapeAttribute (formattedFilename));
+    }
+
+
+    /**
+     * Create the name of the sample file of a zone. Must match the name of the written sample file.
+     *
+     * @param zoneName The name of the zone
+     * @return The name of the sample file including the extension
+     */
+    protected String createSampleFileName (final String zoneName)
+    {
+        return SafeFileNames.create (zoneName) + ".wav";
     }
 
 
@@ -932,7 +1005,7 @@ public abstract class AbstractNKIMetadataFileHandler
 
         final String volume = programParameters.get (this.tags.progVolParam ());
         if (volume != null)
-            instrumentSource.setGain (MathUtils.valueToDb (Double.parseDouble (volume)));
+            instrumentSource.setGain (AbstractKontaktFormat.valueToDb (Double.parseDouble (volume)));
         final String pan = programParameters.get (this.tags.progPanParam ());
         if (pan != null)
             instrumentSource.setPanning (Math.clamp (this.normalizePanning (Double.parseDouble (pan)), -1.0, 1.0));
@@ -1198,7 +1271,7 @@ public abstract class AbstractNKIMetadataFileHandler
             // The volume is a linear factor, 1 is the neutral value
             final double groupVolume = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupVolParam ());
             if (groupVolume != 1)
-                group.setGain (20.0d * Math.log10 (groupVolume));
+                group.setGain (AbstractKontaktFormat.valueToDb (groupVolume));
         }
         catch (final ValueNotAvailableException _)
         {
@@ -1461,7 +1534,7 @@ public abstract class AbstractNKIMetadataFileHandler
             final double groupVol = AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupVolParam ());
             // In a multi the program volume is applied to the instrument
             final double progVol = this.isMulti ? 1.0 : AbstractNKIMetadataFileHandler.getDouble (programParameters, this.tags.progVolParam ());
-            zone.setGain (20.0d * Math.log10 (zoneVol * groupVol * progVol));
+            zone.setGain (AbstractKontaktFormat.valueToDb (zoneVol * groupVol * progVol));
 
             final double zoneTune = AbstractNKIMetadataFileHandler.getDouble (zoneParameters, this.tags.zoneTuneParam ());
             final double groupTune = this.toTuneRatio (AbstractNKIMetadataFileHandler.getDouble (groupParameters, this.tags.groupTuneParam ()));
@@ -1498,14 +1571,14 @@ public abstract class AbstractNKIMetadataFileHandler
             zone.setReversed (reversed.equals (this.tags.yes ()));
         }
 
-        // Kontakt stores the voice group as a zero based index with -1 for 'no group' but the model
-        // uses 0 for 'no group', therefore the index is shifted by one
+        // Kontakt stores the index of the voice group with -1 for 'no group'. Voice group 0 is the
+        // instrument, the others are used as the exclusive group (the model uses 0 for 'no group')
         final String voiceGroup = groupParameters.get (this.tags.voiceGroupParam ());
         if (voiceGroup != null && !voiceGroup.isBlank ())
             try
             {
                 final int voiceGroupIndex = Integer.parseInt (voiceGroup.trim ());
-                zone.setExclusiveGroup (voiceGroupIndex < 0 ? 0 : voiceGroupIndex + 1);
+                zone.setExclusiveGroup (Math.max (0, voiceGroupIndex));
             }
             catch (final NumberFormatException _)
             {
@@ -2173,6 +2246,25 @@ public abstract class AbstractNKIMetadataFileHandler
         if (type == null || type.isBlank ())
             return Optional.empty ();
 
+        final Optional<IFilter> filter = createFilter (type, parseDouble (valueMap.get ("cutoff"), 1.0), parseDouble (valueMap.get ("resonance"), 0));
+        // Effects like an equalizer can be placed in the filter slot as well
+        if (filter.isEmpty () && !EFFECT_TYPE_PATTERN.matcher (type).matches ())
+            this.notifier.logError ("IDS_NKI_UNKNOWN_FILTER_TYPE", type);
+        return filter;
+    }
+
+
+    /**
+     * Creates a filter from the Kontakt filter type and its normalized values. Also used by the
+     * Kontakt 5+ format which uses the same filters.
+     *
+     * @param type The Kontakt filter type, e.g. 'lp4pole'
+     * @param normalizedCutoff The normalized cutoff in the range of [0..1]
+     * @param resonance The resonance in the range of [0..1]
+     * @return The filter or empty if the type is not supported
+     */
+    public static Optional<IFilter> createFilter (final String type, final double normalizedCutoff, final double resonance)
+    {
         final FilterType filterType;
         final int poles;
         if (PRO52_FILTER_TYPE.equals (type) || LADDER_FILTER_TYPE.equals (type))
@@ -2185,12 +2277,7 @@ public abstract class AbstractNKIMetadataFileHandler
         {
             final Matcher matcher = FILTER_TYPE_PATTERN.matcher (type);
             if (!matcher.matches ())
-            {
-                // Effects like an equalizer can be placed in the filter slot as well
-                if (!EFFECT_TYPE_PATTERN.matcher (type).matches ())
-                    this.notifier.logError ("IDS_NKI_UNKNOWN_FILTER_TYPE", type);
                 return Optional.empty ();
-            }
             switch (matcher.group (1))
             {
                 case "lp":
@@ -2211,8 +2298,7 @@ public abstract class AbstractNKIMetadataFileHandler
             poles = Integer.parseInt (matcher.group (2));
         }
 
-        final double cutoff = denormalizeCutoff (type, filterType, parseDouble (valueMap.get ("cutoff"), 1.0));
-        final double resonance = parseDouble (valueMap.get ("resonance"), 0);
+        final double cutoff = denormalizeCutoff (type, filterType, normalizedCutoff);
         return Optional.of (new DefaultFilter (filterType, poles, cutoff, resonance));
     }
 

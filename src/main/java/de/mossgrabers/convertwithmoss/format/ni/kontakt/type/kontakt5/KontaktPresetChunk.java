@@ -24,11 +24,19 @@ import de.mossgrabers.tools.StringUtils;
  */
 public class KontaktPresetChunk
 {
-    private int                            id          = -1;
-    private byte []                        publicData  = {};
-    private byte []                        privateData = {};
-    private int                            version     = -1;
-    private final List<KontaktPresetChunk> children    = new ArrayList<> ();
+    // Fixed arrays of this version and later contain the number of slots
+    private static final int               FIXED_ARRAY_VERSION_WITH_SIZE = 0x13;
+
+    private int                            id                            = -1;
+    private byte []                        publicData                    = {};
+    private byte []                        privateData                   = {};
+    private int                            version                       = -1;
+    // The index of the slot if the chunk is stored in a fixed array, -1 if not set
+    private int                            slotIndex                     = -1;
+    // The number of slots if the chunk is a fixed array which stores it (version 0x13+), -1 if
+    // not set
+    private int                            numSlots                      = -1;
+    private final List<KontaktPresetChunk> children                      = new ArrayList<> ();
 
 
     /**
@@ -52,8 +60,6 @@ public class KontaktPresetChunk
 
             case KontaktPresetChunkID.ZONE_LIST:
                 this.readArray (objectInputStream, objectSize, true);
-                // TODO reference needs to be written again; check what this reference is
-                // this.children.forEach (child -> child.id = KontaktPresetChunkID.ZONE);
                 break;
 
             case KontaktPresetChunkID.BANK, KontaktPresetChunkID.PROGRAM_CONTAINER, KontaktPresetChunkID.PROGRAM, KontaktPresetChunkID.PAR_SCRIPT, KontaktPresetChunkID.PAR_FX_SEND_LEVELS, KontaktPresetChunkID.VOICE_GROUPS, KontaktPresetChunkID.PARAMETER_ARRAY_8, KontaktPresetChunkID.INSERT_BUS, KontaktPresetChunkID.SAVE_SETTINGS, KontaktPresetChunkID.QUICK_BROWSE_DATA:
@@ -99,7 +105,15 @@ public class KontaktPresetChunk
                 this.writeStructure (objectOutputStream);
                 break;
 
-            case KontaktPresetChunkID.SLOT_LIST, KontaktPresetChunkID.PAR_FX, KontaktPresetChunkID.FILENAME_LIST_EX, KontaktPresetChunkID.FILENAME_LIST, KontaktPresetChunkID.PARAMETER_ARRAY_16:
+            case KontaktPresetChunkID.PARAMETER_ARRAY_16:
+                this.writeFixedArray (objectOutputStream, 16);
+                break;
+
+            case KontaktPresetChunkID.PARAMETER_ARRAY_32:
+                this.writeFixedArray (objectOutputStream, 32);
+                break;
+
+            case KontaktPresetChunkID.SLOT_LIST, KontaktPresetChunkID.PAR_FX, KontaktPresetChunkID.FILENAME_LIST_EX, KontaktPresetChunkID.FILENAME_LIST:
             default:
                 objectOutputStream.write (this.publicData);
                 break;
@@ -152,16 +166,73 @@ public class KontaktPresetChunk
         // Found 0x10, 0x11, 0x12, 0x13
         this.version = StreamUtils.readUnsigned16 (in, false);
 
-        for (int i = 0; i < size; i++)
+        // Since version 0x13 (Kontakt 8) the number of slots follows, e.g. 64 instead of 32
+        int slots = size;
+        if (this.version >= FIXED_ARRAY_VERSION_WITH_SIZE)
+        {
+            this.numSlots = (int) StreamUtils.readUnsigned32 (in, false);
+            slots = this.numSlots;
+        }
+
+        for (int i = 0; i < slots; i++)
             if (in.read () > 0)
             {
                 final KontaktPresetChunk child = new KontaktPresetChunk ();
+                child.slotIndex = i;
                 child.id = StreamUtils.readUnsigned16 (in, false);
 
                 final int dataSize = (int) StreamUtils.readUnsigned32 (in, false);
                 child.publicData = in.readNBytes (dataSize);
                 this.children.add (child);
             }
+    }
+
+
+    /**
+     * Writes a fixed array. The children are stored in the slots in which they were read. Children
+     * without a slot index are stored in the following free slots.
+     *
+     * @param out Where to write the array to
+     * @param defaultSize The number of slots of the array if it is not stored in the array
+     * @throws IOException Could not write the array or there are more children than slots
+     */
+    private void writeFixedArray (final OutputStream out, final int defaultSize) throws IOException
+    {
+        final boolean hasSize = this.version >= FIXED_ARRAY_VERSION_WITH_SIZE;
+        final int size = hasSize && this.numSlots > 0 ? this.numSlots : defaultSize;
+        final KontaktPresetChunk [] slots = new KontaktPresetChunk [size];
+        final List<KontaktPresetChunk> unassigned = new ArrayList<> ();
+        for (final KontaktPresetChunk child: this.children)
+            if (child.slotIndex >= 0 && child.slotIndex < size && slots[child.slotIndex] == null)
+                slots[child.slotIndex] = child;
+            else
+                unassigned.add (child);
+        int slot = 0;
+        for (final KontaktPresetChunk child: unassigned)
+        {
+            while (slot < size && slots[slot] != null)
+                slot++;
+            if (slot >= size)
+                throw new IOException ("Too many children for fixed array of size " + size + ".");
+            slots[slot] = child;
+        }
+
+        out.write (0);
+        StreamUtils.writeUnsigned16 (out, this.version, false);
+        if (hasSize)
+            StreamUtils.writeUnsigned32 (out, size, false);
+        for (final KontaktPresetChunk child: slots)
+        {
+            if (child == null)
+            {
+                out.write (0);
+                continue;
+            }
+            out.write (1);
+            StreamUtils.writeUnsigned16 (out, child.id, false);
+            StreamUtils.writeUnsigned32 (out, child.publicData.length, false);
+            out.write (child.publicData);
+        }
     }
 
 

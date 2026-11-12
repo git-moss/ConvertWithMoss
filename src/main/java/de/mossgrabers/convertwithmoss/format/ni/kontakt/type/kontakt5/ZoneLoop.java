@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 
 
@@ -32,6 +34,48 @@ public class ZoneLoop
     private boolean         alternatingLoop;
     private float           loopTuning;
     private int             xFadeLength;
+
+
+    /**
+     * Constructor.
+     */
+    public ZoneLoop ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
+     * Constructor which creates the loop from a sample loop.
+     *
+     * @param sampleLoop The sample loop
+     */
+    public ZoneLoop (final ISampleLoop sampleLoop)
+    {
+        this.mode = sampleLoop.isLoopUntilRelease () ? MODE_UNTIL_RELEASE : MODE_UNTIL_END;
+        this.loopStart = Math.max (0, sampleLoop.getStart ());
+        // Kontakt counts the frames of the loop while the model stores the inclusive end
+        this.loopLength = Math.max (0, sampleLoop.getLength () + 1);
+        this.loopCount = 0;
+        this.alternatingLoop = sampleLoop.getType () == LoopType.ALTERNATING;
+        this.loopTuning = (float) Math.pow (2.0, sampleLoop.getTuning () / 12.0);
+        this.xFadeLength = Math.max (0, sampleLoop.getCrossfadeInSamples ());
+    }
+
+
+    /**
+     * Creates a loop which marks the zone as a one-shot, which means that note-off events are
+     * ignored and the sample is always played back to its end.
+     *
+     * @return The loop
+     */
+    public static ZoneLoop createOneShot ()
+    {
+        final ZoneLoop loop = new ZoneLoop ();
+        loop.mode = MODE_ONESHOT;
+        loop.loopTuning = 1.0f;
+        return loop;
+    }
 
 
     /**

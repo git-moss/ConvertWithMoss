@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import de.mossgrabers.tools.ui.Functions;
+
 
 /**
  * Can read and write one or more Kontakt programs to a Preset Chunk.
@@ -183,9 +185,9 @@ public class KontaktPresetAccessor
         if (bankChunkOpt.isEmpty ())
             return;
         final KontaktPresetChunk bankChunk = bankChunkOpt.get ();
-        final Bank bank = new Bank ();
-        bank.parse (bankChunk);
-        this.bank = Optional.of (bank);
+        final Bank newBank = new Bank ();
+        newBank.parse (bankChunk);
+        this.bank = Optional.of (newBank);
 
         boolean hasMultiConfiguration = false;
 
@@ -209,7 +211,7 @@ public class KontaktPresetAccessor
         if (!hasMultiConfiguration)
         {
             final List<MultiInstrument> multiInstruments = this.multiConfiguration.getMultiInstruments ();
-            for (final int midiChannel: bank.getMidiChannels ())
+            for (final int midiChannel: newBank.getMidiChannels ())
                 multiInstruments.add (new MultiInstrument (midiChannel));
         }
     }
@@ -239,14 +241,14 @@ public class KontaktPresetAccessor
      */
     private void writeProgramsToChunks () throws IOException
     {
-        // TODO Finish writing programs
-        // this.chunks.clear ();
-
-        if (this.programs.size () > 1)
-        {
-            // TODO also create NKM Banks (see parsePrograms above)
-        }
-        else
-            this.programs.get (0).write (this.presetChunks.get (0));
+        // Only used for NKIs: there is exactly one program which is stored in the top level program
+        // chunk. Multis (NKM) are written by Kontakt5Format.writeNKM
+        final int numPrograms = this.programs.size ();
+        if (numPrograms != 1)
+            throw new IOException (Functions.getMessage ("IDS_NKI5_ONLY_SINGLE_PROGRAM", Integer.toString (numPrograms)));
+        final Optional<KontaktPresetChunk> programChunk = this.getTopChunk (KontaktPresetChunkID.PROGRAM);
+        if (programChunk.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_NKI5_NO_PRESET_CHUNK"));
+        this.programs.get (0).write (programChunk.get ());
     }
 }

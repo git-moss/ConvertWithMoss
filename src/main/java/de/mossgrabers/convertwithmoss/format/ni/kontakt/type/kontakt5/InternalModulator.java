@@ -6,19 +6,17 @@ package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfoModulator;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -30,169 +28,89 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class InternalModulator
 {
-    private static final String                   PARAMETER_NAME_NONE                    = "<none>";
-    private static final String                   PARAMETER_NAME_VOLUME                  = "volume";
-    private static final String                   PARAMETER_NAME_PAN                     = "pan";
-    private static final String                   PARAMETER_NAME_CUTOFF                  = "filterCutoff";
-    private static final String                   PARAMETER_NAME_PITCH                   = "pitch";
-    private static final String                   MODULATOR_DESCRIPTION_AHDSR_VOLUME     = "ENV_AHDSR_VOLUME";
-    private static final String                   MODULATOR_SOURCE_NAME_AHDSR            = "ENV_AHDSR";
-    private static final String                   MODULATOR_SOURCE_NAME_LFO_MULTI_CUTOFF = "LFO_MULTI_CUTOFF";
+    private static final String            PARAMETER_NAME_NONE                = "<none>";
+    private static final String            PARAMETER_NAME_VOLUME              = "volume";
+    private static final String            PARAMETER_NAME_CUTOFF              = "filterCutoff";
+    private static final String            PARAMETER_NAME_PITCH               = "pitch";
+    private static final String            MODULATOR_DESCRIPTION_AHDSR_VOLUME = "ENV_AHDSR_VOLUME";
+    private static final String            MODULATOR_SOURCE_NAME_AHDSR        = "ENV_AHDSR";
+    private static final String            MODULATOR_SOURCE_NAME_AHD          = "ENV_AHD";
+    private static final String            MODULATOR_SOURCE_NAME_DBD          = "ENV_DBD";
 
-    private static final Map<String, Set<String>> NEEDS_PADDING                          = new HashMap<> ();
-    private static final Map<String, Set<String>> NO_PADDING                             = new HashMap<> ();
-    static
-    {
-        // Needs padding
+    // The index of the modulation source type
+    private static final int               SOURCE_INDEX_ENVELOPE              = 0;
+    private static final int               SOURCE_INDEX_LFO                   = 1;
+    private static final int               SOURCE_INDEX_ENVELOPE2             = 2;
 
-        final Set<String> eqGain1 = new HashSet<> ();
-        eqGain1.add ("LFO_SINE_EQ_GAIN_1");
+    // Flag of a modulated parameter which inverts the modulation
+    private static final int               FLAG_INVERT                        = 0x02;
+    // Flag of a modulated parameter which has no description
+    private static final int               FLAG_NO_DESCRIPTION                = 0x08;
 
-        final Set<String> filterCutoff = new HashSet<> ();
-        filterCutoff.add ("");
-        filterCutoff.add (PARAMETER_NAME_NONE);
-        filterCutoff.add ("LFO_SINE_CUTOFF");
-        filterCutoff.add ("STEP_CUTOFF");
-        filterCutoff.add ("ENV_AHDSR_CUTOFF");
-        filterCutoff.add ("LFO_SAW_CUTOFF");
-        filterCutoff.add ("LFO_RECT_CUTOFF");
-        filterCutoff.add (MODULATOR_SOURCE_NAME_LFO_MULTI_CUTOFF);
-        filterCutoff.add ("ENV_DBD_CUTOFF");
-        filterCutoff.add ("ENV FLW_CUTOFF");
+    // There are 0-2 unknown bytes after the modulator description (e.g. the filter cutoff
+    // parameter has additional bytes) and 0-1 unknown bytes after the last parameter
+    private static final int               MAX_UNKNOWN_BYTES                  = 2;
 
-        final Set<String> filterQ = new HashSet<> ();
-        filterQ.add ("LFO_SINE_RESONANCE");
-        filterQ.add ("STEP_RESONANCE");
+    // The LFO data contains the waveform (32 bit) at offset 9, followed by the delay (in ms), the
+    // frequency (in Hertz), the pulse width and the start phase (all floats)
+    private static final int               LFO_WAVEFORM_OFFSET                = 9;
+    private static final int               LFO_DELAY_OFFSET                   = 13;
+    private static final int               LFO_FREQUENCY_OFFSET               = 17;
+    private static final int               LFO_START_PHASE_OFFSET             = 25;
+    private static final int               LFO_WAVEFORM_SINE                  = 0;
+    private static final int               LFO_WAVEFORM_RECTANGLE             = 1;
+    private static final int               LFO_WAVEFORM_TRIANGLE              = 2;
+    private static final int               LFO_WAVEFORM_SAWTOOTH              = 3;
+    private static final int               LFO_WAVEFORM_RANDOM                = 4;
 
-        final Set<String> frequency = new HashSet<> ();
-        frequency.add ("ENV_DBD_FREQUENCY");
-        frequency.add ("ENV_AHDSR_FREQUENCY");
+    // The offsets of the decay 1, break and decay 2 values of a decay-break-decay envelope
+    private static final int               DBD_DECAY1_OFFSET                  = 34;
+    private static final int               DBD_BREAK_OFFSET                   = 38;
+    private static final int               DBD_DECAY2_OFFSET                  = 42;
 
-        final Set<String> vfType = new HashSet<> ();
-        vfType.add ("LFO_MULTI_3X2_TYPE");
-
-        final Set<String> formantTalk = new HashSet<> ();
-        formantTalk.add ("LFO_SINE_TALK");
-
-        final Set<String> intensity = new HashSet<> ();
-        intensity.add ("LFO_SINE_FREQUENCY");
-
-        final Set<String> loopStart = new HashSet<> ();
-        loopStart.add ("ENV_AHDSR_LOOP_START");
-
-        final Set<String> pitch = new HashSet<> ();
-        pitch.add ("LFO_RECT_PITCH");
-
-        final Set<String> volume = new HashSet<> ();
-        volume.add ("GLIDE_VOLUME");
-        volume.add ("LFO_SAW_VOLUME");
-
-        final Set<String> dyxMorph = new HashSet<> ();
-        dyxMorph.add ("ENV_AHDSR_MORPH");
-        dyxMorph.add ("LFO_MULTI_MORPH");
-        dyxMorph.add ("LFO_TRI_MORPH");
-
-        NEEDS_PADDING.put ("eqGain1", eqGain1);
-        NEEDS_PADDING.put (PARAMETER_NAME_CUTOFF, filterCutoff);
-        NEEDS_PADDING.put ("filterQ", filterQ);
-        NEEDS_PADDING.put ("frequency", frequency);
-        NEEDS_PADDING.put ("formantTalk", formantTalk);
-        NEEDS_PADDING.put ("intensity", intensity);
-        NEEDS_PADDING.put ("loopStart", loopStart);
-        NEEDS_PADDING.put (PARAMETER_NAME_PITCH, pitch);
-        NEEDS_PADDING.put ("vfType", vfType);
-        NEEDS_PADDING.put (PARAMETER_NAME_VOLUME, volume);
-        NEEDS_PADDING.put ("bitdepth", Collections.singleton ("ENV_AHDSR_BITDEPTH"));
-        NEEDS_PADDING.put ("dyx_morph", dyxMorph);
-        NEEDS_PADDING.put ("dyx_dry", Collections.singleton ("ENV_AHDSR_MORPH"));
-        NEEDS_PADDING.put ("downsample", Collections.singleton ("LFO_SINE_SAMPLE_RATE"));
-
-        // No padding
-
-        final Set<String> noFilterCutoff = new HashSet<> ();
-        noFilterCutoff.add ("ENV FLW_CUTOFF");
-        noFilterCutoff.add ("ENV_FILTER");
-
-        final Set<String> noFormantShift = new HashSet<> ();
-        noFormantShift.add (PARAMETER_NAME_NONE);
-        noFormantShift.add ("ENV_AHDSR_FORMANT");
-
-        final Set<String> noGrainSpeed = new HashSet<> ();
-        noGrainSpeed.add (MODULATOR_SOURCE_NAME_LFO_MULTI_CUTOFF);
-        noGrainSpeed.add ("LFO_MULTI_SPEED");
-        noGrainSpeed.add ("LFO_SAW_SPEED");
-        noGrainSpeed.add ("ENV_AHDSR_SPEED");
-
-        final Set<String> noPitch = new HashSet<> ();
-        noPitch.add ("");
-        noPitch.add (PARAMETER_NAME_NONE);
-        noPitch.add ("GLIDE_PITCH");
-        noPitch.add ("LFO_SINE_PITCH");
-        noPitch.add ("LFO_TRI_PITCH");
-        noPitch.add ("LFO_RAND_PITCH");
-        noPitch.add ("STEP_PITCH");
-        noPitch.add ("ENV_AHDSR_PITCH");
-        noPitch.add ("ENV_DBD_PITCH");
-        noPitch.add ("ENV_PITCH_MIX");
-
-        final Set<String> noVolume = new HashSet<> ();
-        noVolume.add (PARAMETER_NAME_NONE);
-        noVolume.add (MODULATOR_DESCRIPTION_AHDSR_VOLUME);
-        noVolume.add ("GLIDE_VOLUME");
-        noVolume.add ("LFO_SINE_VOLUME");
-        noVolume.add ("LFO_RECT_VOLUME");
-        noVolume.add ("STEP_VOLUME");
-        noVolume.add ("VOL_GATE");
-
-        final Set<String> noPan = new HashSet<> ();
-        noPan.add (PARAMETER_NAME_NONE);
-        noPan.add ("LFO_SINE_PAN");
-        noPan.add ("LFO_TRI_PAN");
-        noPan.add ("LFO_RECT_PAN");
-        noPan.add ("LFO_TRI_VOLUME");
-        noPan.add ("ENV_DBD_PAN");
-
-        NO_PADDING.put (PARAMETER_NAME_CUTOFF, noFilterCutoff);
-        NO_PADDING.put ("formantShift", noFormantShift);
-        NO_PADDING.put ("grainSpeed", noGrainSpeed);
-        NO_PADDING.put (PARAMETER_NAME_PAN, noPan);
-        NO_PADDING.put (PARAMETER_NAME_PITCH, noPitch);
-        NO_PADDING.put (PARAMETER_NAME_VOLUME, noVolume);
-    }
-
-    private int                            version             = 0x81;
-    private final List<ModulatedParameter> modulatedParameters = new ArrayList<> ();
+    private int                            version                            = 0x81;
+    private final List<ModulatedParameter> modulatedParameters                = new ArrayList<> ();
 
     @SuppressWarnings("unused")
-    private boolean                        isModSectionOpen    = false;
-    @SuppressWarnings("unused")
-    private boolean                        isBypassed          = false;
-    @SuppressWarnings("unused")
-    private boolean                        isRetrigger         = true;
-    private String                         modulatorSourceName = MODULATOR_SOURCE_NAME_AHDSR;
+    private boolean                        isModSectionOpen                   = false;
+    private boolean                        isBypassed                         = false;
+    private boolean                        isRetrigger                        = true;
+    private String                         modulatorSourceName                = MODULATOR_SOURCE_NAME_AHDSR;
     private int                            modulationSourceIndex;
-    private float                          curve               = -0.332f;
-    private float                          attack              = 0;
-    private float                          hold                = 0;
-    private float                          decay               = 500;
-    private float                          release             = 300;
-    private float                          sustain             = 1;
-    private boolean                        ahdOnly             = false;
+    private float                          curve                              = -0.332f;
+    private float                          attack                             = 0;
+    private float                          hold                               = 0;
+    private float                          decay                              = 500;
+    private float                          release                            = 300;
+    private float                          sustain                            = 1;
+    private boolean                        ahdOnly                            = false;
+    private boolean                        isDecayBreakDecay                  = false;
+    private LfoWaveform                    lfoWaveform                        = null;
+    private float                          lfoDelay                           = 0;
+    private float                          lfoFrequency                       = 0;
+    private float                          lfoStartPhase                      = 0;
 
 
     /** All attributes of a modulated parameter. */
-    private class ModulatedParameter
+    private static class ModulatedParameter
     {
-        private String   parameterName        = PARAMETER_NAME_VOLUME;
-        private float    intensity            = 1.0f;
-        private int      flags                = 18;
+        private String parameterName        = PARAMETER_NAME_VOLUME;
+        private float  intensity            = 1.0f;
+        private int    flags                = 0x10;
         @SuppressWarnings("unused")
-        private int      lag                  = 0;
-        private String   modulatorDescription = MODULATOR_DESCRIPTION_AHDSR_VOLUME;
-        @SuppressWarnings("unused")
-        private boolean  isModShapeActive     = false;
-        private float [] curveSteps;
-        private float [] curvePoints;
+        private int    lag                  = 0;
+        private String modulatorDescription = MODULATOR_DESCRIPTION_AHDSR_VOLUME;
+
+
+        /**
+         * Get the intensity of the modulation.
+         *
+         * @return The intensity, negative if the modulation is inverted
+         */
+        float getIntensity ()
+        {
+            return (this.flags & FLAG_INVERT) > 0 ? -this.intensity : this.intensity;
+        }
     }
 
 
@@ -212,7 +130,7 @@ public class InternalModulator
      */
     public Optional<IEnvelopeModulator> getVolumeEnvelope ()
     {
-        return this.isEnvelopeModulator () ? this.createEnvelopeModulator (this.getEnvelopeParameter (PARAMETER_NAME_VOLUME)) : Optional.empty ();
+        return this.createEnvelopeModulator (PARAMETER_NAME_VOLUME);
     }
 
 
@@ -223,7 +141,7 @@ public class InternalModulator
      */
     public Optional<IEnvelopeModulator> getFilterCutoffEnvelope ()
     {
-        return this.isEnvelopeModulator () ? this.createEnvelopeModulator (this.getEnvelopeParameter (PARAMETER_NAME_CUTOFF)) : Optional.empty ();
+        return this.createEnvelopeModulator (PARAMETER_NAME_CUTOFF);
     }
 
 
@@ -234,23 +152,95 @@ public class InternalModulator
      */
     public Optional<IEnvelopeModulator> getPitchEnvelope ()
     {
-        return this.isEnvelopeModulator () ? this.createEnvelopeModulator (this.getEnvelopeParameter (PARAMETER_NAME_PITCH)) : Optional.empty ();
+        return this.createEnvelopeModulator (PARAMETER_NAME_PITCH);
     }
 
 
-    private Optional<IEnvelopeModulator> createEnvelopeModulator (final Optional<ModulatedParameter> envelopeParameter)
+    /**
+     * Get the volume LFO if present.
+     *
+     * @return The volume LFO, the depth is the intensity of Kontakt
+     */
+    public Optional<ILfoModulator> getVolumeLfo ()
     {
+        return this.createLfoModulator (PARAMETER_NAME_VOLUME);
+    }
+
+
+    /**
+     * Get the filter cutoff LFO if present.
+     *
+     * @return The filter cutoff LFO, the depth is the intensity of Kontakt
+     */
+    public Optional<ILfoModulator> getFilterCutoffLfo ()
+    {
+        return this.createLfoModulator (PARAMETER_NAME_CUTOFF);
+    }
+
+
+    /**
+     * Get the pitch LFO if present.
+     *
+     * @return The pitch LFO, the depth is the intensity of Kontakt (1.0 = 1 octave)
+     */
+    public Optional<ILfoModulator> getPitchLfo ()
+    {
+        return this.createLfoModulator (PARAMETER_NAME_PITCH);
+    }
+
+
+    private Optional<IEnvelopeModulator> createEnvelopeModulator (final String parameterName)
+    {
+        if (this.isBypassed || !this.isEnvelopeModulator ())
+            return Optional.empty ();
+        final Optional<ModulatedParameter> envelopeParameter = this.getModulatedParameter (parameterName);
         if (envelopeParameter.isEmpty ())
             return Optional.empty ();
-        final IEnvelopeModulator envelopeModulator = new DefaultEnvelopeModulator (envelopeParameter.get ().intensity);
+
+        final IEnvelopeModulator envelopeModulator = new DefaultEnvelopeModulator (envelopeParameter.get ().getIntensity ());
         final IEnvelope envelope = envelopeModulator.getSource ();
-        envelope.setAttackSlope (this.curve);
+        if (this.isDecayBreakDecay)
+        {
+            // The decay-break-decay envelope starts at the maximum level, falls to the break level
+            // during the first decay and from there to zero during the second decay, independent
+            // of the note being held. Since the model does not support this shape it is
+            // approximated by an envelope without attack and sustain which decays during the sum
+            // of both decay times
+            envelope.setAttackTime (0);
+            envelope.setHoldTime (0);
+            envelope.setDecayTime (this.decay / 1000.0);
+            envelope.setSustainLevel (0);
+            envelope.setReleaseTime (0);
+            return Optional.of (envelopeModulator);
+        }
+
+        // The curve of Kontakt has the opposite direction of the slope
+        envelope.setAttackSlope (-this.curve);
         envelope.setAttackTime (this.attack / 1000.0);
         envelope.setHoldTime (this.hold / 1000.0);
         envelope.setDecayTime (this.decay / 1000.0);
         envelope.setSustainLevel (this.ahdOnly ? 0 : this.sustain);
         envelope.setReleaseTime ((this.ahdOnly ? this.decay : this.release) / 1000.0);
         return Optional.of (envelopeModulator);
+    }
+
+
+    private Optional<ILfoModulator> createLfoModulator (final String parameterName)
+    {
+        if (this.isBypassed || this.modulationSourceIndex != SOURCE_INDEX_LFO || this.lfoWaveform == null || this.lfoFrequency <= 0)
+            return Optional.empty ();
+        final Optional<ModulatedParameter> lfoParameter = this.getModulatedParameter (parameterName);
+        if (lfoParameter.isEmpty ())
+            return Optional.empty ();
+
+        final ILfoModulator lfoModulator = new DefaultLfoModulator (lfoParameter.get ().getIntensity ());
+        final ILfo lfo = lfoModulator.getSource ();
+        lfo.setWaveform (this.lfoWaveform);
+        lfo.setRate (this.lfoFrequency);
+        lfo.setDelay (Math.max (0, this.lfoDelay) / 1000.0);
+        lfo.setStartPhase (Math.clamp (this.lfoStartPhase, 0, 1));
+        lfo.setKeySync (this.isRetrigger);
+        return Optional.of (lfoModulator);
     }
 
 
@@ -285,7 +275,7 @@ public class InternalModulator
 
         // First block with parameter/modulation info
         final int sizeBlock1 = (int) StreamUtils.readUnsigned32 (in, false);
-        this.readBlock1 (new ByteArrayInputStream (in.readNBytes (sizeBlock1)));
+        this.readBlock1 (in.readNBytes (sizeBlock1));
 
         // Separator - always 0
         if (StreamUtils.readUnsigned32 (in, false) != 0)
@@ -293,166 +283,194 @@ public class InternalModulator
 
         // Second block with the modulation source
         final int sizeBlock2 = (int) StreamUtils.readUnsigned32 (in, false);
-        this.readBlock2 (new ByteArrayInputStream (in.readNBytes (sizeBlock2)));
+        this.readBlock2 (in.readNBytes (sizeBlock2));
     }
 
 
-    private void readBlock1 (final InputStream in) throws IOException
+    /**
+     * Reads the first block which contains the modulated parameters followed by the settings and
+     * the name of the modulation source. There are 0-2 unknown bytes after the description of a
+     * modulated parameter and 0-1 unknown byte after the last parameter. Since it is unclear when
+     * they are present, all variations are tried until the whole block could be parsed.
+     *
+     * @param data The data of the block
+     * @throws IOException Could not parse the block
+     */
+    private void readBlock1 (final byte [] data) throws IOException
     {
-        final int count = (int) StreamUtils.readUnsigned32 (in, false);
-
-        for (int i = 0; i < count; i++)
-        {
-            final ModulatedParameter modulatedParameter = new ModulatedParameter ();
-            modulatedParameter.parameterName = StreamUtils.readAsciiWith4ByteLength (in);
-            modulatedParameter.intensity = StreamUtils.readFloatLE (in);
-
-            if (StreamUtils.readUnsigned16 (in, false) != 0xFFFF)
-                throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_INTERNAL_MOD_BLOCK1_VALUE"));
-
-            modulatedParameter.flags = in.read ();
-            modulatedParameter.lag = StreamUtils.readSigned16 (in, false);
-
-            if ((modulatedParameter.flags & 8) > 0)
-                // Unused
-                in.readNBytes (5);
-            else
-            {
-                modulatedParameter.modulatorDescription = StreamUtils.readAsciiWith4ByteLength (in);
-
-                // This is a brute force solution but does work in 99.9%
-                // It is not a padding but unclear when these 0-2 bytes appear and when not
-                final int needsPadding = needsPadding (i, modulatedParameter);
-                if (needsPadding > 0)
-                    in.skipNBytes (needsPadding);
-
-                final boolean hasModulationShaper = in.read () > 0;
-                if (hasModulationShaper)
-                {
-                    // Modulation Shaper Data/Table are currently not used
-                    final int type = in.read ();
-                    modulatedParameter.isModShapeActive = in.read () > 0;
-
-                    switch (type)
-                    {
-                        default:
-                        case 0:
-                            // This is highly likely to be a parsing error above (wrong padding)
-                            return;
-
-                        case 1:
-                            // The table consists of 128 steps
-                            modulatedParameter.curveSteps = new float [128];
-                            for (int p = 0; p < 128; p++)
-                                modulatedParameter.curveSteps[p] = StreamUtils.readFloatLE (in);
-                            break;
-
-                        case 2:
-                            // Each curve point has three values: x-position, y-position and slope
-                            final int numPoints = in.read ();
-                            modulatedParameter.curvePoints = new float [numPoints * 3];
-                            for (int p = 0; p < numPoints * 3; p++)
-                                modulatedParameter.curvePoints[p] = StreamUtils.readFloatLE (in);
-                            break;
-                    }
-                }
-            }
-
-            this.modulatedParameters.add (modulatedParameter);
-        }
-
-        if (this.modulatedParameters.isEmpty ())
-            return;
-
-        if (this.version != 0x81 || this.modulatedParameters.get (this.modulatedParameters.size () - 1).curvePoints == null)
-            in.read ();
-
-        this.isModSectionOpen = in.read () > 0;
-        this.isBypassed = in.read () > 0;
-        this.isRetrigger = in.read () > 0;
-
-        try
-        {
-            // Is one of these the slot of the FX?
-            in.read ();
-            StreamUtils.readUnsigned32 (in, false);
-
-            this.modulatorSourceName = StreamUtils.readAsciiWith4ByteLength (in);
-            this.modulationSourceIndex = (int) StreamUtils.readUnsigned32 (in, false);
-        }
-        catch (final IOException _)
-        {
-            // This is a follow up exception if the padding in the first loop is detected falsely...
-        }
+        if (data.length < 4)
+            throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_INTERNAL_MOD_BLOCK1_VALUE"));
+        final int count = (int) readUnsigned32 (data, 0);
+        final List<ModulatedParameter> parameters = new ArrayList<> ();
+        if (!this.readModulatedParameters (data, 4, count, parameters))
+            throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_INTERNAL_MOD_BLOCK1_VALUE"));
+        this.modulatedParameters.addAll (parameters);
     }
 
 
-    private static int needsPadding (final int position, final ModulatedParameter modulatedParameter)
+    /**
+     * Reads the remaining modulated parameters and the block trailer.
+     *
+     * @param data The data of the block
+     * @param offset The offset where to start reading
+     * @param remaining The number of parameters which still need to be read
+     * @param parameters Where to add the read parameters
+     * @return True if the parameters and the trailer could be read and the block was fully consumed
+     */
+    private boolean readModulatedParameters (final byte [] data, final int offset, final int remaining, final List<ModulatedParameter> parameters)
     {
-        if (position > 0)
+        if (remaining == 0)
+            return this.readBlock1Trailer (data, offset) || this.readBlock1Trailer (data, offset + 1);
+
+        final ModulatedParameter modulatedParameter = new ModulatedParameter ();
+        modulatedParameter.parameterName = readAscii (data, offset);
+        if (modulatedParameter.parameterName == null)
+            return false;
+        int pos = offset + 4 + modulatedParameter.parameterName.length ();
+        if (pos + 9 > data.length)
+            return false;
+        modulatedParameter.intensity = Float.intBitsToFloat ((int) readUnsigned32 (data, pos));
+        if (readUnsigned16 (data, pos + 4) != 0xFFFF)
+            return false;
+        modulatedParameter.flags = data[pos + 6] & 0xFF;
+        modulatedParameter.lag = (short) readUnsigned16 (data, pos + 7);
+        pos += 9;
+
+        parameters.add (modulatedParameter);
+        if ((modulatedParameter.flags & FLAG_NO_DESCRIPTION) > 0)
         {
-            if (PARAMETER_NAME_CUTOFF.equals (modulatedParameter.parameterName) && "ENV_AHDSR_CUTOFF".equals (modulatedParameter.modulatorDescription))
-                return 2;
-            if (PARAMETER_NAME_VOLUME.equals (modulatedParameter.parameterName) && ("LFO_SINE_VOLUME".equals (modulatedParameter.modulatorDescription) || "STEP_VOLUME".equals (modulatedParameter.modulatorDescription)))
-                return 1;
-
-            if (PARAMETER_NAME_PAN.equals (modulatedParameter.parameterName) && "ENV_DBD_PAN".equals (modulatedParameter.modulatorDescription) || PARAMETER_NAME_CUTOFF.equals (modulatedParameter.parameterName) && MODULATOR_SOURCE_NAME_LFO_MULTI_CUTOFF.equals (modulatedParameter.modulatorDescription))
-                return 2;
-            if ("vfType".equals (modulatedParameter.parameterName) && "LFO_MULTI_3X2_TYPE".equals (modulatedParameter.modulatorDescription))
-                return 2;
-        }
-
-        final Set<String> set = NEEDS_PADDING.get (modulatedParameter.parameterName);
-        if (set != null && set.contains (modulatedParameter.modulatorDescription))
-            return 1;
-
-        final Set<String> set2 = NO_PADDING.get (modulatedParameter.parameterName);
-        if (set2 != null && set2.contains (modulatedParameter.modulatorDescription))
-            return 0;
-
-        final boolean result = (modulatedParameter.parameterName.length () + modulatedParameter.modulatorDescription.length ()) % 2 == 1;
-        return result ? 1 : 0;
-    }
-
-
-    private void readBlock2 (final InputStream in) throws IOException
-    {
-        final Optional<ModulatedParameter> envelopeParameter = this.getEnvelopeParameter (PARAMETER_NAME_VOLUME, PARAMETER_NAME_CUTOFF, PARAMETER_NAME_PITCH);
-        if (envelopeParameter.isEmpty () || !this.isEnvelopeModulator ())
-            return;
-
-        // Too short but not understood what it contains
-        final int available = in.available ();
-        if (available < 59)
-            return;
-
-        if (MODULATOR_SOURCE_NAME_AHDSR.equals (this.modulatorSourceName) || PARAMETER_NAME_NONE.equals (this.modulatorSourceName) || "".equals (this.modulatorSourceName))
-        {
-            // Not used
-            in.readNBytes (34);
-
-            this.curve = StreamUtils.readFloatLE (in);
-            this.attack = StreamUtils.readFloatLE (in);
-            this.decay = StreamUtils.readFloatLE (in);
-            this.hold = StreamUtils.readFloatLE (in);
-            this.release = StreamUtils.readFloatLE (in);
-            this.sustain = StreamUtils.readFloatLE (in);
-            this.ahdOnly = in.read () > 0;
-
-            // 52 or 16 more bytes not used
-        }
-        else if ("ENV_DBD".equals (this.modulatorSourceName))
-        {
-            // Decay/Break/Decay envelope type not supported
+            // Unused
+            if (this.readModulatedParameters (data, pos + 5, remaining - 1, parameters))
+                return true;
         }
         else
         {
-            // Unknown envelope...
+            modulatedParameter.modulatorDescription = readAscii (data, pos);
+            if (modulatedParameter.modulatorDescription != null)
+            {
+                pos += 4 + modulatedParameter.modulatorDescription.length ();
+                for (int unknown = 0; unknown <= MAX_UNKNOWN_BYTES; unknown++)
+                {
+                    final int next = ExternalModulator.skipModulationShaper (data, pos + unknown);
+                    if (next >= 0 && this.readModulatedParameters (data, next, remaining - 1, parameters))
+                        return true;
+                }
+            }
+        }
+        parameters.remove (parameters.size () - 1);
+        return false;
+    }
+
+
+    /**
+     * Reads the end of the first block: the mod-section open, bypass and retrigger flags, 5 unknown
+     * bytes, the name of the modulation source and its type index.
+     *
+     * @param data The data of the block
+     * @param offset The offset where the trailer starts
+     * @return True if the trailer could be read and ends exactly at the end of the block
+     */
+    private boolean readBlock1Trailer (final byte [] data, final int offset)
+    {
+        if (offset + 8 > data.length)
+            return false;
+        for (int i = 0; i < 3; i++)
+            if ((data[offset + i] & 0xFF) > 1)
+                return false;
+        final String sourceName = readAscii (data, offset + 8);
+        if (sourceName == null)
+            return false;
+        final int pos = offset + 12 + sourceName.length ();
+        if (pos + 4 != data.length)
+            return false;
+
+        this.isModSectionOpen = data[offset] > 0;
+        this.isBypassed = data[offset + 1] > 0;
+        this.isRetrigger = data[offset + 2] > 0;
+        this.modulatorSourceName = sourceName;
+        this.modulationSourceIndex = (int) readUnsigned32 (data, pos);
+        return true;
+    }
+
+
+    /**
+     * Reads the second block which contains the settings of the modulation source.
+     *
+     * @param data The data of the block
+     */
+    private void readBlock2 (final byte [] data)
+    {
+        if (this.getModulatedParameter (PARAMETER_NAME_VOLUME, PARAMETER_NAME_CUTOFF, PARAMETER_NAME_PITCH).isEmpty ())
+            return;
+
+        if (this.modulationSourceIndex == SOURCE_INDEX_LFO)
+        {
+            this.readLfo (data);
+            return;
+        }
+
+        if (!this.isEnvelopeModulator ())
+            return;
+
+        if (MODULATOR_SOURCE_NAME_DBD.equals (this.modulatorSourceName))
+        {
+            if (data.length < DBD_DECAY2_OFFSET + 4)
+                return;
+            final float decay1 = readFloat (data, DBD_DECAY1_OFFSET);
+            final float breakLevel = readFloat (data, DBD_BREAK_OFFSET);
+            final float decay2 = readFloat (data, DBD_DECAY2_OFFSET);
+            this.decay = breakLevel == 0 ? decay1 : decay1 + decay2;
+            this.isDecayBreakDecay = true;
+            return;
+        }
+
+        if (MODULATOR_SOURCE_NAME_AHDSR.equals (this.modulatorSourceName) || MODULATOR_SOURCE_NAME_AHD.equals (this.modulatorSourceName) || PARAMETER_NAME_NONE.equals (this.modulatorSourceName) || "".equals (this.modulatorSourceName))
+        {
+            // Too short but not understood what it contains
+            if (data.length < 59)
+                return;
+
+            // The first 34 bytes are not used, followed by the curve, attack, decay, hold, release
+            // and sustain (all floats) and the AHD-only flag; 52 or 16 more bytes are not used
+            this.curve = readFloat (data, 34);
+            this.attack = readFloat (data, 38);
+            this.decay = readFloat (data, 42);
+            this.hold = readFloat (data, 46);
+            this.release = readFloat (data, 50);
+            this.sustain = readFloat (data, 54);
+            this.ahdOnly = data[58] > 0 || MODULATOR_SOURCE_NAME_AHD.equals (this.modulatorSourceName);
         }
     }
 
 
-    private Optional<ModulatedParameter> getEnvelopeParameter (final String... parameters)
+    /**
+     * Reads the settings of a low frequency oscillator.
+     *
+     * @param data The data of the second block
+     */
+    private void readLfo (final byte [] data)
+    {
+        if (LFO_START_PHASE_OFFSET + 4 > data.length)
+            return;
+
+        this.lfoWaveform = switch ((int) readUnsigned32 (data, LFO_WAVEFORM_OFFSET))
+        {
+            case LFO_WAVEFORM_SINE -> LfoWaveform.SINE;
+            case LFO_WAVEFORM_RECTANGLE -> LfoWaveform.SQUARE;
+            case LFO_WAVEFORM_TRIANGLE -> LfoWaveform.TRIANGLE;
+            // The sawtooth starts at the maximum and decreases
+            case LFO_WAVEFORM_SAWTOOTH -> LfoWaveform.SAWTOOTH_DOWN;
+            case LFO_WAVEFORM_RANDOM -> LfoWaveform.RANDOM;
+            // Multi-waveform is not supported
+            default -> null;
+        };
+        this.lfoDelay = readFloat (data, LFO_DELAY_OFFSET);
+        this.lfoFrequency = readFloat (data, LFO_FREQUENCY_OFFSET);
+        this.lfoStartPhase = readFloat (data, LFO_START_PHASE_OFFSET);
+    }
+
+
+    private Optional<ModulatedParameter> getModulatedParameter (final String... parameters)
     {
         for (final ModulatedParameter modulatedParameter: this.modulatedParameters)
             for (final String parameter: parameters)
@@ -464,6 +482,30 @@ public class InternalModulator
 
     private boolean isEnvelopeModulator ()
     {
-        return this.modulationSourceIndex == 0 || this.modulationSourceIndex == 2;
+        return this.modulationSourceIndex == SOURCE_INDEX_ENVELOPE || this.modulationSourceIndex == SOURCE_INDEX_ENVELOPE2;
+    }
+
+
+    private static String readAscii (final byte [] data, final int offset)
+    {
+        return ExternalModulator.readAscii (data, offset);
+    }
+
+
+    private static float readFloat (final byte [] data, final int offset)
+    {
+        return Float.intBitsToFloat ((int) readUnsigned32 (data, offset));
+    }
+
+
+    private static int readUnsigned16 (final byte [] data, final int offset)
+    {
+        return ExternalModulator.readUnsigned16 (data, offset);
+    }
+
+
+    private static long readUnsigned32 (final byte [] data, final int offset)
+    {
+        return ExternalModulator.readUnsigned32 (data, offset);
     }
 }

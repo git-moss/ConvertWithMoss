@@ -5,6 +5,7 @@
 package de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,9 +21,13 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class FileList
 {
-    private List<String> specialFiles;
-    private List<String> sampleFiles;
-    private List<String> otherFiles;
+    private static final int SEGMENT_PATH          = 2;
+    private static final int SEGMENT_FILENAME      = 4;
+    private static final int FILELIST_EX_VERSION_2 = 2;
+
+    private List<String>     specialFiles;
+    private List<String>     sampleFiles;
+    private List<String>     otherFiles;
 
 
     /**
@@ -225,6 +230,93 @@ public class FileList
             default:
                 throw new IOException (Functions.getMessage ("IDS_NKI5_UNSUPPORTED_FILELIST_SEGMENT", Integer.toString (segmentType)));
         }
+    }
+
+
+    /**
+     * Creates the data of a FILENAME_LIST_EX chunk (version 2) which references the given sample
+     * files relative to the instrument file.
+     *
+     * @param sampleFolderName The name of the folder (relative to the instrument file) which
+     *            contains the samples, might contain sub-folders separated by forward or backward
+     *            slashes
+     * @param sampleFileNames The names of the sample files
+     * @param instrumentFileName The name of the instrument file (NKI)
+     * @return The created data
+     * @throws IOException Could not create the data
+     */
+    public static byte [] createFileListEx (final String sampleFolderName, final List<String> sampleFileNames, final String instrumentFileName) throws IOException
+    {
+        final List<String> samplePaths = new ArrayList<> (sampleFileNames.size ());
+        for (final String sampleFileName: sampleFileNames)
+            samplePaths.add (sampleFolderName + "/" + sampleFileName);
+        return createFileListEx (samplePaths, instrumentFileName);
+    }
+
+
+    /**
+     * Creates the data of a FILENAME_LIST_EX chunk (version 2) which references the given sample
+     * files relative to the instrument (or multi) file.
+     *
+     * @param samplePaths The paths of the sample files relative to the instrument file, the folders
+     *            can be separated by forward or backward slashes
+     * @param instrumentFileName The name of the instrument file (NKI), null for a multi (NKM)
+     * @return The created data
+     * @throws IOException Could not create the data
+     */
+    public static byte [] createFileListEx (final List<String> samplePaths, final String instrumentFileName) throws IOException
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        StreamUtils.writeUnsigned16 (out, FILELIST_EX_VERSION_2, false);
+
+        // One special file with an empty path
+        StreamUtils.writeUnsigned32 (out, 1, false);
+        StreamUtils.writeUnsigned32 (out, 0, false);
+
+        StreamUtils.writeUnsigned32 (out, samplePaths.size (), false);
+        for (final String samplePath: samplePaths)
+        {
+            final List<String> segments = new ArrayList<> ();
+            for (final String segment: samplePath.split ("[/\\\\]"))
+                if (!segment.isBlank ())
+                    segments.add (segment);
+
+            StreamUtils.writeUnsigned32 (out, segments.size (), false);
+            for (int i = 0; i < segments.size (); i++)
+            {
+                // All but the last segment are folders
+                out.write (i + 1 < segments.size () ? SEGMENT_PATH : SEGMENT_FILENAME);
+                StreamUtils.writeUtf16WithLength (out, segments.get (i));
+            }
+        }
+
+        // The last update date of each file in seconds followed by 4 zero bytes
+        final long timestamp = System.currentTimeMillis () / 1000;
+        for (int i = 0; i < samplePaths.size (); i++)
+        {
+            StreamUtils.writeUnsigned32 (out, timestamp, false);
+            StreamUtils.writeUnsigned32 (out, 0, false);
+        }
+        // Unknown but there is 1 integer for each file
+        for (int i = 0; i < samplePaths.size (); i++)
+            StreamUtils.writeUnsigned32 (out, 0, false);
+
+        // The other files contain the instrument file itself, followed by 2 unknown bytes. Multis
+        // do not reference themselves, there the list is empty (and the 2 bytes are missing as
+        // well)
+        if (instrumentFileName == null)
+            StreamUtils.writeUnsigned32 (out, 0, false);
+        else
+        {
+            StreamUtils.writeUnsigned32 (out, 1, false);
+            StreamUtils.writeUnsigned32 (out, 1, false);
+            out.write (SEGMENT_FILENAME);
+            StreamUtils.writeUtf16WithLength (out, instrumentFileName);
+            out.write (1);
+            out.write (0);
+        }
+
+        return out.toByteArray ();
     }
 
 

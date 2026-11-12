@@ -9,8 +9,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.AbstractKontaktFormat;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -21,6 +27,12 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Zone
 {
+    /** The maximum number of loops of a zone. */
+    public static final int      MAX_LOOPS                 = 8;
+
+    private static final int     DEFAULT_SAMPLE_RESOLUTION = 2;
+    private static final int     DEFAULT_SAMPLE_RATE       = 44100;
+
     private final int            groupIndex;
     private int                  sampleStart;
     private int                  sampleEnd;
@@ -36,7 +48,7 @@ public class Zone
     private float                zoneVolume;
     private float                zonePan;
     private float                zoneTune;
-    private int                  filenameId = -1;
+    private int                  filenameId                = -1;
     private int                  sampleResolution;
     private int                  sampleRate;
     private int                  numChannels;
@@ -45,7 +57,7 @@ public class Zone
     private float                tuning;
     private long                 sampleSize;
 
-    private final List<ZoneLoop> loops      = new ArrayList<> ();
+    private final List<ZoneLoop> loops                     = new ArrayList<> ();
 
 
     /**
@@ -56,6 +68,73 @@ public class Zone
     public Zone (final int groupIndex)
     {
         this.groupIndex = groupIndex;
+    }
+
+
+    /**
+     * Constructor which creates the zone from a sample zone.
+     *
+     * @param groupIndex The index of the group to which the zone belongs
+     * @param sampleZone The sample zone from which to take the values
+     * @param filenameId The index of the sample file in the file list
+     * @throws IOException Could not read the audio metadata of the sample
+     */
+    public Zone (final int groupIndex, final ISampleZone sampleZone, final int filenameId) throws IOException
+    {
+        this.groupIndex = groupIndex;
+        this.filenameId = filenameId;
+
+        this.sampleResolution = DEFAULT_SAMPLE_RESOLUTION;
+        this.sampleRate = DEFAULT_SAMPLE_RATE;
+        this.numChannels = 1;
+        this.numFrames = Math.max (0, sampleZone.getStop ());
+        final Optional<ISampleData> sampleData = sampleZone.getSampleData ();
+        if (sampleData.isPresent ())
+        {
+            final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+            // The resolution is stored in bytes
+            this.sampleResolution = Math.max (1, audioMetadata.getBitResolution () / 8);
+            this.sampleRate = audioMetadata.getSampleRate ();
+            this.numChannels = audioMetadata.getChannels ();
+            this.numFrames = audioMetadata.getNumberOfSamples ();
+        }
+
+        // The end is stored as the offset from the end of the sample
+        this.sampleStart = Math.clamp (sampleZone.getStart (), 0, Math.max (0, this.numFrames));
+        final int stop = sampleZone.getStop ();
+        this.sampleEnd = stop <= 0 || stop > this.numFrames ? 0 : this.numFrames - stop;
+
+        this.lowVelocity = limitToDefault (sampleZone.getVelocityLow (), 1);
+        this.highVelocity = limitToDefault (sampleZone.getVelocityHigh (), 127);
+        this.lowKey = limitToDefault (sampleZone.getKeyLow (), 0);
+        this.highKey = limitToDefault (sampleZone.getKeyHigh (), 127);
+        this.fadeLowVelocity = limitToDefault (sampleZone.getVelocityCrossfadeLow (), 0);
+        this.fadeHighVelocity = limitToDefault (sampleZone.getVelocityCrossfadeHigh (), 0);
+        this.fadeLowKey = limitToDefault (sampleZone.getNoteCrossfadeLow (), 0);
+        this.fadeHighKey = limitToDefault (sampleZone.getNoteCrossfadeHigh (), 0);
+        this.rootKey = limitToDefault (sampleZone.getKeyRoot (), this.lowKey);
+        this.rootNote = this.rootKey;
+        this.tuning = 1.0f;
+
+        this.zoneVolume = (float) AbstractKontaktFormat.dbToValue (sampleZone.getGain ());
+        this.zonePan = (float) Math.clamp (sampleZone.getPanning (), -1.0, 1.0);
+        this.zoneTune = (float) Math.pow (2.0, sampleZone.getTuning () / 12.0);
+
+        for (final ISampleLoop sampleLoop: sampleZone.getLoops ())
+        {
+            if (this.loops.size () == MAX_LOOPS)
+                break;
+            this.loops.add (new ZoneLoop (sampleLoop));
+        }
+        // A one-shot without a loop is described by a loop entry with the one-shot mode
+        if (this.loops.isEmpty () && sampleZone.isOneShot ())
+            this.loops.add (ZoneLoop.createOneShot ());
+    }
+
+
+    private static int limitToDefault (final int value, final int defaultValue)
+    {
+        return value < 0 ? defaultValue : value;
     }
 
 
@@ -207,6 +286,17 @@ public class Zone
         StreamUtils.writeUnsigned32 (out, this.sampleSize, false);
 
         return out.toByteArray ();
+    }
+
+
+    /**
+     * Set the index of the sample file in the file list.
+     *
+     * @param filenameId The index
+     */
+    public void setFilenameId (final int filenameId)
+    {
+        this.filenameId = filenameId;
     }
 
 

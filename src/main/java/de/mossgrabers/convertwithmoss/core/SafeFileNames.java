@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.core;
 
+import java.text.Normalizer;
+
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -27,9 +29,13 @@ import de.mossgrabers.tools.FileUtils;
 public final class SafeFileNames
 {
     /** The characters which a shell or the Windows command processor expands. */
-    private static final String EXPANDED_CHARACTERS = "`$;%";
+    private static final String    EXPANDED_CHARACTERS       = "`$;%";
     /** What they are replaced with - the same replacement which FileUtils uses. */
-    private static final char   REPLACEMENT         = '_';
+    private static final char      REPLACEMENT               = '_';
+    /** Characters which are written out by {@link #createAscii(String)}. */
+    private static final String    TRANSLITERATED_CHARACTERS = "äöüÄÖÜßæÆœŒøØđĐłŁþÞðÐ";
+    /** The replacements for the characters above. */
+    private static final String [] TRANSLITERATIONS          = { "ae", "oe", "ue", "Ae", "Oe", "Ue", "ss", "ae", "AE", "oe", "OE", "o", "O", "d", "D", "l", "L", "th", "Th", "d", "D" };
 
 
     /**
@@ -56,5 +62,45 @@ public final class SafeFileNames
         for (int i = 0; i < EXPANDED_CHARACTERS.length (); i++)
             result = result.replace (EXPANDED_CHARACTERS.charAt (i), REPLACEMENT);
         return result;
+    }
+
+
+    /**
+     * Create a safe file name (see {@link #create(String)}) which contains only ASCII characters.
+     * German umlauts and some ligatures are written out (e.g. 'ü' becomes 'ue'), accents are
+     * removed (e.g. 'í' becomes 'i') and all other non-ASCII characters are replaced. This is for
+     * formats and devices which cannot handle other characters in file names.
+     *
+     * @param name The name to make safe, may be null
+     * @return The safe name
+     */
+    public static String createAscii (final String name)
+    {
+        final String safeName = create (name);
+        final StringBuilder sb = new StringBuilder (safeName.length ());
+        for (int i = 0; i < safeName.length (); i++)
+        {
+            final char c = safeName.charAt (i);
+            if (c >= 0x20 && c < 0x7F)
+            {
+                sb.append (c);
+                continue;
+            }
+
+            final int index = TRANSLITERATED_CHARACTERS.indexOf (c);
+            if (index >= 0)
+            {
+                sb.append (TRANSLITERATIONS[index]);
+                continue;
+            }
+
+            // Remove accents and other diacritical marks
+            final String base = Normalizer.normalize (Character.toString (c), Normalizer.Form.NFD).replaceAll ("\\p{M}", "");
+            if (base.length () == 1 && base.charAt (0) >= 0x20 && base.charAt (0) < 0x7F)
+                sb.append (base);
+            else
+                sb.append (REPLACEMENT);
+        }
+        return sb.toString ();
     }
 }

@@ -17,6 +17,7 @@ import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.IKontaktFormat;
@@ -72,7 +73,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
 
         final IKontaktFormat kontaktType = this.createKontaktFormat ();
 
-        final String multisampleName = SafeFileNames.create (multisampleSource.getName ());
+        final String multisampleName = this.createSafeFilename (multisampleSource.getName ());
         final File multiFile = this.createUniqueFilename (destinationFolder, multisampleName, "nki");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
@@ -127,7 +128,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
     {
         final IKontaktFormat kontaktType = this.createKontaktFormat ();
 
-        final File multiFile = this.createUniqueFilename (destinationFolder, libraryName, "nkm");
+        final File multiFile = this.createUniqueFilename (destinationFolder, this.createSafeFilename (libraryName), "nkm");
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
 
         final List<IInstrumentSource> safeInstrumentSources = new ArrayList<> (instrumentSources.size ());
@@ -155,7 +156,7 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
             final IMultisampleSource multisampleSource = instrumentSource.getMultisampleSource ();
 
             // First, store all samples
-            final String multisampleName = SafeFileNames.create (multisampleSource.getName ());
+            final String multisampleName = this.createSafeFilename (multisampleSource.getName ());
             final String safeSampleFolderName = multisampleName + FOLDER_POSTFIX;
             sampleFilePaths.add (safeSampleFolderName);
             final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
@@ -169,6 +170,29 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
         }
 
         this.progress.notifyDone ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    protected String createSampleFilename (final ISampleZone zone, final int zoneIndex, final String fileEnding)
+    {
+        return this.createSafeFilename (zone.getName ()) + fileEnding;
+    }
+
+
+    /**
+     * Create a safe file name. Kontakt 1 cannot find files with non-ASCII characters in their
+     * path, therefore these are replaced if Kontakt 1 is the output format.
+     *
+     * @param name The name
+     * @return The safe file name
+     */
+    private String createSafeFilename (final String name)
+    {
+        if (this.settingsConfiguration.getOutputFormat () == KontaktCreatorUI.OutputFormat.KONTAKT_1)
+            return SafeFileNames.createAscii (name);
+        return SafeFileNames.create (name);
     }
 
 

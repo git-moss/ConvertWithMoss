@@ -26,6 +26,7 @@
       <V name="msFadeTime" value="10"/>
       <V name="exclusionGroup" value="-1"/>
     </VoiceGroup>
+    %PROGRAM_VOICE_GROUPS%
   </Polyphony>
   <FXDelay version="0.50"/>
   <FXChorus version="0.50"/>

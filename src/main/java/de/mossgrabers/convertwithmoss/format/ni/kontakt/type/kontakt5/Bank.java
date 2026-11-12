@@ -104,7 +104,7 @@ public class Bank
 
         this.masterVolume = StreamUtils.readFloatLE (in);
         this.masterTune = StreamUtils.readFloatLE (in);
-        // The master tempo, always 0 in the analysed files
+        // The master tempo, always 0 in the analyzed files
         StreamUtils.readUnsigned32 (in, false);
 
         this.name = StreamUtils.readUtf16WithLength (in);

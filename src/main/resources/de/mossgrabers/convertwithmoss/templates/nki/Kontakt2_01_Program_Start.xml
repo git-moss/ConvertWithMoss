@@ -86,6 +86,7 @@
           <V name="msFadeTime" value="10"/>
           <V name="exclusionGroup" value="-1"/>
         </VoiceGroup>
+        %PROGRAM_VOICE_GROUPS%
       </Polyphony>
       <ProgramInsertFX>
         <K2_Effect index="7" version="0.50">

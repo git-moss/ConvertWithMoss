@@ -9,33 +9,38 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 
 import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
-import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt2.Kontakt2Header;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Bank;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.ExternalModulator;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt5.Group;
@@ -58,8 +63,15 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public abstract class AbstractKontaktFormat implements IKontaktFormat
 {
-    protected final INotifier notifier;
-    protected boolean         isBigEndian;
+    // The pitch intensity of Kontakt (1.0) covers 1 octave
+    private static final double PITCH_INTENSITY_CENTS = 1200.0;
+    // The volume values of Kontakt double every 6 dB
+    private static final double DB_PER_DOUBLING       = 6.0;
+    private static final double MINIMUM_DB            = -150.0;
+    private static final String NULL_ENTRY            = "(null)";
+
+    protected final INotifier   notifier;
+    protected boolean           isBigEndian;
 
 
     /**
@@ -102,13 +114,14 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
      *            performance
      * @throws IOException Error finding samples
      */
-    @SuppressWarnings("null")
     public void fillInto (final IMultisampleSource multiSample, final Program program, final String [] parts, final List<String> filePaths, final boolean isMonolith, final boolean isMultiPart) throws IOException
     {
         final float instrumentVolume = isMultiPart ? 1.0f : program.getInstrumentVolume ();
         final float instrumentPan = isMultiPart ? 0.0f : program.getInstrumentPan ();
 
         setMetadata (multiSample, program, parts);
+        if (program.getMaxVoices () > 0)
+            multiSample.setPolyphony (program.getMaxVoices ());
 
         final List<File> files = this.lookupFiles (filePaths, multiSample.getSourceFile ().getParent (), isMonolith);
         final Map<Integer, Pair<IGroup, Group>> indexedGroups = createGroups (program);
@@ -148,7 +161,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             zone.setKeyRoot (rootKey);
 
             final float volume = instrumentVolume * kontaktGroup.getVolume () * kontaktZone.getZoneVolume ();
-            zone.setGain (MathUtils.valueToDb (volume));
+            zone.setGain (valueToDb (volume));
             zone.setPanning (Math.clamp (instrumentPan + kontaktGroup.getPan () + kontaktZone.getZonePan (), -1, 1));
 
             zone.setTuning (calculateTune (kontaktZone.getZoneTune (), kontaktGroup.getTune (), program.getInstrumentTune ()));
@@ -165,34 +178,70 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             // Only on a group level...
             zone.setReversed (kontaktGroup.isReverse ());
 
-            // Kontakt stores the voice group as a zero based index with -1 for 'no group' but the
-            // model uses 0 for 'no group', therefore the index is shifted by one
-            final int voiceGroupIdx = kontaktGroup.getVoiceGroupIdx ();
-            zone.setExclusiveGroup (voiceGroupIdx < 0 ? 0 : voiceGroupIdx + 1);
+            // Voice group 0 is the instrument, the others are used as the exclusive group
+            zone.setExclusiveGroup (Math.max (0, kontaktGroup.getVoiceGroupIdx ()));
 
-            // IMPROVE Fill Filter info, when understood where it is stored
-            final IFilter filter = null;
+            // The cycle class is the zero based position in the round-robin cycle, the model
+            // starts with 1
+            final int startCriteriaMode = kontaktGroup.getStartCriteriaMode ();
+            if (startCriteriaMode == Group.START_MODE_CYCLE_ROUND_ROBIN || startCriteriaMode == Group.START_MODE_CYCLE_RANDOM)
+            {
+                zone.setPlayLogic (startCriteriaMode == Group.START_MODE_CYCLE_RANDOM ? PlayLogic.RANDOM : PlayLogic.ROUND_ROBIN);
+                final int cycleClass = kontaktGroup.getCycleClass ();
+                if (cycleClass >= 0)
+                    zone.setSequencePosition (cycleClass + 1);
+            }
 
-            // Set pitch by pitch-bend and amplitude by velocity modulation
+            // The filter is shared by all zones of the group
+            final IFilter filter = kontaktGroup.getFilter ().orElse (null);
+            if (filter != null)
+                zone.setFilter (filter);
+
+            // Set pitch by pitch-bend, amplitude by velocity and the filter cutoff modulation
             boolean foundAmpVelocity = false;
             for (final ExternalModulator modulator: kontaktGroup.getExternalModulators ())
             {
                 final long sourceType = modulator.getSourceType ();
-                final long destType = modulator.getDestType ();
-                if (sourceType == ExternalModulator.SOURCE_PITCHBEND && (destType == ExternalModulator.DEST_PITCH || destType == ExternalModulator.DEST_PITCH2))
+                final boolean isVelocity = sourceType == ExternalModulator.SOURCE_VELOCITY || sourceType == ExternalModulator.SOURCE_VELOCITY2;
+                switch (modulator.getTargetName ())
                 {
-                    final int cents = Math.round (modulator.getIntensity () * 12) * 100;
-                    zone.setBendUp (cents);
-                    zone.setBendDown (-cents);
-                }
-                else if ((sourceType == ExternalModulator.SOURCE_VELOCITY || sourceType == ExternalModulator.SOURCE_VELOCITY2) && (destType == ExternalModulator.DEST_VOLUME || destType == ExternalModulator.DEST_VOLUME2 || destType == ExternalModulator.DEST_VOLUME3))
-                {
-                    zone.getAmplitudeVelocityModulator ().setDepth (modulator.getIntensity ());
-                    // The volume of Kontakt maps its normalized value to decibels with
-                    // 60*log10(x). The velocity modulation therefore scales the amplitude with
-                    // x^3, which is a convex curve (+1)
-                    zone.getAmplitudeVelocityModulator ().setCurve (1);
-                    foundAmpVelocity = true;
+                    case ExternalModulator.TARGET_PITCH:
+                        if (sourceType == ExternalModulator.SOURCE_PITCHBEND)
+                        {
+                            final int cents = Math.round (modulator.getIntensity () * 12) * 100;
+                            zone.setBendUp (cents);
+                            zone.setBendDown (-cents);
+                        }
+                        break;
+
+                    case ExternalModulator.TARGET_VOLUME:
+                        if (isVelocity)
+                        {
+                            zone.getAmplitudeVelocityModulator ().setDepth (modulator.getIntensity ());
+                            // The volume of Kontakt maps its normalized value to decibels with
+                            // 60*log10(x). The velocity modulation therefore scales the amplitude
+                            // with x^3, which is a convex curve (+1)
+                            zone.getAmplitudeVelocityModulator ().setCurve (1);
+                            foundAmpVelocity = true;
+                        }
+                        break;
+
+                    case ExternalModulator.TARGET_FILTER_CUTOFF:
+                        if (filter != null)
+                        {
+                            final double depth = Math.clamp (modulator.getIntensity (), -1.0, 1.0);
+                            if (isVelocity)
+                                filter.getCutoffVelocityModulator ().setDepth (depth);
+                            else if (sourceType == ExternalModulator.SOURCE_KEY_POSITION)
+                                filter.setCutoffKeyTracking (depth);
+                            else if (sourceType == ExternalModulator.SOURCE_MIDI_CC && modulator.getCCNumber () == 1)
+                                filter.getCutoffModWheelModulator ().setDepth (depth);
+                        }
+                        break;
+
+                    default:
+                        // Not supported
+                        break;
                 }
             }
             if (!foundAmpVelocity)
@@ -214,7 +263,9 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
                 {
                     final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     final IEnvelopeModulator kontaktPitchModulator = pitchEnvelope.get ();
-                    pitchModulator.setDepth (kontaktPitchModulator.getDepth ());
+                    // The pitch intensity of Kontakt (1.0) covers 1 octave, the depth of the model
+                    // is relative to MAX_ENVELOPE_DEPTH cents
+                    pitchModulator.setDepth (Math.clamp (kontaktPitchModulator.getDepth () * PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH, -1.0, 1.0));
                     pitchModulator.setSource (kontaktPitchModulator.getSource ());
                 }
                 if (filter != null)
@@ -227,7 +278,13 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
                         cutoffModulator.setDepth (kontaktCutoffModulator.getDepth ());
                         cutoffModulator.setSource (kontaktCutoffModulator.getSource ());
                     }
+                    applyLfoModulator (modulator.getFilterCutoffLfo (), filter.getCutoffLfoModulator (), 1.0);
                 }
+
+                applyLfoModulator (modulator.getVolumeLfo (), zone.getAmplitudeLfoModulator (), 1.0);
+                // The pitch intensity of Kontakt (1.0) covers 1 octave, the depth of the model is
+                // relative to MAX_ENVELOPE_DEPTH cents
+                applyLfoModulator (modulator.getPitchLfo (), zone.getPitchLfoModulator (), PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
             }
 
             for (final ZoneLoop zoneLoop: kontaktZone.getLoops ())
@@ -260,6 +317,50 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
 
 
     /**
+     * Converts a Kontakt volume value to decibels. Kontakt doubles the value every 6 dB, e.g. 0.5
+     * is -6 dB and 0.015625 is -36 dB.
+     *
+     * @param value The volume value
+     * @return The value in decibels
+     */
+    public static double valueToDb (final double value)
+    {
+        if (value <= 0)
+            return MINIMUM_DB;
+        return Math.max (MINIMUM_DB, DB_PER_DOUBLING * Math.log (value) / Math.log (2));
+    }
+
+
+    /**
+     * Converts decibels to a Kontakt volume value. Kontakt doubles the value every 6 dB.
+     *
+     * @param db The value in decibels
+     * @return The volume value
+     */
+    public static double dbToValue (final double db)
+    {
+        return Math.pow (2, db / DB_PER_DOUBLING);
+    }
+
+
+    /**
+     * Copy the settings of a low frequency oscillator modulator.
+     *
+     * @param source The modulator to copy
+     * @param destination The modulator to set
+     * @param scale The factor to scale the depth
+     */
+    private static void applyLfoModulator (final Optional<ILfoModulator> source, final ILfoModulator destination, final double scale)
+    {
+        if (source.isEmpty ())
+            return;
+        final ILfoModulator lfoModulator = source.get ();
+        destination.setDepth (Math.clamp (lfoModulator.getDepth () * scale, -1.0, 1.0));
+        destination.setSource (lfoModulator.getSource ());
+    }
+
+
+    /**
      * Create a performance from the programs of a multi (NKM). The programs must have been
      * converted with isMultiPart set to true, since the volume and panning of the programs are
      * applied to the instruments. The master volume of the multi is added to the gain of all
@@ -282,7 +383,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
         final Optional<Bank> bank = presetAccessor.getBank ();
         if (bank.isPresent ())
         {
-            masterGain = MathUtils.valueToDb (bank.get ().getMasterVolume ());
+            masterGain = valueToDb (bank.get ().getMasterVolume ());
             // The tuning is stored as a frequency ratio
             masterTuning = 12.0 * Math.log (bank.get ().getMasterTune ()) / Math.log (2);
         }
@@ -307,12 +408,13 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             }
 
             // The MIDI channel is stored as 0 = Omni, 1 = A1 ... 64 = D16
-            final int midiChannel = multiInstrument == null ? 0 : multiInstrument.getMidiChannel () - 1;
+            final int kontaktMidiChannel = multiInstrument == null ? 0 : multiInstrument.getMidiChannel ();
+            final int midiChannel = kontaktMidiChannel <= 0 ? IInstrumentSource.MIDI_CHANNEL_OMNI : kontaktMidiChannel - 1;
             final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
             instrumentSource.setClipKeyLow (program.getClipKeyLow ());
             instrumentSource.setClipKeyHigh (program.getClipKeyHigh ());
             instrumentSource.setTranspose (program.getMidiTranspose ());
-            instrumentSource.setGain (MathUtils.valueToDb (program.getInstrumentVolume ()) + masterGain);
+            instrumentSource.setGain (valueToDb (program.getInstrumentVolume ()) + masterGain);
             instrumentSource.setPanning (Math.clamp (program.getInstrumentPan (), -1.0, 1.0));
 
             if (masterTuning != 0)
@@ -333,18 +435,47 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
         final IMetadata metadata = source.getMetadata ();
 
         final String instrumentAuthor = program.getInstrumentAuthor ();
-        if (instrumentAuthor != null && !instrumentAuthor.isBlank ())
+        if (instrumentAuthor != null && !instrumentAuthor.isBlank () && !NULL_ENTRY.equals (instrumentAuthor))
             metadata.setCreator (instrumentAuthor);
+        final StringBuilder description = new StringBuilder ();
+        final String instrumentCredits = program.getInstrumentCredits ();
+        if (instrumentCredits != null && !instrumentCredits.isBlank () && !NULL_ENTRY.equals (instrumentCredits))
+            description.append (instrumentCredits.trim ());
         final String instrumentURL = program.getInstrumentURL ();
         if (instrumentURL != null && !instrumentURL.isBlank ())
-            metadata.setDescription ("Website : " + instrumentURL);
+        {
+            if (!description.isEmpty ())
+                description.append ('\n');
+            description.append ("Website : ").append (instrumentURL);
+        }
+        if (!description.isEmpty ())
+            metadata.setDescription (description.toString ());
+
+        // The 3 instrument categories use the same lists as the Kontakt 2 header: the 1st is the
+        // instrument type, the 2nd and 3rd are taken as keywords
+        final int [] categories = program.getInstrumentCategories ();
+        final Set<String> keywords = new LinkedHashSet<> ();
+        for (int i = 1; i < 3; i++)
+        {
+            final String keyword = Kontakt2Header.getCategoryName (i + 1, categories[i]);
+            if (keyword != null)
+                keywords.add (keyword);
+        }
+        if (!keywords.isEmpty ())
+            metadata.setKeywords (keywords.toArray (new String [keywords.size ()]));
+        final String instrumentType = Kontakt2Header.getCategoryName (1, categories[0]);
 
         // The icons 'New' (the default) and 'Wave' (a waveform, the generic icon of a sampled
         // sound)
         // say nothing about the category, which is then detected from the names instead
         final String instrumentIconName = program.getInstrumentIconName ();
         if (instrumentIconName == null || instrumentIconName.isBlank () || "New".equals (instrumentIconName) || "Wave".equals (instrumentIconName))
-            metadata.setCategory (TagDetector.detectCategory (Collections.singletonList (parts[0]), Arrays.asList (AudioFileUtils.getFolderNames (parts)), false));
+        {
+            if (instrumentType != null)
+                metadata.setCategory (TagDetector.detectCategory (instrumentType.split ("[ /]")));
+            else
+                metadata.setCategory (TagDetector.detectCategory (Collections.singletonList (parts[0]), Arrays.asList (AudioFileUtils.getFolderNames (parts)), false));
+        }
         else
             metadata.setCategory (TagDetector.detectCategory (instrumentIconName.split (" ")));
     }
@@ -367,7 +498,7 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             // therefore apply either the group or the zone value but never both.
             final double groupVolume = kontaktGroup.getVolume ();
             if (groupVolume != 1)
-                group.setGain (MathUtils.valueToDb (groupVolume));
+                group.setGain (valueToDb (groupVolume));
             // The panning is already stored in the range of [-1..1]
             final double groupPan = kontaktGroup.getPan ();
             if (groupPan != 0)

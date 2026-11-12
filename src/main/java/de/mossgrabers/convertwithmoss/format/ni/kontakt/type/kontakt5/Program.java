@@ -8,12 +8,23 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
+import de.mossgrabers.convertwithmoss.core.SafeFileNames;
+import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.IMetadata;
+import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.AbstractKontaktFormat;
 import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.KontaktIcon;
-import de.mossgrabers.tools.StringUtils;
+import de.mossgrabers.convertwithmoss.format.ni.kontakt.type.kontakt2.Kontakt2Header;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -31,41 +42,97 @@ public class Program
     private static final byte [] ZONE_PRIVATE_DATA        = { -1, -1, -1, -1, 0, 0, 0, 0, 1, 16, 4, 4, 0, 0, -128, 64, -51, -52, -52, 62, 0, 0, 1, 0, 0, 0, 0, 0, -128, 63, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 };
     //@formatter:on
 
-    private static final String  NULL_ENTRY               = "(null)";
-    private static final int     CHUNK_VERSION_6_8_0      = 0x95;
-    private static final int     ZONE_CHUNK_VERSION_6_8_0 = 0x9A;
+    private static final String         NULL_ENTRY               = "(null)";
+    private static final int            VOICE_GROUP_VERSION      = 0x60;
+    // Kontakt supports up to 1000 voices
+    private static final int            MAX_VOICES               = 1000;
+    private static final int            CHUNK_VERSION_6_8_0      = 0x95;
+    private static final int            ZONE_CHUNK_VERSION_6_8_0 = 0x9A;
+    private static final int            DEFAULT_MAX_VOICES       = 64;
+    // Offset of the integer in the additional data which is -1 for programs in a multi
+    private static final int            ADDITIONAL_DATA_MULTI    = 12;
+    // There are up to 128 voice groups
+    private static final int            MAX_VOICE_GROUPS         = 128;
+    private static final String         INSTRUMENT_VOICE_GROUP   = "<instrument>";
+    // Unknown 3 bytes of a voice group entry, found in all analysed files
+    private static final byte []        VOICE_GROUP_FLAGS        =
+    {
+        1,
+        0,
+        1
+    };
+    // The fade time of a voice group in milliseconds
+    private static final int            VOICE_GROUP_FADE_TIME    = 10;
+    private static final int            LOOP_VERSION             = 0x60;
+    // The offset of the zone index (32 bit) and the 'selected' flag in the private zone data
+    private static final int            ZONE_PRIVATE_INDEX       = ZONE_PRIVATE_DATA.length - 4;
+    private static final int            ZONE_PRIVATE_SELECTED    = 20;
 
-    private int                  slotIndex                = -1;
-    private String               name;
-    private int                  midiTranspose            = 0;
-    private int                  clipLowVelocity          = 0;
-    private int                  clipHighVelocity         = 127;
-    private int                  clipLowKey               = 0;
-    private int                  clipHighKey              = 127;
-    private int                  defaultKeySwitch         = 0xFFFF;
-    private long                 dfdChannelPreloadSize    = 0xF000;
-    private long                 libraryID                = 0;
-    private long                 fingerprint              = 0;
-    private long                 loadingFlags             = 32;
-    private boolean              groupSolo                = false;
-    private int                  instrumentCategory1      = 0;
-    private int                  instrumentCategory2      = 0;
-    private int                  instrumentCategory3      = 0;
-    private String               instrumentIconName       = "";
-    private String               instrumentCredits        = null;
-    private String               instrumentAuthor         = null;
-    private String               instrumentURL            = null;
-    private float                instrumentVolume         = 0.5f;
-    private float                instrumentPan            = 0.0f;
-    private float                instrumentTune           = 1.0f;
-    private double               sizeOfAllSamples;
+    private int                         slotIndex                = -1;
+    private String                      name;
+    private int                         midiTranspose            = 0;
+    private int                         clipLowVelocity          = 0;
+    private int                         clipHighVelocity         = 127;
+    private int                         clipLowKey               = 0;
+    private int                         clipHighKey              = 127;
+    private int                         defaultKeySwitch         = 0xFFFF;
+    private long                        dfdChannelPreloadSize    = 0xF000;
+    private long                        libraryID                = 0;
+    private long                        fingerprint              = 0;
+    private long                        loadingFlags             = 32;
+    private boolean                     groupSolo                = false;
+    private int                         maxVoices                = 0;
+    private int                         instrumentCategory1      = 0;
+    private int                         instrumentCategory2      = 0;
+    private int                         instrumentCategory3      = 0;
+    private String                      instrumentIconName       = "";
+    private String                      instrumentCredits        = null;
+    private String                      instrumentAuthor         = null;
+    private String                      instrumentURL            = null;
+    private float                       instrumentVolume         = 0.5f;
+    private float                       instrumentPan            = 0.0f;
+    private float                       instrumentTune           = 1.0f;
+    private double                      sizeOfAllSamples;
 
     //@formatter:off
     private byte []              additionalData        = { -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1 };
     //@formatter:on
 
-    private final List<Group>    groups                   = new ArrayList<> ();
-    private final List<Zone>     zones                    = new ArrayList<> ();
+    private final List<Group>           groups                   = new ArrayList<> ();
+    private final List<Zone>            zones                    = new ArrayList<> ();
+    // The voice groups to write, the key is the index of the voice group, the value the number of
+    // voices
+    private final Map<Integer, Integer> voiceGroups              = new HashMap<> ();
+    // The zones from which to take the modulation settings of the groups (one for each group)
+    private final List<ISampleZone>     groupSettingZones        = new ArrayList<> ();
+
+
+    /**
+     * Get the 3 instrument categories. These are indices into the same lists as the categories of
+     * the Kontakt 2 header.
+     *
+     * @return The 3 indices, 0 is 'Other'
+     */
+    public int [] getInstrumentCategories ()
+    {
+        return new int []
+        {
+            this.instrumentCategory1,
+            this.instrumentCategory2,
+            this.instrumentCategory3
+        };
+    }
+
+
+    /**
+     * Get the credits of the instrument.
+     *
+     * @return The credits, might be null
+     */
+    public String getInstrumentCredits ()
+    {
+        return this.instrumentCredits;
+    }
 
 
     /**
@@ -149,7 +216,7 @@ public class Program
                     this.readZoneList (presetChunk);
                     break;
                 case KontaktPresetChunkID.VOICE_GROUPS:
-                    // Not used
+                    this.readVoiceGroups (presetChunk.getPublicData ());
                     break;
                 case KontaktPresetChunkID.PARAMETER_ARRAY_8:
                     // Not used
@@ -175,6 +242,7 @@ public class Program
     {
         presetChunk.setId (KontaktPresetChunkID.PROGRAM);
 
+        this.writeVoiceGroups (presetChunk);
         this.writeGroupList (presetChunk);
         this.writeZoneList (presetChunk);
 
@@ -236,6 +304,96 @@ public class Program
 
 
     /**
+     * Reads the maximum number of voices of the instrument from the voice groups. The data starts
+     * with the instrument entry followed by a 128 bit mask of the used voice groups and the entries
+     * of the used voice groups (each preceded by a zero byte). Each entry contains: version (16
+     * bit, 0x60), name (UTF-16 with length), 3 unknown bytes, the maximum number of voices (32
+     * bit), 10 (32 bit, fade time?) and the exclusive group (32 bit, -1 for none).
+     *
+     * @param data The data of the voice groups chunk
+     */
+    private void readVoiceGroups (final byte [] data)
+    {
+        final ByteArrayInputStream in = new ByteArrayInputStream (data);
+        try
+        {
+            if (StreamUtils.readUnsigned16 (in, false) != VOICE_GROUP_VERSION)
+                return;
+            StreamUtils.readUtf16WithLength (in);
+            in.skipNBytes (3);
+            final long voices = StreamUtils.readUnsigned32 (in, false);
+            if (voices > 0 && voices <= MAX_VOICES)
+                this.maxVoices = (int) voices;
+        }
+        catch (final IOException _)
+        {
+            // Unknown format, ignore
+        }
+    }
+
+
+    /**
+     * Get the maximum number of voices of the instrument.
+     *
+     * @return The number of voices, 0 if unknown
+     */
+    public int getMaxVoices ()
+    {
+        return this.maxVoices;
+    }
+
+
+    /**
+     * Replaces the content of the voice groups chunk with the instrument polyphony and the voice
+     * groups which are used for exclusive groups.
+     *
+     * @param programPresetChunk The chunk which contains the voice groups chunk
+     * @throws IOException Could not write the voice groups
+     */
+    private void writeVoiceGroups (final KontaktPresetChunk programPresetChunk) throws IOException
+    {
+        final KontaktPresetChunk voiceGroupsChunk = findChunk (programPresetChunk.getChildren (), KontaktPresetChunkID.VOICE_GROUPS);
+        if (voiceGroupsChunk == null)
+            return;
+
+        final ByteArrayOutputStream out = new ByteArrayOutputStream ();
+        writeVoiceGroupEntry (out, INSTRUMENT_VOICE_GROUP, this.maxVoices > 0 ? this.maxVoices : DEFAULT_MAX_VOICES);
+
+        // Bit mask of the used voice groups, the first bit is voice group 1 since 0 is the
+        // instrument
+        final byte [] usedVoiceGroups = new byte [MAX_VOICE_GROUPS / 8];
+        final TreeSet<Integer> indices = new TreeSet<> (this.voiceGroups.keySet ());
+        for (final Integer index: indices)
+        {
+            final int bit = index.intValue () - 1;
+            usedVoiceGroups[bit / 8] |= (byte) (1 << bit % 8);
+        }
+        out.write (usedVoiceGroups);
+
+        // Each voice group entry is preceded by an unknown zero byte
+        for (final Integer index: indices)
+        {
+            out.write (0);
+            writeVoiceGroupEntry (out, "Exclusive Group " + index, this.voiceGroups.get (index).intValue ());
+        }
+
+        voiceGroupsChunk.setPublicData (out.toByteArray ());
+    }
+
+
+    private static void writeVoiceGroupEntry (final ByteArrayOutputStream out, final String name, final int voices) throws IOException
+    {
+        StreamUtils.writeUnsigned16 (out, VOICE_GROUP_VERSION, false);
+        StreamUtils.writeUtf16WithLength (out, name);
+        out.write (VOICE_GROUP_FLAGS);
+        StreamUtils.writeUnsigned32 (out, voices, false);
+        StreamUtils.writeUnsigned32 (out, VOICE_GROUP_FADE_TIME, false);
+        // No exclusion group
+        StreamUtils.writeSigned32 (out, -1, false);
+    }
+
+
+    /**
      * Creates the Program data.
      *
      * @return The created data
@@ -274,8 +432,8 @@ public class Program
 
         StreamUtils.writeUnsigned32 (out, KontaktIcon.getID (this.getInstrumentIconName ()), false);
 
-        StreamUtils.writeUtf16WithLength (out, this.instrumentCredits);
-        StreamUtils.writeUtf16WithLength (out, this.getInstrumentAuthor ());
+        StreamUtils.writeUtf16WithLength (out, this.instrumentCredits == null ? "" : this.instrumentCredits);
+        StreamUtils.writeUtf16WithLength (out, this.getInstrumentAuthor () == null ? NULL_ENTRY : this.getInstrumentAuthor ());
         StreamUtils.writeUtf16WithLength (out, this.getInstrumentURL () == null ? NULL_ENTRY : this.getInstrumentURL ());
 
         StreamUtils.writeUnsigned16 (out, this.instrumentCategory1, false);
@@ -322,18 +480,68 @@ public class Program
         if (templateGroupChunk == null)
             return;
 
-        for (final Group group: this.getGroups ())
+        final List<Group> programGroups = this.getGroups ();
+        for (int i = 0; i < programGroups.size (); i++)
         {
+            final Group group = programGroups.get (i);
             final KontaktPresetChunk groupChunk = new KontaktPresetChunk ();
             groupChunk.setId (KontaktPresetChunkID.GROUP);
             groupChunk.setVersion (CHUNK_VERSION_6_8_0);
-            groupChunk.setPrivateData (GROUP_PRIVATE_DATA);
             groupChunk.setPublicData (group.create (CHUNK_VERSION_6_8_0));
-            groupChunk.setChildren (templateGroupChunk.getChildren ());
+            final List<KontaktPresetChunk> templateChildren = templateGroupChunk.getChildren ();
+            if (i < this.groupSettingZones.size ())
+            {
+                // The filter is stored as an insert effect in the private data
+                final ISampleZone settingZone = this.groupSettingZones.get (i);
+                groupChunk.setPrivateData (GroupModulators.createPrivateData (GROUP_PRIVATE_DATA, settingZone));
+                groupChunk.setChildren (createGroupChildren (templateChildren, settingZone));
+            }
+            else
+            {
+                groupChunk.setPrivateData (GROUP_PRIVATE_DATA);
+                groupChunk.setChildren (templateChildren);
+            }
             groupChunks.add (groupChunk);
         }
 
         groupListChunk.setChildren (groupChunks);
+    }
+
+
+    /**
+     * Creates the children of a group chunk: the modulators and the start criteria. The children of
+     * the template group are used as the templates for the modulators.
+     *
+     * @param templateChildren The children of the template group
+     * @param zone The zone from which to take the settings
+     * @return The children
+     */
+    private static List<KontaktPresetChunk> createGroupChildren (final List<KontaktPresetChunk> templateChildren, final ISampleZone zone)
+    {
+        final List<KontaktPresetChunk> children = new ArrayList<> ();
+        for (final KontaktPresetChunk child: templateChildren)
+            switch (child.getId ())
+            {
+                case KontaktPresetChunkID.PARAMETER_ARRAY_16:
+                    // Contains the AHDSR envelope which modulates the volume
+                    children.add (child.getChildren ().isEmpty () ? child : GroupModulators.createInternalModulators (child.getChildren ().get (0), zone));
+                    break;
+
+                case KontaktPresetChunkID.PARAMETER_ARRAY_32:
+                    // Contains velocity to volume and pitch-bend
+                    final List<KontaktPresetChunk> externalModulators = child.getChildren ();
+                    children.add (externalModulators.size () < 2 ? child : GroupModulators.createExternalModulators (externalModulators.get (0), externalModulators.get (1), zone));
+                    break;
+
+                case KontaktPresetChunkID.STAR_CRIT_LIST:
+                    children.add (GroupModulators.createStartCriteria (zone));
+                    break;
+
+                default:
+                    children.add (child);
+                    break;
+            }
+        return children;
     }
 
 
@@ -378,38 +586,21 @@ public class Program
         {
             final Zone zone = this.getZones ().get (z);
 
+            // The reference of a zone in the zone list is the index of its group
             final KontaktPresetChunk zoneChunk = new KontaktPresetChunk ();
             zoneChunks.add (zoneChunk);
-            zoneChunk.setId (0);
+            zoneChunk.setId (zone.getGroupIndex ());
             zoneChunk.setVersion (ZONE_CHUNK_VERSION_6_8_0);
 
-            final byte [] privateData = new byte [ZONE_PRIVATE_DATA.length];
-
-            // TODO Understand how to create the private data section
-            final byte [] privateData2 = ZONE_PRIVATE_DATA;// zoneListChunk.getChildren ().get
-            // (z).getPrivateData ();
-            System.out.println (StringUtils.formatArray (privateData2));
-
-            System.arraycopy (privateData2, 0, privateData, 0, ZONE_PRIVATE_DATA.length);
-
-            privateData[20] = (byte) (z == 0 ? 1 : 0);
-            // privateData[21] = (byte) 1; // Selected -> somehow relates to the private data of the
-            // program!
-
-            // TODO fix this
-            // relevant
-            // privateData[14] = (byte) -128;
-            // privateData[22] = (byte) 1;
-            // privateData[23] = (byte) 0;
-            // privateData[79] = (byte) 1;
-            // privateData[80] = (byte) 0;
-
-            privateData[ZONE_PRIVATE_DATA.length - 4] = (byte) z;
-            System.out.println (StringUtils.formatArray (privateData) + "\n");
+            // The private data is not understood, only the 'selected' flag and the index of the
+            // zone are set
+            final byte [] privateData = ZONE_PRIVATE_DATA.clone ();
+            privateData[ZONE_PRIVATE_SELECTED] = (byte) (z == 0 ? 1 : 0);
+            privateData[ZONE_PRIVATE_INDEX] = (byte) (z & 0xFF);
+            privateData[ZONE_PRIVATE_INDEX + 1] = (byte) (z >> 8 & 0xFF);
+            privateData[ZONE_PRIVATE_INDEX + 2] = (byte) (z >> 16 & 0xFF);
+            privateData[ZONE_PRIVATE_INDEX + 3] = (byte) (z >> 24 & 0xFF);
             zoneChunk.setPrivateData (privateData);
-
-            // System.out.println (StringUtils.formatArray (privateData));
-            // zoneChunk.setPrivateData (privateData2);
 
             zoneChunk.setPublicData (zone.write (ZONE_CHUNK_VERSION_6_8_0));
 
@@ -426,11 +617,11 @@ public class Program
                 int loopEnablement = 0;
                 final int numLoops = Math.min (8, loops.size ());
                 for (int i = 0; i < numLoops; i++)
-                    loopEnablement += (int) Math.pow (2, i);
+                    loopEnablement |= 1 << i;
                 StreamUtils.writeUnsigned16 (loopDataOut, loopEnablement, false);
                 for (int i = 0; i < numLoops; i++)
                 {
-                    StreamUtils.writeUnsigned16 (loopDataOut, 0x60, false);
+                    StreamUtils.writeUnsigned16 (loopDataOut, LOOP_VERSION, false);
                     loops.get (i).write (loopDataOut, i + 1 == numLoops);
                 }
             }
@@ -480,7 +671,7 @@ public class Program
             if ((loopEnablement & j) > 0)
             {
                 final int u1 = StreamUtils.readUnsigned16 (childDataIn, false);
-                if (u1 != 0x60)
+                if (u1 != LOOP_VERSION)
                     throw new IOException (Functions.getMessage ("IDS_NKI5_UNKNOWN_LOOP_VALUE", Integer.toHexString (u1).toUpperCase ()));
 
                 final ZoneLoop loop = new ZoneLoop ();
@@ -492,86 +683,142 @@ public class Program
 
 
     /**
-     * Fill the program attributes from the given multi-sample instance.
+     * Fill the program attributes from the given multi-sample instance. All existing groups and
+     * zones are removed.
      *
      * @param source The multi-sample to read from
+     * @return The names of the sample files, the index in the list is the file name ID of the zones
+     * @throws IOException Could not read the sample information
      */
-    public void fillFrom (final IMultisampleSource source)
+    public List<String> fillFrom (final IMultisampleSource source) throws IOException
     {
-        // TODO this.setMetadata (source, parts);
+        this.groups.clear ();
+        this.zones.clear ();
+        this.voiceGroups.clear ();
+        this.groupSettingZones.clear ();
 
-        // final Map<Integer, Pair<IGroup, Group>> indexedGroups = this.createGroups ();
-        //
-        // for (final Zone kontaktZone: this.zones)
-        // {
-        // // Zones without a sample file might be present
-        // if (kontaktZone.getFilenameId () < 0)
-        // continue;
-        //
-        // final Integer groupIndex = Integer.valueOf (kontaktZone.getGroupIndex ());
-        // final Pair<IGroup, Group> groupPair = indexedGroups.get (groupIndex);
-        // if (groupPair == null)
-        // throw new IOException (Functions.getMessage ("IDS_NKI5_MISSING_GROUP",
-        // groupIndex.toString ()));
-        //
-        // final IGroup group = groupPair.getKey ();
-        // final Group kontaktGroup = groupPair.getValue ();
-        //
-        // final ISampleZone zone = this.createZone (source, kontaktZone);
-        // group.addSampleZone (zone);
-        //
-        // zone.setStart (kontaktZone.getSampleStart ());
-        // zone.setStop (kontaktZone.getNumFrames () - kontaktZone.getSampleEnd ());
-        //
-        // zone.setKeyLow (kontaktZone.getLowKey ());
-        // zone.setKeyHigh (kontaktZone.getHighKey ());
-        // final int rootKey = kontaktZone.getRootKey ();
-        // zone.setKeyRoot (rootKey);
-        //
-        // final float volume = this.instrumentVolume * kontaktGroup.getVolume () *
-        // kontaktZone.getZoneVolume ();
-        // zone.setGain (MathUtils.valueToDb (volume));
-        // zone.setPanorama (Math.clamp (this.instrumentPan + kontaktGroup.getPan () +
-        // kontaktZone.getZonePan (), -1, 1));
-        //
-        // zone.setTune (calculateTune (kontaktZone.getZoneTune (), kontaktGroup.getTune (),
-        // this.instrumentTune));
-        // zone.setKeyTracking (kontaktGroup.isKeyTracking () ? 1 : 0);
-        //
-        // zone.setVelocityLow (kontaktZone.getLowVelocity ());
-        // zone.setVelocityHigh (kontaktZone.getHighVelocity ());
-        //
-        // zone.setNoteCrossfadeLow (kontaktZone.getFadeLowKey ());
-        // zone.setNoteCrossfadeHigh (kontaktZone.getFadeHighKey ());
-        // zone.setVelocityCrossfadeLow (kontaktZone.getFadeLowKey ());
-        // zone.setVelocityCrossfadeHigh (kontaktZone.getFadeHighVelocity ());
-        //
-        // // Only on a group level...
-        // zone.setReversed (kontaktGroup.isReverse ());
-        //
-        // // TODO Fill missing info, when understood where it is stored
-        // // Bend Up / Down, Filter, Amplitude and Pitch Modulator
-        //
-        // for (final ZoneLoop zoneLoop: kontaktZone.getLoops ())
-        // {
-        // final ISampleLoop loop = new DefaultSampleLoop ();
-        // final int loopMode = zoneLoop.getMode ();
-        // if (loopMode == ZoneLoop.MODE_UNTIL_END || loopMode == ZoneLoop.MODE_UNTIL_RELEASE)
-        // {
-        // loop.setType (zoneLoop.isAlternating () > 0 ? LoopType.ALTERNATING : LoopType.FORWARDS);
-        // loop.setStart (zoneLoop.getLoopStart ());
-        // loop.setEnd (zoneLoop.getLoopStart () + zoneLoop.getLoopLength ());
-        // loop.setTuning (Math.pow (2.0, zoneLoop.getLoopTuning () / 12.0));
-        // loop.setCrossfadeInSamples (zoneLoop.getCrossfadeLength ());
-        // zone.addLoop (loop);
-        // }
-        // }
-        // }
-        //
-        // final List<IGroup> sampleGroups = new ArrayList<> ();
-        // for (final Pair<IGroup, Group> pair: indexedGroups.values ())
-        // sampleGroups.add (pair.getKey ());
-        // source.setGroups (sampleGroups);
+        this.name = source.getName ();
+        this.midiTranspose = 0;
+        // The gain, panning and tuning are stored in the zones
+        this.instrumentVolume = 1.0f;
+        this.instrumentPan = 0;
+        this.instrumentTune = 1.0f;
+        final int polyphony = source.getPolyphony ();
+        this.maxVoices = polyphony > 0 ? Math.min (polyphony, MAX_VOICES) : DEFAULT_MAX_VOICES;
+
+        final IMetadata metadata = source.getMetadata ();
+        final String category = metadata.getCategory ();
+        this.instrumentIconName = category == null ? "" : category;
+        final String creator = metadata.getCreator ();
+        this.instrumentAuthor = creator == null || creator.isBlank () ? NULL_ENTRY : creator;
+        final String description = metadata.getDescription ();
+        this.instrumentCredits = description == null ? "" : description;
+        this.instrumentURL = null;
+        final String [] keywords = metadata.getKeywords ();
+        this.instrumentCategory1 = Kontakt2Header.getCategory1Index (category);
+        this.instrumentCategory2 = Kontakt2Header.getCategory2Index (keywords);
+        this.instrumentCategory3 = Kontakt2Header.getCategory3Index (keywords);
+
+        final List<String> sampleFileNames = new ArrayList<> ();
+        final List<IGroup> sourceGroups = source.getNonEmptyGroups (false);
+        for (int groupIndex = 0; groupIndex < sourceGroups.size (); groupIndex++)
+        {
+            final IGroup sourceGroup = sourceGroups.get (groupIndex);
+            final List<ISampleZone> sampleZones = sourceGroup.getSampleZones ();
+
+            String groupName = sourceGroup.getName ();
+            if (groupName == null || groupName.isBlank ())
+                groupName = "Group " + (groupIndex + 1);
+
+            // These parameters can only be set on the group, the first zone is used
+            final ISampleZone firstZone = sampleZones.get (0);
+            final boolean keyTracking = firstZone.getKeyTracking () > 0;
+            final boolean isReleaseTrigger = firstZone.getTrigger () == TriggerType.RELEASE;
+
+            // The voice group can only be set on the group, therefore all zones need to use the
+            // same exclusive group. A voice group with 1 voice is created for it. Voice group 0 is
+            // the instrument, therefore the exclusive group number (the model uses 0 for 'no
+            // group') can be used as the index.
+            int voiceGroupIdx = -1;
+            final int exclusiveGroup = getUniformExclusiveGroup (sampleZones);
+            if (exclusiveGroup > 0 && exclusiveGroup <= MAX_VOICE_GROUPS)
+            {
+                voiceGroupIdx = exclusiveGroup;
+                this.voiceGroups.put (Integer.valueOf (voiceGroupIdx), Integer.valueOf (1));
+            }
+
+            this.groups.add (new Group (groupName, keyTracking, firstZone.isReversed (), isReleaseTrigger, voiceGroupIdx));
+            this.groupSettingZones.add (firstZone);
+
+            for (final ISampleZone sampleZone: sampleZones)
+            {
+                final String sampleFileName = SafeFileNames.create (sampleZone.getName ()) + ".wav";
+                int filenameId = sampleFileNames.indexOf (sampleFileName);
+                if (filenameId < 0)
+                {
+                    filenameId = sampleFileNames.size ();
+                    sampleFileNames.add (sampleFileName);
+                }
+                this.zones.add (new Zone (groupIndex, sampleZone, filenameId));
+            }
+        }
+
+        return sampleFileNames;
+    }
+
+
+    /**
+     * Set the values of the instrument in a multi.
+     *
+     * @param instrumentSource The instrument source from which to take the values
+     */
+    public void setInstrumentValues (final IInstrumentSource instrumentSource)
+    {
+        this.instrumentVolume = (float) AbstractKontaktFormat.dbToValue (instrumentSource.getGain ());
+        this.instrumentPan = (float) Math.clamp (instrumentSource.getPanning (), -1.0, 1.0);
+        this.midiTranspose = Math.clamp (instrumentSource.getTranspose (), -24, 24);
+        this.clipLowKey = Math.clamp (instrumentSource.getClipKeyLow (), 0, 127);
+        this.clipHighKey = Math.clamp (instrumentSource.getClipKeyHigh (), 0, 127);
+
+        // Programs in a multi have -1 in the 4th integer of the additional data (0 in NKIs),
+        // Kontakt does not load the multi otherwise
+        if (this.additionalData.length >= ADDITIONAL_DATA_MULTI + 4)
+            Arrays.fill (this.additionalData, ADDITIONAL_DATA_MULTI, ADDITIONAL_DATA_MULTI + 4, (byte) -1);
+    }
+
+
+    /**
+     * Changes the sample file indices of all zones. Required if several programs share one file
+     * list.
+     *
+     * @param mapping Maps the current index to the new one
+     */
+    public void mapFilenameIds (final int [] mapping)
+    {
+        for (final Zone zone: this.zones)
+        {
+            final int filenameId = zone.getFilenameId ();
+            if (filenameId >= 0 && filenameId < mapping.length)
+                zone.setFilenameId (mapping[filenameId]);
+        }
+    }
+
+
+    /**
+     * Get the exclusive group which is shared by all given zones.
+     *
+     * @param zones The zones to check
+     * @return The exclusive group or 0 if there are no zones or they do not all use the same one
+     */
+    private static int getUniformExclusiveGroup (final List<ISampleZone> zones)
+    {
+        if (zones.isEmpty ())
+            return 0;
+        final int exclusiveGroup = zones.get (0).getExclusiveGroup ();
+        for (final ISampleZone zone: zones)
+            if (zone.getExclusiveGroup () != exclusiveGroup)
+                return 0;
+        return exclusiveGroup;
     }
 
 

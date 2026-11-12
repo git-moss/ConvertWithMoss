@@ -73,8 +73,15 @@
 * NI Kontakt
   * Kontakt 1
     * New: Read release trigger groups and round-robin.
-    * Fixed: Kontakt 1.0: Envelopes were ignored (e.g. Kontakt 1.5 library).
-    * Fixed: Kontakt 1: Bypassed filters were applied.
+    * Fixed: Envelopes were ignored.
+    * Fixed: Bypassed filters were applied.
+    * Fixed: Writing: Samples with non-ASCII characters in their names could not be found. These characters are now replaced.
+  * Kontakt 1/2
+    * New: Added write support for Kontakt 2 (NKI + NKM).
+    * Fixed: Volume conversion used 20 dB instead of 6 dB per doubling.
+    * Fixed: The exclusive group was assigned to the wrong voice group.
+    * Fixed: Sample files were not found if a zone name contained characters which are not allowed
+      in file names.
   * Kontakt 1-4.1
     * New: Decay-break-decay envelopes are approximated.
     * New: Read LFOs (volume, pitch, filter cutoff), the velocity, key and modulation wheel modulation of the filter cutoff and the polyphony.
@@ -88,7 +95,13 @@
     * Improved: Groups which can only be triggered by the sequencer are ignored.
     * Fixed: monolith: Instruments with an impulse response sample (convolution) assigned the wrong sample to all zones.
     * Fixed: Kontakt 3-4.1: Group and instrument tuning was wrong and the zone tuning was lost.
-  * Added write support for Kontakt 2 (NKI + NKM).
+  * Kontakt 5+
+    * New: Kontakt 6.8 can now be selected as output format and writes NKI and NKM files.
+    * New: Reads the insert filter effects of groups (Legacy, Pro-53, Ladder, SV, Daft and AR filter types with cutoff and resonance) and more modulators: LFOs (volume, pitch, filter cutoff), DBD and AHD envelopes, voice groups.
+    * Fixed: Instruments saved with Kontakt 8 lost most of their modulation.
+    * Fixed: The attack curve of envelopes had the wrong sign.
+    * Fixed: A '-' in the sound info was read as the author or description.
+    * Fixed: The MIDI channel 'Omni' of instruments in a multi was read as 'off'.
   * NKM multis
     * New: (Kontakt 1/2) the volume and panning are read into the instruments of the performance, Omni is detected, Kontakt 2 programs read the MIDI transpose.
     * New: (Kontakt 4.2+) the master volume and master tune of the multi as well as the MIDI transpose, volume and panning of the instruments are read into the performance.

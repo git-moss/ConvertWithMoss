@@ -33,45 +33,114 @@ import de.mossgrabers.convertwithmoss.format.ni.kontakt.Magic;
 public class Kontakt2Header
 {
     /** The 'Other' category. */
-    public static final String       CATEGORY_OTHER           = "Other";
+    public static final String                CATEGORY_OTHER             = "Other";
 
-    private static final int         HEADER_KONTAKT_2         = 0x100;
+    private static final int                  HEADER_KONTAKT_2           = 0x100;
     /** The size of a Kontakt 2 - 4.1 header including the file ID. */
-    private static final int         HEADER_SIZE              = 0xAA;
-    private static final int         CHECKSUM_OFFSET          = 0xA2;
-    private static final int         PATCH_TYPE_NKM           = 0;
-    private static final int         PATCH_TYPE_NKI           = 1;
+    private static final int                  HEADER_SIZE                = 0xAA;
+    private static final int                  CHECKSUM_OFFSET            = 0xA2;
+    private static final int                  PATCH_TYPE_NKM             = 0;
+    private static final int                  PATCH_TYPE_NKI             = 1;
 
     /** The offsets and sizes of all 2 and 4 byte values of the header (for the byte order). */
-    private static final int [] []   HEADER_VALUES            =
+    private static final int [] []            HEADER_VALUES              =
     {
-        { 0x00, 4 },
-        { 0x04, 4 },
-        { 0x08, 2 },
-        { 0x0A, 4 },
-        { 0x0E, 2 },
-        { 0x10, 4 },
-        { 0x14, 4 },
-        { 0x18, 4 },
-        { 0x1C, 2 },
-        { 0x1E, 2 },
-        { 0x20, 2 },
-        { 0x22, 2 },
-        { 0x24, 2 },
-        { 0x26, 4 },
-        { 0x2A, 4 },
-        { 0x2E, 4 },
-        { 0x32, 4 },
-        { 0x36, 4 },
-        { 0x9A, 2 },
-        { 0x9C, 2 },
-        { 0x9E, 4 },
-        { 0xA2, 4 },
-        { 0xA6, 4 }
+        {
+            0x00,
+            4
+        },
+        {
+            0x04,
+            4
+        },
+        {
+            0x08,
+            2
+        },
+        {
+            0x0A,
+            4
+        },
+        {
+            0x0E,
+            2
+        },
+        {
+            0x10,
+            4
+        },
+        {
+            0x14,
+            4
+        },
+        {
+            0x18,
+            4
+        },
+        {
+            0x1C,
+            2
+        },
+        {
+            0x1E,
+            2
+        },
+        {
+            0x20,
+            2
+        },
+        {
+            0x22,
+            2
+        },
+        {
+            0x24,
+            2
+        },
+        {
+            0x26,
+            4
+        },
+        {
+            0x2A,
+            4
+        },
+        {
+            0x2E,
+            4
+        },
+        {
+            0x32,
+            4
+        },
+        {
+            0x36,
+            4
+        },
+        {
+            0x9A,
+            2
+        },
+        {
+            0x9C,
+            2
+        },
+        {
+            0x9E,
+            4
+        },
+        {
+            0xA2,
+            4
+        },
+        {
+            0xA6,
+            4
+        }
     };
 
     // Kontakt 2.2.3.006 (the bytes in little-endian order)
-    private static final byte []     KONTAKT_2_VERSION        =
+    private static final byte []              KONTAKT_2_VERSION          =
     {
         6,
         3,
@@ -79,17 +148,17 @@ public class Kontakt2Header
         2
     };
     // Kontakt 2.2.0.008 (the bytes in little-endian order)
-    private static final byte []     KONTAKT_2_MIN_VERSION    =
+    private static final byte []              KONTAKT_2_MIN_VERSION      =
     {
         8,
         0,
         2,
         2
     };
-    private static final int         HEADER_KONTAKT_42        = 0x110;
-    private static final String      NULL_ENTRY               = "(null)";
+    private static final int                  HEADER_KONTAKT_42          = 0x110;
+    private static final String               NULL_ENTRY                 = "(null)";
 
-    private static final String []   K2_INSTRUMENT_CATEGORY_1 = new String []
+    private static final String []            K2_INSTRUMENT_CATEGORY_1   = new String []
     {
         CATEGORY_OTHER,
         "Piano",
@@ -112,7 +181,7 @@ public class Kontakt2Header
         "Percussion"
     };
 
-    private static final String []   K2_INSTRUMENT_CATEGORY_2 = new String []
+    private static final String []            K2_INSTRUMENT_CATEGORY_2   = new String []
     {
         CATEGORY_OTHER,
         "Acoustic",
@@ -133,7 +202,7 @@ public class Kontakt2Header
         "Spacious"
     };
 
-    private static final String []   K2_INSTRUMENT_CATEGORY_3 = new String []
+    private static final String []            K2_INSTRUMENT_CATEGORY_3   = new String []
     {
         CATEGORY_OTHER,
         "Noisy",
@@ -161,42 +230,132 @@ public class Kontakt2Header
     {
         final String [] [] mapping =
         {
-            { "Piano", "Piano" },
-            { "Guitar", "Guitar" },
-            { "Bass", "Bass" },
-            { "Drum", "Drums" },
-            { "Acoustic Drum", "Drums" },
-            { "Kick", "Drums" },
-            { "Snare", "Drums" },
-            { "Hi-Hat", "Drums" },
-            { "Clap", "Drums" },
-            { "Keyboard", "Keyboard" },
-            { "Synth", "Synthesizer" },
-            { "Monosynth", "Synthesizer" },
-            { "Chip", "Synthesizer" },
-            { "Strings", "Strings" },
-            { "Orchestral", "Strings" },
-            { "Brass", "Brass" },
-            { "Organ", "Organ" },
-            { "Pipe", "Organ" },
-            { "Vocal", "Vocal" },
-            { "Chromatic Percussion", "Mallet" },
-            { "Bell", "Mallet" },
-            { "Drone", "Athmosphere" },
-            { "Loops", "Loop/Beat" },
-            { "Pad", "Pad" },
-            { "Lead", "Lead" },
-            { "FX", "Soundeffect" },
-            { "Destruction", "Soundeffect" },
-            { "Hits", "Soundeffect" },
-            { "Winds", "Woodwinds" },
-            { "Percussion", "Percussion" }
+            {
+                "Piano",
+                "Piano"
+            },
+            {
+                "Guitar",
+                "Guitar"
+            },
+            {
+                "Bass",
+                "Bass"
+            },
+            {
+                "Drum",
+                "Drums"
+            },
+            {
+                "Acoustic Drum",
+                "Drums"
+            },
+            {
+                "Kick",
+                "Drums"
+            },
+            {
+                "Snare",
+                "Drums"
+            },
+            {
+                "Hi-Hat",
+                "Drums"
+            },
+            {
+                "Clap",
+                "Drums"
+            },
+            {
+                "Keyboard",
+                "Keyboard"
+            },
+            {
+                "Synth",
+                "Synthesizer"
+            },
+            {
+                "Monosynth",
+                "Synthesizer"
+            },
+            {
+                "Chip",
+                "Synthesizer"
+            },
+            {
+                "Strings",
+                "Strings"
+            },
+            {
+                "Orchestral",
+                "Strings"
+            },
+            {
+                "Brass",
+                "Brass"
+            },
+            {
+                "Organ",
+                "Organ"
+            },
+            {
+                "Pipe",
+                "Organ"
+            },
+            {
+                "Vocal",
+                "Vocal"
+            },
+            {
+                "Chromatic Percussion",
+                "Mallet"
+            },
+            {
+                "Bell",
+                "Mallet"
+            },
+            {
+                "Drone",
+                "Athmosphere"
+            },
+            {
+                "Loops",
+                "Loop/Beat"
+            },
+            {
+                "Pad",
+                "Pad"
+            },
+            {
+                "Lead",
+                "Lead"
+            },
+            {
+                "FX",
+                "Soundeffect"
+            },
+            {
+                "Destruction",
+                "Soundeffect"
+            },
+            {
+                "Hits",
+                "Soundeffect"
+            },
+            {
+                "Winds",
+                "Woodwinds"
+            },
+            {
+                "Percussion",
+                "Percussion"
+            }
         };
         for (final String [] entry: mapping)
             TAG_CATEGORY_TO_CATEGORY_1.put (entry[0].toLowerCase (Locale.US), Integer.valueOf (findCategoryIndex (K2_INSTRUMENT_CATEGORY_1, entry[1])));
     }
 
-    private static final Set<String> KNOWN_LIBRARY_IDS        = new HashSet<> ();
+    private static final Set<String> KNOWN_LIBRARY_IDS = new HashSet<> ();
     static
     {
         KNOWN_LIBRARY_IDS.add ("Kon2"); // Kontakt 2
@@ -425,6 +584,25 @@ public class Kontakt2Header
     public static int getCategory3Index (final String [] keywords)
     {
         return findCategoryIndex (K2_INSTRUMENT_CATEGORY_3, keywords);
+    }
+
+
+    /**
+     * Get the name of an instrument category.
+     *
+     * @param category The number of the category list: 1 (instrument type), 2 or 3
+     * @param index The index in the list
+     * @return The name or null if the index is 0 (Other) or out of range
+     */
+    public static String getCategoryName (final int category, final int index)
+    {
+        final String [] categories = switch (category)
+        {
+            case 1 -> K2_INSTRUMENT_CATEGORY_1;
+            case 2 -> K2_INSTRUMENT_CATEGORY_2;
+            default -> K2_INSTRUMENT_CATEGORY_3;
+        };
+        return index <= 0 || index >= categories.length ? null : categories[index].trim ();
     }
 
 
