@@ -237,16 +237,16 @@ public abstract class AbstractZone
 
 
     /**
-     * Get a specific modulator if present.
+     * Get the modulators with a specific general controller (e.g. velocity) as the source.
      *
-     * @param modulatorID The ID of the modulator to get
+     * @param modulatorID The ID of the general controller
      * @return The result
      */
     public List<Sf2Modulator> getModulators (final Integer modulatorID)
     {
         final List<Sf2Modulator> result = new ArrayList<> ();
         for (final Sf2Modulator modulator: this.modulators)
-            if (modulator.getControllerSource () == modulatorID.intValue ())
+            if (modulator.isGeneralController (modulatorID.intValue ()))
                 result.add (modulator);
         return result;
     }

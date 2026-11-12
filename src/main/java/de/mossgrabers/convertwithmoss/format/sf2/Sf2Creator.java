@@ -442,35 +442,30 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         // cent like the pitch envelope, whose range the depth of the model covers as well; the
         // fade-in and the waveform have no equivalent in Sf2.
         final ILfoModulator pitchLfoModulator = sampleZone.getPitchLfoModulator ();
-        final double vibLfoDepth = pitchLfoModulator.getDepth ();
-        if (vibLfoDepth != 0)
+        final boolean isPitchLfoActive = pitchLfoModulator.isActive ();
+        if (isPitchLfoActive)
         {
-            instrumentZone.addSignedGenerator (Generator.VIB_LFO_TO_PITCH, (int) Math.round (vibLfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
-            final ILfo pitchLfo = pitchLfoModulator.getSource ();
-            final double rate = pitchLfo.getRate ();
-            if (rate > 0)
-                instrumentZone.addSignedGenerator (Generator.FREQ_VIB_LFO, Generator.frequencyToCents (rate));
-            final double delay = pitchLfo.getDelay ();
-            if (delay >= 0)
-                instrumentZone.addSignedGenerator (Generator.DELAY_VIB_LFO, convertEnvelopeTime (delay));
+            final double vibLfoDepth = pitchLfoModulator.getDepth ();
+            if (vibLfoDepth != 0)
+                instrumentZone.addSignedGenerator (Generator.VIB_LFO_TO_PITCH, (int) Math.round (vibLfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
+            addLfoGenerators (instrumentZone, pitchLfoModulator.getSource (), Generator.FREQ_VIB_LFO, Generator.DELAY_VIB_LFO);
         }
+        // Always written since an amount of 0 switches off the default modulator of the
+        // specification which adds a vibrato of 50 cent with the modulation wheel
+        addModWheelModulator (instrumentZone, Generator.VIB_LFO_TO_PITCH, isPitchLfoActive ? pitchLfoModulator.getDepthModWheelModulator ().getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH : 0);
 
         // Set the modulation low frequency oscillator to volume from the amplitude modulation
         // (tremolo). The depth is given in centibels, the fade-in and the waveform have no
         // equivalent in Sf2.
         final ILfoModulator amplitudeLfoModulator = sampleZone.getAmplitudeLfoModulator ();
-        final double modLfoDepth = amplitudeLfoModulator.getDepth ();
-        if (modLfoDepth != 0)
+        final boolean isAmplitudeLfoActive = amplitudeLfoModulator.isActive ();
+        if (isAmplitudeLfoActive)
         {
-            final int val = (int) Math.round (modLfoDepth * ILfoModulator.MAX_VOLUME_DEPTH * 10.0);
-            instrumentZone.addSignedGenerator (Generator.MOD_LFO_TO_VOLUME, val);
-            final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
-            final double rate = amplitudeLfo.getRate ();
-            if (rate > 0)
-                instrumentZone.addSignedGenerator (Generator.FREQ_MOD_LFO, Generator.frequencyToCents (rate));
-            final double delay = amplitudeLfo.getDelay ();
-            if (delay >= 0)
-                instrumentZone.addSignedGenerator (Generator.DELAY_MOD_LFO, convertEnvelopeTime (delay));
+            final double modLfoDepth = amplitudeLfoModulator.getDepth ();
+            if (modLfoDepth != 0)
+                instrumentZone.addSignedGenerator (Generator.MOD_LFO_TO_VOLUME, (int) Math.round (modLfoDepth * ILfoModulator.MAX_VOLUME_DEPTH * 10.0));
+            addLfoGenerators (instrumentZone, amplitudeLfoModulator.getSource (), Generator.FREQ_MOD_LFO, Generator.DELAY_MOD_LFO);
+            addModWheelModulator (instrumentZone, Generator.MOD_LFO_TO_VOLUME, amplitudeLfoModulator.getDepthModWheelModulator ().getDepth () * ILfoModulator.MAX_VOLUME_DEPTH * 10.0);
         }
 
         boolean modulationLfoCollision = false;
@@ -509,21 +504,19 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
                 // the cutoff by up to 2400 cent at velocity 0 and leaves it alone at velocity 127
                 addVelocityModulator (instrumentZone, Generator.INITIAL_FILTER_CUTOFF, Sf2Modulator.SOURCE_TYPE_LINEAR, filter.getCutoffVelocityModulator ().getDepth (), -2400);
 
-                // Note: this will overwrite the pitch LFO if it is different!
+                // The modulation oscillator is shared with the amplitude modulation, if both are
+                // used the rate and delay of the amplitude modulation are applied
                 final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
-                final double cutoffLfoDepth = cutoffLfoModulator.getDepth ();
-                if (cutoffLfoDepth != 0)
+                if (cutoffLfoModulator.isActive ())
                 {
-                    modulationLfoCollision = modLfoDepth != 0;
+                    modulationLfoCollision = isAmplitudeLfoActive;
 
-                    instrumentZone.addSignedGenerator (Generator.MOD_LFO_TO_FILTER_CUTOFF, (int) Math.round (cutoffLfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
-                    final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
-                    final double rate = cutoffLfo.getRate ();
-                    if (rate > 0)
-                        instrumentZone.addSignedGenerator (Generator.FREQ_MOD_LFO, Generator.frequencyToCents (rate));
-                    final double delay = cutoffLfo.getDelay ();
-                    if (delay >= 0)
-                        instrumentZone.addSignedGenerator (Generator.DELAY_MOD_LFO, convertEnvelopeTime (delay));
+                    final double cutoffLfoDepth = cutoffLfoModulator.getDepth ();
+                    if (cutoffLfoDepth != 0)
+                        instrumentZone.addSignedGenerator (Generator.MOD_LFO_TO_FILTER_CUTOFF, (int) Math.round (cutoffLfoDepth * IEnvelope.MAX_ENVELOPE_DEPTH));
+                    if (!isAmplitudeLfoActive)
+                        addLfoGenerators (instrumentZone, cutoffLfoModulator.getSource (), Generator.FREQ_MOD_LFO, Generator.DELAY_MOD_LFO);
+                    addModWheelModulator (instrumentZone, Generator.MOD_LFO_TO_FILTER_CUTOFF, cutoffLfoModulator.getDepthModWheelModulator ().getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH);
                 }
 
             }
@@ -533,6 +526,42 @@ public class Sf2Creator extends AbstractCreator<Sf2CreatorUI>
         instrumentZone.addGenerator (Generator.SAMPLE_ID, sampleDescriptor.getSampleIndex ());
 
         return modulationLfoCollision;
+    }
+
+
+    /**
+     * Add the generators for the rate and delay of a low frequency oscillator.
+     *
+     * @param instrumentZone The zone to add the generators to
+     * @param lfo The oscillator
+     * @param rateGenerator The generator for the rate
+     * @param delayGenerator The generator for the delay
+     */
+    private static void addLfoGenerators (final Sf2InstrumentZone instrumentZone, final ILfo lfo, final int rateGenerator, final int delayGenerator)
+    {
+        final double rate = lfo.getRate ();
+        if (rate > 0)
+            instrumentZone.addSignedGenerator (rateGenerator, Generator.frequencyToCents (rate));
+        final double delay = lfo.getDelay ();
+        if (delay >= 0)
+            instrumentZone.addSignedGenerator (delayGenerator, convertEnvelopeTime (delay));
+    }
+
+
+    /**
+     * Add a modulator with which the modulation wheel (MIDI CC 1, positive unipolar linear)
+     * controls the depth of a low frequency oscillator.
+     *
+     * @param instrumentZone The zone to add the modulator to
+     * @param destinationGenerator The generator of the oscillator depth
+     * @param amount The amount at the maximum of the modulation wheel, cent for pitch and cutoff,
+     *            centibels for the volume
+     */
+    private static void addModWheelModulator (final Sf2InstrumentZone instrumentZone, final int destinationGenerator, final double amount)
+    {
+        final int value = Math.clamp (Math.round (amount), Short.MIN_VALUE, Short.MAX_VALUE);
+        if (value != 0 || destinationGenerator == Generator.VIB_LFO_TO_PITCH)
+            instrumentZone.addModulator (Sf2Modulator.SOURCE_MIDI_CONTROLLER | Sf2Modulator.MOD_WHEEL_CC, destinationGenerator, value, 0, 0);
     }
 
 

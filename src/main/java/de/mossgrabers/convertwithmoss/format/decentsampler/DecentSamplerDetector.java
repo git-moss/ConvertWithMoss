@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -793,8 +794,9 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
             }
         }
 
+        // The modulation wheel bindings of the oscillator depths are converted
         final Element midiElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MIDI);
-        if (midiElement != null && midiElement.getElementsByTagName (DecentSamplerTag.BINDING).getLength () > 0)
+        if (midiElement != null && midiElement.getElementsByTagName (DecentSamplerTag.BINDING).getLength () > getModWheelLfoBindings (topElement).size ())
             this.unsupportedPlayback.add (Functions.getMessage ("IDS_DS_FEATURE_MIDI"));
         final Element busesElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.BUSES);
         if (busesElement != null && busesElement.getElementsByTagName (DecentSamplerTag.EFFECTS_EFFECT).getLength () > 0)
@@ -873,6 +875,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                             break;
                         }
                     }
+                parseCutoffLfo (topElement, filter);
 
                 return Optional.of (filter);
             }
@@ -1016,6 +1019,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                 final ILfoModulator pitchLfoModulator = sampleZone.getPitchLfoModulator ();
                 pitchLfoModulator.setDepth (lfoModulator.getDepth ());
                 pitchLfoModulator.setSource (lfoModulator.getSource ());
+                pitchLfoModulator.getDepthModWheelModulator ().setDepth (lfoModulator.getDepthModWheelModulator ().getDepth ());
             }
             if (amplitudeLfoModulation.isPresent ())
             {
@@ -1023,6 +1027,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                 final ILfoModulator amplitudeLfoModulator = sampleZone.getAmplitudeLfoModulator ();
                 amplitudeLfoModulator.setDepth (lfoModulator.getDepth ());
                 amplitudeLfoModulator.setSource (lfoModulator.getSource ());
+                amplitudeLfoModulator.getDepthModWheelModulator ().setDepth (lfoModulator.getDepthModWheelModulator ().getDepth ());
             }
 
             group.addSampleZone (sampleZone);
@@ -1207,34 +1212,224 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
 
     private static Optional<ILfoModulator> parsePitchLfoModulation (final Element topElement)
     {
-        // Parse a low frequency oscillator bound to the pitch (vibrato). The oscillator bound to
-        // the
-        // global tuning in the template is a mod-wheel routing and is intentionally not matched.
+        // Parse a low frequency oscillator bound to the tuning of a group or of all groups
+        // (vibrato), its depth can be controlled by the modulation wheel
         final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
-        if (modulatorsElement != null)
-            for (final Element lfoElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.LFO))
-            {
-                final Element bindingElement = XMLUtils.getChildElementByName (lfoElement, DecentSamplerTag.BINDING);
-                if (bindingElement == null || !"GROUP_TUNING".equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER)))
-                    continue;
+        if (modulatorsElement == null)
+            return Optional.empty ();
+        final List<Element> modWheelBindings = getModWheelLfoBindings (topElement);
+        final List<Element> modulatorElements = XMLUtils.getChildElements (modulatorsElement);
+        for (int i = 0; i < modulatorElements.size (); i++)
+        {
+            final Element lfoElement = modulatorElements.get (i);
+            final Element bindingElement = getPitchLfoBinding (lfoElement);
+            if (bindingElement == null)
+                continue;
 
-                final double depth = XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0);
-                if (depth == 0)
-                    continue;
+            // The unit of the binding range is semi-tones, a modulation amount of 1 applies the
+            // full range
+            final double range = Math.max (Math.abs (XMLUtils.getDoubleAttribute (bindingElement, DecentSamplerTag.TRANSLATION_OUT_MIN, 0)), Math.abs (XMLUtils.getDoubleAttribute (bindingElement, DecentSamplerTag.TRANSLATION_OUT_MAX, 1)));
+            final double scale = range * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+            final double depth = XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0) * scale;
+            final OptionalDouble modWheelAmount = getModWheelAmount (modWheelBindings, lfoElement, i);
+            final double modWheelDepth = modWheelAmount.isPresent () ? modWheelAmount.getAsDouble () * scale - depth : 0;
+            if (depth == 0 && modWheelDepth == 0)
+                continue;
 
-                final ILfoModulator pitchLfoModulator = new DefaultLfoModulator (depth);
-                final ILfo pitchLfo = pitchLfoModulator.getSource ();
-                pitchLfo.setWaveform (toLfoWaveform (lfoElement.getAttribute (DecentSamplerTag.LFO_SHAPE)));
-                // Only a frequency given in Hertz can be converted; a tempo synchronized rate has
-                // no
-                // representation without a tempo
-                final String frequencyFormat = lfoElement.getAttribute (DecentSamplerTag.LFO_FREQUENCY_FORMAT);
-                if (frequencyFormat.isEmpty () || "hz".equals (frequencyFormat))
-                    pitchLfo.setRate (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_FREQUENCY, -1));
-                pitchLfo.setDelay (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_DELAY_TIME, -1));
-                return Optional.of (pitchLfoModulator);
-            }
+            final ILfoModulator pitchLfoModulator = new DefaultLfoModulator (Math.clamp (depth, -1, 1));
+            pitchLfoModulator.getDepthModWheelModulator ().setDepth (Math.clamp (modWheelDepth, -1, 1));
+            parseLfo (lfoElement, pitchLfoModulator.getSource ());
+            return Optional.of (pitchLfoModulator);
+        }
         return Optional.empty ();
+    }
+
+
+    private static Element getPitchLfoBinding (final Element modulatorElement)
+    {
+        if (!DecentSamplerTag.LFO.equals (modulatorElement.getNodeName ()))
+            return null;
+        final Element bindingElement = XMLUtils.getChildElementByName (modulatorElement, DecentSamplerTag.BINDING);
+        if (bindingElement == null)
+            return null;
+        final String parameter = bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER);
+        return "GROUP_TUNING".equals (parameter) || "GLOBAL_TUNING".equals (parameter) ? bindingElement : null;
+    }
+
+
+    /**
+     * Parse an oscillator bound to the cutoff frequency of the filter. DecentSampler adds the
+     * oscillator linearly in Hertz, the swing is the average of the swings upwards and downwards of
+     * the depth in cents.
+     *
+     * @param topElement The top element
+     * @param filter The filter to which to apply the oscillator
+     */
+    private static void parseCutoffLfo (final Element topElement, final IFilter filter)
+    {
+        // IMPROVE: All filters are applied to the global filter. If filters on all levels are
+        // supported, the group index needs to be checked here
+        final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
+        if (modulatorsElement == null)
+            return;
+        final double cutoff = filter.getCutoff ();
+        final List<Element> modWheelBindings = getModWheelLfoBindings (topElement);
+        final List<Element> modulatorElements = XMLUtils.getChildElements (modulatorsElement);
+        for (int i = 0; i < modulatorElements.size (); i++)
+        {
+            final Element lfoElement = modulatorElements.get (i);
+            final Element bindingElement = getCutoffLfoBinding (lfoElement);
+            if (bindingElement == null)
+                continue;
+
+            final double range = Math.max (Math.abs (XMLUtils.getDoubleAttribute (bindingElement, DecentSamplerTag.TRANSLATION_OUT_MIN, 0)), Math.abs (XMLUtils.getDoubleAttribute (bindingElement, DecentSamplerTag.TRANSLATION_OUT_MAX, 1)));
+            final double depth = toCutoffDepth (cutoff, XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0) * range);
+            final OptionalDouble modWheelAmount = getModWheelAmount (modWheelBindings, lfoElement, i);
+            final double modWheelDepth = modWheelAmount.isPresent () ? toCutoffDepth (cutoff, modWheelAmount.getAsDouble () * range) - depth : 0;
+            if (depth == 0 && modWheelDepth == 0)
+                continue;
+
+            final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+            cutoffLfoModulator.setDepth (depth);
+            cutoffLfoModulator.getDepthModWheelModulator ().setDepth (modWheelDepth);
+            parseLfo (lfoElement, cutoffLfoModulator.getSource ());
+            return;
+        }
+    }
+
+
+    /**
+     * Convert a symmetric swing around the cutoff frequency to the depth of a cutoff oscillator.
+     *
+     * @param cutoff The cutoff frequency in Hertz
+     * @param swing The swing in Hertz
+     * @return The depth in the range of [0..1], relative to MAX_ENVELOPE_DEPTH cents
+     */
+    private static double toCutoffDepth (final double cutoff, final double swing)
+    {
+        if (cutoff <= 0 || swing <= 0)
+            return 0;
+        // Solve swing = cutoff * (2^x - 2^-x) / 2 for the octaves x
+        final double ratio = swing / cutoff;
+        final double octaves = Math.log (ratio + Math.sqrt (ratio * ratio + 1)) / Math.log (2);
+        return Math.min (octaves * 1200.0 / IEnvelope.MAX_ENVELOPE_DEPTH, 1.0);
+    }
+
+
+    private static Element getCutoffLfoBinding (final Element modulatorElement)
+    {
+        if (!DecentSamplerTag.LFO.equals (modulatorElement.getNodeName ()))
+            return null;
+        final Element bindingElement = XMLUtils.getChildElementByName (modulatorElement, DecentSamplerTag.BINDING);
+        return bindingElement != null && "FX_FILTER_FREQUENCY".equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER)) ? bindingElement : null;
+    }
+
+
+    private static boolean isAmplitudeLfo (final Element modulatorElement)
+    {
+        if (!DecentSamplerTag.LFO.equals (modulatorElement.getNodeName ()))
+            return false;
+        final Element bindingElement = XMLUtils.getChildElementByName (modulatorElement, DecentSamplerTag.BINDING);
+        return bindingElement != null && "AMP_VOLUME".equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER));
+    }
+
+
+    /**
+     * Set the waveform, the rate and the delay of an oscillator.
+     *
+     * @param lfoElement The oscillator element
+     * @param lfo Where to set the values
+     */
+    private static void parseLfo (final Element lfoElement, final ILfo lfo)
+    {
+        lfo.setWaveform (toLfoWaveform (lfoElement.getAttribute (DecentSamplerTag.LFO_SHAPE)));
+        // Only a frequency given in Hertz can be converted; a tempo synchronized rate has no
+        // representation without a tempo
+        final String frequencyFormat = lfoElement.getAttribute (DecentSamplerTag.LFO_FREQUENCY_FORMAT);
+        if (frequencyFormat.isEmpty () || "hz".equals (frequencyFormat))
+            lfo.setRate (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_FREQUENCY, -1));
+        lfo.setDelay (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_DELAY_TIME, -1));
+    }
+
+
+    /**
+     * Get all bindings of the modulation wheel (MIDI CC 1) which set the modulation amount of an
+     * oscillator bound to the tuning, the volume or the filter cutoff.
+     *
+     * @param topElement The top element
+     * @return The binding elements
+     */
+    private static List<Element> getModWheelLfoBindings (final Element topElement)
+    {
+        final List<Element> result = new ArrayList<> ();
+        final Element midiElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MIDI);
+        final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
+        if (midiElement == null || modulatorsElement == null)
+            return result;
+        final List<Element> modulatorElements = XMLUtils.getChildElements (modulatorsElement);
+        for (final Element ccElement: XMLUtils.getChildElementsByName (midiElement, DecentSamplerTag.MIDI_CC, false))
+        {
+            if (XMLUtils.getIntegerAttribute (ccElement, DecentSamplerTag.MIDI_CC_NUMBER, -1) != DecentSamplerTag.MOD_WHEEL_CC)
+                continue;
+            for (final Element bindingElement: XMLUtils.getChildElementsByName (ccElement, DecentSamplerTag.BINDING, false))
+            {
+                if (!DecentSamplerTag.TYPE_MODULATOR.equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_TYPE)) || !DecentSamplerTag.PARAMETER_MOD_AMOUNT.equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER)))
+                    continue;
+                for (int i = 0; i < modulatorElements.size (); i++)
+                {
+                    final Element modulatorElement = modulatorElements.get (i);
+                    if ((getPitchLfoBinding (modulatorElement) != null || isAmplitudeLfo (modulatorElement) || getCutoffLfoBinding (modulatorElement) != null) && isBindingTarget (bindingElement, modulatorElement, i))
+                    {
+                        result.add (bindingElement);
+                        break;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+
+    /**
+     * Get the modulation amount which the modulation wheel sets at its maximum.
+     *
+     * @param modWheelBindings The bindings of the modulation wheel
+     * @param modulatorElement The modulator element
+     * @param modulatorIndex The index of the modulator
+     * @return The modulation amount, empty if the modulation wheel is not bound to the modulator
+     */
+    private static OptionalDouble getModWheelAmount (final List<Element> modWheelBindings, final Element modulatorElement, final int modulatorIndex)
+    {
+        for (final Element bindingElement: modWheelBindings)
+            if (isBindingTarget (bindingElement, modulatorElement, modulatorIndex))
+                return OptionalDouble.of (XMLUtils.getDoubleAttribute (bindingElement, DecentSamplerTag.TRANSLATION_OUT_MAX, 1));
+        return OptionalDouble.empty ();
+    }
+
+
+    /**
+     * Check if a binding addresses a modulator, either by its tags or by its position.
+     *
+     * @param bindingElement The binding element
+     * @param modulatorElement The modulator element
+     * @param modulatorIndex The index of the modulator
+     * @return True if the binding addresses the modulator
+     */
+    private static boolean isBindingTarget (final Element bindingElement, final Element modulatorElement, final int modulatorIndex)
+    {
+        final String modulatorTags = bindingElement.getAttribute (DecentSamplerTag.MODULATOR_TAGS);
+        if (!modulatorTags.isBlank ())
+        {
+            final Set<String> tags = new HashSet<> ();
+            for (final String tag: modulatorElement.getAttribute (DecentSamplerTag.TAGS_ATTRIBUTE).split (","))
+                tags.add (tag.trim ());
+            for (final String tag: modulatorTags.split (","))
+                if (tags.contains (tag.trim ()))
+                    return true;
+            return false;
+        }
+        final String index = bindingElement.hasAttribute (DecentSamplerTag.MODULATOR_INDEX) ? bindingElement.getAttribute (DecentSamplerTag.MODULATOR_INDEX) : bindingElement.getAttribute (DecentSamplerTag.BINDING_POSITION);
+        return Integer.toString (modulatorIndex).equals (index.trim ());
     }
 
 
@@ -1242,33 +1437,46 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
     {
         // Parse a low frequency oscillator bound to the group volume (tremolo)
         final Element modulatorsElement = XMLUtils.getChildElementByName (topElement, DecentSamplerTag.MODULATORS);
-        if (modulatorsElement != null)
-            for (final Element lfoElement: XMLUtils.getChildElementsByName (modulatorsElement, DecentSamplerTag.LFO))
-            {
-                final Element bindingElement = XMLUtils.getChildElementByName (lfoElement, DecentSamplerTag.BINDING);
-                if (bindingElement == null || !"AMP_VOLUME".equals (bindingElement.getAttribute (DecentSamplerTag.BINDING_PARAMETER)))
-                    continue;
+        if (modulatorsElement == null)
+            return Optional.empty ();
+        final List<Element> modWheelBindings = getModWheelLfoBindings (topElement);
+        final List<Element> modulatorElements = XMLUtils.getChildElements (modulatorsElement);
+        for (int i = 0; i < modulatorElements.size (); i++)
+        {
+            final Element lfoElement = modulatorElements.get (i);
+            if (!isAmplitudeLfo (lfoElement))
+                continue;
 
-                final double modAmount = XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0);
-                if (modAmount <= 0)
-                    continue;
+            final double depth = toVolumeDepth (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.MOD_AMOUNT, 0));
+            final OptionalDouble modWheelAmount = getModWheelAmount (modWheelBindings, lfoElement, i);
+            final double modWheelDepth = modWheelAmount.isPresent () ? toVolumeDepth (modWheelAmount.getAsDouble ()) - depth : 0;
+            if (depth == 0 && modWheelDepth == 0)
+                continue;
 
-                // The volume parameter is linear with 1 being full volume. The bipolar oscillator
-                // swings by the modulation amount around it, therefore a swing of x dips to 1-x
-                // which is -20*log10(1-x) dB below full volume.
-                final double depthDecibels = modAmount >= 1 ? ILfoModulator.MAX_VOLUME_DEPTH : Math.min (-20.0 * Math.log10 (1.0 - modAmount), ILfoModulator.MAX_VOLUME_DEPTH);
-                final ILfoModulator amplitudeLfoModulator = new DefaultLfoModulator (depthDecibels / ILfoModulator.MAX_VOLUME_DEPTH);
-                final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
-                amplitudeLfo.setWaveform (toLfoWaveform (lfoElement.getAttribute (DecentSamplerTag.LFO_SHAPE)));
-                // Only a frequency given in Hertz can be converted; a tempo synchronized rate has
-                // no representation without a tempo
-                final String frequencyFormat = lfoElement.getAttribute (DecentSamplerTag.LFO_FREQUENCY_FORMAT);
-                if (frequencyFormat.isEmpty () || "hz".equals (frequencyFormat))
-                    amplitudeLfo.setRate (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_FREQUENCY, -1));
-                amplitudeLfo.setDelay (XMLUtils.getDoubleAttribute (lfoElement, DecentSamplerTag.LFO_DELAY_TIME, -1));
-                return Optional.of (amplitudeLfoModulator);
-            }
+            final ILfoModulator amplitudeLfoModulator = new DefaultLfoModulator (depth);
+            amplitudeLfoModulator.getDepthModWheelModulator ().setDepth (modWheelDepth);
+            parseLfo (lfoElement, amplitudeLfoModulator.getSource ());
+            return Optional.of (amplitudeLfoModulator);
+        }
         return Optional.empty ();
+    }
+
+
+    /**
+     * Convert the modulation amount of an oscillator bound to the volume to the depth. The volume
+     * parameter is linear with 1 being full volume. The bipolar oscillator swings by the modulation
+     * amount around it, therefore a swing of x dips to 1-x which is -20*log10(1-x) dB below full
+     * volume.
+     *
+     * @param modAmount The modulation amount
+     * @return The depth in the range of [0..1]
+     */
+    private static double toVolumeDepth (final double modAmount)
+    {
+        if (modAmount <= 0)
+            return 0;
+        final double depthDecibels = modAmount >= 1 ? ILfoModulator.MAX_VOLUME_DEPTH : Math.min (-20.0 * Math.log10 (1.0 - modAmount), ILfoModulator.MAX_VOLUME_DEPTH);
+        return depthDecibels / ILfoModulator.MAX_VOLUME_DEPTH;
     }
 
 

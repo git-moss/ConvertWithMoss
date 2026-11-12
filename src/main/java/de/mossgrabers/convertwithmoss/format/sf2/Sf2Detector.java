@@ -282,6 +282,68 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             if (filterOpt.isPresent ())
                 filterOpt.get ().getCutoffVelocityModulator ().setDepth (Math.clamp (cutoffAmount / -2400.0, -1, 1));
         }
+
+        parseModWheelModulators (zone, presetModulators, instrumentModulators);
+    }
+
+
+    /**
+     * Parse the modulators which control the depth of the oscillators with the modulation wheel.
+     * The default modulator of the specification (50 cent vibrato) applies unless the instrument
+     * zone contains an identical modulator. The modulators of the preset zone are added to the
+     * ones of the instrument zone.
+     *
+     * @param zone The zone to which to apply the modulation
+     * @param presetModulators The modulators of the preset zone
+     * @param instrumentModulators The modulators of the instrument zone
+     */
+    private static void parseModWheelModulators (final ISampleZone zone, final List<Sf2Modulator> presetModulators, final List<Sf2Modulator> instrumentModulators)
+    {
+        final List<Sf2Modulator> modulators = new ArrayList<> ();
+        boolean isDefaultReplaced = false;
+        for (final Sf2Modulator modulator: instrumentModulators)
+            if (modulator.isMidiController (Sf2Modulator.MOD_WHEEL_CC))
+            {
+                modulators.add (modulator);
+                isDefaultReplaced |= modulator.isIdentical (Sf2Modulator.DEFAULT_MOD_WHEEL_TO_VIBRATO);
+            }
+        if (!isDefaultReplaced)
+            modulators.add (Sf2Modulator.DEFAULT_MOD_WHEEL_TO_VIBRATO);
+        for (final Sf2Modulator modulator: presetModulators)
+            if (modulator.isMidiController (Sf2Modulator.MOD_WHEEL_CC))
+                modulators.add (modulator);
+
+        // Only a plain positive unipolar linear modulation adds a depth
+        int pitchAmount = 0;
+        int volumeAmount = 0;
+        int cutoffAmount = 0;
+        for (final Sf2Modulator modulator: modulators)
+        {
+            if (modulator.getAmountSourceOperand () != 0 || modulator.getTransformOperand () != 0 || modulator.isBipolar () || modulator.isNegativeDirection () || modulator.getSourceType () != Sf2Modulator.SOURCE_TYPE_LINEAR)
+                continue;
+            switch (modulator.getDestinationGenerator ())
+            {
+                case Generator.VIB_LFO_TO_PITCH:
+                    pitchAmount += modulator.getModulationAmount ();
+                    break;
+                case Generator.MOD_LFO_TO_VOLUME:
+                    volumeAmount += modulator.getModulationAmount ();
+                    break;
+                case Generator.MOD_LFO_TO_FILTER_CUTOFF:
+                    cutoffAmount += modulator.getModulationAmount ();
+                    break;
+                default:
+                    // Not supported
+                    break;
+            }
+        }
+
+        // Pitch and cutoff are given in cent, the volume in centibels
+        zone.getPitchLfoModulator ().getDepthModWheelModulator ().setDepth (Math.clamp (pitchAmount / (double) IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1));
+        zone.getAmplitudeLfoModulator ().getDepthModWheelModulator ().setDepth (Math.clamp (volumeAmount / (double) ILfoModulator.MAX_VOLUME_DEPTH / 10.0, -1, 1));
+        final Optional<IFilter> filterOpt = zone.getFilter ();
+        if (filterOpt.isPresent ())
+            filterOpt.get ().getCutoffLfoModulator ().getDepthModWheelModulator ().setDepth (Math.clamp (cutoffAmount / (double) IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1));
     }
 
 
@@ -293,17 +355,17 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
 
     /**
-     * Get the modulators with a specific source.
+     * Get the modulators with a specific general controller (e.g. velocity) as the source.
      *
      * @param modulators The modulators to filter
-     * @param modulatorID The ID of the source modulator
+     * @param modulatorID The ID of the general controller
      * @return The matching modulators
      */
     private static List<Sf2Modulator> filterModulators (final List<Sf2Modulator> modulators, final Integer modulatorID)
     {
         final List<Sf2Modulator> result = new ArrayList<> ();
         for (final Sf2Modulator modulator: modulators)
-            if (modulator.getControllerSource () == modulatorID.intValue ())
+            if (modulator.isGeneralController (modulatorID.intValue ()))
                 result.add (modulator);
         return result;
     }
@@ -909,12 +971,11 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
                     final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
                     final int modLfoToCutoff = generators.getSignedValue (Generator.MOD_LFO_TO_FILTER_CUTOFF).intValue ();
                     cutoffLfoModulator.setDepth (modLfoToCutoff / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
-                    if (modLfoToCutoff != 0)
-                    {
-                        final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
-                        cutoffLfo.setRate (Generator.centsToFrequency (generators.getSignedValue (Generator.FREQ_MOD_LFO).intValue ()));
-                        cutoffLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_MOD_LFO)));
-                    }
+                    // The oscillator is read even without a depth since the modulation wheel can
+                    // add one, see parseModulators
+                    final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
+                    cutoffLfo.setRate (Generator.centsToFrequency (generators.getSignedValue (Generator.FREQ_MOD_LFO).intValue ()));
+                    cutoffLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_MOD_LFO)));
 
                     zone.setFilter (filter);
                 }
@@ -942,12 +1003,11 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
             final int vibLfoDepth = generators.getSignedValue (Generator.VIB_LFO_TO_PITCH).intValue ();
             pitchLfoModulator.setDepth (vibLfoDepth / (double) IEnvelope.MAX_ENVELOPE_DEPTH);
-            if (vibLfoDepth != 0)
-            {
-                final ILfo pitchLfo = pitchLfoModulator.getSource ();
-                pitchLfo.setRate (Generator.centsToFrequency (generators.getSignedValue (Generator.FREQ_VIB_LFO).intValue ()));
-                pitchLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_VIB_LFO)));
-            }
+            // The oscillator is read even without a depth since the modulation wheel can add one,
+            // see parseModulators
+            final ILfo pitchLfo = pitchLfoModulator.getSource ();
+            pitchLfo.setRate (Generator.centsToFrequency (generators.getSignedValue (Generator.FREQ_VIB_LFO).intValue ()));
+            pitchLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_VIB_LFO)));
 
             // The modulation low frequency oscillator to volume maps to the amplitude modulation
             // (tremolo). Its waveform is always a triangle and the depth is given in centi-bels.
@@ -955,12 +1015,11 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
             final int modLfoToVolume = generators.getSignedValue (Generator.MOD_LFO_TO_VOLUME).intValue ();
             // Input is in deci-bels
             amplitudeLfoModulator.setDepth (modLfoToVolume / (double) ILfoModulator.MAX_VOLUME_DEPTH / 10.0);
-            if (modLfoToVolume != 0)
-            {
-                final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
-                amplitudeLfo.setRate (Generator.centsToFrequency (generators.getSignedValue (Generator.FREQ_MOD_LFO).intValue ()));
-                amplitudeLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_MOD_LFO)));
-            }
+            // The oscillator is read even without a depth since the modulation wheel can add one,
+            // see parseModulators
+            final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
+            amplitudeLfo.setRate (Generator.centsToFrequency (generators.getSignedValue (Generator.FREQ_MOD_LFO).intValue ()));
+            amplitudeLfo.setDelay (convertEnvelopeTime (generators.getSignedValue (Generator.DELAY_MOD_LFO)));
 
             return Optional.of (zone);
         }

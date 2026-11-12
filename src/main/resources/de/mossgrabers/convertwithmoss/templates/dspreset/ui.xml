@@ -1,5 +1,5 @@
 <modulators>
-    <lfo shape="sine" modAmount="0" frequency="5">
+    <lfo shape="sine" modAmount="0" frequency="5" tags="modWheelVibrato">
 		<binding type="amp" level="instrument" parameter="GLOBAL_TUNING" modBehavior="add" translation="linear" translationOutputMin="-1" translationOutputMax="1"/>
     </lfo>
 </modulators>
@@ -10,7 +10,7 @@
 <midi>
     <!-- Modulation Wheel -->	
     <cc number="1">
-        <binding level="instrument" type="modulator" position="1" parameter="MOD_AMOUNT" translation="linear" translationOutputMin="0.0" translationOutputMax="1.0"/>
+        <binding level="instrument" type="modulator" modulatorTags="modWheelVibrato" parameter="MOD_AMOUNT" translation="linear" translationOutputMin="0.0" translationOutputMax="1.0"/>
     </cc>
 </midi>
 <ui bgColor="FF101010" height="375" width="812">
@@ -36,7 +36,7 @@
 
         <!-- Filter Controls -->
         <label text="Filter" textColor="FFDD0000" textSize="30" x="230" y="0" width="280" height="30" hAlign="center"/>
-        <labeled-knob style="linear_bar_vertical" maxValue="1" minValue="0" mouseDragSensitivity="100" parameterName="Cutoff" type="float" value="1.0" x="230" y="30" width="40" height="180" label="Cutoff" textSize="16" textColor="FFFFFFFF">
+        <labeled-knob style="linear_bar_vertical" maxValue="1" minValue="0" mouseDragSensitivity="100" parameterName="Cutoff" type="float" value="%FILTER_CUTOFF_VALUE%" x="230" y="30" width="40" height="180" label="Cutoff" textSize="16" textColor="FFFFFFFF">
             <binding type="effect" level="group" effectIndex="0" groupIndex="0" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
             <binding type="effect" level="group" effectIndex="0" groupIndex="1" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
             <binding type="effect" level="group" effectIndex="0" groupIndex="2" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
@@ -44,7 +44,7 @@
             <binding type="effect" level="group" effectIndex="0" groupIndex="4" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
             <binding type="effect" level="group" effectIndex="0" groupIndex="5" parameter="FX_FILTER_FREQUENCY" translation="table" translationTable="0,33;0.3,150;0.4,450;0.5,1100;0.7,4100;0.9,11000;1.0001,22000"/>
         </labeled-knob>
-        <labeled-knob style="linear_bar_vertical" maxValue="5" minValue="0.5" mouseDragSensitivity="100" parameterName="Resonance" type="float" value="0.5" x="270" y="30" width="40" height="180" label="Resonance" textSize="16" textColor="FFFFFFFF">
+        <labeled-knob style="linear_bar_vertical" maxValue="5" minValue="0.5" mouseDragSensitivity="100" parameterName="Resonance" type="float" value="%FILTER_RESONANCE_VALUE%" x="270" y="30" width="40" height="180" label="Resonance" textSize="16" textColor="FFFFFFFF">
             <binding type="effect" level="group" effectIndex="0" groupIndex="0" parameter="FX_FILTER_RESONANCE"/>
             <binding type="effect" level="group" effectIndex="0" groupIndex="1" parameter="FX_FILTER_RESONANCE"/>
             <binding type="effect" level="group" effectIndex="0" groupIndex="2" parameter="FX_FILTER_RESONANCE"/>
@@ -52,20 +52,20 @@
             <binding type="effect" level="group" effectIndex="0" groupIndex="4" parameter="FX_FILTER_RESONANCE"/>
             <binding type="effect" level="group" effectIndex="0" groupIndex="5" parameter="FX_FILTER_RESONANCE"/>
         </labeled-knob>
-        <labeled-knob style="linear_bar_vertical" maxValue="10" minValue="0" mouseDragSensitivity="100" parameterName="Filter Attack" value="0.0" x="310" y="30" width="40" height="180" label="Attack" textSize="16" textColor="FFFFFFFF">
-            <binding level="instrument" modulatorIndex="0" parameter="ENV_ATTACK" type="modulator"/>
+        <labeled-knob style="linear_bar_vertical" maxValue="10" minValue="0" mouseDragSensitivity="100" parameterName="Filter Attack" value="%FILTER_ENV_ATTACK_VALUE%" x="310" y="30" width="40" height="180" label="Attack" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorTags="filterEnvelope" parameter="ENV_ATTACK" type="modulator"/>
         </labeled-knob>
-        <labeled-knob style="linear_bar_vertical" maxValue="15" minValue="0.05" mouseDragSensitivity="100" parameterName="Filter Decay" value="0.05000000074505806" x="350" y="30" width="40" height="180" label="Decay" textSize="16" textColor="FFFFFFFF">
-            <binding level="instrument" modulatorIndex="0" parameter="ENV_DECAY" type="modulator"/>
+        <labeled-knob style="linear_bar_vertical" maxValue="15" minValue="0.05" mouseDragSensitivity="100" parameterName="Filter Decay" value="%FILTER_ENV_DECAY_VALUE%" x="350" y="30" width="40" height="180" label="Decay" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorTags="filterEnvelope" parameter="ENV_DECAY" type="modulator"/>
         </labeled-knob>
-        <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" parameterName="Filter Sustain" value="0.9999999776482582" x="390" y="30" width="40" height="180" label="Sustain" textSize="16" textColor="FFFFFFFF">
-            <binding level="instrument" modulatorIndex="0" parameter="ENV_SUSTAIN" type="modulator"/>
+        <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" parameterName="Filter Sustain" value="%FILTER_ENV_SUSTAIN_VALUE%" x="390" y="30" width="40" height="180" label="Sustain" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorTags="filterEnvelope" parameter="ENV_SUSTAIN" type="modulator"/>
         </labeled-knob>
-        <labeled-knob style="linear_bar_vertical" maxValue="10" minValue="0.05" mouseDragSensitivity="100" parameterName="Filter Release" value="0.05000000074505806" x="430" y="30" width="40" height="180" label="Release" textSize="16" textColor="FFFFFFFF">
-            <binding level="instrument" modulatorIndex="0" parameter="ENV_RELEASE" type="modulator"/>
+        <labeled-knob style="linear_bar_vertical" maxValue="10" minValue="0.05" mouseDragSensitivity="100" parameterName="Filter Release" value="%FILTER_ENV_RELEASE_VALUE%" x="430" y="30" width="40" height="180" label="Release" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorTags="filterEnvelope" parameter="ENV_RELEASE" type="modulator"/>
         </labeled-knob>
-        <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" parameterName="Filter Env Amount" maxValue="1.0" minValue="0" value="0.0" x="470" y="30" width="40" height="180" label="Env. Amount" textSize="16" textColor="FFFFFFFF">
-            <binding level="instrument" modulatorIndex="0" parameter="MOD_AMOUNT" type="modulator"/>
+        <labeled-knob style="linear_bar_vertical" mouseDragSensitivity="100" parameterName="Filter Env Amount" maxValue="1.0" minValue="0" value="%FILTER_ENV_AMOUNT_VALUE%" x="470" y="30" width="40" height="180" label="Env. Amount" textSize="16" textColor="FFFFFFFF">
+            <binding level="instrument" modulatorTags="filterEnvelope" parameter="MOD_AMOUNT" type="modulator"/>
         </labeled-knob>
 
         <!-- Delay -->

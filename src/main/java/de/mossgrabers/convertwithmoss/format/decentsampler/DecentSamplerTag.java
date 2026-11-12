@@ -92,6 +92,39 @@ public class DecentSamplerTag
     public static final String                    BINDING              = "binding";
     /** The parameter attribute of a binding. */
     public static final String                    BINDING_PARAMETER    = "parameter";
+    /** The type attribute of a binding. */
+    public static final String                    BINDING_TYPE         = "type";
+    /** The level attribute of a binding. */
+    public static final String                    BINDING_LEVEL        = "level";
+    /** The position attribute of a binding. */
+    public static final String                    BINDING_POSITION     = "position";
+    /** The attribute of a binding which addresses a modulator by its position. */
+    public static final String                    MODULATOR_INDEX      = "modulatorIndex";
+    /** The attribute of a binding which addresses modulators by their tags. */
+    public static final String                    MODULATOR_TAGS       = "modulatorTags";
+    /** The translation attribute of a binding. */
+    public static final String                    TRANSLATION          = "translation";
+    /** The minimum output value of the translation of a binding. */
+    public static final String                    TRANSLATION_OUT_MIN  = "translationOutputMin";
+    /** The maximum output value of the translation of a binding. */
+    public static final String                    TRANSLATION_OUT_MAX  = "translationOutputMax";
+    /** The binding type which addresses a modulator. */
+    public static final String                    TYPE_MODULATOR       = "modulator";
+    /** The binding parameter for the modulation amount of a modulator. */
+    public static final String                    PARAMETER_MOD_AMOUNT = "MOD_AMOUNT";
+    /** The MIDI continuous controller tag. */
+    public static final String                    MIDI_CC              = "cc";
+    /** The number attribute of a MIDI continuous controller. */
+    public static final String                    MIDI_CC_NUMBER       = "number";
+    /** The MIDI CC number of the modulation wheel. */
+    public static final int                       MOD_WHEEL_CC         = 1;
+    /**
+     * The tag of the vibrato oscillator of the user interface template which is controlled by the
+     * modulation wheel.
+     */
+    public static final String                    MOD_WHEEL_VIBRATO    = "modWheelVibrato";
+    /** The tag of the envelope which modulates the filter cutoff. */
+    public static final String                    FILTER_ENVELOPE      = "filterEnvelope";
     /** The tags tag. */
     public static final String                    TAGS                 = "tags";
     /** The tag tag. */

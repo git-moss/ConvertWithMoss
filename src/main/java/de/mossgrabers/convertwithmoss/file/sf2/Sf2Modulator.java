@@ -21,6 +21,14 @@ public class Sf2Modulator
     public static final Integer               MODULATOR_VELOCITY        = Integer.valueOf (2);
     /** The ID for a Pitch Bend modulator. */
     public static final Integer               MODULATOR_PITCH_BEND      = Integer.valueOf (14);
+    /** The MIDI CC number of the modulation wheel. */
+    public static final int                   MOD_WHEEL_CC              = 1;
+
+    /**
+     * Source operand flag: the index is the number of a MIDI continuous controller instead of a
+     * general controller (e.g. velocity).
+     */
+    public static final int                   SOURCE_MIDI_CONTROLLER    = 0x0080;
 
     /**
      * Source operand flag: the direction of the source is negative, it runs from its maximum to its
@@ -88,6 +96,13 @@ public class Sf2Modulator
         MODULATOR_NAMES.put (Integer.valueOf (127), "Link");
     }
 
+    /**
+     * The default modulator of the SoundFont specification (8.4.4) which every player applies
+     * unless an instrument zone contains an identical modulator: the modulation wheel adds up to
+     * 50 cent to the depth of the vibrato oscillator.
+     */
+    public static final Sf2Modulator          DEFAULT_MOD_WHEEL_TO_VIBRATO = new Sf2Modulator (SOURCE_MIDI_CONTROLLER | MOD_WHEEL_CC, Generator.VIB_LFO_TO_PITCH, 50, 0, 0);
+
     private final int sourceOperand;
     private final int controllerSource;
     private final int destinationGenerator;
@@ -129,6 +144,56 @@ public class Sf2Modulator
     public int getControllerSource ()
     {
         return this.controllerSource;
+    }
+
+
+    /**
+     * Is the source a MIDI continuous controller? Otherwise it is a general controller (e.g.
+     * velocity).
+     *
+     * @return True if it is a MIDI CC
+     */
+    public boolean isMidiController ()
+    {
+        return (this.sourceOperand & SOURCE_MIDI_CONTROLLER) != 0;
+    }
+
+
+    /**
+     * Check if the controller source is a specific general controller (e.g. velocity).
+     *
+     * @param modulatorID The ID of the general controller
+     * @return True if it matches
+     */
+    public boolean isGeneralController (final int modulatorID)
+    {
+        return !this.isMidiController () && this.controllerSource == modulatorID;
+    }
+
+
+    /**
+     * Check if the controller source is a specific MIDI continuous controller.
+     *
+     * @param ccNumber The number of the MIDI CC
+     * @return True if it matches
+     */
+    public boolean isMidiController (final int ccNumber)
+    {
+        return this.isMidiController () && this.controllerSource == ccNumber;
+    }
+
+
+    /**
+     * Check if the modulator is identical to another one, which is the case if source, destination,
+     * amount source and transform are the same (SoundFont specification 9.5.1). An identical
+     * modulator replaces the other one.
+     *
+     * @param other The other modulator
+     * @return True if identical
+     */
+    public boolean isIdentical (final Sf2Modulator other)
+    {
+        return this.sourceOperand == other.sourceOperand && this.destinationGenerator == other.destinationGenerator && this.amountSourceOperand == other.amountSourceOperand && this.transformOperand == other.transformOperand;
     }
 
 
@@ -187,7 +252,8 @@ public class Sf2Modulator
     {
         final StringBuilder sb = new StringBuilder ();
 
-        sb.append ("           - Modulator: " + getModulatorName (this.controllerSource) + " (" + getSourceTypeName (this.getSourceType ()) + ", " + (this.isBipolar () ? "bipolar" : "unipolar") + ", " + (this.isNegativeDirection () ? "negative" : "positive") + ")\n");
+        final String sourceName = this.isMidiController () ? "MIDI CC " + this.controllerSource : getModulatorName (this.controllerSource);
+        sb.append ("           - Modulator: " + sourceName + " (" + getSourceTypeName (this.getSourceType ()) + ", " + (this.isBipolar () ? "bipolar" : "unipolar") + ", " + (this.isNegativeDirection () ? "negative" : "positive") + ")\n");
         sb.append ("               - Destination Generator: " + GeneratorHierarchy.getGeneratorName (this.destinationGenerator) + " : " + this.modAmount + "\n");
         sb.append ("               - Amount Source Operand: " + getModulatorName (this.amountSourceOperand) + "\n");
 
