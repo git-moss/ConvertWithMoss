@@ -107,7 +107,8 @@ A preset record is `124 + 4 * keyAreas + 32 * voices` bytes long.
 | Offset  | Size            | Content                                                          |
 |---------|-----------------|------------------------------------------------------------------|
 | `0x00`  | 12              | Name, ASCII, space padded                                         |
-| `0x0C`  | 23              | Preset parameters (see *What is not decoded*)                     |
+| `0x0C`  | 4               | Real-time controls (see *Real-time controls*)                     |
+| `0x10`  | 19              | Preset parameters (see *What is not decoded*)                     |
 | `0x23`  | 1               | Number of key areas, which is the length of the voice table       |
 | `0x24`  | 88              | Key map: one byte per key, `0xFF` where the key is silent          |
 | `0x7C`  | 4 per key area  | Voice table                                                       |
@@ -163,6 +164,7 @@ Two parameters sit outside the stream on byte boundaries.
 | 64-67   | 4     | LFO to volume, the tremolo depth, 1.6 dB per step                   |
 | 68-71   | 4     | Velocity to level                                                   |
 | 76-79   | 4     | Velocity to amplitude attack                                        |
+| 80-87   | 8     | Real-time control enable, bit *n* for the destination *n* + 1 (byte 10, see *Real-time controls*) |
 | 88-92   | 5     | Chorus amount                                                       |
 | 96-103  | 8     | Original key, in key map numbering, so MIDI note 21 + value (byte 12) |
 | 104-111 | 8     | The sample this voice plays, counted from the top of the sample directory (byte 13) |
@@ -194,6 +196,45 @@ every envelope stage is 5 bits, which is its "two-digit numeral between 01 and 3
 
 The two envelopes have the same layout, five 5 bit stages one after the other, which is what makes
 the packing readable: bits 0-24 are the amplitude envelope and bits 160-184 the filter envelope.
+
+### Real-time controls
+
+The first 4 bytes of the preset parameters (`0x0C` to `0x0F`) are the *Real-Time Controls* of
+Preset Definition 9: one nibble for each of the 8 sources of the manual which holds the destination
+the source controls - the lower nibble for the odd source, the upper for the even one.
+
+```
+source:      1 left wheel, 2 right wheel, 3 pressure, 4 pedal, 5 MIDI A, 6 MIDI B (destinations
+             0-9), 7 footswitch 1, 8 footswitch 2 (destinations 0-6)
+destination: 0 off, 1 pitch, 2 filter Fc, 3 level, 4 LFO to pitch, 5 LFO to filter Fc,
+             6 LFO to level, 7 attack, 8 panning, 9 crossfade
+```
+
+`41 00 00 63` - 2,667 of the 2,833 presets of the three Emax II CD-ROMs on the test machine - is
+the setup the manual shows as `1:1 2:4 ... 7:3 8:6`: the left wheel bends the pitch, the right wheel
+dials in the vibrato, the footswitches have the functions 3 and 6. The nibbles are confirmed by the
+names of the presets which deviate: `Rt.WheelWash` routes the right wheel to the filter (`21`),
+`RTC XFade2:9` and `Rt Whl Xfade` to the crossfade (`90`, `92`); 77 presets leave the right wheel
+unassigned, 39 route it to LFO to level and 34 to LFO to filter.
+
+A voice exempts itself from a destination with the *Control Enable* function of Analog Processing 22
+by clearing bit *n* of byte 10 of its record (bits 80-87 of the bit stream) for the destination
+*n* + 1. The byte is `0xFF` on 29,903 of the 32,062 voices; `0xF7` (no LFO to pitch, 1,025 voices)
+and `0xF6` (no LFO to pitch and no pitch bend, 481 voices) follow. Bit 3 is cleared on 852 of the
+1,858 voices with a vibrato depth but only on 759 of the 30,204 without one; bit 0 (pitch) is
+cleared on 784 voices. The bits of the other destinations are rarely cleared; that they follow the
+order of the destination numbers, as on the Emulator II and III, is an assumption.
+
+**A real-time control overrides the LFO amount of the voice**, as the manual says for each of the
+LFO destinations ("Assigning this destination overrides the equivalent Analog Processing module
+function"): with the wheel down there is no modulation. How deep the wheel modulates when it is fully
+up is not documented; the converter takes the largest amount (15 steps).
+
+ConvertWithMoss reads an LFO routing which the right wheel controls and which the voice does not
+exempt as a modulation wheel depth of the largest amount without a fixed depth. When writing, the
+right wheel is assigned to the first LFO routing - pitch, filter, level - for which a zone has a
+modulation wheel depth (no assignment otherwise), and the voices without a modulation wheel depth
+for it exempt themselves from it, so that their fixed amount stays audible.
 
 ### The parameter laws
 
@@ -316,10 +357,10 @@ and the two output channel assignments, which route a voice to one of the output
 sampler. The chorus, the voice delay and the velocity routings to the filter attack, the filter Q
 and the amplitude attack are read but only carried where the model has a place for them.
 
-The 23 bytes of preset parameters at offset `0x0C` of a preset record are not decoded either. They
-hold the settings of the Preset Definition module - the keyboard mode, the arpeggiator, the MIDI
-setup, the pitch bend range and the real-time control assignments - which apply to a whole preset
-rather than to its zones.
+The 19 bytes of preset parameters behind the real-time controls (`0x10` to `0x22`) are not decoded
+either. They hold the other settings of the Preset Definition module - the keyboard mode, the
+arpeggiator, the MIDI setup and the pitch bend range - which apply to a whole preset rather than to
+its zones.
 
 The sequencer is not decoded. The sequence pointers at `0x0D4` reach into the top of the sample
 memory and the sequence names live in the parameter heap behind the presets.

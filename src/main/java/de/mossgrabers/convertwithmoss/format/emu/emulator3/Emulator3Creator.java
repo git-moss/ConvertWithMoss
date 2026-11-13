@@ -343,7 +343,13 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         preset.data = new byte [Emulator3Constants.PRESET_SIZE + numNoteZones * Emulator3Constants.NOTE_ZONE_SIZE + numNoteZones * Emulator3Constants.ZONE_SIZE];
 
         Emulator3Constants.encodeName (preset.data, 0, preset.name);
-        System.arraycopy (Emulator3Constants.DEFAULT_REALTIME_CONTROLS, 0, preset.data, Emulator3Constants.NAME_LENGTH, Emulator3Constants.DEFAULT_REALTIME_CONTROLS.length);
+        System.arraycopy (Emulator3Constants.DEFAULT_REALTIME_CONTROLS, 0, preset.data, Emulator3Constants.PRESET_REALTIME_CONTROLS, Emulator3Constants.DEFAULT_REALTIME_CONTROLS.length);
+        // The modulation wheel overrides the amount of the LFO routing it controls, therefore it is
+        // only assigned if a zone has a modulation wheel depth, and only to one of the routings
+        final int modWheelDestination = getModWheelDestination (survivors.stream ().map (survivor -> mappedZones.get (survivor.intValue ())).toList ());
+        preset.data[Emulator3Constants.PRESET_REALTIME_CONTROLS + Emulator3Constants.REALTIME_LFO_TO_PITCH - 1] = 0;
+        if (modWheelDestination > 0)
+            preset.data[Emulator3Constants.PRESET_REALTIME_CONTROLS + modWheelDestination - 1] = (byte) Emulator3Constants.REALTIME_SOURCE_MOD_WHEEL;
         preset.data[Emulator3Constants.PRESET_PITCH_BEND_RANGE] = (byte) getPitchBendRange (mappedZones);
         preset.data[Emulator3Constants.PRESET_NUM_NOTE_ZONES] = (byte) numNoteZones;
         for (int key = 0; key < keyMappings.length; key++)
@@ -373,7 +379,7 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
             // boundaries of the primary layer, which the groups of a source do not have to
             preset.data[noteZoneOffset + i * Emulator3Constants.NOTE_ZONE_SIZE + Emulator3Constants.NOTE_ZONE_PRIMARY] = (byte) i;
             preset.data[noteZoneOffset + i * Emulator3Constants.NOTE_ZONE_SIZE + Emulator3Constants.NOTE_ZONE_SECONDARY] = (byte) Emulator3Constants.UNUSED;
-            createZone (preset.data, zoneOffset + i * Emulator3Constants.ZONE_SIZE, mappedZones.get (index), sampleIndices.get (index).intValue (), bankFormat);
+            createZone (preset.data, zoneOffset + i * Emulator3Constants.ZONE_SIZE, mappedZones.get (index), sampleIndices.get (index).intValue (), bankFormat, modWheelDestination);
         }
         return preset;
     }
@@ -431,8 +437,10 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
      * @param zone The zone to convert
      * @param sampleIndex The 1-based index of the sample of the zone
      * @param bankFormat The format of the bank
+     * @param modWheelDestination The real-time destination which the modulation wheel controls, 0
+     *            if none
      */
-    private static void createZone (final byte [] data, final int offset, final ISampleZone zone, final int sampleIndex, final Emulator3BankFormat bankFormat)
+    private static void createZone (final byte [] data, final int offset, final ISampleZone zone, final int sampleIndex, final Emulator3BankFormat bankFormat, final int modWheelDestination)
     {
         final boolean isEsi = bankFormat == Emulator3BankFormat.ESI_32_V3;
 
@@ -493,7 +501,12 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
             writeEnvelope (data, offset + Emulator3Constants.ZONE_VCF_ENVELOPE, null);
         }
 
-        data[offset + Emulator3Constants.ZONE_REALTIME_ENABLE] = (byte) Emulator3Constants.REALTIME_ENABLE_ALL;
+        // A zone without a modulation wheel depth for the routing which the wheel controls exempts
+        // itself, otherwise the wheel would override its fixed amount
+        int realtimeEnable = Emulator3Constants.REALTIME_ENABLE_ALL;
+        if (modWheelDestination > 0 && getModWheelDepth (zone, modWheelDestination) == 0)
+            realtimeEnable &= ~Emulator3Constants.getRealtimeEnableFlag (modWheelDestination);
+        data[offset + Emulator3Constants.ZONE_REALTIME_ENABLE] = (byte) realtimeEnable;
         // Bit 0 is always set by the samplers, its meaning is unknown
         int flags = 0x01;
         if (zone.getKeyTracking () == 0)
@@ -521,11 +534,11 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         final ILfoModulator amplitudeLfo = zone.getAmplitudeLfoModulator ();
         final ILfoModulator cutoffLfo = zone.getFilter ().map (IFilter::getCutoffLfoModulator).orElse (null);
         ILfoModulator source = null;
-        if (pitchLfo.getDepth () != 0)
+        if (pitchLfo.isActive ())
             source = pitchLfo;
-        else if (amplitudeLfo.getDepth () != 0)
+        else if (amplitudeLfo.isActive ())
             source = amplitudeLfo;
-        else if (cutoffLfo != null && cutoffLfo.getDepth () != 0)
+        else if (cutoffLfo != null && cutoffLfo.isActive ())
             source = cutoffLfo;
         if (source == null)
             return;
@@ -541,6 +554,49 @@ public class Emulator3Creator extends AbstractCreator<Emulator3CreatorUI>
         data[offset + Emulator3Constants.ZONE_LFO_TO_AMPLIFIER] = (byte) Math.clamp (Math.round (amplitudeLfo.getDepth () * ILfoModulator.MAX_VOLUME_DEPTH / Emulator3Constants.LFO_AMPLIFIER_FULL_DEPTH_DB * 127), -127, 127);
         if (cutoffLfo != null)
             data[offset + Emulator3Constants.ZONE_LFO_TO_CUTOFF] = (byte) Math.clamp (Math.round (cutoffLfo.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / Emulator3Constants.LFO_CUTOFF_FULL_DEPTH_CENTS * 127), -127, 127);
+    }
+
+
+    /**
+     * Get the LFO routing which the modulation wheel controls. The preset can assign the wheel to
+     * only one of them; the first one in the order pitch, cutoff and volume for which a zone has a
+     * modulation wheel depth is taken.
+     *
+     * @param zones The zones of the preset
+     * @return The real-time destination of the routing, 0 if no zone has a modulation wheel depth
+     */
+    private static int getModWheelDestination (final List<ISampleZone> zones)
+    {
+        final int [] destinations =
+        {
+            Emulator3Constants.REALTIME_LFO_TO_PITCH,
+            Emulator3Constants.REALTIME_LFO_TO_CUTOFF,
+            Emulator3Constants.REALTIME_LFO_TO_VCA
+        };
+        for (final int destination: destinations)
+            for (final ISampleZone zone: zones)
+                if (getModWheelDepth (zone, destination) != 0)
+                    return destination;
+        return 0;
+    }
+
+
+    /**
+     * Get the depth which the modulation wheel adds to an LFO routing of a zone.
+     *
+     * @param zone The zone
+     * @param destination The real-time destination of the routing, e.g. REALTIME_LFO_TO_PITCH
+     * @return The depth, 0 if the zone has no such routing
+     */
+    private static double getModWheelDepth (final ISampleZone zone, final int destination)
+    {
+        final Optional<ILfoModulator> modulator = switch (destination)
+        {
+            case Emulator3Constants.REALTIME_LFO_TO_PITCH -> Optional.of (zone.getPitchLfoModulator ());
+            case Emulator3Constants.REALTIME_LFO_TO_VCA -> Optional.of (zone.getAmplitudeLfoModulator ());
+            default -> zone.getFilter ().map (IFilter::getCutoffLfoModulator);
+        };
+        return modulator.isPresent () ? modulator.get ().getDepthModWheelModulator ().getDepth () : 0;
     }
 
 

@@ -173,7 +173,7 @@ pure function of it, then the law from the paired values. `Emulator2VoiceSetting
 | `+0x25` (= `+0x93`) | filter envelope amount | a table: `0x14` = 1440 cents, `0x54` = 6000, `0xCC` = 12000 (about (value + 16) × 60 cents up to `0x88`, compressing towards 12000); `0x04` = none |
 | `+0x28`/`+0x2A`/`+0x2C` | LFO to pitch / filter / level | 16-bit pointers into the depth tables: index = (high byte − `0x1C`) × 4 + low byte; pitch 1..8 = 13, 20, 26, 29, 35, 39, 41, 45 cents; filter 1..12 = 340 .. 1496 cents; level 1..9 = 1.6 .. 6 dB |
 | `+0x2E` | filter envelope sustain | 0..`0x1E` = 0 .. 84 % of the amount, `0x1F` and `0x63` = full (EMXP maps both to 0, which contradicts the trend of the values below) |
-| `+0x2F` | flags | bit 7 = filter envelope inverted (98 % of the negative amounts, 0 % of the positive ones); bits 3-5 not decoded |
+| `+0x2F` | flags | bit 7 = filter envelope inverted (98 % of the negative amounts, 0 % of the positive ones); bits 0-6 enable the real-time control destinations 1-7 for the voice (see *Real-time controls*) |
 | `+0x30`-`+0x3F` | cutoff per velocity zone | `0x0F` = 20 Hz, `0x59` = 310 Hz, `0x81` = 900 Hz, `0xB1` = 4.7 kHz, `0xFB` = 19.2 kHz - a table, about 20 units per octave in the middle; `0xF9` and above is open. Entry 0 − entry 15 = velocity to cutoff, −59.4 cents per unit |
 | `+0x40`-`+0x4F` | level per velocity zone | `0xFF` = 0 dB, `0xF1` = −4 dB, `0xE7` = −7 dB, `0xD8` = −11 dB, `0xAC` = −19 dB; entry 0 − entry 15 = velocity to level: `0x1E` = 4 dB, `0x3C` = 8 dB, `0x78` = 22 dB, `0xA5` = 40 dB |
 | `+0x50`/`+0x60`, `+0x70`/`+0x80` | VCF and VCA attack per velocity zone | counter pairs (passes, increment): time = 2.55 s × passes / increment; entry 0 is the parameter, the other entries the velocity variants |
@@ -227,7 +227,7 @@ the signature presets of the Northstar and OMI libraries, which lost the presets
 
 | Offset | Size | Content |
 |--------|------|---------|
-| `+0` | 9 | header `01 04 00 00 00 00 02 03 89` on the newer OS versions, `01 00 00 00 00 00 00 00 81` / `00 … 80` on older ones; `00 00 00 01 04 00 02 03 89` on the first record of some chains; the top bit of the last byte is always set and the eight bytes in front of it are always small values (0 to 6) |
+| `+0` | 9 | header `01 04 00 00 00 00 02 03 89` on the newer OS versions, `01 00 00 00 00 00 00 00 81` / `00 … 80` on older ones; `00 00 00 01 04 00 02 03 89` on the first record of some chains; the top bit of the last byte is always set; the eight bytes in front of it are the **real-time controls** (see below), which is why they are always small values (0 to 6) |
 | `+9` | 12 | name, space padded; ASCII, except that the Sound Designer software of the Macintosh wrote its Mac Roman characters into it - `p&c© 1986 N*` is the signature preset of the Northstar libraries - and some names end with a stray tab or carriage return |
 | `+21` | 14 | parameters (*unknown*, `00 0B 00 00 00 00 00 00 00 00 00 00 50 04` is the most frequent) |
 | `+35` | | the **key range entries** |
@@ -242,6 +242,45 @@ community library, e.g. `Crowd Noise` with 18 keys). The mode is 1 for a silent 
 voice is a 1-based *voice number*, resolved through the voice list at `0x2CF` to a record; a bank
 without a voice list numbers its records in their order. The level is `0x70` on 361 of 375 factory
 ranges. The second byte is 0 or 8 and not decoded.
+
+### Real-time controls — *confirmed*
+
+The first 8 bytes of a preset record are the Real Time Control module of the preset: one byte for
+each of the 8 sources of the operations manual which holds the destination the source controls.
+
+```
+source:      1 left wheel, 2 right wheel, 3 pedal, 4-6 MIDI control A-C, 7-8 footswitch 1-2
+destination: 0 off, 1 pitch, 2 filter Fc, 3 level, 4 LFO to pitch, 5 LFO to filter Fc,
+             6 LFO to level, 7 attack rate (sources 1-6); 0-5 the footswitch functions (7-8)
+```
+
+The common header `01 04 00 00 00 00 02 03` is the setup of the factory library: the left wheel
+bends the pitch, the right wheel - the modulation wheel - dials in the vibrato and the footswitches
+have the functions 2 and 3. The older `01 00 …` leaves the right wheel unassigned; `00 00 00 01 04
+00 02 03` assigns the pitch and the vibrato to the MIDI controls A and B instead of the wheels.
+Which MIDI controllers these receive is presumably held in the preset parameters, which are not
+decoded.
+
+A voice exempts itself from a destination by clearing bit *n* of its flags at `+0x2F` for the
+destination *n* + 1 - the *Control Enable* function of the Voice Definition module. The bit
+positions follow from the 4 bank files of the test corpus (216 voices): every voice without an LFO
+amount has the bits of LFO to pitch, filter and level (`0x08`, `0x10`, `0x20`) set; 45 of the 46
+voices with a vibrato depth clear `0x08`, 15 of the 16 with an LFO amount on the filter clear
+`0x10` and 14 of the 16 with one on the level clear `0x20` - `0x7F` (all enabled) becomes `0x77`,
+`0x6F` and `0x5F`.
+
+**The amount of a voice has priority over a real-time control.** The operations manual states it
+for the three LFO destinations ("this function is operative only if Voice Definition function 23A
+is set at 00"), so the wheel only dials an LFO routing into the voices which have no amount for it.
+The factory voices additionally exempt themselves where they have an amount. How deep the wheel
+modulates when it is fully up is not documented; the converter takes the largest value of each
+depth table.
+
+ConvertWithMoss reads an LFO routing which the right wheel controls, which the voice enables and
+for which the voice has no amount as a modulation wheel depth of the largest table value. When
+writing, the right wheel of a preset is assigned to the first LFO routing - pitch, filter, level -
+which one of its zones only dials in with the modulation wheel (no assignment otherwise); a voice
+enables only the LFO routings which it leaves to the wheel.
 
 ### Key mapping — *confirmed*
 
@@ -317,8 +356,9 @@ becomes a preset, the zones of its first group the voices of the key ranges, the
 group their second voices, identical audio is stored once. The audio is mixed to mono, re-sampled to
 27,777 Hz and companded, and cut at the end of the loop, since the sampler plays the loop as the end
 of a voice; the voice records take their settings from the voice `piano A2` of the disk *Grand
-Piano* with the name, the addresses, the counter block, the loop flag and the pointers replaced,
-the preset records and the key maps of the first preset are written as described, the sample memory
+Piano* with the name, the addresses, the counter block, the loop flag and the pointers replaced
+and with the fine tuning, the level table, the LFO (rate, delay, the three depth pointers) and the
+real-time control enable flags of the zone, the preset records and the key maps of the first preset are written as described, the sample memory
 starts `0x95FE` behind the records and ends at the 485,888 bytes the sampler saves, and the
 operating system is copied from the `.E2O` file or disk image named in the settings. The image is
 written as a HFE with the field spacing of the HxC images or as a raw `.emuiifd`. Round trip: the
@@ -328,7 +368,9 @@ ranges, roots, lengths and loops.
 ### Still to decode
 
 The chorus and *loop in release* switches of a voice (bits 1, 3 and 5 of the voice flags at
-`+0xC6`, or of `+0x2F`), the preset parameters and the second byte of a key range entry.
+`+0xC6`), the preset parameters (presumably the arpeggiator, the MIDI setup with the controller
+numbers of the MIDI controls A to C, and the pitch bend range) and the second byte of a key range
+entry.
 
 ## Test corpus
 

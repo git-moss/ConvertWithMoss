@@ -68,6 +68,12 @@ public class EmaxConstants
 
     /** The length of the name of a preset. */
     public static final int        PRESET_NAME_LENGTH         = 12;
+    /**
+     * The real-time controls of a preset: one nibble for each of the sources 1 to 8 - the lower
+     * nibble for the odd, the upper for the even source - which holds the destination the source
+     * controls, 0 for none. The right wheel (source 2) is the upper nibble of the first byte.
+     */
+    public static final int        PRESET_REALTIME_CONTROLS   = 0x0C;
     /** The number of key areas of a preset, which is the length of its voice table. */
     public static final int        PRESET_KEY_AREA_COUNT      = 0x23;
     /** The table which maps each of the 88 keys to an entry of the voice table. */
@@ -108,6 +114,20 @@ public class EmaxConstants
     public static final int        VOICE_CHORUS               = 27;
     /** The bit which switches the chorus on. */
     public static final int        VOICE_CHORUS_BIT           = 0x08;
+    /**
+     * The flags which enable the real-time control destinations for a voice: bit n for the
+     * destination n + 1, all of them are set by default.
+     */
+    public static final int        VOICE_REALTIME_ENABLE      = 10;
+
+    /** The real-time destination LFO to pitch, which overrides the amount of the voice. */
+    public static final int        REALTIME_LFO_TO_PITCH      = 4;
+    /** The real-time destination LFO to filter Fc, which overrides the amount of the voice. */
+    public static final int        REALTIME_LFO_TO_CUTOFF     = 5;
+    /** The real-time destination LFO to level, which overrides the amount of the voice. */
+    public static final int        REALTIME_LFO_TO_VOLUME     = 6;
+    /** The largest value of the 4 bit LFO depths. */
+    public static final int        LFO_DEPTH_MAX              = 15;
 
     /** The highest value of the filter cutoff, at which the filter is fully open. */
     public static final int        FILTER_CUTOFF_MAX          = 120;
@@ -1004,6 +1024,61 @@ public class EmaxConstants
             }
         }
         return (isNegative ? 0x80 : 0x00) | chord << 4 | bestStep;
+    }
+
+
+    /**
+     * Get the real-time destination which the right wheel - the modulation wheel - of a preset
+     * controls.
+     *
+     * @param presetRecord The data which holds the preset record
+     * @param preset The position of the preset record
+     * @return The destination, 0 for none
+     */
+    public static int getModWheelDestination (final byte [] presetRecord, final int preset)
+    {
+        return (presetRecord[preset + PRESET_REALTIME_CONTROLS] & 0xF0) >> 4;
+    }
+
+
+    /**
+     * Set the real-time destination which the right wheel - the modulation wheel - of a preset
+     * controls.
+     *
+     * @param presetRecord The data which holds the preset record
+     * @param preset The position of the preset record
+     * @param destination The destination, 0 for none
+     */
+    public static void setModWheelDestination (final byte [] presetRecord, final int preset, final int destination)
+    {
+        presetRecord[preset + PRESET_REALTIME_CONTROLS] = (byte) (presetRecord[preset + PRESET_REALTIME_CONTROLS] & 0x0F | destination << 4);
+    }
+
+
+    /**
+     * Get the flag of the real-time enable flags of a voice which enables a destination.
+     *
+     * @param destination The 1-based real-time destination, e.g. REALTIME_LFO_TO_PITCH
+     * @return The flag
+     */
+    public static int getRealtimeEnableFlag (final int destination)
+    {
+        return 1 << (destination - 1);
+    }
+
+
+    /**
+     * Check if the modulation wheel controls a real-time destination of a voice: the preset assigns
+     * the right wheel to it and the voice does not exempt itself from it.
+     *
+     * @param voiceRecord The voice record
+     * @param modWheelDestination The destination which the right wheel of the preset controls
+     * @param destination The real-time destination, e.g. REALTIME_LFO_TO_PITCH
+     * @return True if the modulation wheel controls the destination
+     */
+    public static boolean isModWheelControlled (final byte [] voiceRecord, final int modWheelDestination, final int destination)
+    {
+        return modWheelDestination == destination && (voiceRecord[VOICE_REALTIME_ENABLE] & getRealtimeEnableFlag (destination)) != 0;
     }
 
 

@@ -348,6 +348,9 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         final Map<Integer, ILfo> lfos = new HashMap<> ();
         lfos.put (Integer.valueOf (AkpModulations.SOURCE_LFO1), createLfo (lfo1Chunk));
         lfos.put (Integer.valueOf (AkpModulations.SOURCE_LFO2), createLfo (lfo2Chunk));
+        final Map<Integer, Integer> lfoModWheelDepths = new HashMap<> ();
+        lfoModWheelDepths.put (Integer.valueOf (AkpModulations.SOURCE_LFO1), Integer.valueOf (getModWheelDepth (lfo1Chunk, modsChunk)));
+        lfoModWheelDepths.put (Integer.valueOf (AkpModulations.SOURCE_LFO2), Integer.valueOf (getModWheelDepth (lfo2Chunk, modsChunk)));
 
         // The program level amounts of the amplitude modulation are in the output chunk, the one
         // of the key-group in the location chunk
@@ -386,9 +389,9 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         // The model supports only one envelope and one LFO per destination, therefore the first
         // matching modulation is used
         final Optional<Modulation> pitchEnvelopeModulation = findModulation (pitchModulations, envelopes.keySet ());
-        final Optional<Modulation> pitchLfoModulation = findLfoModulation (pitchModulations, lfoChunks);
-        final Optional<Modulation> amplitudeLfoModulation = findLfoModulation (amplitudeModulations, lfoChunks);
-        final Optional<Modulation> cutoffLfoModulation = findLfoModulation (cutoffModulations, lfoChunks);
+        final Optional<Modulation> pitchLfoModulation = findLfoModulation (pitchModulations, lfoChunks, lfoModWheelDepths);
+        final Optional<Modulation> amplitudeLfoModulation = findLfoModulation (amplitudeModulations, lfoChunks, lfoModWheelDepths);
+        final Optional<Modulation> cutoffLfoModulation = findLfoModulation (cutoffModulations, lfoChunks, lfoModWheelDepths);
 
         // The filter envelope modulates the cutoff with its own depth. A modulation input with the
         // filter envelope as its source is the same parameter: the Z4/Z8 writes the depth of the
@@ -450,7 +453,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
                 cutoffEnvelopeModulator.setSource (cutoffEnvelope);
 
                 if (cutoffLfoModulation.isPresent ())
-                    setLfoModulation (sampleFilter.getCutoffLfoModulator (), cutoffLfoModulation.get (), lfos, lfoChunks, LFO_CUTOFF_FULL_DEPTH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+                    setLfoModulation (sampleFilter.getCutoffLfoModulator (), cutoffLfoModulation.get (), lfos, lfoChunks, lfoModWheelDepths, CUTOFF_LFO_FULL_DEPTH);
             }
 
             // -50..50, the panning has no effect if the zone is routed to a mono output
@@ -477,7 +480,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
             amplitudeEnvelopeModulator.setSource (amplitudeEnvelope);
             sampleZone.getAmplitudeVelocityModulator ().setDepth (outChunk.getVelocitySensitivity () / 100.0);
             if (amplitudeLfoModulation.isPresent ())
-                setLfoModulation (sampleZone.getAmplitudeLfoModulator (), amplitudeLfoModulation.get (), lfos, lfoChunks, LFO_AMPLITUDE_FULL_DEPTH_DB / ILfoModulator.MAX_VOLUME_DEPTH);
+                setLfoModulation (sampleZone.getAmplitudeLfoModulator (), amplitudeLfoModulation.get (), lfos, lfoChunks, lfoModWheelDepths, AMPLITUDE_LFO_FULL_DEPTH);
 
             if (pitchEnvelopeModulation.isPresent ())
             {
@@ -487,7 +490,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
                 pitchModulator.setSource (envelopes.get (Integer.valueOf (modulation.source ())));
             }
             if (pitchLfoModulation.isPresent ())
-                setLfoModulation (sampleZone.getPitchLfoModulator (), pitchLfoModulation.get (), lfos, lfoChunks, LFO_PITCH_FULL_DEPTH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+                setLfoModulation (sampleZone.getPitchLfoModulator (), pitchLfoModulation.get (), lfos, lfoChunks, lfoModWheelDepths, PITCH_LFO_FULL_DEPTH);
 
             sampleZone.setBendUp (tuningChunk.getPitchbendUp () * 100);
             sampleZone.setBendDown (-tuningChunk.getPitchbendDown () * 100);
@@ -522,26 +525,47 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         tuningChunk.setPitchbendDown (Math.clamp (Math.round (Math.abs (zone.getBendDown ()) / 100.0), 0, 24));
 
         // The LFOs are program parameters, they are taken from the first zone which uses them
+        // LFO 1 has its own modulation wheel amount. It is always set since the default of the
+        // S5000/S6000 adds a vibrato with the modulation wheel
         final Optional<ILfoModulator> pitchLfoModulator = findLfoModulator (sampleZones, ISampleZone::getPitchLfoModulator);
         if (pitchLfoModulator.isPresent ())
-            setLfo (lfo1Chunk, pitchLfoModulator.get ().getSource (), toLfoDepth (pitchLfoModulator.get ().getDepth (), PITCH_LFO_FULL_DEPTH));
+        {
+            final int [] depths = toLfoDepths (pitchLfoModulator.get (), PITCH_LFO_FULL_DEPTH);
+            setLfo (lfo1Chunk, pitchLfoModulator.get ().getSource (), depths[0]);
+            lfo1Chunk.setModwheel (Math.clamp (depths[1], 0, 100));
+        }
+        else
+            lfo1Chunk.setModwheel (0);
 
         final Optional<ILfoModulator> cutoffLfoModulator = findLfoModulator (sampleZones, sampleZone -> sampleZone.getFilter ().isPresent () ? sampleZone.getFilter ().get ().getCutoffLfoModulator () : null);
         final Optional<ILfoModulator> amplitudeLfoModulator = findLfoModulator (sampleZones, ISampleZone::getAmplitudeLfoModulator);
         final boolean hasAmplitudeLfo = amplitudeLfoModulator.isPresent () && (cutoffLfoModulator.isEmpty () || isSameLfo (cutoffLfoModulator.get ().getSource (), amplitudeLfoModulator.get ().getSource ()));
 
-        // Both modulations share the depth of LFO 2, therefore use the one which needs the larger
-        // depth
-        final int cutoffLfoDepth = cutoffLfoModulator.isPresent () ? toLfoDepth (cutoffLfoModulator.get ().getDepth (), CUTOFF_LFO_FULL_DEPTH) : 0;
-        final int amplitudeLfoDepth = hasAmplitudeLfo ? toLfoDepth (amplitudeLfoModulator.get ().getDepth (), AMPLITUDE_LFO_FULL_DEPTH) : 0;
+        // Both modulations share the depth of LFO 2 and the depth which the modulation wheel adds
+        // to it (via the LFO 2 depth modulation). The cutoff modulation has priority, the depths of
+        // the amplitude modulation are only exact if their ratio is the same
+        int [] lfo2Depths = null;
         if (cutoffLfoModulator.isPresent ())
-            setLfo (lfo2Chunk, cutoffLfoModulator.get ().getSource (), Math.max (cutoffLfoDepth, amplitudeLfoDepth));
+        {
+            lfo2Depths = toLfoDepths (cutoffLfoModulator.get (), CUTOFF_LFO_FULL_DEPTH);
+            if (hasAmplitudeLfo && cutoffLfoModulator.get ().getDepthModWheelModulator ().getDepth () == 0 && amplitudeLfoModulator.get ().getDepthModWheelModulator ().getDepth () == 0)
+                lfo2Depths[0] = Math.max (lfo2Depths[0], toLfoDepth (amplitudeLfoModulator.get ().getDepth (), AMPLITUDE_LFO_FULL_DEPTH));
+            setLfo (lfo2Chunk, cutoffLfoModulator.get ().getSource (), lfo2Depths[0]);
+        }
         else if (hasAmplitudeLfo)
-            setLfo (lfo2Chunk, amplitudeLfoModulator.get ().getSource (), amplitudeLfoDepth);
+        {
+            lfo2Depths = toLfoDepths (amplitudeLfoModulator.get (), AMPLITUDE_LFO_FULL_DEPTH);
+            setLfo (lfo2Chunk, amplitudeLfoModulator.get ().getSource (), lfo2Depths[0]);
+        }
+        if (lfo2Depths != null && lfo2Depths[1] != 0)
+        {
+            modsChunk.setSource (Slot.LFO2_DEPTH, AkpModulations.SOURCE_MODWHEEL);
+            lfo2Chunk.setDepthMod (Math.clamp (lfo2Depths[1], -100, 100));
+        }
         if (hasAmplitudeLfo)
         {
             modsChunk.setSource (Slot.AMP_MOD_2, AkpModulations.SOURCE_LFO2);
-            outChunk.setAmpMod2 (toLfoAmount (amplitudeLfoModulator.get ().getDepth (), AMPLITUDE_LFO_FULL_DEPTH, lfo2Chunk.getDepth ()));
+            outChunk.setAmpMod2 (toLfoAmount (amplitudeLfoModulator.get (), AMPLITUDE_LFO_FULL_DEPTH, lfo2Chunk.getDepth (), lfo2Chunk.getDepthMod ()));
         }
     }
 
@@ -565,13 +589,10 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         this.location.setMuteGroup (Math.clamp (firstZone.getExclusiveGroup (), 0, 127));
 
         // Pitch Mod 1 uses LFO 1. If the program has no pitch LFO, the default amount is kept since
-        // the LFO depth is 0 and the mod-wheel then adds a vibrato as usual. If only other
-        // key-groups have a pitch LFO, the amount needs to be 0
-        final ILfoModulator pitchLfoModulator = firstZone.getPitchLfoModulator ();
-        if (pitchLfoModulator.getDepth () != 0 && lfo1Chunk.getDepth () > 0)
-            this.location.setPitchMod1 (toLfoAmount (pitchLfoModulator.getDepth (), PITCH_LFO_FULL_DEPTH, lfo1Chunk.getDepth ()));
-        else if (lfo1Chunk.getDepth () > 0)
-            this.location.setPitchMod1 (0);
+        // the LFO depth and its modulation wheel amount are 0. If only other key-groups have a
+        // pitch LFO, the amount needs to be 0
+        if (lfo1Chunk.getDepth () > 0 || lfo1Chunk.getModwheel () > 0)
+            this.location.setPitchMod1 (toLfoAmount (firstZone.getPitchLfoModulator (), PITCH_LFO_FULL_DEPTH, lfo1Chunk.getDepth (), lfo1Chunk.getModwheel ()));
 
         // Pitch Mod 2 uses the auxiliary envelope
         final IEnvelopeModulator pitchEnvelopeModulator = firstZone.getPitchEnvelopeModulator ();
@@ -603,8 +624,8 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
             // Filter Mod 2 uses LFO 2
             final ILfoModulator cutoffLfoModulator = sampleFilter.getCutoffLfoModulator ();
-            if (cutoffLfoModulator.getDepth () != 0 && lfo2Chunk.getDepth () > 0)
-                this.filter.setModInput (1, toLfoAmount (cutoffLfoModulator.getDepth (), CUTOFF_LFO_FULL_DEPTH, lfo2Chunk.getDepth ()));
+            if (cutoffLfoModulator.isActive ())
+                this.filter.setModInput (1, toLfoAmount (cutoffLfoModulator, CUTOFF_LFO_FULL_DEPTH, lfo2Chunk.getDepth (), lfo2Chunk.getDepthMod ()));
         }
         else
             keygroupCutoff = this.filter.getCutoff ();
@@ -781,7 +802,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
 
     /**
-     * Find the first LFO modulator with a depth.
+     * Find the first LFO modulator with a depth or a depth added by the modulation wheel.
      *
      * @param sampleZones The sample zones to search
      * @param getter Gets the LFO modulator from a zone, may return null
@@ -792,7 +813,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         for (final ISampleZone sampleZone: sampleZones)
         {
             final ILfoModulator modulator = getter.apply (sampleZone);
-            if (modulator != null && modulator.getDepth () != 0)
+            if (modulator != null && modulator.isActive ())
                 return Optional.of (modulator);
         }
         return Optional.empty ();
@@ -898,6 +919,55 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
 
     /**
+     * Get the depth of an LFO and the depth which the modulation wheel adds to it. Both share the
+     * amount of the modulation destination, therefore they are scaled from the larger one which
+     * uses the lowest LFO depth which allows an amount of up to 100.
+     *
+     * @param modulator The LFO modulator
+     * @param fullDepth The modulator depth of the maximum LFO depth and amount
+     * @return The LFO depth in the range of [0..100] and the depth added by the modulation wheel
+     *         in the range of [-100..100]
+     */
+    private static int [] toLfoDepths (final ILfoModulator modulator, final double fullDepth)
+    {
+        final double depth = modulator.getDepth ();
+        final double modWheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
+        final double peak = Math.max (Math.abs (depth), Math.abs (modWheelDepth));
+        if (peak == 0)
+            return new int [2];
+        // The sign is applied by the amount, which is calculated from the depth if present
+        final double sign = Math.signum (depth != 0 ? depth : modWheelDepth);
+        final int peakDepth = toLfoDepth (peak, fullDepth);
+        return new int []
+        {
+            (int) Math.round (Math.abs (depth) / peak * peakDepth),
+            (int) Math.round (modWheelDepth * sign / peak * peakDepth)
+        };
+    }
+
+
+    /**
+     * Convert the depth of an LFO modulator to the amount of the modulation destination. The
+     * amount is calculated from the depth of the LFO if present, otherwise from the depth which the
+     * modulation wheel adds.
+     *
+     * @param modulator The LFO modulator
+     * @param fullDepth The modulator depth of the maximum LFO depth and amount
+     * @param lfoDepth The depth of the LFO in the range of [0..100]
+     * @param modWheelDepth The depth which the modulation wheel adds to the LFO
+     * @return The amount in the range of [-100..100]
+     */
+    private static int toLfoAmount (final ILfoModulator modulator, final double fullDepth, final int lfoDepth, final int modWheelDepth)
+    {
+        if (lfoDepth > 0 && modulator.getDepth () != 0)
+            return toLfoAmount (modulator.getDepth (), fullDepth, lfoDepth);
+        if (modWheelDepth != 0)
+            return toLfoAmount (modulator.getDepthModWheelModulator ().getDepth (), fullDepth, modWheelDepth);
+        return 0;
+    }
+
+
+    /**
      * Get the modulations of a destination.
      *
      * @param modsChunk The modulations chunk which contains the modulation sources
@@ -936,21 +1006,43 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
     /**
      * Find the first modulation which uses one of the LFOs as its source. An LFO with a depth of 0
-     * does not modulate anything and is therefore ignored.
+     * which is also not increased by the modulation wheel does not modulate anything and is
+     * therefore ignored.
      *
      * @param modulations The modulations of a destination
      * @param lfoChunks The LFO chunks mapped to their modulation source
+     * @param lfoModWheelDepths The depths which the modulation wheel adds to the LFOs mapped to
+     *            their modulation source
      * @return The modulation if found
      */
-    private static Optional<Modulation> findLfoModulation (final List<Modulation> modulations, final Map<Integer, AkpLfo> lfoChunks)
+    private static Optional<Modulation> findLfoModulation (final List<Modulation> modulations, final Map<Integer, AkpLfo> lfoChunks, final Map<Integer, Integer> lfoModWheelDepths)
     {
         for (final Modulation modulation: modulations)
         {
-            final AkpLfo lfoChunk = lfoChunks.get (Integer.valueOf (modulation.source ()));
-            if (lfoChunk != null && lfoChunk.getDepth () > 0)
+            final Integer source = Integer.valueOf (modulation.source ());
+            final AkpLfo lfoChunk = lfoChunks.get (source);
+            if (lfoChunk != null && (lfoChunk.getDepth () > 0 || lfoModWheelDepths.get (source).intValue () != 0))
                 return Optional.of (modulation);
         }
         return Optional.empty ();
+    }
+
+
+    /**
+     * Get the depth which the modulation wheel adds to an LFO: LFO 1 has its own modulation wheel
+     * amount, additionally the depth of both LFOs can be modulated by a source in the modulations
+     * chunk.
+     *
+     * @param lfoChunk The LFO chunk
+     * @param modsChunk The modulations chunk
+     * @return The added depth in the range of [-100..200]
+     */
+    private static int getModWheelDepth (final AkpLfo lfoChunk, final AkpModulations modsChunk)
+    {
+        int depth = lfoChunk.isFirst () ? lfoChunk.getModwheel () : 0;
+        if (modsChunk.getSource (lfoChunk.isFirst () ? Slot.LFO1_DEPTH : Slot.LFO2_DEPTH) == AkpModulations.SOURCE_MODWHEEL)
+            depth += lfoChunk.getDepthMod ();
+        return depth;
     }
 
 
@@ -962,13 +1054,18 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
      * @param modulation The modulation which has one of the LFOs as its source
      * @param lfos The converted LFOs mapped to their modulation source
      * @param lfoChunks The LFO chunks mapped to their modulation source
+     * @param lfoModWheelDepths The depths which the modulation wheel adds to the LFOs mapped to
+     *            their modulation source
      * @param fullDepth The depth of the model which matches the maximum LFO depth and amount
      */
-    private static void setLfoModulation (final ILfoModulator modulator, final Modulation modulation, final Map<Integer, ILfo> lfos, final Map<Integer, AkpLfo> lfoChunks, final double fullDepth)
+    private static void setLfoModulation (final ILfoModulator modulator, final Modulation modulation, final Map<Integer, ILfo> lfos, final Map<Integer, AkpLfo> lfoChunks, final Map<Integer, Integer> lfoModWheelDepths, final double fullDepth)
     {
         final Integer source = Integer.valueOf (modulation.source ());
-        final double depth = lfoChunks.get (source).getDepth () / 100.0 * modulation.amount () / 100.0;
+        final double amount = modulation.amount () / 100.0;
+        final double depth = lfoChunks.get (source).getDepth () / 100.0 * amount;
         modulator.setDepth (Math.clamp (depth * fullDepth, -1, 1));
+        final double modWheelDepth = lfoModWheelDepths.get (source).intValue () / 100.0 * amount;
+        modulator.getDepthModWheelModulator ().setDepth (Math.clamp (modWheelDepth * fullDepth, -1, 1));
         modulator.setSource (lfos.get (source));
     }
 

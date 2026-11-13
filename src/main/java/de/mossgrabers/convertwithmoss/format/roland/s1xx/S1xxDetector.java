@@ -272,6 +272,9 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
         // The full depth is taken as 1 semi-tone, the depth of the model covers
         // IEnvelope#MAX_ENVELOPE_DEPTH cent
         final double depth = performance.delayVibratoDepth / 255.0 * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+        // The manual vibrato is dialed in with the modulation bender, it is added on top of the
+        // delayed vibrato. Note that it is delayed as well since the model has only one delay
+        final double modWheelDepth = performance.manualVibratoDepth / 255.0 * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
 
         for (final ISampleZone zone: multisampleSource.getAllSampleZones (false))
         {
@@ -281,6 +284,7 @@ public class S1xxDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
             pitchLfoModulator.setSource (lfoSource);
             pitchLfoModulator.setDepth (depth);
+            pitchLfoModulator.getDepthModWheelModulator ().setDepth (modWheelDepth);
         }
     }
 

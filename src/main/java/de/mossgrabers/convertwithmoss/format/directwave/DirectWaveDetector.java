@@ -349,12 +349,14 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Apply the pitch and volume modulations of the zone. An LFO only has an effect when the
-     * modulation matrix routes it to a target, therefore the matrix slots are the starting point: a
-     * slot which routes one of the two zone LFOs to the pitch or to the gain of the voice is
-     * converted with the LFO block it names. The amount is bipolar around
+     * Apply the pitch, volume and filter cutoff modulations of the zone. An LFO only has an effect
+     * when the modulation matrix routes it to a target, therefore the matrix slots are the starting
+     * point: a slot which routes one of the two zone LFOs to the pitch or to the gain of the voice
+     * or to the cutoff of the first filter is converted with the LFO block it names. The filter is
+     * applied before, a cutoff modulation without a filter is ignored. The amount is bipolar around
      * {@link DirectWaveTag#MODULATION_NEUTRAL} and the strength is the cube of the distance from
-     * it, see the design document.
+     * it, see the design document. A slot which routes the modulation wheel to the amount of an
+     * LFO slot adds the modulation wheel depth.
      *
      * @param zone The zone
      * @param lfoBlocks The payloads of the two LFO blocks
@@ -362,8 +364,9 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static void applyLfos (final ISampleZone zone, final List<byte []> lfoBlocks, final List<byte []> modulations)
     {
-        for (final byte [] modulation: modulations)
+        for (int slot = 0; slot < modulations.size (); slot++)
         {
+            final byte [] modulation = modulations.get (slot);
             if (modulation.length < 8)
                 continue;
             final int source = DirectWaveChunk.readShortLE (modulation, DirectWaveTag.MODULATION_SOURCE);
@@ -377,31 +380,91 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             if (lfoIndex < 0 || lfoIndex >= lfoBlocks.size ())
                 continue;
 
-            final double strength = modulationStrength (DirectWaveChunk.readFloatLE (modulation, DirectWaveTag.MODULATION_AMOUNT));
-            if (Math.abs (strength) < 0.0001)
+            final float amount = DirectWaveChunk.readFloatLE (modulation, DirectWaveTag.MODULATION_AMOUNT);
+            final double strength = modulationStrength (amount);
+            final double wheelStrength = modulationStrength ((float) (amount + modulationStrength ((float) getModWheelAmount (modulations, slot)) * DirectWaveTag.MODULATION_AMOUNT_RANGE));
+            if (Math.abs (strength) < 0.0001 && Math.abs (wheelStrength) < 0.0001)
                 continue;
 
             final ILfoModulator modulator;
+            final double depth;
+            final double wheelDepth;
             switch (target)
             {
                 case DirectWaveTag.MODULATION_TARGET_PITCH:
                     modulator = zone.getPitchLfoModulator ();
-                    // DirectWave reaches PITCH_MODULATION_RANGE cent at its full strength, the
-                    // depth of the model is relative to MAX_ENVELOPE_DEPTH cent
-                    modulator.setDepth (Math.clamp (strength * DirectWaveTag.PITCH_MODULATION_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1));
+                    depth = pitchDepth (strength);
+                    wheelDepth = pitchDepth (wheelStrength);
                     break;
 
                 case DirectWaveTag.MODULATION_TARGET_GAIN:
                     modulator = zone.getAmplitudeLfoModulator ();
-                    modulator.setDepth (volumeDepth (strength));
+                    depth = volumeDepth (strength);
+                    wheelDepth = volumeDepth (wheelStrength);
+                    break;
+
+                case DirectWaveTag.MODULATION_TARGET_FL1:
+                    if (zone.getFilter ().isEmpty ())
+                        continue;
+                    modulator = zone.getFilter ().get ().getCutoffLfoModulator ();
+                    depth = cutoffDepth (strength);
+                    wheelDepth = cutoffDepth (wheelStrength);
                     break;
 
                 default:
                     continue;
             }
+            modulator.setDepth (depth);
+            modulator.getDepthModWheelModulator ().setDepth (wheelDepth - depth);
 
             applyLfo (modulator.getSource (), lfoBlocks.get (lfoIndex));
         }
+    }
+
+
+    /**
+     * Get the amount of the matrix slot which routes the modulation wheel to the amount of another
+     * slot. With the wheel fully up the strength of this slot times
+     * {@link DirectWaveTag#MODULATION_AMOUNT_RANGE} is added to the amount of the modulated slot.
+     *
+     * @param modulations The payloads of the modulation matrix slots
+     * @param slot The index of the slot whose amount the wheel modulates
+     * @return The amount, MODULATION_NEUTRAL if there is no such slot
+     */
+    private static double getModWheelAmount (final List<byte []> modulations, final int slot)
+    {
+        for (final byte [] modulation: modulations)
+            if (modulation.length >= 8 && DirectWaveChunk.readShortLE (modulation, DirectWaveTag.MODULATION_SOURCE) == DirectWaveTag.MODULATION_SOURCE_WHEEL && DirectWaveChunk.readShortLE (modulation, DirectWaveTag.MODULATION_TARGET) == DirectWaveTag.MODULATION_TARGET_SLOT + slot)
+                return DirectWaveChunk.readFloatLE (modulation, DirectWaveTag.MODULATION_AMOUNT);
+        return DirectWaveTag.MODULATION_NEUTRAL;
+    }
+
+
+    /**
+     * Convert the modulation strength of a pitch modulation into the depth of the model.
+     * DirectWave reaches PITCH_MODULATION_RANGE cent at its full strength, the depth of the model
+     * is relative to MAX_ENVELOPE_DEPTH cent.
+     *
+     * @param strength The strength in the range of [-1..1]
+     * @return The depth in the range of [-1..1]
+     */
+    private static double pitchDepth (final double strength)
+    {
+        return Math.clamp (strength * DirectWaveTag.PITCH_MODULATION_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1);
+    }
+
+
+    /**
+     * Convert the modulation strength of a filter cutoff modulation into the depth of the model.
+     * DirectWave reaches CUTOFF_MODULATION_RANGE cent at its full strength, the depth of the model
+     * is relative to MAX_ENVELOPE_DEPTH cent.
+     *
+     * @param strength The strength in the range of [-1..1]
+     * @return The depth in the range of [-1..1]
+     */
+    private static double cutoffDepth (final double strength)
+    {
+        return Math.clamp (strength * DirectWaveTag.CUTOFF_MODULATION_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1);
     }
 
 

@@ -357,6 +357,7 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
     private IMultisampleSource parsePreset (final File sourceFile, final byte [] data, final int bank, final int preset, final List<Sample> samples, final String bankName)
     {
         final int numKeyAreas = data[bank + preset + EmaxConstants.PRESET_KEY_AREA_COUNT] & 0xFF;
+        final int modWheelDestination = EmaxConstants.getModWheelDestination (data, bank + preset);
         final IGroup [] groups = new IGroup []
         {
             new DefaultGroup ("Layer 1"),
@@ -383,7 +384,7 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
                 final int voice = data[entry + (layer == 0 ? EmaxConstants.VOICE_TABLE_PRIMARY : EmaxConstants.VOICE_TABLE_SECONDARY)] & 0xFF;
                 if (voice == EmaxConstants.VOICE_NONE)
                     continue;
-                final ISampleZone zone = createZone (data, bank + preset + getVoiceOffset (numKeyAreas, voice), samples, key, lastKey);
+                final ISampleZone zone = createZone (data, bank + preset + getVoiceOffset (numKeyAreas, voice), samples, key, lastKey, modWheelDestination);
                 if (zone != null)
                     groups[layer].addSampleZone (zone);
             }
@@ -410,9 +411,11 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
      * @param samples The samples of the bank
      * @param lowKey The first key of the run
      * @param highKey The last key of the run
+     * @param modWheelDestination The real-time destination which the right wheel (the modulation
+     *            wheel) of the preset controls, 0 for none
      * @return The zone or null if the sample of the voice holds no audio
      */
-    private static ISampleZone createZone (final byte [] data, final int voice, final List<Sample> samples, final int lowKey, final int highKey)
+    private static ISampleZone createZone (final byte [] data, final int voice, final List<Sample> samples, final int lowKey, final int highKey, final int modWheelDestination)
     {
         final int sampleIndex = data[voice + EmaxConstants.VOICE_SAMPLE] & 0xFF;
         final Sample sample = samples.get (sampleIndex);
@@ -425,7 +428,7 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
 
         final byte [] voiceRecord = new byte [EmaxConstants.VOICE_SIZE];
         System.arraycopy (data, voice, voiceRecord, 0, EmaxConstants.VOICE_SIZE);
-        applyVoiceParameters (zone, voiceRecord);
+        applyVoiceParameters (zone, voiceRecord, modWheelDestination);
 
         if ((sample.flags & EmaxConstants.SAMPLE_FLAG_LOOP) > 0 && sample.loopEnd > sample.loopStart && sample.loopStart >= sample.start && sample.loopEnd <= sample.end)
         {
@@ -444,8 +447,9 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param zone The zone to fill
      * @param voiceRecord The voice record
+     * @param modWheelDestination The real-time destination which the modulation wheel controls
      */
-    private static void applyVoiceParameters (final ISampleZone zone, final byte [] voiceRecord)
+    private static void applyVoiceParameters (final ISampleZone zone, final byte [] voiceRecord, final int modWheelDestination)
     {
         // The panning nibble runs from 1 to 15 with 8 in the middle; 1 is fully right and 15 fully
         // left, which the sampler shows as +07 to -07
@@ -467,8 +471,8 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
         if (velocityRange > 0)
             zone.getAmplitudeVelocityModulator ().setDepth (Math.clamp (velocityRange / ILfoModulator.MAX_VOLUME_DEPTH, 0, 1));
 
-        applyLfo (zone, voiceRecord);
-        applyFilter (zone, voiceRecord);
+        applyLfo (zone, voiceRecord, modWheelDestination);
+        applyFilter (zone, voiceRecord, modWheelDestination);
     }
 
 
@@ -496,27 +500,49 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param zone The zone to fill
      * @param voiceRecord The voice record
+     * @param modWheelDestination The real-time destination which the modulation wheel controls
      */
-    private static void applyLfo (final ISampleZone zone, final byte [] voiceRecord)
+    private static void applyLfo (final ISampleZone zone, final byte [] voiceRecord, final int modWheelDestination)
     {
         final double rate = EmaxConstants.getLfoRate (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_RATE, 7));
         final double delay = EmaxConstants.getLfoDelayTime (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_DELAY, 6));
 
         final int toPitch = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_PITCH, 4);
-        if (toPitch > 0)
+        final boolean isPitchModWheel = EmaxConstants.isModWheelControlled (voiceRecord, modWheelDestination, EmaxConstants.REALTIME_LFO_TO_PITCH);
+        if (toPitch > 0 || isPitchModWheel)
         {
             final ILfoModulator modulator = zone.getPitchLfoModulator ();
-            modulator.setDepth (Math.clamp (toPitch * EmaxConstants.LFO_PITCH_CENTS_PER_STEP / IEnvelope.MAX_ENVELOPE_DEPTH, 0, 1));
+            setLfoDepth (modulator, isPitchModWheel, toPitch, EmaxConstants.LFO_PITCH_CENTS_PER_STEP / IEnvelope.MAX_ENVELOPE_DEPTH);
             setLfo (modulator.getSource (), rate, delay);
         }
 
         final int toVolume = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_VOLUME, 4);
-        if (toVolume > 0)
+        final boolean isVolumeModWheel = EmaxConstants.isModWheelControlled (voiceRecord, modWheelDestination, EmaxConstants.REALTIME_LFO_TO_VOLUME);
+        if (toVolume > 0 || isVolumeModWheel)
         {
             final ILfoModulator modulator = zone.getAmplitudeLfoModulator ();
-            modulator.setDepth (Math.clamp (toVolume * EmaxConstants.LFO_VOLUME_DB_PER_STEP / ILfoModulator.MAX_VOLUME_DEPTH, 0, 1));
+            setLfoDepth (modulator, isVolumeModWheel, toVolume, EmaxConstants.LFO_VOLUME_DB_PER_STEP / ILfoModulator.MAX_VOLUME_DEPTH);
             setLfo (modulator.getSource (), rate, delay);
         }
+    }
+
+
+    /**
+     * Set the depth of one routing of the LFO. When the modulation wheel controls the routing, it
+     * overrides the amount of the voice, as the operations manual states: without the wheel there
+     * is no modulation, with the wheel fully up the largest amount, which is an assumption.
+     *
+     * @param modulator The LFO modulator
+     * @param isModWheel True if the modulation wheel controls the routing
+     * @param amount The amount of the voice, 0 to 15
+     * @param depthPerStep The depth of the model which one step of the amount is worth
+     */
+    private static void setLfoDepth (final ILfoModulator modulator, final boolean isModWheel, final int amount, final double depthPerStep)
+    {
+        if (isModWheel)
+            modulator.getDepthModWheelModulator ().setDepth (Math.clamp (EmaxConstants.LFO_DEPTH_MAX * depthPerStep, 0, 1));
+        else
+            modulator.setDepth (Math.clamp (amount * depthPerStep, 0, 1));
     }
 
 
@@ -540,16 +566,18 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param zone The zone to fill
      * @param voiceRecord The voice record
+     * @param modWheelDestination The real-time destination which the modulation wheel controls
      */
-    private static void applyFilter (final ISampleZone zone, final byte [] voiceRecord)
+    private static void applyFilter (final ISampleZone zone, final byte [] voiceRecord, final int modWheelDestination)
     {
         final int cutoff = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_CUTOFF_BITS, 7);
         final int envelopeAmount = EmaxConstants.readSignedVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_ENV_AMOUNT, 7);
         final int tracking = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_TRACKING, 4);
         final int resonance = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_FILTER_RESONANCE, 7);
         final int lfoToCutoff = EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_TO_CUTOFF, 4);
+        final boolean isCutoffModWheel = EmaxConstants.isModWheelControlled (voiceRecord, modWheelDestination, EmaxConstants.REALTIME_LFO_TO_CUTOFF);
         // A filter which is fully open, does not resonate and is not modulated does nothing
-        if (cutoff >= EmaxConstants.FILTER_CUTOFF_MAX && envelopeAmount == 0 && tracking == 0 && resonance == 0 && lfoToCutoff == 0)
+        if (cutoff >= EmaxConstants.FILTER_CUTOFF_MAX && envelopeAmount == 0 && tracking == 0 && resonance == 0 && lfoToCutoff == 0 && !isCutoffModWheel)
             return;
 
         // The model carries the resonance as 0 to 1 where 1 is 40 dB
@@ -569,10 +597,10 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
 
         // The LFO of the voice modulates the cutoff as well; it shares its rate and its delay with
         // the vibrato and the tremolo
-        if (lfoToCutoff > 0)
+        if (lfoToCutoff > 0 || isCutoffModWheel)
         {
             final ILfoModulator modulator = filter.getCutoffLfoModulator ();
-            modulator.setDepth (Math.clamp (lfoToCutoff * EmaxConstants.LFO_CUTOFF_CENTS_PER_STEP / IEnvelope.MAX_ENVELOPE_DEPTH, 0, 1));
+            setLfoDepth (modulator, isCutoffModWheel, lfoToCutoff, EmaxConstants.LFO_CUTOFF_CENTS_PER_STEP / IEnvelope.MAX_ENVELOPE_DEPTH);
             final double rate = EmaxConstants.getLfoRate (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_RATE, 7));
             final double delay = EmaxConstants.getLfoDelayTime (EmaxConstants.readVoiceField (voiceRecord, EmaxConstants.VOICE_LFO_DELAY, 6));
             setLfo (modulator.getSource (), rate, delay);

@@ -23,7 +23,11 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -46,9 +50,11 @@ import de.mossgrabers.tools.ui.Functions;
  * group of its zones the voices of the key ranges and the second group their second voices, so a
  * library of multi-samples becomes one disk. See documentation/design/EMULATOR2_FORMAT.md.
  * <p>
- * The fine tuning, the level and the velocity to level amount of a zone are written into its voice;
- * the other settings of a voice - filter, envelopes, LFO - are taken from a voice of the factory
- * library, an unfiltered piano, so that a written voice plays with sensible defaults. The disk is
+ * The fine tuning, the level, the velocity to level amount and the LFO of a zone are written into
+ * its voice; the other settings of a voice - filter, envelopes - are taken from a voice of the
+ * factory library, an unfiltered piano, so that a written voice plays with sensible defaults. An
+ * LFO routing which only the modulation wheel dials in is assigned to the right wheel of the
+ * preset, which the sampler only applies to voices without an amount of their own. The disk is
  * written as an image for the HxC floppy emulators (HFE) or as a raw sector image (EMUIIFD). The
  * operating system, which lives on the first 22 tracks, is not part of this program: it is copied
  * from a system file or a disk image which the user names; without one the disk holds the bank
@@ -84,7 +90,11 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
      */
     private static final int     OS_FILE_SIZE         = 72704;
 
-    /** The header which starts every preset record. */
+    /**
+     * The header which starts every preset record. The first 8 bytes are the real-time controls:
+     * the left wheel bends the pitch, the footswitches control the sustain and the release; the
+     * right wheel is set for each preset.
+     */
     private static final byte [] PRESET_HEADER        =
     {
         0x01,
@@ -611,6 +621,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         boolean playsVoice = false;
         for (final KeyRange range: preset.ranges)
             playsVoice |= range.voice > 0 || range.secondVoice > 0;
+        preset.modWheelDestination = getModWheelDestination (preset, builder);
         return playsVoice ? preset : null;
     }
 
@@ -674,7 +685,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
         // Re-use a voice with identical audio, loop and settings, e.g. when the same sample is
         // mapped to several key ranges or is played by several presets of the library
-        final Object contentKey = List.of (ByteBuffer.wrap (voice.audio), Boolean.valueOf (voice.hasLoop), Integer.valueOf (voice.loopStart), Integer.valueOf (voice.loopLength), Double.valueOf (voice.tuning), Double.valueOf (voice.gain), Double.valueOf (voice.velocityDepth));
+        final Object contentKey = List.of (ByteBuffer.wrap (voice.audio), Boolean.valueOf (voice.hasLoop), Integer.valueOf (voice.loopStart), Integer.valueOf (voice.loopLength), Double.valueOf (voice.tuning), Double.valueOf (voice.gain), Double.valueOf (voice.velocityDepth), Arrays.asList (Integer.valueOf (voice.lfoRate), Integer.valueOf (voice.lfoDelay), Integer.valueOf (voice.lfoToPitch), Integer.valueOf (voice.lfoToFilter), Integer.valueOf (voice.lfoToLevel), Integer.valueOf (voice.realtimeEnable)));
         final Integer existingNumber = builder.voiceNumbersByContent.get (contentKey);
         if (existingNumber != null)
         {
@@ -724,6 +735,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         voice.tuning = zone.getTuning () - (int) zone.getTuning ();
         voice.gain = zone.getGain ();
         voice.velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
+        convertLfo (zone, voice);
         voice.audio = new byte [numFrames];
         for (int frame = 0; frame < numFrames; frame++)
         {
@@ -755,6 +767,105 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
                 break;
             }
         return voice;
+    }
+
+
+    /**
+     * Convert the LFO modulators of a zone into the LFO of a voice. The voice has one LFO for its
+     * three routings, therefore its rate and delay are taken from the first active routing. A
+     * routing which only the modulation wheel dials in keeps the amount 0 and stays enabled for the
+     * real-time control; the others are exempted from it, since the wheel would add a modulation
+     * to them which the zone does not have.
+     *
+     * @param zone The zone
+     * @param voice The voice to fill
+     */
+    private static void convertLfo (final ISampleZone zone, final Voice voice)
+    {
+        final ILfoModulator pitchLfo = zone.getPitchLfoModulator ();
+        final ILfoModulator levelLfo = zone.getAmplitudeLfoModulator ();
+        final ILfoModulator filterLfo = zone.getFilter ().map (IFilter::getCutoffLfoModulator).orElse (null);
+
+        voice.realtimeEnable = Emulator2VoiceSettings.REALTIME_ENABLE_ALL;
+        if (!isModWheelOnly (pitchLfo))
+            voice.realtimeEnable &= ~Emulator2VoiceSettings.getRealtimeEnableFlag (Emulator2Constants.REALTIME_LFO_TO_PITCH);
+        if (!isModWheelOnly (filterLfo))
+            voice.realtimeEnable &= ~Emulator2VoiceSettings.getRealtimeEnableFlag (Emulator2Constants.REALTIME_LFO_TO_FILTER);
+        if (!isModWheelOnly (levelLfo))
+            voice.realtimeEnable &= ~Emulator2VoiceSettings.getRealtimeEnableFlag (Emulator2Constants.REALTIME_LFO_TO_LEVEL);
+
+        final ILfoModulator source;
+        if (pitchLfo.isActive ())
+            source = pitchLfo;
+        else if (levelLfo.isActive ())
+            source = levelLfo;
+        else if (filterLfo != null && filterLfo.isActive ())
+            source = filterLfo;
+        else
+            return;
+
+        final ILfo lfo = source.getSource ();
+        if (lfo.getRate () > 0)
+            voice.lfoRate = Emulator2VoiceSettings.lfoRateValue (lfo.getRate ());
+        if (lfo.getDelay () > 0)
+            voice.lfoDelay = Emulator2VoiceSettings.lfoDelayValue (lfo.getDelay ());
+        // The sampler has no negative depths, a negative depth only shifts the phase
+        voice.lfoToPitch = Emulator2VoiceSettings.lfoPitchIndex (Math.abs (pitchLfo.getDepth ()) * IEnvelope.MAX_ENVELOPE_DEPTH);
+        voice.lfoToLevel = Emulator2VoiceSettings.lfoLevelIndex (Math.abs (levelLfo.getDepth ()) * ILfoModulator.MAX_VOLUME_DEPTH);
+        if (filterLfo != null)
+            voice.lfoToFilter = Emulator2VoiceSettings.lfoFilterIndex (Math.abs (filterLfo.getDepth ()) * IEnvelope.MAX_ENVELOPE_DEPTH);
+    }
+
+
+    /**
+     * Check if only the modulation wheel dials in an LFO routing: it has a modulation wheel depth
+     * but no depth of its own.
+     *
+     * @param modulator The LFO modulator, may be null
+     * @return True if only the modulation wheel dials it in
+     */
+    private static boolean isModWheelOnly (final ILfoModulator modulator)
+    {
+        return modulator != null && modulator.getDepth () == 0 && modulator.getDepthModWheelModulator ().getDepth () != 0;
+    }
+
+
+    /**
+     * Get the LFO routing which the right wheel of a preset controls: the first one in the order
+     * pitch, filter and level which one of the voices of the preset leaves to the modulation wheel.
+     * The wheel can only be assigned to one of them.
+     *
+     * @param preset The preset
+     * @param builder The bank which is being built
+     * @return The real-time destination, 0 if no voice leaves a routing to the modulation wheel
+     */
+    private static int getModWheelDestination (final Preset preset, final BankBuilder builder)
+    {
+        final int [] destinations =
+        {
+            Emulator2Constants.REALTIME_LFO_TO_PITCH,
+            Emulator2Constants.REALTIME_LFO_TO_FILTER,
+            Emulator2Constants.REALTIME_LFO_TO_LEVEL
+        };
+        for (final int destination: destinations)
+            for (final KeyRange range: preset.ranges)
+                if (isModWheelEnabled (builder, range.voice, destination) || isModWheelEnabled (builder, range.secondVoice, destination))
+                    return destination;
+        return 0;
+    }
+
+
+    /**
+     * Check if a voice leaves an LFO routing to the modulation wheel.
+     *
+     * @param builder The bank which is being built
+     * @param voiceNumber The 1-based voice number, 0 for none
+     * @param destination The real-time destination of the routing
+     * @return True if the voice enables the real-time control of the routing
+     */
+    private static boolean isModWheelEnabled (final BankBuilder builder, final int voiceNumber, final int destination)
+    {
+        return voiceNumber > 0 && (builder.voices.get (voiceNumber - 1).realtimeEnable & Emulator2VoiceSettings.getRealtimeEnableFlag (destination)) != 0;
     }
 
 
@@ -892,6 +1003,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
         final byte [] presetRecord = new byte [size];
         System.arraycopy (PRESET_HEADER, 0, presetRecord, 0, PRESET_HEADER.length);
+        presetRecord[Emulator2Constants.PRESET_REALTIME + Emulator2Constants.REALTIME_RIGHT_WHEEL - 1] = (byte) preset.modWheelDestination;
         final byte [] name = pad (preset.name, Emulator2Constants.PRESET_NAME_LENGTH);
         System.arraycopy (name, 0, presetRecord, Emulator2Constants.PRESET_NAME_OFFSET, Emulator2Constants.PRESET_NAME_LENGTH);
         System.arraycopy (PRESET_PARAMETERS, 0, presetRecord, Emulator2Constants.PRESET_NAME_OFFSET + Emulator2Constants.PRESET_NAME_LENGTH, PRESET_PARAMETERS.length);
@@ -952,6 +1064,15 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         final int lowestLevel = Math.clamp (level - (long) Emulator2VoiceSettings.velocityLevelRange (Math.max (0, voice.velocityDepth) * Emulator2VoiceSettings.MAX_LEVEL_DEPTH_DB), 0, 255);
         for (int i = 0; i < 16; i++)
             image[voiceRecord + Emulator2VoiceSettings.LEVEL_TABLE + i] = (byte) Math.round (level + (lowestLevel - level) * i / 15.0);
+
+        // The LFO and the real-time control destinations which are enabled for the voice; the top
+        // bit of the flags belongs to the filter envelope of the template
+        image[voiceRecord + Emulator2VoiceSettings.LFO_RATE] = (byte) voice.lfoRate;
+        image[voiceRecord + Emulator2VoiceSettings.LFO_DELAY] = (byte) voice.lfoDelay;
+        Emulator2VoiceSettings.writeLfoTableIndex (image, voiceRecord + Emulator2VoiceSettings.LFO_TO_PITCH, voice.lfoToPitch);
+        Emulator2VoiceSettings.writeLfoTableIndex (image, voiceRecord + Emulator2VoiceSettings.LFO_TO_FILTER, voice.lfoToFilter);
+        Emulator2VoiceSettings.writeLfoTableIndex (image, voiceRecord + Emulator2VoiceSettings.LFO_TO_LEVEL, voice.lfoToLevel);
+        image[voiceRecord + Emulator2VoiceSettings.FLAGS] = (byte) (VOICE_TEMPLATE[Emulator2VoiceSettings.FLAGS] & ~Emulator2VoiceSettings.REALTIME_ENABLE_ALL | voice.realtimeEnable);
 
         // The audio in front of the loop plays once, the loop repeats; a voice without a loop is
         // written as the factory library holds it: all of its audio in front of a loop of length 1
@@ -1037,6 +1158,15 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         double  gain;
         /** The depth of the velocity to level modulation, 0 to 1. */
         double  velocityDepth;
+        /** The LFO rate and delay values, the ones of the template by default. */
+        int     lfoRate        = VOICE_TEMPLATE[Emulator2VoiceSettings.LFO_RATE];
+        int     lfoDelay       = VOICE_TEMPLATE[Emulator2VoiceSettings.LFO_DELAY];
+        /** The indices into the LFO depth tables. */
+        int     lfoToPitch;
+        int     lfoToFilter;
+        int     lfoToLevel;
+        /** The flags which enable the real-time control destinations for the voice. */
+        int     realtimeEnable = Emulator2VoiceSettings.REALTIME_ENABLE_ALL;
 
 
         /**
@@ -1098,8 +1228,10 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
     /** A preset of the bank which is being built. */
     private static class Preset
     {
-        String               name   = "";
-        final List<KeyRange> ranges = new ArrayList<> ();
+        String               name                = "";
+        final List<KeyRange> ranges              = new ArrayList<> ();
+        /** The real-time destination which the right wheel (the modulation wheel) controls. */
+        int                  modWheelDestination = 0;
     }
 
 

@@ -22,6 +22,7 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
+import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -54,15 +55,23 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
     private static final String                    MOD_LFO                  = "mod_lfo";
 
     private static final String                    TAG_VALUE                = "value";
+    private static final String                    TAG_SENSE                = "sense";
 
     // The version number to use: 3.20.0
     private static final int                       BLISS_VERSION            = 0x31400;
+
+    /**
+     * Bliss plays all samples at 44.1 kHz, whatever the rate of their FLAC file or of their zone
+     * is: samples with another rate play out of tune (or crash the plugin), therefore all samples
+     * are converted to 44.1 kHz.
+     */
+    private static final int                       SAMPLE_RATE              = 44100;
 
     private static final DestinationAudioFormat    DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
         16,
         24
-    }, 96000, false);
+    }, SAMPLE_RATE, true);
 
     private static final Map<FilterType, Integer>  FILTER_TYPE_MAP          = new EnumMap<> (FilterType.class);
     private static final Map<LfoWaveform, Integer> LFO_WAVE_FORMS           = new EnumMap<> (LfoWaveform.class);
@@ -106,6 +115,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         final Element topElement = document.createElement (BlissTag.PROGRAM);
         document.appendChild (topElement);
 
+        this.recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
         createPresetXML (document, topElement, multisampleSource);
         final Optional<String> xml = this.createXMLString (document);
         if (xml.isEmpty ())
@@ -163,6 +173,8 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
             {
                 final Element programElement = XMLUtils.addElement (document, programsElement, BlissTag.PROGRAM);
                 final IMultisampleSource multisampleSource = i < sources.size () ? sources.get (i) : null;
+                if (multisampleSource != null)
+                    this.recalculateSamplePositions (multisampleSource, SAMPLE_RATE);
                 createPresetXML (document, programElement, multisampleSource);
                 this.programIndex = i;
                 if (multisampleSource != null)
@@ -260,9 +272,18 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         if (sampleData.isEmpty ())
             throw new IOException ("Empty sample data in zone: " + zone.getName ());
 
-        XMLUtils.setIntegerAttribute (zoneElement, "num_samples", sampleData.get ().getAudioMetadata ().getNumberOfSamples ());
+        // The audio of a zone without a loop is converted to the sample rate of Bliss when it is
+        // written, see rewriteFile; the zones with a loop were already converted, see
+        // recalculateSamplePositions
+        final IAudioMetadata audioMetadata = sampleData.get ().getAudioMetadata ();
+        final long numSamples = (long) audioMetadata.getNumberOfSamples () * SAMPLE_RATE / audioMetadata.getSampleRate ();
+        XMLUtils.setIntegerAttribute (zoneElement, "num_samples", (int) numSamples);
+        XMLUtils.setIntegerAttribute (zoneElement, "sample_rate", SAMPLE_RATE);
         XMLUtils.setIntegerAttribute (zoneElement, "mp_gain", (int) Math.round (zone.getGain ()));
         XMLUtils.setDoubleAttribute (zoneElement, "vel_amp", zone.getAmplitudeVelocityModulator ().getDepth (), 2);
+        // Bliss reads a missing value as 1.0, which lets the velocity morph the parameters as well;
+        // only the modulation wheel morphs them, see applyLfo
+        XMLUtils.setDoubleAttribute (zoneElement, "vel_mod", 0.0, 1);
         XMLUtils.setIntegerAttribute (zoneElement, "mp_pan", (int) Math.round (zone.getPanning () * 100.0));
         final int trigger;
         if (zone.isOneShot ())
@@ -354,7 +375,7 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
 
                 // The [0..1] value is first squared (x²) to give it a perceptual curve, then
                 // linearly mapped to 20 Hz – 22050 Hz
-                final double normalizedCutoff = Math.sqrt ((filter.getCutoff () - 20) / (22050.0 - 20.0));
+                final double normalizedCutoff = BlissLfoAmount.normalizeCutoff (filter.getCutoff ());
                 XMLUtils.setDoubleAttribute (cutoffElement, TAG_VALUE, normalizedCutoff, 8);
                 XMLUtils.setDoubleAttribute (resonanceElement, TAG_VALUE, filter.getResonance (), 8);
 
@@ -382,15 +403,16 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
             }
         }
 
+        // There are 2 LFOs, the modulation wheel morphs their amount
         int lfoIndex = 0;
         final ILfoModulator ampModulator = zone.getAmplitudeLfoModulator ();
-        if (ampModulator.getDepth () > 0)
-            applyLfo (document, zoneElement, ++lfoIndex, ampModulator, 1);
+        if (ampModulator.isActive ())
+            applyLfo (document, zoneElement, ++lfoIndex, ampModulator, BlissLfoAmount.DESTINATION_AMP, 0);
         final ILfoModulator pitchModulator = zone.getPitchLfoModulator ();
-        if (pitchModulator.getDepth () > 0)
-            applyLfo (document, zoneElement, ++lfoIndex, pitchModulator, 2);
-        if (cutoffModulator != null && lfoIndex < 2)
-            applyLfo (document, zoneElement, ++lfoIndex, cutoffModulator, 3);
+        if (pitchModulator.isActive ())
+            applyLfo (document, zoneElement, ++lfoIndex, pitchModulator, BlissLfoAmount.DESTINATION_PITCH, 0);
+        if (cutoffModulator != null && cutoffModulator.isActive () && lfoIndex < 2)
+            applyLfo (document, zoneElement, ++lfoIndex, cutoffModulator, BlissLfoAmount.DESTINATION_CUTOFF, zone.getFilter ().get ().getCutoff ());
     }
 
 
@@ -483,14 +505,22 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
     }
 
 
-    private static void applyLfo (final Document document, final Element zoneElement, final int lfoIndex, final ILfoModulator modulator, final int destinationIndex)
+    /**
+     * Set the parameters of an LFO route. The modulation wheel morphs the amount of the route.
+     *
+     * @param document The XML document
+     * @param zoneElement The zone element
+     * @param lfoIndex The index of the LFO [1..2]
+     * @param modulator The LFO modulator
+     * @param destinationIndex The destination of the route
+     * @param cutoff The cutoff frequency of the filter in Hertz, only used for the cutoff
+     */
+    private static void applyLfo (final Document document, final Element zoneElement, final int lfoIndex, final ILfoModulator modulator, final int destinationIndex, final double cutoff)
     {
-        final double depth = modulator.getDepth ();
-        if (depth == 0)
-            return;
-
         XMLUtils.setIntegerAttribute (zoneElement, MOD_LFO + lfoIndex + "_dest", destinationIndex);
-        setDoubleValueAttribute (document, zoneElement, MOD_LFO + lfoIndex + "_amt", (depth - 0.5) * 2);
+        final Element amountElement = XMLUtils.addElement (document, zoneElement, MOD_LFO + lfoIndex + "_amt");
+        XMLUtils.setDoubleAttribute (amountElement, TAG_VALUE, BlissLfoAmount.toValue (destinationIndex, modulator.getDepth (), cutoff), 6);
+        XMLUtils.setDoubleAttribute (amountElement, TAG_SENSE, BlissLfoAmount.toSense (destinationIndex, modulator, cutoff), 6);
 
         final ILfo lfo = modulator.getSource ();
         XMLUtils.setIntegerAttribute (zoneElement, MOD_LFO + lfoIndex + "_type", LFO_WAVE_FORMS.getOrDefault (lfo.getWaveform (), Integer.valueOf (0)).intValue ());
@@ -499,7 +529,8 @@ public class BlissCreator extends AbstractCreator<EmptySettingsUI>
         if (startPhase < 0)
             startPhase = 1.0;
         setDoubleValueAttribute (document, zoneElement, MOD_LFO + lfoIndex + "_phs", startPhase);
-        setDoubleValueAttribute (document, zoneElement, MOD_LFO + lfoIndex + "_rat", lfoFrequencyToRate (lfo.getRate ()));
+        final Element rateElement = XMLUtils.addElement (document, zoneElement, MOD_LFO + lfoIndex + "_rat");
+        XMLUtils.setDoubleAttribute (rateElement, TAG_VALUE, lfoFrequencyToRate (lfo.getRate ()), 4);
     }
 
 

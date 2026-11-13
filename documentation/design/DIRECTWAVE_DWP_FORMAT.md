@@ -471,9 +471,65 @@ modulation index measures 0.5996 against the 0.6063 of the reference. Measure th
 fitting a sinusoid to the envelope, not as its peak-to-peak swing - the release tail of a
 played note inflates the latter by several decibels.
 
+**A filter cutoff modulation (target 7, Fl1 Cutoff) moves the cutoff by 12800 cent at the full
+strength**, again with the cubic strength. Measured with a probe program: white noise through
+the low-pass filter at knob 0.5 with a resonance of 0.6, so that the cutoff shows as a peak in
+the spectrum, modulated by a square LFO at 0.2 Hz which holds each level for 2.5 seconds. The
+peak swings symmetrically around its unmodulated position (ca. 490 Hz):
+
+| amount | 0.6 | 0.7 | 0.75 | 0.8 | 0.9 / 1.0 | 0.25 |
+|---|---|---|---|---|---|---|
+| strength | 0.008 | 0.064 | 0.125 | 0.216 | 0.512 / 1.0 | -0.125 |
+| measured peaks | no visible swing | 302 / 780 Hz | 191 / 1198 Hz | 94 / 2349 Hz | fully open / silent | 1254 / 191 Hz |
+| octaves / strength | - | 10.7 | 10.6 | 10.7 | - | 10.9 |
+
+The amount below 0.5 inverts the LFO (its first level is the high one). Note that the
+unmodulated peak at knob 0.5 sits at ca. 490 Hz, not at the 949 Hz the 45 Hz to 20 kHz knob
+range predicts; a resonance peak is not necessarily the cutoff, therefore the knob range was
+left as it is, but it should be measured again.
+
 Both directions convert the two zone LFOs: LFO 1 to the pitch (vibrato) and LFO 2 to the
 gain (tremolo). A volume depth in decibels maps to the modulation index the same way the
-Decent Sampler support does it, `index = 1 - 10^(-dB/20)`.
+Decent Sampler support does it, `index = 1 - 10^(-dB/20)`. A filter cutoff LFO is read from
+either zone LFO; when writing, it shares the zone LFO of the pitch or of the volume if that
+one has the same waveform and rate, otherwise it takes an unused one, and it is dropped if both
+are in use with different settings.
+
+The modulation wheel dials in an LFO the way the FL Studio Mobile programs do it: a second
+slot routes the source *Mod Wheel* (3) to the target *Mod Amt* of the LFO slot, which is
+`32 + the index of the slot` (P1-1 is 32, P1-3 is 34). **The target numbering and that the
+modulation is added to the amount of the LFO slot are confirmed**: the FL Studio demo does not
+pass the modulation wheel to DirectWave at all (even a direct Mod Wheel to Voice Pitch slot
+does nothing), therefore a probe used the *Note Velocity* (2) as the source instead. Hard notes
+turned a vibrato slot at 0.5 into a vibrato, deepened one at 0.75 with a velocity slot at 1.0
+and made it shallower with one at 0.0, while the same slot aimed at 33 or 35 changed nothing.
+In FL Studio the wheel reaches the plug-in once CC1 is linked to *Omni - Mod Wheel (Wrapper)*.
+
+**How far the wheel moves the amount was then measured**: a probe routed a square LFO (0.2 Hz) to
+the pitch of a 220 Hz sine and the wheel to the Mod Amt of that slot, and was played with the
+wheel fully up. The swing matches when the **strength** of the wheel slot (the same cube law)
+times 0.5 is added to the **amount** of the LFO slot, which then goes through the cube law
+again:
+
+| LFO slot / wheel slot | 0.5 / 0.6 | 0.5 / 0.75 | 0.5 / 0.9 | 0.5 / 0.25 | 0.75 / 0.75 | 0.75 / 0.25 |
+|---|---|---|---|---|---|---|
+| resulting amount | 0.504 | 0.5625 | 0.756 | 0.4375 | 0.8125 | 0.6875 |
+| predicted swing | 0 ct | ±5 ct | ±322 ct | ±5 ct (inverted) | ±593 ct | ±124 ct |
+| measured swing | 0 ct | ±5 ct | ±342 ct | ±5 ct (inverted) | ±593 ct | ±124 ct |
+
+So the 0.75 of the Mobile programs only adds 0.0625 to the amount. The two extreme combinations
+0.5 / 1.0 and 0.5 / 0.0 (resulting amounts 1.0 and 0.0, predicted ±2400 cent) both measured
+**±1200 cent** - either the pitch modulation is limited to one octave or the resulting amount is
+limited; this was not investigated further (the pitch law above was only measured up to the
+strength 0.512).
+
+The end point with the wheel fully up is right, but **the way there is not linear**: the wheel
+moves the amount of the LFO slot linearly and the cube law is applied afterwards, so with an LFO
+slot at 0.5 the depth grows with the cube of the wheel position - half-way up gives only about an
+eighth of the full depth and most of the change happens in the last quarter of the travel. This
+is how the plug-in works and cannot be compensated in the program: the amount of the wheel slot
+only sets the end point, two wheel slots are summed before the cube law as well, and a base
+depth on the LFO slot would soften the curve but keep the LFO audible with the wheel down.
 
 ## Two crashes, one lesson
 

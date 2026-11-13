@@ -7,12 +7,15 @@ package de.mossgrabers.convertwithmoss.format.renoise;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.zip.CRC32;
 import java.util.zip.ZipOutputStream;
 
@@ -160,13 +163,14 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         // multi-sample gets one instrument-wide set; additional sets are only created for zones
         // which genuinely modulate differently (e.g. release samples with their own envelope)
         final Map<String, Integer> modulationSetKeys = new HashMap<> ();
+        final Map<Integer, List<double []>> modWheelMappings = new TreeMap<> ();
         boolean hasRoundRobin = false;
         boolean hasRandom = false;
         int zoneIndex = 0;
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                final int modulationSetIndex = addModulationSet (document, modulationSetsElement, modulationSetKeys, zone);
+                final int modulationSetIndex = addModulationSet (document, modulationSetsElement, modulationSetKeys, modWheelMappings, zone);
                 this.createSampleElement (document, samplesElement, zoneIndex, modulationSetIndex, zone);
                 final PlayLogic playLogic = zone.getPlayLogic ();
                 hasRoundRobin = hasRoundRobin || playLogic == PlayLogic.ROUND_ROBIN;
@@ -175,6 +179,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
             }
 
         sampleGenerator.appendChild (modulationSetsElement);
+        if (!modWheelMappings.isEmpty ())
+            globalProperties.insertBefore (createModWheelMacro (document, modWheelMappings), XMLUtils.getChildElementByName (globalProperties, RenoiseTag.VOLUME));
         // The overlapping mode is a global setting of the instrument. If both selection modes are
         // present the random one wins since it cannot be expressed by cycling but a round-robin can
         // still be played randomly.
@@ -260,19 +266,28 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
      * @param document The XML document
      * @param modulationSetsElement The element which holds all modulation sets
      * @param modulationSetKeys Maps the comparison key of each created modulation set to its index
+     * @param modWheelMappings Collects the mappings of the modulation wheel macro of each created
+     *            modulation set, see createModulationSet
      * @param zone The zone from which to read the modulation information
      * @return The index of the modulation set to reference from the sample
      */
-    private static int addModulationSet (final Document document, final Element modulationSetsElement, final Map<String, Integer> modulationSetKeys, final ISampleZone zone)
+    private static int addModulationSet (final Document document, final Element modulationSetsElement, final Map<String, Integer> modulationSetKeys, final Map<Integer, List<double []>> modWheelMappings, final ISampleZone zone)
     {
-        final Element modulationSetElement = createModulationSet (document, zone);
-        final String key = createComparisonKey (modulationSetElement);
-        final Integer existingIndex = modulationSetKeys.get (key);
+        final List<double []> setModWheelMappings = new ArrayList<> ();
+        final Element modulationSetElement = createModulationSet (document, zone, setModWheelMappings);
+        // The mappings of the modulation wheel are not part of the set, but two sets which only
+        // differ in them must not be shared
+        final StringBuilder key = new StringBuilder (createComparisonKey (modulationSetElement));
+        for (final double [] mapping: setModWheelMappings)
+            key.append (Arrays.toString (mapping));
+        final Integer existingIndex = modulationSetKeys.get (key.toString ());
         if (existingIndex != null)
             return existingIndex.intValue ();
 
         final int index = modulationSetKeys.size ();
-        modulationSetKeys.put (key, Integer.valueOf (index));
+        modulationSetKeys.put (key.toString (), Integer.valueOf (index));
+        if (!setModWheelMappings.isEmpty ())
+            modWheelMappings.put (Integer.valueOf (index), setModWheelMappings);
 
         // The name is not part of the comparison key, therefore it is only set once the set is
         // known to be a new one; it belongs between the devices and the filter type
@@ -287,15 +302,18 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Create the modulation set for one zone. It holds the amplitude envelope and - if present -
-     * the sampler filter (type, cutoff, resonance and filter envelope), the pitch envelope, the
-     * pitch LFO (vibrato) and the volume LFO (tremolo). The created element is not appended to the
+     * the sampler filter (type, cutoff, resonance, filter envelope and filter LFO), the pitch
+     * envelope, the pitch LFO (vibrato) and the volume LFO (tremolo). The created element is not appended to the
      * document and does not contain a name element yet.
      *
      * @param document The XML document
      * @param zone The zone from which to read the modulation information
+     * @param modWheelMappings Where to add the mappings of the modulation wheel macro to the LFO
+     *            devices of the set: the index of the device, the amplitude without and with the
+     *            wheel fully up
      * @return The created modulation set element
      */
-    private static Element createModulationSet (final Document document, final ISampleZone zone)
+    private static Element createModulationSet (final Document document, final ISampleZone zone, final List<double []> modWheelMappings)
     {
         final Element modulationSetElement = document.createElement (RenoiseTag.MODULATION_SET);
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.SELECTED_PRESET_NAME, "Init");
@@ -342,17 +360,102 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
         if (pitchDepth != 0)
             createAhdsrDevice (document, devicesElement, RenoiseTag.TARGET_PITCH, RenoiseTag.OP_ADD, true, pitchModulator.getSource ());
 
+        // The modulation wheel dials in the depth of a LFO by mapping the modulation wheel macro
+        // to the amplitude of its device: the macro moves the amplitude between the depth without
+        // and the depth with the wheel fully up
         final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
-        if (pitchLfoModulator.getDepth () != 0 && pitchLfoModulator.getSource ().isSet ())
-            createLfoDevice (document, devicesElement, RenoiseTag.TARGET_PITCH, RenoiseValueConverter.lfoDepthToAmplitude (pitchLfoModulator.getDepth (), pitchModulationRange), pitchLfoModulator);
+        if (pitchLfoModulator.isActive () && pitchLfoModulator.getSource ().isSet ())
+        {
+            final double depth = Math.abs (pitchLfoModulator.getDepth ());
+            final double modWheelDepth = Math.abs (pitchLfoModulator.getDepthModWheelModulator ().getDepth ());
+            final double amplitude = RenoiseValueConverter.lfoDepthToAmplitude (depth, pitchModulationRange);
+            addModWheelMapping (modWheelMappings, devicesElement, modWheelDepth, amplitude, RenoiseValueConverter.lfoDepthToAmplitude (depth + modWheelDepth, pitchModulationRange));
+            createLfoDevice (document, devicesElement, RenoiseTag.TARGET_PITCH, amplitude, pitchLfoModulator);
+        }
 
         final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
-        if (amplitudeLfoModulator.getDepth () != 0 && amplitudeLfoModulator.getSource ().isSet ())
-            createLfoDevice (document, devicesElement, RenoiseTag.TARGET_VOLUME, RenoiseValueConverter.volumeLfoDepthToAmplitude (amplitudeLfoModulator.getDepth ()), amplitudeLfoModulator);
+        if (amplitudeLfoModulator.isActive () && amplitudeLfoModulator.getSource ().isSet ())
+        {
+            final double depth = Math.abs (amplitudeLfoModulator.getDepth ());
+            final double modWheelDepth = Math.abs (amplitudeLfoModulator.getDepthModWheelModulator ().getDepth ());
+            final double amplitude = RenoiseValueConverter.volumeLfoDepthToAmplitude (depth);
+            addModWheelMapping (modWheelMappings, devicesElement, modWheelDepth, amplitude, RenoiseValueConverter.volumeLfoDepthToAmplitude (depth + modWheelDepth));
+            createLfoDevice (document, devicesElement, RenoiseTag.TARGET_VOLUME, amplitude, amplitudeLfoModulator);
+        }
+
+        if (optionalFilter.isPresent ())
+        {
+            final ILfoModulator cutoffLfoModulator = optionalFilter.get ().getCutoffLfoModulator ();
+            if (cutoffLfoModulator.isActive () && cutoffLfoModulator.getSource ().isSet ())
+            {
+                final double depth = Math.abs (cutoffLfoModulator.getDepth ());
+                final double modWheelDepth = Math.abs (cutoffLfoModulator.getDepthModWheelModulator ().getDepth ());
+                final double amplitude = RenoiseValueConverter.cutoffLfoDepthToAmplitude (depth);
+                addModWheelMapping (modWheelMappings, devicesElement, modWheelDepth, amplitude, RenoiseValueConverter.cutoffLfoDepthToAmplitude (depth + modWheelDepth));
+                createLfoDevice (document, devicesElement, RenoiseTag.TARGET_CUTOFF, amplitude, cutoffLfoModulator);
+            }
+        }
 
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.FILTER_TYPE, Integer.toString (filterTypeIndex));
         XMLUtils.addTextElement (document, modulationSetElement, RenoiseTag.FILTER_BANK_VERSION, Integer.toString (RenoiseFilterType.FILTER_BANK_VERSION));
         return modulationSetElement;
+    }
+
+
+    /**
+     * Add the mapping of the modulation wheel macro to the amplitude of the LFO device which is
+     * added next to the devices of a modulation set.
+     *
+     * @param modWheelMappings Where to add the mapping
+     * @param devicesElement The devices of the modulation set, the LFO device is not added yet
+     * @param modWheelDepth The depth which the modulation wheel adds, nothing is added if it is 0
+     * @param minAmplitude The amplitude of the LFO device without the wheel
+     * @param maxAmplitude The amplitude of the LFO device with the wheel fully up
+     */
+    private static void addModWheelMapping (final List<double []> modWheelMappings, final Element devicesElement, final double modWheelDepth, final double minAmplitude, final double maxAmplitude)
+    {
+        if (modWheelDepth == 0)
+            return;
+        // The devices element only holds the device elements, which are counted from 0
+        final int deviceIndex = devicesElement.getChildNodes ().getLength ();
+        modWheelMappings.add (new double []
+        {
+            deviceIndex,
+            minAmplitude,
+            maxAmplitude
+        });
+    }
+
+
+    /**
+     * Create the modulation wheel macro of the instrument, which maps the wheel to the amplitude of
+     * the LFO devices of the modulation sets.
+     *
+     * @param document The XML document
+     * @param modWheelMappings The mappings of each modulation set: the index of the LFO device, its
+     *            amplitude without and with the wheel fully up
+     * @return The created macro element
+     */
+    private static Element createModWheelMacro (final Document document, final Map<Integer, List<double []>> modWheelMappings)
+    {
+        final Element macroElement = document.createElement (RenoiseTag.MODULATION_WHEEL_MACRO);
+        XMLUtils.addTextElement (document, macroElement, RenoiseTag.VALUE, "0.0");
+        XMLUtils.addTextElement (document, macroElement, RenoiseTag.VISUALIZATION, "Device only");
+        XMLUtils.addTextElement (document, macroElement, RenoiseTag.NAME, "Modulation");
+        final Element mappingsElement = XMLUtils.addElement (document, macroElement, RenoiseTag.MAPPINGS);
+        for (final Map.Entry<Integer, List<double []>> entry: modWheelMappings.entrySet ())
+            for (final double [] mapping: entry.getValue ())
+            {
+                final Element mappingElement = XMLUtils.addElement (document, mappingsElement, RenoiseTag.MAPPING);
+                XMLUtils.addTextElement (document, mappingElement, RenoiseTag.DEST_CHAIN_TYPE, RenoiseTag.DEST_MODULATION_SET);
+                XMLUtils.addTextElement (document, mappingElement, RenoiseTag.DEST_CHAIN_INDEX, entry.getKey ().toString ());
+                XMLUtils.addTextElement (document, mappingElement, RenoiseTag.DEST_DEVICE_INDEX, Integer.toString ((int) mapping[0]));
+                XMLUtils.addTextElement (document, mappingElement, RenoiseTag.DEST_PARAMETER_INDEX, RenoiseTag.LFO_AMPLITUDE_INDEX);
+                XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MIN, formatFloat (mapping[1]));
+                XMLUtils.addTextElement (document, mappingElement, RenoiseTag.MAX, formatFloat (mapping[2]));
+                XMLUtils.addTextElement (document, mappingElement, RenoiseTag.SCALING, "Linear");
+            }
+        return macroElement;
     }
 
 

@@ -21,6 +21,7 @@ import java.util.zip.ZipFile;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -31,6 +32,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -153,7 +155,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         // Parse the indexed modulation sets which carry the envelopes and the sampler filter
-        final List<ModulationSet> modulationSets = parseModulationSets (sampleGenerator);
+        final List<ModulationSet> modulationSets = parseModulationSets (sampleGenerator, readModWheelMappings (top));
 
         final String overlapMode = XMLUtils.getChildElementContent (sampleGenerator, RenoiseTag.KEYZONE_OVERLAPPING_MODE);
         final PlayLogic overlapPlayLogic = toPlayLogic (overlapMode);
@@ -295,15 +297,17 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                 // of the mixer device
                 zone.getPitchEnvelopeModulator ().setDepth (modulationSet.pitchModulationRange * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
             }
-            if (modulationSet.pitchLfo != null && modulationSet.pitchLfoDepth > 0)
+            if (modulationSet.pitchLfo != null)
             {
                 zone.getPitchLfoModulator ().setSource (modulationSet.pitchLfo);
                 zone.getPitchLfoModulator ().setDepth (modulationSet.pitchLfoDepth);
+                zone.getPitchLfoModulator ().getDepthModWheelModulator ().setDepth (modulationSet.pitchLfoModWheelDepth);
             }
-            if (modulationSet.volumeLfo != null && modulationSet.volumeLfoDepth > 0)
+            if (modulationSet.volumeLfo != null)
             {
                 zone.getAmplitudeLfoModulator ().setSource (modulationSet.volumeLfo);
                 zone.getAmplitudeLfoModulator ().setDepth (modulationSet.volumeLfoDepth);
+                zone.getAmplitudeLfoModulator ().getDepthModWheelModulator ().setDepth (modulationSet.volumeLfoModWheelDepth);
             }
             final Optional<IFilter> filter = modulationSet.createFilter ();
             if (filter.isPresent ())
@@ -424,12 +428,14 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
     /**
      * Parse all modulation sets into an indexed list. Each set carries the optional amplitude
      * (Volume), pitch and filter (Cutoff) envelopes from its AHDSR devices as well as the pitch LFO
-     * (vibrato) from a LFO device.
+     * (vibrato), the volume LFO (tremolo) and the filter cutoff LFO from LFO devices.
      *
      * @param sampleGenerator The sample generator element
+     * @param modWheelMappings The mappings of the modulation wheel macro to the amplitude of LFO
+     *            devices, see readModWheelMappings
      * @return The indexed list of modulation sets
      */
-    private static List<ModulationSet> parseModulationSets (final Element sampleGenerator)
+    private static List<ModulationSet> parseModulationSets (final Element sampleGenerator, final Map<Integer, Map<Integer, double []>> modWheelMappings)
     {
         final List<ModulationSet> result = new ArrayList<> ();
         final Element modulationSetsElement = XMLUtils.getChildElementByName (sampleGenerator, RenoiseTag.MODULATION_SETS);
@@ -468,8 +474,10 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
                 }
 
                 modulationSet.pitchModulationRange = pitchModulationRange;
-                readPitchLfo (devicesElement, modulationSet, pitchModulationRange);
-                readVolumeLfo (devicesElement, modulationSet);
+                final Map<Integer, double []> setModWheelMappings = modWheelMappings.getOrDefault (Integer.valueOf (result.size ()), Collections.emptyMap ());
+                readPitchLfo (devicesElement, modulationSet, pitchModulationRange, setModWheelMappings);
+                readVolumeLfo (devicesElement, modulationSet, setModWheelMappings);
+                readCutoffLfo (devicesElement, modulationSet, setModWheelMappings);
             }
 
             result.add (modulationSet);
@@ -484,8 +492,10 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      * @param devicesElement The devices element of the modulation set
      * @param modulationSet The modulation set to fill
      * @param pitchModulationRange The pitch modulation range of the mixer device in semitones
+     * @param modWheelMappings The mappings of the modulation wheel macro to the LFO devices of the
+     *            set by the index of the device
      */
-    private static void readPitchLfo (final Element devicesElement, final ModulationSet modulationSet, final int pitchModulationRange)
+    private static void readPitchLfo (final Element devicesElement, final ModulationSet modulationSet, final int pitchModulationRange, final Map<Integer, double []> modWheelMappings)
     {
         for (final Element deviceElement: XMLUtils.getChildElementsByName (devicesElement, RenoiseTag.LFO_DEVICE, false))
         {
@@ -494,12 +504,16 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             if (!RenoiseTag.TARGET_PITCH.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0 || "true".equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TEMPO_SYNCED)))
                 continue;
 
-            final double depth = RenoiseValueConverter.amplitudeToLfoDepth (paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0), pitchModulationRange);
-            if (depth == 0)
+            // A mapped modulation wheel macro moves the amplitude between its minimum and maximum
+            final double [] mapping = modWheelMappings.get (Integer.valueOf (getDeviceIndex (deviceElement)));
+            final double depth = RenoiseValueConverter.amplitudeToLfoDepth (mapping == null ? paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0) : mapping[0], pitchModulationRange);
+            final double modWheelDepth = mapping == null ? 0 : Math.max (0, RenoiseValueConverter.amplitudeToLfoDepth (mapping[1], pitchModulationRange) - depth);
+            if (depth == 0 && modWheelDepth == 0)
                 continue;
 
             modulationSet.pitchLfo = readLfoDevice (deviceElement);
             modulationSet.pitchLfoDepth = depth;
+            modulationSet.pitchLfoModWheelDepth = modWheelDepth;
             return;
         }
     }
@@ -511,8 +525,10 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param devicesElement The devices element of the modulation set
      * @param modulationSet The modulation set to fill
+     * @param modWheelMappings The mappings of the modulation wheel macro to the LFO devices of the
+     *            set by the index of the device
      */
-    private static void readVolumeLfo (final Element devicesElement, final ModulationSet modulationSet)
+    private static void readVolumeLfo (final Element devicesElement, final ModulationSet modulationSet, final Map<Integer, double []> modWheelMappings)
     {
         for (final Element deviceElement: XMLUtils.getChildElementsByName (devicesElement, RenoiseTag.LFO_DEVICE, false))
         {
@@ -521,14 +537,101 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             if (!RenoiseTag.TARGET_VOLUME.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0 || "true".equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TEMPO_SYNCED)))
                 continue;
 
-            final double depth = RenoiseValueConverter.amplitudeToVolumeLfoDepth (paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0));
-            if (depth == 0)
+            // A mapped modulation wheel macro moves the amplitude between its minimum and maximum
+            final double [] mapping = modWheelMappings.get (Integer.valueOf (getDeviceIndex (deviceElement)));
+            final double depth = RenoiseValueConverter.amplitudeToVolumeLfoDepth (mapping == null ? paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0) : mapping[0]);
+            final double modWheelDepth = mapping == null ? 0 : Math.max (0, RenoiseValueConverter.amplitudeToVolumeLfoDepth (mapping[1]) - depth);
+            if (depth == 0 && modWheelDepth == 0)
                 continue;
 
             modulationSet.volumeLfo = readLfoDevice (deviceElement);
             modulationSet.volumeLfoDepth = depth;
+            modulationSet.volumeLfoModWheelDepth = modWheelDepth;
             return;
         }
+    }
+
+
+    /**
+     * Read the first active LFO device which modulates the filter cutoff into the modulation set.
+     *
+     * @param devicesElement The devices element of the modulation set
+     * @param modulationSet The modulation set to fill
+     * @param modWheelMappings The mappings of the modulation wheel macro to the LFO devices of the
+     *            set by the index of the device
+     */
+    private static void readCutoffLfo (final Element devicesElement, final ModulationSet modulationSet, final Map<Integer, double []> modWheelMappings)
+    {
+        for (final Element deviceElement: XMLUtils.getChildElementsByName (devicesElement, RenoiseTag.LFO_DEVICE, false))
+        {
+            // A tempo synchronized rate has no representation without a tempo, which is not part
+            // of a multi-sample
+            if (!RenoiseTag.TARGET_CUTOFF.equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TARGET)) || paramValue (deviceElement, RenoiseTag.IS_ACTIVE, 1) == 0 || "true".equals (XMLUtils.getChildElementContent (deviceElement, RenoiseTag.TEMPO_SYNCED)))
+                continue;
+
+            // A mapped modulation wheel macro moves the amplitude between its minimum and maximum
+            final double [] mapping = modWheelMappings.get (Integer.valueOf (getDeviceIndex (deviceElement)));
+            final double depth = RenoiseValueConverter.amplitudeToCutoffLfoDepth (mapping == null ? paramValue (deviceElement, RenoiseTag.LFO_AMPLITUDE, 0) : mapping[0]);
+            final double modWheelDepth = mapping == null ? 0 : Math.max (0, RenoiseValueConverter.amplitudeToCutoffLfoDepth (mapping[1]) - depth);
+            if (depth == 0 && modWheelDepth == 0)
+                continue;
+
+            modulationSet.cutoffLfo = readLfoDevice (deviceElement);
+            modulationSet.cutoffLfoDepth = depth;
+            modulationSet.cutoffLfoModWheelDepth = modWheelDepth;
+            return;
+        }
+    }
+
+
+    /**
+     * Read the mappings of the modulation wheel macro to the amplitude of LFO devices in the
+     * modulation sets.
+     *
+     * @param top The root element
+     * @return The minimum and maximum amplitude of each mapping by the index of the modulation set
+     *         and the index of the device in the set
+     */
+    private static Map<Integer, Map<Integer, double []>> readModWheelMappings (final Element top)
+    {
+        final Map<Integer, Map<Integer, double []>> result = new HashMap<> ();
+        final Element globalProperties = XMLUtils.getChildElementByName (top, RenoiseTag.GLOBAL_PROPERTIES);
+        final Element macroElement = globalProperties == null ? null : XMLUtils.getChildElementByName (globalProperties, RenoiseTag.MODULATION_WHEEL_MACRO);
+        final Element mappingsElement = macroElement == null ? null : XMLUtils.getChildElementByName (macroElement, RenoiseTag.MAPPINGS);
+        if (mappingsElement == null)
+            return result;
+
+        for (final Element mappingElement: XMLUtils.getChildElementsByName (mappingsElement, RenoiseTag.MAPPING, false))
+        {
+            if (!RenoiseTag.DEST_MODULATION_SET.equals (XMLUtils.getChildElementContent (mappingElement, RenoiseTag.DEST_CHAIN_TYPE)) || !RenoiseTag.LFO_AMPLITUDE_INDEX.equals (XMLUtils.getChildElementContent (mappingElement, RenoiseTag.DEST_PARAMETER_INDEX)))
+                continue;
+            final int setIndex = XMLUtils.getChildElementIntegerContent (mappingElement, RenoiseTag.DEST_CHAIN_INDEX, -1);
+            final int deviceIndex = XMLUtils.getChildElementIntegerContent (mappingElement, RenoiseTag.DEST_DEVICE_INDEX, -1);
+            if (setIndex < 0 || deviceIndex < 0)
+                continue;
+            result.computeIfAbsent (Integer.valueOf (setIndex), _ -> new HashMap<> ()).put (Integer.valueOf (deviceIndex), new double []
+            {
+                XMLUtils.getChildElementDoubleContent (mappingElement, RenoiseTag.MIN, 0),
+                XMLUtils.getChildElementDoubleContent (mappingElement, RenoiseTag.MAX, 0)
+            });
+        }
+        return result;
+    }
+
+
+    /**
+     * Get the index of a device in the devices of its modulation set, the mixer device is 0.
+     *
+     * @param deviceElement The device element
+     * @return The index
+     */
+    private static int getDeviceIndex (final Element deviceElement)
+    {
+        int index = 0;
+        for (Node node = deviceElement.getPreviousSibling (); node != null; node = node.getPreviousSibling ())
+            if (node instanceof Element)
+                index++;
+        return index;
     }
 
 
@@ -732,8 +835,8 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Holds the envelopes, the pitch and volume LFOs and the sampler filter of one Renoise
-     * modulation set.
+     * Holds the envelopes, the pitch, volume and filter cutoff LFOs and the sampler filter of one
+     * Renoise modulation set.
      */
     private static class ModulationSet
     {
@@ -754,10 +857,15 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
         IEnvelope                   pitchEnvelope;
         int                         pitchModulationRange            = RenoiseValueConverter.PITCH_MODULATION_RANGE;
         IEnvelope                   cutoffEnvelope;
+        ILfo                        cutoffLfo;
+        double                      cutoffLfoDepth;
+        double                      cutoffLfoModWheelDepth;
         ILfo                        pitchLfo;
         double                      pitchLfoDepth;
+        double                      pitchLfoModWheelDepth;
         ILfo                        volumeLfo;
         double                      volumeLfoDepth;
+        double                      volumeLfoModWheelDepth;
         int                         filterTypeIndex                 = RenoiseFilterType.INDEX_NONE;
         double                      cutoffValue                     = -1;
         double                      resonanceValue                  = -1;
@@ -788,6 +896,13 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             {
                 filter.getCutoffEnvelopeModulator ().setSource (this.cutoffEnvelope);
                 filter.getCutoffEnvelopeModulator ().setDepth (1.0);
+            }
+            if (this.cutoffLfo != null)
+            {
+                final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+                cutoffLfoModulator.setSource (this.cutoffLfo);
+                cutoffLfoModulator.setDepth (this.cutoffLfoDepth);
+                cutoffLfoModulator.getDepthModWheelModulator ().setDepth (this.cutoffLfoModWheelDepth);
             }
             return Optional.of (filter);
         }

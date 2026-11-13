@@ -254,7 +254,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                 // voice was recorded at
                 zone.setKeyRoot (Emulator2Constants.LOWEST_KEY + range.firstKey + Emulator2Constants.TRANSPOSE_UNITY - transpose);
                 zone.setSampleData (sampleData);
-                Emulator2VoiceSettings.apply (zone, voice.voiceRecord);
+                Emulator2VoiceSettings.apply (zone, voice.voiceRecord, preset.modWheelDestination);
                 if (voice.hasLoop)
                 {
                     final ISampleLoop loop = new DefaultSampleLoop ();
@@ -413,10 +413,12 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
     /** A preset of the bank. */
     private static class Preset
     {
-        String               name         = "";
+        String               name                = "";
         @SuppressWarnings("unused")
-        int                  recordLength = 0;
-        final List<KeyRange> ranges       = new ArrayList<> ();
+        int                  recordLength        = 0;
+        /** The real-time destination which the right wheel (the modulation wheel) controls. */
+        int                  modWheelDestination = 0;
+        final List<KeyRange> ranges              = new ArrayList<> ();
     }
 
 
@@ -625,6 +627,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
             final Preset preset = new Preset ();
             preset.name = readName (this.image, position + Emulator2Constants.PRESET_NAME_OFFSET, Emulator2Constants.PRESET_NAME_LENGTH);
             preset.recordLength = length;
+            preset.modWheelDestination = this.image[position + Emulator2Constants.PRESET_REALTIME + Emulator2Constants.REALTIME_RIGHT_WHEEL - 1] & 0xFF;
 
             int entry = position + Emulator2Constants.PRESET_ENTRIES_OFFSET;
             int key = 0;
@@ -669,6 +672,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         {
             final Preset preset = new Preset ();
             preset.name = readName (this.image, this.bankOffset + Emulator2Constants.SELECTED_PRESET + Emulator2Constants.PRESET_NAME_OFFSET, Emulator2Constants.PRESET_NAME_LENGTH);
+            preset.modWheelDestination = this.image[this.bankOffset + Emulator2Constants.SELECTED_PRESET + Emulator2Constants.PRESET_REALTIME + Emulator2Constants.REALTIME_RIGHT_WHEEL - 1] & 0xFF;
             int key = 0;
             while (key < Emulator2Constants.NUM_KEYS)
             {

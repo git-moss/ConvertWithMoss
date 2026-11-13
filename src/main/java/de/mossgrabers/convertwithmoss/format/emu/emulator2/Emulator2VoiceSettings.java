@@ -36,21 +36,26 @@ class Emulator2VoiceSettings
     /** Velocity to VCA attack in the high nibble, velocity to VCF attack in the low nibble. */
     private static final int          VELOCITY_TO_ATTACK              = 0x1B;
     /** LFO delay in 10 ms, less one. */
-    private static final int          LFO_DELAY                       = 0x1C;
+    static final int                  LFO_DELAY                       = 0x1C;
     /** LFO rate. */
-    private static final int          LFO_RATE                        = 0x1D;
+    static final int                  LFO_RATE                        = 0x1D;
     /** Filter keyboard tracking in the high nibble, 8 = one octave per octave. */
     private static final int          KEY_TRACKING                    = 0x1F;
     /** The amount of the filter envelope. */
     private static final int          ENVELOPE_AMOUNT                 = 0x25;
     /** The pointers into the LFO depth tables: LFO to pitch, to filter and to level. */
-    private static final int          LFO_TO_PITCH                    = 0x28;
-    private static final int          LFO_TO_FILTER                   = 0x2A;
-    private static final int          LFO_TO_LEVEL                    = 0x2C;
+    static final int                  LFO_TO_PITCH                    = 0x28;
+    static final int                  LFO_TO_FILTER                   = 0x2A;
+    static final int                  LFO_TO_LEVEL                    = 0x2C;
     /** The sustain level of the filter envelope. */
     private static final int          VCF_SUSTAIN                     = 0x2E;
-    /** Flags; the top bit inverts the filter envelope. */
-    private static final int          FLAGS                           = 0x2F;
+    /**
+     * Flags; the top bit inverts the filter envelope, the bits 0 to 6 enable the real-time control
+     * destinations 1 to 7 for the voice (see Emulator2Constants.REALTIME_*).
+     */
+    static final int                  FLAGS                           = 0x2F;
+    /** The flags of all real-time control destinations which a voice can enable. */
+    static final int                  REALTIME_ENABLE_ALL             = 0x7F;
     private static final int          FLAG_NEGATIVE_ENVELOPE          = 0x80;
     /** The 16 entry velocity tables, entry 0 for the highest velocity. */
     private static final int          CUTOFF_TABLE                    = 0x30;
@@ -1229,8 +1234,10 @@ class Emulator2VoiceSettings
      *
      * @param zone The zone
      * @param voiceRecord The 256 bytes of the voice record
+     * @param modWheelDestination The real-time destination which the right wheel (the modulation
+     *            wheel) of the preset controls, 0 for none
      */
-    static void apply (final ISampleZone zone, final byte [] voiceRecord)
+    static void apply (final ISampleZone zone, final byte [] voiceRecord, final int modWheelDestination)
     {
         // Tuning
         zone.setTuning (voiceRecord[FINE_TUNE] * FINE_TUNE_CENTS / 100.0);
@@ -1251,20 +1258,25 @@ class Emulator2VoiceSettings
         amplitudeEnvelope.setTimeVelocityTracking (((voiceRecord[VELOCITY_TO_ATTACK] & 0xFF) >> 4) / 15.0);
 
         // LFO: one triangle LFO which the voice routes to the pitch, the filter and the level
+        final int flags = voiceRecord[FLAGS] & 0xFF;
         final double lfoRate = lfoRate (voiceRecord[LFO_RATE] & 0xFF);
         final double lfoDelay = Math.max (0, (voiceRecord[LFO_DELAY] & 0xFF) - 1) / 100.0;
         final double lfoToPitch = lookup (LFO_PITCH_CENTS, lfoTableIndex (voiceRecord, LFO_TO_PITCH));
-        if (lfoToPitch > 0)
+        final double pitchModWheel = getModWheelDepth (LFO_PITCH_CENTS, lfoToPitch, flags, modWheelDestination, Emulator2Constants.REALTIME_LFO_TO_PITCH);
+        if (lfoToPitch > 0 || pitchModWheel > 0)
         {
             final ILfoModulator modulator = zone.getPitchLfoModulator ();
             modulator.setDepth (lfoToPitch / IEnvelope.MAX_ENVELOPE_DEPTH);
+            modulator.getDepthModWheelModulator ().setDepth (pitchModWheel / IEnvelope.MAX_ENVELOPE_DEPTH);
             setLfo (modulator.getSource (), lfoRate, lfoDelay);
         }
         final double lfoToLevel = lookup (LFO_LEVEL_DB, lfoTableIndex (voiceRecord, LFO_TO_LEVEL));
-        if (lfoToLevel > 0)
+        final double levelModWheel = getModWheelDepth (LFO_LEVEL_DB, lfoToLevel, flags, modWheelDestination, Emulator2Constants.REALTIME_LFO_TO_LEVEL);
+        if (lfoToLevel > 0 || levelModWheel > 0)
         {
             final ILfoModulator modulator = zone.getAmplitudeLfoModulator ();
             modulator.setDepth (lfoToLevel / ILfoModulator.MAX_VOLUME_DEPTH);
+            modulator.getDepthModWheelModulator ().setDepth (levelModWheel / ILfoModulator.MAX_VOLUME_DEPTH);
             setLfo (modulator.getSource (), lfoRate, lfoDelay);
         }
 
@@ -1277,6 +1289,7 @@ class Emulator2VoiceSettings
         if ((voiceRecord[FLAGS] & FLAG_NEGATIVE_ENVELOPE) != 0)
             envelopeAmount = -envelopeAmount;
         final double lfoToFilter = lookup (LFO_FILTER_CENTS, lfoTableIndex (voiceRecord, LFO_TO_FILTER));
+        final double filterModWheel = getModWheelDepth (LFO_FILTER_CENTS, lfoToFilter, flags, modWheelDestination, Emulator2Constants.REALTIME_LFO_TO_FILTER);
         // An open filter stays out of the way, as it does in the SoundFont reader: the envelope,
         // the velocity and the LFO could only close it from there
         if (cutoff >= CUTOFF_OPEN)
@@ -1301,13 +1314,49 @@ class Emulator2VoiceSettings
             // velocity it is set, on the 3,646 others it is 0
             filterEnvelope.setTimeVelocityTracking ((voiceRecord[VELOCITY_TO_ATTACK] & 0x0F) / 15.0);
         }
-        if (lfoToFilter > 0)
+        if (lfoToFilter > 0 || filterModWheel > 0)
         {
             final ILfoModulator modulator = filter.getCutoffLfoModulator ();
             modulator.setDepth (lfoToFilter / IEnvelope.MAX_ENVELOPE_DEPTH);
+            modulator.getDepthModWheelModulator ().setDepth (filterModWheel / IEnvelope.MAX_ENVELOPE_DEPTH);
             setLfo (modulator.getSource (), lfoRate, lfoDelay);
         }
         zone.setFilter (filter);
+    }
+
+
+    /**
+     * Get the depth which the modulation wheel dials into an LFO routing of a voice. The wheel
+     * controls the routing if the preset assigns the right wheel to it, the voice does not exempt
+     * itself from it and the voice has no amount of its own: the operations manual states that the
+     * amount of the voice has priority over the wheel. When it is fully up, the wheel reaches the
+     * largest amount, which is not documented and therefore an assumption.
+     *
+     * @param table The depth table of the routing
+     * @param amount The amount of the voice, in the unit of the table
+     * @param flags The flags of the voice which enable the real-time control destinations
+     * @param modWheelDestination The real-time destination which the right wheel controls
+     * @param destination The real-time destination of the routing
+     * @return The depth with the wheel fully up in the unit of the table, 0 if the wheel does not
+     *         control the routing
+     */
+    private static double getModWheelDepth (final double [] [] table, final double amount, final int flags, final int modWheelDestination, final int destination)
+    {
+        if (amount > 0 || modWheelDestination != destination || (flags & getRealtimeEnableFlag (destination)) == 0)
+            return 0;
+        return table[table.length - 1][1];
+    }
+
+
+    /**
+     * Get the flag of the voice flags which enables a real-time control destination for the voice.
+     *
+     * @param destination The 1-based real-time destination, e.g. REALTIME_LFO_TO_PITCH
+     * @return The flag
+     */
+    static int getRealtimeEnableFlag (final int destination)
+    {
+        return 1 << (destination - 1);
     }
 
 
@@ -1454,6 +1503,81 @@ class Emulator2VoiceSettings
     static int velocityLevelRange (final double rangeDb)
     {
         return inverseLookup (VELOCITY_LEVEL_DB, rangeDb);
+    }
+
+
+    /**
+     * Get the value of the LFO rate which comes closest to a rate, the inverse of lfoRate.
+     *
+     * @param hertz The rate in Hertz
+     * @return The value of the rate byte
+     */
+    static int lfoRateValue (final double hertz)
+    {
+        return Math.clamp (Math.round (15.67 * Math.log (hertz / 0.0669) / Math.log (2)), 0, 255);
+    }
+
+
+    /**
+     * Get the value of the LFO delay which comes closest to a delay: 10 ms steps, less one.
+     *
+     * @param seconds The delay in seconds
+     * @return The value of the delay byte
+     */
+    static int lfoDelayValue (final double seconds)
+    {
+        return Math.clamp (Math.round (Math.max (0, seconds) * 100.0) + 1, 1, 255);
+    }
+
+
+    /**
+     * Get the index into the LFO to pitch depth table which comes closest to a depth.
+     *
+     * @param cents The depth in cents
+     * @return The index
+     */
+    static int lfoPitchIndex (final double cents)
+    {
+        return inverseLookup (LFO_PITCH_CENTS, cents);
+    }
+
+
+    /**
+     * Get the index into the LFO to filter depth table which comes closest to a depth.
+     *
+     * @param cents The depth in cents
+     * @return The index
+     */
+    static int lfoFilterIndex (final double cents)
+    {
+        return inverseLookup (LFO_FILTER_CENTS, cents);
+    }
+
+
+    /**
+     * Get the index into the LFO to level depth table which comes closest to a depth.
+     *
+     * @param decibels The depth in decibels
+     * @return The index
+     */
+    static int lfoLevelIndex (final double decibels)
+    {
+        return inverseLookup (LFO_LEVEL_DB, decibels);
+    }
+
+
+    /**
+     * Write the pointer into an LFO depth table, the inverse of lfoTableIndex: the low byte holds
+     * the index modulo 4, the high byte the page of the table which holds 4 entries each.
+     *
+     * @param data The data which holds the voice record
+     * @param offset The position of the pointer in the data
+     * @param index The index into the table
+     */
+    static void writeLfoTableIndex (final byte [] data, final int offset, final int index)
+    {
+        data[offset] = (byte) (index % 4);
+        data[offset + 1] = (byte) (LFO_TABLE_PAGE + index / 4);
     }
 
 

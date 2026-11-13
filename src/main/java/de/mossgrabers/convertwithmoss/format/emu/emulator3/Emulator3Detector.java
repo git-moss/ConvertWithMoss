@@ -878,26 +878,14 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
         // of a full amount is not documented anywhere; the vibrato is treated as one semitone, the
         // tremolo and the cutoff modulation are scaled like the ones of the Emax, whose steps are
         // known
-        final int lfoToPitch = data[offset + Emulator3Constants.ZONE_LFO_TO_PITCH];
-        if (lfoToPitch != 0)
+        final double pitchFullDepth = 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+        readLfoModulator (zone.getPitchLfoModulator (), data, presetOffset, offset, Emulator3Constants.ZONE_LFO_TO_PITCH, Emulator3Constants.REALTIME_LFO_TO_PITCH, pitchFullDepth);
+        final double amplifierFullDepth = Emulator3Constants.LFO_AMPLIFIER_FULL_DEPTH_DB / ILfoModulator.MAX_VOLUME_DEPTH;
+        readLfoModulator (zone.getAmplitudeLfoModulator (), data, presetOffset, offset, Emulator3Constants.ZONE_LFO_TO_AMPLIFIER, Emulator3Constants.REALTIME_LFO_TO_VCA, amplifierFullDepth);
+        if (filter != null)
         {
-            final ILfoModulator lfoModulator = zone.getPitchLfoModulator ();
-            readLfo (lfoModulator.getSource (), data, offset);
-            lfoModulator.setDepth (Math.clamp (lfoToPitch / 127.0, -1, 1) * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
-        }
-        final int lfoToAmplifier = data[offset + Emulator3Constants.ZONE_LFO_TO_AMPLIFIER];
-        if (lfoToAmplifier != 0)
-        {
-            final ILfoModulator lfoModulator = zone.getAmplitudeLfoModulator ();
-            readLfo (lfoModulator.getSource (), data, offset);
-            lfoModulator.setDepth (Math.clamp (lfoToAmplifier / 127.0, -1, 1) * Emulator3Constants.LFO_AMPLIFIER_FULL_DEPTH_DB / ILfoModulator.MAX_VOLUME_DEPTH);
-        }
-        final int lfoToCutoff = data[offset + Emulator3Constants.ZONE_LFO_TO_CUTOFF];
-        if (lfoToCutoff != 0 && filter != null)
-        {
-            final ILfoModulator lfoModulator = filter.getCutoffLfoModulator ();
-            readLfo (lfoModulator.getSource (), data, offset);
-            lfoModulator.setDepth (Math.clamp (lfoToCutoff / 127.0, -1, 1) * Emulator3Constants.LFO_CUTOFF_FULL_DEPTH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+            final double cutoffFullDepth = Emulator3Constants.LFO_CUTOFF_FULL_DEPTH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH;
+            readLfoModulator (filter.getCutoffLfoModulator (), data, presetOffset, offset, Emulator3Constants.ZONE_LFO_TO_CUTOFF, Emulator3Constants.REALTIME_LFO_TO_CUTOFF, cutoffFullDepth);
         }
 
         // The pitch bend range belongs to the preset and applies to all of its zones
@@ -908,6 +896,36 @@ public class Emulator3Detector extends AbstractDetector<MetadataSettingsUI>
             zone.setBendDown (-pitchBendRange * 100);
         }
         return zone;
+    }
+
+
+    /**
+     * Read one routing of the LFO of a zone. When the preset assigns the modulation wheel to the
+     * routing and the zone does not exempt itself from it, the wheel overrides the amount of the
+     * zone: without the wheel there is no modulation, with the wheel fully up the full amount. The
+     * factory banks rely on this: zones with a fixed vibrato exempt themselves from the wheel,
+     * zones which are controlled by the wheel have an amount of 0.
+     *
+     * @param modulator The LFO modulator to fill
+     * @param data The bank data
+     * @param presetOffset The offset of the preset which holds the zone
+     * @param offset The offset of the zone
+     * @param amountOffset The offset of the amount of the routing in the zone
+     * @param destination The real-time destination of the routing, e.g. REALTIME_LFO_TO_PITCH
+     * @param fullDepth The depth of the model which a full amount of 127 reaches
+     */
+    private static void readLfoModulator (final ILfoModulator modulator, final byte [] data, final int presetOffset, final int offset, final int amountOffset, final int destination, final double fullDepth)
+    {
+        if (Emulator3Constants.isModWheelControlled (data, presetOffset, offset, destination))
+            modulator.getDepthModWheelModulator ().setDepth (fullDepth);
+        else
+        {
+            final int amount = data[offset + amountOffset];
+            if (amount == 0)
+                return;
+            modulator.setDepth (Math.clamp (amount / 127.0, -1, 1) * fullDepth);
+        }
+        readLfo (modulator.getSource (), data, offset);
     }
 
 

@@ -68,6 +68,11 @@ public class Emulator3Constants
     public static final int            BANK_SELECTED_PRESET           = 0x5C;
 
     // The fields of a preset
+    /**
+     * The offset of the real-time controller assignments: one byte for each of the destinations 1
+     * to 9 (see the REALTIME_* constants) which holds the source controlling it, 0 for none.
+     */
+    public static final int            PRESET_REALTIME_CONTROLS       = 0x10;
     /** The offset of the pitch bend range in semitones. */
     public static final int            PRESET_PITCH_BEND_RANGE        = 0x2C;
     /** The offset of the lowest velocity which triggers the primary layer. */
@@ -247,6 +252,17 @@ public class Emulator3Constants
     public static final int            Q_REALTIME_ENABLE              = 0x80;
     /** All real-time controls of a zone are enabled. */
     public static final int            REALTIME_ENABLE_ALL            = 0xFF;
+
+    // The real-time controls; the destinations are 1-based, bit (destination - 1) of the real-time
+    // enable flags of a zone exempts the zone from a destination when it is cleared
+    /** The real-time source of the right wheel, which receives the modulation wheel (CC 1). */
+    public static final int            REALTIME_SOURCE_MOD_WHEEL      = 2;
+    /** The real-time destination LFO to pitch, which overrides the amount of the zone. */
+    public static final int            REALTIME_LFO_TO_PITCH          = 4;
+    /** The real-time destination LFO to cutoff, which overrides the amount of the zone. */
+    public static final int            REALTIME_LFO_TO_CUTOFF         = 5;
+    /** The real-time destination LFO to VCA, which overrides the amount of the zone. */
+    public static final int            REALTIME_LFO_TO_VCA            = 6;
     /** The value which the EIIIX writes into the unknown parameter A of a zone. */
     public static final int            PARAMETER_A_EMULATOR_3X        = 0x1F;
 
@@ -268,7 +284,11 @@ public class Emulator3Constants
     /** The filter tracking value which follows the keyboard at 100%. */
     public static final double         FULL_VCF_TRACKING              = 0.5;
 
-    /** The real-time controller assignments which the samplers use by default. */
+    /**
+     * The real-time controller assignments which the samplers use by default: the left wheel
+     * controls the pitch, the right wheel the LFO to pitch. The last 3 bytes are the same in all
+     * library banks, their meaning is unknown.
+     */
     protected static final byte []     DEFAULT_REALTIME_CONTROLS      =
     {
         1,
@@ -280,9 +300,9 @@ public class Emulator3Constants
         0,
         0,
         0,
-        0,
         1,
-        8
+        8,
+        0
     };
 
     /** The value which the position behind the last preset has in an empty bank. */
@@ -1622,5 +1642,33 @@ public class Emulator3Constants
             case 3 -> LfoWaveform.SQUARE;
             default -> LfoWaveform.TRIANGLE;
         };
+    }
+
+
+    /**
+     * Get the flag of the real-time enable flags of a zone which enables a real-time destination.
+     *
+     * @param destination The 1-based real-time destination, e.g. REALTIME_LFO_TO_PITCH
+     * @return The flag
+     */
+    public static int getRealtimeEnableFlag (final int destination)
+    {
+        return 1 << (destination - 1);
+    }
+
+
+    /**
+     * Check if the modulation wheel controls a real-time destination of a zone: the preset assigns
+     * the right wheel to the destination and the zone does not exempt itself from it.
+     *
+     * @param data The data which holds the preset and the zone
+     * @param presetOffset The offset of the preset
+     * @param zoneOffset The offset of the zone
+     * @param destination The 1-based real-time destination, e.g. REALTIME_LFO_TO_PITCH
+     * @return True if the modulation wheel controls the destination
+     */
+    public static boolean isModWheelControlled (final byte [] data, final int presetOffset, final int zoneOffset, final int destination)
+    {
+        return data[presetOffset + PRESET_REALTIME_CONTROLS + destination - 1] == REALTIME_SOURCE_MOD_WHEEL && (data[zoneOffset + ZONE_REALTIME_ENABLE] & getRealtimeEnableFlag (destination)) != 0;
     }
 }

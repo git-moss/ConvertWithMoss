@@ -140,6 +140,24 @@ public class DirectWaveTag
     public static final int         MODULATION_TARGET_PITCH = 1;
     /** The modulation target value of the gain of the voice. */
     public static final int         MODULATION_TARGET_GAIN  = 2;
+    /** The modulation target value of the cutoff of the first filter (Fl1 Cutoff). */
+    public static final int         MODULATION_TARGET_FL1   = 7;
+    /** The modulation source value of the modulation wheel. */
+    public static final int         MODULATION_SOURCE_WHEEL = 3;
+    /**
+     * The modulation target value of the amount of the first matrix slot (Mod Amt P1-1); the
+     * amounts of the other 15 slots follow in the order of the slots. The modulation is added to
+     * the amount of the slot, see MODULATION_AMOUNT_RANGE. In FL Studio the modulation wheel only
+     * reaches the plug-in when CC1 is linked to 'Omni - Mod Wheel (Wrapper)'.
+     */
+    public static final int         MODULATION_TARGET_SLOT  = 32;
+    /**
+     * The amount which a modulation of the amount of a slot (Mod Amt) adds at its full strength:
+     * the strength of the modulating slot (which follows the cube law as well) times this value is
+     * added to the amount of the modulated slot. Measured with the modulation wheel fully up on a
+     * vibrato slot; e.g. a wheel slot at 0.75 (strength 0.125) moves the amount 0.5 to 0.5625.
+     */
+    public static final double      MODULATION_AMOUNT_RANGE = 0.5;
 
     /**
      * The modulation amount is bipolar: this value is no modulation at all, the distance from it is
@@ -154,6 +172,13 @@ public class DirectWaveTag
      * <code>cent = 2400 * strength</code> reproduces within 2 %.
      */
     public static final double      PITCH_MODULATION_RANGE  = 2400.0;
+
+    /**
+     * The cutoff modulation in cent at the full modulation strength. Measured with a square LFO on
+     * a resonant low-pass filter at four amounts (0.25, 0.7, 0.75, 0.8): the cutoff moves
+     * symmetrically by 10.6 to 10.9 octaves times the strength.
+     */
+    public static final double      CUTOFF_MODULATION_RANGE = 12800.0;
 
     /** The magic bytes of a FLAC stream. */
     protected static final byte []  FLAC_MAGIC              = "fLaC".getBytes ();

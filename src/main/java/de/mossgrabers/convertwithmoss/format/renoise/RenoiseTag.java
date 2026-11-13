@@ -171,6 +171,34 @@ public class RenoiseTag
     /** The drive base value parameter tag (mixer device). */
     public static final String DRIVE                    = "Drive";
 
+    /** The macro of the modulation wheel in the global properties. */
+    public static final String MODULATION_WHEEL_MACRO   = "ModulationWheelMacro";
+    /** The mappings wrapper tag of a macro; a single one is a {@link #MAPPING} tag. */
+    public static final String MAPPINGS                 = "Mappings";
+    /** The type of the device chain to which a macro mapping is routed. */
+    public static final String DEST_CHAIN_TYPE          = "DestChainType";
+    /** The index of the device chain (e.g. the modulation set) of a macro mapping. */
+    public static final String DEST_CHAIN_INDEX         = "DestChainIndex";
+    /** The index of the device in the chain of a macro mapping; the mixer device is 0. */
+    public static final String DEST_DEVICE_INDEX        = "DestDeviceIndex";
+    /** The index of the parameter of the device of a macro mapping. */
+    public static final String DEST_PARAMETER_INDEX     = "DestParameterIndex";
+    /** The parameter value of a macro mapping when the macro is at its minimum. */
+    public static final String MIN                      = "Min";
+    /** The parameter value of a macro mapping when the macro is at its maximum. */
+    public static final String MAX                      = "Max";
+    /** The scaling of a macro mapping. */
+    public static final String SCALING                  = "Scaling";
+    /** The chain type of a macro mapping which is routed to a modulation set. */
+    public static final String DEST_MODULATION_SET      = "ModulationSet";
+    /**
+     * The index of the amplitude parameter of a LFO device in a macro mapping. The parameters are
+     * counted in the order of the XML, starting with IsActive at 0 (which is the same as starting
+     * with the first value parameter at 1): Frequency 1, Amplitude 2, Dephase 3, Delay 4. The only
+     * mapping of the test files (mixer device, parameter 6 = Drive) fits this counting.
+     */
+    public static final String LFO_AMPLITUDE_INDEX      = "2";
+
     /** The device chains wrapper tag. */
     public static final String DEVICE_CHAINS            = "DeviceChains";
     /** A single device chain tag. */

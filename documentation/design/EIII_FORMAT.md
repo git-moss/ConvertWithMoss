@@ -101,7 +101,7 @@ either, so those keys are simply silent; the reference is stored data and not a 
 ```
 offset size
 0      16   char   preset name, padded with spaces
-16     12   int8   real-time controller assignments (10 controllers + 2 footswitches)
+16     12   uint8  real-time controller assignments, one source per destination (see below)
 28     16   int8   unknown
 44     1    int8   pitch bend range in semitones
 45     1    uint8  lowest velocity of the primary layer
@@ -133,6 +133,60 @@ its ends link to the empty slots 126/127). An empty slot has the same table addr
 successor, so following such a link reads whatever lies behind the last preset as note zones and
 zones - on these volumes garbage which references impossible sample numbers like 16356. A chain
 therefore ends at the first slot which holds no preset, which is also what the device does.
+
+### Real-time controls
+
+The 12 bytes at offset 16 hold one byte for each real-time destination, in the order of the
+destination numbers of the operations manual, and the byte holds the source which controls the
+destination. This is why a destination can only have one source and why assigning a destination
+to a source removes it from the source which controlled it before.
+
+```
+byte  destination        byte  destination
+0     1 pitch            5     6 LFO->VCA
+1     2 VCF cutoff       6     7 pan
+2     3 VCA level        7     8 attack
+3     4 LFO->pitch       8     9 crossfade
+4     5 LFO->cutoff      9-11  unknown, 1, 8, 0 in 2119 of the 2122 presets of Vol. 1 and 12
+
+source: 0 off, 1 left wheel, 2 right wheel, 3 pressure, 4 pedal, 5 MIDI A, 6 MIDI B
+```
+
+By default the right wheel receives the MIDI controller 1, i.e. it is the modulation wheel. 1123
+of the 1235 presets of `Vol. 1 - Emulator Standards` hold `1 0 0 2 0 0 0 0 0 1 8 0` - the left
+wheel bends the pitch, the right wheel controls the vibrato - which is the default of the
+samplers; the ESI-32 banks of `Vol. 12` also route the right wheel to LFO->VCA (63 presets),
+LFO->cutoff (38) and VCF cutoff (46), pressure shows up on VCA level and crossfade.
+
+A zone exempts itself from a destination by clearing bit n of its real-time enable flags (zone
+offset 46) for the destination n + 1. The manual lists the switches in the order pitch, VCF
+cutoff, level, LFO->pitch, LFO->VCF cutoff, LFO->VCA, attack, pan; the order of the last two bits
+is not verified. The value 0xF7, which only exempts the zone from LFO->pitch, is held by 690 zones
+of `Vol. 1`.
+
+**A real-time control overrides the LFO amount of the zone.** The operations manual of the EIIIX
+does not say so (the Emax II manual does for the same destinations), but the factory banks
+depend on it. Of the zones of `Vol. 1` whose preset routes the right wheel to LFO->pitch:
+
+```
+zone LFO->pitch   LFO->pitch enabled   zones
+0                 on                   15562
+not 0             off                    642
+0                 off                     83
+not 0             on                      37
+```
+
+A zone with a fixed vibrato exempts itself from the wheel, a zone which the wheel controls has an
+amount of 0 - which would never sound if the wheel only scaled the amount of the zone. The ESI-32
+banks are less strict (317 zones have an amount and are enabled). The depth which the wheel
+reaches when it is fully up is not documented; the converter takes the full amount (127) of the
+routing.
+
+ConvertWithMoss reads a routing which the right wheel controls and which the zone does not exempt
+as a modulation wheel depth of the full amount without a fixed depth. When writing, the right
+wheel is assigned to the first LFO routing - pitch, cutoff, volume - for which a zone has a
+modulation wheel depth (no routing otherwise), and the zones without a modulation wheel depth for
+it exempt themselves from it, so that their fixed amount stays audible.
 
 ### Note zone (4 bytes)
 
@@ -185,7 +239,8 @@ which no note zone references may hold stale data and must not be read.
 43  uint8  note-on delay, 0x00..0xFF for 0.00..1.53 s
 44  uint8  panorama, 0 fully left, 0x40 centered, 0x7F fully right
 45  uint8  filter type (upper 5 bits) and LFO shape (lower 2 bits)
-46  uint8  flags which enable the real-time controls, normally 0xFF
+46  uint8  flags which enable the real-time controls, bit n for the destination n + 1 (see
+           Real-time controls), normally 0xFF
 47  uint8  flags: 0x02 non-transpose, 0x04 envelope trigger mode, 0x08 chorus,
            0x10 solo, 0x20 disable loop, 0x40 disable left, 0x80 disable right
 ```

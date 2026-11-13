@@ -129,6 +129,19 @@ public class Emulator2Constants
 
     /** A preset record starts with a 9 byte header, whose last byte has its top bit set. */
     public static final int PRESET_HEADER_SIZE     = 9;
+    /**
+     * The real-time controls of a preset are the first 8 bytes of its header: one byte for each of
+     * the sources 1 to 8 which holds the destination the source controls, 0 for none.
+     */
+    public static final int PRESET_REALTIME        = 0;
+    /** The real-time source of the right wheel, which is the modulation wheel. */
+    public static final int REALTIME_RIGHT_WHEEL   = 2;
+    /** The real-time destination LFO to pitch; it only works on voices without a vibrato depth. */
+    public static final int REALTIME_LFO_TO_PITCH  = 4;
+    /** The real-time destination LFO to filter; it only works on voices without an LFO amount. */
+    public static final int REALTIME_LFO_TO_FILTER = 5;
+    /** The real-time destination LFO to level; it only works on voices without an LFO amount. */
+    public static final int REALTIME_LFO_TO_LEVEL  = 6;
     /** The name of a preset follows the header. */
     public static final int PRESET_NAME_OFFSET     = PRESET_HEADER_SIZE;
     /** The length of the name of a preset. */

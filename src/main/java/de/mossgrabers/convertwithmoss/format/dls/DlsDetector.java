@@ -247,45 +247,31 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
 
         // Pitch LFO (vibrato). The low frequency oscillator which modulates the pitch is the
         // vibrato; its frequency and delay are set by their own connections.
-        // Only an *uncontrolled* connection is read: the format additionally defines the same
-        // connection controlled by the modulation wheel, which is the amount the wheel can dial in
-        // and must not be applied as a permanently sounding vibrato.
-        final Optional<DlsArticulation> pitchLfoModulation = getUncontrolledArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_LFO, DlsArticulation.CONN_DST_PITCH);
-        if (pitchLfoModulation.isPresent ())
+        // The uncontrolled connection is the permanently sounding vibrato. The format additionally
+        // defines the same connection controlled by the modulation wheel, which is the amount the
+        // wheel adds to it.
+        final double pitchDepthCents = getLfoDepth (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_PITCH);
+        final double pitchModWheelDepthCents = getLfoDepth (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_CC1, DlsArticulation.CONN_DST_PITCH);
+        if (pitchDepthCents != 0 || pitchModWheelDepthCents != 0)
         {
-            final double depthCents = DlsArticulation.relativePitchToCents (pitchLfoModulation.get ().getScale ());
-            if (depthCents != 0)
-            {
-                final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
-                pitchLfoModulator.setDepth (Math.clamp (depthCents, -IEnvelope.MAX_ENVELOPE_DEPTH, IEnvelope.MAX_ENVELOPE_DEPTH) / IEnvelope.MAX_ENVELOPE_DEPTH);
-
-                final ILfo pitchLfo = pitchLfoModulator.getSource ();
-                final Optional<DlsArticulation> lfoFrequency = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_LFO_FREQUENCY);
-                if (lfoFrequency.isPresent ())
-                    pitchLfo.setRate (DlsArticulation.absolutePitchToHertz (lfoFrequency.get ().getScale ()));
-                pitchLfo.setDelay (getTime (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_LFO_STARTDELAY));
-            }
+            final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+            pitchLfoModulator.setDepth (Math.clamp (pitchDepthCents, -IEnvelope.MAX_ENVELOPE_DEPTH, IEnvelope.MAX_ENVELOPE_DEPTH) / IEnvelope.MAX_ENVELOPE_DEPTH);
+            pitchLfoModulator.getDepthModWheelModulator ().setDepth (Math.clamp (pitchModWheelDepthCents, -IEnvelope.MAX_ENVELOPE_DEPTH, IEnvelope.MAX_ENVELOPE_DEPTH) / IEnvelope.MAX_ENVELOPE_DEPTH);
+            setLfo (pitchLfoModulator.getSource (), dlsInstrument, dlsRegion);
         }
 
         // Volume LFO (tremolo). The low frequency oscillator which modulates the gain is the
         // tremolo; it shares its frequency and delay connections with the vibrato above since the
-        // format has only one modulation oscillator. Only an *uncontrolled* connection is read for
-        // the same reason as for the vibrato.
-        final Optional<DlsArticulation> gainLfoModulation = getUncontrolledArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_LFO, DlsArticulation.CONN_DST_GAIN);
-        if (gainLfoModulation.isPresent ())
+        // format has only one modulation oscillator. The uncontrolled and the modulation wheel
+        // controlled connections are read for the same reason as for the vibrato.
+        final double gainDepthDecibels = getLfoDepth (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_GAIN);
+        final double gainModWheelDepthDecibels = getLfoDepth (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_CC1, DlsArticulation.CONN_DST_GAIN);
+        if (gainDepthDecibels != 0 || gainModWheelDepthDecibels != 0)
         {
-            final double depthDecibels = DlsArticulation.relativeGainToDecibels (gainLfoModulation.get ().getScale ());
-            if (depthDecibels != 0)
-            {
-                final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
-                amplitudeLfoModulator.setDepth (Math.clamp (depthDecibels, -ILfoModulator.MAX_VOLUME_DEPTH, ILfoModulator.MAX_VOLUME_DEPTH) / ILfoModulator.MAX_VOLUME_DEPTH);
-
-                final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
-                final Optional<DlsArticulation> lfoFrequency = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_LFO_FREQUENCY);
-                if (lfoFrequency.isPresent ())
-                    amplitudeLfo.setRate (DlsArticulation.absolutePitchToHertz (lfoFrequency.get ().getScale ()));
-                amplitudeLfo.setDelay (getTime (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_LFO_STARTDELAY));
-            }
+            final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
+            amplitudeLfoModulator.setDepth (Math.clamp (gainDepthDecibels, -ILfoModulator.MAX_VOLUME_DEPTH, ILfoModulator.MAX_VOLUME_DEPTH) / ILfoModulator.MAX_VOLUME_DEPTH);
+            amplitudeLfoModulator.getDepthModWheelModulator ().setDepth (Math.clamp (gainModWheelDepthDecibels, -ILfoModulator.MAX_VOLUME_DEPTH, ILfoModulator.MAX_VOLUME_DEPTH) / ILfoModulator.MAX_VOLUME_DEPTH);
+            setLfo (amplitudeLfoModulator.getSource (), dlsInstrument, dlsRegion);
         }
 
         // Pitch tuning
@@ -311,27 +297,67 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Get a connection which is not modulated by a controller, e.g. the modulation wheel.
+     * Get the depth of a connection of the LFO to the pitch or the gain.
+     *
+     * @param dlsInstrument The instrument
+     * @param dlsRegion The region
+     * @param control The controller which modulates the connection, CONN_SRC_NONE for the
+     *            uncontrolled connection or CONN_SRC_CC1 for the one controlled by the modulation
+     *            wheel
+     * @param destination The destination, CONN_DST_PITCH or CONN_DST_GAIN
+     * @return The depth in cent for the pitch or in dB for the gain, 0 if there is no such
+     *         connection
+     */
+    private static double getLfoDepth (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int control, final int destination)
+    {
+        final Optional<DlsArticulation> articulation = getControlledArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_LFO, control, destination);
+        if (articulation.isEmpty ())
+            return 0;
+        final int scale = articulation.get ().getScale ();
+        return destination == DlsArticulation.CONN_DST_PITCH ? DlsArticulation.relativePitchToCents (scale) : DlsArticulation.relativeGainToDecibels (scale);
+    }
+
+
+    /**
+     * Set the frequency and the delay of the LFO, which are shared by the vibrato and the tremolo.
+     *
+     * @param lfo The LFO to fill
+     * @param dlsInstrument The instrument
+     * @param dlsRegion The region
+     */
+    private static void setLfo (final ILfo lfo, final DlsInstrument dlsInstrument, final DlsRegion dlsRegion)
+    {
+        final Optional<DlsArticulation> lfoFrequency = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_LFO_FREQUENCY);
+        if (lfoFrequency.isPresent ())
+            lfo.setRate (DlsArticulation.absolutePitchToHertz (lfoFrequency.get ().getScale ()));
+        lfo.setDelay (getTime (dlsInstrument, dlsRegion, DlsArticulation.CONN_DST_LFO_STARTDELAY));
+    }
+
+
+    /**
+     * Get a connection which is modulated by the given controller, e.g. the modulation wheel.
      *
      * @param dlsInstrument The instrument
      * @param dlsRegion The region
      * @param source The source, see the CONN_SRC_* constants
+     * @param control The controller, see the CONN_SRC_* constants, CONN_SRC_NONE for a connection
+     *            which is not modulated by a controller
      * @param destination The destination, see the CONN_DST_* constants
      * @return The connection, if any
      */
-    private static Optional<DlsArticulation> getUncontrolledArticulation (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int source, final int destination)
+    private static Optional<DlsArticulation> getControlledArticulation (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int source, final int control, final int destination)
     {
-        final Optional<DlsArticulation> articulation = getUncontrolledArticulation (dlsRegion.getArticulations (), source, destination);
+        final Optional<DlsArticulation> articulation = getControlledArticulation (dlsRegion.getArticulations (), source, control, destination);
         if (articulation.isPresent ())
             return articulation;
-        return getUncontrolledArticulation (dlsInstrument.getArticulations (), source, destination);
+        return getControlledArticulation (dlsInstrument.getArticulations (), source, control, destination);
     }
 
 
-    private static Optional<DlsArticulation> getUncontrolledArticulation (final List<DlsArticulation> articulations, final int source, final int destination)
+    private static Optional<DlsArticulation> getControlledArticulation (final List<DlsArticulation> articulations, final int source, final int control, final int destination)
     {
         for (final DlsArticulation articulation: articulations)
-            if (articulation.getSource () == source && articulation.getDestination () == destination && articulation.getControl () == DlsArticulation.CONN_SRC_NONE)
+            if (articulation.getSource () == source && articulation.getDestination () == destination && articulation.getControl () == control)
                 return Optional.of (articulation);
         return Optional.empty ();
     }

@@ -343,16 +343,18 @@ public class AkaiS900Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setTuning (rootNote - nominalPitch);
         sampleZone.setKeyTracking ((flags & AkaiS900Keygroup.FLAG_TRANSPOSE) > 0 ? 0 : 1.0);
 
-        // Pitch LFO
-        // Indirect modulation wheel modulation is currently not support, therefore, prevent
-        // unintended wobbly sounds
+        // Pitch LFO: the vibrato depth is always applied, the modulation wheel adds its depth on
+        // top of it. Since the wheel depth defaults to 50, most key-groups have a vibrato which
+        // only the wheel dials in
         final int lfoVibratoDepth = keygroup.getLfoVibratoDepth ();
-        if (lfoVibratoDepth > 0 && keygroup.getModulationWheelLfoDepthModulation () == 0)
+        final int modWheelDepth = keygroup.getModulationWheelLfoDepthModulation ();
+        if (lfoVibratoDepth > 0 || modWheelDepth > 0)
         {
             final ILfoModulator pitchLfoModulator = sampleZone.getPitchLfoModulator ();
             // The full depth is +-3 semi-tones, the depth of the model covers
             // IEnvelope#MAX_ENVELOPE_DEPTH cent
             pitchLfoModulator.setDepth (lfoVibratoDepth / 99.0 * 300.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
+            pitchLfoModulator.getDepthModWheelModulator ().setDepth (modWheelDepth / 99.0 * 300.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
             final ILfo lfo = pitchLfoModulator.getSource ();
             lfo.setWaveform (LfoWaveform.SINE);
             lfo.setRate (lfoRateToHertz (keygroup.getLfoVibratoRate () / 99.0));

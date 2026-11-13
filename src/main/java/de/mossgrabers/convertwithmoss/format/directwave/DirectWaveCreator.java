@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -186,31 +187,64 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         final int blockSize = DirectWaveTag.EMBEDDED_AUDIO_BLOCK;
         final int frames = (audioMetadata.getNumberOfSamples () + blockSize - 1) / blockSize * blockSize;
 
+        final Optional<List<DirectWaveChunk>> chunksOpt = DirectWaveChunk.parseAll (DirectWaveTag.TEMPLATE_CONTAINER, 0);
+        if (chunksOpt.isEmpty ())
+            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", "DirectWaveTag.TEMPLATE_CONTAINER"));
+
+        // The unused slots of the modulation matrix of the template, the used ones are program
+        // defaults
+        final List<Integer> freeSlots = new ArrayList<> ();
+        int slotIndex = 0;
+        for (final DirectWaveChunk chunk: chunksOpt.get ())
+            if (chunk.getTag () == DirectWaveTag.TAG_MODULATION)
+            {
+                if (DirectWaveChunk.readIntLE (chunk.getPayload (), DirectWaveTag.MODULATION_SOURCE) == 0)
+                    freeSlots.add (Integer.valueOf (slotIndex));
+                slotIndex++;
+            }
+
         // Zone LFO 1 modulates the pitch, Zone LFO 2 the volume; both are routed in the modulation
-        // matrix, which is why an LFO block is only written together with its matrix slot
+        // matrix, which is why an LFO block is only written together with its matrix slot. The
+        // filter cutoff uses one of them, see getLfoIndex
         final ILfo [] lfoSources = new ILfo [2];
-        final List<byte []> modulations = new ArrayList<> ();
+        final Map<Integer, byte []> modulations = new HashMap<> ();
         final ILfoModulator pitchModulator = zone.getPitchLfoModulator ();
         if (isModulating (pitchModulator))
         {
             lfoSources[0] = pitchModulator.getSource ();
             // The depth of the model is relative to MAX_ENVELOPE_DEPTH cent, DirectWave reaches
             // PITCH_MODULATION_RANGE cent at its full strength
-            modulations.add (createModulation (DirectWaveTag.MODULATION_SOURCE_LFO1, DirectWaveTag.MODULATION_TARGET_PITCH, pitchModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / DirectWaveTag.PITCH_MODULATION_RANGE));
+            final double factor = IEnvelope.MAX_ENVELOPE_DEPTH / DirectWaveTag.PITCH_MODULATION_RANGE;
+            addModulation (modulations, freeSlots, DirectWaveTag.MODULATION_SOURCE_LFO1, DirectWaveTag.MODULATION_TARGET_PITCH, pitchModulator.getDepth () * factor, getFullDepth (pitchModulator) * factor);
         }
         final ILfoModulator volumeModulator = zone.getAmplitudeLfoModulator ();
         if (isModulating (volumeModulator))
         {
             lfoSources[1] = volumeModulator.getSource ();
-            modulations.add (createModulation (DirectWaveTag.MODULATION_SOURCE_LFO2, DirectWaveTag.MODULATION_TARGET_GAIN, volumeStrength (volumeModulator.getDepth ())));
+            addModulation (modulations, freeSlots, DirectWaveTag.MODULATION_SOURCE_LFO2, DirectWaveTag.MODULATION_TARGET_GAIN, volumeStrength (volumeModulator.getDepth ()), volumeStrength (getFullDepth (volumeModulator)));
+        }
+        final Optional<IFilter> filterOpt = zone.getFilter ();
+        if (filterOpt.isPresent () && FILTER_TYPES.containsKey (filterOpt.get ().getType ()))
+        {
+            final ILfoModulator cutoffModulator = filterOpt.get ().getCutoffLfoModulator ();
+            if (isModulating (cutoffModulator))
+            {
+                final int index = getLfoIndex (lfoSources, cutoffModulator.getSource ());
+                if (index >= 0)
+                {
+                    lfoSources[index] = cutoffModulator.getSource ();
+                    // The depth of the model is relative to MAX_ENVELOPE_DEPTH cent, DirectWave
+                    // reaches CUTOFF_MODULATION_RANGE cent at its full strength
+                    final double factor = IEnvelope.MAX_ENVELOPE_DEPTH / DirectWaveTag.CUTOFF_MODULATION_RANGE;
+                    addModulation (modulations, freeSlots, index == 0 ? DirectWaveTag.MODULATION_SOURCE_LFO1 : DirectWaveTag.MODULATION_SOURCE_LFO2, DirectWaveTag.MODULATION_TARGET_FL1, cutoffModulator.getDepth () * factor, getFullDepth (cutoffModulator) * factor);
+                }
+            }
         }
 
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         final AtomicBoolean isFirstFilter = new AtomicBoolean (true);
         final int [] lfoIndex = new int [1];
-        final Optional<List<DirectWaveChunk>> chunksOpt = DirectWaveChunk.parseAll (DirectWaveTag.TEMPLATE_CONTAINER, 0);
-        if (chunksOpt.isEmpty ())
-            throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_BAD_METADATA_FILE", "DirectWaveTag.TEMPLATE_CONTAINER"));
+        final int [] modulationIndex = new int [1];
         for (final DirectWaveChunk chunk: chunksOpt.get ())
             switch (chunk.getTag ())
             {
@@ -258,10 +292,9 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
                     break;
 
                 case DirectWaveTag.TAG_MODULATION:
-                    // Fill the unused slots of the matrix, the used ones are program defaults
-                    final byte [] slot = chunk.getPayload ();
-                    final boolean isFree = DirectWaveChunk.readIntLE (slot, DirectWaveTag.MODULATION_SOURCE) == 0;
-                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_MODULATION, isFree && !modulations.isEmpty () ? modulations.remove (0) : slot);
+                    final byte [] slot = modulations.get (Integer.valueOf (modulationIndex[0]));
+                    modulationIndex[0]++;
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_MODULATION, slot == null ? chunk.getPayload () : slot);
                     break;
 
                 case DirectWaveTag.TAG_SAMPLE_TERMINATOR:
@@ -396,14 +429,78 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Check if a modulator has a depth and a source which is set.
+     * Check if a modulator has a depth (or a modulation wheel depth) and a source which is set.
      *
      * @param modulator The modulator to check
      * @return True if it modulates
      */
     private static boolean isModulating (final ILfoModulator modulator)
     {
-        return modulator != null && Math.abs (modulator.getDepth ()) > 0.0001 && modulator.getSource () != null && modulator.getSource ().isSet ();
+        return modulator != null && (Math.abs (modulator.getDepth ()) > 0.0001 || Math.abs (modulator.getDepthModWheelModulator ().getDepth ()) > 0.0001) && modulator.getSource () != null && modulator.getSource ().isSet ();
+    }
+
+
+    /**
+     * Get the depth of a modulator with the modulation wheel fully up.
+     *
+     * @param modulator The modulator
+     * @return The depth in the range of [-1..1]
+     */
+    private static double getFullDepth (final ILfoModulator modulator)
+    {
+        final double depth = modulator.getDepth ();
+        final double modWheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
+        final double sign = depth != 0 ? Math.signum (depth) : Math.signum (modWheelDepth);
+        return Math.clamp (sign * (Math.abs (depth) + Math.abs (modWheelDepth)), -1, 1);
+    }
+
+
+    /**
+     * Get the zone LFO which the filter cutoff modulation can use. DirectWave has only two zone LFOs
+     * which only store the waveform and the rate. The cutoff shares an LFO which is already used
+     * with the same waveform and rate, otherwise it takes a free one.
+     *
+     * @param lfoSources The LFOs used for the pitch and the volume, null if unused
+     * @param lfo The LFO of the cutoff modulation
+     * @return The index of the LFO to use (0 or 1), -1 if both are used with different settings
+     */
+    private static int getLfoIndex (final ILfo [] lfoSources, final ILfo lfo)
+    {
+        for (int i = 0; i < lfoSources.length; i++)
+            if (lfoSources[i] != null && lfoSources[i].getWaveform () == lfo.getWaveform () && Math.abs (lfoSources[i].getRate () - lfo.getRate ()) < 0.001)
+                return i;
+        for (int i = 0; i < lfoSources.length; i++)
+            if (lfoSources[i] == null)
+                return i;
+        return -1;
+    }
+
+
+    /**
+     * Put the slot which routes an LFO to its target into the next free slot of the modulation
+     * matrix. If the modulation wheel changes the strength, a second slot routes the wheel to the
+     * amount of the first one. With the wheel fully up the strength of the wheel slot times
+     * {@link DirectWaveTag#MODULATION_AMOUNT_RANGE} is added to the amount of the first slot.
+     *
+     * @param modulations Where to put the slots by their index
+     * @param freeSlots The indices of the free slots of the template, used ones are removed
+     * @param source The modulation source, one of the zone LFOs
+     * @param target The modulation target
+     * @param strength The modulation strength without the wheel in the range of [-1..1]
+     * @param fullStrength The modulation strength with the wheel fully up in the range of [-1..1]
+     */
+    private static void addModulation (final Map<Integer, byte []> modulations, final List<Integer> freeSlots, final int source, final int target, final double strength, final double fullStrength)
+    {
+        if (freeSlots.isEmpty ())
+            return;
+        final Integer slot = freeSlots.remove (0);
+        modulations.put (slot, createModulation (source, target, toModulationAmount (strength)));
+
+        final double amountDifference = toModulationAmount (fullStrength) - toModulationAmount (strength);
+        if (Math.abs (amountDifference) < 0.0001 || freeSlots.isEmpty ())
+            return;
+        final double wheelAmount = toModulationAmount (amountDifference / DirectWaveTag.MODULATION_AMOUNT_RANGE);
+        modulations.put (freeSlots.remove (0), createModulation (DirectWaveTag.MODULATION_SOURCE_WHEEL, DirectWaveTag.MODULATION_TARGET_SLOT + slot.intValue (), wheelAmount));
     }
 
 
@@ -428,24 +525,36 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Create the payload of one modulation matrix slot. The amount is bipolar around
-     * {@link DirectWaveTag#MODULATION_NEUTRAL} and the strength is the cube of the distance from
-     * it, see the design document.
+     * Create the payload of one modulation matrix slot.
      *
      * @param source The modulation source
      * @param target The modulation target
-     * @param strength The modulation strength in the range of [-1..1]
+     * @param amount The modulation amount in the range of [0..1]
      * @return The payload
      */
-    private static byte [] createModulation (final int source, final int target, final double strength)
+    private static byte [] createModulation (final int source, final int target, final double amount)
     {
         final byte [] payload = new byte [8];
         DirectWaveChunk.writeShortLE (payload, DirectWaveTag.MODULATION_SOURCE, source);
         DirectWaveChunk.writeShortLE (payload, DirectWaveTag.MODULATION_TARGET, target);
+        DirectWaveChunk.writeFloatLE (payload, DirectWaveTag.MODULATION_AMOUNT, (float) Math.clamp (amount, 0, 1));
+        return payload;
+    }
+
+
+    /**
+     * Convert a modulation strength into the amount of a modulation matrix slot. The amount is
+     * bipolar around {@link DirectWaveTag#MODULATION_NEUTRAL} and the strength is the cube of the
+     * distance from it, see the design document.
+     *
+     * @param strength The modulation strength in the range of [-1..1]
+     * @return The amount in the range of [0..1]
+     */
+    private static double toModulationAmount (final double strength)
+    {
         final double clamped = Math.clamp (strength, -1, 1);
         final double distance = Math.cbrt (Math.abs (clamped)) / 2.0;
-        DirectWaveChunk.writeFloatLE (payload, DirectWaveTag.MODULATION_AMOUNT, (float) (DirectWaveTag.MODULATION_NEUTRAL + Math.signum (clamped) * distance));
-        return payload;
+        return DirectWaveTag.MODULATION_NEUTRAL + Math.signum (clamped) * distance;
     }
 
 

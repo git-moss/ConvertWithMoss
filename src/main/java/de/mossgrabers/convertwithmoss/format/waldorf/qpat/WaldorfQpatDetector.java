@@ -570,12 +570,14 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                     final ILfoModulator lfoModulator = zone.getPitchLfoModulator ();
                     lfoModulator.setDepth (pitchLfoModulator.get ().getDepth ());
                     lfoModulator.setSource (pitchLfoModulator.get ().getSource ());
+                    lfoModulator.getDepthModWheelModulator ().setDepth (pitchLfoModulator.get ().getDepthModWheelModulator ().getDepth ());
                 }
                 if (amplitudeLfoModulator.isPresent ())
                 {
                     final ILfoModulator lfoModulator = zone.getAmplitudeLfoModulator ();
                     lfoModulator.setDepth (amplitudeLfoModulator.get ().getDepth ());
                     lfoModulator.setSource (amplitudeLfoModulator.get ().getSource ());
+                    lfoModulator.getDepthModWheelModulator ().setDepth (amplitudeLfoModulator.get ().getDepthModWheelModulator ().getDepth ());
                 }
             }
         }
@@ -657,6 +659,7 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
             final ILfoModulator lfoModulator = filter.getCutoffLfoModulator ();
             lfoModulator.setDepth (cutoffLfoModulator.get ().getDepth ());
             lfoModulator.setSource (cutoffLfoModulator.get ().getSource ());
+            lfoModulator.getDepthModWheelModulator ().setDepth (cutoffLfoModulator.get ().getDepthModWheelModulator ().getDepth ());
         }
 
         filter.getCutoffModWheelModulator ().setDepth (findCutoffWheelModMatrixEntry (parameters, version));
@@ -1080,12 +1083,17 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
 
             final double amount = getMatrixAmount (parameters, i);
-            if (amount == 0)
+            final double wheelAmount = getMatrixWheelControlAmount (parameters, i);
+            if (amount == 0 && wheelAmount == 0)
                 continue;
 
-            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, convertToPitchDepth (amount));
+            final double depth = convertToPitchDepth (amount);
+            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, depth);
             if (modulator.isPresent ())
+            {
+                modulator.get ().getDepthModWheelModulator ().setDepth (convertToPitchDepth (amount + wheelAmount) - depth);
                 return modulator;
+            }
         }
 
         return Optional.empty ();
@@ -1110,18 +1118,17 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
 
             final double amount = getMatrixAmount (parameters, i);
-            if (amount == 0)
+            final double wheelAmount = getMatrixWheelControlAmount (parameters, i);
+            if (amount == 0 && wheelAmount == 0)
                 continue;
 
-            // The amplifier plays at its full level, therefore the modulation is heard as the
-            // attenuation which it reaches at the end of its swing. A modulation which covers the
-            // full range is silence, which is the maximum depth of the model.
-            final double swing = Math.min (Math.abs (amount), 1.0);
-            final double decibels = swing == 1.0 ? ILfoModulator.MAX_VOLUME_DEPTH : -convertToDecibels (1.0 - swing);
-            final double depth = Math.clamp (decibels / ILfoModulator.MAX_VOLUME_DEPTH, 0, 1);
+            final double depth = convertToAmplitudeDepth (amount);
             final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, depth);
             if (modulator.isPresent ())
+            {
+                modulator.get ().getDepthModWheelModulator ().setDepth (convertToAmplitudeDepth (amount + wheelAmount) - depth);
                 return modulator;
+            }
         }
 
         return Optional.empty ();
@@ -1147,14 +1154,17 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
                 continue;
 
             final double amount = getMatrixAmount (parameters, i);
-            if (amount == 0)
+            final double wheelAmount = getMatrixWheelControlAmount (parameters, i);
+            if (amount == 0 && wheelAmount == 0)
                 continue;
 
-            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent
-            final double depth = amount * WaldorfQpatModulationMatrix.CUTOFF_RANGE * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
-            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, Math.clamp (depth, -1.0, 1.0));
+            final double depth = convertToCutoffDepth (amount);
+            final Optional<ILfoModulator> modulator = createLfoModulator (parameters, lfoIndex, depth);
             if (modulator.isPresent ())
+            {
+                modulator.get ().getDepthModWheelModulator ().setDepth (convertToCutoffDepth (amount + wheelAmount) - depth);
                 return modulator;
+            }
         }
 
         return Optional.empty ();
@@ -1239,6 +1249,62 @@ public class WaldorfQpatDetector extends AbstractDetector<MetadataSettingsUI>
         // MatrixAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
         final WaldorfQpatParameter amountParam = parameters.get ("MatrixAmount" + slot);
         return amountParam == null ? 0 : amountParam.value * 2.0 - 1.0;
+    }
+
+
+    /**
+     * Get the control amount of a modulation matrix slot if its controller is the modulation wheel.
+     * The controller scales the output of the source, its amount is added to the amount of the
+     * slot: the full modulation wheel results in the sum of both.
+     *
+     * @param parameters The parameters of the preset
+     * @param slot The index of the modulation matrix slot [1..40]
+     * @return The control amount in the range of [-1..1], 0 if the controller is not the modulation
+     *         wheel
+     */
+    private static double getMatrixWheelControlAmount (final Map<String, WaldorfQpatParameter> parameters, final int slot)
+    {
+        // MatrixControlX: [0] "Off" ... [14] "Wheel"
+        final WaldorfQpatParameter controlParam = parameters.get ("MatrixControl" + slot);
+        if (controlParam == null || WaldorfQpatModulationMatrix.getSourceIndex (controlParam) != WaldorfQpatModulationMatrix.SOURCE_WHEEL)
+            return 0;
+        // MatrixControlAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
+        final WaldorfQpatParameter amountParam = parameters.get ("MatrixControlAmount" + slot);
+        return amountParam == null ? 0 : amountParam.value * 2.0 - 1.0;
+    }
+
+
+    /**
+     * Convert the amount of a modulation of the amplifier to the depth of a tremolo. The amplifier
+     * plays at its full level, therefore the modulation is heard as the attenuation which it
+     * reaches at the end of its swing. A modulation which covers the full range is silence, which
+     * is the maximum depth of the model.
+     *
+     * @param amount The amount in the range of [-1..1]
+     * @return The depth in the range of [0..1]
+     */
+    private static double convertToAmplitudeDepth (final double amount)
+    {
+        final double swing = Math.min (Math.abs (amount), 1.0);
+        if (swing == 0)
+            return 0;
+        final double decibels = swing == 1.0 ? ILfoModulator.MAX_VOLUME_DEPTH : -convertToDecibels (1.0 - swing);
+        return Math.clamp (decibels / ILfoModulator.MAX_VOLUME_DEPTH, 0, 1);
+    }
+
+
+    /**
+     * Convert the amount of a modulation of the filter cutoff to the depth of the model, which
+     * covers IEnvelope#MAX_ENVELOPE_DEPTH cent. The device adds the modulation in the units of
+     * Filter1CutOff, whose range covers {@link WaldorfQpatModulationMatrix#CUTOFF_RANGE}
+     * semi-tones.
+     *
+     * @param amount The amount in the range of [-1..1]
+     * @return The depth in the range of [-1..1]
+     */
+    private static double convertToCutoffDepth (final double amount)
+    {
+        return Math.clamp (amount * WaldorfQpatModulationMatrix.CUTOFF_RANGE * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH, -1.0, 1.0);
     }
 
 

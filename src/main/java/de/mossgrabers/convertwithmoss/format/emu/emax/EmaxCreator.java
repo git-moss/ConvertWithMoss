@@ -125,6 +125,14 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
         (byte) 0x96
     };
 
+    /** The LFO routings which the modulation wheel can control, in the order of preference. */
+    private static final int []  LFO_DESTINATIONS    =
+    {
+        EmaxConstants.REALTIME_LFO_TO_PITCH,
+        EmaxConstants.REALTIME_LFO_TO_CUTOFF,
+        EmaxConstants.REALTIME_LFO_TO_VOLUME
+    };
+
     private static final int []  ALLOWED_BIT_DEPTHS  =
     {
         16
@@ -395,6 +403,51 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
 
         writeLfo (voiceRecord, zone);
         writeFilter (voiceRecord, zone);
+
+        // A real-time control overrides the LFO amount of the voice, therefore a voice exempts
+        // itself from the LFO routings which it does not leave to the modulation wheel
+        int realtimeEnable = voiceRecord[EmaxConstants.VOICE_REALTIME_ENABLE] & 0xFF;
+        for (final int destination: LFO_DESTINATIONS)
+            if (getModWheelDepth (zone, destination) == 0)
+                realtimeEnable &= ~EmaxConstants.getRealtimeEnableFlag (destination);
+        voiceRecord[EmaxConstants.VOICE_REALTIME_ENABLE] = (byte) realtimeEnable;
+    }
+
+
+    /**
+     * Get the depth which the modulation wheel adds to an LFO routing of a zone.
+     *
+     * @param zone The zone
+     * @param destination The real-time destination of the routing, e.g. REALTIME_LFO_TO_PITCH
+     * @return The depth, 0 if the zone has no such routing
+     */
+    private static double getModWheelDepth (final ISampleZone zone, final int destination)
+    {
+        final Optional<ILfoModulator> modulator = switch (destination)
+        {
+            case EmaxConstants.REALTIME_LFO_TO_PITCH -> Optional.of (zone.getPitchLfoModulator ());
+            case EmaxConstants.REALTIME_LFO_TO_VOLUME -> Optional.of (zone.getAmplitudeLfoModulator ());
+            default -> zone.getFilter ().map (IFilter::getCutoffLfoModulator);
+        };
+        return modulator.isPresent () ? modulator.get ().getDepthModWheelModulator ().getDepth () : 0;
+    }
+
+
+    /**
+     * Get the LFO routing which the right wheel of a preset controls. The preset can assign the
+     * wheel to only one of them; the first one in the order pitch, cutoff and volume which one of
+     * its voices leaves to the modulation wheel is taken.
+     *
+     * @param preset The preset
+     * @return The real-time destination of the routing, 0 if no voice leaves one to the wheel
+     */
+    private static int getModWheelDestination (final Preset preset)
+    {
+        for (final int destination: LFO_DESTINATIONS)
+            for (final Voice voice: preset.voices)
+                if ((voice.voiceRecord[EmaxConstants.VOICE_REALTIME_ENABLE] & EmaxConstants.getRealtimeEnableFlag (destination)) != 0)
+                    return destination;
+        return 0;
     }
 
 
@@ -470,10 +523,11 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
         final ILfoModulator pitchLfo = zone.getPitchLfoModulator ();
         final ILfoModulator amplitudeLfo = zone.getAmplitudeLfoModulator ();
         final ILfoModulator cutoffLfo = zone.getFilter ().map (IFilter::getCutoffLfoModulator).orElse (null);
-        ILfoModulator source = pitchLfo.getDepth () > 0 ? pitchLfo : amplitudeLfo;
-        if (source.getDepth () <= 0 && cutoffLfo != null)
+        // An LFO which only the modulation wheel dials in needs its rate and delay as well
+        ILfoModulator source = pitchLfo.isActive () ? pitchLfo : amplitudeLfo;
+        if (!source.isActive () && cutoffLfo != null)
             source = cutoffLfo;
-        if (source.getDepth () <= 0)
+        if (!source.isActive ())
             return;
 
         if (source.getSource ().getRate () >= 0)
@@ -753,6 +807,7 @@ public class EmaxCreator extends AbstractCreator<EmaxCreatorUI>
         final byte [] name = pad (preset.name, EmaxConstants.PRESET_NAME_LENGTH);
         System.arraycopy (name, 0, bank, address, EmaxConstants.PRESET_NAME_LENGTH);
         System.arraycopy (PRESET_TEMPLATE, 0, bank, address + EmaxConstants.PRESET_NAME_LENGTH, PRESET_TEMPLATE.length);
+        EmaxConstants.setModWheelDestination (bank, address, getModWheelDestination (preset));
         bank[address + EmaxConstants.PRESET_KEY_AREA_COUNT] = (byte) preset.keyAreas.size ();
         for (int key = 0; key < EmaxConstants.NUM_KEYS; key++)
             bank[address + EmaxConstants.PRESET_KEY_MAP + key] = (byte) preset.keyMap[key];

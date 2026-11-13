@@ -1548,11 +1548,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // Vibrato - the pitch swings around the played note, therefore the LFO stays bipolar
         final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
         final ILfo pitchLfo = pitchLfoModulator.getSource ();
-        final double pitchDepth = pitchLfoModulator.getDepth ();
-        if (pitchDepth != 0 && pitchLfo.isSet ())
+        if (pitchLfoModulator.isActive () && pitchLfo.isSet ())
         {
+            final double pitchDepth = pitchLfoModulator.getDepth ();
+            final double amount = convertFromPitchDepth (pitchDepth);
             final String destination = WaldorfQpatModulationMatrix.DESTINATION_PITCH;
-            createModulationMatrixEntry (parameters, slots.take (), LFO_VIBRATO, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), convertFromPitchDepth (pitchDepth));
+            final int slot = slots.take ();
+            createModulationMatrixEntry (parameters, slot, LFO_VIBRATO, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), amount);
+            createWheelControl (parameters, slot, pitchLfoModulator, amount, convertFromPitchDepth (pitchDepth + pitchLfoModulator.getDepthModWheelModulator ().getDepth ()));
             createLfo (parameters, pitchLfo, LFO_VIBRATO, false);
         }
 
@@ -1562,15 +1565,14 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
         // waveform into its rectified half.
         final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
         final ILfo amplitudeLfo = amplitudeLfoModulator.getSource ();
-        final double amplitudeDepth = amplitudeLfoModulator.getDepth ();
-        if (amplitudeDepth != 0 && amplitudeLfo.isSet ())
+        if (amplitudeLfoModulator.isActive () && amplitudeLfo.isSet ())
         {
-            // A negative depth only turns the tremolo by half a cycle, which is not audible on its
-            // own, therefore only its magnitude is written
-            final double decibels = Math.abs (amplitudeDepth) * ILfoModulator.MAX_VOLUME_DEPTH;
-            final double amount = convertFromDecibels (-decibels) - 1.0;
+            final double amplitudeDepth = amplitudeLfoModulator.getDepth ();
+            final double amount = convertFromAmplitudeDepth (amplitudeDepth);
             final String destination = WaldorfQpatModulationMatrix.DESTINATION_VCA;
-            createModulationMatrixEntry (parameters, slots.take (), LFO_TREMOLO, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), amount);
+            final int slot = slots.take ();
+            createModulationMatrixEntry (parameters, slot, LFO_TREMOLO, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), amount);
+            createWheelControl (parameters, slot, amplitudeLfoModulator, amount, convertFromAmplitudeDepth (amplitudeDepth + amplitudeLfoModulator.getDepthModWheelModulator ().getDepth ()));
             createLfo (parameters, amplitudeLfo, LFO_TREMOLO, true);
         }
 
@@ -1583,16 +1585,73 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
             return;
         final ILfoModulator cutoffLfoModulator = layerFilter.get ().getCutoffLfoModulator ();
         final ILfo cutoffLfo = cutoffLfoModulator.getSource ();
-        final double cutoffDepth = cutoffLfoModulator.getDepth ();
-        if (cutoffDepth != 0 && cutoffLfo.isSet ())
+        if (cutoffLfoModulator.isActive () && cutoffLfo.isSet ())
         {
-            // The depth of the model covers IEnvelope#MAX_ENVELOPE_DEPTH cent
-            final double semitones = cutoffDepth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
-            final double amount = Math.clamp (semitones / WaldorfQpatModulationMatrix.CUTOFF_RANGE, -1.0, 1.0);
+            final double cutoffDepth = cutoffLfoModulator.getDepth ();
+            final double amount = convertFromCutoffDepth (cutoffDepth);
             final String destination = WaldorfQpatModulationMatrix.DESTINATION_FILTER1_CUTOFF;
-            createModulationMatrixEntry (parameters, slots.take (), LFO_CUTOFF, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), amount);
+            final int slot = slots.take ();
+            createModulationMatrixEntry (parameters, slot, LFO_CUTOFF, destination, WaldorfQpatModulationMatrix.getDestinationIndex (destination, version), amount);
+            createWheelControl (parameters, slot, cutoffLfoModulator, amount, convertFromCutoffDepth (cutoffDepth + cutoffLfoModulator.getDepthModWheelModulator ().getDepth ()));
             createLfo (parameters, cutoffLfo, LFO_CUTOFF, false);
         }
+    }
+
+
+    /**
+     * Convert the depth of a tremolo to the amount of the modulation of the amplifier. A negative
+     * depth only turns the tremolo by half a cycle, which is not audible on its own, therefore only
+     * its magnitude is written. The amount is negative so that the unipolar oscillator only
+     * attenuates.
+     *
+     * @param depth The depth in the range of [-1..1]
+     * @return The amount in the range of [-1..0]
+     */
+    private static double convertFromAmplitudeDepth (final double depth)
+    {
+        final double decibels = Math.min (Math.abs (depth), 1.0) * ILfoModulator.MAX_VOLUME_DEPTH;
+        return convertFromDecibels (-decibels) - 1.0;
+    }
+
+
+    /**
+     * Convert the depth of a modulation of the filter cutoff, which covers
+     * IEnvelope#MAX_ENVELOPE_DEPTH cent, to the amount of the modulation matrix. The device adds
+     * the modulation to the cutoff in the units of Filter1CutOff, whose range covers
+     * WaldorfQpatModulationMatrix#CUTOFF_RANGE semi-tones, and does not square its amount.
+     *
+     * @param depth The depth in the range of [-1..1]
+     * @return The amount in the range of [-1..1]
+     */
+    private static double convertFromCutoffDepth (final double depth)
+    {
+        final double semitones = depth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0;
+        return Math.clamp (semitones / WaldorfQpatModulationMatrix.CUTOFF_RANGE, -1.0, 1.0);
+    }
+
+
+    /**
+     * Let the modulation wheel control the amount of a modulation matrix slot, if the modulator
+     * has a depth which is added by the modulation wheel. The controller scales the output of the
+     * source and its amount is added to the amount of the slot, therefore the control amount is the
+     * difference between the amounts with and without the modulation wheel.
+     *
+     * @param parameters Where to add the parameters
+     * @param slot The index of the modulation matrix slot [1..40]
+     * @param modulator The LFO modulator
+     * @param amount The amount of the slot without the modulation wheel
+     * @param modWheelAmount The amount of the slot at the maximum of the modulation wheel
+     */
+    private static void createWheelControl (final List<WaldorfQpatParameter> parameters, final int slot, final ILfoModulator modulator, final double amount, final double modWheelAmount)
+    {
+        if (modulator.getDepthModWheelModulator ().getDepth () == 0)
+            return;
+
+        // MatrixControlX: [14] "Wheel"
+        parameters.add (new WaldorfQpatParameter ("MatrixControl" + slot, WaldorfQpatModulationMatrix.SOURCE_NAME_WHEEL, WaldorfQpatModulationMatrix.SOURCE_WHEEL));
+        // MatrixControlAmountX: [0.00] "-100.00 %" ... [1.00] "+100.00 %"
+        final double controlAmount = Math.clamp (modWheelAmount - amount, -1.0, 1.0);
+        parameters.add (new WaldorfQpatParameter ("MatrixControlAmount" + slot, StringUtils.formatPercent (controlAmount, 2), (float) ((controlAmount + 1.0) / 2.0)));
     }
 
 

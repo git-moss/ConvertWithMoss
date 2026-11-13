@@ -55,6 +55,8 @@ public final class RenoiseValueConverter
     // Filter cutoff mapping. The 0..127 cutoff maps exponentially over the audible range.
     private static final double FILTER_MIN_HERTZ       = 20.0;
     private static final double FILTER_MAX_HERTZ       = 20000.0;
+    // The range of the mixer cutoff in cent (ca. 10 octaves)
+    private static final double FILTER_RANGE_CENTS     = 1200.0 * Math.log (FILTER_MAX_HERTZ / FILTER_MIN_HERTZ) / Math.log (2.0);
 
     // LFO mappings, measured by sweeping the modulation LFO device parameters in Renoise 3.5.4 and
     // recording the displayed values: Hertz = min + 20 * (100 ^ value - 1) / 99 with a constant
@@ -345,6 +347,35 @@ public final class RenoiseValueConverter
     {
         final double decibels = Math.abs (depth) * ILfoModulator.MAX_VOLUME_DEPTH;
         return Math.clamp (1.0 - Math.pow (10.0, -decibels / 20.0), 0, 1);
+    }
+
+
+    /**
+     * Convert a filter cutoff modulation depth of the model ([-1..1], 1 = the full envelope depth
+     * in cent) to the Renoise LFO amplitude. A bipolar LFO at the full amplitude moves the cutoff in
+     * both directions by the full range of the mixer cutoff, in the same way as a pitch LFO uses the
+     * full pitch modulation range.
+     *
+     * @param depth The modulation depth [-1..1]
+     * @return The LFO amplitude [0..1]
+     */
+    public static double cutoffLfoDepthToAmplitude (final double depth)
+    {
+        return Math.clamp (Math.abs (depth) * IEnvelope.MAX_ENVELOPE_DEPTH / FILTER_RANGE_CENTS, 0, 1);
+    }
+
+
+    /**
+     * Convert a Renoise LFO amplitude of a filter cutoff LFO to a modulation depth of the model
+     * ([0..1], 1 = the full envelope depth in cent). This is the inverse of
+     * {@link #cutoffLfoDepthToAmplitude(double)}.
+     *
+     * @param amplitude The LFO amplitude [0..1]
+     * @return The modulation depth [0..1]
+     */
+    public static double amplitudeToCutoffLfoDepth (final double amplitude)
+    {
+        return Math.clamp (Math.clamp (amplitude, 0, 1) * FILTER_RANGE_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH, 0, 1);
     }
 
 

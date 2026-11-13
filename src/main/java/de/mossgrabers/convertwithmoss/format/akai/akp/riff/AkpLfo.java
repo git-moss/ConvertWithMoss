@@ -210,6 +210,17 @@ public class AkpLfo extends AbstractAkpChunk
 
 
     /**
+     * Set the modulation wheel amount which is added to the depth. Only available for LFO 1.
+     *
+     * @param modwheel The amount in the range of [0..100]
+     */
+    public void setModwheel (final int modwheel)
+    {
+        this.modwheel = modwheel;
+    }
+
+
+    /**
      * Get the aftertouch amount. Only available for LFO 1.
      *
      * @return The amount in the range of [0..100]
@@ -239,6 +250,18 @@ public class AkpLfo extends AbstractAkpChunk
     public int getDelayMod ()
     {
         return this.delayMod;
+    }
+
+
+    /**
+     * Set the depth modulation amount. The source is set with the LFO1_DEPTH or LFO2_DEPTH slot of
+     * the modulations chunk.
+     *
+     * @param depthMod The amount in the range of [-100..100]
+     */
+    public void setDepthMod (final int depthMod)
+    {
+        this.depthMod = depthMod;
     }
 
 

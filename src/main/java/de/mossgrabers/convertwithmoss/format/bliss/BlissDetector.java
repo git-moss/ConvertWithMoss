@@ -62,6 +62,7 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
     private static final String                    MOD_LFO                              = "mod_lfo";
 
     private static final String                    VALUE                                = "value";
+    private static final String                    SENSE                                = "sense";
 
     private static final String                    IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND = "IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND";
     private static final String                    ERR_BAD_METADATA_FILE                = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
@@ -316,12 +317,12 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         if (ampEnvDest1 == 3 || ampEnvDest2 == 3)
         {
             cutoffEnvelopeModulator = ampEnvelopeModulator;
-            cutoffAmount = XMLUtils.getDoubleAttribute (zoneElement, ampEnvDest1 == 2 ? "amp_env_dest1amt" : "amp_env_dest2amt", 0);
+            cutoffAmount = XMLUtils.getDoubleAttribute (zoneElement, ampEnvDest1 == 3 ? "amp_env_dest1amt" : "amp_env_dest2amt", 0);
         }
         else if (modEnvDest1 == 3 || modEnvDest2 == 3)
         {
             cutoffEnvelopeModulator = modEnvelopeModulator;
-            cutoffAmount = XMLUtils.getDoubleAttribute (zoneElement, modEnvDest1 == 2 ? "mod_env_dest1amt" : "mod_env_dest2amt", 0);
+            cutoffAmount = XMLUtils.getDoubleAttribute (zoneElement, modEnvDest1 == 3 ? "mod_env_dest1amt" : "mod_env_dest2amt", 0);
         }
 
         // Read filter
@@ -392,19 +393,28 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
         final Optional<IFilter> filter = zone.getFilter ();
         final ILfoModulator modulator = switch (destinationIndex)
         {
-            case 1 -> zone.getAmplitudeLfoModulator ();
-            case 2 -> zone.getPitchLfoModulator ();
-            case 3 -> filter.isPresent () ? filter.get ().getCutoffLfoModulator () : null;
+            case BlissLfoAmount.DESTINATION_AMP -> zone.getAmplitudeLfoModulator ();
+            case BlissLfoAmount.DESTINATION_PITCH -> zone.getPitchLfoModulator ();
+            case BlissLfoAmount.DESTINATION_CUTOFF -> filter.isPresent () ? filter.get ().getCutoffLfoModulator () : null;
             default -> null;
         };
 
         if (modulator == null)
             return;
 
-        final double amount = getDoubleValueAttribute (zoneElement, MOD_LFO + lfoIndex + "_amt", 0);
-        if (amount == 0)
+        // The amount of the amplifier is unipolar, all others are centre-biased. The modulation
+        // wheel morphs the amount by its sense
+        final double cutoff = filter.isPresent () ? filter.get ().getCutoff () : 0;
+        final Element amountElement = XMLUtils.getChildElementByName (zoneElement, MOD_LFO + lfoIndex + "_amt");
+        final double neutral = destinationIndex == BlissLfoAmount.DESTINATION_AMP ? 0 : 0.5;
+        final double amount = amountElement == null ? neutral : XMLUtils.getDoubleAttribute (amountElement, VALUE, neutral);
+        final double sense = amountElement == null ? 0 : XMLUtils.getDoubleAttribute (amountElement, SENSE, 0);
+        final double depth = BlissLfoAmount.toDepth (destinationIndex, amount, cutoff);
+        final double modWheelDepth = BlissLfoAmount.toModWheelDepth (destinationIndex, amount, sense, cutoff);
+        if (depth == 0 && modWheelDepth == 0)
             return;
-        modulator.setDepth (amount / 2.0 + 0.5);
+        modulator.setDepth (depth);
+        modulator.getDepthModWheelModulator ().setDepth (modWheelDepth);
 
         final ILfo lfo = modulator.getSource ();
         final int lfoType = XMLUtils.getIntegerAttribute (zoneElement, MOD_LFO + lfoIndex + "_type", 0);
@@ -521,7 +531,8 @@ public class BlissDetector extends AbstractDetector<MetadataSettingsUI>
 
     private static int toDestinationIndex (final String value, final Version version)
     {
-        if (value == null)
+        // The attribute is missing if the oscillator or envelope is not used
+        if (value == null || value.isBlank ())
             return 0;
         if (version.supportsIntegerDestinations ())
             return Integer.parseInt (value);
