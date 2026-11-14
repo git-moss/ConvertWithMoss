@@ -986,7 +986,7 @@ public abstract class AbstractDetector<T extends ICoreTaskSettings> extends Abst
                 final AiffFile aiffFile = new AiffFile (sampleFile);
                 final AiffCommonChunk commonChunk = aiffFile.getCommonChunk ();
                 if (commonChunk != null && !commonChunk.isPCM ())
-                    throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", sampleFile.getName (), commonChunk.getCompressionName (), commonChunk.getCompressionType ()));
+                    throw new IOException (commonChunk.createNotPCMMessage (sampleFile.getName ()));
 
                 return new AiffFileSampleData (sampleFile);
             }

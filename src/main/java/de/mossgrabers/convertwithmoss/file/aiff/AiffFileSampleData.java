@@ -191,7 +191,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
         if (commonChunk == null || soundDataChunk == null)
             throw new IOException (Functions.getMessage ("IDS_ERR_SOURCE_FORMAT_NOT_SUPPORTED", this.filename));
         if (!commonChunk.isPCM ())
-            throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", this.filename, commonChunk.getCompressionName (), commonChunk.getCompressionType ()));
+            throw new IOException (commonChunk.createNotPCMMessage (this.filename));
 
         // WAV stores multi-byte samples in little-endian order and 8-bit samples unsigned
         byte [] data = soundDataChunk.getSoundData ();
@@ -336,7 +336,7 @@ public class AiffFileSampleData extends AbstractFileSampleData
             }
 
         if (!commonChunk.isPCM ())
-            throw new IOException (Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", this.filename, commonChunk.getCompressionName (), commonChunk.getCompressionType ()));
+            throw new IOException (commonChunk.createNotPCMMessage (this.filename));
         this.audioMetadata = new DefaultAudioMetadata (commonChunk.getNumChannels (), commonChunk.getSampleRate (), commonChunk.getSampleSize (), (int) commonChunk.getNumSampleFrames ());
     }
 

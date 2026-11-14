@@ -10,6 +10,7 @@ import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.file.iff.IffChunk;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -23,6 +24,11 @@ public class AiffCommonChunk extends AiffChunk
     private static final Set<String> PCM_COMPRESSION_TYPES = Set.of ("NONE", "twos", "sowt", "in24", "in32", "23ni");
     /** The AIFC compression types which store the PCM sound data in little-endian order. */
     private static final Set<String> LITTLE_ENDIAN_TYPES   = Set.of ("sowt", "23ni");
+    /**
+     * The AIFC compression type of the samples which Ableton encrypts as a copy protection, which
+     * only Live can play.
+     */
+    private static final String      ABLETON_ENCRYPTED     = "able";
 
     int                              numChannels;
     long                             numSampleFrames;
@@ -147,6 +153,21 @@ public class AiffCommonChunk extends AiffChunk
     public boolean isPCM ()
     {
         return this.compressionType == null || PCM_COMPRESSION_TYPES.contains (this.compressionType);
+    }
+
+
+    /**
+     * Create the message which reports that the sound data cannot be converted since it is not
+     * plain PCM. Samples which Ableton encrypted as a copy protection are reported as such.
+     *
+     * @param filename The name of the AIFF file
+     * @return The message
+     */
+    public String createNotPCMMessage (final String filename)
+    {
+        if (ABLETON_ENCRYPTED.equals (this.compressionType))
+            return Functions.getMessage ("IDS_ERR_ENCRYPTED_AIFF_FILE", filename);
+        return Functions.getMessage ("IDS_ERR_COMPRESSED_AIFF_FILE", filename, this.compressionName, this.compressionType);
     }
 
 

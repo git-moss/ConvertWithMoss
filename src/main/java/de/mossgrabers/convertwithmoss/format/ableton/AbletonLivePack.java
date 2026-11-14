@@ -41,9 +41,11 @@ import de.mossgrabers.tools.ui.Functions;
  * the content of all files at the end of the file. The table of contents is a tree of the files and
  * folders with the position and the size of the content of each file. Samples are compressed with
  * FLAC and carry '.flac' after their original name, e.g. 'Kick.wav.flac', all other files are
- * stored as they are. Most packs are additionally compressed as a whole with GZIP; since the table
- * of contents is at the end and the files are read from their positions, such a pack is
- * de-compressed into a temporary file first.
+ * stored as they are. Packs which are downloaded from Ableton store their samples encrypted instead,
+ * with '.eflac' after their original name, which only Live can decrypt when it installs the pack.
+ * Most packs are additionally compressed as a whole with GZIP; since the table of contents is at the
+ * end and the files are read from their positions, such a pack is de-compressed into a temporary
+ * file first.
  *
  * @author Jürgen Moßgraber
  */
@@ -61,6 +63,7 @@ public class AbletonLivePack
     /** Files and the table of contents are only read into memory up to this size. */
     private static final int               MAX_MEMORY_SIZE     = 256 * 1024 * 1024;
     private static final String            FLAC_ENDING         = ".flac";
+    private static final String            EFLAC_ENDING        = ".eflac";
 
     private static final String            TYPE_CONTENT_INFO   = "PackageContentInfo";
     private static final String            FIELD_ROOT_ITEM     = "RootItem";
@@ -80,6 +83,7 @@ public class AbletonLivePack
     private final Map<String, List<Entry>> filesByName         = new HashMap<> ();
     private final Map<String, File>        extractedFiles      = new HashMap<> ();
     private File                           extractFolder;
+    private int                            numberOfEncryptedSamples;
 
 
     /**
@@ -106,14 +110,28 @@ public class AbletonLivePack
 
         /**
          * Get the name of the file before it was added to the pack, which is the name without
-         * '.flac' for a compressed sample.
+         * '.flac' for a compressed sample and without '.eflac' for an encrypted one.
          *
          * @return The name
          */
         public String getOriginalName ()
         {
             final String name = this.getName ();
+            if (this.isEncrypted ())
+                return name.substring (0, name.length () - EFLAC_ENDING.length ());
             return this.isCompressed && name.toLowerCase (Locale.US).endsWith (FLAC_ENDING) ? name.substring (0, name.length () - FLAC_ENDING.length ()) : name;
+        }
+
+
+        /**
+         * Test if the file is a sample which is encrypted. Only Live can decrypt it when it installs
+         * the pack.
+         *
+         * @return True if it is encrypted
+         */
+        public boolean isEncrypted ()
+        {
+            return !this.isFolder && this.getName ().toLowerCase (Locale.US).endsWith (EFLAC_ENDING);
         }
 
 
@@ -237,6 +255,8 @@ public class AbletonLivePack
             else
             {
                 this.files.add (entry);
+                if (entry.isEncrypted ())
+                    this.numberOfEncryptedSamples++;
                 this.filesByName.computeIfAbsent (entry.getOriginalName ().toLowerCase (Locale.US), _ -> new ArrayList<> ()).add (entry);
             }
         }
@@ -262,6 +282,17 @@ public class AbletonLivePack
     public List<Entry> getFiles ()
     {
         return Collections.unmodifiableList (this.files);
+    }
+
+
+    /**
+     * Get the number of samples of the pack which are encrypted.
+     *
+     * @return The number of encrypted samples
+     */
+    public int getNumberOfEncryptedSamples ()
+    {
+        return this.numberOfEncryptedSamples;
     }
 
 
@@ -298,8 +329,9 @@ public class AbletonLivePack
 
 
     /**
-     * Get a file by its path. A sample which is compressed with FLAC is found with the path of the
-     * original file as well. If no file has exactly the path, the case of the letters is ignored.
+     * Get a file by its path. A sample which is compressed with FLAC or encrypted is found with the
+     * path of the original file as well. If no file has exactly the path, the case of the letters is
+     * ignored.
      *
      * @param path The path relative to the root of the pack, may contain '.' and '..'
      * @return The file, empty if the path does not lead to a file of the pack
@@ -314,7 +346,8 @@ public class AbletonLivePack
         for (final String candidate: new String []
         {
             p,
-            p + FLAC_ENDING
+            p + FLAC_ENDING,
+            p + EFLAC_ENDING
         })
         {
             final Entry entry = this.entries.get (candidate);
@@ -324,7 +357,8 @@ public class AbletonLivePack
         for (final String candidate: new String []
         {
             p,
-            p + FLAC_ENDING
+            p + FLAC_ENDING,
+            p + EFLAC_ENDING
         })
         {
             final Entry entry = this.entriesIgnoreCase.get (candidate.toLowerCase (Locale.US));
@@ -373,10 +407,12 @@ public class AbletonLivePack
      * @param entry The sample file
      * @param notifier Where to report errors
      * @return The sample data
-     * @throws IOException The sample could not be read
+     * @throws IOException The sample could not be read or is encrypted
      */
     public synchronized ISampleData createSampleData (final Entry entry, final INotifier notifier) throws IOException
     {
+        if (entry.isEncrypted ())
+            throw new IOException (Functions.getMessage ("IDS_ADV_PACK_ENCRYPTED_SAMPLE", entry.path ()));
         if (entry.isCompressed () && entry.getName ().toLowerCase (Locale.US).endsWith (FLAC_ENDING))
             return new AbletonLivePackSampleData (this, entry);
 

@@ -210,6 +210,17 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     private List<IMultisampleSource> readLivePack (final File packFile) throws IOException
     {
         final AbletonLivePack pack = this.openLivePack (packFile);
+
+        // Packs which are downloaded from Ableton store their samples encrypted, which only Live
+        // can decrypt when it installs the pack
+        final int numberOfEncryptedSamples = pack.getNumberOfEncryptedSamples ();
+        if (numberOfEncryptedSamples > 0)
+        {
+            this.notifier.logError ("IDS_ADV_PACK_ENCRYPTED", Integer.toString (numberOfEncryptedSamples));
+            this.closeLivePack (pack);
+            return Collections.emptyList ();
+        }
+
         final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
         int numberWithoutDevices = 0;
         int numberOfBinaryPresets = 0;
@@ -290,6 +301,22 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             }
             return pack;
         }
+    }
+
+
+    /**
+     * Close a Live Pack which is not needed anymore and delete its temporary files, e.g. the
+     * de-compressed copy of a large pack.
+     *
+     * @param pack The pack
+     */
+    private void closeLivePack (final AbletonLivePack pack)
+    {
+        synchronized (this.livePacks)
+        {
+            this.livePacks.values ().remove (pack);
+        }
+        pack.dispose ();
     }
 
 
