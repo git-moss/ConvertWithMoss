@@ -102,21 +102,6 @@ public abstract class AbstractMusic1010Creator extends AbstractWavCreator<Music1
 
 
     /**
-     * Creates the default routing of the low frequency oscillator and the velocity modulation
-     * matrix entries.
-     *
-     * @param document The XML document
-     * @param slotElement The element to which to add the modulation matrix entries
-     * @param multisampleSource The multi-sample
-     */
-    protected static void createModulators (final Document document, final Element slotElement, final IMultisampleSource multisampleSource)
-    {
-        createDefaultLfoModulators (document, slotElement);
-        createVelocityModulators (document, slotElement, multisampleSource);
-    }
-
-
-    /**
      * Creates the default routing of the low frequency oscillator: a vibrato which is controlled by
      * the modulation wheel.
      *
@@ -142,8 +127,9 @@ public abstract class AbstractMusic1010Creator extends AbstractWavCreator<Music1
      * @param slotElement The element to which to add the modulation matrix entries
      * @param paramsElement The parameters element of the instrument
      * @param multisampleSource The multi-sample
+     * @param isSawFlipped True if the indices of Saw and Rev Saw are swapped (Blackbox)
      */
-    protected static void createLfoModulators (final Document document, final Element slotElement, final Element paramsElement, final IMultisampleSource multisampleSource)
+    protected static void createLfoModulators (final Document document, final Element slotElement, final Element paramsElement, final IMultisampleSource multisampleSource, final boolean isSawFlipped)
     {
         final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
         if (groups.isEmpty ())
@@ -183,7 +169,7 @@ public abstract class AbstractMusic1010Creator extends AbstractWavCreator<Music1
             return;
 
         final ILfo lfo = mainModulator.getSource ();
-        paramsElement.setAttribute (Music1010Tag.ATTR_LFO_WAVE, Integer.toString (Music1010Lfo.fromWaveform (lfo.getWaveform ())));
+        paramsElement.setAttribute (Music1010Tag.ATTR_LFO_WAVE, Integer.toString (Music1010Lfo.fromWaveform (lfo.getWaveform (), isSawFlipped)));
         if (lfo.getRate () > 0)
             paramsElement.setAttribute (Music1010Tag.ATTR_LFO_RATE, Integer.toString (Music1010Lfo.hertzToRate (lfo.getRate ())));
         paramsElement.setAttribute (Music1010Tag.ATTR_LFO_KEY_TRIGGER, lfo.isKeySync () ? "1" : "0");

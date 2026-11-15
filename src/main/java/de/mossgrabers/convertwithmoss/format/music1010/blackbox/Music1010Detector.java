@@ -41,6 +41,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010Lfo;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
@@ -342,6 +343,8 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         readVelocityModulators (sampleElement, group);
+        if (paramsElement != null)
+            Music1010Lfo.readLfoModulators (paramsElement, sampleElement, group, true);
 
         return Optional.of (new DefaultInstrumentSource (multisampleSource, midiChannel));
     }

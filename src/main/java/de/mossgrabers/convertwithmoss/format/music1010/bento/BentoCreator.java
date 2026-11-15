@@ -92,7 +92,7 @@ public class BentoCreator extends AbstractMusic1010Creator
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("multisammode", "1");
 
         // Setup for modulation wheel!
-        MULTISAMPLE_PARAM_ATTRIBUTES.put ("lfowave", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("lfowave", "4");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("lforate", "845");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("lfoamount", "0");
 
@@ -380,7 +380,7 @@ public class BentoCreator extends AbstractMusic1010Creator
                 paramsElement.setAttribute (Music1010Tag.ATTR_CHOKE_GROUP, Integer.toString (exclusiveGroup));
 
             createFilter (paramsElement, multisampleSource);
-            createLfoModulators (document, instElement, paramsElement, multisampleSource);
+            createLfoModulators (document, instElement, paramsElement, multisampleSource, false);
         }
 
         return this.createXMLString (document);

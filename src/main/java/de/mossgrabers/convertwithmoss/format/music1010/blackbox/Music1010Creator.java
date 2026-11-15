@@ -99,7 +99,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("loopmode", "0");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("loopmodes", "0");
         // Setup for modulation wheel!
-        MULTISAMPLE_PARAM_ATTRIBUTES.put ("lfowave", "0");
+        MULTISAMPLE_PARAM_ATTRIBUTES.put ("lfowave", "4");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("lforate", "845");
         MULTISAMPLE_PARAM_ATTRIBUTES.put ("lfoamount", "0");
 
@@ -322,7 +322,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
 
             XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS).setAttribute (Music1010Tag.ATTR_MIDI_MODE, Integer.toString (midiChannel));
 
-            createModulators (document, slotElement, multisampleSource);
+            createVelocityModulators (document, slotElement, multisampleSource);
 
             // Create sample entries for all sample zones of all groups, adds workaround for silence
             // outside of range
@@ -382,6 +382,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
                 paramsElement.setAttribute (Music1010Tag.ATTR_CHOKE_GROUP, Integer.toString (exclusiveGroup));
 
             createFilter (paramsElement, multisampleSource);
+            createLfoModulators (document, slotElement, paramsElement, multisampleSource, true);
         }
 
         return this.createXMLString (document);
@@ -497,4 +498,4 @@ public class Music1010Creator extends AbstractMusic1010Creator
         if (zone.isOneShot () || zone.getLoops ().isEmpty ())
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 0);
     }
-}
+}

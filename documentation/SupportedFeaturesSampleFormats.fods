@@ -1255,16 +1255,16 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; gaindb (waveform, rate, beat sync at 120 BPM, restart), mod. wheel -&gt; lfoamount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce59"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; pitch (waveform, rate, beat sync at 120 BPM, restart), mod. wheel -&gt; lfoamount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce59"/>
      <table:table-cell table:style-name="ce21"/>
@@ -1283,8 +1283,8 @@
       <text:p>modsource source=”velocity” (global)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; dualfilcutoff (waveform, rate, beat sync at 120 BPM, restart), mod. wheel -&gt; lfoamount</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell/>
@@ -1363,16 +1363,16 @@
      <table:covered-table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; gaindb (waveform, rate, restart), mod. wheel -&gt; lfoamount; only 1 LFO</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce59"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; pitch (waveform, rate, restart), mod. wheel -&gt; lfoamount; only 1 LFO</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce39"/>
@@ -1386,8 +1386,8 @@
      <table:table-cell table:style-name="ce44"/>
      <table:covered-table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; dualfilcutoff (waveform, rate, restart), mod. wheel -&gt; lfoamount; only 1 LFO</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell/>
@@ -1481,16 +1481,16 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; gaindb (waveform, rate, beat sync at 120 BPM, restart), mod. wheel -&gt; lfoamount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce59"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; pitch (waveform, rate, beat sync at 120 BPM, restart), mod. wheel -&gt; lfoamount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce59"/>
      <table:table-cell table:style-name="ce21"/>
@@ -1509,8 +1509,8 @@
       <text:p>modsource source=”velocity” (global)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; dualfilcutoff (waveform, rate, beat sync at 120 BPM, restart), mod. wheel -&gt; lfoamount</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell/>
@@ -1588,16 +1588,16 @@
      <table:covered-table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; gaindb (waveform, rate, restart), mod. wheel -&gt; lfoamount; only 1 LFO</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce59"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; pitch (waveform, rate, restart), mod. wheel -&gt; lfoamount; only 1 LFO</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce21"/>
@@ -1608,8 +1608,8 @@
      <table:table-cell table:style-name="ce44"/>
      <table:covered-table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>lfo1 -&gt; dualfilcutoff (waveform, rate, restart), mod. wheel -&gt; lfoamount; only 1 LFO</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell/>
