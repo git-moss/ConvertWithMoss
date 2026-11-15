@@ -22,7 +22,7 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
  */
 public class WavSampleFileType implements SampleFileType
 {
-    private static final String [] ENDINGS = new String []
+    private static final String [] ENDINGS =
     {
         ".wav"
     };

@@ -54,7 +54,7 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String [] OSC_TAGS              = new String []
+    private static final String [] OSC_TAGS              =
     {
         DelugeTag.OSC1,
         DelugeTag.OSC2

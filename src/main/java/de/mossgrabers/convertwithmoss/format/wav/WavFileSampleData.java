@@ -41,8 +41,10 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class WavFileSampleData extends AbstractFileSampleData
 {
-    private WaveFile waveFile         = null;
-    private boolean  hasWavSourceFile = true;
+    private static final String IDS_WAV_NO_AUDIO_DATA = "IDS_WAV_NO_AUDIO_DATA";
+
+    private WaveFile            waveFile              = null;
+    private boolean             hasWavSourceFile      = true;
 
 
     /**
@@ -160,7 +162,7 @@ public class WavFileSampleData extends AbstractFileSampleData
             // Without the audio data, e.g. of a file which is cut off in front of it, only a broken
             // file could be written
             if (sourceFile.getDataChunk () == null)
-                throw new IOException (Functions.getMessage ("IDS_WAV_NO_AUDIO_DATA", this.filename));
+                throw new IOException (Functions.getMessage (IDS_WAV_NO_AUDIO_DATA, this.filename));
             sourceFile.write (outputStream);
         }
     }
@@ -199,7 +201,7 @@ public class WavFileSampleData extends AbstractFileSampleData
         final FormatChunk formatChunk = wavFile.getFormatChunk ();
         final DataChunk dataChunk = wavFile.getDataChunk ();
         if (formatChunk == null || dataChunk == null)
-            throw new IOException (Functions.getMessage ("IDS_WAV_NO_AUDIO_DATA", this.filename));
+            throw new IOException (Functions.getMessage (IDS_WAV_NO_AUDIO_DATA, this.filename));
         final int numberOfChannels = formatChunk.getNumberOfChannels ();
         if (numberOfChannels > 2)
             throw new IOException (Functions.getMessage ("IDS_NOTIFY_ERR_MONO", Integer.toString (numberOfChannels), this.sampleFile.getAbsolutePath ()));
@@ -281,7 +283,7 @@ public class WavFileSampleData extends AbstractFileSampleData
             final FormatChunk formatChunk = wavFile.getFormatChunk ();
             final DataChunk dataChunk = wavFile.getDataChunk ();
             if (formatChunk == null || dataChunk == null)
-                throw new IOException (Functions.getMessage ("IDS_WAV_NO_AUDIO_DATA", this.filename));
+                throw new IOException (Functions.getMessage (IDS_WAV_NO_AUDIO_DATA, this.filename));
             this.audioMetadata = new DefaultAudioMetadata (formatChunk.getNumberOfChannels (), formatChunk.getSampleRate (), formatChunk.getSignificantBitsPerSample (), dataChunk.calculateLength (formatChunk));
         }
         catch (final IOException | CompressionNotSupportedException _)

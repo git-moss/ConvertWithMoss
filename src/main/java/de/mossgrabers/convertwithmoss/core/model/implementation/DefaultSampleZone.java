@@ -78,8 +78,8 @@ public class DefaultSampleZone implements ISampleZone
 
 
     /**
-     * Constructor. Copies all metadata except the sample data from the given source zone. Warning:
-     * the filter and loops are only assigned not cloned!
+     * Constructor. Copies all metadata except the sample data from the given source zone. The loops
+     * are cloned. Warning: the filter is only assigned not cloned!
      *
      * @param zone The zone from which to copy the metadata
      */
@@ -638,7 +638,10 @@ public class DefaultSampleZone implements ISampleZone
         final Optional<IFilter> filterOpt = other.getFilter ();
         this.filter = filterOpt.isPresent () ? filterOpt.get () : null;
 
+        // Clone the loops, since creators change the loop positions of each zone in place (e.g.
+        // when resampling), a shared loop would be changed several times
         this.loops.clear ();
-        this.loops.addAll (other.getLoops ());
+        for (final ISampleLoop loop: other.getLoops ())
+            this.loops.add (new DefaultSampleLoop (loop));
     }
 }

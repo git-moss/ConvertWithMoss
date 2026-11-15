@@ -187,7 +187,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
     /** From this phase on the device runs the low frequency oscillator freely. */
     private static final double                                LFO_FREE_PHASE          = 0.9986;
     /** LfoXShape: the waveforms of a low frequency oscillator in the order of the device. */
-    private static final String []                             LFO_SHAPES              = new String []
+    private static final String []                             LFO_SHAPES              =
     {
         "Sine",
         "Triangle",
@@ -218,7 +218,7 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
      * 'keys' as three entries which each find a part of the sounds. Therefore every attribute is
      * matched against this list regardless of its case and written in the spelling of the list.
      */
-    private static final String []           FACTORY_ATTRIBUTES = new String []
+    private static final String []           FACTORY_ATTRIBUTES =
     {
         "Synth",
         "Pad",
@@ -1631,8 +1631,8 @@ public class WaldorfQpatCreator extends AbstractWavCreator<WaldorfQpatCreatorUI>
 
 
     /**
-     * Let the modulation wheel control the amount of a modulation matrix slot, if the modulator
-     * has a depth which is added by the modulation wheel. The controller scales the output of the
+     * Let the modulation wheel control the amount of a modulation matrix slot, if the modulator has
+     * a depth which is added by the modulation wheel. The controller scales the output of the
      * source and its amount is added to the amount of the slot, therefore the control amount is the
      * difference between the amounts with and without the modulation wheel.
      *

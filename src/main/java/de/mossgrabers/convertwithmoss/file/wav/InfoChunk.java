@@ -30,7 +30,7 @@ import de.mossgrabers.convertwithmoss.file.riff.RiffChunkId;
 public class InfoChunk extends AbstractListChunk
 {
     // This must not be static since it is not thread safe!
-    private static final SimpleDateFormat [] CREATION_DATE_PARSERS = new SimpleDateFormat []
+    private static final SimpleDateFormat [] CREATION_DATE_PARSERS =
     {
         // 'Month Day, Year' where Month is initially capitalized and is the conventional full
         // English spelling of the month, Day is the date in decimal followed by a comma, and Year

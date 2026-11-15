@@ -420,7 +420,7 @@ public class MathUtils
      */
     public static int decodeTwosComplement (final int value)
     {
-        return (value & 0x80) != 0 ? value - 256 : value;
+        return (value & 0x80) == 0 ? value : value - 256;
     }
 
 

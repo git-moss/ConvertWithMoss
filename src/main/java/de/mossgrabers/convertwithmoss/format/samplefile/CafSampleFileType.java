@@ -21,7 +21,7 @@ import de.mossgrabers.convertwithmoss.file.caf.CafInstrumentChunk;
  */
 public class CafSampleFileType implements SampleFileType
 {
-    private static final String [] ENDINGS = new String []
+    private static final String [] ENDINGS =
     {
         ".caf"
     };

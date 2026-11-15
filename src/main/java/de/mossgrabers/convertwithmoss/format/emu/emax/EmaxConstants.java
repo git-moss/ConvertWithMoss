@@ -1116,7 +1116,7 @@ public class EmaxConstants
     {
         final int value = readVoiceField (voiceRecord, offset, width);
         final int sign = 1 << width - 1;
-        return (value & sign) != 0 ? value - (sign << 1) : value;
+        return (value & sign) == 0 ? value : value - (sign << 1);
     }
 
 
@@ -1441,7 +1441,7 @@ public class EmaxConstants
             final int magnitude = (((step << 1) + 33) << chord) - 33;
             // The largest magnitude is 8031, which leaves the scaled value inside the 16 bit range
             final int scaled = magnitude * 4;
-            table[value] = (short) ((value & 0x80) != 0 ? -scaled : scaled);
+            table[value] = (short) ((value & 0x80) == 0 ? scaled : -scaled);
         }
         return table;
     }

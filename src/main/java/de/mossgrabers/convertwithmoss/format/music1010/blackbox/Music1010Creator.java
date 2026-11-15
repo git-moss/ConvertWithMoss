@@ -281,7 +281,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
      */
     private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final List<String> presetFolderNames, final boolean trim, final String subFolder, final boolean isPerformance) throws IOException
     {
-        final Optional<Pair<Document, Element>> sessionDocumentOpt = this.createSessionDocument ();
+        final Optional<Pair<Document, Element>> sessionDocumentOpt = this.createSessionDocument (1);
         if (sessionDocumentOpt.isEmpty ())
             return Optional.empty ();
         final Pair<Document, Element> sessionDocument = sessionDocumentOpt.get ();

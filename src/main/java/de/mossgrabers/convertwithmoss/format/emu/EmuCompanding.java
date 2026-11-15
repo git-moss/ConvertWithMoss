@@ -90,7 +90,7 @@ public final class EmuCompanding
             final int step = value & 0x0F;
             final int magnitude = (((step << 1) + 33) << chord) - 33;
             final int scaled = magnitude * SCALE;
-            table[value] = (short) ((value & 0x80) != 0 ? -scaled : scaled);
+            table[value] = (short) ((value & 0x80) == 0 ? scaled : -scaled);
         }
         return table;
     }

@@ -40,7 +40,7 @@ public class YsfcFile
     // The size of the library block - fixed
     private static final int                   LIBRARY_SIZE             = 81;
 
-    private static final String []             CHUNKS_ONLY_WAVEFORMS    = new String []
+    private static final String []             CHUNKS_ONLY_WAVEFORMS    =
     {
         YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_METADATA,
         YamahaYsfcChunk.ENTRY_LIST_WAVEFORM_DATA,
@@ -48,7 +48,7 @@ public class YsfcFile
         YamahaYsfcChunk.DATA_LIST_WAVEFORM_DATA
     };
 
-    private static final String []             CHUNKS_WITH_PERFORMANCES = new String []
+    private static final String []             CHUNKS_WITH_PERFORMANCES =
     {
         YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE,
         YamahaYsfcChunk.DATA_LIST_PERFORMANCE,

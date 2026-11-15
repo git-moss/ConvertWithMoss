@@ -1428,7 +1428,7 @@ public class DecentSamplerDetector extends AbstractDetector<DecentSamplerDetecto
                     return true;
             return false;
         }
-        final String index = bindingElement.hasAttribute (DecentSamplerTag.MODULATOR_INDEX) ? bindingElement.getAttribute (DecentSamplerTag.MODULATOR_INDEX) : bindingElement.getAttribute (DecentSamplerTag.BINDING_POSITION);
+        final String index = bindingElement.getAttribute (bindingElement.hasAttribute (DecentSamplerTag.MODULATOR_INDEX) ? DecentSamplerTag.MODULATOR_INDEX : DecentSamplerTag.BINDING_POSITION);
         return Integer.toString (modulatorIndex).equals (index.trim ());
     }
 

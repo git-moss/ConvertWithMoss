@@ -8,8 +8,8 @@ package de.mossgrabers.convertwithmoss.core.model;
  * Interface to a low frequency oscillator modulator. The modulation depth of the pitch modulation
  * and of the filter cutoff modulation maps to -{@link IEnvelope#MAX_ENVELOPE_DEPTH}..
  * {@link IEnvelope#MAX_ENVELOPE_DEPTH} cent, which is the same range as the one of the pitch and
- * cutoff envelope modulators. The modulation depth of the volume modulation maps to -96..96 dB.
- * The depth can additionally be controlled by the modulation wheel, see
+ * cutoff envelope modulators. The modulation depth of the volume modulation maps to -96..96 dB. The
+ * depth can additionally be controlled by the modulation wheel, see
  * {@link #getDepthModWheelModulator()}.
  *
  * @author Jürgen Moßgraber

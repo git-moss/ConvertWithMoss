@@ -189,7 +189,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
         final byte [] samplerData = sampleChunk.getSamplerSpecificData ();
         if (samplerData.length < AKAI_SAMPLER_DATA_SIZE)
             return;
-        sampleZone.setKeyRoot (Math.clamp (Byte.toUnsignedInt (samplerData[2]) - samplerData[3], 0, 127));
+        sampleZone.setKeyRoot (Math.clamp (Byte.toUnsignedInt (samplerData[2]) - (long) samplerData[3], 0, 127));
     }
 
 

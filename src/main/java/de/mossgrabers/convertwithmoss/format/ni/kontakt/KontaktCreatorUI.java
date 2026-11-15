@@ -29,6 +29,9 @@ import javafx.scene.layout.Pane;
  */
 public class KontaktCreatorUI extends WavChunkSettingsUI
 {
+    private static final String IDS_OUTPUT_FORMAT = "IDS_OUTPUT_FORMAT";
+
+
     /** The supported output formats in the order of the radio buttons. */
     public enum OutputFormat
     {
@@ -68,13 +71,13 @@ public class KontaktCreatorUI extends WavChunkSettingsUI
 
         this.outputFormatGroup = new ToggleGroup ();
         final RadioButton order1 = panel.createRadioButton ("@IDS_NKI_KONTAKT_1");
-        order1.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
+        order1.setAccessibleHelp (Functions.getMessage (IDS_OUTPUT_FORMAT));
         order1.setToggleGroup (this.outputFormatGroup);
         final RadioButton order2 = panel.createRadioButton ("@IDS_NKI_KONTAKT_2");
-        order2.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
+        order2.setAccessibleHelp (Functions.getMessage (IDS_OUTPUT_FORMAT));
         order2.setToggleGroup (this.outputFormatGroup);
         final RadioButton order3 = panel.createRadioButton ("@IDS_NKI_KONTAKT_6_8");
-        order3.setAccessibleHelp (Functions.getMessage ("IDS_OUTPUT_FORMAT"));
+        order3.setAccessibleHelp (Functions.getMessage (IDS_OUTPUT_FORMAT));
         order3.setToggleGroup (this.outputFormatGroup);
 
         this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");

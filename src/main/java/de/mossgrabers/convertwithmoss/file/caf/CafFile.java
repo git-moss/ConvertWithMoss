@@ -828,7 +828,7 @@ public class CafFile
                             difference += step >> 1;
                         if ((nibble & 4) != 0)
                             difference += step;
-                        predictor = Math.clamp ((nibble & 8) != 0 ? predictor - difference : predictor + difference, Short.MIN_VALUE, Short.MAX_VALUE);
+                        predictor = Math.clamp ((nibble & 8) == 0 ? predictor + difference : predictor - difference, Short.MIN_VALUE, Short.MAX_VALUE);
                         stepIndex = Math.clamp (stepIndex + (long) IMA_INDEX_TABLE[nibble], 0, 88);
 
                         final int offset = ((packet * IMA4_FRAMES_PER_PACKET + i * 2 + nibbleIndex) * numberOfChannels + channel) * 2;
@@ -1008,7 +1008,7 @@ public class CafFile
         final int value = ~sample & 0xFF;
         int decoded = ((value & 0x0F) << 3) + 0x84;
         decoded <<= (value & 0x70) >> 4;
-        return (value & 0x80) != 0 ? 0x84 - decoded : decoded - 0x84;
+        return (value & 0x80) == 0 ? decoded - 0x84 : 0x84 - decoded;
     }
 
 
@@ -1030,7 +1030,7 @@ public class CafFile
                 decoded <<= segment - 1;
                 break;
         }
-        return (value & 0x80) != 0 ? decoded : -decoded;
+        return (value & 0x80) == 0 ? -decoded : decoded;
     }
 
 

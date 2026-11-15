@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.sound.sampled.AudioFileFormat;
@@ -540,6 +542,37 @@ public class AudioSampleReducer
      */
     private record ConvertedSample (byte [] data, double attenuation)
     {
+        /** {@inheritDoc} */
+        @Override
+        public String toString ()
+        {
+            return "ConvertedSample [data=" + Arrays.toString (this.data) + ", attenuation=" + this.attenuation + "]";
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public int hashCode ()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + Arrays.hashCode (this.data);
+            result = prime * result + Objects.hash (Double.valueOf (this.attenuation));
+            return result;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean equals (final Object obj)
+        {
+            if (this == obj)
+                return true;
+            if ((obj == null) || (this.getClass () != obj.getClass ()))
+                return false;
+            final ConvertedSample other = (ConvertedSample) obj;
+            return Double.doubleToLongBits (this.attenuation) == Double.doubleToLongBits (other.attenuation) && Arrays.equals (this.data, other.data);
+        }
     }
 
 

@@ -15,11 +15,11 @@ import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
  * <li>Amp: unipolar, depth = value * 0.5, the gain swings between 1 and 1 - 2 * depth, therefore
  * 1.0 is a full tremolo.</li>
  * <li>Pitch: centre-biased, depth = value - 0.5, the LFO adds lfo * depth * 4 octaves.</li>
- * <li>Filter cutoff: centre-biased, depth = value - 0.5, the LFO adds lfo * depth to the
- * normalized cutoff.</li>
+ * <li>Filter cutoff: centre-biased, depth = value - 0.5, the LFO adds lfo * depth to the normalized
+ * cutoff.</li>
  * </ul>
- * The modulation wheel morphs the normalized value of a parameter: effective = clamp (value +
- * sense * modwheel, 0, 1), the sense is stored in the range of [-1..1].
+ * The modulation wheel morphs the normalized value of a parameter: effective = clamp (value + sense
+ * * modwheel, 0, 1), the sense is stored in the range of [-1..1].
  *
  * @author Jürgen Moßgraber
  */

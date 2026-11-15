@@ -66,7 +66,7 @@ public class AkaiMPC2000BootSector
         final int hiddenSectors = buffer.getInt (); // 0x1C
         final int totalSectors32 = buffer.getInt (); // 0x20
 
-        bs.totalSectors = totalSectors16 != 0 ? totalSectors16 : totalSectors32;
+        bs.totalSectors = totalSectors16 == 0 ? totalSectors32 : totalSectors16;
 
         // Extended Boot Record
         buffer.position (0x24);

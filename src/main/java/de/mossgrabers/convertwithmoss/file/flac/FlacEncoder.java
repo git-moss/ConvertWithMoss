@@ -42,8 +42,8 @@ public class FlacEncoder
             int crc16 = i << 8;
             for (int bit = 0; bit < 8; bit++)
             {
-                crc8 = (crc8 & 0x80) != 0 ? crc8 << 1 ^ 0x07 : crc8 << 1;
-                crc16 = (crc16 & 0x8000) != 0 ? crc16 << 1 ^ 0x8005 : crc16 << 1;
+                crc8 = (crc8 & 0x80) == 0 ? crc8 << 1 : crc8 << 1 ^ 0x07;
+                crc16 = (crc16 & 0x8000) == 0 ? crc16 << 1 : crc16 << 1 ^ 0x8005;
             }
             CRC8_TABLE[i] = crc8 & 0xFF;
             CRC16_TABLE[i] = crc16 & 0xFFFF;

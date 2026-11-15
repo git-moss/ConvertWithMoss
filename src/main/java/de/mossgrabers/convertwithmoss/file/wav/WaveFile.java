@@ -624,7 +624,7 @@ public class WaveFile extends AbstractRIFFFile
         final boolean isFloat = getSampleFormat (formatChunk) == FormatChunk.WAVE_FORMAT_IEEE_FLOAT;
         final ByteBuffer buffer = ByteBuffer.wrap (data).order (ByteOrder.LITTLE_ENDIAN);
         final int numberOfFrames = data.length / bytesPerFrame;
-        final double fadeOutFrames = numberOfFrames - fadeOutStart;
+        final double fadeOutFrames = numberOfFrames - (double) fadeOutStart;
         for (int frame = fadeOutStart; frame < numberOfFrames; frame++)
         {
             final double gain = (numberOfFrames - 1 - frame) / fadeOutFrames;

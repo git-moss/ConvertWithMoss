@@ -23,6 +23,31 @@ public class DefaultSampleLoop implements ISampleLoop
     private boolean  loopUntilRelease = false;
 
 
+    /**
+     * Constructor.
+     */
+    public DefaultSampleLoop ()
+    {
+        // Intentionally empty
+    }
+
+
+    /**
+     * Constructor. Creates an independent copy of the given loop.
+     *
+     * @param loop The loop to copy
+     */
+    public DefaultSampleLoop (final ISampleLoop loop)
+    {
+        this.loopType = loop.getType ();
+        this.loopStart = loop.getStart ();
+        this.loopEnd = loop.getEnd ();
+        this.tuning = loop.getTuning ();
+        this.crossfade = loop.getCrossfade ();
+        this.loopUntilRelease = loop.isLoopUntilRelease ();
+    }
+
+
     /** {@inheritDoc} */
     @Override
     public LoopType getType ()

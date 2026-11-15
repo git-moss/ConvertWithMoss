@@ -340,9 +340,9 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
     {
         final List<Sector> sectors = hfeFile.decodeSectors ();
         // Sort sectors by cylinder, head, sector number
-        Collections.sort (sectors);
+        sectors.sort (null);
 
-        final int [] sectorLengths = new int []
+        final int [] sectorLengths =
         {
             1024,
             1024,

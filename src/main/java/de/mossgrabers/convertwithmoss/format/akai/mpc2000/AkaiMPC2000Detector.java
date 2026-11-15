@@ -42,7 +42,7 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class AkaiMPC2000Detector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final String [] SOUND_FILE_ENDINGS = new String []
+    private static final String [] SOUND_FILE_ENDINGS =
     {
         ".wav",
         ".WAV",

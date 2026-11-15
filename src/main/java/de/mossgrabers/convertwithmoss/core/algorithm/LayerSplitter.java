@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.core.algorithm;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -117,7 +116,7 @@ public class LayerSplitter
         for (final ISampleZone sampleZone: sampleZones)
             velocityLayers.computeIfAbsent (createKey (sampleZone), _ -> new ArrayList<> ()).add (sampleZone);
         for (final List<ISampleZone> velocityLayer: velocityLayers.values ())
-            Collections.sort (velocityLayer, (final ISampleZone sz1, final ISampleZone sz2) -> Integer.compare (sz1.getKeyLow (), sz2.getKeyLow ()));
+            velocityLayer.sort ((final ISampleZone sz1, final ISampleZone sz2) -> Integer.compare (sz1.getKeyLow (), sz2.getKeyLow ()));
         return velocityLayers;
     }
 

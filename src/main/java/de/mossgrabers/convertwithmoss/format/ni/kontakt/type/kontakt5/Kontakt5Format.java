@@ -58,13 +58,15 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class Kontakt5Format extends AbstractKontaktFormat
 {
+    private static final String  IDS_NKI5_NO_PRESET_CHUNK = "IDS_NKI5_NO_PRESET_CHUNK";
+
     private static final byte [] NKI_TEMPLATE;
     private static final byte [] NKM_TEMPLATE;
-    private static final int     MAX_SLOTS             = 64;
-    private static final int     MULTI_CONFIG_SIZE     = 24;
+    private static final int     MAX_SLOTS                = 64;
+    private static final int     MULTI_CONFIG_SIZE        = 24;
     // The save settings of a program in a multi which is not linked to an instrument file (the
     // file index is -1)
-    private static final byte [] SLOT_SAVE_SETTINGS    =
+    private static final byte [] SLOT_SAVE_SETTINGS       =
     {
         0x10,
         0x00,
@@ -84,8 +86,8 @@ public class Kontakt5Format extends AbstractKontaktFormat
         0x00,
         0x00
     };
-    private static final String  SOUNDINFO_EMPTY       = "-";
-    private static final String  SOUNDINFO_TAG_KONTAKT = "Kontakt";
+    private static final String  SOUNDINFO_EMPTY          = "-";
+    private static final String  SOUNDINFO_TAG_KONTAKT    = "Kontakt";
 
     static
     {
@@ -134,7 +136,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
 
         final Optional<NIContainerDataChunk> presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
         if (presetChunk.isEmpty () || !(presetChunk.get ().getData () instanceof final PresetChunkData presetChunkData))
-            throw new IOException (Functions.getMessage ("IDS_NKI5_NO_PRESET_CHUNK"));
+            throw new IOException (Functions.getMessage (IDS_NKI5_NO_PRESET_CHUNK));
 
         final KontaktPresetAccessor bankAccessor = new KontaktPresetAccessor ();
         bankAccessor.readKontaktPresetChunks (presetChunkData.getPresetData ());
@@ -196,7 +198,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
             final KontaktPresetChunk programContainerChunk = new KontaktPresetChunk ();
             programContainerChunk.read (new ByteArrayInputStream (programContainerTemplate));
             if (programContainerChunk.getId () != KontaktPresetChunkID.PROGRAM_CONTAINER)
-                throw new IOException (Functions.getMessage ("IDS_NKI5_NO_PRESET_CHUNK"));
+                throw new IOException (Functions.getMessage (IDS_NKI5_NO_PRESET_CHUNK));
             findChunk (programContainerChunk.getChildren (), KontaktPresetChunkID.PROGRAM_LIST).setPublicData (programListOut.toByteArray ());
             // The template program is linked to its NKI file, remove the link
             for (final KontaktPresetChunk child: programContainerChunk.getChildren ())
@@ -274,7 +276,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
         niContainerItem.read (new ByteArrayInputStream (containerData));
         final Optional<NIContainerDataChunk> presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
         if (presetChunk.isEmpty () || !(presetChunk.get ().getData () instanceof final PresetChunkData presetChunkData))
-            throw new IOException (Functions.getMessage ("IDS_NKI5_NO_PRESET_CHUNK"));
+            throw new IOException (Functions.getMessage (IDS_NKI5_NO_PRESET_CHUNK));
         return presetChunkData.getPresetData ();
     }
 
@@ -292,7 +294,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
         for (final KontaktPresetChunk chunk: chunks)
             if (chunk.getId () == chunkID)
                 return chunk;
-        throw new IOException (Functions.getMessage ("IDS_NKI5_NO_PRESET_CHUNK"));
+        throw new IOException (Functions.getMessage (IDS_NKI5_NO_PRESET_CHUNK));
     }
 
 
@@ -448,7 +450,7 @@ public class Kontakt5Format extends AbstractKontaktFormat
 
         final Optional<NIContainerDataChunk> presetChunk = niContainerItem.find (NIContainerChunkType.PRESET_CHUNK_ITEM);
         if (presetChunk.isEmpty () || !(presetChunk.get ().getData () instanceof final PresetChunkData presetChunkData))
-            throw new IOException (Functions.getMessage ("IDS_NKI5_NO_PRESET_CHUNK"));
+            throw new IOException (Functions.getMessage (IDS_NKI5_NO_PRESET_CHUNK));
 
         final KontaktPresetAccessor programAccessor = new KontaktPresetAccessor ();
         programAccessor.readKontaktPresetChunks (presetChunkData.getPresetData ());

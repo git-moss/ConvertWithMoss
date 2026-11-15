@@ -420,7 +420,7 @@ public class RenoiseDetector extends AbstractDetector<MetadataSettingsUI>
             if (lower.startsWith (SAMPLE_DATA_FOLDER) && (lower.endsWith (".wav") || lower.endsWith (".flac") || lower.endsWith (".aif") || lower.endsWith (".aiff")))
                 entries.add (entryName);
         }
-        Collections.sort (entries);
+        entries.sort (null);
         return entries;
     }
 

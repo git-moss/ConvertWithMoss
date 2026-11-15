@@ -256,7 +256,7 @@ public class BentoCreator extends AbstractMusic1010Creator
      */
     private Optional<String> createPreset (final List<IInstrumentSource> instrumentSources, final List<String> presetFolderNames, final boolean trim, final String subFolder, final boolean isPerformance) throws IOException
     {
-        final Optional<Pair<Document, Element>> sessionDocumentOpt = this.createSessionDocument ();
+        final Optional<Pair<Document, Element>> sessionDocumentOpt = this.createSessionDocument (2);
         if (sessionDocumentOpt.isEmpty ())
             return Optional.empty ();
         final Pair<Document, Element> sessionDocument = sessionDocumentOpt.get ();
@@ -294,7 +294,7 @@ public class BentoCreator extends AbstractMusic1010Creator
             final Element instElement = XMLUtils.addElement (document, trackElement, Music1010Tag.CELL);
             instElement.setAttribute (Music1010Tag.ATTR_TYPE, "saminst");
 
-            createModulators (document, instElement, multisampleSource);
+            createVelocityModulators (document, instElement, multisampleSource);
 
             // Create sample entries for all sample zones of all groups, adds workaround for silence
             // outside of range
@@ -380,6 +380,7 @@ public class BentoCreator extends AbstractMusic1010Creator
                 paramsElement.setAttribute (Music1010Tag.ATTR_CHOKE_GROUP, Integer.toString (exclusiveGroup));
 
             createFilter (paramsElement, multisampleSource);
+            createLfoModulators (document, instElement, paramsElement, multisampleSource);
         }
 
         return this.createXMLString (document);

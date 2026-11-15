@@ -30,7 +30,7 @@ import java.util.Optional;
  */
 public class FmDecoder extends AbstractDecoder
 {
-    private static final int [] PHASES    = new int []
+    private static final int [] PHASES    =
     {
         0,
         1
@@ -160,7 +160,7 @@ public class FmDecoder extends AbstractDecoder
         // CRC calculation includes: IDAM + header fields exactly as physically encoded (no sync
         // byte prefix in FM) - must use headerHead here, not physicalHead, since the CRC covers
         // the actual on-disk bytes.
-        final byte [] headerData = new byte []
+        final byte [] headerData =
         {
             (byte) IDAM,
             (byte) cyl,

@@ -358,7 +358,7 @@ public class EmaxDetector extends AbstractDetector<MetadataSettingsUI>
     {
         final int numKeyAreas = data[bank + preset + EmaxConstants.PRESET_KEY_AREA_COUNT] & 0xFF;
         final int modWheelDestination = EmaxConstants.getModWheelDestination (data, bank + preset);
-        final IGroup [] groups = new IGroup []
+        final IGroup [] groups =
         {
             new DefaultGroup ("Layer 1"),
             new DefaultGroup ("Layer 2")

@@ -31,18 +31,18 @@ import de.mossgrabers.convertwithmoss.format.ni.kontakt.LfoIntensityConverter;
 final class GroupModulators
 {
     /** The version of the parameter arrays which contain the modulators. */
-    static final int             PARAMETER_ARRAY_VERSION = 0x12;
+    static final int                           PARAMETER_ARRAY_VERSION = 0x12;
 
     // Flag of a modulated parameter which inverts the modulation
-    private static final int     FLAG_INVERT             = 0x02;
+    private static final int                   FLAG_INVERT             = 0x02;
     // The modulation is added to the parameter instead of scaling it, e.g. 'Intensity (add)'
-    private static final int     FLAG_ADD                = 0x04;
+    private static final int                   FLAG_ADD                = 0x04;
     // The pitch intensity of Kontakt (1.0) covers 1 octave
-    private static final double  PITCH_INTENSITY_CENTS   = 1200.0;
+    private static final double                PITCH_INTENSITY_CENTS   = 1200.0;
     // The pitch intensity of Kontakt (1.0) covers 1 octave, the depth of the model is relative to
     // MAX_ENVELOPE_DEPTH cents
-    private static final LfoIntensityConverter PITCH_LFO_CONVERTER  = LfoIntensityConverter.linear (PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
-    private static final LfoIntensityConverter CUTOFF_LFO_CONVERTER = LfoIntensityConverter.linear (1.0);
+    private static final LfoIntensityConverter PITCH_LFO_CONVERTER     = LfoIntensityConverter.linear (PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+    private static final LfoIntensityConverter CUTOFF_LFO_CONVERTER    = LfoIntensityConverter.linear (1.0);
 
     //@formatter:off
     // An AHDSR envelope which modulates the pitch, taken from a file saved by Kontakt 7
@@ -75,70 +75,70 @@ final class GroupModulators
     //@formatter:on
 
     // The parameter names of the modulation targets
-    private static final String  TARGET_VOLUME           = "volume";
-    private static final String  TARGET_PITCH            = "pitch";
-    private static final String  TARGET_CUTOFF           = "filterCutoff";
-    private static final String  TARGET_INTENSITY        = "intensity";
-    private static final int     FLAGS_DEFAULT           = 0x10;
+    private static final String                TARGET_VOLUME           = "volume";
+    private static final String                TARGET_PITCH            = "pitch";
+    private static final String                TARGET_CUTOFF           = "filterCutoff";
+    private static final String                TARGET_INTENSITY        = "intensity";
+    private static final int                   FLAGS_DEFAULT           = 0x10;
 
     // The index of the modulation source type of internal modulators
-    private static final int     SOURCE_INDEX_ENVELOPE   = 2;
-    private static final int     SOURCE_INDEX_LFO        = 1;
+    private static final int                   SOURCE_INDEX_ENVELOPE   = 2;
+    private static final int                   SOURCE_INDEX_LFO        = 1;
     // Unknown values found in the internal modulators of envelopes and LFOs saved by Kontakt 7
-    private static final int     UNKNOWN_ENVELOPE        = 0;
-    private static final int     UNKNOWN_LFO             = 3;
-    private static final String  SOURCE_AHDSR            = "ENV_AHDSR";
+    private static final int                   UNKNOWN_ENVELOPE        = 0;
+    private static final int                   UNKNOWN_LFO             = 3;
+    private static final String                SOURCE_AHDSR            = "ENV_AHDSR";
 
     // The source types of external modulators
-    private static final int     SOURCE_MIDI_CC          = 4;
-    private static final int     SOURCE_KEY_POSITION     = 5;
-    private static final int     MOD_WHEEL_CC            = 1;
-    private static final int     MAX_SOURCE_NAME_LENGTH  = 64;
-    private static final int     MAX_PARAMETER_TRAILER   = 4;
-    private static final int     SOURCE_VELOCITY         = 6;
+    private static final int                   SOURCE_MIDI_CC          = 4;
+    private static final int                   SOURCE_KEY_POSITION     = 5;
+    private static final int                   MOD_WHEEL_CC            = 1;
+    private static final int                   MAX_SOURCE_NAME_LENGTH  = 64;
+    private static final int                   MAX_PARAMETER_TRAILER   = 4;
+    private static final int                   SOURCE_VELOCITY         = 6;
 
     // The offsets in the LFO block
-    private static final int     LFO_WAVEFORM            = 9;
-    private static final int     LFO_DELAY               = 13;
-    private static final int     LFO_FREQUENCY           = 17;
-    private static final int     LFO_START_PHASE         = 25;
+    private static final int                   LFO_WAVEFORM            = 9;
+    private static final int                   LFO_DELAY               = 13;
+    private static final int                   LFO_FREQUENCY           = 17;
+    private static final int                   LFO_START_PHASE         = 25;
 
     // The private data of a group starts with the output routing table (136 entries of 12 bytes)
     // followed by 25 unknown bytes, the version of the insert effects (16 bit) and the 8 slots
-    private static final int     INSERT_EFFECTS_SLOTS    = 136 * 12 + 25 + 2;
-    private static final int     PAR_FX                  = 0x25;
+    private static final int                   INSERT_EFFECTS_SLOTS    = 136 * 12 + 25 + 2;
+    private static final int                   PAR_FX                  = 0x25;
     /** The insert effect slot in which the filter is stored. */
-    static final int             FILTER_SLOT             = 0;
+    static final int                           FILTER_SLOT             = 0;
     // The offsets in the filter effect data
-    private static final int     FILTER_BYPASS           = 16;
-    private static final int     FILTER_TYPE             = 43 + 3;
-    private static final int     FILTER_TYPE2            = 43 + 7;
-    private static final int     FILTER_CUTOFF           = 43 + 11;
-    private static final int     FILTER_RESONANCE        = 43 + 15;
+    private static final int                   FILTER_BYPASS           = 16;
+    private static final int                   FILTER_TYPE             = 43 + 3;
+    private static final int                   FILTER_TYPE2            = 43 + 7;
+    private static final int                   FILTER_CUTOFF           = 43 + 11;
+    private static final int                   FILTER_RESONANCE        = 43 + 15;
     // The cutoff of the SV filters is MIDI note 20 + 115 * value
-    private static final double  SV_NOTE_OFFSET          = 20;
-    private static final double  SV_NOTE_RANGE           = 115;
+    private static final double                SV_NOTE_OFFSET          = 20;
+    private static final double                SV_NOTE_RANGE           = 115;
 
     // The internal modulator data starts with 1 byte (always 1), the version (16 bit) and the
     // size of the first block (32 bit)
-    private static final int     BLOCK1_OFFSET           = 7;
+    private static final int                   BLOCK1_OFFSET           = 7;
     // The values of an AHDSR envelope in the second block of an internal modulator
-    private static final int     ENVELOPE_CURVE          = 34;
-    private static final int     ENVELOPE_ATTACK         = 38;
-    private static final int     ENVELOPE_DECAY          = 42;
-    private static final int     ENVELOPE_HOLD           = 46;
-    private static final int     ENVELOPE_RELEASE        = 50;
-    private static final int     ENVELOPE_SUSTAIN        = 54;
-    private static final int     ENVELOPE_AHD_ONLY       = 58;
+    private static final int                   ENVELOPE_CURVE          = 34;
+    private static final int                   ENVELOPE_ATTACK         = 38;
+    private static final int                   ENVELOPE_DECAY          = 42;
+    private static final int                   ENVELOPE_HOLD           = 46;
+    private static final int                   ENVELOPE_RELEASE        = 50;
+    private static final int                   ENVELOPE_SUSTAIN        = 54;
+    private static final int                   ENVELOPE_AHD_ONLY       = 58;
 
     // The external modulator data starts with 3 bytes and the size of the block (32 bit)
-    private static final int     EXTERNAL_BLOCK_OFFSET   = 7;
+    private static final int                   EXTERNAL_BLOCK_OFFSET   = 7;
 
     // The start criteria entry, the values are the defaults of Kontakt
-    private static final int     START_CRITERIA_VERSION  = 0x70;
-    private static final int     START_CRITERIA_KEY      = 24;
-    private static final int     START_CRITERIA_CC       = 1;
-    private static final int     START_CRITERIA_CC_VALUE = 64;
+    private static final int                   START_CRITERIA_VERSION  = 0x70;
+    private static final int                   START_CRITERIA_KEY      = 24;
+    private static final int                   START_CRITERIA_CC       = 1;
+    private static final int                   START_CRITERIA_CC_VALUE = 64;
 
 
     /**
@@ -167,7 +167,7 @@ final class GroupModulators
         final IEnvelope ampEnvelope = ampModulator.getSource ();
         final byte [] ampData = ampEnvelopeTemplate.getPublicData ().clone ();
         setIntensity (ampData, BLOCK1_OFFSET, Math.clamp (ampModulator.getDepth (), 0, 1));
-        setEnvelope (ampData, ampEnvelope, -ampEnvelope.getAttackSlope (), limitToDefault (ampEnvelope.getAttackTime (), 0), limitToDefault (ampEnvelope.getHoldTime (), 0), limitToDefault (ampEnvelope.getDecayTime (), 0), limitToDefault (ampEnvelope.getSustainLevel (), 1), limitToDefault (ampEnvelope.getReleaseTime (), 1));
+        setEnvelope (ampData, -ampEnvelope.getAttackSlope (), limitToDefault (ampEnvelope.getAttackTime (), 0), limitToDefault (ampEnvelope.getHoldTime (), 0), limitToDefault (ampEnvelope.getDecayTime (), 0), limitToDefault (ampEnvelope.getSustainLevel (), 1), limitToDefault (ampEnvelope.getReleaseTime (), 1));
         modulators.add (createChunk (ampEnvelopeTemplate.getId (), ampData));
 
         // The depth of the model is relative to MAX_ENVELOPE_DEPTH cents
@@ -182,9 +182,9 @@ final class GroupModulators
             // envelope), it is assumed to be the attack level and only the attack time is used as
             // the decay, since this is the most common application for pitch envelopes
             if (pitchEnvelope.getStartLevel () > 0)
-                setEnvelope (pitchData, pitchEnvelope, -pitchEnvelope.getAttackSlope (), 0, 0, limitToDefault (pitchEnvelope.getAttackTime (), 0), 0, 0);
+                setEnvelope (pitchData, -pitchEnvelope.getAttackSlope (), 0, 0, limitToDefault (pitchEnvelope.getAttackTime (), 0), 0, 0);
             else
-                setEnvelope (pitchData, pitchEnvelope, -pitchEnvelope.getAttackSlope (), limitToDefault (pitchEnvelope.getAttackTime (), 0), limitToDefault (pitchEnvelope.getHoldTime (), 0), limitToDefault (pitchEnvelope.getDecayTime (), 0), limitToDefault (pitchEnvelope.getSustainLevel (), 0), limitToDefault (pitchEnvelope.getReleaseTime (), 0));
+                setEnvelope (pitchData, -pitchEnvelope.getAttackSlope (), limitToDefault (pitchEnvelope.getAttackTime (), 0), limitToDefault (pitchEnvelope.getHoldTime (), 0), limitToDefault (pitchEnvelope.getDecayTime (), 0), limitToDefault (pitchEnvelope.getSustainLevel (), 0), limitToDefault (pitchEnvelope.getReleaseTime (), 0));
             modulators.add (createChunk (KontaktPresetChunkID.PAR_INTERNAL_MOD, pitchData));
         }
 
@@ -197,7 +197,7 @@ final class GroupModulators
             {
                 final IEnvelope cutoffEnvelope = cutoffModulator.getSource ();
                 final byte [] cutoffData = createInternalModulator (TARGET_CUTOFF, cutoffIntensity, "ENV_AHDSR_CUTOFF", true, UNKNOWN_ENVELOPE, SOURCE_AHDSR, SOURCE_INDEX_ENVELOPE, getEnvelopeBlock ());
-                setEnvelope (cutoffData, cutoffEnvelope, -cutoffEnvelope.getAttackSlope (), limitToDefault (cutoffEnvelope.getAttackTime (), 0), limitToDefault (cutoffEnvelope.getHoldTime (), 0), limitToDefault (cutoffEnvelope.getDecayTime (), 0), limitToDefault (cutoffEnvelope.getSustainLevel (), 1), limitToDefault (cutoffEnvelope.getReleaseTime (), 1));
+                setEnvelope (cutoffData, -cutoffEnvelope.getAttackSlope (), limitToDefault (cutoffEnvelope.getAttackTime (), 0), limitToDefault (cutoffEnvelope.getHoldTime (), 0), limitToDefault (cutoffEnvelope.getDecayTime (), 0), limitToDefault (cutoffEnvelope.getSustainLevel (), 1), limitToDefault (cutoffEnvelope.getReleaseTime (), 1));
                 modulators.add (createChunk (KontaktPresetChunkID.PAR_INTERNAL_MOD, cutoffData));
             }
         }
@@ -479,8 +479,8 @@ final class GroupModulators
 
 
     /**
-     * Adds an external modulator which controls the intensity of an oscillator with the
-     * modulation wheel, if the oscillator is written and has a modulation wheel depth.
+     * Adds an external modulator which controls the intensity of an oscillator with the modulation
+     * wheel, if the oscillator is written and has a modulation wheel depth.
      *
      * @param modulators Where to add the modulator
      * @param template The template for an external modulator
@@ -633,15 +633,15 @@ final class GroupModulators
 
     /**
      * Writes one modulated parameter: number of parameters (1), name, intensity (set later),
-     * 0xFFFF, flags (add-mode for the intensity of an internal modulator), lag, description, the insert effect slot of the filter (only for the filter
-     * cutoff) or the slot of the internal modulator (only for its intensity) and 2 zero bytes (no
-     * modulation shaper).
+     * 0xFFFF, flags (add-mode for the intensity of an internal modulator), lag, description, the
+     * insert effect slot of the filter (only for the filter cutoff) or the slot of the internal
+     * modulator (only for its intensity) and 2 zero bytes (no modulation shaper).
      *
      * @param out Where to write to
      * @param target The name of the modulated parameter
      * @param description The description
-     * @param targetIndex The slot index of the internal modulator whose intensity is modulated,
-     *            -1 if not used
+     * @param targetIndex The slot index of the internal modulator whose intensity is modulated, -1
+     *            if not used
      * @throws IOException Could not write
      */
     private static void writeModulatedParameter (final ByteArrayOutputStream out, final String target, final String description, final int targetIndex) throws IOException
@@ -715,7 +715,6 @@ final class GroupModulators
      * Sets the values of the AHDSR envelope in the second block of an internal modulator.
      *
      * @param data The modulator data
-     * @param envelope The envelope
      * @param curve The curve of the attack in the range of [-1..1]
      * @param attack The attack time in seconds
      * @param hold The hold time in seconds
@@ -723,7 +722,7 @@ final class GroupModulators
      * @param sustain The sustain level in the range of [0..1]
      * @param release The release time in seconds
      */
-    private static void setEnvelope (final byte [] data, final IEnvelope envelope, final double curve, final double attack, final double hold, final double decay, final double sustain, final double release)
+    private static void setEnvelope (final byte [] data, final double curve, final double attack, final double hold, final double decay, final double sustain, final double release)
     {
         final int block1Size = (int) readUnsigned32 (data, 3);
         // Skip the separator and the size of the second block
@@ -739,10 +738,10 @@ final class GroupModulators
 
 
     /**
-     * Find the offset of the ID of a modulator. Each modulator of a group has a unique ID.
-     * Internal modulators store it in their first block directly before the name of the
-     * modulation source (which is followed by the index of the source). External modulators store
-     * it after the type of the source, the optional MIDI CC number (8 bit) and 4 unknown bytes.
+     * Find the offset of the ID of a modulator. Each modulator of a group has a unique ID. Internal
+     * modulators store it in their first block directly before the name of the modulation source
+     * (which is followed by the index of the source). External modulators store it after the type
+     * of the source, the optional MIDI CC number (8 bit) and 4 unknown bytes.
      *
      * @param data The data of the modulator
      * @param isInternal True for an internal modulator, false for an external one

@@ -76,7 +76,7 @@ public class MirageFile
     /** 65 large sectors (1 sector parameters + 64 sector sample data). */
     private static final int                  SOUND_SIZE             = 66560;
 
-    private static final byte []              MAGIC_MIRAGE_OS        = new byte []
+    private static final byte []              MAGIC_MIRAGE_OS        =
     {
         0x00,
         0x00,
@@ -84,7 +84,7 @@ public class MirageFile
         0x00
     };
 
-    private static final byte []              MAGIC_SOUND_PROCESS_OS = new byte []
+    private static final byte []              MAGIC_SOUND_PROCESS_OS =
     {
         (byte) 0x88,
         0x09,

@@ -34,6 +34,18 @@ public class Kontakt2Header
 {
     /** The 'Other' category. */
     public static final String                CATEGORY_OTHER             = "Other";
+    private static final String               CATEGORY_BRASS             = "Brass";
+    private static final String               CATEGORY_PERCUSSION        = "Percussion";
+    private static final String               CATEGORY_SOUNDEFFECT       = "Soundeffect";
+    private static final String               CATEGORY_MALLET            = "Mallet";
+    private static final String               CATEGORY_VOCAL             = "Vocal";
+    private static final String               CATEGORY_ORGAN             = "Organ";
+    private static final String               CATEGORY_STRINGS           = "Strings";
+    private static final String               CATEGORY_SYNTHESIZER       = "Synthesizer";
+    private static final String               CATEGORY_KEYBOARD          = "Keyboard";
+    private static final String               CATEGORY_DRUMS             = "Drums";
+    private static final String               CATEGORY_GUITAR            = "Guitar";
+    private static final String               CATEGORY_PIANO             = "Piano";
 
     private static final int                  HEADER_KONTAKT_2           = 0x100;
     /** The size of a Kontakt 2 - 4.1 header including the file ID. */
@@ -158,30 +170,30 @@ public class Kontakt2Header
     private static final int                  HEADER_KONTAKT_42          = 0x110;
     private static final String               NULL_ENTRY                 = "(null)";
 
-    private static final String []            K2_INSTRUMENT_CATEGORY_1   = new String []
+    private static final String []            K2_INSTRUMENT_CATEGORY_1   =
     {
         CATEGORY_OTHER,
-        "Piano",
-        "Guitar",
+        CATEGORY_PIANO,
+        CATEGORY_GUITAR,
         "Bass",
-        "Drums",
-        "Keyboard",
-        "Synthesizer",
-        "Strings",
-        "Brass",
-        "Organ",
-        "Vocal",
-        "Mallet",
+        CATEGORY_DRUMS,
+        CATEGORY_KEYBOARD,
+        CATEGORY_SYNTHESIZER,
+        CATEGORY_STRINGS,
+        CATEGORY_BRASS,
+        CATEGORY_ORGAN,
+        CATEGORY_VOCAL,
+        CATEGORY_MALLET,
         "Athmosphere",
         "Loop/Beat",
         "Pad",
         "Lead",
-        "Soundeffect",
+        CATEGORY_SOUNDEFFECT,
         "Woodwinds",
-        "Percussion"
+        CATEGORY_PERCUSSION
     };
 
-    private static final String []            K2_INSTRUMENT_CATEGORY_2   = new String []
+    private static final String []            K2_INSTRUMENT_CATEGORY_2   =
     {
         CATEGORY_OTHER,
         "Acoustic",
@@ -202,7 +214,7 @@ public class Kontakt2Header
         "Spacious"
     };
 
-    private static final String []            K2_INSTRUMENT_CATEGORY_3   = new String []
+    private static final String []            K2_INSTRUMENT_CATEGORY_3   =
     {
         CATEGORY_OTHER,
         "Noisy",
@@ -231,12 +243,12 @@ public class Kontakt2Header
         final String [] [] mapping =
         {
             {
-                "Piano",
-                "Piano"
+                CATEGORY_PIANO,
+                CATEGORY_PIANO
             },
             {
-                "Guitar",
-                "Guitar"
+                CATEGORY_GUITAR,
+                CATEGORY_GUITAR
             },
             {
                 "Bass",
@@ -244,75 +256,75 @@ public class Kontakt2Header
             },
             {
                 "Drum",
-                "Drums"
+                CATEGORY_DRUMS
             },
             {
                 "Acoustic Drum",
-                "Drums"
+                CATEGORY_DRUMS
             },
             {
                 "Kick",
-                "Drums"
+                CATEGORY_DRUMS
             },
             {
                 "Snare",
-                "Drums"
+                CATEGORY_DRUMS
             },
             {
                 "Hi-Hat",
-                "Drums"
+                CATEGORY_DRUMS
             },
             {
                 "Clap",
-                "Drums"
+                CATEGORY_DRUMS
             },
             {
-                "Keyboard",
-                "Keyboard"
+                CATEGORY_KEYBOARD,
+                CATEGORY_KEYBOARD
             },
             {
                 "Synth",
-                "Synthesizer"
+                CATEGORY_SYNTHESIZER
             },
             {
                 "Monosynth",
-                "Synthesizer"
+                CATEGORY_SYNTHESIZER
             },
             {
                 "Chip",
-                "Synthesizer"
+                CATEGORY_SYNTHESIZER
             },
             {
-                "Strings",
-                "Strings"
+                CATEGORY_STRINGS,
+                CATEGORY_STRINGS
             },
             {
                 "Orchestral",
-                "Strings"
+                CATEGORY_STRINGS
             },
             {
-                "Brass",
-                "Brass"
+                CATEGORY_BRASS,
+                CATEGORY_BRASS
             },
             {
-                "Organ",
-                "Organ"
+                CATEGORY_ORGAN,
+                CATEGORY_ORGAN
             },
             {
                 "Pipe",
-                "Organ"
+                CATEGORY_ORGAN
             },
             {
-                "Vocal",
-                "Vocal"
+                CATEGORY_VOCAL,
+                CATEGORY_VOCAL
             },
             {
                 "Chromatic Percussion",
-                "Mallet"
+                CATEGORY_MALLET
             },
             {
                 "Bell",
-                "Mallet"
+                CATEGORY_MALLET
             },
             {
                 "Drone",
@@ -332,23 +344,23 @@ public class Kontakt2Header
             },
             {
                 "FX",
-                "Soundeffect"
+                CATEGORY_SOUNDEFFECT
             },
             {
                 "Destruction",
-                "Soundeffect"
+                CATEGORY_SOUNDEFFECT
             },
             {
                 "Hits",
-                "Soundeffect"
+                CATEGORY_SOUNDEFFECT
             },
             {
                 "Winds",
                 "Woodwinds"
             },
             {
-                "Percussion",
-                "Percussion"
+                CATEGORY_PERCUSSION,
+                CATEGORY_PERCUSSION
             }
         };
         for (final String [] entry: mapping)

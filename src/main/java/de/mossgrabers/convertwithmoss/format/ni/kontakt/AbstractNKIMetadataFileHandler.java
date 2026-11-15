@@ -89,29 +89,29 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public abstract class AbstractNKIMetadataFileHandler
 {
-    private static final String               LFO_SAWTOOTH              = "sawtooth";
+    private static final String                LFO_SAWTOOTH              = "sawtooth";
     // The index of the first oscillator in the internal and external modulators of the templates
-    private static final int                  FIRST_LFO_MODULATOR_INDEX = 3;
-    private static final int                  FIRST_LFO_EXT_MOD_INDEX   = 3;
+    private static final int                   FIRST_LFO_MODULATOR_INDEX = 3;
+    private static final int                   FIRST_LFO_EXT_MOD_INDEX   = 3;
     // Kontakt 2 references the filter (insert effect at index 0) in the target of the modulator
-    private static final String               LFO_FILTER_TARGET_OBJECT  = "                  <V name=\"targetObjIdx\" value=\"0\"/>";
-    protected static final String             TEMPLATE_FOLDER           = "de/mossgrabers/convertwithmoss/templates/nki/";
-    protected static final String             XML_HEADER                = "<?xml version=\"1.0\"?>\n";
+    private static final String                LFO_FILTER_TARGET_OBJECT  = "                  <V name=\"targetObjIdx\" value=\"0\"/>";
+    protected static final String              TEMPLATE_FOLDER           = "de/mossgrabers/convertwithmoss/templates/nki/";
+    protected static final String              XML_HEADER                = "<?xml version=\"1.0\"?>\n";
 
-    private static final String               NULL_ENTRY                = "(null)";
-    private static final String               PRO52_FILTER_TYPE         = "pro52";
-    private static final String               LADDER_FILTER_TYPE        = "ladder";
-    private static final Pattern              FILTER_TYPE_PATTERN       = Pattern.compile ("^(lp|hp|bp|br)(\\d+)pole$");
+    private static final String                NULL_ENTRY                = "(null)";
+    private static final String                PRO52_FILTER_TYPE         = "pro52";
+    private static final String                LADDER_FILTER_TYPE        = "ladder";
+    private static final Pattern               FILTER_TYPE_PATTERN       = Pattern.compile ("^(lp|hp|bp|br)(\\d+)pole$");
 
     // Effects which can be placed in the filter slot but which cannot be mapped to a filter
-    private static final Pattern              EFFECT_TYPE_PATTERN       = Pattern.compile ("^(eq\\d+band|phaser|versatile|vowel\\w|sampleAndHold)$");
-    private static final Pattern              UTF_PATTERN               = Pattern.compile ("%([0-9a-fA-F]{4})");
+    private static final Pattern               EFFECT_TYPE_PATTERN       = Pattern.compile ("^(eq\\d+band|phaser|versatile|vowel\\w|sampleAndHold)$");
+    private static final Pattern               UTF_PATTERN               = Pattern.compile ("%([0-9a-fA-F]{4})");
 
     // The cutoff frequencies displayed by Kontakt for the normalized cutoff values 0, 0.1, ..., 1.0
     // of the low-pass filters as well as of the high-, band-pass and band-reject filters
     // (independent of the number of poles). The curves cannot be expressed by a simple formula,
     // therefore the values are interpolated logarithmically
-    private static final double []            LOW_PASS_CUTOFFS          =
+    private static final double []             LOW_PASS_CUTOFFS          =
     {
         43.6,
         91.2,
@@ -125,7 +125,7 @@ public abstract class AbstractNKIMetadataFileHandler
         12600,
         21800
     };
-    private static final double []            HIGH_PASS_CUTOFFS         =
+    private static final double []             HIGH_PASS_CUTOFFS         =
     {
         36.1,
         75.5,
@@ -141,26 +141,26 @@ public abstract class AbstractNKIMetadataFileHandler
     };
 
     // The pitch intensity of Kontakt (1.0) covers 1 octave
-    private static final double               PITCH_INTENSITY_CENTS     = 1200.0;
+    private static final double                PITCH_INTENSITY_CENTS     = 1200.0;
     // The pitch intensity of Kontakt covers 1 octave (same as the pitch-bend), the model uses the
     // range of the pitch envelope
-    private static final LfoIntensityConverter PITCH_LFO_CONVERTER      = LfoIntensityConverter.linear (PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
-    private static final LfoIntensityConverter CUTOFF_LFO_CONVERTER     = LfoIntensityConverter.linear (1.0);
+    private static final LfoIntensityConverter PITCH_LFO_CONVERTER       = LfoIntensityConverter.linear (PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+    private static final LfoIntensityConverter CUTOFF_LFO_CONVERTER      = LfoIntensityConverter.linear (1.0);
 
     // The default number of voices if the source does not specify the polyphony
-    private static final int                  DEFAULT_MAX_VOICES        = 64;
+    private static final int                   DEFAULT_MAX_VOICES        = 64;
     // There are up to 128 voice groups in addition to the voice group of the instrument
-    private static final int                  MAX_VOICE_GROUPS          = 128;
-    private static final String               PROGRAM_VOICE_GROUPS      = "%PROGRAM_VOICE_GROUPS%";
+    private static final int                   MAX_VOICE_GROUPS          = 128;
+    private static final String                PROGRAM_VOICE_GROUPS      = "%PROGRAM_VOICE_GROUPS%";
 
-    private static final String               CYCLE_ROUND_ROBIN         = "cycle_round_robin";
-    private static final String               CYCLE_RANDOM              = "cycle_random";
+    private static final String                CYCLE_ROUND_ROBIN         = "cycle_round_robin";
+    private static final String                CYCLE_RANDOM              = "cycle_random";
 
-    protected final AbstractTagsAndAttributes tags;
-    protected final INotifier                 notifier;
-    private final Map<String, String>         absolutePathLookupSuccess = new HashMap<> ();
-    protected boolean                         isMulti                   = false;
-    private boolean                           isAdditiveTuning          = false;
+    protected final AbstractTagsAndAttributes  tags;
+    protected final INotifier                  notifier;
+    private final Map<String, String>          absolutePathLookupSuccess = new HashMap<> ();
+    protected boolean                          isMulti                   = false;
+    private boolean                            isAdditiveTuning          = false;
 
 
     /**
@@ -617,8 +617,8 @@ public abstract class AbstractNKIMetadataFileHandler
      *
      * @param zone The zone from which to take the oscillators, might be null
      * @param lfoTemplate The template of an oscillator modulator
-     * @param modWheelTemplate The template of an external modulator which controls the intensity
-     *            of an internal modulator with the modulation wheel
+     * @param modWheelTemplate The template of an external modulator which controls the intensity of
+     *            an internal modulator with the modulation wheel
      * @return The internal modulators (index 0) and the external modulators (index 1)
      */
     private String [] createLfoModulators (final ISampleZone zone, final String lfoTemplate, final String modWheelTemplate)
@@ -650,8 +650,8 @@ public abstract class AbstractNKIMetadataFileHandler
 
 
     /**
-     * Creates an internal modulator for an oscillator and the external modulator which controls
-     * its intensity with the modulation wheel (if any).
+     * Creates an internal modulator for an oscillator and the external modulator which controls its
+     * intensity with the modulation wheel (if any).
      *
      * @param modulator The oscillator modulator
      * @param target The modulation target

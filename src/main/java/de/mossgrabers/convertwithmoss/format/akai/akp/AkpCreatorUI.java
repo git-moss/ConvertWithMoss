@@ -82,7 +82,7 @@ public class AkpCreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        final int index = Math.clamp (config.getInteger (this.generationProperty, AbstractAkpChunk.DEFAULT_GENERATION.ordinal () + 1) - 1, 0, AkpGeneration.values ().length - 1);
+        final int index = Math.clamp (config.getInteger (this.generationProperty, AbstractAkpChunk.DEFAULT_GENERATION.ordinal () + 1) - 1L, 0, AkpGeneration.values ().length - 1);
         this.generationGroup.selectToggle (this.generationGroup.getToggles ().get (index));
 
         super.loadSettings (config);

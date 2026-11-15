@@ -290,8 +290,8 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
     /**
      * Parse the modulators which control the depth of the oscillators with the modulation wheel.
      * The default modulator of the specification (50 cent vibrato) applies unless the instrument
-     * zone contains an identical modulator. The modulators of the preset zone are added to the
-     * ones of the instrument zone.
+     * zone contains an identical modulator. The modulators of the preset zone are added to the ones
+     * of the instrument zone.
      *
      * @param zone The zone to which to apply the modulation
      * @param presetModulators The modulators of the preset zone

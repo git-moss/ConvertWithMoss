@@ -9,7 +9,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -118,8 +117,8 @@ public enum ZoneChannels
 
         // Sort both arrays so that the matching pairs are at the same index, the same way the
         // combination does it
-        Collections.sort (leftSampleZones, SAMPLE_ZONE_COMPARATOR);
-        Collections.sort (rightSampleZones, SAMPLE_ZONE_COMPARATOR);
+        leftSampleZones.sort (SAMPLE_ZONE_COMPARATOR);
+        rightSampleZones.sort (SAMPLE_ZONE_COMPARATOR);
 
         for (int i = 0; i < size; i++)
         {
@@ -193,8 +192,8 @@ public enum ZoneChannels
 
         // Sort both arrays by all of their relevant attributes which means that the matching pairs
         // are at the same index
-        Collections.sort (leftSampleZones, SAMPLE_ZONE_COMPARATOR);
-        Collections.sort (rightSampleZones, SAMPLE_ZONE_COMPARATOR);
+        leftSampleZones.sort (SAMPLE_ZONE_COMPARATOR);
+        rightSampleZones.sort (SAMPLE_ZONE_COMPARATOR);
 
         // Audio metadata must match as well as the loops of the left/right pairs!
         for (int i = 0; i < size; i++)

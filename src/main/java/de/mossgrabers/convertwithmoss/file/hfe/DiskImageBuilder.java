@@ -5,7 +5,6 @@
 package de.mossgrabers.convertwithmoss.file.hfe;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -55,7 +54,7 @@ public class DiskImageBuilder
     public static byte [] buildImage (final List<Sector> sectors, final int numCylinders, final int numHeads, final int sectorsPerTrack, final int bytesPerSector, final boolean sectorIsZeroBased)
     {
         // Sort sectors by cylinder, head, sector number
-        Collections.sort (sectors);
+        sectors.sort (null);
 
         final byte [] image = createEmptyImage (numCylinders * numHeads * sectorsPerTrack * bytesPerSector);
 

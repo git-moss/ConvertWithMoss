@@ -65,18 +65,18 @@ import de.mossgrabers.tools.ui.Functions;
 public abstract class AbstractKontaktFormat implements IKontaktFormat
 {
     // The pitch intensity of Kontakt (1.0) covers 1 octave
-    private static final double PITCH_INTENSITY_CENTS = 1200.0;
+    private static final double                PITCH_INTENSITY_CENTS = 1200.0;
     // The pitch intensity of Kontakt (1.0) covers 1 octave, the depth of the model is relative to
     // MAX_ENVELOPE_DEPTH cents
-    private static final LfoIntensityConverter PITCH_LFO_CONVERTER  = LfoIntensityConverter.linear (PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
-    private static final LfoIntensityConverter CUTOFF_LFO_CONVERTER = LfoIntensityConverter.linear (1.0);
+    private static final LfoIntensityConverter PITCH_LFO_CONVERTER   = LfoIntensityConverter.linear (PITCH_INTENSITY_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+    private static final LfoIntensityConverter CUTOFF_LFO_CONVERTER  = LfoIntensityConverter.linear (1.0);
     // The volume values of Kontakt double every 6 dB
-    private static final double DB_PER_DOUBLING       = 6.0;
-    private static final double MINIMUM_DB            = -150.0;
-    private static final String NULL_ENTRY            = "(null)";
+    private static final double                DB_PER_DOUBLING       = 6.0;
+    private static final double                MINIMUM_DB            = -150.0;
+    private static final String                NULL_ENTRY            = "(null)";
 
-    protected final INotifier   notifier;
-    protected boolean           isBigEndian;
+    protected final INotifier                  notifier;
+    protected boolean                          isBigEndian;
 
 
     /**

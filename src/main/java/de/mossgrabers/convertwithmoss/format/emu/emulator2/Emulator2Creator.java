@@ -774,8 +774,8 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
      * Convert the LFO modulators of a zone into the LFO of a voice. The voice has one LFO for its
      * three routings, therefore its rate and delay are taken from the first active routing. A
      * routing which only the modulation wheel dials in keeps the amount 0 and stays enabled for the
-     * real-time control; the others are exempted from it, since the wheel would add a modulation
-     * to them which the zone does not have.
+     * real-time control; the others are exempted from it, since the wheel would add a modulation to
+     * them which the zone does not have.
      *
      * @param zone The zone
      * @param voice The voice to fill

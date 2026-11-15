@@ -138,9 +138,9 @@ public class ExternalModulator
      * the size of a block (32 bit) which contains: the number of modulated parameters (32 bit), for
      * each parameter: name, intensity (float), 0xFFFF, flags (byte), lag (16 bit), description, 0-2
      * unknown bytes (the first one is the slot index of the modulated internal modulator if the
-     * parameter is its intensity) and the modulation shaper. After the parameters: 0-1 unknown byte, the name of
-     * the source, 1 (32 bit), the type of the source (32 bit) and the MIDI CC number (8 bit) if
-     * the source is a MIDI CC.
+     * parameter is its intensity) and the modulation shaper. After the parameters: 0-1 unknown
+     * byte, the name of the source, 1 (32 bit), the type of the source (32 bit) and the MIDI CC
+     * number (8 bit) if the source is a MIDI CC.
      *
      * @param chunk The chunk from which to read the bank data
      * @throws IOException Could not read the bank

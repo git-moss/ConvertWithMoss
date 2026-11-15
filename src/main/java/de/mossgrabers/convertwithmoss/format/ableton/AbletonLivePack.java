@@ -41,11 +41,11 @@ import de.mossgrabers.tools.ui.Functions;
  * the content of all files at the end of the file. The table of contents is a tree of the files and
  * folders with the position and the size of the content of each file. Samples are compressed with
  * FLAC and carry '.flac' after their original name, e.g. 'Kick.wav.flac', all other files are
- * stored as they are. Packs which are downloaded from Ableton store their samples encrypted instead,
- * with '.eflac' after their original name, which only Live can decrypt when it installs the pack.
- * Most packs are additionally compressed as a whole with GZIP; since the table of contents is at the
- * end and the files are read from their positions, such a pack is de-compressed into a temporary
- * file first.
+ * stored as they are. Packs which are downloaded from Ableton store their samples encrypted
+ * instead, with '.eflac' after their original name, which only Live can decrypt when it installs
+ * the pack. Most packs are additionally compressed as a whole with GZIP; since the table of
+ * contents is at the end and the files are read from their positions, such a pack is de-compressed
+ * into a temporary file first.
  *
  * @author Jürgen Moßgraber
  */
@@ -124,8 +124,8 @@ public class AbletonLivePack
 
 
         /**
-         * Test if the file is a sample which is encrypted. Only Live can decrypt it when it installs
-         * the pack.
+         * Test if the file is a sample which is encrypted. Only Live can decrypt it when it
+         * installs the pack.
          *
          * @return True if it is encrypted
          */
@@ -330,8 +330,8 @@ public class AbletonLivePack
 
     /**
      * Get a file by its path. A sample which is compressed with FLAC or encrypted is found with the
-     * path of the original file as well. If no file has exactly the path, the case of the letters is
-     * ignored.
+     * path of the original file as well. If no file has exactly the path, the case of the letters
+     * is ignored.
      *
      * @param path The path relative to the root of the pack, may contain '.' and '..'
      * @return The file, empty if the path does not lead to a file of the pack

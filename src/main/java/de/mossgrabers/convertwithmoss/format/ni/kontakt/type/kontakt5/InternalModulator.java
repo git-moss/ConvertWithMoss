@@ -68,7 +68,6 @@ public class InternalModulator
     private static final int               DBD_BREAK_OFFSET                   = 38;
     private static final int               DBD_DECAY2_OFFSET                  = 42;
 
-    private int                            version                            = 0x81;
     private int                            slotIndex                          = -1;
     private final List<ModulatedParameter> modulatedParameters                = new ArrayList<> ();
 
@@ -283,9 +282,9 @@ public class InternalModulator
             throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_INTERNAL_MOD_HEADER"));
 
         // Version: 0x80, 0x81
-        this.version = StreamUtils.readUnsigned16 (in, false);
-        if (this.version < 0x80 || this.version > 0x81)
-            throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_INTERNAL_MOD_VERSION", Integer.toString (this.version)));
+        final int version = StreamUtils.readUnsigned16 (in, false);
+        if (version < 0x80 || version > 0x81)
+            throw new IOException (Functions.getMessage ("IDS_NKI_UNKNOWN_INTERNAL_MOD_VERSION", Integer.toString (version)));
 
         // First block with parameter/modulation info
         final int sizeBlock1 = (int) StreamUtils.readUnsigned32 (in, false);

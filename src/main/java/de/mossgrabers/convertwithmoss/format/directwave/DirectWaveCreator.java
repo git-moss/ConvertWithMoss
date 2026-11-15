@@ -450,15 +450,15 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
     {
         final double depth = modulator.getDepth ();
         final double modWheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
-        final double sign = depth != 0 ? Math.signum (depth) : Math.signum (modWheelDepth);
+        final double sign = Math.signum (depth == 0 ? modWheelDepth : depth);
         return Math.clamp (sign * (Math.abs (depth) + Math.abs (modWheelDepth)), -1, 1);
     }
 
 
     /**
-     * Get the zone LFO which the filter cutoff modulation can use. DirectWave has only two zone LFOs
-     * which only store the waveform and the rate. The cutoff shares an LFO which is already used
-     * with the same waveform and rate, otherwise it takes a free one.
+     * Get the zone LFO which the filter cutoff modulation can use. DirectWave has only two zone
+     * LFOs which only store the waveform and the rate. The cutoff shares an LFO which is already
+     * used with the same waveform and rate, otherwise it takes a free one.
      *
      * @param lfoSources The LFOs used for the pitch and the volume, null if unused
      * @param lfo The LFO of the cutoff modulation

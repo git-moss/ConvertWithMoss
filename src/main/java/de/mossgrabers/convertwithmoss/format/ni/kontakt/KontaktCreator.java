@@ -182,8 +182,8 @@ public class KontaktCreator extends AbstractWavCreator<KontaktCreatorUI>
 
 
     /**
-     * Create a safe file name. Kontakt 1 cannot find files with non-ASCII characters in their
-     * path, therefore these are replaced if Kontakt 1 is the output format.
+     * Create a safe file name. Kontakt 1 cannot find files with non-ASCII characters in their path,
+     * therefore these are replaced if Kontakt 1 is the output format.
      *
      * @param name The name
      * @return The safe file name

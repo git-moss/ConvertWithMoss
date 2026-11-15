@@ -86,7 +86,37 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private record SamplePool (File file, byte [] data, Map<Integer, int []> entries)
     {
-        // Intentionally empty
+        /** {@inheritDoc} */
+        @Override
+        public String toString ()
+        {
+            return "SamplePool [file=" + this.file + ", data=" + Arrays.toString (this.data) + ", entries=" + this.entries + "]";
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public int hashCode ()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + Arrays.hashCode (this.data);
+            result = prime * result + Objects.hash (this.entries, this.file);
+            return result;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean equals (final Object obj)
+        {
+            if (this == obj)
+                return true;
+            if ((obj == null) || (this.getClass () != obj.getClass ()))
+                return false;
+            final SamplePool other = (SamplePool) obj;
+            return Arrays.equals (this.data, other.data) && Objects.equals (this.entries, other.entries) && Objects.equals (this.file, other.file);
+        }
     }
 
 

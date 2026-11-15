@@ -186,7 +186,9 @@ public class SfzOpcode
     public static final String AMPLFO_FADE           = "amplfo_fade";
     /** SFZ v1. The amplitude LFO (tremolo) depth added by the modulation wheel in decibels. */
     public static final String AMPLFO_DEPTH_CC1      = "amplfo_depthcc1";
-    /** SFZ v2 alias. The amplitude LFO (tremolo) depth added by the modulation wheel in decibels. */
+    /**
+     * SFZ v2 alias. The amplitude LFO (tremolo) depth added by the modulation wheel in decibels.
+     */
     public static final String AMPLFO_DEPTH_ONCC1    = "amplfo_depth_oncc1";
 
     // -----------------------------------------------------------

@@ -355,8 +355,8 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
      * or to the cutoff of the first filter is converted with the LFO block it names. The filter is
      * applied before, a cutoff modulation without a filter is ignored. The amount is bipolar around
      * {@link DirectWaveTag#MODULATION_NEUTRAL} and the strength is the cube of the distance from
-     * it, see the design document. A slot which routes the modulation wheel to the amount of an
-     * LFO slot adds the modulation wheel depth.
+     * it, see the design document. A slot which routes the modulation wheel to the amount of an LFO
+     * slot adds the modulation wheel depth.
      *
      * @param zone The zone
      * @param lfoBlocks The payloads of the two LFO blocks
@@ -441,9 +441,9 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Convert the modulation strength of a pitch modulation into the depth of the model.
-     * DirectWave reaches PITCH_MODULATION_RANGE cent at its full strength, the depth of the model
-     * is relative to MAX_ENVELOPE_DEPTH cent.
+     * Convert the modulation strength of a pitch modulation into the depth of the model. DirectWave
+     * reaches PITCH_MODULATION_RANGE cent at its full strength, the depth of the model is relative
+     * to MAX_ENVELOPE_DEPTH cent.
      *
      * @param strength The strength in the range of [-1..1]
      * @return The depth in the range of [-1..1]

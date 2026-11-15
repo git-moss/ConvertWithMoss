@@ -274,10 +274,10 @@ public class AlacEncoder
 
         // Check whether an escape (uncompressed) packet would be smaller than the estimated
         // compressed size
-        long minBits = minBits1 + minBits2 + 8 * 8 + (partialFrame != 0 ? 32 : 0);
+        long minBits = minBits1 + minBits2 + 8 * 8 + (partialFrame == 0 ? 0 : 32);
         if (bytesShifted != 0)
             minBits += (long) numSamples * (bytesShifted * 8) * 2;
-        final long escapeBits = (long) numSamples * this.bitDepth * 2 + (partialFrame != 0 ? 32 : 0) + 2 * 8;
+        final long escapeBits = (long) numSamples * this.bitDepth * 2 + (partialFrame == 0 ? 0 : 32) + 2 * 8;
 
         boolean doEscape = minBits >= escapeBits;
 
@@ -408,10 +408,10 @@ public class AlacEncoder
 
         // Check whether an escape (uncompressed) packet would be smaller than the estimated
         // compressed size
-        minBits += 4 * 8 + (partialFrame != 0 ? 32 : 0);
+        minBits += 4 * 8 + (partialFrame == 0 ? 0 : 32);
         if (bytesShifted != 0)
             minBits += (long) numSamples * (bytesShifted * 8);
-        final long escapeBits = (long) numSamples * this.bitDepth + (partialFrame != 0 ? 32 : 0) + 2 * 8;
+        final long escapeBits = (long) numSamples * this.bitDepth + (partialFrame == 0 ? 0 : 32) + 2 * 8;
 
         boolean doEscape = minBits >= escapeBits;
 

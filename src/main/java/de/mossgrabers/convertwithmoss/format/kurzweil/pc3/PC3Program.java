@@ -283,6 +283,93 @@ public class PC3Program
 
 
         /**
+         * Read an envelope segment: the tag, a flags byte and 7 (level, time) byte pairs.
+         *
+         * @param layerRecord The layer record
+         * @param offset The offset of the segment
+         * @return The envelope
+         */
+        private static KurzweilEnvelope readEnvelope (final byte [] layerRecord, final int offset)
+        {
+            final KurzweilEnvelope envelope = new KurzweilEnvelope ();
+            for (int stage = 0; stage < KurzweilEnvelope.NUM_STAGES; stage++)
+                envelope.setStage (stage, decodeTime (layerRecord[offset + 3 + stage * 2] & 0xFF), layerRecord[offset + 2 + stage * 2]);
+            return envelope;
+        }
+
+
+        /**
+         * Write an envelope segment: the flags byte and 7 (level, time) byte pairs behind the tag.
+         *
+         * @param layerRecord The layer record
+         * @param offset The offset of the segment
+         * @param envelope The envelope
+         */
+        private static void writeEnvelope (final byte [] layerRecord, final int offset, final KurzweilEnvelope envelope)
+        {
+            // No envelope loop
+            layerRecord[offset + 1] = 0;
+            for (int stage = 0; stage < KurzweilEnvelope.NUM_STAGES; stage++)
+            {
+                layerRecord[offset + 2 + stage * 2] = (byte) Math.clamp (envelope.getLevel (stage), 0, 100);
+                layerRecord[offset + 3 + stage * 2] = (byte) encodeTime (envelope.getTime (stage));
+            }
+        }
+
+
+        /**
+         * Write the function and the main parameter of a DSP record and clear its modulation and
+         * output fields. The tag and the pan fields of the template are kept.
+         *
+         * @param layerRecord The layer record
+         * @param rec The index of the DSP record
+         * @param function The DSP function
+         * @param coarse The main parameter
+         * @param type The type field of the record
+         */
+        private static void writePage (final byte [] layerRecord, final int rec, final int function, final int coarse, final int type)
+        {
+            final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
+            layerRecord[offset + PAGE_FUNCTION] = (byte) function;
+            layerRecord[offset + PAGE_COARSE] = (byte) coarse;
+            for (int i = PAGE_COARSE + 1; i < PAGE_TYPE; i++)
+                layerRecord[offset + i] = 0;
+            writeUnsigned16 (layerRecord, offset + PAGE_TYPE, type);
+            writeUnsigned16 (layerRecord, offset + PAGE_OUTPUT, 0);
+        }
+
+
+        /**
+         * Encode a MIDI velocity range into the packed velocity window byte of a layer: the low and
+         * high velocity as 0..7 dynamic marks (ppp..fff), the high mark stored inverted. A full
+         * range therefore encodes as 0.
+         *
+         * @param velocityLow The lowest MIDI velocity
+         * @param velocityHigh The highest MIDI velocity
+         * @return The packed velocity window byte
+         */
+        private static int encodeVelocityRange (final int velocityLow, final int velocityHigh)
+        {
+            final int lowMark = Math.clamp ((int) Math.round (velocityLow * 7 / 127.0), 0, 7);
+            final int highMark = Math.clamp ((int) Math.round (velocityHigh * 7 / 127.0), 0, 7);
+            return (lowMark & 7) << 3 | 7 - highMark & 7;
+        }
+
+
+        private static int readUnsigned16 (final byte [] data, final int offset)
+        {
+            return (data[offset] & 0xFF) << 8 | data[offset + 1] & 0xFF;
+        }
+
+
+        private static void writeUnsigned16 (final byte [] data, final int offset, final int value)
+        {
+            data[offset] = (byte) (value >>> 8 & 0xFF);
+            data[offset + 1] = (byte) (value & 0xFF);
+        }
+
+
+        /**
          * Create the record of this layer for writing.
          *
          * @return The record
@@ -948,92 +1035,5 @@ public class PC3Program
         if (seconds < 0.015)
             return 3;
         return Math.max (SHORT_TIMES.length, KurzweilEnvelope.encodeTime (seconds));
-    }
-
-
-    /**
-     * Read an envelope segment: the tag, a flags byte and 7 (level, time) byte pairs.
-     *
-     * @param layerRecord The layer record
-     * @param offset The offset of the segment
-     * @return The envelope
-     */
-    private static KurzweilEnvelope readEnvelope (final byte [] layerRecord, final int offset)
-    {
-        final KurzweilEnvelope envelope = new KurzweilEnvelope ();
-        for (int stage = 0; stage < KurzweilEnvelope.NUM_STAGES; stage++)
-            envelope.setStage (stage, decodeTime (layerRecord[offset + 3 + stage * 2] & 0xFF), layerRecord[offset + 2 + stage * 2]);
-        return envelope;
-    }
-
-
-    /**
-     * Write an envelope segment: the flags byte and 7 (level, time) byte pairs behind the tag.
-     *
-     * @param layerRecord The layer record
-     * @param offset The offset of the segment
-     * @param envelope The envelope
-     */
-    private static void writeEnvelope (final byte [] layerRecord, final int offset, final KurzweilEnvelope envelope)
-    {
-        // No envelope loop
-        layerRecord[offset + 1] = 0;
-        for (int stage = 0; stage < KurzweilEnvelope.NUM_STAGES; stage++)
-        {
-            layerRecord[offset + 2 + stage * 2] = (byte) Math.clamp (envelope.getLevel (stage), 0, 100);
-            layerRecord[offset + 3 + stage * 2] = (byte) encodeTime (envelope.getTime (stage));
-        }
-    }
-
-
-    /**
-     * Write the function and the main parameter of a DSP record and clear its modulation and output
-     * fields. The tag and the pan fields of the template are kept.
-     *
-     * @param layerRecord The layer record
-     * @param rec The index of the DSP record
-     * @param function The DSP function
-     * @param coarse The main parameter
-     * @param type The type field of the record
-     */
-    private static void writePage (final byte [] layerRecord, final int rec, final int function, final int coarse, final int type)
-    {
-        final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
-        layerRecord[offset + PAGE_FUNCTION] = (byte) function;
-        layerRecord[offset + PAGE_COARSE] = (byte) coarse;
-        for (int i = PAGE_COARSE + 1; i < PAGE_TYPE; i++)
-            layerRecord[offset + i] = 0;
-        writeUnsigned16 (layerRecord, offset + PAGE_TYPE, type);
-        writeUnsigned16 (layerRecord, offset + PAGE_OUTPUT, 0);
-    }
-
-
-    /**
-     * Encode a MIDI velocity range into the packed velocity window byte of a layer: the low and
-     * high velocity as 0..7 dynamic marks (ppp..fff), the high mark stored inverted. A full range
-     * therefore encodes as 0.
-     *
-     * @param velocityLow The lowest MIDI velocity
-     * @param velocityHigh The highest MIDI velocity
-     * @return The packed velocity window byte
-     */
-    private static int encodeVelocityRange (final int velocityLow, final int velocityHigh)
-    {
-        final int lowMark = Math.clamp ((int) Math.round (velocityLow * 7 / 127.0), 0, 7);
-        final int highMark = Math.clamp ((int) Math.round (velocityHigh * 7 / 127.0), 0, 7);
-        return (lowMark & 7) << 3 | 7 - highMark & 7;
-    }
-
-
-    private static int readUnsigned16 (final byte [] data, final int offset)
-    {
-        return (data[offset] & 0xFF) << 8 | data[offset + 1] & 0xFF;
-    }
-
-
-    private static void writeUnsigned16 (final byte [] data, final int offset, final int value)
-    {
-        data[offset] = (byte) (value >>> 8 & 0xFF);
-        data[offset + 1] = (byte) (value & 0xFF);
     }
 }

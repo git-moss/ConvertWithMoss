@@ -230,7 +230,7 @@ public class DistingExDetector extends AbstractDetector<MetadataSettingsUI>
 
     private static void calculateKeyRanges (final List<ISampleZone> zones)
     {
-        Collections.sort (zones, Comparator.comparing (ISampleZone::getKeyHigh));
+        zones.sort (Comparator.comparing (ISampleZone::getKeyHigh));
 
         int lowKey = 0;
         for (final ISampleZone zone: zones)

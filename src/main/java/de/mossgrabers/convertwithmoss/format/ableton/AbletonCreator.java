@@ -47,7 +47,9 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
 {
+    private static final String                  TRUE            = "true";
     private static final String                  FALSE           = "false";
+
     private static final String                  TEMPLATE_FOLDER = "de/mossgrabers/convertwithmoss/templates/adv/";
 
     private static final Map<FilterType, String> FILTER_TYPES    = new EnumMap<> (FilterType.class);
@@ -166,7 +168,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
                     // Pitch Envelope
                     final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
                     final double pitchModDepth = pitchModulator.getDepth ();
-                    text = text.replace ("%PITCH_EG_ENABLED%", pitchModDepth != 0 ? "true" : FALSE);
+                    text = text.replace ("%PITCH_EG_ENABLED%", pitchModDepth == 0 ? FALSE : TRUE);
 
                     final IEnvelope pitchEnvelope = pitchModulator.getSource ();
                     text = text.replace ("%PITCH_EG_AMOUNT%", Integer.toString ((int) Math.round (pitchModDepth * 100)));
@@ -198,7 +200,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             text = text.replace ("%MULTI_SAMPLE_PARTS%", multisampleParts);
             if (isVersion12)
             {
-                text = text.replace ("%ROUND_ROBIN%", nativeRoundRobin ? "true" : FALSE);
+                text = text.replace ("%ROUND_ROBIN%", nativeRoundRobin ? TRUE : FALSE);
                 text = text.replace ("%ROUND_ROBIN_MODE%", Integer.toString (getRoundRobinMode (multisampleSource)));
             }
             text = text.replace ("%PITCHBEND_RANGE%", Integer.toString (pitchBend));
@@ -222,14 +224,14 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
 
         final String filterType = FILTER_TYPES.get (filter.getType ());
         text = text.replace ("%FILTER_TYPE%", filterType == null ? "0" : filterType);
-        text = text.replace ("%FILTER_SLOPE%", filter.getPoles () < 3 ? FALSE : "true");
+        text = text.replace ("%FILTER_SLOPE%", filter.getPoles () < 3 ? FALSE : TRUE);
         text = text.replace ("%FILTER_FREQ%", formatDouble (filter.getCutoff ()));
         text = text.replace ("%FILTER_RES%", formatDouble (filter.getResonance () * 1.25));
 
         // Filter envelope
         final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
         final double filterModDepth = cutoffModulator.getDepth ();
-        text = text.replace ("%FILTER_EG_ENABLED%", filterModDepth != 0 ? "true" : FALSE);
+        text = text.replace ("%FILTER_EG_ENABLED%", filterModDepth == 0 ? FALSE : TRUE);
         // The amount is in semitones (+-72), the depth of the model covers MAX_ENVELOPE_DEPTH cent
         text = text.replace ("%FILTER_EG_AMOUNT%", Integer.toString ((int) Math.round (Math.clamp (filterModDepth * IEnvelope.MAX_ENVELOPE_DEPTH / 100.0, -72, 72))));
 

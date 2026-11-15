@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -489,7 +488,7 @@ public class KMPFile
 
     private static List<ISampleZone> sortByKeyHigh (final List<ISampleZone> sampleZones)
     {
-        Collections.sort (sampleZones, (o1, o2) -> Integer.compare (o1.getKeyHigh (), o2.getKeyHigh ()));
+        sampleZones.sort ((o1, o2) -> Integer.compare (o1.getKeyHigh (), o2.getKeyHigh ()));
         return sampleZones;
     }
 }

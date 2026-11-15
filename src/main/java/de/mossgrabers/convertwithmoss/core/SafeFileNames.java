@@ -35,7 +35,30 @@ public final class SafeFileNames
     /** Characters which are written out by {@link #createAscii(String)}. */
     private static final String    TRANSLITERATED_CHARACTERS = "äöüÄÖÜßæÆœŒøØđĐłŁþÞðÐ";
     /** The replacements for the characters above. */
-    private static final String [] TRANSLITERATIONS          = { "ae", "oe", "ue", "Ae", "Oe", "Ue", "ss", "ae", "AE", "oe", "OE", "o", "O", "d", "D", "l", "L", "th", "Th", "d", "D" };
+    private static final String [] TRANSLITERATIONS          =
+    {
+        "ae",
+        "oe",
+        "ue",
+        "Ae",
+        "Oe",
+        "Ue",
+        "ss",
+        "ae",
+        "AE",
+        "oe",
+        "OE",
+        "o",
+        "O",
+        "d",
+        "D",
+        "l",
+        "L",
+        "th",
+        "Th",
+        "d",
+        "D"
+    };
 
 
     /**

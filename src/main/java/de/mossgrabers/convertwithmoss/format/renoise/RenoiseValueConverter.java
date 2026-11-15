@@ -352,9 +352,9 @@ public final class RenoiseValueConverter
 
     /**
      * Convert a filter cutoff modulation depth of the model ([-1..1], 1 = the full envelope depth
-     * in cent) to the Renoise LFO amplitude. A bipolar LFO at the full amplitude moves the cutoff in
-     * both directions by the full range of the mixer cutoff, in the same way as a pitch LFO uses the
-     * full pitch modulation range.
+     * in cent) to the Renoise LFO amplitude. A bipolar LFO at the full amplitude moves the cutoff
+     * in both directions by the full range of the mixer cutoff, in the same way as a pitch LFO uses
+     * the full pitch modulation range.
      *
      * @param depth The modulation depth [-1..1]
      * @return The LFO amplitude [0..1]

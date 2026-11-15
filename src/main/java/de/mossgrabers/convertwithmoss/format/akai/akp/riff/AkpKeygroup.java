@@ -925,8 +925,8 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
      *
      * @param modulator The LFO modulator
      * @param fullDepth The modulator depth of the maximum LFO depth and amount
-     * @return The LFO depth in the range of [0..100] and the depth added by the modulation wheel
-     *         in the range of [-100..100]
+     * @return The LFO depth in the range of [0..100] and the depth added by the modulation wheel in
+     *         the range of [-100..100]
      */
     private static int [] toLfoDepths (final ILfoModulator modulator, final double fullDepth)
     {
@@ -936,7 +936,7 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
         if (peak == 0)
             return new int [2];
         // The sign is applied by the amount, which is calculated from the depth if present
-        final double sign = Math.signum (depth != 0 ? depth : modWheelDepth);
+        final double sign = Math.signum (depth == 0 ? modWheelDepth : depth);
         final int peakDepth = toLfoDepth (peak, fullDepth);
         return new int []
         {
@@ -947,8 +947,8 @@ public class AkpKeygroup extends AbstractSpecificRIFFChunk
 
 
     /**
-     * Convert the depth of an LFO modulator to the amount of the modulation destination. The
-     * amount is calculated from the depth of the LFO if present, otherwise from the depth which the
+     * Convert the depth of an LFO modulator to the amount of the modulation destination. The amount
+     * is calculated from the depth of the LFO if present, otherwise from the depth which the
      * modulation wheel adds.
      *
      * @param modulator The LFO modulator

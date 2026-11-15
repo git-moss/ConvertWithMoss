@@ -106,7 +106,7 @@ public class MaschinePresetAccessor
     private static final int                      X0D_GLOBAL_TUNING              = 31;
     private static final int                      X0D_GLOBAL_AMP_ENVELOPE_TYPE   = 23;
 
-    private static final char []                  PLUGIN_HOST_ROW_PARAM_TYPES    = new char []
+    private static final char []                  PLUGIN_HOST_ROW_PARAM_TYPES    =
     {
         'i',
         'i',

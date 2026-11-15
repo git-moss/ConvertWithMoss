@@ -23,7 +23,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
  */
 public class ContentsEntry
 {
-    private static final String [] NOTE_NAMES = new String []
+    private static final String [] NOTE_NAMES =
     {
         "C",
         "C#",
@@ -279,14 +279,13 @@ public class ContentsEntry
         if (subPath == null || subPath.length < 3)
             return new ArrayList<> ();
         final List<String> containers = new ArrayList<> (Arrays.asList (subPath).subList (1, subPath.length - 1));
-        Collections.reverse (containers);
 
         // Remove the folders of the file, in their order. A folder which the format treats as one
         // file, e.g. the '.dsbundle' of DecentSampler, is part of the folder path but not of the
         // sub-path, so the folders do not always match one to one
         final List<String> result = new ArrayList<> ();
         int folderIndex = 0;
-        for (final String container: containers)
+        for (final String container: containers.reversed ())
         {
             final int index = folderPath.subList (folderIndex, folderPath.size ()).indexOf (container);
             if (index < 0)

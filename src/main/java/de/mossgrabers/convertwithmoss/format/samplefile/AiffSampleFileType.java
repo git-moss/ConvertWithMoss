@@ -22,7 +22,7 @@ import de.mossgrabers.convertwithmoss.file.aiff.AiffInstrumentChunk;
  */
 public class AiffSampleFileType implements SampleFileType
 {
-    private static final String [] ENDINGS = new String []
+    private static final String [] ENDINGS =
     {
         ".aif",
         ".aiff"

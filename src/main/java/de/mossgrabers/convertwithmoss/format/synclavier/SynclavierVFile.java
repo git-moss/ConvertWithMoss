@@ -32,7 +32,7 @@ public class SynclavierVFile
     private static final String       SCHEMA_VERSION       = "15";
 
     /** The audio sample object blob header: 0x01, length 22, the signature, 0x01, version 10. */
-    private static final byte []      SAMPLE_BLOB_HEADER   = new byte []
+    private static final byte []      SAMPLE_BLOB_HEADER   =
     {
         0x01,
         0x16,
@@ -65,7 +65,7 @@ public class SynclavierVFile
         0
     };
     /** The default trailer of an audio sample object: the Boost varints 0, -1, -1. */
-    private static final byte []      SAMPLE_BLOB_TRAILER  = new byte []
+    private static final byte []      SAMPLE_BLOB_TRAILER  =
     {
         0,
         (byte) 0xFF,
@@ -80,7 +80,7 @@ public class SynclavierVFile
      * interpolated index into this piece-wise linear list. Each row is the first index of the
      * segment, the seconds at that index and the seconds per index step.
      */
-    private static final double [] [] TIME_SEGMENTS        = new double [] []
+    private static final double [] [] TIME_SEGMENTS        =
     {
         {
             0,

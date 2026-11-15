@@ -19,7 +19,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
  */
 public class FlacSampleFileType implements SampleFileType
 {
-    private static final String [] ENDINGS = new String []
+    private static final String [] ENDINGS =
     {
         ".flac"
     };

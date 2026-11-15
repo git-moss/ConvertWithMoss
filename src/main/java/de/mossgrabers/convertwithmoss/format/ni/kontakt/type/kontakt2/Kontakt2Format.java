@@ -195,12 +195,12 @@ public class Kontakt2Format extends AbstractKontaktFormat
         for (final IGroup group: groups)
             numZones += group.getSampleZones ().size ();
 
-        final IMetadata metadata = multisampleSource.getMetadata ();
-        final Date creationDateTime = metadata.getCreationDateTime ();
-        final String category = metadata.getCategory ();
+        final IMetadata readMetadata = multisampleSource.getMetadata ();
+        final Date creationDateTime = readMetadata.getCreationDateTime ();
+        final String category = readMetadata.getCategory ();
         final Kontakt2Header header = new Kontakt2Header (this.notifier, this.isBigEndian);
-        header.setInstrumentValues (zlibContent.length, countLines (result), numZones, groups.size (), sizeOfSamples, creationDateTime == null ? new Date () : creationDateTime, KontaktIcon.getID (category == null ? "" : category), metadata.getCreator ());
-        header.setCategories (Kontakt2Header.getCategory1Index (category), Kontakt2Header.getCategory2Index (metadata.getKeywords ()), Kontakt2Header.getCategory3Index (metadata.getKeywords ()));
+        header.setInstrumentValues (zlibContent.length, countLines (result), numZones, groups.size (), sizeOfSamples, creationDateTime == null ? new Date () : creationDateTime, KontaktIcon.getID (category == null ? "" : category), readMetadata.getCreator ());
+        header.setCategories (Kontakt2Header.getCategory1Index (category), Kontakt2Header.getCategory2Index (readMetadata.getKeywords ()), Kontakt2Header.getCategory3Index (readMetadata.getKeywords ()));
         header.write (out, Magic.KONTAKT2_INSTRUMENT_BE);
 
         out.write (zlibContent);
@@ -208,7 +208,7 @@ public class Kontakt2Format extends AbstractKontaktFormat
         StreamUtils.writeUnsigned32 (out, Magic.SOUNDINFO_HEADER_LE, false);
         StreamUtils.writeUnsigned32 (out, Magic.SOUNDINFO_HEADER_VERSION_LE, false);
 
-        final SoundinfoDocument soundinfoDocument = new SoundinfoDocument (metadata.getCreator (), metadata.getCategory ());
+        final SoundinfoDocument soundinfoDocument = new SoundinfoDocument (readMetadata.getCreator (), readMetadata.getCategory ());
         final byte [] data = soundinfoDocument.createDocument (multisampleSource.getName ()).getBytes (StandardCharsets.UTF_8);
         StreamUtils.writeUnsigned32 (out, data.length, false);
         out.write (data);
@@ -404,17 +404,17 @@ public class Kontakt2Format extends AbstractKontaktFormat
         final boolean isMulti = multiSamples.size () > 1;
         for (final IMultisampleSource multiSample: multiSamples)
         {
-            final IMetadata metadata = multiSample.getMetadata ();
-            if (!isMulti && (metadata.getCreator () == null || metadata.getCreator ().isBlank ()))
-                metadata.setCreator (creator);
-            if (!isMulti && (metadata.getCategory () == null || metadata.getCategory ().isBlank ()))
-                metadata.setCategory (category);
-            if (metadata.getCreationDateTime () == null && headerMetadata.getCreationDateTime () != null)
-                metadata.setCreationDateTime (headerMetadata.getCreationDateTime ());
+            final IMetadata readMetadata = multiSample.getMetadata ();
+            if (!isMulti && (readMetadata.getCreator () == null || readMetadata.getCreator ().isBlank ()))
+                readMetadata.setCreator (creator);
+            if (!isMulti && (readMetadata.getCategory () == null || readMetadata.getCategory ().isBlank ()))
+                readMetadata.setCategory (category);
+            if (readMetadata.getCreationDateTime () == null && headerMetadata.getCreationDateTime () != null)
+                readMetadata.setCreationDateTime (headerMetadata.getCreationDateTime ());
 
             final List<String> soundCategories = new ArrayList<> ();
             soundCategories.addAll (categories);
-            Collections.addAll (soundCategories, metadata.getKeywords ());
+            Collections.addAll (soundCategories, readMetadata.getKeywords ());
             // The 2nd and 3rd instrument category of the header are taken as they are since most of
             // them are not known keywords
             final Set<String> keywords = new LinkedHashSet<> (Arrays.asList (TagDetector.detectKeywords (soundCategories.toArray (new String [soundCategories.size ()]))));
@@ -422,20 +422,20 @@ public class Kontakt2Format extends AbstractKontaktFormat
             if (headerKeywords != null)
                 for (final String headerKeyword: headerKeywords)
                     keywords.add (headerKeyword.trim ());
-            metadata.setKeywords (keywords.toArray (new String [keywords.size ()]));
+            readMetadata.setKeywords (keywords.toArray (new String [keywords.size ()]));
 
             // Update the description
             final String description = headerMetadata.getDescription ();
             if (description != null && !description.isBlank ())
             {
-                final String desc = metadata.getDescription ();
+                final String desc = readMetadata.getDescription ();
                 if (!desc.contains (description))
                 {
                     final StringBuilder sb = new StringBuilder (desc);
                     if (!sb.isEmpty ())
                         sb.append ('\n');
                     sb.append (description);
-                    metadata.setDescription (sb.toString ().trim ());
+                    readMetadata.setDescription (sb.toString ().trim ());
                 }
             }
         }

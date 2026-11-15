@@ -29,11 +29,13 @@ public final class TonverkTags
     /** The main category of drum presets. */
     public static final String               CATEGORY_DRUMS  = "DRUMS";
 
+    private static final String              TAG_ARPEGGIO    = "ARPEGGIO";
+
     /** The tags of the device, as the presets of the factory library use them. */
     private static final String []           DEVICE_TAGS     =
     {
         "ACOUSTIC",
-        "ARPEGGIO",
+        TAG_ARPEGGIO,
         "ATMOSPHERIC",
         "BASS",
         "BRASS",
@@ -70,7 +72,7 @@ public final class TonverkTags
      * The categories and keywords of the model whose tag has another name; all others are matched
      * to a tag of the same name, ignoring the case.
      */
-    private static final Map<String, String> TAG_SYNONYMS    = Map.of (TagDetector.CATEGORY_FX, "SOUND FX", TagDetector.CATEGORY_LOOPS, "LOOP", "arp", "ARPEGGIO", "arpeggiated", "ARPEGGIO", "atmo", "ATMOSPHERIC");
+    private static final Map<String, String> TAG_SYNONYMS    = Map.of (TagDetector.CATEGORY_FX, "SOUND FX", TagDetector.CATEGORY_LOOPS, "LOOP", "arp", TAG_ARPEGGIO, "arpeggiated", TAG_ARPEGGIO, "atmo", "ATMOSPHERIC");
 
 
     /**

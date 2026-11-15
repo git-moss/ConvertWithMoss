@@ -15,14 +15,14 @@ public class AkpAuxEnvelope extends AbstractAkpChunk
     /** The length of the Envelope structure. */
     private static final int LENGTH_ENV          = 18;
 
-    private final int []     rates               = new int []
+    private final int []     rates               =
     {
         0,
         50,
         50,
         15
     };
-    private final int []     levels              = new int []
+    private final int []     levels              =
     {
         100,
         100,

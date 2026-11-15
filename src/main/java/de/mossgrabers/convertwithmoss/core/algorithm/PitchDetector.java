@@ -279,7 +279,7 @@ public final class PitchDetector
         // The loop is what the destination plays while a key is held - if it has no clear pitch,
         // e.g. because it is noisy, the loudest part after the attack is measured instead
         final double [] loop = pickLoop (signal, sampleRate, zone);
-        double pitch = loop == null ? -1 : estimatePitch (loop, sampleRate, notatedFrequency);
+        double pitch = loop.length == 0 ? -1 : estimatePitch (loop, sampleRate, notatedFrequency);
         if (pitch < 0)
         {
             final double [] segment = pickLoudestPart (signal, sampleRate, zone);
@@ -293,12 +293,12 @@ public final class PitchDetector
 
     /**
      * Pick the loop of a sample, which is what the destination plays while a key is held. A loop
-     * which is shorter than the analysed part is repeated, exactly as the device repeats it.
+     * which is shorter than the analyzed part is repeated, exactly as the device repeats it.
      *
      * @param signal The mono signal of the sample
      * @param sampleRate The sample rate
      * @param zone The zone of the sample
-     * @return The segment, null if the zone has no loop which can be measured
+     * @return The segment, an empty array if the zone has no loop which can be measured
      */
     private static double [] pickLoop (final int [] signal, final int sampleRate, final ISampleZone zone)
     {
@@ -311,12 +311,12 @@ public final class PitchDetector
             final int loopLength = loop.getEnd () - loopStart + 1;
             if (loopStart < start || loopStart + loopLength > stop || loopLength < MINIMUM_LOOP * sampleRate)
                 continue;
-            final double [] segment = new double [Math.min (maximumLength, Math.max (loopLength, MINIMUM_SEGMENT_FRAMES))];
+            final double [] segment = new double [Math.clamp (loopLength, MINIMUM_SEGMENT_FRAMES, maximumLength)];
             for (int i = 0; i < segment.length; i++)
                 segment[i] = signal[loopStart + i % loopLength];
             return segment;
         }
-        return null;
+        return new double [0];
     }
 
 
@@ -354,7 +354,7 @@ public final class PitchDetector
         int last = frames - 1;
         while (last > loudest && levels[last] < levels[loudest] / 10000)
             last--;
-        final int segmentStart = Math.min (start + (loudest + 3) * frameLength, Math.max (start, stop - MINIMUM_SEGMENT_FRAMES));
+        final int segmentStart = Math.clamp (start + (loudest + 3L) * frameLength, start, Math.max (start, stop - MINIMUM_SEGMENT_FRAMES));
         // A sound which is still loud in the last frame lasts until the end, also the rest which is
         // shorter than a frame
         final int segmentStop = Math.min (last == frames - 1 ? stop : Math.min (start + (last + 1) * frameLength, stop), segmentStart + maximumLength);
@@ -607,7 +607,7 @@ public final class PitchDetector
                     candidates.add (Double.valueOf (candidate));
             }
         }
-        Collections.sort (candidates, Collections.reverseOrder ());
+        candidates.sort (Collections.reverseOrder ());
 
         final double [] result = new double [candidates.size ()];
         int size = 0;
@@ -719,7 +719,8 @@ public final class PitchDetector
     private static void transform (final double [] real, final double [] imaginary)
     {
         final int size = real.length;
-        for (int i = 1, j = 0; i < size; i++)
+        int j = 0;
+        for (int i = 1; i < size; i++)
         {
             int bit = size >> 1;
             for (; (j & bit) != 0; bit >>= 1)
@@ -835,7 +836,7 @@ public final class PitchDetector
     private static double median (final List<Double> values)
     {
         final List<Double> sorted = new ArrayList<> (values);
-        Collections.sort (sorted);
+        sorted.sort (null);
         final int middle = sorted.size () / 2;
         if (sorted.size () % 2 == 1)
             return sorted.get (middle).doubleValue ();

@@ -98,17 +98,17 @@ public class Sf2Modulator
 
     /**
      * The default modulator of the SoundFont specification (8.4.4) which every player applies
-     * unless an instrument zone contains an identical modulator: the modulation wheel adds up to
-     * 50 cent to the depth of the vibrato oscillator.
+     * unless an instrument zone contains an identical modulator: the modulation wheel adds up to 50
+     * cent to the depth of the vibrato oscillator.
      */
-    public static final Sf2Modulator          DEFAULT_MOD_WHEEL_TO_VIBRATO = new Sf2Modulator (SOURCE_MIDI_CONTROLLER | MOD_WHEEL_CC, Generator.VIB_LFO_TO_PITCH, 50, 0, 0);
+    public static final Sf2Modulator DEFAULT_MOD_WHEEL_TO_VIBRATO = new Sf2Modulator (SOURCE_MIDI_CONTROLLER | MOD_WHEEL_CC, Generator.VIB_LFO_TO_PITCH, 50, 0, 0);
 
-    private final int sourceOperand;
-    private final int controllerSource;
-    private final int destinationGenerator;
-    private final int modAmount;
-    private final int amountSourceOperand;
-    private final int transformOperand;
+    private final int                sourceOperand;
+    private final int                controllerSource;
+    private final int                destinationGenerator;
+    private final int                modAmount;
+    private final int                amountSourceOperand;
+    private final int                transformOperand;
 
 
     /**

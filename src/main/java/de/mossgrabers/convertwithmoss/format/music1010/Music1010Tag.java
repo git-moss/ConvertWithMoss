@@ -111,6 +111,19 @@ public class Music1010Tag
     /** The attribute for the loop fade amount. */
     public static final String ATTR_LOOP_FADE_AMOUNT      = "loopfadeamt";
 
+    /** The waveform of the low frequency oscillator. */
+    public static final String ATTR_LFO_WAVE              = "lfowave";
+    /** The rate of the low frequency oscillator. */
+    public static final String ATTR_LFO_RATE              = "lforate";
+    /** The depth of the low frequency oscillator. */
+    public static final String ATTR_LFO_AMOUNT            = "lfoamount";
+    /** Restart the low frequency oscillator on each note. */
+    public static final String ATTR_LFO_KEY_TRIGGER       = "lfokeytrig";
+    /** Synchronize the low frequency oscillator to the tempo. */
+    public static final String ATTR_LFO_BEAT_SYNC         = "lfobeatsync";
+    /** The tempo synchronized rate of the low frequency oscillator. */
+    public static final String ATTR_LFO_RATE_BEAT_SYNC    = "lforatebeatsync";
+
     // -----------------------------------------------------------
     // Bento specific
 

@@ -28,7 +28,7 @@ public class YamahaYsfcCategories
     private static final String               TAG_ELECTRONIC               = "Electronic";
     private static final String               TAG_ANALOG                   = "Analog";
 
-    private static final String []            MAIN_CATEGORIES              = new String []
+    private static final String []            MAIN_CATEGORIES              =
     {
         TagDetector.CATEGORY_PIANO,
         TagDetector.CATEGORY_KEYBOARD,

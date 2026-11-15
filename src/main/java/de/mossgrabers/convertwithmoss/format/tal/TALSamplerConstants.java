@@ -62,7 +62,7 @@ public class TALSamplerConstants
      */
     public static final int          MAX_VOICES        = 12;
     /** The IDs to for the 4 layers. */
-    protected static final String [] LAYERS            = new String []
+    protected static final String [] LAYERS            =
     {
         "a",
         "b",
@@ -71,7 +71,7 @@ public class TALSamplerConstants
     };
 
     private static final double      INDEX_OFFSET      = 0.0833333333333333;
-    private static final int []      LOW_PASS_POLES    = new int []
+    private static final int []      LOW_PASS_POLES    =
     {
         4,
         2,

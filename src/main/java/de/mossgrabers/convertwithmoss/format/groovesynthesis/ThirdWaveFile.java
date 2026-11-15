@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 
 /**
@@ -94,6 +95,39 @@ final class ThirdWaveFile
      */
     record Sample (String name, float sampleRate, int bitDepth, int start, int end, int loopStart, int loopEnd, int root, int low, int high, int crossfadeType, int crossfade, int loopMode, float tune, float secondSampleRate, float volume, byte [] audio)
     {
+        /** {@inheritDoc} */
+        @Override
+        public String toString ()
+        {
+            return "Sample [name=" + this.name + ", sampleRate=" + this.sampleRate + ", bitDepth=" + this.bitDepth + ", start=" + this.start + ", end=" + this.end + ", loopStart=" + this.loopStart + ", loopEnd=" + this.loopEnd + ", root=" + this.root + ", low=" + this.low + ", high=" + this.high + ", crossfadeType=" + this.crossfadeType + ", crossfade=" + this.crossfade + ", loopMode=" + this.loopMode + ", tune=" + this.tune + ", secondSampleRate=" + this.secondSampleRate + ", volume=" + this.volume + ", audio=" + Arrays.toString (this.audio) + "]";
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public int hashCode ()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + Arrays.hashCode (this.audio);
+            result = prime * result + Objects.hash (Integer.valueOf (this.bitDepth), Integer.valueOf (this.crossfade), Integer.valueOf (this.crossfadeType), Integer.valueOf (this.end), Integer.valueOf (this.high), Integer.valueOf (this.loopEnd), Integer.valueOf (this.loopMode), Integer.valueOf (this.loopStart), Integer.valueOf (this.low), this.name, Integer.valueOf (this.root), Float.valueOf (this.sampleRate), Float.valueOf (this.secondSampleRate), Integer.valueOf (this.start), Float.valueOf (this.tune), Float.valueOf (this.volume));
+            return result;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean equals (final Object obj)
+        {
+            if (this == obj)
+                return true;
+            if ((obj == null) || (this.getClass () != obj.getClass ()))
+                return false;
+            final Sample other = (Sample) obj;
+            return Arrays.equals (this.audio, other.audio) && this.bitDepth == other.bitDepth && this.crossfade == other.crossfade && this.crossfadeType == other.crossfadeType && this.end == other.end && this.high == other.high && this.loopEnd == other.loopEnd && this.loopMode == other.loopMode && this.loopStart == other.loopStart && this.low == other.low && Objects.equals (this.name, other.name) && this.root == other.root && Float.floatToIntBits (this.sampleRate) == Float.floatToIntBits (other.sampleRate) && Float.floatToIntBits (this.secondSampleRate) == Float.floatToIntBits (other.secondSampleRate) && this.start == other.start && Float.floatToIntBits (this.tune) == Float.floatToIntBits (other.tune) && Float.floatToIntBits (this.volume) == Float.floatToIntBits (other.volume);
+        }
+
+
         /**
          * Get the number of frames of the recording.
          *
@@ -168,6 +202,39 @@ final class ThirdWaveFile
      */
     record Content (String name, boolean isProgram, List<Slot> slots, int [] resourceTypes, ThirdWaveProgram program)
     {
+        /** {@inheritDoc} */
+        @Override
+        public String toString ()
+        {
+            return "Content [name=" + this.name + ", isProgram=" + this.isProgram + ", slots=" + this.slots + ", resourceTypes=" + Arrays.toString (this.resourceTypes) + ", program=" + this.program + "]";
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public int hashCode ()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + Arrays.hashCode (this.resourceTypes);
+            result = prime * result + Objects.hash (Boolean.valueOf (this.isProgram), this.name, this.program, this.slots);
+            return result;
+        }
+
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean equals (final Object obj)
+        {
+            if (this == obj)
+                return true;
+            if ((obj == null) || (this.getClass () != obj.getClass ()))
+                return false;
+            final Content other = (Content) obj;
+            return this.isProgram == other.isProgram && Objects.equals (this.name, other.name) && Objects.equals (this.program, other.program) && Arrays.equals (this.resourceTypes, other.resourceTypes) && Objects.equals (this.slots, other.slots);
+        }
+
+
         /**
          * Test if a resource of a unified program file is a sample slot.
          *

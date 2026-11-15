@@ -303,8 +303,8 @@ public class RenoiseCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Create the modulation set for one zone. It holds the amplitude envelope and - if present -
      * the sampler filter (type, cutoff, resonance, filter envelope and filter LFO), the pitch
-     * envelope, the pitch LFO (vibrato) and the volume LFO (tremolo). The created element is not appended to the
-     * document and does not contain a name element yet.
+     * envelope, the pitch LFO (vibrato) and the volume LFO (tremolo). The created element is not
+     * appended to the document and does not contain a name element yet.
      *
      * @param document The XML document
      * @param zone The zone from which to read the modulation information

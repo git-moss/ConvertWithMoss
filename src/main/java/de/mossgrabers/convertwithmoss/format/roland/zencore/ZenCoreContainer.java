@@ -30,14 +30,14 @@ public class ZenCoreContainer
     /** Platform tag used inside a SVZ table-of-contents. */
     public static final String   PLATFORM_SVZ = "ZCOR";
 
-    private static final byte [] MAGIC_SVD    = new byte []
+    private static final byte [] MAGIC_SVD    =
     {
         'S',
         'V',
         'D',
         '5'
     };
-    private static final byte [] MAGIC_SVZ    = new byte []
+    private static final byte [] MAGIC_SVZ    =
     {
         'S',
         'V',

@@ -29,6 +29,8 @@ import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -36,11 +38,13 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010Lfo;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
@@ -163,7 +167,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
             return Optional.empty ();
         }
         final String versionAttribute = sessionElement.getAttribute (Music1010Tag.ATTR_VERSION);
-        if (versionAttribute == null || !"1".equals (versionAttribute))
+        if (versionAttribute == null || Integer.parseInt (versionAttribute) > 2)
         {
             this.notifier.logError ("IDS_1010_MUSIC_WRONG_VERSION", versionAttribute == null ? "'none'" : versionAttribute);
             return Optional.empty ();
@@ -269,8 +273,94 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, new File (pathPrefix).getName (), Collections.singletonList (group));
         parseEffects (instParamsElement, multisampleSource);
         readVelocityModulators (instElement, group);
+        readLfoModulators (instParamsElement, instElement, group);
 
         return Optional.of (new DefaultInstrumentSource (multisampleSource, midiChannel));
+    }
+
+
+    /**
+     * Read the low frequency oscillator and its routings to the volume, the pitch and the filter
+     * cutoff from the modulation matrix. The multi-sample engine has only 1 oscillator. The
+     * effective depth of a routing is the depth of the oscillator multiplied by the amount of the
+     * routing. The modulation wheel can increase the depth of the oscillator.
+     *
+     * @param instParamsElement The parameters element of the instrument
+     * @param instElement The instrument element which contains the modulation matrix
+     * @param group The group which contains all sample zones
+     */
+    private static void readLfoModulators (final Element instParamsElement, final Element instElement, final IGroup group)
+    {
+        double gainAmount = 0;
+        double pitchAmount = 0;
+        double cutoffAmount = 0;
+        double modWheelAmount = 0;
+        for (final Element modElement: XMLUtils.getChildElementsByName (instElement, Music1010Tag.MOD_SOURCE))
+        {
+            final String source = modElement.getAttribute (Music1010Tag.ATTR_MOD_SOURCE);
+            final String destination = modElement.getAttribute (Music1010Tag.ATTR_MOD_DESTINATION);
+            final double amount = Math.clamp (XMLUtils.getIntegerAttribute (modElement, Music1010Tag.ATTR_MOD_AMOUNT, 0) / 1000.0, -1.0, 1.0);
+            if (Music1010Lfo.SOURCE_LFO1.equals (source))
+                switch (destination)
+                {
+                    case Music1010Lfo.DESTINATION_GAIN -> gainAmount = amount;
+                    case Music1010Lfo.DESTINATION_PITCH -> pitchAmount = amount;
+                    case Music1010Lfo.DESTINATION_CUTOFF -> cutoffAmount = amount;
+                    case null, default -> {
+                        // Everything stays on the defaults
+                    }
+                }
+            else if (Music1010Lfo.SOURCE_MOD_WHEEL.equals (source) && Music1010Lfo.DESTINATION_LFO.equals (destination))
+                modWheelAmount = amount;
+        }
+        if (gainAmount == 0 && pitchAmount == 0 && cutoffAmount == 0)
+            return;
+
+        final double lfoAmount = Math.clamp (XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_LFO_AMOUNT, 0) / 1000.0, 0, 1.0);
+        if (lfoAmount == 0 && modWheelAmount == 0)
+            return;
+
+        final ILfo lfo = new DefaultLfo ();
+        lfo.setWaveform (Music1010Lfo.toWaveform (XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_LFO_WAVE, 0)));
+        // A tempo synchronized rate is converted with an assumed tempo of 120 BPM since the tempo
+        // is not part of a patch
+        if (XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_LFO_BEAT_SYNC, 0) > 0)
+            lfo.setRate (Music1010Lfo.beatSyncRateToHertz (XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_LFO_RATE_BEAT_SYNC, 0)));
+        else
+            lfo.setRate (Music1010Lfo.rateToHertz (XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_LFO_RATE, 0)));
+        lfo.setKeySync (XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_LFO_KEY_TRIGGER, 0) > 0);
+
+        for (final ISampleZone zone: group.getSampleZones ())
+        {
+            if (gainAmount != 0)
+                setLfoModulator (zone.getAmplitudeLfoModulator (), lfo, lfoAmount, modWheelAmount, gainAmount * Music1010Lfo.VOLUME_SCALE);
+            if (pitchAmount != 0)
+                setLfoModulator (zone.getPitchLfoModulator (), lfo, lfoAmount, modWheelAmount, pitchAmount * Music1010Lfo.PITCH_SCALE);
+            if (cutoffAmount != 0)
+            {
+                final Optional<IFilter> optFilter = zone.getFilter ();
+                if (optFilter.isPresent ())
+                    setLfoModulator (optFilter.get ().getCutoffLfoModulator (), lfo, lfoAmount, modWheelAmount, cutoffAmount * Music1010Lfo.CUTOFF_SCALE);
+            }
+        }
+    }
+
+
+    /**
+     * Set the oscillator and the depths of a modulator.
+     *
+     * @param lfoModulator The modulator to fill
+     * @param lfo The oscillator
+     * @param lfoAmount The depth of the oscillator in the range of [0..1]
+     * @param modWheelAmount The amount by which the modulation wheel increases the depth of the
+     *            oscillator in the range of [-1..1]
+     * @param depth The depth of the routing, already scaled to the range of the modulator
+     */
+    private static void setLfoModulator (final ILfoModulator lfoModulator, final ILfo lfo, final double lfoAmount, final double modWheelAmount, final double depth)
+    {
+        lfoModulator.setSource (lfo);
+        lfoModulator.setDepth (Math.clamp (lfoAmount * depth, -1.0, 1.0));
+        lfoModulator.getDepthModWheelModulator ().setDepth (Math.clamp (modWheelAmount * depth, -1.0, 1.0));
     }
 
 
@@ -395,6 +485,12 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
                 loop.setStart (loopStart);
                 loop.setEnd (loopEnd);
                 sampleZone.addLoop (loop);
+
+                // Some patches contain a play-back length which ends before the loop end (e.g.
+                // the length of the sample before it was re-sampled to 48kHz), extend it to
+                // include the full loop
+                if (length > 0 && loopEnd > sampleZone.getStop ())
+                    sampleZone.setStop (loopEnd);
             }
         }
 

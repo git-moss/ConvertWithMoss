@@ -86,7 +86,7 @@ public class SynclavierRegenDetector extends AbstractDetector<EmptySettingsUI>
     private static final String    PARAGRAPH           = "¶";
     private static final String    SAMPLE_ENDING       = ".sflc";
     // The audio extensions to probe, the obfuscated SFLC first
-    private static final String [] SAMPLE_ENDINGS      = new String []
+    private static final String [] SAMPLE_ENDINGS      =
     {
         SAMPLE_ENDING,
         ".flac",

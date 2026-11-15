@@ -120,7 +120,7 @@ public class MfmDecoder extends AbstractDecoder
         final int crc2 = bitStream.readMfmByte ();
 
         // CRC calculation includes: 0xA1 0xA1 0xA1 + IDAM + header fields
-        final byte [] headerData = new byte []
+        final byte [] headerData =
         {
             (byte) SYNC_BYTE,
             (byte) SYNC_BYTE,
