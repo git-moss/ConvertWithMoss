@@ -41,6 +41,11 @@ jobs:
           - os: ubuntu-latest
             artifact_name: convertwithmoss*.deb
             build_name: linux
+          # Needs a different artifact suffix since it runs on the same OS as the DEB build
+          - os: ubuntu-latest
+            artifact_name: convertwithmoss*.rpm
+            build_name: linux-rpm
+            artifact_suffix: -rpm
           - os: windows-latest
             artifact_name: ConvertWithMoss*.exe
             build_name: win
@@ -55,7 +60,7 @@ jobs:
             artifact_name: ConvertWithMoss*.dmg
             build_name: mac
     
-    name: ${{ matrix.os }}
+    name: ${{ matrix.os }}${{ matrix.artifact_suffix }}
 
     steps:
     - uses: actions/checkout@v7
@@ -70,12 +75,18 @@ jobs:
     - name: Install WiX Toolset
       if: startsWith(matrix.os, 'windows')
       run: choco install wixtoolset --no-progress -y
+    # jpackage needs rpmbuild to create RPM packages
+    - name: Install RPM tools
+      if: matrix.build_name == 'linux-rpm'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y rpm
     - name: Build and jpackage with Maven
       run: mvn -B package jpackage::jpackage@${{ matrix.build_name }} --file pom.xml
     - name: Publish jpackage result
       uses: actions/upload-artifact@v7
       with:
-        name: ConvertWithMoss-Installers-${{ matrix.os }}
+        name: ConvertWithMoss-Installers-${{ matrix.os }}${{ matrix.artifact_suffix }}
         path: target/release/${{ matrix.artifact_name }}
 
   merge:
