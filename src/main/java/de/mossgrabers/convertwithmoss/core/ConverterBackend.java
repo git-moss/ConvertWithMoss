@@ -519,6 +519,10 @@ public class ConverterBackend
 
         try
         {
+            // Checked before the output folder is created, so that a source which the creator
+            // declines does not leave an empty folder behind
+            if (!this.creator.canCreatePreset (multisampleSource))
+                return;
             final File multisampleOutputFolder = calcOutputFolder (this.detectionSettings.outputFolder, multisampleSource.getSubPath (), this.detectionSettings.createFolderStructure);
             this.creator.createPreset (multisampleOutputFolder, multisampleSource);
         }
