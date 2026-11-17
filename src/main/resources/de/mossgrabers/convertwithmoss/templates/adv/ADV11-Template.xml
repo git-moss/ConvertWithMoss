@@ -210,7 +210,7 @@
 			</TransposeFine>
 			<PitchLfoAmount>
 				<LomId Value="0" />
-				<Manual Value="0" />
+				<Manual Value="%LFO1_PITCH%" />
 				<MidiControllerRange>
 					<Min Value="0" />
 					<Max Value="1" />
@@ -612,7 +612,7 @@
 						</ModByVelocity>
 						<ModByLfo>
 							<LomId Value="0" />
-							<Manual Value="12.75" />
+							<Manual Value="%LFO1_FILTER%" />
 							<MidiControllerRange>
 								<Min Value="0" />
 								<Max Value="24" />
@@ -689,7 +689,7 @@
 			</VolumeKeyScale>
 			<VolumeLfoAmount>
 				<LomId Value="0" />
-				<Manual Value="0" />
+				<Manual Value="%LFO1_VOLUME%" />
 				<MidiControllerRange>
 					<Min Value="0" />
 					<Max Value="1" />
@@ -1209,7 +1209,7 @@
 		<Lfo>
 			<IsOn>
 				<LomId Value="0" />
-				<Manual Value="false" />
+				<Manual Value="%LFO1_ENABLED%" />
 				<AutomationTarget Id="0">
 					<LockEnvelope Value="0" />
 				</AutomationTarget>
@@ -1219,13 +1219,13 @@
 				</MidiCCOnOffThresholds>
 			</IsOn>
 			<Slot>
-				<Value />
+%LFO1_SLOT%
 			</Slot>
 		</Lfo>
 		<AuxLfos.0>
 			<IsOn>
 				<LomId Value="0" />
-				<Manual Value="false" />
+				<Manual Value="%LFO2_ENABLED%" />
 				<AutomationTarget Id="0">
 					<LockEnvelope Value="0" />
 				</AutomationTarget>
@@ -1235,13 +1235,13 @@
 				</MidiCCOnOffThresholds>
 			</IsOn>
 			<Slot>
-				<Value />
+%LFO2_SLOT%
 			</Slot>
 		</AuxLfos.0>
 		<AuxLfos.1>
 			<IsOn>
 				<LomId Value="0" />
-				<Manual Value="false" />
+				<Manual Value="%LFO3_ENABLED%" />
 				<AutomationTarget Id="0">
 					<LockEnvelope Value="0" />
 				</AutomationTarget>
@@ -1251,7 +1251,7 @@
 				</MidiCCOnOffThresholds>
 			</IsOn>
 			<Slot>
-				<Value />
+%LFO3_SLOT%
 			</Slot>
 		</AuxLfos.1>
 		<KeyDst>
@@ -1308,12 +1308,12 @@
 		</MidiCtrl.1>
 		<MidiCtrl.2>
 			<ModConnections.0>
-				<Amount Value="33.3333321" />
-				<Connection Value="12" />
+				<Amount Value="%MOD_WHEEL_AMOUNT_1%" />
+				<Connection Value="%MOD_WHEEL_DESTINATION_1%" />
 			</ModConnections.0>
 			<ModConnections.1>
-				<Amount Value="0" />
-				<Connection Value="0" />
+				<Amount Value="%MOD_WHEEL_AMOUNT_2%" />
+				<Connection Value="%MOD_WHEEL_DESTINATION_2%" />
 			</ModConnections.1>
 			<Feedback Value="0" />
 		</MidiCtrl.2>

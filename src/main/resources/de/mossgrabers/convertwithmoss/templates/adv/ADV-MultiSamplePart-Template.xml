@@ -46,8 +46,8 @@
 						</ReleaseLoop>
 						<SampleRef>
 							<FileRef>
-								<RelativePathType Value="6" />
-								<RelativePath Value="Samples/Imported/%SAMPLE_FOLDER%/%SAMPLE_FILE%" />
+								<RelativePathType Value="1" />
+								<RelativePath Value="../../../Samples/Imported/%SAMPLE_FOLDER%/%SAMPLE_FILE%" />
 								<Path Value="/Volumes/data/Samples/Imported/%SAMPLE_FOLDER%/%SAMPLE_FILE%" />
 								<Type Value="1" />
 								<LivePackName Value="" />

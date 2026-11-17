@@ -41,6 +41,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -51,6 +53,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
@@ -644,6 +647,7 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
             multisampleSource.setGlobalFilter (filter.get ());
 
         applyGlobalEnvelopes (deviceElement, multisampleSource);
+        readLfos (deviceElement, multisampleSource);
         applyOneShot (deviceElement, multisampleSource);
     }
 
@@ -756,7 +760,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
     private ISampleData getSampleData (final File multiSampleFile, final Element fileRefElement, final File rootPath) throws IOException
     {
         final String relativePath = getRelativePath (fileRefElement);
-        File sampleFile = new File (rootPath, relativePath);
+        // A path relative to the document is relative to the folder of the preset
+        final boolean isRelativeToDocument = getIntegerValueAttribute (fileRefElement, AbletonTag.TAG_RELATIVE_PATH_TYPE, -1) == 1;
+        File sampleFile = new File (isRelativeToDocument ? multiSampleFile.getParentFile () : rootPath, relativePath);
         if (!sampleFile.isFile ())
         {
             final String absolutePath = getAbsolutePath (fileRefElement);
@@ -1029,6 +1035,309 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
         {
             // Ignore missing elements
         }
+    }
+
+
+    /**
+     * Read the 3 low frequency oscillators and their routings to the volume, the pitch and the
+     * filter cutoff. LFO 1 has fixed destinations, LFO 2 and LFO 3 have 2 configurable destinations
+     * (A and B) each. The modulation wheel can control the amounts of the oscillators: the
+     * modulation wheel amount is the percentage of the routing amount which is controlled by the
+     * wheel (100% means that the routing amount is only reached with the wheel fully up). If several
+     * oscillators modulate the same destination, the strongest one is used since the model supports
+     * only 1 oscillator per destination.
+     *
+     * @param deviceElement The Sampler device element
+     * @param multisampleSource The multi-sample to fill
+     */
+    private static void readLfos (final Element deviceElement, final IMultisampleSource multisampleSource)
+    {
+        final Map<Integer, Double> modWheelAmounts = readModWheelAmounts (deviceElement);
+
+        // Index 0: volume, 1: pitch, 2: filter cutoff
+        final ILfo [] lfos = new ILfo [3];
+        final double [] depths = new double [3];
+        final double [] modWheelDepths = new double [3];
+
+        // LFO 1 with its fixed destinations
+        final Optional<Element> lfo1Element = getLfoElement (deviceElement, AbletonTag.TAG_LFO, AbletonTag.TAG_SIMPLER_LFO);
+        if (lfo1Element.isPresent ())
+        {
+            final ILfo lfo = createLfo (lfo1Element.get ());
+
+            final Element volAndPanElement = XMLUtils.getChildElementByName (deviceElement, AbletonTag.TAG_VOLUME_AND_PAN);
+            final double volumeAmount = getManualValue (volAndPanElement, AbletonTag.TAG_VOLUME_LFO_AMOUNT);
+            setLfoCandidate (lfos, depths, modWheelDepths, 0, lfo, volumeAmount * AbletonLfo.VOLUME_SCALE, getModWheelAmount (modWheelAmounts, AbletonLfo.DESTINATION_LFO1_VOLUME));
+
+            final Element pitchElement = XMLUtils.getChildElementByName (deviceElement, AbletonTag.TAG_PITCH);
+            final double pitchAmount = getManualValue (pitchElement, AbletonTag.TAG_PITCH_LFO_AMOUNT);
+            setLfoCandidate (lfos, depths, modWheelDepths, 1, lfo, pitchAmount * AbletonLfo.PITCH_SCALE, getModWheelAmount (modWheelAmounts, AbletonLfo.DESTINATION_LFO1_PITCH));
+
+            final Optional<Element> simplerFilterElement = getSimplerFilterElement (deviceElement);
+            if (simplerFilterElement.isPresent ())
+            {
+                final double filterSemitones = getManualValue (simplerFilterElement.get (), AbletonTag.TAG_MOD_BY_LFO);
+                setLfoCandidate (lfos, depths, modWheelDepths, 2, lfo, filterSemitones * AbletonLfo.FILTER_SEMITONE_SCALE, getModWheelAmount (modWheelAmounts, AbletonLfo.DESTINATION_LFO1_FILTER));
+            }
+        }
+
+        // LFO 2 and LFO 3 with their configurable destinations
+        readAuxLfo (deviceElement, AbletonTag.TAG_AUX_LFO_0, AbletonLfo.DESTINATION_LFO2_AMOUNT_A, AbletonLfo.DESTINATION_LFO2_AMOUNT_B, modWheelAmounts, lfos, depths, modWheelDepths);
+        readAuxLfo (deviceElement, AbletonTag.TAG_AUX_LFO_1, AbletonLfo.DESTINATION_LFO3_AMOUNT_A, AbletonLfo.DESTINATION_LFO3_AMOUNT_B, modWheelAmounts, lfos, depths, modWheelDepths);
+
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                if (lfos[0] != null)
+                    setLfoModulator (zone.getAmplitudeLfoModulator (), lfos[0], depths[0], modWheelDepths[0]);
+                if (lfos[1] != null)
+                    setLfoModulator (zone.getPitchLfoModulator (), lfos[1], depths[1], modWheelDepths[1]);
+            }
+        final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
+        if (lfos[2] != null && globalFilter.isPresent ())
+            setLfoModulator (globalFilter.get ().getCutoffLfoModulator (), lfos[2], depths[2], modWheelDepths[2]);
+    }
+
+
+    /**
+     * Read LFO 2 or LFO 3 and its 2 configurable destinations.
+     *
+     * @param deviceElement The Sampler device element
+     * @param lfoTag The tag of the oscillator
+     * @param modWheelDestinationA The modulation wheel destination of the amount A
+     * @param modWheelDestinationB The modulation wheel destination of the amount B
+     * @param modWheelAmounts The amounts of the modulation wheel routings
+     * @param lfos Where to store the oscillators per destination
+     * @param depths Where to store the depths per destination
+     * @param modWheelDepths Where to store the modulation wheel depths per destination
+     */
+    private static void readAuxLfo (final Element deviceElement, final String lfoTag, final int modWheelDestinationA, final int modWheelDestinationB, final Map<Integer, Double> modWheelAmounts, final ILfo [] lfos, final double [] depths, final double [] modWheelDepths)
+    {
+        final Optional<Element> lfoElement = getLfoElement (deviceElement, lfoTag, AbletonTag.TAG_SIMPLER_AUX_LFO);
+        if (lfoElement.isEmpty ())
+            return;
+
+        final ILfo lfo = createLfo (lfoElement.get ());
+        final Element modDestElement = XMLUtils.getChildElementByName (lfoElement.get (), AbletonTag.TAG_MODULATION_DESTINATION);
+        if (modDestElement == null)
+            return;
+
+        final String [] connectionTags =
+        {
+            AbletonTag.TAG_MODULATION_CONNECTION_0,
+            AbletonTag.TAG_MODULATION_CONNECTION_1
+        };
+        final int [] modWheelDestinations =
+        {
+            modWheelDestinationA,
+            modWheelDestinationB
+        };
+        for (int i = 0; i < 2; i++)
+        {
+            final Element connectionElement = XMLUtils.getChildElementByName (modDestElement, connectionTags[i]);
+            if (connectionElement == null)
+                continue;
+            final int destination = getIntegerValueAttribute (connectionElement, AbletonTag.TAG_MODULATION_CONNECTION, 0);
+            final double amount = getDoubleValueAttribute (connectionElement, AbletonTag.TAG_AMOUNT, 0) / 100.0;
+            final double modWheelAmount = getModWheelAmount (modWheelAmounts, modWheelDestinations[i]);
+            final double scale;
+            final int index;
+            switch (destination)
+            {
+                case AbletonLfo.DESTINATION_VOLUME:
+                    index = 0;
+                    scale = AbletonLfo.VOLUME_SCALE;
+                    break;
+                case AbletonLfo.DESTINATION_PITCH:
+                    index = 1;
+                    scale = AbletonLfo.PITCH_SCALE;
+                    break;
+                case AbletonLfo.DESTINATION_FILTER_FREQUENCY:
+                    index = 2;
+                    scale = AbletonLfo.CUTOFF_SCALE;
+                    break;
+                default:
+                    continue;
+            }
+            setLfoCandidate (lfos, depths, modWheelDepths, index, lfo, amount * scale, modWheelAmount);
+        }
+    }
+
+
+    /**
+     * Store the oscillator for a destination if its modulation is stronger than the already stored
+     * one. The routing depth is split into the part which is always active and the part which is
+     * controlled by the modulation wheel.
+     *
+     * @param lfos The oscillators per destination
+     * @param depths The depths per destination
+     * @param modWheelDepths The modulation wheel depths per destination
+     * @param index The index of the destination
+     * @param lfo The oscillator
+     * @param routingDepth The depth of the routing (reached with the modulation wheel fully up)
+     * @param modWheelAmount The share of the routing depth which is controlled by the modulation
+     *            wheel in the range of [0..1]
+     */
+    private static void setLfoCandidate (final ILfo [] lfos, final double [] depths, final double [] modWheelDepths, final int index, final ILfo lfo, final double routingDepth, final double modWheelAmount)
+    {
+        final double share = Math.clamp (modWheelAmount, 0, 1.0);
+        final double depth = routingDepth * (1.0 - share);
+        final double modWheelDepth = routingDepth * share;
+        final double strength = Math.abs (depth) + Math.abs (modWheelDepth);
+        if (strength == 0 || strength <= Math.abs (depths[index]) + Math.abs (modWheelDepths[index]))
+            return;
+        lfos[index] = lfo;
+        depths[index] = depth;
+        modWheelDepths[index] = modWheelDepth;
+    }
+
+
+    /**
+     * Set the oscillator and the depths of a modulator.
+     *
+     * @param lfoModulator The modulator to fill
+     * @param lfo The oscillator
+     * @param depth The depth
+     * @param modWheelDepth The modulation wheel depth
+     */
+    private static void setLfoModulator (final ILfoModulator lfoModulator, final ILfo lfo, final double depth, final double modWheelDepth)
+    {
+        lfoModulator.setSource (lfo);
+        lfoModulator.setDepth (Math.clamp (depth, -1.0, 1.0));
+        lfoModulator.getDepthModWheelModulator ().setDepth (Math.clamp (modWheelDepth, -1.0, 1.0));
+    }
+
+
+    /**
+     * Get the parameters element of an oscillator if it is switched on.
+     *
+     * @param deviceElement The Sampler device element
+     * @param lfoTag The tag of the oscillator
+     * @param parameterTag The tag of the parameters element
+     * @return The parameters element if the oscillator is switched on
+     */
+    private static Optional<Element> getLfoElement (final Element deviceElement, final String lfoTag, final String parameterTag)
+    {
+        try
+        {
+            final Element lfoElement = getRequiredElement (deviceElement, lfoTag);
+            final Element isOnElement = getRequiredElement (lfoElement, AbletonTag.TAG_IS_ON);
+            if (!getBooleanValueAttribute (isOnElement, AbletonTag.TAG_MANUAL))
+                return Optional.empty ();
+            final Element slotElement = getRequiredElement (lfoElement, AbletonTag.TAG_SLOT);
+            final Element valueElement = getRequiredElement (slotElement, AbletonTag.TAG_VALUE);
+            return Optional.of (getRequiredElement (valueElement, parameterTag));
+        }
+        catch (final IOException _)
+        {
+            return Optional.empty ();
+        }
+    }
+
+
+    /**
+     * Create an oscillator from its parameters element.
+     *
+     * @param lfoElement The parameters element
+     * @return The oscillator
+     */
+    private static ILfo createLfo (final Element lfoElement)
+    {
+        final ILfo lfo = new DefaultLfo ();
+        lfo.setWaveform (AbletonLfo.toWaveform ((int) getManualValue (lfoElement, AbletonTag.TAG_LFO_TYPE)));
+        // A tempo synchronized rate is converted with an assumed tempo of 120 BPM since the tempo
+        // is not part of a preset
+        if (getManualValue (lfoElement, AbletonTag.TAG_LFO_RATE_TYPE) > 0)
+            lfo.setRate (AbletonLfo.beatRateToHertz ((int) getManualValue (lfoElement, AbletonTag.TAG_LFO_BEAT_RATE)));
+        else
+            lfo.setRate (getManualValue (lfoElement, AbletonTag.TAG_LFO_FREQUENCY));
+        final Element retriggerElement = XMLUtils.getChildElementByName (lfoElement, AbletonTag.TAG_LFO_RETRIGGER);
+        lfo.setKeySync (retriggerElement != null && getBooleanValueAttribute (retriggerElement, AbletonTag.TAG_MANUAL));
+        return lfo;
+    }
+
+
+    /**
+     * Read the routings of the modulation wheel.
+     *
+     * @param deviceElement The Sampler device element
+     * @return The amounts in the range of [-1..1] mapped to their destinations
+     */
+    private static Map<Integer, Double> readModWheelAmounts (final Element deviceElement)
+    {
+        final Map<Integer, Double> amounts = new HashMap<> ();
+        final Element modWheelElement = XMLUtils.getChildElementByName (deviceElement, AbletonTag.TAG_MIDI_CONTROLLER_MOD);
+        if (modWheelElement == null)
+            return amounts;
+        for (final String tag: new String []
+        {
+            AbletonTag.TAG_MODULATION_CONNECTION_0,
+            AbletonTag.TAG_MODULATION_CONNECTION_1
+        })
+        {
+            final Element connectionElement = XMLUtils.getChildElementByName (modWheelElement, tag);
+            if (connectionElement == null)
+                continue;
+            final int destination = getIntegerValueAttribute (connectionElement, AbletonTag.TAG_MODULATION_CONNECTION, 0);
+            if (destination > 0)
+                amounts.put (Integer.valueOf (destination), Double.valueOf (getDoubleValueAttribute (connectionElement, AbletonTag.TAG_AMOUNT, 0) / 100.0));
+        }
+        return amounts;
+    }
+
+
+    /**
+     * Get the amount of a modulation wheel routing.
+     *
+     * @param modWheelAmounts The amounts of the modulation wheel routings
+     * @param destination The destination
+     * @return The amount in the range of [-1..1] or 0 if there is no routing to the destination
+     */
+    private static double getModWheelAmount (final Map<Integer, Double> modWheelAmounts, final int destination)
+    {
+        final Double amount = modWheelAmounts.get (Integer.valueOf (destination));
+        return amount == null ? 0 : amount.doubleValue ();
+    }
+
+
+    /**
+     * Get the Simpler filter element if the filter is switched on.
+     *
+     * @param deviceElement The Sampler device element
+     * @return The element if the filter is switched on
+     */
+    private static Optional<Element> getSimplerFilterElement (final Element deviceElement)
+    {
+        try
+        {
+            final Element filterElement = getRequiredElement (deviceElement, AbletonTag.TAG_FILTER);
+            final Element filterIsOnElement = getRequiredElement (filterElement, AbletonTag.TAG_IS_ON);
+            if (!getBooleanValueAttribute (filterIsOnElement, AbletonTag.TAG_MANUAL))
+                return Optional.empty ();
+            final Element slotElement = getRequiredElement (filterElement, AbletonTag.TAG_SLOT);
+            final Element valueElement = getRequiredElement (slotElement, AbletonTag.TAG_VALUE);
+            return Optional.of (getRequiredElement (valueElement, AbletonTag.TAG_SIMPLER_FILTER));
+        }
+        catch (final IOException _)
+        {
+            return Optional.empty ();
+        }
+    }
+
+
+    /**
+     * Get the manual value of a parameter.
+     *
+     * @param parentElement The parent element of the parameter, might be null
+     * @param parameterTag The tag of the parameter
+     * @return The value or 0 if not present
+     */
+    private static double getManualValue (final Element parentElement, final String parameterTag)
+    {
+        if (parentElement == null)
+            return 0;
+        final Element parameterElement = XMLUtils.getChildElementByName (parentElement, parameterTag);
+        return parameterElement == null ? 0 : getDoubleValueAttribute (parameterElement, AbletonTag.TAG_MANUAL, 0);
     }
 
 

@@ -193,6 +193,37 @@ public class AbletonTag
     /** The Auxiliary Envelope tag. */
     public static final String TAG_AUX_ENVELOPE            = "AuxEnv";
 
+    /** The tag of the 1st low frequency oscillator. */
+    public static final String TAG_LFO                     = "Lfo";
+    /** The tag of the 2nd low frequency oscillator. */
+    public static final String TAG_AUX_LFO_0               = "AuxLfos.0";
+    /** The tag of the 3rd low frequency oscillator. */
+    public static final String TAG_AUX_LFO_1               = "AuxLfos.1";
+    /** The parameters tag of the 1st low frequency oscillator. */
+    public static final String TAG_SIMPLER_LFO             = "SimplerLfo";
+    /** The parameters tag of the 2nd and 3rd low frequency oscillator. */
+    public static final String TAG_SIMPLER_AUX_LFO         = "SimplerAuxLfo";
+    /** The waveform of a low frequency oscillator. */
+    public static final String TAG_LFO_TYPE                = "Type";
+    /** The rate in Hertz of a low frequency oscillator. */
+    public static final String TAG_LFO_FREQUENCY           = "Frequency";
+    /** The rate type of a low frequency oscillator: 0 (Hertz), 1 (Beats). */
+    public static final String TAG_LFO_RATE_TYPE           = "RateType";
+    /** The tempo synchronized rate of a low frequency oscillator. */
+    public static final String TAG_LFO_BEAT_RATE           = "BeatRate";
+    /** Restart the low frequency oscillator with each note. */
+    public static final String TAG_LFO_RETRIGGER           = "Retrigger";
+    /** The pitch tag. */
+    public static final String TAG_PITCH                   = "Pitch";
+    /** The amount of the 1st low frequency oscillator applied to the pitch. */
+    public static final String TAG_PITCH_LFO_AMOUNT        = "PitchLfoAmount";
+    /** The amount of the 1st low frequency oscillator applied to the volume. */
+    public static final String TAG_VOLUME_LFO_AMOUNT       = "VolumeLfoAmount";
+    /** The amount of the 1st low frequency oscillator applied to the filter cutoff. */
+    public static final String TAG_MOD_BY_LFO              = "ModByLfo";
+    /** The modulation wheel routings of the MIDI modulation matrix. */
+    public static final String TAG_MIDI_CONTROLLER_MOD     = "MidiCtrl.2";
+
     /** The envelope tag. */
     public static final String TAG_ENVELOPE                = "Envelope";
 

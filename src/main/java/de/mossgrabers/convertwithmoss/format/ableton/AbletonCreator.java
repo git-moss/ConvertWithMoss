@@ -28,6 +28,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -51,6 +53,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
     private static final String                  FALSE           = "false";
 
     private static final String                  TEMPLATE_FOLDER = "de/mossgrabers/convertwithmoss/templates/adv/";
+    private static final String                  EMPTY_SLOT      = "\t\t\t\t<Value />";
 
     private static final Map<FilterType, String> FILTER_TYPES    = new EnumMap<> (FilterType.class);
     static
@@ -205,6 +208,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             }
             text = text.replace ("%PITCHBEND_RANGE%", Integer.toString (pitchBend));
             text = addFilter (multisampleSource.getGlobalFilter (), text);
+            text = addLfos (text, groups, multisampleSource.getGlobalFilter ());
             return Optional.of (text);
         }
         catch (final IOException ex)
@@ -213,6 +217,155 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
         }
 
         return Optional.empty ();
+    }
+
+
+    /**
+     * Add the low frequency oscillators. Since each Sampler oscillator has its own waveform and
+     * rate, the volume modulation is written to LFO 1 (fixed volume amount), the pitch modulation to
+     * LFO 2 and the filter cutoff modulation to LFO 3 (both via destination A). The routing amount
+     * is set to the maximum depth (modulation wheel fully up), the modulation wheel amount is the
+     * share of it which is controlled by the wheel. The modulation wheel can only have 2 routings,
+     * therefore the 2 strongest modulation wheel depths are used. Without any modulation wheel
+     * depth, the default routing of the modulation wheel to the filter cutoff is kept.
+     *
+     * @param sourceTemplate The template text
+     * @param groups The groups
+     * @param globalFilter The global filter, if any
+     * @return The text with the replaced placeholders
+     * @throws IOException Could not read the oscillator templates
+     */
+    private static String addLfos (final String sourceTemplate, final List<IGroup> groups, final Optional<IFilter> globalFilter) throws IOException
+    {
+        ILfoModulator volumeModulator = null;
+        ILfoModulator pitchModulator = null;
+        ILfoModulator cutoffModulator = null;
+        if (!groups.isEmpty () && !groups.get (0).getSampleZones ().isEmpty ())
+        {
+            final ISampleZone zone = groups.get (0).getSampleZones ().get (0);
+            if (zone.getAmplitudeLfoModulator ().isActive ())
+                volumeModulator = zone.getAmplitudeLfoModulator ();
+            if (zone.getPitchLfoModulator ().isActive ())
+                pitchModulator = zone.getPitchLfoModulator ();
+        }
+        if (globalFilter.isPresent () && globalFilter.get ().getCutoffLfoModulator ().isActive ())
+            cutoffModulator = globalFilter.get ().getCutoffLfoModulator ();
+
+        final String lfoTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ADV-Lfo-Template.xml").stripTrailing ();
+        final String auxLfoTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ADV-AuxLfo-Template.xml").stripTrailing ();
+
+        // LFO 1: volume
+        String text = sourceTemplate.replace ("%LFO1_ENABLED%", volumeModulator == null ? FALSE : TRUE);
+        text = text.replace ("%LFO1_SLOT%", volumeModulator == null ? EMPTY_SLOT : createLfoSlot (lfoTemplate, volumeModulator.getSource (), 0, 0));
+        final double volumeAmount = volumeModulator == null ? 0 : Math.clamp (Math.abs (getMaximumDepth (volumeModulator)) / AbletonLfo.VOLUME_SCALE, 0, 1);
+        text = text.replace ("%LFO1_VOLUME%", formatDouble (volumeAmount));
+        text = text.replace ("%LFO1_PITCH%", "0");
+        text = text.replace ("%LFO1_FILTER%", "0");
+
+        // LFO 2: pitch
+        text = text.replace ("%LFO2_ENABLED%", pitchModulator == null ? FALSE : TRUE);
+        text = text.replace ("%LFO2_SLOT%", pitchModulator == null ? EMPTY_SLOT : createLfoSlot (auxLfoTemplate, pitchModulator.getSource (), AbletonLfo.DESTINATION_PITCH, toAmount (getMaximumDepth (pitchModulator), AbletonLfo.PITCH_SCALE)));
+
+        // LFO 3: filter cutoff
+        text = text.replace ("%LFO3_ENABLED%", cutoffModulator == null ? FALSE : TRUE);
+        text = text.replace ("%LFO3_SLOT%", cutoffModulator == null ? EMPTY_SLOT : createLfoSlot (auxLfoTemplate, cutoffModulator.getSource (), AbletonLfo.DESTINATION_FILTER_FREQUENCY, toAmount (getMaximumDepth (cutoffModulator), AbletonLfo.CUTOFF_SCALE)));
+
+        // Modulation wheel: destination and amount of the 2 strongest routings
+        final List<double []> modWheelRoutings = new ArrayList<> ();
+        if (volumeModulator != null)
+            modWheelRoutings.add (new double []
+            {
+                AbletonLfo.DESTINATION_LFO1_VOLUME,
+                getModWheelShare (volumeModulator)
+            });
+        if (pitchModulator != null)
+            modWheelRoutings.add (new double []
+            {
+                AbletonLfo.DESTINATION_LFO2_AMOUNT_A,
+                getModWheelShare (pitchModulator)
+            });
+        if (cutoffModulator != null)
+            modWheelRoutings.add (new double []
+            {
+                AbletonLfo.DESTINATION_LFO3_AMOUNT_A,
+                getModWheelShare (cutoffModulator)
+            });
+        modWheelRoutings.removeIf (routing -> routing[1] == 0);
+        modWheelRoutings.sort ((routing1, routing2) -> Double.compare (Math.abs (routing2[1]), Math.abs (routing1[1])));
+
+        if (modWheelRoutings.isEmpty ())
+        {
+            text = text.replace ("%MOD_WHEEL_DESTINATION_1%", Integer.toString (AbletonLfo.DESTINATION_FILTER_FREQUENCY));
+            text = text.replace ("%MOD_WHEEL_AMOUNT_1%", "33.3333321");
+        }
+        else
+        {
+            text = text.replace ("%MOD_WHEEL_DESTINATION_1%", Integer.toString ((int) modWheelRoutings.get (0)[0]));
+            text = text.replace ("%MOD_WHEEL_AMOUNT_1%", formatDouble (modWheelRoutings.get (0)[1]));
+        }
+        final boolean hasSecond = modWheelRoutings.size () > 1;
+        text = text.replace ("%MOD_WHEEL_DESTINATION_2%", hasSecond ? Integer.toString ((int) modWheelRoutings.get (1)[0]) : "0");
+        return text.replace ("%MOD_WHEEL_AMOUNT_2%", hasSecond ? formatDouble (modWheelRoutings.get (1)[1]) : "0");
+    }
+
+
+    /**
+     * Fill the template of an oscillator.
+     *
+     * @param template The oscillator template
+     * @param lfo The oscillator
+     * @param destination The modulation destination of LFO 2 and 3
+     * @param amount The modulation amount of LFO 2 and 3 in percent
+     * @return The filled template
+     */
+    private static String createLfoSlot (final String template, final ILfo lfo, final int destination, final double amount)
+    {
+        final double rate = lfo.getRate () > 0 ? lfo.getRate () : 1;
+        String text = template.replace ("%LFO_TYPE%", Integer.toString (AbletonLfo.fromWaveform (lfo.getWaveform ())));
+        text = text.replace ("%LFO_FREQUENCY%", formatDouble (Math.clamp (rate, 0.01, 30.0)));
+        text = text.replace ("%LFO_RETRIGGER%", lfo.isKeySync () ? TRUE : FALSE);
+        text = text.replace ("%LFO_DESTINATION%", Integer.toString (destination));
+        return text.replace ("%LFO_AMOUNT%", formatDouble (amount));
+    }
+
+
+    /**
+     * Get the maximum depth of a modulator which is reached with the modulation wheel fully up.
+     *
+     * @param modulator The modulator
+     * @return The depth
+     */
+    private static double getMaximumDepth (final ILfoModulator modulator)
+    {
+        return modulator.getDepth () + modulator.getDepthModWheelModulator ().getDepth ();
+    }
+
+
+    /**
+     * Get the share of the maximum depth of a modulator which is controlled by the modulation wheel.
+     *
+     * @param modulator The modulator
+     * @return The share in percent in the range of [0..100]
+     */
+    private static double getModWheelShare (final ILfoModulator modulator)
+    {
+        final double maximumDepth = getMaximumDepth (modulator);
+        if (maximumDepth == 0)
+            return 0;
+        return Math.clamp (modulator.getDepthModWheelModulator ().getDepth () / maximumDepth * 100.0, 0, 100.0);
+    }
+
+
+    /**
+     * Convert a modulation depth to a modulation amount in percent.
+     *
+     * @param depth The depth
+     * @param scale The scaling factor of the destination (depth of an amount of 100%)
+     * @return The amount in the range of [-100..100]
+     */
+    private static double toAmount (final double depth, final double scale)
+    {
+        return Math.clamp (depth / scale * 100.0, -100.0, 100.0);
     }
 
 
