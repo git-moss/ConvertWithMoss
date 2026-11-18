@@ -236,7 +236,7 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
         final IAudioMetadata audioMetadata = pad.sampleData.getAudioMetadata ();
         final int sampleLength = audioMetadata.getNumberOfSamples ();
         final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();
-        amplitudeEnvelopeModulator.setSource (convertEnvelope (pad));
+        amplitudeEnvelopeModulator.setSource (convertEnvelope (pad, sampleLength / (double) audioMetadata.getSampleRate ()));
 
         // Play-back
         sampleZone.setStart (0);
@@ -246,12 +246,29 @@ public class AkaiMPC60Detector extends AbstractDetector<MetadataSettingsUI>
     }
 
 
-    private static IEnvelope convertEnvelope (final AkaiMPC60Pad pad)
+    /**
+     * Convert the amplitude envelope of a pad. According to the manual the decay (fade-out) of the
+     * MPC60 always ends at the end of the sample, therefore the level is held until the decay
+     * starts. Without a decay the sample plays with full level.
+     *
+     * @param pad The pad
+     * @param sampleLength The length of the sample in seconds
+     * @return The envelope
+     */
+    private static IEnvelope convertEnvelope (final AkaiMPC60Pad pad, final double sampleLength)
     {
         final IEnvelope envelope = new DefaultEnvelope ();
-        envelope.setAttackTime (toSeconds (pad.attack, false));
-        envelope.setDecayTime (toSeconds (pad.decay, true));
-        envelope.setSustainLevel (0);
+        final double attack = toSeconds (pad.attack, false);
+        final double decay = toSeconds (pad.decay, true);
+        envelope.setAttackTime (attack);
+        if (decay > 0)
+        {
+            envelope.setHoldTime (Math.max (0, sampleLength - attack - decay));
+            envelope.setDecayTime (decay);
+            envelope.setSustainLevel (0);
+        }
+        else
+            envelope.setSustainLevel (1.0);
         // This is not fully correct but cannot be mapped otherwise...
         envelope.setReleaseTime (toSeconds (pad.decay, false));
         return envelope;

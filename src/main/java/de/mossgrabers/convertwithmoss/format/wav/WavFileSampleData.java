@@ -225,9 +225,10 @@ public class WavFileSampleData extends AbstractFileSampleData
         // Read the root key and its fine tuning if the format did not provide a root itself.
         // The pitch fraction is relative to the unity note of the chunk, so it must never be
         // combined with - or even overwrite - a root key which the format supplied
-        if (addRootKey && zone.getKeyRoot () == -1)
+        final int unityNote = sampleChunk.getMIDIUnityNote ();
+        if (addRootKey && zone.getKeyRoot () == -1 && unityNote >= 0)
         {
-            zone.setKeyRoot (sampleChunk.getMIDIUnityNote ());
+            zone.setKeyRoot (unityNote);
             if (zone.getTuning () == 0)
                 zone.setTuning (Math.clamp (sampleChunk.getMIDIPitchFractionAsCents () / 100.0, -0.5, 0.5));
         }

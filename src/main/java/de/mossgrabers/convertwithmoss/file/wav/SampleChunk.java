@@ -148,12 +148,24 @@ public class SampleChunk extends AbstractSpecificRIFFChunk
      * reverses that encoding, so together with {@link #getMIDIPitchFractionAsCents()} it returns
      * the intended root key and fine tuning.
      *
-     * @return The four bytes converted to an integer
+     * <p>
+     * Some devices write invalid values: the Akai MPC500/1000/2500 store the note in big-endian
+     * order (e.g. 60 as 0x3C000000), which is corrected. Other values outside of the MIDI range are
+     * ignored.
+     *
+     * @return The unity note in the range of [0..127] or -1 if the stored value is invalid
      */
     public int getMIDIUnityNote ()
     {
-        final int unityNote = this.rawRiffChunk.getFourBytesAsUnsignedInt (0x0C);
-        return this.getMIDIPitchFractionAsCents () < 0 ? unityNote - 1 : unityNote;
+        int unityNote = this.rawRiffChunk.getFourBytesAsUnsignedInt (0x0C);
+        if (unityNote < 0 || unityNote > 127)
+        {
+            final int swapped = Integer.reverseBytes (unityNote);
+            if (swapped < 0 || swapped > 127)
+                return -1;
+            unityNote = swapped;
+        }
+        return this.getMIDIPitchFractionAsCents () < 0 && unityNote > 0 ? unityNote - 1 : unityNote;
     }
 
 

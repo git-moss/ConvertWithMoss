@@ -33,7 +33,11 @@ public class AkaiMPC1000Sample
      */
     public AkaiMPC1000Sample (final InputStream input) throws IOException
     {
-        this.name = StreamUtils.readAscii (input, 16).trim ();
+        // The name ends at the first 0 byte. The MPC does not clear the rest of the field, e.g. the
+        // empty pads of the factory programs contain 0 followed by the remains of a previous name
+        final String text = StreamUtils.readAscii (input, 16);
+        final int end = text.indexOf ('\0');
+        this.name = (end >= 0 ? text.substring (0, end) : text).trim ();
 
         // Padding
         input.skipNBytes (1);

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.tools.ui.Functions;
@@ -22,9 +23,11 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class AkaiMPC1000Program
 {
-    private static final String        MAGIC = "MPC1000 PGM 1.00";
+    // Version 1.00 is written by the MPC500 and MPC1000, 1.01 by the MPC2500. Both have the same
+    // layout.
+    private static final Set<String>   MAGICS = Set.of ("MPC1000 PGM 1.00", "MPC1000 PGM 1.01");
 
-    private final List<AkaiMPC1000Pad> pads  = new ArrayList<> ();
+    private final List<AkaiMPC1000Pad> pads   = new ArrayList<> ();
     private final byte []              midiNotes;
     private final byte []              assignedPads;
     @SuppressWarnings("unused")
@@ -43,7 +46,7 @@ public class AkaiMPC1000Program
         input.skipNBytes (4);
 
         final String magic = StreamUtils.readAscii (input, 16);
-        if (!MAGIC.equals (magic))
+        if (!MAGICS.contains (magic))
             throw new IOException (Functions.getMessage ("IDS_MPC1000_UNKNOWN_FILE"));
 
         // 4 bytes padding

@@ -172,15 +172,25 @@ public class AkaMPC2000ProgramConverter
         sampleZone.setGain (MathUtils.valueToDb ((pad.getMixerLevel () + pad.getLevel ()) / 200.0));
         sampleZone.setPanning ((pad.getMixerPan () - 50) / 50.0);
 
+        // Play-back: the start and end of the sound were set from the sound file (SND), WAV files
+        // play completely
         final IAudioMetadata audioMetadata = sampleData.getAudioMetadata ();
         final int sampleLength = audioMetadata.getNumberOfSamples ();
-        final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();
-        amplitudeEnvelopeModulator.setSource (convertEnvelope (pad));
-        amplitudeEnvelopeModulator.setDepth (pad.getVelocityToLevel () / 100.0);
+        final int start = Math.clamp (sampleZone.getStart (), 0, sampleLength);
+        final int stop = sampleZone.getStop () <= start ? sampleLength : Math.min (sampleZone.getStop (), sampleLength);
+        sampleZone.setStart (start);
+        sampleZone.setStop (stop);
+        final double sampleLengthAsSeconds = (stop - start) / (double) audioMetadata.getSampleRate ();
 
-        // Play-back
-        sampleZone.setStart (0);
-        sampleZone.setStop (sampleLength);
+        // With voice overlap 'Note Off' the sound stops when the pad is released, a looped sample
+        // with decay mode 'End' behaves the same, otherwise the sample is played to its end
+        final boolean isLooped = !sampleZone.getLoops ().isEmpty ();
+        final boolean isNoteOff = pad.getVoiceOverlap () == 2 || isLooped && pad.getDecayMode () == 0;
+        sampleZone.setOneShot (!isNoteOff);
+
+        final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();
+        amplitudeEnvelopeModulator.setSource (convertEnvelope (pad, !isNoteOff, isLooped, sampleLengthAsSeconds));
+        sampleZone.getAmplitudeVelocityModulator ().setDepth (pad.getVelocityToLevel () / 100.0);
 
         // Filter
         final int filterCutoff = pad.getFilterFreq ();
@@ -188,7 +198,18 @@ public class AkaMPC2000ProgramConverter
         // Poles are unknown, let's go with 4
         final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 4, cutoff, pad.getFilterRes () / 100.0);
 
-        // There is a filter envelope with +/- intensity in the unknown data
+        // The filter envelope is disabled with an amount of 0
+        final int filterAmount = pad.getFilterAmount ();
+        if (filterAmount > 0)
+        {
+            final IEnvelope filterEnvelope = new DefaultEnvelope ();
+            filterEnvelope.setAttackTime (toSeconds (pad.getFilterAttack (), false));
+            filterEnvelope.setDecayTime (toSeconds (pad.getFilterDecay (), true));
+            filterEnvelope.setSustainLevel (0);
+            final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+            cutoffEnvelopeModulator.setSource (filterEnvelope);
+            cutoffEnvelopeModulator.setDepth (Math.min (filterAmount, 100) / 100.0);
+        }
 
         filter.getCutoffVelocityModulator ().setDepth (pad.getFilterVelocityToFrequency () / 100.0);
         sampleZone.setFilter (filter);
@@ -197,16 +218,42 @@ public class AkaMPC2000ProgramConverter
     }
 
 
-    private static IEnvelope convertEnvelope (final AkaiMPC2000Pad pad)
+    /**
+     * Convert the amplitude envelope of a pad. The MPC has an attack and a decay. The decay mode
+     * 'Start' fades out the sound directly after the attack. The decay mode 'End' fades out the
+     * sound so that the fade ends at the end of the sample. If the sound stops when the pad is
+     * released, this is converted to a release with the decay time.
+     *
+     * @param pad The pad
+     * @param isOneShot True if the sample is played up to its end regardless of a note-off
+     * @param isLooped True if the sample contains a loop
+     * @param sampleLength The length of the sample in seconds
+     * @return The envelope
+     */
+    private static IEnvelope convertEnvelope (final AkaiMPC2000Pad pad, final boolean isOneShot, final boolean isLooped, final double sampleLength)
     {
         final IEnvelope envelope = new DefaultEnvelope ();
-        envelope.setAttackTime (toSeconds (pad.getAttack (), false));
-        if (pad.getDecayMode () == 0)
-            envelope.setDecayTime (toSeconds (pad.getDecay (), true));
-        envelope.setSustainLevel (0);
-        // This is not fully correct but cannot be mapped otherwise...
+        final double attack = toSeconds (pad.getAttack (), false);
+        final double decay = toSeconds (pad.getDecay (), true);
+        envelope.setAttackTime (attack);
+
         if (pad.getDecayMode () == 1)
-            envelope.setReleaseTime (toSeconds (pad.getDecay (), false));
+        {
+            // Decay mode 'Start': fade out right after the attack
+            envelope.setDecayTime (decay);
+            envelope.setSustainLevel (0);
+        }
+        else if (decay > 0 && !isLooped)
+        {
+            // Decay mode 'End': hold the level and fade out at the end of the sample
+            envelope.setHoldTime (Math.max (0, sampleLength - attack - decay));
+            envelope.setDecayTime (decay);
+            envelope.setSustainLevel (0);
+        }
+        else
+            envelope.setSustainLevel (1.0);
+
+        envelope.setReleaseTime (isOneShot ? sampleLength : decay);
         return envelope;
     }
 

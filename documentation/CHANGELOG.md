@@ -18,6 +18,7 @@
 * Fixed: 8 bit samples were converted to full-scale noise for destinations which need samples with more bits, e.g. 16 bit for Waldorf Quantum/Iridium (QPAT) and the Teenage Engineering OP-XY - samples from 8 bit WAV and AIFF files as well as e.g. the voices of the Fairlight CMI IIx. WAV stores 8 bit samples unsigned and all others signed, but the conversion kept the unsigned format of the source for the 16 bit samples, which are then read as signed ones: every sample is moved by half of the full scale and the waveform wraps around at each zero crossing. The 6 CMI IIx test voices wrapped 255 to 4,864 times per sample when converted to QPAT, and the 48 converted 8 bit samples of the 'RobotA/B 9 octaves' presets of the Iridium MK2 factory library, written for the OP-XY, were shifted by up to 30% of the full scale and no longer followed their source; now they match it within one 8 bit step. Destinations which keep the 8 bits, e.g. SFZ, were not affected.
 * Fixed: A WAV file which ends before its audio does, e.g. because a copy was interrupted, stopped the conversion of its multi-sample when processing was enabled. Without processing, the file was copied as it is, with a header which states audio that is not there, and the zone ended behind the audio. The audio which is present is now used, faded out over its last 10 ms so that it does not end with a click, and written with a header which matches it; a warning names the file and how many of its sample frames are present. The play range of a zone ends with the audio, a zone which only plays the missing part is left out, and a loop which reaches into the faded out or missing part is removed, since it would jump from silence back to the loop start at every repeat. Reading such a file also dropped up to 16 KB of the audio in front of its end.
 * Fixed: A WAV file which the check of a loaded sample rejects - one with more than two channels, without a format chunk or without audio data - is left out, as the logged error says. The result of the check was ignored, so the file was loaded anyway, e.g. a file with 4 channels was written into a converted QPAT preset, although the instruments play only mono and stereo samples.
+* Fixed: WAV files with a MIDI unity note in the wrong byte order (e.g. written by the Akai MPC500/1000/2500) created huge root keys (e.g. pitch_keycenter=1006632960).
 * 1010music bento / blackbox
   * New: Read/write the LFO and its routing to Level, Pitch and Filter Cutoff incl. the modulation wheel depth. Tempo synchronized rates are converted assuming 120 BPM.
 * Ableton
@@ -50,6 +51,23 @@
   * Fixed: Playback mode LOOP UNTIL REL is now converted as a loop which ends on note-off; unknown playback values no longer create a loop.
   * Fixed: Envelope times were much too long, they now use the curve of the S1000/S3000.
   * Fixed: Samples written by an Akai sampler with a sample tuning were mapped 2 octaves too high since the root key was read from the generic part of the WAV sample chunk instead of the Akai specific data.
+* Akai MPC60
+  * Fixed: Pads without a decay were silent, the decay now ends at the end of the sample.
+* Akai MPC500/1000/2500
+  * New: Read the LFO of the pads (MPC1000 OS 2 and MPC2500): waveform, rate and delay (converted at 120 BPM) and the amounts for pitch, level and filter cutoff.
+  * New: Read the filter envelope (time and amount) of filter 1.
+  * Fixed: Programs saved by the MPC2500 could not be read ("MPC1000 PGM 1.01").
+  * Fixed: Velocity to level was applied as the depth of the amplitude envelope, pads with a value of 0 had no envelope.
+  * Fixed: Empty pads could cause 'Referenced sample missing' errors (e.g. in the MPC1000 factory programs).
+  * Fixed: Pads with decay mode 'Start' were silent
+* Akai MPC2000/2000XL/3000
+  * New: Voice overlap 'Note Off' is converted (stop on note-off), all other pads are one-shot.
+  * New: Read the filter envelope (attack, decay, amount).
+  * Fixed: The start and end of SND sounds were ignored.
+  * Fixed: Pads with decay mode 'Start' were silent, decay mode 'End' faded out directly after the attack.
+  * Fixed: Velocity to level was applied as the depth of the amplitude envelope.
+* Akai MPC/Force
+  * New: Read and write the key-group LFO (Sine, Triangle, S&H, Saw, Saw Down, Square, Noise) with its rate, reset and the amounts for pitch, volume and filter cutoff. The 'Wheel > LFO' setting is converted to/from modulation wheel control of the LFO amounts.
 * Audiomodern Soundbox
   * Fixed: The panning of the samples was not converted, all samples played in the center. E.g. split stereo samples - two mono samples of one recording, hard panned left and right - played layered in the center instead of in stereo. The panning is now written to the value which the sample editor of the plug-in sets, for every sample, and read from it.
 * discoDSP Bliss

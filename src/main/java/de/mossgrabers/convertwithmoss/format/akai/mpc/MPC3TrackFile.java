@@ -22,8 +22,10 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.tools.ui.Functions;
 
 
@@ -152,12 +154,18 @@ public class MPC3TrackFile
         keygroupNode.put ("pitchBendPositiveRange", bendUpSemitones);
         keygroupNode.put ("pitchBendNegativeRange", bendDownSemitones);
 
+        // The share of the LFO amounts which is controlled by the modulation wheel; without any LFO
+        // modulation in the source the LFO settings of the template are kept
+        final boolean hasLfo = MPCLfo.hasLfo (multisampleSource);
+        if (hasLfo)
+            setWrappedValue (keygroupNode, "wheelToLfo", MPCLfo.getWheelShare (multisampleSource));
+
         // The used instrument slots carry the key-groups, the rest stays at the neutral prototype
         for (int i = 0; i < NUM_INSTRUMENTS; i++)
         {
             final ObjectNode instrumentNode = instrumentPrototype.deepCopy ();
             if (i < numKeygroups)
-                patchInstrument (instrumentNode, keygroups.get (i));
+                patchInstrument (instrumentNode, keygroups.get (i), hasLfo);
             instrumentsNode.add (instrumentNode);
         }
 
@@ -186,8 +194,9 @@ public class MPC3TrackFile
      *
      * @param instrumentNode The instrument node to patch
      * @param zones The zones which are stacked as the layers of the key-group
+     * @param hasLfo True if the multi-sample source contains LFO modulations
      */
-    private static void patchInstrument (final ObjectNode instrumentNode, final List<ISampleZone> zones)
+    private static void patchInstrument (final ObjectNode instrumentNode, final List<ISampleZone> zones, final boolean hasLfo)
     {
         final ISampleZone firstZone = zones.get (0);
         instrumentNode.put ("lowNote", limitToDefault (firstZone.getKeyLow (), 0));
@@ -196,7 +205,10 @@ public class MPC3TrackFile
         // 0 is one-shot, 1 is note-off and 2 is note-on
         instrumentNode.put ("triggerMode", firstZone.isOneShot () ? 0 : 2);
 
-        patchSynthSection ((ObjectNode) instrumentNode.get ("synthSection"), firstZone);
+        final ObjectNode synthNode = (ObjectNode) instrumentNode.get ("synthSection");
+        patchSynthSection (synthNode, firstZone);
+        if (hasLfo)
+            patchLfo (synthNode, firstZone);
 
         final ArrayNode layersNode = (ArrayNode) instrumentNode.get ("layersv");
         for (int i = 0; i < zones.size () && i < layersNode.size (); i++)
@@ -303,6 +315,32 @@ public class MPC3TrackFile
             filterValueNode.put ("filterEnvelopeAmount", envelopeDepth);
             patchEnvelope ((ObjectNode) synthNode.get ("filterEnvelope"), cutoffModulator.getSource ());
         }
+    }
+
+
+    /**
+     * Patch the first LFO of the synthesizer section of an instrument slot with the LFO settings of a
+     * zone. The second LFO is not used by the key-group.
+     *
+     * @param synthNode The synthesizer section node to patch
+     * @param zone The sample zone
+     */
+    private static void patchLfo (final ObjectNode synthNode, final ISampleZone zone)
+    {
+        final JsonNode lfoDataNode = synthNode.get ("lfoData");
+        if (lfoDataNode == null || !(lfoDataNode.get (VALUE0) instanceof final ObjectNode lfoNode))
+            return;
+
+        final Optional<ILfo> lfoOpt = MPCLfo.getLfo (zone);
+        final ILfo lfo = lfoOpt.isPresent () ? lfoOpt.get () : new DefaultLfo ();
+        lfoNode.put ("lfoPitch", MPCLfo.getAmount (zone.getPitchLfoModulator (), MPCLfo.PITCH_SCALE));
+        lfoNode.put ("lfoAmpLevel", MPCLfo.getAmount (zone.getAmplitudeLfoModulator (), MPCLfo.VOLUME_SCALE));
+        // value0 is the amount for filter 1, value1 for filter 2
+        setWrappedValue (lfoNode, "lfoFilterCutOff", MPCLfo.getCutoffAmount (zone));
+        lfoNode.put ("lfoWaveformType", MPCLfo.fromWaveform (lfo.getWaveform ()));
+        lfoNode.put ("lfoRate", MPCLfo.hertzToRate (lfo.getRate ()));
+        lfoNode.put ("lfoSync", 0);
+        lfoNode.put ("lfoReset", lfo.isKeySync ());
     }
 
 

@@ -59,6 +59,25 @@ public class MPCKeygroupTag
     public static final String INSTRUMENT_ONE_SHOT                  = "OneShot";
     /** The layers element of the instrument element. */
     public static final String INSTRUMENT_LAYERS                    = "Layers";
+    /** The LFO element of the instrument element. */
+    public static final String INSTRUMENT_LFO                       = "LFO";
+
+    /** The type (waveform) element of the LFO element. */
+    public static final String LFO_TYPE                             = "Type";
+    /** The rate element of the LFO element. */
+    public static final String LFO_RATE                             = "Rate";
+    /** The tempo sync element of the LFO element. */
+    public static final String LFO_SYNC                             = "Sync";
+    /** The reset (key sync) element of the LFO element. */
+    public static final String LFO_RESET                            = "Reset";
+    /** The pitch amount element of the LFO element (or of the instrument element in older files). */
+    public static final String LFO_PITCH                            = "LfoPitch";
+    /** The cutoff amount element of the LFO element (or of the instrument element in older files). */
+    public static final String LFO_CUTOFF                           = "LfoCutoff";
+    /** The volume amount element of the LFO element (or of the instrument element in older files). */
+    public static final String LFO_VOLUME                           = "LfoVolume";
+    /** The panning amount element of the LFO element (or of the instrument element in older files). */
+    public static final String LFO_PAN                              = "LfoPan";
 
     /** The filter type element of the instrument element. */
     public static final String INSTRUMENT_FILTER_TYPE               = "FilterType";
@@ -216,6 +235,9 @@ public class MPCKeygroupTag
 
     /** The number attribute of the pad note element. */
     public static final String PAD_NOTE_NUMBER                      = "number";
+
+    /** The number attribute of the LFO element. */
+    public static final String LFO_NUMBER                           = "LfoNum";
 
     /** The program type keygroup. */
     public static final String TYPE_KEYGROUP                        = "Keygroup";

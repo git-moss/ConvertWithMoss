@@ -22,11 +22,15 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
@@ -40,7 +44,8 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final Map<Integer, FilterType> FILTER_MAP = new HashMap<> ();
+    private static final Map<Integer, FilterType> FILTER_MAP     = new HashMap<> ();
+
     static
     {
         FILTER_MAP.put (Integer.valueOf (1), FilterType.LOW_PASS);
@@ -49,6 +54,23 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         // Not sure about this one but there is a LOW PASS 2 in the manual
         FILTER_MAP.put (Integer.valueOf (4), FilterType.LOW_PASS);
     }
+
+    private static final LfoWaveform []           LFO_WAVEFORMS  =
+    {
+        LfoWaveform.TRIANGLE,
+        LfoWaveform.SINE,
+        LfoWaveform.SQUARE,
+        LfoWaveform.SAWTOOTH_UP,
+        LfoWaveform.SAWTOOTH_DOWN,
+        LfoWaveform.RANDOM
+    };
+
+    /** Ticks per beat of the LFO rate and delay. */
+    private static final double                   TICKS_PER_BEAT = 96.0;
+    /** The tempo for converting the tempo synchronized LFO rate and delay. */
+    private static final double                   TEMPO          = 120.0;
+    /** The depth of a pitch amount of 100, assumed to be 1 octave. */
+    private static final double                   PITCH_SCALE    = 1200.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
 
 
     /**
@@ -145,8 +167,8 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         final int sampleLength = audioMetadata.getNumberOfSamples ();
         final double sampleLengthAsSeconds = sampleLength / (double) audioMetadata.getSampleRate ();
         final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();
-        amplitudeEnvelopeModulator.setSource (convertEnvelope (pad, isOneShot, sampleLengthAsSeconds));
-        amplitudeEnvelopeModulator.setDepth (pad.getVelocityToLevel () / 100.0);
+        amplitudeEnvelopeModulator.setSource (convertEnvelope (pad, isOneShot, !sampleZone.getLoops ().isEmpty (), sampleLengthAsSeconds));
+        sampleZone.getAmplitudeVelocityModulator ().setDepth (pad.getVelocityToLevel () / 100.0);
 
         // Play-back
         sampleZone.setOneShot (isOneShot);
@@ -161,28 +183,116 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
             // Poles are unknown, let's go with 4
             final IFilter filter = new DefaultFilter (filterType, 4, cutoff, pad.getFilter1Res () / 100.0);
 
-            // There is a filter envelope with +/- intensity in the unknown data
+            // The filter envelope starts at the cutoff plus the amount and goes back to the
+            // cutoff within the envelope time
+            final int envelopeAmount = pad.getFilter1EnvelopeAmount ();
+            if (envelopeAmount != 0)
+            {
+                final IEnvelope filterEnvelope = new DefaultEnvelope ();
+                filterEnvelope.setAttackTime (0);
+                filterEnvelope.setDecayTime (toSeconds (pad.getFilter1EnvelopeTime (), false));
+                filterEnvelope.setSustainLevel (0);
+                filterEnvelope.setReleaseTime (0);
+                final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+                cutoffEnvelopeModulator.setSource (filterEnvelope);
+                cutoffEnvelopeModulator.setDepth (Math.clamp (envelopeAmount / 50.0, -1.0, 1.0));
+            }
 
             filter.getCutoffVelocityModulator ().setDepth (pad.getFilter1VelocityToFrequency () / 100.0);
             sampleZone.setFilter (filter);
         }
 
+        convertLfo (pad, sampleZone);
+
         return Optional.of (sampleZone);
     }
 
 
-    private static IEnvelope convertEnvelope (final AkaiMPC1000Pad pad, final boolean isOneShot, final double sampleLength)
+    /**
+     * Convert the LFO of a pad. The rate and the delay are synchronized to the tempo, which is
+     * assumed to be 120 BPM. The depths of the amounts are unknown: a pitch amount of 100 is
+     * assumed to be 1 octave, a level amount of 100 the full volume range and a filter amount of
+     * 100 the full cutoff range. The amount for filter 2 is ignored since only filter 1 is
+     * converted.
+     *
+     * @param pad The pad
+     * @param sampleZone The sample zone to which to add the LFO modulations
+     */
+    private static void convertLfo (final AkaiMPC1000Pad pad, final ISampleZone sampleZone)
+    {
+        final int rate = pad.getLfoRate ();
+        if (rate <= 0)
+            return;
+
+        final double secondsPerBeat = 60.0 / TEMPO;
+        final ILfo lfo = new DefaultLfo ();
+        final int waveform = pad.getLfoWaveform ();
+        lfo.setWaveform (waveform >= 0 && waveform < LFO_WAVEFORMS.length ? LFO_WAVEFORMS[waveform] : LfoWaveform.TRIANGLE);
+        lfo.setRate (1.0 / (rate / TICKS_PER_BEAT * secondsPerBeat));
+        lfo.setDelay (pad.getLfoDelay () / TICKS_PER_BEAT * secondsPerBeat);
+        // The delay starts with the note, therefore the LFO is expected to restart with each note
+        lfo.setKeySync (true);
+
+        setLfoModulator (sampleZone.getPitchLfoModulator (), lfo, pad.getLfoPitch () / 100.0 * PITCH_SCALE);
+        setLfoModulator (sampleZone.getAmplitudeLfoModulator (), lfo, pad.getLfoLevel () / 100.0);
+        final Optional<IFilter> filter = sampleZone.getFilter ();
+        if (filter.isPresent ())
+            setLfoModulator (filter.get ().getCutoffLfoModulator (), lfo, pad.getLfoFilter1 () / 100.0);
+    }
+
+
+    /**
+     * Set the oscillator and the depth of a modulator, if the depth is not 0.
+     *
+     * @param modulator The modulator
+     * @param lfo The oscillator
+     * @param depth The depth
+     */
+    private static void setLfoModulator (final ILfoModulator modulator, final ILfo lfo, final double depth)
+    {
+        if (depth <= 0)
+            return;
+        modulator.setSource (lfo);
+        modulator.setDepth (depth);
+    }
+
+
+    /**
+     * Convert the amplitude envelope of a pad. The MPC has an attack and a decay. The decay mode
+     * 'Start' fades out the sound directly after the attack. The decay mode 'End' fades out the
+     * sound so that the fade ends at the end of the sample. In play mode 'Note On' the sound stops
+     * when the pad is released, which is converted to a release with the decay time.
+     *
+     * @param pad The pad
+     * @param isOneShot True if the sample is played up to its end regardless of a note-off
+     * @param isLooped True if the sample contains a loop
+     * @param sampleLength The length of the sample in seconds
+     * @return The envelope
+     */
+    private static IEnvelope convertEnvelope (final AkaiMPC1000Pad pad, final boolean isOneShot, final boolean isLooped, final double sampleLength)
     {
         final IEnvelope envelope = new DefaultEnvelope ();
-        envelope.setAttackTime (toSeconds (pad.getAttack (), false));
-        if (pad.getDecayMode () == 0)
-            envelope.setDecayTime (toSeconds (pad.getDecay (), true));
-        envelope.setSustainLevel (isOneShot ? 1.0 : 0.0);
-        // This is not fully correct but cannot be mapped otherwise...
+        final double attack = toSeconds (pad.getAttack (), false);
+        final double decay = toSeconds (pad.getDecay (), true);
+        envelope.setAttackTime (attack);
+
         if (pad.getDecayMode () == 1)
-            envelope.setReleaseTime (toSeconds (pad.getDecay (), false));
-        else if (isOneShot)
-            envelope.setReleaseTime (sampleLength);
+        {
+            // Decay mode 'Start': fade out right after the attack
+            envelope.setDecayTime (decay);
+            envelope.setSustainLevel (0);
+        }
+        else if (decay > 0 && !isLooped)
+        {
+            // Decay mode 'End': hold the level and fade out at the end of the sample
+            envelope.setHoldTime (Math.max (0, sampleLength - attack - decay));
+            envelope.setDecayTime (decay);
+            envelope.setSustainLevel (0);
+        }
+        else
+            envelope.setSustainLevel (1.0);
+
+        envelope.setReleaseTime (isOneShot ? sampleLength : decay);
         return envelope;
     }
 

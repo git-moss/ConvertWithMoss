@@ -31,10 +31,12 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.tools.XMLUtils;
 
 
@@ -165,7 +167,8 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         XMLUtils.addTextElement (document, versionElement, MPCKeygroupTag.VERSION_FILE_VERSION, MPCKeygroupConstants.FILE_VERSION);
         XMLUtils.addTextElement (document, versionElement, MPCKeygroupTag.VERSION_PLATFORM, MPCKeygroupConstants.PLATFORM);
 
-        final Element programElement = createProgramElement (document, multisampleSource);
+        final boolean hasLfo = MPCLfo.hasLfo (multisampleSource);
+        final Element programElement = createProgramElement (document, multisampleSource, hasLfo);
         multisampleElement.appendChild (programElement);
         final Element instrumentsElement = document.createElement (MPCKeygroupTag.PROGRAM_INSTRUMENTS);
         programElement.appendChild (instrumentsElement);
@@ -179,7 +182,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 
             for (final ISampleZone sampleMetadata: group.getSampleZones ())
             {
-                final Optional<MPCKeygroup> keygroupOpt = this.getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger);
+                final Optional<MPCKeygroup> keygroupOpt = this.getKeygroup (keygroupsMap, sampleMetadata, document, instrumentsElement, trigger, hasLfo);
                 if (keygroupOpt.isEmpty ())
                 {
                     this.notifier.logError ("IDS_MPC_MORE_THAN_N_LAYERS", Integer.toString (this.settingsConfiguration.getLayerLimit ()), Integer.toString (sampleMetadata.getKeyLow ()), Integer.toString (sampleMetadata.getKeyHigh ()), Integer.toString (sampleMetadata.getVelocityLow ()), Integer.toString (sampleMetadata.getVelocityHigh ()));
@@ -205,9 +208,10 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
      *
      * @param document The XML document
      * @param multisampleSource The multi-sample source
+     * @param hasLfo True if the multi-sample source contains LFO modulations
      * @return The created element
      */
-    private static Element createProgramElement (final Document document, final IMultisampleSource multisampleSource)
+    private static Element createProgramElement (final Document document, final IMultisampleSource multisampleSource, final boolean hasLfo)
     {
         final Element programElement = document.createElement (MPCKeygroupTag.ROOT_PROGRAM);
         programElement.setAttribute (MPCKeygroupTag.PROGRAM_TYPE, MPCKeygroupTag.TYPE_KEYGROUP);
@@ -223,8 +227,10 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
             XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_PITCHBEND_RANGE, formatDouble (bendUpValue, 3));
         }
 
-        // Vibrato on Modulation Wheel
-        XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_WHEEL_TO_LFO, "1.000000");
+        // The share of the LFO amounts which is controlled by the modulation wheel; without any LFO
+        // modulation in the source a vibrato on the modulation wheel is added
+        final double wheelShare = hasLfo ? MPCLfo.getWheelShare (multisampleSource) : 1.0;
+        XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_WHEEL_TO_LFO, String.format (Locale.US, "%.6f", Double.valueOf (wheelShare)));
         return programElement;
     }
 
@@ -311,19 +317,49 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
     }
 
 
-    // LFO for vibrato on Modulation Wheel
-    private static Element createLfoElement (final Document document)
+    /**
+     * Creates the LFO element of a key-group. If the multi-sample source does not contain any LFO
+     * modulation, a vibrato is created which is controlled by the modulation wheel.
+     *
+     * @param document The XML document
+     * @param zone The sample zone from which to take the LFO settings
+     * @param hasLfo True if the multi-sample source contains LFO modulations
+     * @return The created element
+     */
+    private static Element createLfoElement (final Document document, final ISampleZone zone, final boolean hasLfo)
     {
-        final Element lfoElement = document.createElement ("LFO");
-        lfoElement.setAttribute ("LfoNum", "0");
-        XMLUtils.addTextElement (document, lfoElement, "Type", "Sine");
-        XMLUtils.addTextElement (document, lfoElement, "Rate", "0.700000");
-        XMLUtils.addTextElement (document, lfoElement, "LfoPitch", "0.044000");
+        final Element lfoElement = document.createElement (MPCKeygroupTag.INSTRUMENT_LFO);
+        lfoElement.setAttribute (MPCKeygroupTag.LFO_NUMBER, "0");
+
+        if (!hasLfo)
+        {
+            XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_TYPE, "Sine");
+            XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_RATE, "0.700000");
+            XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_PITCH, "0.044000");
+            return lfoElement;
+        }
+
+        final Optional<ILfo> lfoOpt = MPCLfo.getLfo (zone);
+        final ILfo lfo = lfoOpt.isPresent () ? lfoOpt.get () : new DefaultLfo ();
+        XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_TYPE, MPCLfo.getWaveformName (lfo.getWaveform ()));
+        setLfoAttribute (document, lfoElement, MPCKeygroupTag.LFO_RATE, MPCLfo.hertzToRate (lfo.getRate ()));
+        XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_SYNC, "0");
+        XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_RESET, lfo.isKeySync () ? MPCKeygroupTag.TRUE : "False");
+        setLfoAttribute (document, lfoElement, MPCKeygroupTag.LFO_PITCH, MPCLfo.getAmount (zone.getPitchLfoModulator (), MPCLfo.PITCH_SCALE));
+        setLfoAttribute (document, lfoElement, MPCKeygroupTag.LFO_CUTOFF, MPCLfo.getCutoffAmount (zone));
+        setLfoAttribute (document, lfoElement, MPCKeygroupTag.LFO_VOLUME, MPCLfo.getAmount (zone.getAmplitudeLfoModulator (), MPCLfo.VOLUME_SCALE));
+        XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_PAN, MPCKeygroupConstants.DOUBLE_ZERO);
         return lfoElement;
     }
 
 
-    private Optional<MPCKeygroup> getKeygroup (final Map<String, List<MPCKeygroup>> keygroupsMap, final ISampleZone zone, final Document document, final Element instrumentsElement, final TriggerType trigger)
+    private static void setLfoAttribute (final Document document, final Element element, final String attribute, final double value)
+    {
+        XMLUtils.addTextElement (document, element, attribute, String.format (Locale.US, "%.6f", Double.valueOf (value)));
+    }
+
+
+    private Optional<MPCKeygroup> getKeygroup (final Map<String, List<MPCKeygroup>> keygroupsMap, final ISampleZone zone, final Document document, final Element instrumentsElement, final TriggerType trigger, final boolean hasLfo)
     {
         final int keyLow = limitToDefault (zone.getKeyLow (), 0);
         final int keyHigh = limitToDefault (zone.getKeyHigh (), 127);
@@ -453,7 +489,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_TRIGGER_MODE, Integer.toString (triggerMode.ordinal ()));
 
-        instrumentElement.appendChild (createLfoElement (document));
+        instrumentElement.appendChild (createLfoElement (document, zone, hasLfo));
         final Element layersElement = document.createElement ("Layers");
         instrumentElement.appendChild (layersElement);
 

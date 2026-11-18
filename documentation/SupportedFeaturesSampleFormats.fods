@@ -1731,8 +1731,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 (Vol), LFO 2/3 -&gt; Volume (waveform, rate, beat sync at 120 BPM, retrigger), mod. wheel -&gt; LFO amount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce59"/>
      <table:table-cell table:style-name="ce21"/>
@@ -1743,8 +1743,8 @@
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>AttackTime, DecayTime, ReleaseTime, AttackLevel, SustainLevel, ReleaseLevel</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 (Pitch), LFO 2/3 -&gt; Pitch (waveform, rate, beat sync at 120 BPM, retrigger), mod. wheel -&gt; LFO amount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce59"/>
      <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -1771,8 +1771,8 @@
      <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>ModByPitch (global)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 (Filter), LFO 2/3 -&gt; Filter Freq (waveform, rate, beat sync at 120 BPM, retrigger), mod. wheel -&gt; LFO amount</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell/>
@@ -1842,8 +1842,8 @@
      <table:covered-table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 (Vol) (waveform, rate, retrigger), mod. wheel -&gt; LFO 1 Amt Vol</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce59"/>
      <table:table-cell table:style-name="ce21"/>
@@ -1854,7 +1854,9 @@
       <text:p>PitchBendRange</text:p>
      </table:table-cell>
      <table:covered-table-cell table:style-name="ce24"/>
-     <table:table-cell table:style-name="ce44"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 2 -&gt; Pitch (waveform, rate, retrigger), mod. wheel -&gt; LFO 2 Amt A</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce24"/>
      <table:covered-table-cell table:style-name="ce24"/>
      <table:covered-table-cell table:style-name="ce24"/>
@@ -1864,8 +1866,8 @@
      <table:covered-table-cell table:style-name="ce24"/>
      <table:covered-table-cell table:style-name="ce24"/>
      <table:covered-table-cell table:style-name="ce24"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 3 -&gt; Filter Freq (waveform, rate, retrigger), mod. wheel -&gt; LFO 3 Amt A; mod. wheel has only 2 slots</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell/>
@@ -2739,8 +2741,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Keygroup LFO (waveform, rate, reset) -&gt; Amp, Wheel &gt; LFO -&gt; LFO amount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce5"/>
@@ -2752,8 +2754,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>PitchEnvAmount, PitchAttack, PitchHold, PitchDecay,</text:p><text:p>PitchSustain, PitchRelease, PitchAttackCurve, PitchDecayCurve, PitchReleaseCurve</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Keygroup LFO (waveform, rate, reset) -&gt; Pitch, Wheel &gt; LFO -&gt; LFO amount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce5"/>
@@ -2778,8 +2780,8 @@
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>FilterKeytrack</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Keygroup LFO (waveform, rate, reset) -&gt; Filter Cutoff, Wheel &gt; LFO -&gt; LFO amount</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell/>
@@ -2849,15 +2851,17 @@
      <table:covered-table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Keygroup LFO (waveform, rate, reset) -&gt; Amp, Wheel &gt; LFO -&gt; LFO amount</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:style-name="ce24"/>
      <table:covered-table-cell table:style-name="ce24"/>
      <table:covered-table-cell table:style-name="ce24"/>
-     <table:table-cell table:style-name="ce44"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Keygroup LFO (waveform, rate, reset) -&gt; Pitch, Wheel &gt; LFO -&gt; LFO amount</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce14"/>
      <table:covered-table-cell table:style-name="ce24"/>
@@ -2867,8 +2871,8 @@
      <table:covered-table-cell table:style-name="ce24"/>
      <table:covered-table-cell table:style-name="ce24"/>
      <table:covered-table-cell table:style-name="ce24"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Keygroup LFO (waveform, rate, reset) -&gt; Filter Cutoff, Wheel &gt; LFO -&gt; LFO amount; only 1 LFO and 1 Wheel &gt; LFO value for all destinations</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell/>
@@ -2918,7 +2922,8 @@
      <table:table-cell table:style-name="ce54" office:value-type="string" calcext:value-type="string"><text:p>1 MIDI note increasingly set </text:p><text:p>from 36</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce49"/>
-     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string"><text:p>2 velocity layers with 1 split point</text:p><text:p>(TODO)</text:p>
+     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
+      <text:p>2 velocity layers with 1 split point: position in the file unknown</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce49"/>
      <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
@@ -2950,10 +2955,11 @@
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
      <table:table-cell table:style-name="ce47" office:value-type="string" calcext:value-type="string">
-      <text:p>Attack, Decay</text:p></table:table-cell>
+      <text:p>Attack, Decay (the fade-out ends at the end of the sample); times are estimated</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce49"/>
      <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO</text:p>
+      <text:p>Velocity control of volume: position in the file unknown</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
@@ -3072,20 +3078,21 @@
       <text:p>Attack, Decay</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce49"/>
-     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO velocityToLevel is stored as envelope depth</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>V&gt;Level</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (except 500)</text:p>
+     <table:table-cell table:style-name="ce50" office:value-type="string" calcext:value-type="string">
+      <text:p>Pad LFO (waveform, rate + delay at 120 BPM) -&gt; Level; depth unknown; MPC 1000/2500 only</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce5"/>
      <table:table-cell table:style-name="ce49"/>
      <table:table-cell table:style-name="ce49"/>
      <table:table-cell table:style-name="ce49"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (except 500)</text:p>
+     <table:table-cell table:style-name="ce50" office:value-type="string" calcext:value-type="string">
+      <text:p>Pad LFO (waveform, rate + delay at 120 BPM) -&gt; Pitch; depth unknown; MPC 1000/2500 only</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce24"/>
      <table:table-cell table:style-name="ce14"/>
@@ -3101,15 +3108,15 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>Resonance</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce88" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO only on MPC 1000/2500</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter 1: Time, Amount (MPC 1000/2500 only)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>filter1VelocityToFrequency</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce49"/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (except 500)</text:p>
+     <table:table-cell table:style-name="ce50" office:value-type="string" calcext:value-type="string">
+      <text:p>Pad LFO (waveform, rate + delay at 120 BPM) -&gt; Filter 1; depth unknown; MPC 1000/2500 only</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell/>
@@ -3164,10 +3171,12 @@
       <text:p>3 layers with 2 split points</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce49"/>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Start is overwritten with 0</text:p></table:table-cell>
-     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO End is overwritten with the length</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Start of the sound (SND), 0 for WAV</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>End of the sound (SND), sample length for WAV</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>Tuning</text:p>
      </table:table-cell>
@@ -3181,7 +3190,9 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce49"/>
      <table:table-cell table:style-name="ce49"/>
-     <table:table-cell table:style-name="ce44"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Voice overlap NOTE OFF (or looped with Dcy md END) = note-off, otherwise one-shot</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
@@ -3197,11 +3208,12 @@
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
      <table:table-cell table:style-name="ce50" office:value-type="string" calcext:value-type="string">
-      <text:p>Attack, Decay</text:p>
+      <text:p>Attack, Decay, Dcy md (START / END); times are estimated</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce49"/>
-     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO veloAttackLevel is stored as envelope depth</text:p></table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Velo&gt;Level</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
      <table:table-cell table:style-name="ce44"/>
@@ -3225,8 +3237,9 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>Resonance</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce39">
-      </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Attack, Decay, Amount</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>veloFilterFreq</text:p>
      </table:table-cell>

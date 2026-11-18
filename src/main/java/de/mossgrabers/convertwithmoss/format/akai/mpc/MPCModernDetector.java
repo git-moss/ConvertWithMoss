@@ -38,6 +38,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -69,6 +70,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
     private static final String IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE = "IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE";
     private static final String IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY   = "IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY";
     private static final String BAD_METADATA_FILE                   = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String VALUE0                              = "value0";
 
     private final ObjectMapper  mapper                              = new ObjectMapper ();
 
@@ -174,7 +176,8 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             return Collections.emptyList ();
         final List<Element> instrumentElements = XMLUtils.getChildElementsByName (instrumentsElement, MPCKeygroupTag.INSTRUMENTS_INSTRUMENT);
         final int numKeygroups = XMLUtils.getChildElementIntegerContent (programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, 128);
-        final List<IGroup> groups = this.parseGroups (sourceFile.getParentFile (), numKeygroups, instrumentElements, isDrum);
+        final double wheelShare = XMLUtils.getChildElementDoubleContent (programElement, MPCKeygroupTag.PROGRAM_WHEEL_TO_LFO, 0);
+        final List<IGroup> groups = this.parseGroups (sourceFile.getParentFile (), numKeygroups, instrumentElements, isDrum, wheelShare);
 
         if (isDrum)
             this.applyDrumPadNoteMap (programElement, groups);
@@ -225,9 +228,10 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
      * @param numKeygroups The number of valid key-groups
      * @param instrumentElements The instrument elements
      * @param isDrum True, if it is a drum type (not a key-group)
+     * @param wheelShare The share of the LFO amounts which is controlled by the modulation wheel
      * @return The parsed groups
      */
-    private List<IGroup> parseGroups (final File basePath, final int numKeygroups, final List<Element> instrumentElements, final boolean isDrum)
+    private List<IGroup> parseGroups (final File basePath, final int numKeygroups, final List<Element> instrumentElements, final boolean isDrum, final double wheelShare)
     {
         final List<ISampleZone> zones = new ArrayList<> ();
         for (final Element instrumentElement: instrumentElements)
@@ -280,14 +284,14 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                         break;
                 }
 
-            this.readZones (basePath, isDrum, zones, instrumentElement, keyLow, keyHigh, zonePlay, isOneShot, triggerType);
+            this.readZones (basePath, isDrum, zones, instrumentElement, keyLow, keyHigh, zonePlay, isOneShot, triggerType, wheelShare);
         }
 
         return groupIntoLayers (zones);
     }
 
 
-    private void readZones (final File basePath, final boolean isDrum, final List<ISampleZone> zones, final Element instrumentElement, final int keyLow, final int keyHigh, final PlayLogic zonePlay, final boolean isOneShot, final TriggerType triggerType)
+    private void readZones (final File basePath, final boolean isDrum, final List<ISampleZone> zones, final Element instrumentElement, final int keyLow, final int keyHigh, final PlayLogic zonePlay, final boolean isOneShot, final TriggerType triggerType, final double wheelShare)
     {
         final String ignoreBaseNoteStr = XMLUtils.getChildElementContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE);
         final boolean ignoreBaseNote = ignoreBaseNoteStr != null && MPCKeygroupTag.TRUE.equals (ignoreBaseNoteStr);
@@ -339,6 +343,8 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
             if (filter.isPresent ())
                 zone.setFilter (filter.get ());
+
+            parseLfo (instrumentElement, zone, wheelShare);
 
             this.readMissingData (isDrum, zone);
         }
@@ -393,6 +399,41 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         filter.setCutoffKeyTracking (XMLUtils.getChildElementDoubleContent (instrumentElement, MPCKeygroupTag.INSTRUMENT_FILTER_KEYTRACK, 0));
 
         return Optional.of (filter);
+    }
+
+
+    /**
+     * Parse the LFO settings of an instrument element and apply them to a sample zone. Newer files
+     * store the amounts in the LFO element, older ones (e.g. version 2.7) directly in the
+     * instrument element.
+     *
+     * @param instrumentElement The instrument element
+     * @param zone The sample zone to which to apply the LFO
+     * @param wheelShare The share of the LFO amounts which is controlled by the modulation wheel
+     */
+    private static void parseLfo (final Element instrumentElement, final ISampleZone zone, final double wheelShare)
+    {
+        final Element lfoElement = XMLUtils.getChildElementByName (instrumentElement, MPCKeygroupTag.INSTRUMENT_LFO);
+        if (lfoElement == null)
+            return;
+
+        final Element amountsElement = XMLUtils.getChildElementByName (lfoElement, MPCKeygroupTag.LFO_PITCH) == null ? instrumentElement : lfoElement;
+        final double pitchAmount = XMLUtils.getChildElementDoubleContent (amountsElement, MPCKeygroupTag.LFO_PITCH, 0);
+        final double volumeAmount = XMLUtils.getChildElementDoubleContent (amountsElement, MPCKeygroupTag.LFO_VOLUME, 0);
+        final double cutoffAmount = XMLUtils.getChildElementDoubleContent (amountsElement, MPCKeygroupTag.LFO_CUTOFF, 0);
+        if (pitchAmount <= 0 && volumeAmount <= 0 && cutoffAmount <= 0)
+            return;
+
+        // Tempo synchronized rates (Sync element) are not supported since the values are unknown
+        final String resetStr = XMLUtils.getChildElementContent (lfoElement, MPCKeygroupTag.LFO_RESET);
+        final boolean isKeySync = resetStr == null || MPCKeygroupTag.TRUE.equalsIgnoreCase (resetStr.trim ());
+        final ILfo lfo = MPCLfo.createLfo (MPCLfo.parseWaveformName (XMLUtils.getChildElementContent (lfoElement, MPCKeygroupTag.LFO_TYPE)), XMLUtils.getChildElementDoubleContent (lfoElement, MPCKeygroupTag.LFO_RATE, 0.5), isKeySync);
+
+        MPCLfo.setLfoModulator (zone.getAmplitudeLfoModulator (), lfo, volumeAmount, MPCLfo.VOLUME_SCALE, wheelShare);
+        MPCLfo.setLfoModulator (zone.getPitchLfoModulator (), lfo, pitchAmount, MPCLfo.PITCH_SCALE, wheelShare);
+        final Optional<IFilter> filter = zone.getFilter ();
+        if (filter.isPresent ())
+            MPCLfo.setLfoModulator (filter.get ().getCutoffLfoModulator (), lfo, cutoffAmount, MPCLfo.CUTOFF_SCALE, wheelShare);
     }
 
 
@@ -793,8 +834,10 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             int pitchBendUp = 0;
             int pitchBendDown = 0;
             MPCEnvelopesAndFilter globalEnvelopesAndFilter = null;
+            double wheelShare = 0;
             if (keygroupNode != null)
             {
+                wheelShare = keygroupNode.path ("wheelToLfo").path (VALUE0).asDouble (0);
                 keygroupTranspose = programTranspose + keygroupNode.get ("transpose").asDouble ();
                 // The ranges are semi-tones, e.g. the default of 2 (the fraction of an octave
                 // in 'pitchBendRange' confirms it)
@@ -821,7 +864,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 final Iterator<JsonNode> layersNodes = instrumentNode.get ("layersv").elements ();
                 while (layersNodes.hasNext ())
                 {
-                    final Optional<ISampleZone> sampleZone = this.readJsonSampleZone (multiSampleFile, instrumentNode, layersNodes.next (), lowNote, highNote, pitchBendUp, pitchBendDown, tuning, sampleInfos, globalEnvelopesAndFilter, jsonFormat);
+                    final Optional<ISampleZone> sampleZone = this.readJsonSampleZone (multiSampleFile, instrumentNode, layersNodes.next (), lowNote, highNote, pitchBendUp, pitchBendDown, tuning, sampleInfos, globalEnvelopesAndFilter, wheelShare, jsonFormat);
                     if (sampleZone.isPresent ())
                         group.addSampleZone (sampleZone.get ());
                 }
@@ -864,7 +907,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
     }
 
 
-    private Optional<ISampleZone> readJsonSampleZone (final File multiSampleFile, final JsonNode instrumentNode, final JsonNode layerNode, final int lowNote, final int highNote, final int pitchBendUp, final int pitchBendDown, final double tuning, final Map<String, SampleInfo> sampleInfos, final MPCEnvelopesAndFilter globalEnvelopesAndFilter, final JSONFormat jsonFormat) throws IOException
+    private Optional<ISampleZone> readJsonSampleZone (final File multiSampleFile, final JsonNode instrumentNode, final JsonNode layerNode, final int lowNote, final int highNote, final int pitchBendUp, final int pitchBendDown, final double tuning, final Map<String, SampleInfo> sampleInfos, final MPCEnvelopesAndFilter globalEnvelopesAndFilter, final double wheelShare, final JSONFormat jsonFormat) throws IOException
     {
         if (!layerNode.get ("active").asBoolean ())
             return Optional.empty ();
@@ -971,7 +1014,44 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         setModulator (sampleZone.getAmplitudeEnvelopeModulator (), globalEnvelopesAndFilter != null ? globalEnvelopesAndFilter.getAmpEnvelopeModulator () : null, envelopesAndFilter.getAmpEnvelopeModulator ());
         setModulator (sampleZone.getPitchEnvelopeModulator (), globalEnvelopesAndFilter != null ? globalEnvelopesAndFilter.getPitchEnvelopeModulator () : null, envelopesAndFilter.getPitchEnvelopeModulator ());
 
+        readJsonLfo (synthSectionNode, sampleZone, wheelShare);
+
         return Optional.of (sampleZone);
+    }
+
+
+    /**
+     * Read the LFO settings of the synthesizer section of an instrument and apply them to a sample
+     * zone. Only the first of the 2 LFO data blocks is used, the second one is not used by the key-
+     * group.
+     *
+     * @param synthSectionNode The synthesizer section node of the instrument
+     * @param zone The sample zone to which to apply the LFO
+     * @param wheelShare The share of the LFO amounts which is controlled by the modulation wheel
+     */
+    private static void readJsonLfo (final JsonNode synthSectionNode, final ISampleZone zone, final double wheelShare)
+    {
+        if (synthSectionNode == null)
+            return;
+        final JsonNode lfoNode = synthSectionNode.path ("lfoData").path (VALUE0);
+        if (lfoNode.isMissingNode ())
+            return;
+
+        final double pitchAmount = lfoNode.path ("lfoPitch").asDouble (0);
+        final double volumeAmount = lfoNode.path ("lfoAmpLevel").asDouble (0);
+        // value0 is the amount for filter 1, value1 for filter 2
+        final double cutoffAmount = lfoNode.path ("lfoFilterCutOff").path (VALUE0).asDouble (0);
+        if (pitchAmount <= 0 && volumeAmount <= 0 && cutoffAmount <= 0)
+            return;
+
+        // Tempo synchronized rates (lfoSync) are not supported since the values are unknown
+        final ILfo lfo = MPCLfo.createLfo (MPCLfo.toWaveform (lfoNode.path ("lfoWaveformType").asInt (0)), lfoNode.path ("lfoRate").asDouble (0.5), lfoNode.path ("lfoReset").asBoolean (true));
+
+        MPCLfo.setLfoModulator (zone.getAmplitudeLfoModulator (), lfo, volumeAmount, MPCLfo.VOLUME_SCALE, wheelShare);
+        MPCLfo.setLfoModulator (zone.getPitchLfoModulator (), lfo, pitchAmount, MPCLfo.PITCH_SCALE, wheelShare);
+        final Optional<IFilter> filter = zone.getFilter ();
+        if (filter.isPresent ())
+            MPCLfo.setLfoModulator (filter.get ().getCutoffLfoModulator (), lfo, cutoffAmount, MPCLfo.CUTOFF_SCALE, wheelShare);
     }
 
 

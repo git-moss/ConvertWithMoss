@@ -25,7 +25,6 @@ public class AkaiMPC2000Pad
     private final int     velNote1;
     private final int     velSw2;
     private final int     velNote2;
-    @SuppressWarnings("unused")
     private final int     voiceOverlap;
     @SuppressWarnings("unused")
     private final int     polyNote1;
@@ -213,6 +212,17 @@ public class AkaiMPC2000Pad
     public int getDecayMode ()
     {
         return this.decayMode;
+    }
+
+
+    /**
+     * Get the voice overlap.
+     *
+     * @return 0=Poly, 1=Mono, 2=Note Off
+     */
+    public int getVoiceOverlap ()
+    {
+        return this.voiceOverlap;
     }
 
 

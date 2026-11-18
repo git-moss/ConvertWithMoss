@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+import de.mossgrabers.convertwithmoss.file.StreamUtils;
+
 
 /**
  * An Akai MPC1000 pad. One pad can have assigned up to 4 samples.
@@ -31,6 +33,10 @@ public class AkaiMPC1000Pad
     private final int                     filter1Freq;
     private final int                     filter1Res;
     private final int                     filter1VelocityToFrequency;
+    /** [0..100] */
+    private final int                     filter1EnvelopeTime;
+    /** [-50..50] */
+    private final int                     filter1EnvelopeAmount;
 
     @SuppressWarnings("unused")
     private final int                     filter2Type;
@@ -40,6 +46,18 @@ public class AkaiMPC1000Pad
     private final int                     filter2Res;
     @SuppressWarnings("unused")
     private final int                     filter2VelocityToFrequency;
+
+    /** Rate and delay in ticks, 96 ticks = 1 beat */
+    private final int                     lfoRate;
+    private final int                     lfoDelay;
+    /** 0=Triangle, 1=Sine, 2=Square, 3=Saw, 4=Saw Down, 5=Random */
+    private final int                     lfoWaveform;
+    /** The LFO amounts in the range of [0..100] */
+    private final int                     lfoPitch;
+    private final int                     lfoFilter1;
+    @SuppressWarnings("unused")
+    private final int                     lfoFilter2;
+    private final int                     lfoLevel;
 
     private final int                     mixerLevel;
     private final int                     mixerPan;
@@ -77,14 +95,14 @@ public class AkaiMPC1000Pad
 
         // Padding
         input.read ();
-        // Unknown, always 0x01
+        // Overlap x-fade in the Amp Envelope window, always 1 in all test files
         input.read ();
 
         this.attack = input.read ();
         this.decay = input.read ();
         this.decayMode = input.read ();
 
-        // Padding
+        // Velocity to attack and velocity to start, not supported
         input.skipNBytes (2);
 
         this.velocityToLevel = input.read ();
@@ -95,21 +113,34 @@ public class AkaiMPC1000Pad
         this.filter1Type = input.read ();
         this.filter1Freq = input.read ();
         this.filter1Res = input.read ();
-        // These bytes might contain the filter cutoff envelope: attack, decay, amount but all test
-        // files contain only 00
-        input.skipNBytes (4);
-
+        this.filter1EnvelopeTime = input.read ();
+        this.filter1EnvelopeAmount = (byte) input.read ();
+        // Velocity to envelope time and velocity to envelope amount, not supported
+        input.skipNBytes (2);
         this.filter1VelocityToFrequency = input.read ();
 
         this.filter2Type = input.read ();
         this.filter2Freq = input.read ();
         this.filter2Res = input.read ();
-        // Padding
+        // Filter envelope: time, amount, velocity to time and velocity to amount
         input.skipNBytes (4);
         this.filter2VelocityToFrequency = input.read ();
 
         // Padding
-        input.skipNBytes (14);
+        input.read ();
+
+        // The LFO was added with MPC1000 OS 2.0 in previously unused bytes, therefore files of
+        // older versions contain 0 which turns the LFO off
+        this.lfoRate = StreamUtils.readUnsigned16 (input, false);
+        this.lfoDelay = StreamUtils.readUnsigned16 (input, false);
+        this.lfoWaveform = input.read ();
+        this.lfoPitch = input.read ();
+        this.lfoFilter1 = input.read ();
+        this.lfoFilter2 = input.read ();
+        this.lfoLevel = input.read ();
+
+        // Padding, the last byte is unknown
+        input.skipNBytes (4);
 
         this.mixerLevel = input.read ();
         this.mixerPan = input.read ();
@@ -118,7 +149,7 @@ public class AkaiMPC1000Pad
         this.fxSendLevel = input.read ();
         this.filterAttenuation = input.read ();
 
-        // Padding
+        // 2 unused bytes, 4 mute target pads (0x97 to 0x9A) and 9 unused bytes
         input.skipNBytes (15);
     }
 
@@ -231,6 +262,95 @@ public class AkaiMPC1000Pad
     public int getFilter1VelocityToFrequency ()
     {
         return this.filter1VelocityToFrequency;
+    }
+
+
+    /**
+     * Get the time of the filter 1 envelope. It is the time from the start value (the cutoff
+     * frequency plus the envelope amount) back to the cutoff frequency.
+     *
+     * @return The time in the range of [0..100]
+     */
+    public int getFilter1EnvelopeTime ()
+    {
+        return this.filter1EnvelopeTime;
+    }
+
+
+    /**
+     * Get the amount of the filter 1 envelope.
+     *
+     * @return The amount in the range of [-50..50]
+     */
+    public int getFilter1EnvelopeAmount ()
+    {
+        return this.filter1EnvelopeAmount;
+    }
+
+
+    /**
+     * Get the LFO rate.
+     *
+     * @return The length of one cycle in ticks (96 ticks = 1 beat), 0 if the LFO is not used
+     */
+    public int getLfoRate ()
+    {
+        return this.lfoRate;
+    }
+
+
+    /**
+     * Get the LFO delay.
+     *
+     * @return The time before the LFO starts in ticks (96 ticks = 1 beat)
+     */
+    public int getLfoDelay ()
+    {
+        return this.lfoDelay;
+    }
+
+
+    /**
+     * Get the LFO waveform.
+     *
+     * @return 0=Triangle, 1=Sine, 2=Square, 3=Saw, 4=Saw Down, 5=Random
+     */
+    public int getLfoWaveform ()
+    {
+        return this.lfoWaveform;
+    }
+
+
+    /**
+     * Get the LFO pitch amount.
+     *
+     * @return The amount in the range of [0..100]
+     */
+    public int getLfoPitch ()
+    {
+        return this.lfoPitch;
+    }
+
+
+    /**
+     * Get the LFO amount for the cutoff of filter 1.
+     *
+     * @return The amount in the range of [0..100]
+     */
+    public int getLfoFilter1 ()
+    {
+        return this.lfoFilter1;
+    }
+
+
+    /**
+     * Get the LFO level amount.
+     *
+     * @return The amount in the range of [0..100]
+     */
+    public int getLfoLevel ()
+    {
+        return this.lfoLevel;
     }
 
 
