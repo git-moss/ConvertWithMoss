@@ -68,7 +68,11 @@
   * Fixed: Velocity to level was applied as the depth of the amplitude envelope.
 * Akai MPC/Force
   * New: Read and write the key-group LFO (Sine, Triangle, S&H, Saw, Saw Down, Square, Noise) with its rate, reset and the amounts for pitch, volume and filter cutoff. The 'Wheel > LFO' setting is converted to/from modulation wheel control of the LFO amounts.
+* Akai S1000/S3000
+  * New: Read LFO 1 (vibrato with depth, mod wheel, rate, delay; S3000: waveform) and the assignable S3000 LFO 1/2 modulations of pitch, loudness (tremolo) and filter cutoff.
+  * Fixed: The program parameters after the key temperament were read 1 byte off.
 * Audiomodern Soundbox
+  * New: Read/write LFO modulation (tremolo, vibrato, filter cutoff) from/to the 4 LFO engines of the Modulation tab (shape, rate, sync, retrigger). Assignments to the layer volume, fine tune/transpose/octave and the filter frequency of the filter effect are converted.
   * Fixed: The panning of the samples was not converted, all samples played in the center. E.g. split stereo samples - two mono samples of one recording, hard panned left and right - played layered in the center instead of in stereo. The panning is now written to the value which the sample editor of the plug-in sets, for every sample, and read from it.
 * discoDSP Bliss
   * New: Added support for reading/writing version 3.8 - 3.20 features (round-robin, one-shot). Writing now always uses version 3.20.
@@ -98,17 +102,28 @@
 * E-mu Emulator III / IIIX / ESI
   * New: The modulation wheel assignments of a preset to LFO->Pitch, LFO->Cutoff and LFO->VCA are read as a modulation wheel controlled LFO depth; it overrides the LFO amount of the zone, as the factory banks rely on.
   * Fixed: Written presets routed the modulation wheel to the vibrato of all zones, which overrode a converted vibrato so that it only sounded with the wheel up; the wheel is now only assigned if the source has a modulation wheel depth, and zones with a fixed vibrato exempt themselves from it. The last 3 bytes of the real-time controls are written like in the factory banks; they were shifted by one.
+* E-mu Emulator IV
+  * New: Read/write the LFOs (rate, shape, delay, key sync) and their modulation cords to the amplifier volume, the pitch and the filter frequency (tremolo, vibrato, cutoff LFO) incl. the modulation wheel control of the LFO depth.
 * E-mu Emulator X
+  * New: Read/write the LFOs (rate, shape, delay, key sync) and their modulation cords to the amplifier volume, the pitch and the filter frequency (tremolo, vibrato, cutoff LFO) incl. the modulation wheel control of the LFO depth.
   * New: Banks which store all of their samples in a single sample pool file - 'SamplePool/<bank name>.ebl' instead of one file per sample - are read.
   * Fixed: The banks of the ZERO-G library could not be read, each one reported 'No presets with sample zones found'. Their voice lists claim 92 bytes more than the preset holds, and such a list was dropped together with all of its voices. A chunk which runs past the end of its parent is now cut there, which reads all 378 presets of the 68 banks; all other banks are read exactly as before.
   * Fixed: Samples which store their audio as 32 bit floating-point values were read as 16 bit audio and sounded like loud noise, twice as long as the sample. The Emulator X stores every sample with a resolution above 16 bit in this format, e.g. the ones imported from 24 or 32 bit WAV files. Such samples are now read as floating-point audio with their loops in place; they stay 32 bit floating-point where the destination allows it, e.g. when converting to WAV files, and are converted to the resolution of the destination otherwise. 16 bit samples are read exactly as before.
 * Elektron Tonverk Preset
   * Fixed: Presets with loops could not be loaded by the Tonverk when a loop ended on the last frame of its sample or its cross-fade was longer than the audio in front of the loop start, which the Tonverk cross-fades the end of the loop with. The loops of the factory samples always end at least one frame before the end of their sample, and their cross-fades are always shorter than the audio in front of the loop start, by at least 198 frames, and at most 71.5% of their loop. A sample whose loop ends on its last frame now gets the first frame of the loop appended, the frame which follows the loop end when it plays, so the loop and the sound stay the same. A cross-fade which does not fit moves the loop start forward until 256 frames of the sample are left in front of the cross-fade, so the cross-fade blends the end of the loop into the audio which the loop skips, like a sampler which cross-fades into the start of the loop; a cross-fade which covers most of the loop is limited to half of the remaining loop.
   * Fixed: Converted presets did not show up in the preset menu of the Tonverk. They carried the category and the keywords of their source as their category and tags, e.g. 'Bell' or 'Chromatic Percussion' and 'analog', while the Tonverk knows only its two main categories DRUMS and KEYS, by which the LOAD PRESET menu filters, and its own set of upper-case tags; a preset without keywords had no 'tags' entry at all, which every preset that the device saves has. A preset now gets the category DRUMS when it is written as a drum kit or its source is drums and KEYS otherwise, the category and the keywords of the source which match a tag of the Tonverk become its tags (e.g. 'Bass' as BASS, 'FX' as SOUND FX, 'dark' as DARK), the others are left out, and an empty 'tags' entry is written when none matches.
+* Ensoniq EPS/EPS16+/ASR-10
+  * New: Read the LFO (wave, speed, delay, reset) and its modulation of the pitch (vibrato), the filter 1 cutoff and the volume (tremolo) incl. the modulation wheel control of the LFO depth.
+  * Fixed: Velocity modulation of the volume and the filter 1 cutoff was read from the pressure source instead of the velocity sources.
+  * Fixed: The pitch envelope depth was far too large (the amount is in 1/8 semi-tones, max. 15.7).
+* Ensoniq Mirage
+  * New: Read the pitch LFO (vibrato) incl. the modulation wheel control of the depth.
 * FL Studio DirectWave
   * New: Read and write an LFO which modulates the filter cutoff.
   * New: Read and write the modulation wheel depth of the pitch, volume and filter cutoff LFOs.
 * Logic EXS24
+  * New: Read/write the LFOs (rate incl. tempo synced values, waveform, fade-in) and their routing in the modulation matrix to the pitch, the volume and the filter 1 cutoff (vibrato, tremolo, cutoff LFO) incl. the modulation wheel as Via source.
+  * Improved: The conversion of the pitch modulation amount is more accurate for small values (e.g. 343 is now 50 cents instead of 59).
   * Fixed: AIFF files with certain number of spaces in the comment could fail to load.
   * Fixed: Zones without a sample played the sample of another zone - the one whose number matched the index of the zone - or logged 'Sample index out of bounds'. Logic stores a zone without a sample, which plays nothing, with the sample number -1. Zones without a sample are now left out and counted in one message. Only if not a single zone of a file references a sample, the zones still play the samples in their order.
   * Fixed: Sample names which originally contained double quotes in their filenames but got automatically replaced with dashes on Windows are now found.

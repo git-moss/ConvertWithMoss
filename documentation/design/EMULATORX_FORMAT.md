@@ -1,18 +1,5 @@
 # E-mu Emulator X bank format (EXB / EBL)
 
-This document describes the file format of the E-mu Emulator X software sampler (Emulator X,
-Emulator X2 and Emulator X3, 2004-2008). It was reverse-engineered from 14 banks - the E-mu factory
-banks *PROcussion*, *SP-1200*, *Vintage Keys*, *Proteus 1*, *Orbit 8080* and *Production Set* as
-well as the third party libraries *Halion Synth Kit*, *Saint Thomas Strings* and the six banks of
-*Wizoo Electric Pianos*, together 1704 presets, 18670 voices and 2988 samples - and from the
-`ebl2wav` tool of the [e-mu-soundbanks](https://github.com/mattetti/e-mu-soundbanks) project, which
-decodes the sample files. E-mu never published the layout.
-
-The meaning and the value ranges of the parameters come from the *Emulator X* and *Emulator X3*
-reference manuals, which document the user interface but not the file format. Where this document
-says that the manual confirms something, the manual states the range or the default and the factory
-banks agree with it.
-
 A sound bank consists of
 
 * one **`*.exb`** file which holds all presets of the bank and a list of the samples it uses, and
@@ -319,9 +306,19 @@ from the EOS documentation of the E4B format and the rest from this collection:
 
 | Code  | Destination                                                               |
 |-------|---------------------------------------------------------------------------|
+| 0x2F  | Fine pitch, 1 semitone at 100%                                            |
+| 0x30  | Pitch, 32 semitones at 100%                                               |
 | 0x38  | Filter frequency                                                          |
 | 0x39  | Realtime resonance                                                        |
 | 0x40  | Amplifier volume                                                          |
+| 0x41  | Amplifier pan                                                             |
+| 0xA8+ | Amount of cord 1 to 36                                                    |
+
+The numbers are the ones of the EOS samplers (see E4B_FORMAT.md), which also gives the LFO sources:
+0x60/0x61 is LFO 1 centered/positive, 0x68/0x69 LFO 2 and 0x11 the modulation wheel. The default
+cords of a voice route the modulation wheel into the amount of cord 3 (0xAA), which routes LFO 1 to
+the pitch with amount 0 - the modulation wheel vibrato - and cord 4 routes LFO 2 to the pitch with
+amount 0.
 
 That 0x14..0x23 are the controllers A to P is established by the `E5IC` chunk, which holds their 16
 initial values with 0xFF for 'not set'. Of the 5404 presets which use source 0x14, **every single
@@ -349,6 +346,24 @@ envelope runs from zero towards the level of each stage in turn, holds at the le
 the note is released - that level is therefore the sustain level - and then runs through the two
 release stages. Every voice has three of them, the amplitude, the filter and the auxiliary envelope;
 the modulation cords give the latter two no depth in any factory bank.
+
+## LFO chunk (`E5LF`)
+
+The `LIST LFOL` holds two `E5LF` chunks of 22 bytes, LFO 1 and LFO 2:
+
+| Offset | Size | Content                                                            |
+|--------|------|--------------------------------------------------------------------|
+| 0      | 4    | Version, 2                                                         |
+| 4      | 4    | Delay in seconds (float)                                           |
+| 8      | 4    | Rate in Hertz (float), 0.08 to 18.01                               |
+| 12     | 1    | Note division if the rate follows the tempo, 1 in an unused LFO    |
+| 13     | 1    | Wave shape, numbered like the EOS samplers (see E4B_FORMAT.md)     |
+| 14     | 4    | Variation (float)                                                  |
+| 18     | 1    | Key sync, 1 = the LFO restarts with each note (assumed polarity)   |
+| 19     | 1    | 1 = the rate follows the tempo (BPM), the rate field then is 4.082 |
+| 20     | 2    | Unknown, mostly 0                                                  |
+
+An unused LFO has the rate 8.176 Hz, division 1 and shape 1 (sine).
 
 ## Zone list (`LIST E5ZL`)
 

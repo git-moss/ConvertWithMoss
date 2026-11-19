@@ -1,23 +1,5 @@
 # Sequential Prophet X / XL sample instrument (`.grp`) format — reverse-engineered
 
-Reverse-engineered 2026-09 from the **Prophet X OS 2.2.2.0.0 update image** (`PxUpdate_V2.2.2.0.0.bin`,
-3 099 064 bytes, December 2021). The image is a 13-byte vendor header followed by an unstripped
-x86-64 QNX 7 ELF executable, so all class, method and global names are available: the reader of the
-instrument file is `GroupFileParse` with its tokenizer `CGroupVelocityManifestFileReader`, the column
-names are the table `gGroupFileParmNames`, the WAV reader is `CWavReader::Open`/`Read`, the zone
-lookup `CSampleGroup::FindHandler`, the USB importer `LibraryCopy_DoLibraryUpdate` and the pitch law
-sits in `CSampleOsc::PlayNote`. Sequential does not document the format; the official "Prophet X
-Series Mapping Utility" (8Dio) is the only public writer and states 16 bit / 48 kHz WAV, at most 128
-files and 1.5 GB per instrument.
-
-No factory content was available, so the format below comes from the code paths which read and
-import the files; statements about what the device *does* with a value are taken from the code.
-Two other writers served as the reference for what actually plays: the free **PXToolkit** 1.3.2
-(ThinkerSnacks, an Electron app whose writer `ProphetWriter.js` is plain JavaScript) and the free
-third-party pack *Goldbaby GBPX Free1* (six instruments in the USB layout, made with PXToolkit),
-which ConvertWithMoss reads. The written output of ConvertWithMoss follows their conventions but
-has **not** been verified on hardware yet.
-
 ## What kind of instrument this is
 
 The Prophet X is a hybrid synthesizer whose two sample oscillators play **multi-sampled

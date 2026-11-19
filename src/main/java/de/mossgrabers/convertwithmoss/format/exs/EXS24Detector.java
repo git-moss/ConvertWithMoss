@@ -375,6 +375,8 @@ public class EXS24Detector extends AbstractDetector<MetadataWithSearchHeightSett
 
                 zone.getAmplitudeVelocityModulator ().setDepth (velocityModulation);
             }
+
+        EXSLfo.applyLfos (multisampleSource, exs24File);
     }
 
 

@@ -28,11 +28,13 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
+import de.mossgrabers.convertwithmoss.format.emu.EmuLfoModulation;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 
 
@@ -383,6 +385,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         // The modulation cord table: start from the EOS factory default cord set (required for
         // non-transpose voices to be recognized) and set the depths of the used routings
         System.arraycopy (Emulator4Constants.MOD_CORD_TEMPLATE, 0, voice, Emulator4Constants.VOICE_MOD_OFFSET, Emulator4Constants.MOD_CORD_TEMPLATE.length);
+        writeLfos (voice, zone);
         final double velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
         voice[Emulator4Constants.VOICE_MOD_OFFSET + Emulator4Constants.MOD_VELOCITY_AMOUNT] = (byte) Math.clamp (Math.round (velocityDepth * 127), 0, 127);
         if (filterEnvelopeDepth != 0)
@@ -402,6 +405,58 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         voice[entryOffset + 14] = (byte) Math.clamp (zone.getKeyRoot () < 0 ? keyLow : zone.getKeyRoot (), 0, 127);
 
         return voice;
+    }
+
+
+    /**
+     * Write the LFOs of a zone: the default cord from LFO 1 to the pitch carries the vibrato, new
+     * cords behind the default cord set route the tremolo and the cutoff LFO. The settings of the
+     * used LFOs are written into the primary zone table.
+     *
+     * @param voice The voice block, which already contains the default cord set
+     * @param zone The zone
+     */
+    private static void writeLfos (final byte [] voice, final ISampleZone zone)
+    {
+        final int modOffset = Emulator4Constants.VOICE_MOD_OFFSET;
+        final List<EmuLfoModulation.Cord> cords = new ArrayList<> ();
+        for (int slot = 0; slot < Emulator4Constants.NUM_MOD_CORDS; slot++)
+        {
+            final int cordOffset = modOffset + slot * Emulator4Constants.MOD_CORD_SIZE;
+            final int source = voice[cordOffset + Emulator4Constants.MOD_CORD_SOURCE] & 0xFF;
+            final int destination = voice[cordOffset + Emulator4Constants.MOD_CORD_DESTINATION] & 0xFF;
+            if (source == 0 && destination == 0)
+                break;
+            cords.add (new EmuLfoModulation.Cord (source, destination, voice[cordOffset + Emulator4Constants.MOD_CORD_AMOUNT] / 127.0));
+        }
+
+        final ILfo [] lfos = EmuLfoModulation.createLfos (zone, cords, Emulator4Constants.NUM_MOD_CORDS);
+        for (int slot = 0; slot < cords.size (); slot++)
+        {
+            final EmuLfoModulation.Cord cord = cords.get (slot);
+            final int cordOffset = modOffset + slot * Emulator4Constants.MOD_CORD_SIZE;
+            voice[cordOffset + Emulator4Constants.MOD_CORD_SOURCE] = (byte) cord.source ();
+            voice[cordOffset + Emulator4Constants.MOD_CORD_DESTINATION] = (byte) cord.destination ();
+            voice[cordOffset + Emulator4Constants.MOD_CORD_AMOUNT] = (byte) Math.clamp (Math.round (cord.amount () * 127), -127, 127);
+        }
+
+        final int [] lfoOffsets =
+        {
+            Emulator4Constants.VOICE_PZT_OFFSET + Emulator4Constants.PZT_LFO1,
+            Emulator4Constants.VOICE_PZT_OFFSET + Emulator4Constants.PZT_LFO2
+        };
+        for (int i = 0; i < lfos.length; i++)
+        {
+            final ILfo lfo = lfos[i];
+            if (lfo == null)
+                continue;
+            final int offset = lfoOffsets[i];
+            voice[offset + Emulator4Constants.LFO_RATE] = (byte) EmuLfoModulation.rateToEosValue (EmuLfoModulation.getRate (lfo));
+            voice[offset + Emulator4Constants.LFO_SHAPE] = (byte) EmuLfoModulation.fromWaveform (lfo.getWaveform ());
+            voice[offset + Emulator4Constants.LFO_DELAY] = (byte) EmuLfoModulation.delayToEosValue (lfo.getDelay ());
+            voice[offset + Emulator4Constants.LFO_VARIATION] = 0;
+            voice[offset + Emulator4Constants.LFO_FREE_RUN] = (byte) (lfo.isKeySync () ? 0 : 1);
+        }
     }
 
 

@@ -139,6 +139,24 @@ public class EmulatorXConstants
     public static final int    ENVELOPE_STAGE_SIZE     = 9;
     /** The number of stages of an envelope. */
     public static final int    ENVELOPE_NUM_STAGES     = 6;
+    /** The list type of the LFOs. */
+    public static final String LFO_LIST_TYPE           = "LFOL";
+    /** The tag of an LFO chunk. */
+    public static final String LFO_TAG                 = "E5LF";
+    /** The size of an LFO chunk. */
+    public static final int    LFO_SIZE                = 22;
+    /** The offset of the delay in seconds (float) inside an LFO chunk. */
+    public static final int    LFO_DELAY               = 4;
+    /** The offset of the rate in Hertz (float) inside an LFO chunk. */
+    public static final int    LFO_RATE                = 8;
+    /** The offset of the tempo note division inside an LFO chunk, used if synced to the tempo. */
+    public static final int    LFO_DIVISION            = 12;
+    /** The offset of the wave shape inside an LFO chunk. */
+    public static final int    LFO_SHAPE               = 13;
+    /** The offset of the key sync flag inside an LFO chunk. */
+    public static final int    LFO_KEY_SYNC            = 18;
+    /** The offset of the tempo sync (BPM) flag inside an LFO chunk. */
+    public static final int    LFO_TEMPO_SYNC          = 19;
     /** The size of a modulation cord chunk. */
     public static final int    CORD_SIZE               = 10;
     /** The number of modulation cords of a voice. */

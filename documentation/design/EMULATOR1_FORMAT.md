@@ -1,11 +1,5 @@
 # E-mu Emulator Disk Format
 
-**Status: reading and writing are implemented.** `file/hfe/EmuFmDecoder` reads the disks,
-`format/emu/emulator1/Emulator1Detector` turns their two banks into a multi-sample and
-`format/emu/emulator1/Emulator1Creator` writes a disk (as a HxC image or as a raw image) from a
-multi-sample. Sections are marked *confirmed*, *reported* or *unknown* so later work does not mistake
-a second-hand figure for a verified one. Nothing here has been tried on a real Emulator yet.
-
 The Emulator (1981) is the first sampler of the line, the machine *below* the Emulator II whose
 disks are described in `EMULATOR2_FORMAT.md`. The two share the floppy controller and the track
 format, the companding DAC and the sample clock, and nothing else: the Emulator holds two banks of
@@ -32,10 +26,7 @@ and that `GET UPPER` and `GET LOWER` load the sounds of one half of the keyboard
 the two system tracks again is *unknown*; it decides whether a disk written without a system can be
 loaded after booting from another disk.
 
-## Physical layout — *confirmed*
-
-From *Disk layout of Emulator I floppy disks* v0.8 by ///Esynthesist (emxp.net), captured with an
-oscilloscope on the Shugart interface, and verified here on all 79 disks of the corpus.
+## Physical layout
 
 - Shugart 400L drive, SSDD soft-sectored 5.25" media, 300 RPM, **one side, 35 tracks** (of the 40 the
   drive could format)
@@ -68,7 +59,7 @@ polynomial `8005` fed least significant bit first - reflected form `A001`, initi
 over the payload only (the track number, or the 3584 data bytes), stored least significant byte
 first.
 
-### The two fields of a track are written separately — *confirmed*
+### The two fields of a track are written separately
 
 This is what broke the first decoder. The Emulator writes the header and the data field of a track
 in two operations, so the data mark does not sit at a fixed distance from the header mark: across
@@ -86,7 +77,7 @@ which put the data mark 28 sync cells (three and a half bytes) after the gap whe
 synthetic corpus and the published description have 32; the 90 factory disks and the OS 3.1 image
 of the Emulator II corpus all decode as well.
 
-### Image containers — *confirmed*
+### Image containers
 
 | Extension | Meaning |
 |-----------|---------|
@@ -108,7 +99,7 @@ disk `#1 Trombone - Trumpet` and `EmuI_00_002_103M2__00_001_101M4_Trombone_Trump
 34 of 35 tracks and differ in 12 parameter bytes of the upper bank header, the way two copies of a
 disk that was edited differ.
 
-## Disk layout — *confirmed*
+## Disk layout
 
 | Tracks | Offset | Content |
 |--------|--------|---------|
@@ -131,7 +122,7 @@ without one it writes the system tracks as zeroes.
 `00` up to the end of the track; three of the fourteen reference disks carry this pattern, the
 others hold recorded sequences or other leftovers. The creator writes the empty pattern.
 
-## Bank layout — *confirmed*
+## Bank layout
 
 A bank is **a 256-byte header followed by 57,088 bytes of sample memory**, together the 16 tracks =
 57,344 bytes. The bank is loaded at RAM address **`0x2000`**, and every address in the header is a
@@ -190,7 +181,7 @@ cutoff frequencies 19,300 / 18,200 / 14,500 / 9,000 / 5,000 / (unobserved) / 800
 interpolated for the setting 6 which none of the references uses. Which analogue filter sits behind
 the setting is *unknown*.
 
-## Keyboard and zones — *confirmed*
+## Keyboard and zones
 
 The keyboard has 49 keys, C2 to C6 = **MIDI 36 to 84**; the **lower half is MIDI 36-59** (24 keys),
 the **upper half 60-84** (25 keys). Each half is divided into zones of equal width **24 / zones**,
@@ -203,7 +194,7 @@ The pitch of every key is confirmed by the samples themselves: the loop of the t
 frames = one period of 103.6 Hz, the trumpet loops of 87, 62, 43 and 31 frames are one period of
 D#4, A4, E5 and A5, all at 27,778 Hz and all on the keys the table puts them.
 
-## Pitch table — *confirmed*
+## Pitch table
 
 The zone records point at a table of **25 little-endian 16-bit entries**, one per key of the half
 from its lowest key upwards plus one more; on the newer disks it sits at `0x20C0`. An entry holds a
@@ -242,7 +233,7 @@ The upper 3 bits depend only on the position of the key in its zone: a 24-key zo
 code plays the same pitch, so the code is not part of the pitch; what it controls is not known. The
 creator writes the pattern as found.
 
-## Audio — *confirmed*
+## Audio
 
 The sample bytes are the code of the **AM6072 companding DAC**, exactly as on the Emulator II: sign
 in bit 7, chord in bits 6-4, step in bits 3-0, and
@@ -271,30 +262,3 @@ own copy in `EmaxConstants`.
 - **Writing.** A disk converted to SFZ and back to an Emulator HFE decodes CRC-valid on every track,
   the decoded raw image re-encodes to the identical HFE, and reading the written disk again gives the
   same zones, roots, loops and audio. Not tried on hardware.
-
-## The converter
-
-`Emulator1Detector` reads `.emufd`, `.img` (125,440 bytes) and `.hfe`; one disk becomes one
-multi-sample with the zones of both halves: key range, root key, tuning, loop, filter and the
-expanded audio at 27,778 Hz.
-
-`Emulator1Creator` writes one disk per multi-sample: the zones which cover each half are mapped onto
-the smallest available zone count, each zone plays the source zone which covers most of its keys,
-the audio is mixed to mono, re-sampled to 27,778 Hz where the source is faster - a slower source
-keeps its rate, which the pitch table compensates - and companded; the records, the pitch table
-(with the code pattern above) and the empty sequencer track are written, the system tracks are
-copied from the `.E1O` file or disk image named in the settings, and the image is written as a HFE
-through `EmuFmEncoder` with the field spacing of the Emulator or as a raw `.emufd`. A sample which
-does not fit into the 57,088 bytes of its half is shortened and reported. Two things are *unknown*
-until a machine is available: whether the disk loads as written, and whether `GET UPPER` / `GET
-LOWER` re-read the system tracks, which decides whether a disk without a system can be loaded after
-booting from a factory disk.
-
-## Sources
-
-- ///Esynthesist, *Disk layout of Emulator I floppy disks* v0.8 (2010) — https://emxp.net/Disk_layout_of_EmulatorI_floppy_disks_v0_8.pdf
-- ///Esynthesist, *Copy protection schema in Emulator I* v1.0 (2010) — https://emxp.net/Emulator_I_BootRom_CopyProtection_v1_0.pdf
-- EMXP additional downloads (OS 3.07 and 3.11 as `.E1O`) — https://emxp.net/Additional_downloads.htm
-- E-mu Systems, *Emulator Operating Instructions* — the excerpts on `GET UPPER` / `GET LOWER`, the multi-sampling software (0303 and later) and the loading of the software at power-on
-- Corpus: *Emulator I all* — 79 `.hfe` of the factory library (emulatorarchive numbering) and the 14 `.emufd` dumps of the *Production Set* with the SoundFonts EMXP wrote from them
-- `EMULATOR2_FORMAT.md` for the shared track encoding and the companding

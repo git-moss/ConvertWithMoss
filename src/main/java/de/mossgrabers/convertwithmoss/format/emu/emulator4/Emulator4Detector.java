@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -39,6 +40,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoo
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
+import de.mossgrabers.convertwithmoss.format.emu.EmuLfoModulation;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -525,6 +527,14 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
         final IFilter filter = createFilter (body, offset, pztOffset, filterEnvelopeDepth, filterKeyTracking, filterVelocity);
 
+        // The two LFOs of the voice and the cords which route them
+        final List<EmuLfoModulation.Cord> cords = readCords (body, modOffset);
+        final ILfo [] lfos =
+        {
+            readLfo (body, pztOffset + Emulator4Constants.PZT_LFO1),
+            readLfo (body, pztOffset + Emulator4Constants.PZT_LFO2)
+        };
+
         for (int zoneIndex = 0; zoneIndex < numZones; zoneIndex++)
         {
             final int entryOffset = offset + Emulator4Constants.VOICE_SIZE + zoneIndex * Emulator4Constants.ZONE_ENTRY_SIZE;
@@ -587,6 +597,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             zone.getAmplitudeVelocityModulator ().setDepth (velocityToAmplitude);
             if (filter != null)
                 zone.setFilter (filter);
+            EmuLfoModulation.applyLfos (zone, cords, lfos);
 
             group.addSampleZone (zone);
         }
@@ -680,6 +691,43 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         return filter;
+    }
+
+
+    /**
+     * Read the modulation cord table of a voice.
+     *
+     * @param body The content of the preset chunk
+     * @param modOffset The offset of the modulation cord table
+     * @return The cords in their order, the amounts in the range of -1..1
+     */
+    private static List<EmuLfoModulation.Cord> readCords (final byte [] body, final int modOffset)
+    {
+        final List<EmuLfoModulation.Cord> cords = new ArrayList<> ();
+        for (int slot = 0; slot < Emulator4Constants.NUM_MOD_CORDS; slot++)
+        {
+            final int cordOffset = modOffset + slot * Emulator4Constants.MOD_CORD_SIZE;
+            final int source = body[cordOffset + Emulator4Constants.MOD_CORD_SOURCE] & 0xFF;
+            final int destination = body[cordOffset + Emulator4Constants.MOD_CORD_DESTINATION] & 0xFF;
+            cords.add (new EmuLfoModulation.Cord (source, destination, body[cordOffset + Emulator4Constants.MOD_CORD_AMOUNT] / 127.0));
+        }
+        return cords;
+    }
+
+
+    /**
+     * Read one of the two LFOs of a voice: rate, wave shape, delay, variation and the free run
+     * flag.
+     *
+     * @param body The content of the preset chunk
+     * @param offset The offset of the LFO
+     * @return The LFO
+     */
+    private static ILfo readLfo (final byte [] body, final int offset)
+    {
+        final double rate = EmuLfoModulation.eosValueToRate (body[offset + Emulator4Constants.LFO_RATE] & 0xFF);
+        final double delay = EmuLfoModulation.eosValueToDelay (body[offset + Emulator4Constants.LFO_DELAY] & 0xFF);
+        return EmuLfoModulation.createLfo (body[offset + Emulator4Constants.LFO_SHAPE] & 0xFF, rate, delay, body[offset + Emulator4Constants.LFO_FREE_RUN] == 0);
     }
 
 

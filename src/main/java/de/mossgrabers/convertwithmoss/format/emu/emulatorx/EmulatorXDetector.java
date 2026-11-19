@@ -24,6 +24,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
@@ -38,6 +39,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.exception.ParseException;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.emu.EmuLfoModulation;
 import de.mossgrabers.tools.FileUtils;
 
 
@@ -504,6 +506,8 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         final IEnvelope amplitudeEnvelope = readEnvelope (voice, EmulatorXConstants.ENVELOPE_AMPLITUDE);
         final double velocityDepth = readVelocityToVolume (voice);
         final IFilter filter = createFilter (voice, initialControllers);
+        final List<EmuLfoModulation.Cord> cords = readCords (voice);
+        final ILfo [] lfos = readLfos (voice);
 
         final List<ISampleZone> zones = new ArrayList<> ();
         final EmulatorXChunk zoneList = voice.getList (EmulatorXConstants.ZONE_LIST_TYPE);
@@ -560,6 +564,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
             zone.getAmplitudeVelocityModulator ().setDepth (velocityDepth);
             if (filter != null)
                 zone.setFilter (filter);
+            EmuLfoModulation.applyLfos (zone, cords, lfos);
 
             zones.add (zone);
             zoneHeader = null;
@@ -693,6 +698,50 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         envelope.setSustainLevel (levels[3]);
         envelope.setReleaseTime (times[4] + times[5]);
         return envelope;
+    }
+
+
+    /**
+     * Read the modulation cords of a voice.
+     *
+     * @param voice The voice chunk
+     * @return The cords in their order, the amounts in the range of -1..1
+     */
+    private static List<EmuLfoModulation.Cord> readCords (final EmulatorXChunk voice)
+    {
+        final List<EmuLfoModulation.Cord> cords = new ArrayList<> ();
+        final EmulatorXChunk cordList = voice.getList (EmulatorXConstants.CORD_LIST_TYPE);
+        if (cordList != null)
+            for (final EmulatorXChunk cord: cordList.getChildren ())
+                if (cord.is (EmulatorXConstants.CORD_TAG))
+                    cords.add (new EmuLfoModulation.Cord (cord.getByte (4), cord.getByte (5), cord.getFloat (6) / EmulatorXConstants.FULL_CORD_AMOUNT));
+        return cords;
+    }
+
+
+    /**
+     * Read the two LFOs of a voice. A missing LFO is read with the default settings.
+     *
+     * @param voice The voice chunk
+     * @return The two LFOs
+     */
+    private static ILfo [] readLfos (final EmulatorXChunk voice)
+    {
+        final ILfo [] lfos = new ILfo [2];
+        final EmulatorXChunk lfoList = voice.getList (EmulatorXConstants.LFO_LIST_TYPE);
+        int index = 0;
+        if (lfoList != null)
+            for (final EmulatorXChunk lfo: lfoList.getChildren ())
+                if (lfo.is (EmulatorXConstants.LFO_TAG) && index < lfos.length)
+                {
+                    // A tempo synchronized LFO keeps a rate which is not used, it is read
+                    // anyway since the note divisions are not decoded
+                    lfos[index] = EmuLfoModulation.createLfo (lfo.getByte (EmulatorXConstants.LFO_SHAPE), lfo.getFloat (EmulatorXConstants.LFO_RATE), lfo.getFloat (EmulatorXConstants.LFO_DELAY), lfo.getByte (EmulatorXConstants.LFO_KEY_SYNC) != 0);
+                    index++;
+                }
+        for (int i = index; i < lfos.length; i++)
+            lfos[i] = EmuLfoModulation.createLfo (EmuLfoModulation.SHAPE_SINE, EmuLfoModulation.DEFAULT_RATE, 0, false);
+        return lfos;
     }
 
 

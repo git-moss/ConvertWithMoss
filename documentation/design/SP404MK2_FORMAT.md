@@ -1,17 +1,5 @@
 # Roland SP-404MK2 project / PADCONF.BIN format — reverse-engineered
 
-Reverse-engineered 2026-07 and **validated against a real exported project** (one of the
-public projects from `sp404.amirmeludah.com`, system program v5.x) plus the
-**SP-404MKII system program v5.52** firmware image (`SP404MKII_APP1.bin`, an uncompressed
-ARM Thumb image loaded at `0x80000000` — i.MX RT1060 SDRAM). Cross-checked against three
-independent community efforts:
-
-* `gsterlin/sp404mk2-tools` — a bit-level `PADCONF.BIN` diff log (firmware 5.01).
-* `ciscoittech/sp404mk2-sample-agent` — a Python read/write reference implementation.
-* `macdigi/compa` — protocol notes documenting the `RFPD` / `RFWV` magics.
-
-Fields below are confirmed against the real file unless marked **(?)** = still unknown.
-
 ## What kind of instrument this is
 
 The SP-404MK2 is a **pad sampler**, not a keyboard multi-sampler — there is no

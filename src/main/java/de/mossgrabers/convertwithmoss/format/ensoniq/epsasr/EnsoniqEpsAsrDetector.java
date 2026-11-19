@@ -22,14 +22,18 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
@@ -54,6 +58,53 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
     private static final Map<Integer, FilterType> FILTER_TYPES = new HashMap<> ();
     private static final Map<Integer, Integer>    FILTER_POLES = new HashMap<> ();
     private static final double []                TIMES        = new double [100];
+
+    // Modulation sources
+    private static final int                      SRC_LFO      = 0;
+    private static final int                      SRC_VEL      = 5;
+    private static final int                      SRC_VEL2     = 7;
+    private static final int                      SRC_WHEEL    = 10;
+    private static final int                      SRC_WHEEL_PR = 14;
+
+    // The 7 LFO waveforms: triangle, sine/triangle, sine, positive triangle, positive sine,
+    // sawtooth (rising) and square (positive only)
+    private static final LfoWaveform []           LFO_WAVES    =
+    {
+        LfoWaveform.TRIANGLE,
+        LfoWaveform.SINE,
+        LfoWaveform.SINE,
+        LfoWaveform.TRIANGLE,
+        LfoWaveform.SINE,
+        LfoWaveform.SAWTOOTH_UP,
+        LfoWaveform.SQUARE
+    };
+
+    // The LFO rates in Hertz of the speed values 0-19, above it increases by 0.25Hz per step up to
+    // 21Hz at 99
+    private static final double []                LFO_RATES    =
+    {
+        0.05,
+        0.05,
+        0.06,
+        0.06,
+        0.06,
+        0.07,
+        0.07,
+        0.08,
+        0.08,
+        0.09,
+        0.10,
+        0.11,
+        0.13,
+        0.14,
+        0.17,
+        0.20,
+        0.25,
+        0.33,
+        0.50,
+        1.0
+    };
+
     static
     {
         HARDWARE_IDS.put (Integer.valueOf (0x0000), "EPS");
@@ -367,7 +418,8 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 }
                 final IEnvelopeModulator pitchEnvelopeModulator = sampleZone.getPitchEnvelopeModulator ();
                 pitchEnvelopeModulator.setSource (createEnvelope (waveSample.getPitchEnvelope ()));
-                pitchEnvelopeModulator.setDepth (waveSample.getPitchEnvelopeAmount () / 127.0);
+                // The amount is in 1/8 semi-tones
+                pitchEnvelopeModulator.setDepth (waveSample.getPitchEnvelopeAmount () * 100.0 / 8.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
 
                 sampleZone.setGain (MathUtils.valueToDb (Math.clamp (waveSample.getVolume () / 127.0, 0, 1)));
 
@@ -378,8 +430,7 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 final IEnvelopeModulator amplitudeEnvelopeModulator = sampleZone.getAmplitudeEnvelopeModulator ();
                 amplitudeEnvelopeModulator.setSource (ampEnvelope);
 
-                // 13=Pressure
-                if (waveSample.getAmplitudeModulationSource () == 13)
+                if (isVelocitySource (waveSample.getAmplitudeModulationSource ()))
                     sampleZone.getAmplitudeVelocityModulator ().setDepth (waveSample.getAmplitudeModulationAmount () / 127.0);
 
                 // Filter
@@ -392,13 +443,14 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
                 final IEnvelope filterEnvelope = createEnvelope (waveSample.getFilterEnvelope ());
                 cutoffEnvelopeModulator.setDepth (waveSample.getFilter1EnvelopeAmount () / 127.0);
                 cutoffEnvelopeModulator.setSource (filterEnvelope);
-                // Pressure
-                if (waveSample.getFilter1ModulationSource () == 13)
+                if (isVelocitySource (waveSample.getFilter1ModulationSource ()))
                     filter.getCutoffVelocityModulator ().setDepth (waveSample.getFilter1ModulationAmount () / 127.0);
 
                 filter.setCutoffKeyTracking (waveSample.getFilter1KeyAmount () / 127.0);
 
                 sampleZone.setFilter (filter);
+
+                applyLfo (sampleZone, filter, waveSample, instrument.getInstrumentID () == 0);
 
                 final int start = waveSample.getSampleStart ();
                 final int end = waveSample.getSampleEnd ();
@@ -520,6 +572,102 @@ public class EnsoniqEpsAsrDetector extends AbstractDetector<MetadataSettingsUI>
     private static double parseVolume (final int volume)
     {
         return Math.clamp (volume / 99.0, 0, 1);
+    }
+
+
+    /**
+     * Check if a modulation source is one of the 3 velocity sources. The EPS calls them VEL, VEL1
+     * and VEL2, the EPS-16 PLUS and ASR VEL1, VEL and VEL2.
+     *
+     * @param source The modulation source
+     * @return True if it is a velocity source
+     */
+    private static boolean isVelocitySource (final int source)
+    {
+        return source >= SRC_VEL && source <= SRC_VEL2;
+    }
+
+
+    /**
+     * Applies the single LFO of a wave-sample to the sample zone. The LFO always modulates the
+     * pitch by the LFO amount. It modulates the cutoff of filter 1 and the volume only if it is
+     * selected as their modulation source.
+     *
+     * @param sampleZone The sample zone
+     * @param filter The filter of the sample zone
+     * @param waveSample The wave-sample which contains the LFO settings
+     * @param isEPS True if the instrument was created on an EPS, false for the EPS-16 PLUS and ASR
+     */
+    private static void applyLfo (final ISampleZone sampleZone, final IFilter filter, final EnsoniqWaveSample waveSample, final boolean isEPS)
+    {
+        // The positive-only waveforms cover only half of the range of the bipolar ones
+        final int waveform = waveSample.getLfoWaveform ();
+        final double polarity = waveform == 3 || waveform == 4 || waveform == 6 ? 0.5 : 1.0;
+        final double depth = polarity * waveSample.getLfoDepth () / 127.0;
+
+        // The modulation wheel adds to the LFO depth, the EPS has no amount and adds the full range
+        double modWheelDepth = 0;
+        final int depthModulationSource = waveSample.getLfoDepthModulationSource ();
+        if (depthModulationSource == SRC_WHEEL || depthModulationSource == SRC_WHEEL_PR)
+            modWheelDepth = polarity * (isEPS ? 1.0 : waveSample.getLfoDepthModulationAmount () / 127.0);
+        if (depth == 0 && modWheelDepth == 0)
+            return;
+
+        // The LFO amount is in 1/8 semi-tones
+        final double pitchScale = waveSample.getLfoAmount () * 100.0 / 8.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+        setLfoModulator (sampleZone.getPitchLfoModulator (), waveSample, pitchScale * depth, pitchScale * modWheelDepth);
+
+        // A modulation amount of 127 sweeps the full cutoff range respectively the full volume
+        if (waveSample.getFilter1ModulationSource () == SRC_LFO)
+        {
+            final double cutoffScale = waveSample.getFilter1ModulationAmount () / 127.0;
+            setLfoModulator (filter.getCutoffLfoModulator (), waveSample, cutoffScale * depth, cutoffScale * modWheelDepth);
+        }
+        if (waveSample.getAmplitudeModulationSource () == SRC_LFO)
+        {
+            final double volumeScale = waveSample.getAmplitudeModulationAmount () / 127.0;
+            setLfoModulator (sampleZone.getAmplitudeLfoModulator (), waveSample, volumeScale * depth, volumeScale * modWheelDepth);
+        }
+    }
+
+
+    /**
+     * Sets the depths and the LFO of a modulator if any of the depths is not zero.
+     *
+     * @param modulator The modulator to set
+     * @param waveSample The wave-sample which contains the LFO settings
+     * @param depth The depth of the modulator
+     * @param modWheelDepth The depth which is added by the modulation wheel
+     */
+    private static void setLfoModulator (final ILfoModulator modulator, final EnsoniqWaveSample waveSample, final double depth, final double modWheelDepth)
+    {
+        if (depth == 0 && modWheelDepth == 0)
+            return;
+        modulator.setDepth (Math.clamp (depth, -1, 1));
+        modulator.getDepthModWheelModulator ().setDepth (Math.clamp (modWheelDepth, -1, 1));
+        modulator.setSource (createLfo (waveSample));
+    }
+
+
+    /**
+     * Create an LFO from the settings of a wave-sample.
+     *
+     * @param waveSample The wave-sample which contains the LFO settings
+     * @return The LFO
+     */
+    private static ILfo createLfo (final EnsoniqWaveSample waveSample)
+    {
+        final ILfo lfo = new DefaultLfo ();
+        lfo.setWaveform (LFO_WAVES[Math.clamp (waveSample.getLfoWaveform (), 0, LFO_WAVES.length - 1)]);
+        final int speed = Math.clamp (waveSample.getLfoSpeed (), 0, 99);
+        lfo.setRate (speed < LFO_RATES.length ? LFO_RATES[speed] : 1.0 + (speed - LFO_RATES.length + 1) * 0.25);
+        // The delay is the time in which the LFO fades in to its depth. There is no table for it,
+        // therefore the times of the envelopes are used which have the same range
+        lfo.setFadeIn (parseTime (waveSample.getLfoDelay ()));
+        // Only 'Reset On' restarts the LFO with each key, 'Humanize' is a free running LFO with a
+        // randomly changing speed
+        lfo.setKeySync (waveSample.getLfoMode () == 1);
+        return lfo;
     }
 
 

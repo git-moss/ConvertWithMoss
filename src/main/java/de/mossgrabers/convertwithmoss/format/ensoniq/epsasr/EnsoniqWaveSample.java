@@ -28,6 +28,7 @@ public class EnsoniqWaveSample
     private final int          waveLayerCopy;
     private final int          rootNote;
     private final int          pitchEnvelopeAmount;
+    private final int          lfoAmount;
     private final int          pitchBendRange;
     private final int          fineTune;
     private final int          filterMode;
@@ -41,6 +42,13 @@ public class EnsoniqWaveSample
     private final int          panPositionEPS;
     private final int          panPositionARS;
     private final int          amplitudeModulationAmount;
+    private final int          lfoWaveform;
+    private final int          lfoSpeed;
+    private final int          lfoDepth;
+    private final int          lfoDelay;
+    private final int          lfoDepthModulationAmount;
+    private final int          lfoDepthModulationSource;
+    private final int          lfoMode;
     private final int          keyRangeLow;
     private final int          keyRangeHigh;
     private final int          sampleRate;
@@ -89,8 +97,7 @@ public class EnsoniqWaveSample
 
         this.pitchEnvelopeAmount = StreamUtils.readSigned8FromWord (input);
 
-        @SuppressWarnings("unused")
-        final int lfoAmount = StreamUtils.readSigned8FromWord (input);
+        this.lfoAmount = StreamUtils.readSigned8FromWord (input);
         @SuppressWarnings("unused")
         final int randomModulationAmount = StreamUtils.readSigned8FromWord (input);
 
@@ -151,8 +158,22 @@ public class EnsoniqWaveSample
         @SuppressWarnings("unused")
         final int panningModulationAmount = input.read ();
 
-        // Skip LFO parameters
-        input.skipNBytes (14);
+        this.lfoWaveform = input.read ();
+        @SuppressWarnings("unused")
+        final int boost = input.read ();
+        this.lfoSpeed = input.read ();
+        @SuppressWarnings("unused")
+        final int lfoRateModulationAmount = StreamUtils.readSigned8 (input);
+        this.lfoDepth = StreamUtils.readUnsigned8FromWord (input);
+        this.lfoDelay = input.read ();
+        // Not present on the EPS, contains 0
+        this.lfoDepthModulationAmount = StreamUtils.readSigned8 (input);
+        this.lfoDepthModulationSource = input.read ();
+        @SuppressWarnings("unused")
+        final int lfoRateModulationSource = input.read ();
+        this.lfoMode = StreamUtils.readUnsigned8FromWord (input);
+        @SuppressWarnings("unused")
+        final int randomModulatorFrequency = StreamUtils.readUnsigned8FromWord (input);
 
         this.loopMode = StreamUtils.readUnsigned8FromWord (input);
         this.sampleStart = calculateOffset (input);
@@ -288,13 +309,26 @@ public class EnsoniqWaveSample
 
 
     /**
-     * Get the pitch envelope amount. -15.7 to +15.7 (in 0.1 increments).
+     * Get the pitch envelope amount. The value is in 1/8 semi-tones, -127 to +127 which is
+     * displayed as -15.7 to +15.7 (semi-tones and eighths).
      *
      * @return The pitch envelope amount
      */
     public int getPitchEnvelopeAmount ()
     {
         return this.pitchEnvelopeAmount;
+    }
+
+
+    /**
+     * Get the amount by which the LFO modulates the pitch. The value is in 1/8 semi-tones, -127 to
+     * +127 which is displayed as -15.7 to +15.7 (semi-tones and eighths).
+     *
+     * @return The LFO pitch amount
+     */
+    public int getLfoAmount ()
+    {
+        return this.lfoAmount;
     }
 
 
@@ -417,6 +451,86 @@ public class EnsoniqWaveSample
     public int getAmplitudeModulationAmount ()
     {
         return this.amplitudeModulationAmount;
+    }
+
+
+    /**
+     * Get the LFO waveform.
+     *
+     * @return 0 = TRIANGLE, 1 = SINE/TRIANGLE, 2 = SINE, 3 = POSITIVE TRIANGLE, 4 = POSITIVE SINE,
+     *         5 = SAWTOOTH (rising), 6 = SQUARE (positive only)
+     */
+    public int getLfoWaveform ()
+    {
+        return this.lfoWaveform;
+    }
+
+
+    /**
+     * Get the LFO speed.
+     *
+     * @return The speed, 0-99
+     */
+    public int getLfoSpeed ()
+    {
+        return this.lfoSpeed;
+    }
+
+
+    /**
+     * Get the initial LFO depth.
+     *
+     * @return The depth, 0-127 (displayed as 0-99 on the EPS-16 PLUS and ASR)
+     */
+    public int getLfoDepth ()
+    {
+        return this.lfoDepth;
+    }
+
+
+    /**
+     * Get the LFO delay, which is the time it takes the LFO to fade in from zero to its depth.
+     *
+     * @return The delay, 0-99
+     */
+    public int getLfoDelay ()
+    {
+        return this.lfoDelay;
+    }
+
+
+    /**
+     * Get the amount by which the LFO depth modulation source adds to the LFO depth. Only on the
+     * EPS-16 PLUS and ASR, the EPS always adds the full amount.
+     *
+     * @return The amount, -127..127 (displayed as -99 to +99)
+     */
+    public int getLfoDepthModulationAmount ()
+    {
+        return this.lfoDepthModulationAmount;
+    }
+
+
+    /**
+     * Get the modulation source of the LFO depth, e.g. 10 = WHEEL, 14 = WHEEL + PRESSURE. See
+     * {@link #getAmplitudeModulationSource()} for all values.
+     *
+     * @return The LFO depth modulation source, 0-15
+     */
+    public int getLfoDepthModulationSource ()
+    {
+        return this.lfoDepthModulationSource;
+    }
+
+
+    /**
+     * Get the LFO mode.
+     *
+     * @return 0 = RESET OFF, 1 = RESET ON (restarts with each key), 2 = HUMANIZE
+     */
+    public int getLfoMode ()
+    {
+        return this.lfoMode;
     }
 
 

@@ -31,9 +31,11 @@ import de.mossgrabers.tools.ui.Functions;
  */
 public class S3pFile
 {
-    private static final String MAGIC   = "PSYSSS30";
+    private static final String MAGIC                 = "PSYSSS30";
+    /** The number of bytes of the S3000 key-group which are read. */
+    private static final int    S3000_KEYGROUP_LENGTH = 156;
 
-    private AkaiS1000Program    program = null;
+    private AkaiS1000Program    program               = null;
 
 
     /**
@@ -101,7 +103,8 @@ public class S3pFile
     {
         try (final AkaiSysexImage akaiSysexImage = new AkaiSysexImage (content))
         {
-            return new AkaiS1000Keygroup (akaiSysexImage);
+            // The S3000 key-group is longer than the one of the S1000
+            return new AkaiS1000Keygroup (akaiSysexImage, akaiSysexImage.available () >= S3000_KEYGROUP_LENGTH);
         }
     }
 

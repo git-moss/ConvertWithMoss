@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -27,6 +28,7 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -40,6 +42,7 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZon
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.FlacFileSampleData;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.soundbox.SoundboxLfoEngine.Assignment;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.XMLUtils;
 
@@ -221,6 +224,7 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
         if (layersElement == null)
             return null;
         final List<Element> layerElements = XMLUtils.getChildElementsByName (layersElement, SoundboxTag.LAYER, false);
+        final List<SoundboxLfoEngine> lfoEngines = SoundboxLfoEngine.readEngines (presetElement);
 
         final List<IGroup> groups = new ArrayList<> ();
         SoundboxEngineSettings firstEngineSettings = null;
@@ -246,15 +250,26 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
 
             // A filter effect of the layer (or of the master effects) becomes the filter of its
             // zones
-            IFilter filter = SoundboxFilterEffect.readFilterEffect (XMLUtils.getChildElementByName (layerElement, SoundboxTag.EFFECTS));
-            if (filter == null)
+            final Element layerEffectsElement = XMLUtils.getChildElementByName (layerElement, SoundboxTag.EFFECTS);
+            IFilter filter = SoundboxFilterEffect.readFilterEffect (layerEffectsElement);
+            String filterTarget = null;
+            if (filter != null)
+                filterTarget = SoundboxLfoEngine.getEffectTarget (SoundboxLfoEngine.TARGET_FILTER_FREQUENCY, layerIndex, SoundboxFilterEffect.findFilterSlot (layerEffectsElement));
+            else
             {
                 final Element masterElement = XMLUtils.getChildElementByName (presetElement, SoundboxTag.MASTER);
                 if (masterElement != null)
-                    filter = SoundboxFilterEffect.readFilterEffect (XMLUtils.getChildElementByName (masterElement, SoundboxTag.EFFECTS));
+                {
+                    final Element masterEffectsElement = XMLUtils.getChildElementByName (masterElement, SoundboxTag.EFFECTS);
+                    filter = SoundboxFilterEffect.readFilterEffect (masterEffectsElement);
+                    if (filter != null)
+                        filterTarget = SoundboxLfoEngine.getEffectTarget (SoundboxLfoEngine.TARGET_FILTER_FREQUENCY, -1, SoundboxFilterEffect.findFilterSlot (masterEffectsElement));
+                }
             }
 
-            for (final IGroup group: this.parseGroup (zipFile, groupElement, groupName, layerState, engineSettings, filter, soundNames, sampleDataCache))
+            final LayerModulation modulation = createLayerModulation (lfoEngines, layerIndex, layerState, engineSettings, filterTarget);
+
+            for (final IGroup group: this.parseGroup (zipFile, groupElement, groupName, layerState, engineSettings, filter, modulation, soundNames, sampleDataCache))
                 if (!group.getSampleZones ().isEmpty ())
                     groups.add (group);
         }
@@ -318,12 +333,13 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
      * @param layerState The state of the layer which plays the group
      * @param engineSettings The engine settings of the layer which plays the group
      * @param filter The filter of the layer or null if there is none
+     * @param modulation The LFO modulation of the layer
      * @param soundNames The original sample file names
      * @param sampleDataCache Caches the already created sample data objects
      * @return The groups, one for each round robin layer
      * @throws IOException Error reading the sample data
      */
-    private List<IGroup> parseGroup (final ZipFile zipFile, final Element groupElement, final String groupName, final SoundboxLayerState layerState, final SoundboxEngineSettings engineSettings, final IFilter filter, final List<String> soundNames, final Map<Integer, ISampleData> sampleDataCache) throws IOException
+    private List<IGroup> parseGroup (final ZipFile zipFile, final Element groupElement, final String groupName, final SoundboxLayerState layerState, final SoundboxEngineSettings engineSettings, final IFilter filter, final LayerModulation modulation, final List<String> soundNames, final Map<Integer, ISampleData> sampleDataCache) throws IOException
     {
         // The 'G' prefix marks a group name, remove it for display
         final String displayName = groupName.startsWith ("G") ? groupName.substring (1) : groupName;
@@ -400,7 +416,8 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
             zone.setTuning (sound.tuneSemitones + engineSettings.transposeSemitones + (engineSettings.octaveIndex - SoundboxEngineSettings.OCTAVE_CENTER) * 12.0 + engineSettings.fineTuneCents / 100.0);
 
             if (filter != null)
-                zone.setFilter (new DefaultFilter (filter.getType (), filter.getPoles (), filter.getCutoff (), filter.getResonance ()));
+                zone.setFilter (new DefaultFilter (filter.getType (), filter.getPoles (), modulation.cutoffCenter > 0 ? modulation.cutoffCenter : filter.getCutoff (), filter.getResonance ()));
+            modulation.apply (zone);
 
             final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
             envelope.setAttackTime (engineSettings.attack * SoundboxEngineSettings.MAX_ATTACK_SECONDS);
@@ -429,6 +446,83 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
         }
 
         return groups;
+    }
+
+
+    /**
+     * Collects the LFO modulation of a layer from the assignments of the LFO engines: the layer
+     * volume becomes the amplitude LFO, fine tune, transpose and octave the pitch LFO and the
+     * frequency of the filter effect which is used as the filter of the zones the cutoff LFO. If
+     * several engines modulate the same destination the strongest one is used. A modulated
+     * parameter does not keep its own value but moves around the center which is set by the
+     * position of the assignment, therefore the position replaces the static value of the
+     * parameter in the layer state and engine settings.
+     *
+     * @param lfoEngines The LFO engines of the preset
+     * @param layerIndex The index of the layer
+     * @param layerState The state of the layer, the volume is updated
+     * @param engineSettings The engine settings of the layer, the tuning is updated
+     * @param filterTarget The name of the filter frequency parameter used as the filter of the
+     *            zones, null if there is no filter
+     * @return The modulation
+     */
+    private static LayerModulation createLayerModulation (final List<SoundboxLfoEngine> lfoEngines, final int layerIndex, final SoundboxLayerState layerState, final SoundboxEngineSettings engineSettings, final String filterTarget)
+    {
+        final LayerModulation modulation = new LayerModulation ();
+        final String volumeTarget = SoundboxLfoEngine.getLayerTarget (SoundboxLfoEngine.TARGET_VOLUME, layerIndex);
+        final String fineTarget = SoundboxLfoEngine.getLayerTarget (SoundboxLfoEngine.TARGET_FINE, layerIndex);
+        final String transposeTarget = SoundboxLfoEngine.getLayerTarget (SoundboxLfoEngine.TARGET_TRANSPOSE, layerIndex);
+        final String octaveTarget = SoundboxLfoEngine.getLayerTarget (SoundboxLfoEngine.TARGET_OCTAVE, layerIndex);
+
+        for (final SoundboxLfoEngine engine: lfoEngines)
+        {
+            final Optional<Assignment> volume = engine.getAssignment (volumeTarget);
+            if (volume.isPresent ())
+            {
+                layerState.volume = SoundboxLfoEngine.getVolumeCenter (volume.get ());
+                final double depth = SoundboxLfoEngine.getVolumeDepth (volume.get ());
+                if (Math.abs (depth) > Math.abs (modulation.amplitudeDepth))
+                {
+                    modulation.amplitudeEngine = engine;
+                    modulation.amplitudeDepth = depth;
+                }
+            }
+
+            final Optional<Assignment> fine = engine.getAssignment (fineTarget);
+            if (fine.isPresent ())
+            {
+                engineSettings.fineTuneCents = fine.get ().position * SoundboxLfoEngine.FINE_RANGE_CENTS;
+                modulation.setPitch (engine, fine.get ().amount * SoundboxLfoEngine.FINE_RANGE_CENTS);
+            }
+            final Optional<Assignment> transpose = engine.getAssignment (transposeTarget);
+            if (transpose.isPresent ())
+            {
+                engineSettings.transposeSemitones = transpose.get ().position * SoundboxLfoEngine.TRANSPOSE_RANGE_CENTS / 100.0;
+                modulation.setPitch (engine, transpose.get ().amount * SoundboxLfoEngine.TRANSPOSE_RANGE_CENTS);
+            }
+            final Optional<Assignment> octave = engine.getAssignment (octaveTarget);
+            if (octave.isPresent ())
+            {
+                engineSettings.octaveIndex = SoundboxEngineSettings.OCTAVE_CENTER + (int) Math.round (octave.get ().position * SoundboxLfoEngine.OCTAVE_RANGE_CENTS / 1200.0);
+                modulation.setPitch (engine, octave.get ().amount * SoundboxLfoEngine.OCTAVE_RANGE_CENTS);
+            }
+
+            if (filterTarget != null)
+            {
+                final Optional<Assignment> cutoff = engine.getAssignment (filterTarget);
+                if (cutoff.isPresent ())
+                {
+                    modulation.cutoffCenter = SoundboxLfoEngine.getFilterCenter (cutoff.get ());
+                    final double depthCents = SoundboxLfoEngine.getFilterDepthCents (cutoff.get ());
+                    if (Math.abs (depthCents) > Math.abs (modulation.cutoffDepthCents))
+                    {
+                        modulation.cutoffEngine = engine;
+                        modulation.cutoffDepthCents = depthCents;
+                    }
+                }
+            }
+        }
+        return modulation;
     }
 
 
@@ -478,5 +572,59 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
     {
         final int dotPosition = fileName.lastIndexOf ('.');
         return dotPosition > 0 ? fileName.substring (0, dotPosition) : fileName;
+    }
+
+
+    /** The LFO modulation of a layer. */
+    private static class LayerModulation
+    {
+        SoundboxLfoEngine amplitudeEngine  = null;
+        double            amplitudeDepth   = 0;
+        SoundboxLfoEngine pitchEngine      = null;
+        double            pitchDepthCents  = 0;
+        SoundboxLfoEngine cutoffEngine     = null;
+        double            cutoffDepthCents = 0;
+        /** The center frequency of a modulated filter, replaces the frequency of the filter. */
+        double            cutoffCenter     = -1;
+
+
+        /**
+         * Set the pitch modulation if it is stronger than the current one.
+         *
+         * @param engine The LFO engine
+         * @param depthCents The depth in cents
+         */
+        void setPitch (final SoundboxLfoEngine engine, final double depthCents)
+        {
+            if (Math.abs (depthCents) > Math.abs (this.pitchDepthCents))
+            {
+                this.pitchEngine = engine;
+                this.pitchDepthCents = depthCents;
+            }
+        }
+
+
+        /**
+         * Applies the modulation to a zone. The filter of the zone must already be set.
+         *
+         * @param zone The zone
+         */
+        void apply (final ISampleZone zone)
+        {
+            if (this.amplitudeEngine != null)
+                setLfo (zone.getAmplitudeLfoModulator (), this.amplitudeEngine, this.amplitudeDepth);
+            if (this.pitchEngine != null)
+                setLfo (zone.getPitchLfoModulator (), this.pitchEngine, this.pitchDepthCents / IEnvelope.MAX_ENVELOPE_DEPTH);
+            final Optional<IFilter> filter = zone.getFilter ();
+            if (this.cutoffEngine != null && filter.isPresent ())
+                setLfo (filter.get ().getCutoffLfoModulator (), this.cutoffEngine, this.cutoffDepthCents / IEnvelope.MAX_ENVELOPE_DEPTH);
+        }
+
+
+        private static void setLfo (final ILfoModulator modulator, final SoundboxLfoEngine engine, final double depth)
+        {
+            modulator.setDepth (Math.clamp (depth, -1, 1));
+            modulator.setSource (engine.createLfo ());
+        }
     }
 }

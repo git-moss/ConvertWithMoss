@@ -19,8 +19,17 @@ import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiImage;
  */
 public class AkaiS1000Program
 {
+    /** Modulation source: modulation wheel. */
+    public static final int      MOD_SOURCE_MODWHEEL = 1;
+    /** Modulation source: LFO 1. */
+    public static final int      MOD_SOURCE_LFO1     = 7;
+    /** Modulation source: LFO 2. */
+    public static final int      MOD_SOURCE_LFO2     = 8;
+
     /** ID for a program structure. */
-    private static final int     AKAI_PROGRAM_ID = 1;
+    private static final int     AKAI_PROGRAM_ID     = 1;
+    /** The number of bytes of the S3000 program header which are read. */
+    private static final int     S3000_LENGTH        = 103;
 
     // AKAI character set
     private String               name;
@@ -56,28 +65,21 @@ public class AkaiS1000Program
     @SuppressWarnings("unused")
     private byte                 pressureToVolume;
     // 0..99
-    @SuppressWarnings("unused")
     private byte                 panLFORate;
     // 0..99
-    @SuppressWarnings("unused")
     private byte                 panLFODepth;
     // 0..99
-    @SuppressWarnings("unused")
     private byte                 panLFODelay;
     // -50..50
     @SuppressWarnings("unused")
     private byte                 keyToPan;
     // 0..99
-    @SuppressWarnings("unused")
     private byte                 lfoRate;
     // 0..99
-    @SuppressWarnings("unused")
     private byte                 lfoDepth;
     // 0..99
-    @SuppressWarnings("unused")
     private byte                 lfoDelay;
     // 0..99
-    @SuppressWarnings("unused")
     private byte                 modulationToLFODepth;
     // 0..99
     @SuppressWarnings("unused")
@@ -96,7 +98,7 @@ public class AkaiS1000Program
     // 1..99
     private byte                 numberOfKeygroups;
     // -25..25 cents
-    private final byte []        keyTemperament  = new byte [11];
+    private final byte []        keyTemperament  = new byte [12];
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
     private boolean              fxOutput;
@@ -107,7 +109,6 @@ public class AkaiS1000Program
     @SuppressWarnings("unused")
     private boolean              stereoCoherence;
     // 0=OFF 1=ON
-    @SuppressWarnings("unused")
     private boolean              lfoDesync;
     // 0=LINEAR
     @SuppressWarnings("unused")
@@ -146,6 +147,23 @@ public class AkaiS1000Program
     @SuppressWarnings("unused")
     private byte                 stereoOutputScale;
 
+
+    // S3000 only: the sources of the assignable modulations (see the MOD_SOURCE constants) of
+    // the loudness 1-3, the LFO 1 depth, the filter frequency 1-3 and the pitch
+    private final byte []        loudnessModSources = new byte [3];
+    private byte                 lfo1DepthModSource;
+    private final byte []        filterModSources   = new byte [3];
+    private byte                 pitchModSource;
+    // S3000 only: -50..50, the amounts of the loudness modulation 1 and 2 (the one of 3 is part of
+    // the key-group) and of the LFO 1 depth modulation
+    private final byte []        loudnessModAmounts = new byte [2];
+    private byte                 lfo1DepthModAmount;
+    // S3000 only: 0=TRIANGLE 1=SAWTOOTH 2=SQUARE 3=RANDOM
+    private byte                 lfo1Waveform;
+    private byte                 lfo2Waveform;
+    // S3000 only: LFO 2 re-trigger, 0=OFF 1=ON
+    private boolean              lfo2Retrigger;
+
     private AkaiS1000Keygroup [] keygroups;
 
 
@@ -157,7 +175,11 @@ public class AkaiS1000Program
      */
     public AkaiS1000Program (final IAkaiImage image) throws IOException
     {
+        // The S3000 header is longer than the one of the S1000
+        final boolean isS3000 = image.available () >= S3000_LENGTH;
         this.readProgram (image);
+        if (isS3000)
+            this.readS3000Parameters (image);
     }
 
 
@@ -174,6 +196,8 @@ public class AkaiS1000Program
         disk.setPosition (dataPosition, AkaiStreamWhence.START);
 
         this.readProgram (disk);
+        if (isS3000)
+            this.readS3000Parameters (disk);
 
         // Read key-groups
         final int headerSize = isS3000 ? 192 : 150;
@@ -182,7 +206,7 @@ public class AkaiS1000Program
         for (int i = 0; i < numKeygroups; i++)
         {
             disk.setPosition (dataPosition + headerSize * (i + 1), AkaiStreamWhence.START);
-            this.keygroups[i] = new AkaiS1000Keygroup (disk);
+            this.keygroups[i] = new AkaiS1000Keygroup (disk, isS3000);
         }
     }
 
@@ -240,7 +264,7 @@ public class AkaiS1000Program
         // program number
         image.readInt8 ();
 
-        for (int i = 0; i < 11; i++)
+        for (int i = 0; i < 12; i++)
             this.keyTemperament[i] = image.readInt8 ();
 
         this.fxOutput = image.readInt8 () != 0;
@@ -260,7 +284,54 @@ public class AkaiS1000Program
         this.voiceOutputScale = image.readInt8 ();
         this.stereoOutputScale = image.readInt8 ();
 
-        // Bytes 73-150/192 are not used, key-groups start at 150/192
+        // The S1000 does not use the remaining bytes, key-groups start at 150/192
+    }
+
+
+    /**
+     * Read the parameters which the S3000 added to the program header (offset 72 to 102).
+     *
+     * @param image The image to read from, positioned at offset 72
+     * @throws IOException Could not read the parameters
+     */
+    private void readS3000Parameters (final IAkaiImage image) throws IOException
+    {
+        // Legato, pitch bend down, bend mode and transpose
+        for (int i = 0; i < 4; i++)
+            image.readInt8 ();
+
+        // Pan modulation sources 1-3
+        for (int i = 0; i < 3; i++)
+            image.readInt8 ();
+        this.loudnessModSources[0] = image.readInt8 ();
+        this.loudnessModSources[1] = image.readInt8 ();
+        // LFO 1 speed modulation source
+        image.readInt8 ();
+        this.lfo1DepthModSource = image.readInt8 ();
+        // LFO 1 delay modulation source
+        image.readInt8 ();
+        for (int i = 0; i < 3; i++)
+            this.filterModSources[i] = image.readInt8 ();
+        this.pitchModSource = image.readInt8 ();
+        this.loudnessModSources[2] = image.readInt8 ();
+
+        // Pan modulation amounts 1-3
+        for (int i = 0; i < 3; i++)
+            image.readInt8 ();
+        this.loudnessModAmounts[0] = image.readInt8 ();
+        this.loudnessModAmounts[1] = image.readInt8 ();
+        // LFO 1 speed modulation amount
+        image.readInt8 ();
+        this.lfo1DepthModAmount = image.readInt8 ();
+        // LFO 1 delay modulation amount
+        image.readInt8 ();
+
+        this.lfo1Waveform = image.readInt8 ();
+        this.lfo2Waveform = image.readInt8 ();
+        // Filter 2 modulation sources (S3200 only)
+        for (int i = 0; i < 3; i++)
+            image.readInt8 ();
+        this.lfo2Retrigger = image.readInt8 () != 0;
     }
 
 
@@ -406,6 +477,199 @@ public class AkaiS1000Program
     public byte getBendToPitch ()
     {
         return this.bendToPitch;
+    }
+
+
+    /**
+     * Get the rate of LFO 1.
+     *
+     * @return The rate in the range of [0..99]
+     */
+    public int getLfo1Rate ()
+    {
+        return this.lfoRate;
+    }
+
+
+    /**
+     * Get the depth of LFO 1.
+     *
+     * @return The depth in the range of [0..99]
+     */
+    public int getLfo1Depth ()
+    {
+        return this.lfoDepth;
+    }
+
+
+    /**
+     * Get the delay of LFO 1.
+     *
+     * @return The delay in the range of [0..99]
+     */
+    public int getLfo1Delay ()
+    {
+        return this.lfoDelay;
+    }
+
+
+    /**
+     * Get the depth which the modulation wheel adds to LFO 1.
+     *
+     * @return The depth in the range of [0..99]
+     */
+    public int getModulationToLfo1Depth ()
+    {
+        return this.modulationToLFODepth;
+    }
+
+
+    /**
+     * Get the waveform of LFO 1 (S3000 only, the S1000 has only a triangle).
+     *
+     * @return 0=TRIANGLE 1=SAWTOOTH 2=SQUARE 3=RANDOM
+     */
+    public int getLfo1Waveform ()
+    {
+        return this.lfo1Waveform;
+    }
+
+
+    /**
+     * Are the LFOs of the notes de-synchronized?
+     *
+     * @return True if each note has its own LFO phase
+     */
+    public boolean isLfoDesync ()
+    {
+        return this.lfoDesync;
+    }
+
+
+    /**
+     * Get the rate of LFO 2 (the pan LFO of the S1000).
+     *
+     * @return The rate in the range of [0..99]
+     */
+    public int getLfo2Rate ()
+    {
+        return this.panLFORate;
+    }
+
+
+    /**
+     * Get the depth of LFO 2 (the pan LFO of the S1000).
+     *
+     * @return The depth in the range of [0..99]
+     */
+    public int getLfo2Depth ()
+    {
+        return this.panLFODepth;
+    }
+
+
+    /**
+     * Get the delay of LFO 2 (the pan LFO of the S1000).
+     *
+     * @return The delay in the range of [0..99]
+     */
+    public int getLfo2Delay ()
+    {
+        return this.panLFODelay;
+    }
+
+
+    /**
+     * Get the waveform of LFO 2 (S3000 only).
+     *
+     * @return 0=TRIANGLE 1=SAWTOOTH 2=SQUARE 3=RANDOM
+     */
+    public int getLfo2Waveform ()
+    {
+        return this.lfo2Waveform;
+    }
+
+
+    /**
+     * Is LFO 2 re-triggered by each note (S3000 only)?
+     *
+     * @return True if re-triggered
+     */
+    public boolean isLfo2Retrigger ()
+    {
+        return this.lfo2Retrigger;
+    }
+
+
+    /**
+     * Get the source of an assignable loudness modulation (S3000 only).
+     *
+     * @param index The index of the modulation in the range of [0..2]
+     * @return The source, 0 if not used
+     */
+    public int getLoudnessModSource (final int index)
+    {
+        return this.loudnessModSources[index];
+    }
+
+
+    /**
+     * Get the amount of the assignable loudness modulation 1 or 2 (S3000 only). The amount of the
+     * 3rd one is part of the key-group.
+     *
+     * @param index The index of the modulation in the range of [0..1]
+     * @return The amount in the range of [-50..50]
+     */
+    public int getLoudnessModAmount (final int index)
+    {
+        return this.loudnessModAmounts[index];
+    }
+
+
+    /**
+     * Get the source of the assignable LFO 1 depth modulation (S3000 only).
+     *
+     * @return The source, 0 if not used
+     */
+    public int getLfo1DepthModSource ()
+    {
+        return this.lfo1DepthModSource;
+    }
+
+
+    /**
+     * Get the amount of the assignable LFO 1 depth modulation (S3000 only).
+     *
+     * @return The amount in the range of [-50..50]
+     */
+    public int getLfo1DepthModAmount ()
+    {
+        return this.lfo1DepthModAmount;
+    }
+
+
+    /**
+     * Get the source of an assignable filter frequency modulation (S3000 only). The amounts are
+     * part of the key-group.
+     *
+     * @param index The index of the modulation in the range of [0..2]
+     * @return The source, 0 if not used
+     */
+    public int getFilterModSource (final int index)
+    {
+        return this.filterModSources[index];
+    }
+
+
+    /**
+     * Get the source of the assignable pitch modulation (S3000 only). The amount is part of the
+     * key-group.
+     *
+     * @return The source, 0 if not used
+     */
+    public int getPitchModSource ()
+    {
+        return this.pitchModSource;
     }
 
 

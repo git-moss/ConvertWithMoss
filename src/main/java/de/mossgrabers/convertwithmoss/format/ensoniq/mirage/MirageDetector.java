@@ -20,14 +20,18 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
@@ -53,6 +57,12 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
     private static final double FILTER_MAXIMUM_CUTOFF_VALUE = 99.0;
     private static final double FILTER_FREQUENCY_RATIO      = Math.pow (15000.0 / FILTER_MINIMUM_FREQUENCY, 1.0 / FILTER_MAXIMUM_CUTOFF_VALUE);
     private static final int    LOWEST_NOTE                 = 36;
+
+    // The LFO speed range is linear from 0.5Hz (0) to 40Hz (99)
+    private static final double LFO_MINIMUM_RATE            = 0.5;
+    private static final double LFO_MAXIMUM_RATE            = 40.0;
+    // The pitch range of the LFO depth 99 in cents is an estimation
+    private static final double LFO_MAXIMUM_DEPTH           = 1200.0;
 
 
     /**
@@ -277,6 +287,9 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
             filter.setCutoffKeyTracking (program.filterKybdTracking / 4.0);
             osc1SampleZone.setFilter (filter);
 
+            // The 2nd oscillator zone below shares the LFO modulator
+            applyLfo (osc1SampleZone, program);
+
             // Note: program.mixVelocitySensitivity is ignored since results do not work...
 
             if (mirageWaveSample.loopMode > 0)
@@ -411,6 +424,30 @@ public class MirageDetector extends AbstractDetector<MetadataSettingsUI>
     private static double parseVolume (final int volume)
     {
         return volume / 31.0;
+    }
+
+
+    /**
+     * Apply the LFO of a program to the pitch of a sample zone. The LFO of the Mirage is a triangle
+     * wave which only modulates the pitch. A depth of 0 assigns the LFO depth to the modulation
+     * wheel.
+     *
+     * @param zone The sample zone
+     * @param program The program which contains the LFO settings
+     */
+    private static void applyLfo (final ISampleZone zone, final MirageProgram program)
+    {
+        final ILfo lfo = new DefaultLfo ();
+        lfo.setWaveform (LfoWaveform.TRIANGLE);
+        lfo.setRate (LFO_MINIMUM_RATE + Math.clamp (program.lfoFrequency, 0, 99) * (LFO_MAXIMUM_RATE - LFO_MINIMUM_RATE) / 99.0);
+
+        final ILfoModulator modulator = zone.getPitchLfoModulator ();
+        final double maximumDepth = LFO_MAXIMUM_DEPTH / IEnvelope.MAX_ENVELOPE_DEPTH;
+        if (program.lfoDepth == 0)
+            modulator.getDepthModWheelModulator ().setDepth (maximumDepth);
+        else
+            modulator.setDepth (maximumDepth * Math.clamp (program.lfoDepth, 0, 99) / 99.0);
+        modulator.setSource (lfo);
     }
 
 

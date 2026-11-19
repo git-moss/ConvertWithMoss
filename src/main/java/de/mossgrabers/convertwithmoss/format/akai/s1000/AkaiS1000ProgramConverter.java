@@ -14,13 +14,17 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultLfo;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleData;
@@ -270,6 +274,40 @@ public class AkaiS1000ProgramConverter
     /** The scaled value which the loudness of the sound hardware plays at its full level. */
     private static final int    FULL_LEVEL       = 255;
 
+    /**
+     * The semi-tones of a pitch modulation amount (0, 4, 9, 13, ... 50) at the full output of the
+     * modulation source, from the table of the S3000XL manual (+50 is 1 octave).
+     */
+    private static final int [] PITCH_AMOUNTS    =
+    {
+        0,
+        4,
+        9,
+        13,
+        17,
+        21,
+        26,
+        30,
+        34,
+        38,
+        42,
+        46,
+        50
+    };
+
+    // The rate and delay curves of the LFOs and the depths of the loudness and filter modulation
+    // are not documented, the following values are assumptions. The cutoff and loudness depths
+    // are the same as for the S5000/S6000 (AKP)
+
+    /** The LFO rate of the default setting 50 in Hertz, which gives a common vibrato. */
+    private static final double LFO_RATE_CENTER_HZ          = 5.0;
+    /** The factor by which the LFO rate changes over half of the range (49 steps). */
+    private static final double LFO_RATE_FACTOR             = 5.0;
+    /** The cutoff modulation of the maximum LFO output and amount in cents (4 octaves). */
+    private static final double LFO_CUTOFF_FULL_DEPTH_CENTS = 4800;
+    /** The loudness modulation of the maximum LFO output and amount in dB. */
+    private static final double LFO_LOUDNESS_FULL_DEPTH_DB  = 12;
+
     private final INotifier     notifier;
 
 
@@ -294,7 +332,7 @@ public class AkaiS1000ProgramConverter
     public IGroup createGroup (final AkaiS1000Program program, final List<AkaiS1000Sample> samples)
     {
         final IGroup group = new DefaultGroup ();
-        this.createSampleZones (group, program.getKeygroups (), samples);
+        this.createSampleZones (group, program, samples);
 
         // Set global values
         final int pitchBendRange = program.getBendToPitch () & 0xFF;
@@ -360,9 +398,12 @@ public class AkaiS1000ProgramConverter
     }
 
 
-    private void createSampleZones (final IGroup group, final AkaiS1000Keygroup [] keygroups, final List<AkaiS1000Sample> samples)
+    private void createSampleZones (final IGroup group, final AkaiS1000Program program, final List<AkaiS1000Sample> samples)
     {
-        for (final AkaiS1000Keygroup keygroup: keygroups)
+        final ProgramLfo lfo1 = createLfo1 (program);
+        final ProgramLfo lfo2 = createLfo2 (program);
+
+        for (final AkaiS1000Keygroup keygroup: program.getKeygroups ())
         {
             // Each key-group can have up to 4 velocity layers, therefore an individual ISampleZone
             // needs to be created for each layer
@@ -376,11 +417,46 @@ public class AkaiS1000ProgramConverter
             applyLoudnessCurve (amplitudeEnvelope);
             final IEnvelope auxEnvelope = convertEnvelope (keygroup.getAuxEnvelope ());
 
+            // LFO modulations: LFO 1 is always routed to the pitch, all other LFO modulations are
+            // assignable (S3000 only). The model supports only one LFO per destination, therefore
+            // the first assignment of an LFO is used
+            final Optional<LfoModulation> pitchLfo = findLfoModulation (lfo1, lfo2, new int []
+            {
+                AkaiS1000Program.MOD_SOURCE_LFO1,
+                program.getPitchModSource ()
+            }, new int []
+            {
+                keygroup.getLfo1ToPitch (),
+                keygroup.getPitchModAmount ()
+            });
+            final Optional<LfoModulation> loudnessLfo = findLfoModulation (lfo1, lfo2, new int []
+            {
+                program.getLoudnessModSource (0),
+                program.getLoudnessModSource (1),
+                program.getLoudnessModSource (2)
+            }, new int []
+            {
+                program.getLoudnessModAmount (0),
+                program.getLoudnessModAmount (1),
+                keygroup.getLoudnessMod3Amount ()
+            });
+            final Optional<LfoModulation> cutoffLfo = findLfoModulation (lfo1, lfo2, new int []
+            {
+                program.getFilterModSource (0),
+                program.getFilterModSource (1),
+                program.getFilterModSource (2)
+            }, new int []
+            {
+                keygroup.getFilterModAmount (0),
+                keygroup.getFilterModAmount (1),
+                keygroup.getFilterModAmount (2)
+            });
+
             // Filter
             final int filterCutoff = keygroup.getFilter ();
             final double cutoffModulation = keygroup.getEnvelope2ToFilter () / 50.0;
             IFilter filter = null;
-            if (filterCutoff < 99 || cutoffModulation != 0)
+            if (filterCutoff < 99 || cutoffModulation != 0 || cutoffLfo.isPresent ())
             {
                 final double cutoff = FILTER_CUTOFF[Math.clamp (filterCutoff, 0, 99)];
                 filter = new DefaultFilter (FilterType.LOW_PASS, 3, cutoff, 0);
@@ -390,6 +466,11 @@ public class AkaiS1000ProgramConverter
 
                 filter.getCutoffVelocityModulator ().setDepth (keygroup.getVelocityToFilter () / 50.0);
                 filter.setCutoffKeyTracking (Math.clamp (keygroup.getKeyToFilter () / 12.0, 0, 1));
+                if (cutoffLfo.isPresent ())
+                {
+                    final LfoModulation modulation = cutoffLfo.get ();
+                    setLfoModulator (filter.getCutoffLfoModulator (), modulation, modulation.amount () / 50.0 * LFO_CUTOFF_FULL_DEPTH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+                }
             }
 
             // Pitch modulation
@@ -444,6 +525,11 @@ public class AkaiS1000ProgramConverter
                 // Unclear of the +/- range of the loudness parameter, assume +/-6dB
                 sampleZone.setGain (scaledLoudnessToDecibel (keygroupSample.getLoudness ()));
                 sampleZone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
+                if (loudnessLfo.isPresent ())
+                {
+                    final LfoModulation modulation = loudnessLfo.get ();
+                    setLfoModulator (sampleZone.getAmplitudeLfoModulator (), modulation, modulation.amount () / 50.0 * LFO_LOUDNESS_FULL_DEPTH_DB / ILfoModulator.MAX_VOLUME_DEPTH);
+                }
 
                 // Play-back
                 sampleZone.setStart (sample.getStartMarker ());
@@ -483,10 +569,164 @@ public class AkaiS1000ProgramConverter
                     pitchEnvelopeModulator.setDepth (pitchModulation);
                     pitchEnvelopeModulator.setSource (auxEnvelope);
                 }
+                if (pitchLfo.isPresent ())
+                {
+                    final LfoModulation modulation = pitchLfo.get ();
+                    setLfoModulator (sampleZone.getPitchLfoModulator (), modulation, pitchAmountToSemitones (modulation.amount ()) * 100.0 / IEnvelope.MAX_ENVELOPE_DEPTH);
+                }
 
                 group.addSampleZone (sampleZone);
             }
         }
+    }
+
+
+    /**
+     * Create LFO 1 of a program. Its output is the fixed depth plus the depth which the
+     * modulation wheel adds, the latter can be increased with the assignable LFO 1 depth
+     * modulation of the S3000. The S1000 has only a triangle waveform.
+     *
+     * @param program The program
+     * @return The LFO
+     */
+    private static ProgramLfo createLfo1 (final AkaiS1000Program program)
+    {
+        double modWheelDepth = program.getModulationToLfo1Depth () / 99.0;
+        if (program.getLfo1DepthModSource () == AkaiS1000Program.MOD_SOURCE_MODWHEEL)
+            modWheelDepth += program.getLfo1DepthModAmount () / 50.0;
+        // With de-synchronization each note has its own LFO which starts with the note
+        final ILfo lfo = createLfo (program.getLfo1Waveform (), program.getLfo1Rate (), program.getLfo1Delay (), program.isLfoDesync ());
+        return new ProgramLfo (lfo, program.getLfo1Depth () / 99.0, modWheelDepth);
+    }
+
+
+    /**
+     * Create LFO 2 of a program. On the S1000 it only modulates the panning, which is not
+     * supported.
+     *
+     * @param program The program
+     * @return The LFO
+     */
+    private static ProgramLfo createLfo2 (final AkaiS1000Program program)
+    {
+        final ILfo lfo = createLfo (program.getLfo2Waveform (), program.getLfo2Rate (), program.getLfo2Delay (), program.isLfo2Retrigger ());
+        return new ProgramLfo (lfo, program.getLfo2Depth () / 99.0, 0);
+    }
+
+
+    /**
+     * Create an LFO.
+     *
+     * @param waveform The waveform, 0=TRIANGLE 1=SAWTOOTH 2=SQUARE 3=RANDOM
+     * @param rate The rate in the range of [0..99]
+     * @param delay The delay in the range of [0..99]
+     * @param isKeySync True if the LFO starts with each note
+     * @return The LFO
+     */
+    private static ILfo createLfo (final int waveform, final int rate, final int delay, final boolean isKeySync)
+    {
+        final ILfo lfo = new DefaultLfo ();
+        // The sawtooth rises slowly and falls abruptly
+        lfo.setWaveform (switch (waveform)
+        {
+            case 1 -> LfoWaveform.SAWTOOTH_UP;
+            case 2 -> LfoWaveform.SQUARE;
+            case 3 -> LfoWaveform.RANDOM;
+            default -> LfoWaveform.TRIANGLE;
+        });
+        // The rate curve is not documented, an exponential curve is assumed: 'very slow' at 1,
+        // a common vibrato at the default of 50 and fast at 99
+        lfo.setRate (LFO_RATE_CENTER_HZ * Math.pow (LFO_RATE_FACTOR, (Math.clamp (rate, 0, 99) - 50) / 49.0));
+        // The delay curve is not documented either, the one of the envelope stages is assumed
+        lfo.setDelay (delay <= 0 ? 0 : AkaiEnvelopeTime.toSeconds (delay));
+        lfo.setKeySync (isKeySync);
+        return lfo;
+    }
+
+
+    /**
+     * Find the first modulation which has one of the LFOs as its source and an effect.
+     *
+     * @param lfo1 LFO 1
+     * @param lfo2 LFO 2
+     * @param sources The modulation sources
+     * @param amounts The modulation amounts in the range of [-50..50], one for each source
+     * @return The modulation if found
+     */
+    private static Optional<LfoModulation> findLfoModulation (final ProgramLfo lfo1, final ProgramLfo lfo2, final int [] sources, final int [] amounts)
+    {
+        for (int i = 0; i < sources.length; i++)
+        {
+            final ProgramLfo lfo = switch (sources[i])
+            {
+                case AkaiS1000Program.MOD_SOURCE_LFO1 -> lfo1;
+                case AkaiS1000Program.MOD_SOURCE_LFO2 -> lfo2;
+                default -> null;
+            };
+            final int amount = Math.clamp (amounts[i], -50, 50);
+            if (lfo != null && amount != 0 && (lfo.depth () > 0 || lfo.modWheelDepth () > 0))
+                return Optional.of (new LfoModulation (lfo, amount));
+        }
+        return Optional.empty ();
+    }
+
+
+    /**
+     * Set the source and depths of an LFO modulator. The depth is the product of the output of
+     * the LFO and the amount of the modulation.
+     *
+     * @param modulator The modulator to set
+     * @param modulation The modulation
+     * @param fullDepth The depth of the model which matches the full output of the LFO
+     */
+    private static void setLfoModulator (final ILfoModulator modulator, final LfoModulation modulation, final double fullDepth)
+    {
+        final ProgramLfo lfo = modulation.lfo ();
+        modulator.setSource (lfo.lfo ());
+        modulator.setDepth (Math.clamp (lfo.depth () * fullDepth, -1, 1));
+        modulator.getDepthModWheelModulator ().setDepth (Math.clamp (lfo.modWheelDepth () * fullDepth, -1, 1));
+    }
+
+
+    /**
+     * Convert a pitch modulation amount into semi-tones with the table of the S3000XL manual.
+     *
+     * @param amount The amount in the range of [-50..50]
+     * @return The semi-tones in the range of [-12..12]
+     */
+    private static double pitchAmountToSemitones (final int amount)
+    {
+        final int value = Math.clamp (Math.abs (amount), 0, 50);
+        int semitones = 0;
+        while (semitones < PITCH_AMOUNTS.length - 2 && value > PITCH_AMOUNTS[semitones + 1])
+            semitones++;
+        final double result = semitones + (value - PITCH_AMOUNTS[semitones]) / (double) (PITCH_AMOUNTS[semitones + 1] - PITCH_AMOUNTS[semitones]);
+        return amount < 0 ? -result : result;
+    }
+
+
+    /**
+     * An LFO of the program with its output.
+     *
+     * @param lfo The LFO
+     * @param depth The fixed output in the range of [0..1]
+     * @param modWheelDepth The output which the modulation wheel adds in the range of [0..1]
+     */
+    private record ProgramLfo (ILfo lfo, double depth, double modWheelDepth)
+    {
+        // Intentionally empty
+    }
+
+
+    /**
+     * The modulation of a destination by an LFO.
+     *
+     * @param lfo The LFO
+     * @param amount The amount in the range of [-50..50]
+     */
+    private record LfoModulation (ProgramLfo lfo, int amount)
+    {
+        // Intentionally empty
     }
 
 

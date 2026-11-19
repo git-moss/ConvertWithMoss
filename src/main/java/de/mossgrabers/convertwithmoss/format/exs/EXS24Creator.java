@@ -236,6 +236,7 @@ public class EXS24Creator extends AbstractWavCreator<WavChunkSettingsUI>
                 final EXS24Parameters parameters = exs24File.getParameters ();
                 createEnvelope (parameters, 1, zone.getAmplitudeEnvelopeModulator ());
                 applyFilterParameters (exs24File, parameters, multisampleSource.getGlobalFilter ());
+                EXSLfo.writeLfos (exs24File, zone);
             }
         }
 

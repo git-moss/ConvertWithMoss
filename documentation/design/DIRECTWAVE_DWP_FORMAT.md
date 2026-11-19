@@ -5,32 +5,6 @@ DirectWave on FL Studio Desktop when a program is saved with the *Monolithic fil
 disabled. The same file is what FL Studio Mobile imports (packaged in one folder together
 with its WAV samples, optionally zipped).
 
-Sources of this specification:
-
-* A real DirectWave export (`Instrument.dwp`, 47307 bytes, 48 chromatic stereo samples,
-  FL Studio Desktop, published as a test fixture of the
-  [Dwp-Creator](https://github.com/jvksdigitalstudio/Dwp-Creator) project) which was
-  re-analyzed byte by byte for this implementation. The block-stream walk accounts for
-  every byte of the file (no gaps, no trailing data).
-* The block envelope layout documented by the Dwp-Creator project (verified against the
-  file). Note: that project documents the key-range bytes as low/root/high — the specimen
-  disproves this, see below.
-* The DirectWave manual (Automap file-name token syntax, see the detector fall-back).
-* The six factory programs of FL Studio Mobile (`FL Studio Mobile Factory Data/DirectWave
-  Samples`, version byte 0x25 instead of the 0x26 of the specimen above): all of them
-  tokenize completely, the preamble size rule and the zone mapping layout hold, and they
-  add data points marked below. Differences of the older version: 100 parameter slot
-  blocks instead of 99, and the bytes-per-frame field holds other values (see below).
-* 85 monolithic programs of a commercial library (version 0x26, 288 sample containers),
-  which pin down the embedded audio (see below).
-* The 26 DirectWave programs of the legacy patch pack of FL Studio
-  (`Data/Patches/Packs/Legacy`, version byte **0x24**). They are the only known files of
-  that version; its preamble is 4 bytes longer, so the block stream starts at 0x5E instead
-  of 0x5A. They also contain the only zones with an engaged filter found anywhere: 111
-  zones with a low-pass, which confirm the filter type encoding described below. Their
-  samples are WAV files with the Ogg Vorbis codec (format tag 0x674F), which the sample
-  loader of ConvertWithMoss cannot decode, so their audio is not converted.
-
 Everything below is little-endian.
 
 ## Overall layout

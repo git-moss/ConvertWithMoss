@@ -63,18 +63,27 @@ public class AkaiS1000Keygroup
     // Sample 1-4 AUX out offset 0..7
     private final byte []                    sampleAuxOutOffset     = new byte [4];
     // -9999..9999 (16-bit signed)
+    @SuppressWarnings("unused")
     private final short []                   velocityToSampleStart  = new short [4];
-    // -50..50
-    private final byte []                    velocityToVolumeOffset = new byte [4];
+
+    // S3000 only: -50..50, the amount of the fixed LFO 1 to pitch modulation (the S1000 always
+    // applies LFO 1 to the pitch, which equals the default of 50)
+    private byte                             lfo1ToPitch            = 50;
+    // S3000 only: -50..50, the amounts of the assignable filter frequency modulation 1-3, of the
+    // pitch modulation and of the loudness modulation 3
+    private final byte []                    filterModAmounts       = new byte [3];
+    private byte                             pitchModAmount;
+    private byte                             loudnessMod3Amount;
 
 
     /**
      * Constructor.
      *
      * @param disk The disk to read from
+     * @param isS3000 If it is an extended S3000 key-group (otherwise shorter S1000)
      * @throws IOException Could not read the key-group
      */
-    public AkaiS1000Keygroup (final IAkaiImage disk) throws IOException
+    public AkaiS1000Keygroup (final IAkaiImage disk, final boolean isS3000) throws IOException
     {
         if (disk.readInt8 () != AKAI_KEYGROUP_ID)
             throw new IOException ("Not a key-group.");
@@ -117,10 +126,19 @@ public class AkaiS1000Keygroup
             this.sampleAuxOutOffset[i] = disk.readInt8 ();
 
         for (int i = 0; i < 4; i++)
-            this.velocityToSampleStart[i] = disk.readInt8 ();
+            this.velocityToSampleStart[i] = disk.readInt16 ();
 
-        for (int i = 0; i < 4; i++)
-            this.velocityToVolumeOffset[i] = disk.readInt8 ();
+        if (!isS3000)
+            return;
+
+        // Velocity to loudness offset (not used) and the resonance of filter 1
+        disk.readInt8 ();
+        disk.readInt8 ();
+        this.lfo1ToPitch = disk.readInt8 ();
+        for (int i = 0; i < 3; i++)
+            this.filterModAmounts[i] = disk.readInt8 ();
+        this.pitchModAmount = disk.readInt8 ();
+        this.loudnessMod3Amount = disk.readInt8 ();
     }
 
 
@@ -276,5 +294,53 @@ public class AkaiS1000Keygroup
     public boolean [] getSampleKeyTracking ()
     {
         return this.sampleKeyTracking;
+    }
+
+
+    /**
+     * Get the amount of the fixed LFO 1 to pitch modulation.
+     *
+     * @return The amount in the range of [-50..50], always 50 on the S1000
+     */
+    public int getLfo1ToPitch ()
+    {
+        return this.lfo1ToPitch;
+    }
+
+
+    /**
+     * Get the amount of an assignable filter frequency modulation (S3000 only). The sources are
+     * part of the program.
+     *
+     * @param index The index of the modulation in the range of [0..2]
+     * @return The amount in the range of [-50..50]
+     */
+    public int getFilterModAmount (final int index)
+    {
+        return this.filterModAmounts[index];
+    }
+
+
+    /**
+     * Get the amount of the assignable pitch modulation (S3000 only). The source is part of the
+     * program.
+     *
+     * @return The amount in the range of [-50..50]
+     */
+    public int getPitchModAmount ()
+    {
+        return this.pitchModAmount;
+    }
+
+
+    /**
+     * Get the amount of the assignable loudness modulation 3 (S3000 only). The source is part of
+     * the program.
+     *
+     * @return The amount in the range of [-50..50]
+     */
+    public int getLoudnessMod3Amount ()
+    {
+        return this.loudnessMod3Amount;
     }
 }

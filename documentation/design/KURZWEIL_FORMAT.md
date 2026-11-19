@@ -5,11 +5,6 @@ one container format; the extension only signals the intended device family. A K
 files, a K2600 reads both. Program objects may contain device specific segments (K2500 triple
 modular processing, KDFX effects, KB3 organ mode) which older devices ignore or reject.
 
-The layout was derived from the source code of the GPL tool *KurzFiler* by Marc Halbruegge
-(https://sourceforge.net/projects/kurzfiler/), which reads and writes these files and whose output
-loads on the hardware. All multi-byte values are **big-endian**. Sample positions are counted in
-16-bit **words**, not bytes.
-
 ## File layout
 
 ```

@@ -4,11 +4,6 @@ Bank files of the E-mu Emulator III sampler family. One bank holds the presets *
 data of a sound, which is why a bank file is the whole instrument and not just a reference to
 external samples.
 
-The structures were derived from the source code of the GPL tool *emu3bm* by David García Goñi
-(https://github.com/dagargo/emu3bm), which reads and writes these banks, and were verified against
-the E-mu EIIIX and ESI-4000 library CD-ROMs (22 banks, 3424 presets, 25596 zones, 8073 samples).
-All multi-byte values are **little-endian**. Sample positions are byte offsets, not frame indices.
-
 ## Bank variants
 
 The first 16 bytes of a bank are an identifier: 15 characters followed by a terminating zero byte.

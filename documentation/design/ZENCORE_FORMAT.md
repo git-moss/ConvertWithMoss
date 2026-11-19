@@ -1,6 +1,6 @@
 # Roland ZEN-Core file formats
 
-Reverse-engineered for ConvertWithMoss. Covers the Roland **FANTOM-0** (FANTOM-06/07/08, firmware
+Covers the Roland **FANTOM-0** (FANTOM-06/07/08, firmware
 `mi078`, ARM64) and the **FANTOM 6/7/8** / **6/7/8 EX** (firmware `ky019`, ARM32). All of these run
 the same **ZEN-Core** sound engine and share the same on-disk formats and internal platform tag
 `KY19`/`KY019`; differences are capacity/feature only and are called out per section.
@@ -30,10 +30,6 @@ storage, not SysEx.
 | `.SMP` | `RFWV` | **big-endian** | One on-device sample: 0x20 header + 16-bit **big-endian** PCM. | Reference only (not parsed) |
 | `PADCONF.BIN` | `RFPD` | **big-endian** | Maps the 16×4 sample pads to samples + params. | Reference only (not parsed) |
 | `.SDZ` | `VEXP` | little-endian | Roland Cloud paid expansion (encrypted). | **Not supported** |
-
-> **CWM scope:** ConvertWithMoss reads and writes **`.SVZ` only**. `.SVD`, `RFWV` `.SMP` and `RFPD`
-> `PADCONF.BIN` are documented here as reverse-engineering reference — the earlier read paths for them
-> were removed to keep the format focused on the importable SVZ round-trip.
 
 `.SVZ` and `.SVD` share one container engine (`NS_SVZ::CSvz`); they differ in one important way —
 `.SVZ` blocks carry a **per-record CRC32 table**, `.SVD` blocks do not (§3). `RFWV`/`RFPD` are
@@ -590,7 +586,7 @@ ZENOLOGY (`RC001`) headers are recorded above only as reverse-engineering refere
 device can use a user-sample `.svz` (their version/flag bytes differ too: ZENOLOGY uses `03 03`/`01`
 where the FANTOM family uses `05 04`/`24`).
 
-**ZENOLOGY plug-in limitation (verified 2026-07-12).** ZENOLOGY Pro imports only the *tone* from a
+**ZENOLOGY plug-in limitation.** ZENOLOGY Pro imports only the *tone* from a
 `.svz`: the `USPa`/`MSPa`/`USDa` user-sample sections are ignored — the imported tone shows its PCM
 wave as *No Assign* with wave bank `---` and plays silent. This is not an encoding matter: the
 FANTOM's **own** exported user-sample tone behaves identically in the plug-in, and the samples-only

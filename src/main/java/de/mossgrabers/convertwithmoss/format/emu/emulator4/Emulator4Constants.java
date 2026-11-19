@@ -54,6 +54,20 @@ public class Emulator4Constants
     protected static final int     PZT_AMPLITUDE_ENVELOPE     = 0;
     /** The offset of the filter envelope inside the primary zone table. */
     protected static final int     PZT_FILTER_ENVELOPE        = 14;
+    /** The offset of LFO 1 inside the primary zone table. */
+    protected static final int     PZT_LFO1                   = 42;
+    /** The offset of LFO 2 inside the primary zone table. */
+    protected static final int     PZT_LFO2                   = 50;
+    /** The offset of the rate inside an LFO. */
+    protected static final int     LFO_RATE                   = 0;
+    /** The offset of the wave shape inside an LFO. */
+    protected static final int     LFO_SHAPE                  = 1;
+    /** The offset of the delay inside an LFO. */
+    protected static final int     LFO_DELAY                  = 2;
+    /** The offset of the variation inside an LFO. */
+    protected static final int     LFO_VARIATION              = 3;
+    /** The offset of the free run flag inside an LFO (0 = key sync). */
+    protected static final int     LFO_FREE_RUN               = 4;
     /** The stages of an envelope: attack 1 and 2, decay 1 and 2, release 1 and 2. */
     protected static final int     NUM_ENVELOPE_STAGES        = 6;
     /** The offset of the modulation cord table inside a voice block. */

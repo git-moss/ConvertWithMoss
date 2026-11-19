@@ -1,24 +1,5 @@
 # ISLA Instruments S2400 kit (`.kit`) format — reverse-engineered
 
-Reverse-engineered 2026-08 from the **official ISLA "S2400 Kit Builder" web application**
-(`https://s2400kiteditor.web.app`, mirrored at `http://www.islaelectronics.com/s2400kiteditor`),
-which is the only tool that writes kit files. The kit writer is the function `ck(project,
-sampleLengths)` in its Vite bundle `/assets/index-*.js`; that function is the format oracle. Its
-exact byte output was reproduced in Node to produce a golden reference kit, and the decode below is
-**validated both directions**: a kit written by ConvertWithMoss round-trips, and ConvertWithMoss
-reads the golden kit the real app produced byte-for-byte (gain, tuning, filter cutoff in Hz, and the
-envelope times converted back from the device's percentage-of-length law all match).
-
-The device firmware (`S2400_20260713.upd`, 1 082 136 bytes) is a **dead end**: it is encrypted -
-uniform 7.9998 bits/byte entropy from byte 0, a flat byte histogram, no repeated 16-byte blocks (no
-ECB), no repeating-key XOR autocorrelation, and no compression at any offset. The bootloader holds
-the key; nothing is extractable from it. The manual documents the folder layout and the (text)
-`.MAP` file, but not the binary kit file.
-
-Fields below are confirmed from the app's writer unless marked **(reserved)** = the app always
-writes a fixed value whose purpose is unknown, or **(approx)** = the encoding round-trips but its
-absolute calibration is inferred.
-
 ## What kind of instrument this is
 
 The S2400 is a **sampling drum machine** — a pad sampler, not a keyboard multi-sampler. It has 4
@@ -26,13 +7,6 @@ banks (A–D) of 8 pads = **32 pads (tracks)**. Each track holds **one** sample 
 parameters (gain, tuning, filter, volume envelope, choke/trigger group, …) and, optionally, eight
 **multi-slices** of that same sample. There is no key-range / per-zone-root model; a track is played
 by its pad and, over MIDI, by a single note assigned in the `.MAP` file.
-
-**ConvertWithMoss mapping.** Same as CWM's other pad/drum devices (SP-404MK2, MC-707 kits): the kit
-is **one multi-sample source**, and **each track → one single-key zone**. The pads are mapped to
-consecutive MIDI notes starting at **note 36 for pad A1** (`36 + trackIndex`), which matches the
-device's default sample-tracks MIDI map (`A1=36` in the manual's appendix). A general keyboard
-multi-sample written *to* the S2400 is flattened to one sample per pad (up to 32; extra zones are
-dropped).
 
 ## Project / kit folder layout
 
@@ -198,25 +172,3 @@ blobs** (`60` bytes), over-allocating **14 bytes per envelope**. Those bytes are
 trailing zeros (one HiFi track × 9 slots × 2 envelopes × 14). This is a benign uninitialized-buffer
 artifact — the device stops reading at the first `0x00` type byte. ConvertWithMoss **writes a tight
 stream** (no padding) and **tolerates trailing padding** on read.
-
-## ConvertWithMoss implementation notes
-
-* Package `format/isla/s2400/`: `S2400Constants` (the ids/types/enums above), `S2400Detector`,
-  `S2400Creator`. The reader parses the record stream generically and only needs the main slot
-  (slot 8) and the volume envelope (HiFi index 0); it stops on any non-`1..3` type byte.
-* **Reading:** each track → one zone at MIDI note `36 + trackIndex`, with gain, tuning, choke group,
-  filter (a low-pass parked at 20 kHz or a high-pass parked at 20 Hz is treated as no filter) and the
-  volume envelope (HiFi converted from percent-of-length to seconds; classic approximated by its
-  release). Loops come from the WAV `smpl` chunk via `addZoneData`. Sustain-hold has no model
-  equivalent and is dropped.
-* **Writing:** one kit folder per multi-sample — the `.kit` named after the folder plus one WAV per
-  zone (48 kHz / 16-bit; a sample above 48 kHz is down-sampled and its loop positions rescaled, a
-  44.1 kHz sample is kept). The volume envelope is written as HiFi index 0; the record order and the
-  slot defaults mirror the reference app exactly.
-* **Loops in the WAV.** Because the device reads loops from the `smpl` chunk, the creator always
-  writes that chunk for a looped zone. Note that the shared `WavChunkSettingsUI` resets its chunk
-  flags to off on the command line unless `-p<prefix>WriteSampleChunk=1` is passed, so
-  `S2400Creator` overrides `additionalProcessing` to write the loop chunk regardless.
-
-None of this has been verified on real S2400 hardware; it is validated against the official Kit
-Builder's output, which is as authoritative a reference as exists short of the device itself.

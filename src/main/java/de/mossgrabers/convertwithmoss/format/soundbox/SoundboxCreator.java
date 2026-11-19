@@ -35,6 +35,7 @@ import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -59,15 +60,11 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 {
-    private static final String               TAG_ACTIVE      = "active";
-    private static final String               PLUGIN_VERSION  = "1.0.0b19";
-    private static final int                  MAX_LAYERS      = 4;
+    private static final String               TAG_ACTIVE     = "active";
+    private static final String               PLUGIN_VERSION = "1.0.0b19";
+    private static final int                  MAX_LAYERS     = 4;
 
-    // The default engine state and sequence blobs as written by the Soundbox plug-in
-    private static final String               ENGINE_STATE    = "13..DPyLybOF....D.HA.";
-    private static final String               ENGINE_SEQUENCE = "128.MyLS9....7iYlY1OMyLy8LyLy7ilYloOMyLy9zLyL8ilYlwO.........7SyLyjOMyLy8nYlY5yLyLyOMyLS+zLyL6iYlY1OZlYF+.....PyLybOMyLS9nYlY5SyLyrO....+nYlY7yLyLyOMyLS+XlYl8C.....MyLy8zLyL4C";
-
-    private static final Map<String, Integer> CATEGORIES_MAP  = new HashMap<> ();
+    private static final Map<String, Integer> CATEGORIES_MAP = new HashMap<> ();
     static
     {
         CATEGORIES_MAP.put (TagDetector.CATEGORY_UNKNOWN, Integer.valueOf (140)); // Others
@@ -307,6 +304,13 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 layerPlan.settings.release = Math.clamp (envelope.getReleaseTime () / SoundboxEngineSettings.MAX_RELEASE_SECONDS, 0, 1);
 
             layerPlan.filter = calculateCommonFilter (zones);
+
+            // The LFOs of the first zone are applied to the whole layer
+            final ISampleZone firstZone = zones.get (0);
+            layerPlan.amplitudeLfo = firstZone.getAmplitudeLfoModulator ();
+            layerPlan.pitchLfo = firstZone.getPitchLfoModulator ();
+            if (layerPlan.filter != null)
+                layerPlan.cutoffLfo = layerPlan.filter.getCutoffLfoModulator ();
 
             // The voice mode and glide are per instrument in the model and per layer here
             if (multisampleSource.getPolyphony () == 1)
@@ -660,13 +664,7 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 SoundboxFilterEffect.writeFilterEffect (effectsElement, layerPlan.filter);
         }
 
-        final Element enginesElement = XMLUtils.addElement (document, presetElement, "Engines");
-        for (int engineIndex = 0; engineIndex < MAX_LAYERS; engineIndex++)
-        {
-            final Element engineElement = XMLUtils.addElement (document, enginesElement, "E");
-            engineElement.setAttribute ("state", ENGINE_STATE);
-            engineElement.setAttribute ("sequence", ENGINE_SEQUENCE);
-        }
+        SoundboxLfoEngine.writeEngines (document, presetElement, createLfoEngines (layerPlans));
 
         XMLUtils.addElement (document, presetElement, "ArpsManager");
 
@@ -692,6 +690,80 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         xyPadElement.setAttribute ("y", "0.5");
 
         return this.createXMLString (document);
+    }
+
+
+    /**
+     * Creates the LFO engines for the amplitude, pitch and cutoff LFOs of all layers. Layers with
+     * identical oscillator settings share an engine. Since a modulated parameter moves around the
+     * position of the assignment instead of its own value, the position is set to the static value
+     * of the parameter.
+     *
+     * @param layerPlans The layers of the preset
+     * @return The LFO engines, at most 4
+     */
+    private static List<SoundboxLfoEngine> createLfoEngines (final List<LayerPlan> layerPlans)
+    {
+        final List<SoundboxLfoEngine> lfoEngines = new ArrayList<> ();
+        for (int layerIndex = 0; layerIndex < layerPlans.size (); layerIndex++)
+        {
+            final LayerPlan layerPlan = layerPlans.get (layerIndex);
+
+            if (layerPlan.amplitudeLfo != null && layerPlan.amplitudeLfo.getDepth () != 0)
+            {
+                final double center = layerPlan.state.volume;
+                final double amount = SoundboxLfoEngine.getVolumeAmount (layerPlan.amplitudeLfo.getDepth (), center);
+                addLfoAssignment (lfoEngines, layerPlan.amplitudeLfo, SoundboxLfoEngine.getLayerTarget (SoundboxLfoEngine.TARGET_VOLUME, layerIndex), amount, 2.0 * center - 1.0);
+            }
+
+            if (layerPlan.pitchLfo != null && layerPlan.pitchLfo.getDepth () != 0)
+            {
+                // Use the fine tune parameter if it can hold the modulation, otherwise transpose
+                final double cents = layerPlan.pitchLfo.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH;
+                final double fineTuneCents = layerPlan.settings.fineTuneCents;
+                if (Math.abs (cents) + Math.abs (fineTuneCents) <= SoundboxLfoEngine.FINE_RANGE_CENTS)
+                    addLfoAssignment (lfoEngines, layerPlan.pitchLfo, SoundboxLfoEngine.getLayerTarget (SoundboxLfoEngine.TARGET_FINE, layerIndex), cents / SoundboxLfoEngine.FINE_RANGE_CENTS, fineTuneCents / SoundboxLfoEngine.FINE_RANGE_CENTS);
+                else
+                    addLfoAssignment (lfoEngines, layerPlan.pitchLfo, SoundboxLfoEngine.getLayerTarget (SoundboxLfoEngine.TARGET_TRANSPOSE, layerIndex), cents / SoundboxLfoEngine.TRANSPOSE_RANGE_CENTS, layerPlan.settings.transposeSemitones * 100.0 / SoundboxLfoEngine.TRANSPOSE_RANGE_CENTS);
+            }
+
+            // The filter is always written into the first effect slot
+            if (layerPlan.cutoffLfo != null && layerPlan.cutoffLfo.getDepth () != 0)
+            {
+                final double center = Math.clamp (layerPlan.filter.getCutoff (), SoundboxLfoEngine.MIN_FILTER_FREQUENCY, SoundboxLfoEngine.MAX_FILTER_FREQUENCY);
+                final double amount = SoundboxLfoEngine.getFilterAmount (layerPlan.cutoffLfo.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH, center);
+                addLfoAssignment (lfoEngines, layerPlan.cutoffLfo, SoundboxLfoEngine.getEffectTarget (SoundboxLfoEngine.TARGET_FILTER_FREQUENCY, layerIndex, 0), amount, SoundboxLfoEngine.getFilterPosition (center));
+            }
+        }
+        return lfoEngines;
+    }
+
+
+    /**
+     * Assigns an LFO to a parameter. The assignment is added to an engine with identical
+     * oscillator settings or to a new engine. If all engines are used by different oscillators the
+     * assignment is dropped.
+     *
+     * @param lfoEngines The LFO engines
+     * @param modulator The LFO modulator of the model
+     * @param target The name of the parameter
+     * @param amount The amount of the assignment
+     * @param position The position of the assignment
+     */
+    private static void addLfoAssignment (final List<SoundboxLfoEngine> lfoEngines, final ILfoModulator modulator, final String target, final double amount, final double position)
+    {
+        final SoundboxLfoEngine newEngine = SoundboxLfoEngine.create (modulator.getSource ());
+        for (final SoundboxLfoEngine engine: lfoEngines)
+            if (engine.hasSameOscillator (newEngine))
+            {
+                engine.addAssignment (target, amount, position);
+                return;
+            }
+
+        if (lfoEngines.size () >= SoundboxLfoEngine.NUMBER_OF_ENGINES)
+            return;
+        newEngine.addAssignment (target, amount, position);
+        lfoEngines.add (newEngine);
     }
 
 
@@ -725,13 +797,19 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     /** The mapping of one layer of a preset to its group, state and engine settings. */
     private static class LayerPlan
     {
-        String                       groupName = "";
+        String                       groupName    = "";
         /** The zones of the layer, one list per round robin (one list = no round robin). */
-        List<List<ISampleZone>>      robins    = Collections.emptyList ();
-        final SoundboxLayerState     state     = new SoundboxLayerState ();
-        final SoundboxEngineSettings settings  = new SoundboxEngineSettings ();
+        List<List<ISampleZone>>      robins       = Collections.emptyList ();
+        final SoundboxLayerState     state        = new SoundboxLayerState ();
+        final SoundboxEngineSettings settings     = new SoundboxEngineSettings ();
         /** The filter which is common to all zones of the layer, if any. */
-        IFilter                      filter    = null;
+        IFilter                      filter       = null;
+        /** The amplitude LFO of the layer, if any. */
+        ILfoModulator                amplitudeLfo = null;
+        /** The pitch LFO of the layer, if any. */
+        ILfoModulator                pitchLfo     = null;
+        /** The cutoff LFO of the layer filter, if any. */
+        ILfoModulator                cutoffLfo    = null;
     }
 
 

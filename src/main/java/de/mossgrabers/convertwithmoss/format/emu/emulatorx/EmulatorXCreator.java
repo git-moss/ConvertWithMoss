@@ -27,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -35,6 +36,7 @@ import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
+import de.mossgrabers.convertwithmoss.format.emu.EmuLfoModulation;
 
 
 /**
@@ -429,9 +431,11 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
         out.write (EmulatorXChunk.create (EmulatorXConstants.AMPLIFIER_TAG, createAmplifier (zone)));
         out.write (EmulatorXChunk.create (EmulatorXConstants.FILTER_TAG, createFilter (zone)));
         out.write (EmulatorXChunk.createList (EmulatorXConstants.ENVELOPE_LIST_TYPE, List.of (createEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource ()), createEnvelope (getFilterEnvelope (zone)), createEnvelope (null))));
-        out.write (EmulatorXChunk.createList ("LFOL", createLFOs ()));
+        final List<EmuLfoModulation.Cord> cords = createCords (zone);
+        final ILfo [] lfos = EmuLfoModulation.createLfos (zone, cords, EmulatorXConstants.VOICE_NUM_CORDS);
+        out.write (EmulatorXChunk.createList (EmulatorXConstants.LFO_LIST_TYPE, createLFOs (lfos)));
         out.write (EmulatorXChunk.createList ("FuGL", createFunctionGenerators ()));
-        out.write (EmulatorXChunk.createList (EmulatorXConstants.CORD_LIST_TYPE, createCords (zone)));
+        out.write (EmulatorXChunk.createList (EmulatorXConstants.CORD_LIST_TYPE, writeCords (cords)));
         out.write (EmulatorXChunk.createList (EmulatorXConstants.ZONE_LIST_TYPE, createZone (sampleIndex, zone)));
         return EmulatorXChunk.create (EmulatorXConstants.VOICE_TAG, out.toByteArray ());
     }
@@ -576,38 +580,57 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
 
     /**
      * Create the modulation cords of a voice, which are the defaults of the factory banks with the
-     * velocity to volume amount taken from the zone.
+     * velocity to volume amount, the filter envelope depth and the velocity to cutoff amount taken
+     * from the zone.
      *
      * @param zone The zone
+     * @return The cords, the amounts in the range of -1..1
+     */
+    private static List<EmuLfoModulation.Cord> createCords (final ISampleZone zone)
+    {
+        final double velocityAmount = Math.clamp (zone.getAmplitudeVelocityModulator ().getDepth (), 0, 1);
+        final double cutoffAmount = getFilterEnvelopeDepth (zone);
+        final double cutoffVelocityAmount = getCutoffVelocityDepth (zone);
+        final List<EmuLfoModulation.Cord> cords = new ArrayList<> ();
+        for (final Cord cord: DEFAULT_CORDS)
+        {
+            double amount = cord.amount () / EmulatorXConstants.FULL_CORD_AMOUNT;
+            if (cord.source () == EmulatorXConstants.CORD_SOURCE_VELOCITY && cord.destination () == EmulatorXConstants.CORD_DEST_VOLUME)
+                amount = velocityAmount;
+            else if (cord.source () == EmulatorXConstants.CORD_SOURCE_FILTER_ENV2 && cord.destination () == EmulatorXConstants.CORD_DEST_CUTOFF)
+                amount = cutoffAmount;
+            else if (cord.source () == EmulatorXConstants.CORD_SOURCE_VELOCITY && cord.destination () == EmulatorXConstants.CORD_DEST_CUTOFF)
+                amount = cutoffVelocityAmount;
+            cords.add (new EmuLfoModulation.Cord (cord.source (), cord.destination (), amount));
+        }
+        return cords;
+    }
+
+
+    /**
+     * Create the chunks of all modulation cords of a voice. The cords which are not used are
+     * written empty.
+     *
+     * @param cords The used cords
      * @return The complete chunks
      * @throws IOException Could not assemble the chunks
      */
-    private static List<byte []> createCords (final ISampleZone zone) throws IOException
+    private static List<byte []> writeCords (final List<EmuLfoModulation.Cord> cords) throws IOException
     {
-        final float velocityAmount = (float) (Math.clamp (zone.getAmplitudeVelocityModulator ().getDepth (), 0, 1) * EmulatorXConstants.FULL_CORD_AMOUNT);
-        final float cutoffAmount = (float) (getFilterEnvelopeDepth (zone) * EmulatorXConstants.FULL_CORD_AMOUNT);
-        final float cutoffVelocityAmount = (float) (getCutoffVelocityDepth (zone) * EmulatorXConstants.FULL_CORD_AMOUNT);
-        final List<byte []> cords = new ArrayList<> ();
+        final List<byte []> chunks = new ArrayList<> ();
         for (int i = 0; i < EmulatorXConstants.VOICE_NUM_CORDS; i++)
         {
             final byte [] data = createVersionedChunk (EmulatorXConstants.CORD_SIZE, EmulatorXConstants.VERSION_1);
-            if (i < DEFAULT_CORDS.size ())
+            if (i < cords.size ())
             {
-                final Cord cord = DEFAULT_CORDS.get (i);
+                final EmuLfoModulation.Cord cord = cords.get (i);
                 data[4] = (byte) cord.source ();
                 data[5] = (byte) cord.destination ();
-                float amount = cord.amount ();
-                if (cord.source () == EmulatorXConstants.CORD_SOURCE_VELOCITY && cord.destination () == EmulatorXConstants.CORD_DEST_VOLUME)
-                    amount = velocityAmount;
-                else if (cord.source () == EmulatorXConstants.CORD_SOURCE_FILTER_ENV2 && cord.destination () == EmulatorXConstants.CORD_DEST_CUTOFF)
-                    amount = cutoffAmount;
-                else if (cord.source () == EmulatorXConstants.CORD_SOURCE_VELOCITY && cord.destination () == EmulatorXConstants.CORD_DEST_CUTOFF)
-                    amount = cutoffVelocityAmount;
-                EmulatorXConstants.putFloatBE (data, 6, amount);
+                EmulatorXConstants.putFloatBE (data, 6, (float) (cord.amount () * EmulatorXConstants.FULL_CORD_AMOUNT));
             }
-            cords.add (EmulatorXChunk.create (EmulatorXConstants.CORD_TAG, data));
+            chunks.add (EmulatorXChunk.create (EmulatorXConstants.CORD_TAG, data));
         }
-        return cords;
+        return chunks;
     }
 
 
@@ -717,23 +740,34 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Create the two default LFOs of a voice.
+     * Create the two LFOs of a voice. An unused LFO gets the default settings of the factory banks.
      *
+     * @param lfos The two LFOs, null for an unused one
      * @return The complete chunks
      * @throws IOException Could not assemble the chunks
      */
-    private static List<byte []> createLFOs () throws IOException
+    private static List<byte []> createLFOs (final ILfo [] lfos) throws IOException
     {
-        final List<byte []> lfos = new ArrayList<> ();
-        for (int i = 0; i < 2; i++)
+        final List<byte []> chunks = new ArrayList<> ();
+        for (final ILfo lfo: lfos)
         {
-            final byte [] data = createVersionedChunk (22, EmulatorXConstants.VERSION_2);
-            EmulatorXConstants.putFloatBE (data, 8, 8.1759f);
-            data[12] = 1;
-            data[13] = 1;
-            lfos.add (EmulatorXChunk.create ("E5LF", data));
+            final byte [] data = createVersionedChunk (EmulatorXConstants.LFO_SIZE, EmulatorXConstants.VERSION_2);
+            data[EmulatorXConstants.LFO_DIVISION] = 1;
+            if (lfo == null)
+            {
+                EmulatorXConstants.putFloatBE (data, EmulatorXConstants.LFO_RATE, 8.1759f);
+                data[EmulatorXConstants.LFO_SHAPE] = (byte) EmuLfoModulation.SHAPE_SINE;
+            }
+            else
+            {
+                EmulatorXConstants.putFloatBE (data, EmulatorXConstants.LFO_DELAY, (float) Math.max (0, lfo.getDelay ()));
+                EmulatorXConstants.putFloatBE (data, EmulatorXConstants.LFO_RATE, (float) EmuLfoModulation.getRate (lfo));
+                data[EmulatorXConstants.LFO_SHAPE] = (byte) EmuLfoModulation.fromWaveform (lfo.getWaveform ());
+                data[EmulatorXConstants.LFO_KEY_SYNC] = (byte) (lfo.isKeySync () ? 1 : 0);
+            }
+            chunks.add (EmulatorXChunk.create (EmulatorXConstants.LFO_TAG, data));
         }
-        return lfos;
+        return chunks;
     }
 
 

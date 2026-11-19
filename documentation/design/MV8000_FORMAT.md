@@ -1,11 +1,5 @@
 # Roland MV-8000 patch format (.MV0) — reverse-engineered
 
-Reverse-engineered 2026-07 from the 103 MV-8000 factory patches (OS-era files dated
-2003-03-06, container version 0x75) and confirmed against the parameter descriptor
-tables extracted from the MV-8000 OS 3.54 / MV-8800 OS 1.01 firmware (see "Firmware
-notes" at the end). Field positions marked "(fw)" are taken from the firmware tables;
-everything else was derived empirically with corpus-wide statistical validation.
-
 ## Container (IFF-like, all values big-endian)
 
 ```

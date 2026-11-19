@@ -56,15 +56,9 @@ public class SoundboxFilterEffect
      */
     public static IFilter readFilterEffect (final Element effectsElement)
     {
-        if (effectsElement == null || "0".equals (effectsElement.getAttribute ("active")))
-            return null;
-
-        for (int slot = 0; slot < 4; slot++)
+        final int slot = findFilterSlot (effectsElement);
+        if (slot >= 0)
         {
-            // A bypassed slot is marked with s<n>="1"
-            if ((XMLUtils.getIntegerAttribute (effectsElement, "s" + slot + "fx", 0) != FILTER_TYPE_ID) || (XMLUtils.getIntegerAttribute (effectsElement, "s" + slot, 0) == 1))
-                continue;
-
             double frequency = DEFAULT_FREQUENCY;
             double quality = DEFAULT_QUALITY;
             int typeIndex = 0;
@@ -83,6 +77,25 @@ public class SoundboxFilterEffect
             return new DefaultFilter (filterType, 2, Math.min (frequency, IFilter.MAX_FREQUENCY), resonance);
         }
         return null;
+    }
+
+
+    /**
+     * Finds the slot of the first active filter effect in an effects element.
+     *
+     * @param effectsElement The effects element of a layer or the master, may be null
+     * @return The index of the slot (0-3) or -1 if there is no active filter effect
+     */
+    public static int findFilterSlot (final Element effectsElement)
+    {
+        if (effectsElement == null || "0".equals (effectsElement.getAttribute ("active")))
+            return -1;
+
+        // A bypassed slot is marked with s<n>="1"
+        for (int slot = 0; slot < 4; slot++)
+            if (XMLUtils.getIntegerAttribute (effectsElement, "s" + slot + "fx", 0) == FILTER_TYPE_ID && XMLUtils.getIntegerAttribute (effectsElement, "s" + slot, 0) != 1)
+                return slot;
+        return -1;
     }
 
 

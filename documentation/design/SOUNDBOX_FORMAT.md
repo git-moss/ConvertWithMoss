@@ -1,22 +1,17 @@
 # Audiomodern Soundbox format (.sbpack / .sbset / .sbgrp / .amx)
 
-Reverse engineered from the factory packs *Cosmo*, *Kromium*, *Voxmotive*, *Starlit*, *Mechania*
-and the imported library of the Soundbox plug-in (macOS, versions 1.0.0b11 … 1.2.1). Soundbox is a
-JUCE based sample player with 4 layers; each layer plays one *group* which contains the mapped
-samples (called *sounds*).
-
 ## Containers
 
 ### .sbpack — a sound pack
 
 A plain ZIP archive (entries are STORED / uncompressed):
 
-| Entry                | Content                                                          |
-|----------------------|------------------------------------------------------------------|
-| `pack.amx`           | XML: pack metadata, preset names, all groups, sample name list   |
-| `_presets/p<N>.sbset`| XML: preset N (index into the `<Presets>` list of `pack.amx`)    |
-| `_samples/s<N>`      | Sample file N *without file extension* (WAV, newer packs FLAC)   |
-| `*.png`              | Optional icon/cover images referenced from `pack.amx`            |
+| Entry                 | Content                                                        |
+|-----------------------|----------------------------------------------------------------|
+| `pack.amx`            | XML: pack metadata, preset names, all groups, sample name list |
+| `_presets/p<N>.sbset` | XML: preset N (index into the `<Presets>` list of `pack.amx`)  |
+| `_samples/s<N>`       | Sample file N *without file extension* (WAV, newer packs FLAC) |
+| `*.png`               | Optional icon/cover images referenced from `pack.amx`          |
 
 ### .sbgrp / .sbset on disk (imported/user library)
 
@@ -85,29 +80,29 @@ are little-endian; the structures are packed (no alignment).
 
 Field names follow the plug-in's setter symbols (`AMSoundsManager::set…`).
 
-| Offset | Type | Field                | Notes                                                   |
-|--------|------|----------------------|---------------------------------------------------------|
-| 0x00   | u32  | key low (copy)       | always identical to 0x26 (4093 of 4093 samples)         |
-| 0x04   | u32  | root note            | MIDI note                                               |
-| 0x08   | u8   | loop active          | 0/1                                                     |
-| 0x09   | u8   | ping-pong loop       | 0/1 (loop type alternating)                             |
-| 0x0A   | f32  | sample start         | fraction 0..1 of the sample length                      |
-| 0x0E   | f32  | sample end           | fraction 0..1                                           |
-| 0x12   | f32  | loop start           | fraction 0..1                                           |
-| 0x16   | f32  | loop end             | fraction 0..1                                           |
-| 0x1A   | f32  | fade in              | fraction 0..1                                           |
-| 0x1E   | f32  | fade out             | fraction 0..1                                           |
-| 0x22   | f32  | loop crossfade       | 0..0.5, assumed relative to the loop length             |
-| 0x26   | u32  | key low              | MIDI note, inclusive                                    |
-| 0x2A   | u32  | key high, exclusive  | first key *not* played (drum maps use low+1; max 127)   |
-| 0x2E   | u8   | reverse              | 0/1                                                     |
-| 0x2F   | f32  | ?                    | always 0                                                |
-| 0x33   | f32  | (speed?)             | always 1.0 (a single sample: 0.3136)                    |
-| 0x37   | u32  | volume percent       | `setSoundVolume(int)`; 100 = full, corpus also has 80   |
-| 0x3B   | f32  | pan                  | -1..1, left to right; editor shows L50..R50 (verified)  |
-| 0x3F   | i32  | tune semi-tones      | `setSoundTune(int)`; corpus: 0 and -12                  |
-| 0x43   | u32  | velocity low         | inclusive, 0..127 (paired splits like 20/21 in corpus)  |
-| 0x47   | u32  | velocity high        | inclusive                                               |
+| Offset | Type | Field               | Notes                                                  |
+|--------|------|---------------------|--------------------------------------------------------|
+| 0x00   | u32  | key low (copy)      | always identical to 0x26 (4093 of 4093 samples)        |
+| 0x04   | u32  | root note           | MIDI note                                              |
+| 0x08   | u8   | loop active         | 0/1                                                    |
+| 0x09   | u8   | ping-pong loop      | 0/1 (loop type alternating)                            |
+| 0x0A   | f32  | sample start        | fraction 0..1 of the sample length                     |
+| 0x0E   | f32  | sample end          | fraction 0..1                                          |
+| 0x12   | f32  | loop start          | fraction 0..1                                          |
+| 0x16   | f32  | loop end            | fraction 0..1                                          |
+| 0x1A   | f32  | fade in             | fraction 0..1                                          |
+| 0x1E   | f32  | fade out            | fraction 0..1                                          |
+| 0x22   | f32  | loop crossfade      | 0..0.5, assumed relative to the loop length            |
+| 0x26   | u32  | key low             | MIDI note, inclusive                                   |
+| 0x2A   | u32  | key high, exclusive | first key *not* played (drum maps use low+1; max 127)  |
+| 0x2E   | u8   | reverse             | 0/1                                                    |
+| 0x2F   | f32  | ?                   | always 0                                               |
+| 0x33   | f32  | (speed?)            | always 1.0 (a single sample: 0.3136)                   |
+| 0x37   | u32  | volume percent      | `setSoundVolume(int)`; 100 = full, corpus also has 80  |
+| 0x3B   | f32  | pan                 | -1..1, left to right; editor shows L50..R50 (verified) |
+| 0x3F   | i32  | tune semi-tones     | `setSoundTune(int)`; corpus: 0 and -12                 |
+| 0x43   | u32  | velocity low        | inclusive, 0..127 (paired splits like 20/21 in corpus) |
+| 0x47   | u32  | velocity high       | inclusive                                              |
 
 The 87 byte variant appends 12 bytes: u8 flag at 0x4B (repitch/tempo-sync related, usually 1),
 two zero bytes, f64 = 1.0 at 0x4E (stretch/speed factor), u8 = 0 at 0x56. These are ignored when
@@ -125,8 +120,10 @@ read (all Cosmo groups imported by plug-in 1.2.x keep their 75 byte blobs).
       <Effects active="1" .../>             <!-- 4 FX slots -->
     </L> ...
   </Layers>
-  <Engines>
-    <E state="13...." sequence="128...."/>  <!-- 4 elements, playback engine per layer -->
+  <Engines>                                <!-- the 4 LFO engines of the Modulation tab -->
+    <E state="13...." sequence="128....">
+      <P name="VOLUME LAYER 1" state="9...."/>  <!-- one assignment per modulated parameter -->
+    </E> ...
   </Engines>
   <ArpsManager/>
   <Master volume="0.85" pan="0.0"> <Effects .../> </Master>
@@ -147,17 +144,17 @@ read (all Cosmo groups imported by plug-in 1.2.x keep their 75 byte blobs).
 
 ### Layer `settings` blob — 33 bytes (`AMSamplerEngineMPE` parameters)
 
-| Offset | Type | Field      | Notes                                              |
-|--------|------|------------|----------------------------------------------------|
-| 0x00   | u8   | voice mode | 0 = mono, 1 = legato, 2 = poly (default)           |
-| 0x01   | f32  | glide      | knob 0..1; time law not calibrated                 |
-| 0x05   | f32  | transpose  | semi-tones, always 0 in corpus                     |
-| 0x09   | f32  | fine tune  | cents (corpus: ±5, ±10)                            |
-| 0x0D   | u32  | octave     | index with center 2 = ±0 octaves (assumed)         |
-| 0x11   | f32  | attack     | knob 0..1; time = knob x 4.0 s (measured, linear)  |
-| 0x15   | f32  | decay      | knob 0..1; assumed 20 s law like release           |
-| 0x19   | f32  | sustain    | 0..1 (UI shows 0-100%)                             |
-| 0x1D   | f32  | release    | knob 0..1; time = knob x 20 s (measured)           |
+| Offset | Type | Field      | Notes                                             |
+|--------|------|------------|---------------------------------------------------|
+| 0x00   | u8   | voice mode | 0 = mono, 1 = legato, 2 = poly (default)          |
+| 0x01   | f32  | glide      | knob 0..1; time law not calibrated                |
+| 0x05   | f32  | transpose  | semi-tones, always 0 in corpus                    |
+| 0x09   | f32  | fine tune  | cents (corpus: ±5, ±10)                           |
+| 0x0D   | u32  | octave     | index with center 2 = ±0 octaves (assumed)        |
+| 0x11   | f32  | attack     | knob 0..1; time = knob x 4.0 s (measured, linear) |
+| 0x15   | f32  | decay      | knob 0..1; assumed 20 s law like release          |
+| 0x19   | f32  | sustain    | 0..1 (UI shows 0-100%)                            |
+| 0x1D   | f32  | release    | knob 0..1; time = knob x 20 s (measured)          |
 
 The ADSR values are the normalized knob positions of the plug-in (the UI displays them as
 0-100%, e.g. the defaults decay 0.2/sustain 1.0 show as 20%/100%). Neither the UI nor the user
@@ -195,10 +192,79 @@ filter slot of a layer - or of the master, if the layer has none - as the filter
 zones and writes a common zone filter back into the first slot. All other effects are not
 converted.
 
-The engine `state` (13 bytes) and `sequence` (128 bytes) blobs belong to the 4 LFO engines of
-the Modulation tab (the 128 byte sequence holds the 32 steps of the LFO sequencer shape); they
-are identical for all four engines in every corpus preset and ConvertWithMoss writes the
-constant default as found in Cosmo (see `SoundboxCreator`).
+### Modulation (LFO engines)
+
+The `<Engines>` section holds the 4 LFO engines of the Modulation tab, one `<E>` element each. The
+`state` attribute holds the oscillator settings, the `sequence` attribute the 32 steps of the
+sequencer shape (32 f32 values, 0..1) and each `<P>` child assigns the LFO to one parameter of the
+preset. An engine can modulate any number of parameters.
+
+#### Engine `state` blob — 13 bytes
+
+| Offset | Type | Field            | Notes                                                                        |
+|--------|------|------------------|------------------------------------------------------------------------------|
+| 0x00   | u8   | shape            | 0 = sine, 1 = triangle, 2 = square, 3 = saw, 4 = inverted saw, 5 = sequencer |
+| 0x01   | u8   | retrigger        | 0/1, restart the LFO with each note                                          |
+| 0x02   | f32  | rate             | Hertz, 0.1..80, used if sync is off                                          |
+| 0x06   | u8   | note length      | used if sync is on: 0..8 = 1/16, 1/8, 1/4, 1/2, 1, 2, 4, 8, 16               |
+| 0x07   | u8   | motion           | 0 = loop, 1 = ping-pong, 2 = reverse                                         |
+| 0x08   | u8   | bypass           | 0/1, a bypassed engine modulates nothing                                     |
+| 0x09   | u8   | infinity active  | 0/1                                                                          |
+| 0x0A   | u8   | infinity counter |                                                                              |
+| 0x0B   | u8   | steps            | number of sequencer steps, 1..32                                             |
+| 0x0C   | u8   | sync             | 0/1, tempo sync                                                              |
+
+The default engine (written by the plug-in for every unused engine) is a sine with retrigger and
+sync on, rate 0.1 Hz, note length 4, loop, 1 infinity counter and 32 steps.
+
+The note length is given in whole notes: one LFO cycle lasts *length* × 4 beats of the host
+tempo, e.g. 1/4 at 120 BPM = 2 Hz. The tempo is not stored in the preset.
+
+All shapes produce a value *x* in -1..1 over one cycle (phase *p* = 0..1): sine = sin(2π*p*),
+triangle rising from -1, square = -1 for the first half and +1 for the second, saw rising from -1 to
++1, inverted saw falling from +1 to -1. The sequencer outputs step ⌊*p* × steps⌋, scaled from 0..1
+to -1..1. Reverse plays the shape backwards, ping-pong plays it forwards and then backwards, so one
+ping-pong cycle lasts two LFO cycles.
+
+#### Assignment `<P>`
+
+`name` is the name of the modulated parameter, `state` a 9 byte blob:
+
+| Offset | Type | Field    | Notes                                        |
+|--------|------|----------|----------------------------------------------|
+| 0x00   | f32  | amount   | -1..1, a negative amount inverts the LFO     |
+| 0x04   | f32  | position | -1..1, center of the modulation              |
+| 0x08   | u8   | bypass   | 0/1, a bypassed assignment modulates nothing |
+
+A modulated parameter does not keep its own value. With *min*/*max* being the range of the
+parameter it becomes
+
+```
+value = min + (max - min) × (1 + position + clamp(amount × x, -1, 1)) / 2
+```
+
+limited to *min*..*max*. The position therefore replaces the static value of the parameter (0 =
+the middle of the range) and the amount sets the swing (1 = the whole range).
+
+The parameter names are formed from a parameter and a suffix for the layer: `" 1"` .. `" 4"` or
+`" Master"`. Effect parameters additionally get the effect slot as `" (1)"` .. `" (4)"`, e.g.
+`FILTER FREQUENCY 1 (2)` is the cutoff of the filter in the second effect slot of layer 1.
+
+| Parameter                | Range       | Notes                            |
+|--------------------------|-------------|----------------------------------|
+| `VOLUME MASTER`          | 0..1        | master volume (no layer suffix)  |
+| `PAN MASTER`             | -1..1       | master panning (no layer suffix) |
+| `VOLUME LAYER n`         | 0..1        | layer volume                     |
+| `PAN LAYER n`            | -1..1       | layer panning                    |
+| `OCTAVE LAYER n`         | -2400..2400 | cents                            |
+| `TRANSPOSE LAYER n`      | -1200..1200 | cents                            |
+| `FINE LAYER n`           | -100..100   | cents                            |
+| `FILTER FREQUENCY n (s)` | 50..15001   | Hertz, linear                    |
+| `FILTER RESONANCE n (s)` | 1..15       |                                  |
+
+Most other effect parameters can be modulated as well, they are named `<EFFECT> <PARAMETER>`
+with the effect and parameter names used in the `<S>` elements of the effects, e.g.
+`DELAY FEEDBACK 2 (1)` or `PHASER RATE Master (3)`.
 
 ## Mapping notes (ConvertWithMoss)
 
@@ -211,6 +277,16 @@ constant default as found in Cosmo (see `SoundboxCreator`).
   changed only the float at 0x3B. The layer pan is therefore ignored when reading and written as
   0, the pan of each zone is written into its sound.
 - Key high and velocity ranges: key high is stored exclusive, velocity is inclusive.
+- LFOs: the assignments to `VOLUME LAYER n`, to `FINE`/`TRANSPOSE`/`OCTAVE LAYER n` and to the
+  `FILTER FREQUENCY` of the filter slot which is read as the zone filter become the amplitude,
+  pitch and cutoff LFOs of the layer's zones; if several engines modulate the same destination,
+  the strongest one is used. The position of such an assignment replaces the layer volume, the
+  tuning or the cutoff. The volume and cutoff depths are half of the swing between the highest
+  and the lowest value in dB respectively cents. The sequencer shape is read as a random wave,
+  synced rates are calculated for 120 BPM. Writing creates free running engines (rate in Hertz),
+  layers with identical oscillators share an engine. The pitch is written to `FINE LAYER n` if
+  the modulation fits into ±100 cents, otherwise to `TRANSPOSE LAYER n`; the cutoff is written to
+  the first effect slot which holds the filter.
 - Loop/sample positions are fractions of the sample frame count, so a sound cannot be read
   without the length of its sample. The frame count has to come from the audio metadata:
   the packs of the original corpus hold WAV, but packs written by newer plug-in versions

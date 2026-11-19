@@ -1,11 +1,5 @@
 # Roland MC-707 / MC-101 project format (`.mpj`)
 
-Reverse-engineered for ConvertWithMoss from the Roland **MC-707** and **MC-101** GROOVEBOX
-(firmware v1.82, model codes `RPG68`/`RPG69`) — the seven official Roland preset projects
-(`MC707_PRESET_PROJECT`) and the init-project image embedded in both devices' firmware.
-Everything below is validated against those Roland-authored files; **no hardware test has been
-performed yet** (marked where it matters).
-
 Both devices run the ZEN-Core engine (see `ZENCORE_FORMAT.md`); the project file embeds ZEN-Core
 tone records in the same 1632-byte layout as the FANTOM's `PATa` records, so that document's tone
 findings apply here and are extended by this one (partial strides, kit records).

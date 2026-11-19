@@ -43,6 +43,8 @@ public class EXSModulator
     public static final int                   SOURCE_ENV4                    = -22;
     /** The envelope 5 as the source. */
     public static final int                   SOURCE_ENV5                    = -23;
+    /** The modulation wheel (MIDI CC 1) as the via source. */
+    public static final int                   VIA_MOD_WHEEL                  = 1;
 
     /** The modulator is off. */
     public static final int                   DESTINATION_OFF                = 0;
@@ -120,6 +122,7 @@ public class EXSModulator
     int destination;
     int lowValue;
     int highValue;
+    int via = SOURCE_OFF;
 
 
     /**

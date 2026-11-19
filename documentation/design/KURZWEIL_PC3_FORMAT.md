@@ -7,15 +7,6 @@ wrote the file. Every device of the family loads the files of the others and con
 on the fly. Only the PC3K, the Forte family, the PC4 and the K2700 have user sample memory; the
 files of the other devices reference the ROM samples of the device only.
 
-The layout of the container and of the objects follows the open-source object viewer *Kurzweil
-Object View* by Brian Cowell (MIT license, https://github.com/cunka/Kurzweil-Object-View) and was
-verified on the free sound packs which Kurzweil publishes for the PC3, PC3K, Forte and Forte SE
-(e.g. `ACCORDN1.PC3`, `REAL32DW.P3K` of the *Take 6* sample library, `KCOMP100.K2P` - the K2661
-ROM compatibility samples for the PC3K -, the 25 Forte *Legacy* / *Patch Kreator* packs, their
-Forte SE variants and the K2700 packs including `NylonGuitar.K27` of the *Building Keymaps*
-tutorial, which holds samples in the layout of the Forte generation). All multi-byte values are **big-endian**.
-Sample positions are counted in **bytes** (the K2x00 family counts 16-bit words).
-
 ## File layout
 
 ```

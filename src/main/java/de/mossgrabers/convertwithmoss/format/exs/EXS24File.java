@@ -318,6 +318,17 @@ public class EXS24File
 
 
     /**
+     * Get all modulators of the modulation matrix which are not bypassed.
+     *
+     * @return The modulators
+     */
+    public List<EXSModulator> getModulators ()
+    {
+        return this.modulators;
+    }
+
+
+    /**
      * Get a modulator which has the given source and destination.
      *
      * @param source The ID of the source
@@ -356,6 +367,8 @@ public class EXS24File
                 final Integer modValueHigh = this.parameters.get (EXS24Parameters.MOD1_AMOUNT_HIGH + offset);
                 modulator.lowValue = modValueLow == null ? 0 : modValueLow.intValue ();
                 modulator.highValue = modValueHigh == null ? 0 : modValueHigh.intValue ();
+                final Integer modVia = this.parameters.get (EXS24Parameters.MOD1_VIA + offset);
+                modulator.via = modVia == null ? EXSModulator.SOURCE_OFF : modVia.intValue ();
                 this.modulators.add (modulator);
             }
         }
@@ -378,6 +391,7 @@ public class EXS24File
             this.parameters.put (EXS24Parameters.MOD1_BYPASS + offset, 0);
             this.parameters.put (EXS24Parameters.MOD1_AMOUNT_LOW + offset, modulator.lowValue);
             this.parameters.put (EXS24Parameters.MOD1_AMOUNT_HIGH + offset, modulator.highValue);
+            this.parameters.put (EXS24Parameters.MOD1_VIA + offset, modulator.via);
         }
     }
 }

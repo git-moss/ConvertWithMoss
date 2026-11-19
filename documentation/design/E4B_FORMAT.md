@@ -4,16 +4,6 @@ Banks of the E-mu Emulator IV series (Emulator 4, E4X, E4XT, E4K, e-Synth,
 e-6400 and the other EOS samplers, 1994-2002) are stored in single `*.e4b`
 files which contain all presets, their parameters and the sample data.
 
-The format is not documented by E-mu. The byte-level layout used here was
-reverse-engineered by the **mpc2emu** project (GPL-2.0-or-later,
-`docs/E4B_FORMAT.md` and `writers/e4b_writer.py`/`parsers/e4b_parser.py` in its
-source tree) by differential analysis of hardware-saved E4XT banks (created by
-Jan Lentfer), commercial EOS CD-ROMs, the `struct emu3_sample` layout of
-[emu3bm](https://github.com/dagargo/emu3bm) by David García Goñi and Phil's E4
-format notes (philizound.co.uk). The implementation in
-`format/emu/emulator4` is an independent Java implementation based on that
-documentation; no code was copied.
-
 ## Container
 
 An E4B file is an IFF-like container. All chunk sizes and all indices are
@@ -144,6 +134,28 @@ are stored as `round(percent * 127 / 100)` (signed for the filter envelope).
 The filter envelope shape alone is inert: its depth is the amount of the
 "cord 5" modulation route (below).
 
+The auxiliary envelope follows at bytes 28-39 (each envelope is followed by
+the bytes `0x03 0x00`), then the two LFOs of 7 bytes each, LFO 1 at byte 42
+and LFO 2 at byte 50 (one zero byte between them):
+
+| Offset | Content |
+|---|---|
+| 0 | rate: `Hz = 1.64054 * 1.01973^value - 1.57702` (0 = 0.08 Hz ... 127 = 18.01 Hz) |
+| 1 | wave shape (see below) |
+| 2 | delay: `seconds = 0.149998 * 1.04^value - 0.150012` (0 ... 21.7 s) |
+| 3 | variation 0-127 (random rate change per note) |
+| 4 | 0 = key sync (the LFO restarts with each note), 1 = free running |
+| 5:7 | zero |
+
+Wave shapes: 0 triangle, 1 sine, 2 sawtooth (falls, then jumps back up), 3
+square, 4-7 pulse 33%/25%/16%/12%, 8 'Pat: Octaves', 9 'Pat: Fifth+Octave',
+10 'Pat: Sus4 trip', 11 'Pat: Neener', 12 'Sine 1,2', 13 'Sine 1,3,5', 14
+'Sine + Noise', 15 'Hemi-quaver', 255 random (sample and hold). The rate,
+delay and shape encodings follow the simple_e4b project.
+
+An LFO has no destination of its own; it only acts through the modulation
+cords.
+
 ### Modulation cord table
 
 20 cords of `[source, destination, amount, 0]`; amounts are signed
@@ -155,6 +167,40 @@ first 8 slots. Routes used by the converter:
 | 0 | velocity (0x0A add / 0x0B centered / 0x0C subtract) -> amp (0x40) | velocity modulation of the amplitude, default amount 0x1E |
 | 5 | filter envelope (0x50) -> filter frequency (0x38) | the depth of the filter envelope |
 | 6 | key (0x08) -> filter frequency (0x38) | filter key tracking; +100% tracks ~0.713 octave per octave |
+
+The default set also contains pitch wheel (0x10) -> pitch (0x30) in slot 1,
+LFO 1 centered (0x60) -> pitch (0x30) with amount 0 in slot 2 and modulation
+wheel (0x11) -> amount of cord 3 (0xAA) in slot 3, which together are the
+modulation wheel vibrato.
+
+Sources and destinations (the numbering of the Proteus 2000 / EOS family):
+
+| Source | Code |
+|---|---|
+| off | 0x00 |
+| key `+`, `~` | 0x08, 0x09 |
+| velocity `+`, `~`, `<` | 0x0A, 0x0B, 0x0C |
+| pitch wheel, modulation wheel, pressure, pedal | 0x10, 0x11, 0x12, 0x13 |
+| MIDI A, B | 0x14, 0x15 |
+| amplifier / filter / auxiliary envelope `+`, `~`, `<` | 0x48-0x4A, 0x50-0x52, 0x58-0x5A |
+| LFO 1 `~`, `+` | 0x60, 0x61 |
+| LFO 2 `~`, `+` | 0x68, 0x69 |
+| DC offset | 0xA0 |
+
+| Destination | Code |
+|---|---|
+| fine pitch (1 semitone at 100%) | 0x2F |
+| pitch | 0x30 |
+| filter frequency, resonance | 0x38, 0x39 |
+| amplifier volume, pan | 0x40, 0x41 |
+| LFO 1 rate, LFO 2 rate | 0x60, 0x68 |
+| amount of cord 1 ... 24 | 0xA8 ... 0xBF |
+
+A `~` source swings around zero, a `+` source between zero and its full
+value and a `<` source only subtracts. A cord with full amount (+100%) moves
+the pitch by 32 semitones (3.125% per semitone). A cord whose destination is
+the amount of another cord adds its value to that amount; the modulation
+wheel controls the depth of an LFO this way.
 
 An all-zero table is valid for a plain key-tracking voice, but a
 **non-transpose voice requires the populated default table** to be recognized
@@ -319,6 +365,17 @@ it.
   above); a non-transpose voice sets key tracking 0. A fully open
   4-pole low-pass without resonance, envelope depth and key tracking is the
   EOS bypass state and creates no filter.
+* **LFOs:** the cords from LFO 1 or 2 to the amplifier volume, to the pitch
+  or fine pitch and to the filter frequency become the amplitude, pitch and
+  cutoff LFOs of the zones; per destination the cord with the strongest
+  effect wins. The depth of the modulation wheel comes from a cord which routes
+  the modulation wheel into the amount of that LFO cord, a DC offset into it
+  adds to the depth. Depths: pitch 3200 cents, volume 96 dB and cutoff
+  ~9055 cents (from the key tracking) at 100%; a `+` LFO counts half. Writing
+  sets the pitch depth on the default LFO 1 cord and its modulation wheel
+  cord; the volume and cutoff LFOs get new cords behind the default set,
+  using LFO 1 if it has the same settings, otherwise LFO 2. A rising sawtooth
+  is written as the falling one with a negative amount.
 * **Writing:** every zone becomes its own voice with a single zone entry,
   which keeps the per-zone tuning, volume, panning, filter and envelopes
   (hardware banks typically map many zones into one voice; both layouts are
