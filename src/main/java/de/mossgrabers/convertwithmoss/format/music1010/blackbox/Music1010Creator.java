@@ -498,4 +498,4 @@ public class Music1010Creator extends AbstractMusic1010Creator
         if (zone.isOneShot () || zone.getLoops ().isEmpty ())
             XMLUtils.setIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_TRIGGER_TYPE, 0);
     }
-}
+}

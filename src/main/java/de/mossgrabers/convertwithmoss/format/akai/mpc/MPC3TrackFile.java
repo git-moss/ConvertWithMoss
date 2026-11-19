@@ -319,8 +319,8 @@ public class MPC3TrackFile
 
 
     /**
-     * Patch the first LFO of the synthesizer section of an instrument slot with the LFO settings of a
-     * zone. The second LFO is not used by the key-group.
+     * Patch the first LFO of the synthesizer section of an instrument slot with the LFO settings of
+     * a zone. The second LFO is not used by the key-group.
      *
      * @param synthNode The synthesizer section node to patch
      * @param zone The sample zone

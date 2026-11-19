@@ -70,13 +70,21 @@ public class MPCKeygroupTag
     public static final String LFO_SYNC                             = "Sync";
     /** The reset (key sync) element of the LFO element. */
     public static final String LFO_RESET                            = "Reset";
-    /** The pitch amount element of the LFO element (or of the instrument element in older files). */
+    /**
+     * The pitch amount element of the LFO element (or of the instrument element in older files).
+     */
     public static final String LFO_PITCH                            = "LfoPitch";
-    /** The cutoff amount element of the LFO element (or of the instrument element in older files). */
+    /**
+     * The cutoff amount element of the LFO element (or of the instrument element in older files).
+     */
     public static final String LFO_CUTOFF                           = "LfoCutoff";
-    /** The volume amount element of the LFO element (or of the instrument element in older files). */
+    /**
+     * The volume amount element of the LFO element (or of the instrument element in older files).
+     */
     public static final String LFO_VOLUME                           = "LfoVolume";
-    /** The panning amount element of the LFO element (or of the instrument element in older files). */
+    /**
+     * The panning amount element of the LFO element (or of the instrument element in older files).
+     */
     public static final String LFO_PAN                              = "LfoPan";
 
     /** The filter type element of the instrument element. */

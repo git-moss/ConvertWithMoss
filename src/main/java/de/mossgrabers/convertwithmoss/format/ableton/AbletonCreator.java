@@ -222,12 +222,12 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
 
     /**
      * Add the low frequency oscillators. Since each Sampler oscillator has its own waveform and
-     * rate, the volume modulation is written to LFO 1 (fixed volume amount), the pitch modulation to
-     * LFO 2 and the filter cutoff modulation to LFO 3 (both via destination A). The routing amount
-     * is set to the maximum depth (modulation wheel fully up), the modulation wheel amount is the
-     * share of it which is controlled by the wheel. The modulation wheel can only have 2 routings,
-     * therefore the 2 strongest modulation wheel depths are used. Without any modulation wheel
-     * depth, the default routing of the modulation wheel to the filter cutoff is kept.
+     * rate, the volume modulation is written to LFO 1 (fixed volume amount), the pitch modulation
+     * to LFO 2 and the filter cutoff modulation to LFO 3 (both via destination A). The routing
+     * amount is set to the maximum depth (modulation wheel fully up), the modulation wheel amount
+     * is the share of it which is controlled by the wheel. The modulation wheel can only have 2
+     * routings, therefore the 2 strongest modulation wheel depths are used. Without any modulation
+     * wheel depth, the default routing of the modulation wheel to the filter cutoff is kept.
      *
      * @param sourceTemplate The template text
      * @param groups The groups
@@ -342,7 +342,8 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
 
 
     /**
-     * Get the share of the maximum depth of a modulator which is controlled by the modulation wheel.
+     * Get the share of the maximum depth of a modulator which is controlled by the modulation
+     * wheel.
      *
      * @param modulator The modulator
      * @return The share in percent in the range of [0..100]

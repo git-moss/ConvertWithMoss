@@ -45,7 +45,9 @@ public class Music1010Lfo
     public static final double          PITCH_SCALE        = 1200.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
     /** Modulating the volume by 100% covers the range of -96dB to 0dB. */
     public static final double          VOLUME_SCALE       = 96.0 / ILfoModulator.MAX_VOLUME_DEPTH;
-    /** Modulating the cutoff by 70% matches a modulation of 1 octave (compared by ear with sfizz). */
+    /**
+     * Modulating the cutoff by 70% matches a modulation of 1 octave (compared by ear with sfizz).
+     */
     public static final double          CUTOFF_SCALE       = 1200.0 / 0.7 / IEnvelope.MAX_ENVELOPE_DEPTH;
 
     private static final double         MIN_RATE           = 0.1;

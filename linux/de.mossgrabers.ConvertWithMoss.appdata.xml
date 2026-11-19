@@ -15,14 +15,6 @@
       Furthermore, it can create multisample files from plain WAV files.
     </p>
   </description>
-  <!-- TODO: Can AppStream support YT videos?
-  <screenshots>
-    <screenshot>
-      <caption>ConvertWithMoss presentation</caption>
-      <video>https://youtu.be/Zmbclwce5kA</video>
-    </screenshot>
-  </screenshots>
-  -->
   <url type="homepage">https://mossgrabers.de/Software/ConvertWithMoss/ConvertWithMoss.html</url>
   <url type="bugtracker">https://github.com/git-moss/ConvertWithMoss/issues</url>
   <url type="help">https://www.kvraudio.com/forum/viewtopic.php?f=42&amp;t=575352</url>

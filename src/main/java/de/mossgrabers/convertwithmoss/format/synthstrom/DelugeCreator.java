@@ -69,35 +69,35 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 {
-    private static final String  SYNTHS_FOLDER            = "SYNTHS";
-    private static final String  KITS_FOLDER              = "KITS";
-    private static final String  SAMPLES_FOLDER           = "SAMPLES";
+    private static final String    SYNTHS_FOLDER            = "SYNTHS";
+    private static final String    KITS_FOLDER              = "KITS";
+    private static final String    SAMPLES_FOLDER           = "SAMPLES";
 
     /** The Deluge's decay/release rate table tops out at about 5.9 seconds. */
-    private static final double  MAX_DELUGE_DECAY_SECONDS = 5.9;
+    private static final double    MAX_DELUGE_DECAY_SECONDS = 5.9;
 
     /** The Deluge's default kit master volume (unity gain). */
-    private static final int     DEFAULT_KIT_VOLUME       = 0x3504F334;
+    private static final int       DEFAULT_KIT_VOLUME       = 0x3504F334;
 
     /** The maximum number of drums in a kit (one per note from 36 up to 127). */
-    private static final int     MAX_KIT_DRUMS            = 92;
+    private static final int       MAX_KIT_DRUMS            = 92;
 
     /** Matches a "Kit &lt;number&gt;" occurrence (whole word) used to derive a short kit name. */
-    private static final Pattern KIT_NUMBER_PATTERN       = Pattern.compile ("(?i)\\bkit\\s*(\\d{1,4})");
+    private static final Pattern   KIT_NUMBER_PATTERN       = Pattern.compile ("(?i)\\bkit\\s*(\\d{1,4})");
     /**
      * Matches a name segment that carries no identity of its own - a bare "Kit NN", a date (6-8
      * digits) or a version ("v2") - so it can be skipped in favour of a more meaningful segment and
      * is never given a redundant number prefix.
      */
-    private static final Pattern REDUNDANT_SEGMENT        = Pattern.compile ("(?i)^(?:kit\\s*\\d{1,4}|\\d{6,8}|v(?:er|ersion)?\\.?\\s*\\d+)$");
+    private static final Pattern   REDUNDANT_SEGMENT        = Pattern.compile ("(?i)^(?:kit\\s*\\d{1,4}|\\d{6,8}|v(?:er|ersion)?\\.?\\s*\\d+)$");
     /**
      * Matches a trailing date (6-8 digits) or version ("v2") suffix, preceded by a separator, so it
      * can be stripped. A model number like "TR-808" or "R-50" is 1-4 digits and is never matched,
      * so it is preserved.
      */
-    private static final Pattern VERSION_DATE_SUFFIX      = Pattern.compile ("(?i)[\\s_-]+(?:v(?:er|ersion)?\\.?\\s*\\d+|\\d{6,8})$");
+    private static final Pattern   VERSION_DATE_SUFFIX      = Pattern.compile ("(?i)[\\s_-]+(?:v(?:er|ersion)?\\.?\\s*\\d+|\\d{6,8})$");
     /** Splits a name into segments on the common separators (surrounded by spaces). */
-    private static final Pattern NAME_SEPARATOR           = Pattern.compile ("\\s+[-/:|]\\s+");
+    private static final Pattern   NAME_SEPARATOR           = Pattern.compile ("\\s+[-/:|]\\s+");
 
     /** The source whose dual oscillator layout was calculated when it was checked. */
     private IMultisampleSource     checkedSource;
@@ -274,8 +274,8 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
 
     /**
-     * Get the dual oscillator layout of a source: the one which was calculated when the source
-     * was checked or otherwise a new one. The two channels of stereo recordings are combined into
+     * Get the dual oscillator layout of a source: the one which was calculated when the source was
+     * checked or otherwise a new one. The two channels of stereo recordings are combined into
      * stereo zones first, since one oscillator plays both.
      *
      * @param multisampleSource The multi-sample source
@@ -374,8 +374,8 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
     /**
      * Report a preset which is not written because it does not fit onto the two oscillators: more
-     * layers sound together on a note than they can play, or the attack times of two layers are
-     * too far apart for the one amplitude envelope which they share.
+     * layers sound together on a note than they can play, or the attack times of two layers are too
+     * far apart for the one amplitude envelope which they share.
      *
      * @param multisampleSource The multi-sample source
      * @param layout The layout of the source
@@ -449,8 +449,8 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
 
     /**
-     * Map zones onto the key map of a single oscillator: if several zones share the same upper
-     * key, only the one with the highest velocity is kept.
+     * Map zones onto the key map of a single oscillator: if several zones share the same upper key,
+     * only the one with the highest velocity is kept.
      *
      * @param zones The zones
      * @return The zones sorted by their upper key
@@ -1045,11 +1045,11 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
     /**
      * Get the volumes of the two oscillators. A single sample oscillator plays at the full volume
-     * and the second oscillator is silent. Two oscillators share the amplitude of one oscillator
-     * at full volume, so that the layers which sound together cannot exceed it - two equally loud
+     * and the second oscillator is silent. Two oscillators share the amplitude of one oscillator at
+     * full volume, so that the layers which sound together cannot exceed it - two equally loud
      * layers play at half of the amplitude (-6 dB) each - and keep their balance: if the zones of
-     * one oscillator are quieter in the source than those of the other - by their average gain -
-     * it plays quieter by the difference.
+     * one oscillator are quieter in the source than those of the other - by their average gain - it
+     * plays quieter by the difference.
      *
      * @param layout The samples which the oscillators play
      * @return The volume parameter values of the first and the second oscillator

@@ -26,9 +26,9 @@ public interface ICreator<T extends ICoreTaskSettings> extends ICoreTask<T>
 {
     /**
      * Check if a preset can be created from a multi-sample source. This is called before anything
-     * is written for the preset - also before its output folder is created - so that a source
-     * which the destination cannot play does not leave an empty folder behind. A creator which
-     * declines a source logs the reason.
+     * is written for the preset - also before its output folder is created - so that a source which
+     * the destination cannot play does not leave an empty folder behind. A creator which declines a
+     * source logs the reason.
      *
      * @param multisampleSource The multi-sample source from which to create the preset
      * @return True if the preset can be created

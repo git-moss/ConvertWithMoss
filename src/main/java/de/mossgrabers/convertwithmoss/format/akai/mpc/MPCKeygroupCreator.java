@@ -49,6 +49,9 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 {
+    private static final String TAG_FALSE = "False";
+
+
     private enum SamplePlay
     {
         ONE_SHOT,
@@ -282,7 +285,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_LOOP_TUNE, "0");
         // The root note is strangely one more than the lower upper keys!
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_ROOT_NOTE, Integer.toString (limitToDefault (zone.getKeyRoot (), limitToDefault (zone.getKeyLow (), 0)) + 1));
-        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_KEY_TRACK, zone.getKeyTracking () == 0 ? "False" : "True");
+        XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_KEY_TRACK, zone.getKeyTracking () == 0 ? TAG_FALSE : "True");
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_SAMPLE_NAME, zoneName);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_PITCH_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
         XMLUtils.addTextElement (document, layerElement, MPCKeygroupTag.LAYER_VOLUME_RANDOM, MPCKeygroupConstants.DOUBLE_ZERO);
@@ -344,7 +347,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_TYPE, MPCLfo.getWaveformName (lfo.getWaveform ()));
         setLfoAttribute (document, lfoElement, MPCKeygroupTag.LFO_RATE, MPCLfo.hertzToRate (lfo.getRate ()));
         XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_SYNC, "0");
-        XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_RESET, lfo.isKeySync () ? MPCKeygroupTag.TRUE : "False");
+        XMLUtils.addTextElement (document, lfoElement, MPCKeygroupTag.LFO_RESET, lfo.isKeySync () ? MPCKeygroupTag.TRUE : TAG_FALSE);
         setLfoAttribute (document, lfoElement, MPCKeygroupTag.LFO_PITCH, MPCLfo.getAmount (zone.getPitchLfoModulator (), MPCLfo.PITCH_SCALE));
         setLfoAttribute (document, lfoElement, MPCKeygroupTag.LFO_CUTOFF, MPCLfo.getCutoffAmount (zone));
         setLfoAttribute (document, lfoElement, MPCKeygroupTag.LFO_VOLUME, MPCLfo.getAmount (zone.getAmplitudeLfoModulator (), MPCLfo.VOLUME_SCALE));
@@ -437,7 +440,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_LOW_NOTE, Integer.toString (keyLow));
         XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_HIGH_NOTE, Integer.toString (keyHigh));
-        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, zone.getKeyTracking () == 0 ? "True" : "False");
+        XMLUtils.addTextElement (document, instrumentElement, MPCKeygroupTag.INSTRUMENT_IGNORE_BASE_NOTE, zone.getKeyTracking () == 0 ? "True" : TAG_FALSE);
 
         // -----------------------------------------------------------
         // Amplitude

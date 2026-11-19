@@ -1043,9 +1043,9 @@ public class AbletonDetector extends AbstractDetector<MetadataSettingsUI>
      * filter cutoff. LFO 1 has fixed destinations, LFO 2 and LFO 3 have 2 configurable destinations
      * (A and B) each. The modulation wheel can control the amounts of the oscillators: the
      * modulation wheel amount is the percentage of the routing amount which is controlled by the
-     * wheel (100% means that the routing amount is only reached with the wheel fully up). If several
-     * oscillators modulate the same destination, the strongest one is used since the model supports
-     * only 1 oscillator per destination.
+     * wheel (100% means that the routing amount is only reached with the wheel fully up). If
+     * several oscillators modulate the same destination, the strongest one is used since the model
+     * supports only 1 oscillator per destination.
      *
      * @param deviceElement The Sampler device element
      * @param multisampleSource The multi-sample to fill

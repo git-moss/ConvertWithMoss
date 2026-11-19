@@ -135,8 +135,8 @@ public class AbletonLfo
 
 
     /**
-     * Convert a tempo synchronized rate to Hertz. Since the tempo is not stored in a preset, a tempo
-     * of 120 BPM is assumed.
+     * Convert a tempo synchronized rate to Hertz. Since the tempo is not stored in a preset, a
+     * tempo of 120 BPM is assumed.
      *
      * @param index The index of the beat rate
      * @return The rate in Hertz

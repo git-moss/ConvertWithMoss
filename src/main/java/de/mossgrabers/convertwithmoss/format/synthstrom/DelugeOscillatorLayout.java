@@ -43,20 +43,20 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
  * plays its own key map - a list of sample ranges, each one ending on its top note - while both
  * share the envelopes and the filters of the sound. A Deluge key map selects its samples by the
  * note only, therefore an oscillator plays one zone on each note: velocity layers and round-robins
- * are reduced to the loudest zone of the note, as in the single oscillator mode. A sample range
- * has no level of its own either, so a zone which is far quieter than the loudest zone of the
- * multi-sample - often a layer which the source switched off by its volume - would play at the
- * full level: such a near-silent zone is left out in both modes.
+ * are reduced to the loudest zone of the note, as in the single oscillator mode. A sample range has
+ * no level of its own either, so a zone which is far quieter than the loudest zone of the
+ * multi-sample - often a layer which the source switched off by its volume - would play at the full
+ * level: such a near-silent zone is left out in both modes.
  * <p>
- * In the dual oscillator mode the second oscillator plays the zones which sound together with
- * those of the first oscillator on the same note, e.g. a swell on top of a body. Only zones which
- * sound together count as layers: key ranges which follow each other, velocity layers,
- * round-robins and the two channels of a stereo recording all fit onto one oscillator, and an
- * overlapping copy of a zone - the same sample with the same root note, tuning and panning - is
- * not a layer either, nor is a near-silent zone. A multi-sample in which more than two layers
- * sound together on a note does not fit onto the two oscillators, and neither do two layers whose
- * attack times are more than 2 seconds apart, since the two oscillators share one amplitude
- * envelope, see {@link #getSkipReason()}.
+ * In the dual oscillator mode the second oscillator plays the zones which sound together with those
+ * of the first oscillator on the same note, e.g. a swell on top of a body. Only zones which sound
+ * together count as layers: key ranges which follow each other, velocity layers, round-robins and
+ * the two channels of a stereo recording all fit onto one oscillator, and an overlapping copy of a
+ * zone - the same sample with the same root note, tuning and panning - is not a layer either, nor
+ * is a near-silent zone. A multi-sample in which more than two layers sound together on a note does
+ * not fit onto the two oscillators, and neither do two layers whose attack times are more than 2
+ * seconds apart, since the two oscillators share one amplitude envelope, see
+ * {@link #getSkipReason()}.
  * <p>
  * Since a Deluge key map has no gaps, an oscillator plays a silent sample on the notes on which
  * only the layer of the other oscillator sounds; otherwise the zone next to these notes would be
@@ -113,8 +113,8 @@ class DelugeOscillatorLayout
 
 
         /**
-         * Get the highest note of the range. The range starts on the note above the top note of
-         * the range below it.
+         * Get the highest note of the range. The range starts on the note above the top note of the
+         * range below it.
          *
          * @return The top note
          */
@@ -125,8 +125,8 @@ class DelugeOscillatorLayout
 
 
         /**
-         * Does the range play the silent sample, which keeps the oscillator quiet on notes on
-         * which only the layer of the other oscillator sounds?
+         * Does the range play the silent sample, which keeps the oscillator quiet on notes on which
+         * only the layer of the other oscillator sounds?
          *
          * @return True if the range is silent
          */
@@ -348,8 +348,8 @@ class DelugeOscillatorLayout
 
 
     /**
-     * Get why the multi-sample does not fit onto the two oscillators: more layers sound together
-     * on a note than the two oscillators can play, or the attack times of two layers which sound
+     * Get why the multi-sample does not fit onto the two oscillators: more layers sound together on
+     * a note than the two oscillators can play, or the attack times of two layers which sound
      * together are more than 2 seconds apart, while the oscillators share one amplitude envelope.
      * Such a layout has no oscillators.
      *
@@ -884,8 +884,8 @@ class DelugeOscillatorLayout
 
 
         /**
-         * Remember the notes on which two zones sound together which cannot be distributed onto
-         * two oscillators together with the zones they sound with.
+         * Remember the notes on which two zones sound together which cannot be distributed onto two
+         * oscillators together with the zones they sound with.
          *
          * @param unit1 The indices of the zones of the first unit
          * @param unit2 The indices of the zones of the second unit
@@ -913,8 +913,8 @@ class DelugeOscillatorLayout
          * oscillators cannot play them: a layer which fades in over seconds would start with the
          * note, or a layer which starts with the note would fade in. A time which is not set is 0,
          * like it is written. The notes on which such zones sound together are remembered.
-         * Different decay, sustain or release settings only change how long the second layer
-         * plays, and different filters how bright it is, so they do not count.
+         * Different decay, sustain or release settings only change how long the second layer plays,
+         * and different filters how bright it is, so they do not count.
          *
          * @return True if two such zones sound together
          */
@@ -943,8 +943,8 @@ class DelugeOscillatorLayout
 
 
         /**
-         * Test if two zones sound together on the same note: their key and velocity ranges
-         * overlap, they are not copies of each other, not two neighbors of one key map, they do not
+         * Test if two zones sound together on the same note: their key and velocity ranges overlap,
+         * they are not copies of each other, not two neighbors of one key map, they do not
          * alternate (round-robin or random) and their velocity ranges do not follow each other,
          * which makes them velocity layers.
          *
@@ -954,9 +954,7 @@ class DelugeOscillatorLayout
          */
         private boolean soundTogether (final int i, final int j)
         {
-            if (!this.overlap (i, j) || this.findUnit (i) == this.findUnit (j) || this.keyMap[i] == this.keyMap[j])
-                return false;
-            if (alternate (this.zones.get (i), this.zones.get (j)))
+            if (!this.overlap (i, j) || this.findUnit (i) == this.findUnit (j) || this.keyMap[i] == this.keyMap[j] || alternate (this.zones.get (i), this.zones.get (j)))
                 return false;
             final boolean follow = this.velocityLow[i] < this.velocityLow[j] && this.velocityHigh[i] < this.velocityHigh[j] || this.velocityLow[j] < this.velocityLow[i] && this.velocityHigh[j] < this.velocityHigh[i];
             return !follow;
@@ -964,8 +962,7 @@ class DelugeOscillatorLayout
 
 
         /**
-         * Test if the key and the velocity ranges of two zones overlap, without their
-         * cross-fades.
+         * Test if the key and the velocity ranges of two zones overlap, without their cross-fades.
          *
          * @param i The index of the first zone
          * @param j The index of the second zone
@@ -984,10 +981,10 @@ class DelugeOscillatorLayout
          * 43, which are not two layers. A zone is added to the key map of its velocity range which
          * it overlaps least - preferably not at all - among those whose zones it overlaps by less
          * than half of the smaller of the two key ranges; a zone which overlaps more sounds
-         * together with the other one, and if there is no such key map the zone starts another
-         * one. The zones are taken from the lowest key up, of two which start on the same key the
-         * wider one first, so that a layer which spans the whole keyboard does not scatter the
-         * zones of another one.
+         * together with the other one, and if there is no such key map the zone starts another one.
+         * The zones are taken from the lowest key up, of two which start on the same key the wider
+         * one first, so that a layer which spans the whole keyboard does not scatter the zones of
+         * another one.
          *
          * @return The index of the key map of each zone
          */

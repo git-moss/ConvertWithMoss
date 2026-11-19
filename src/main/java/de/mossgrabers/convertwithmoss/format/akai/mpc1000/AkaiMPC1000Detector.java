@@ -44,7 +44,7 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
 {
-    private static final Map<Integer, FilterType> FILTER_MAP     = new HashMap<> ();
+    private static final Map<Integer, FilterType> FILTER_MAP = new HashMap<> ();
 
     static
     {
@@ -55,7 +55,7 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
         FILTER_MAP.put (Integer.valueOf (4), FilterType.LOW_PASS);
     }
 
-    private static final LfoWaveform []           LFO_WAVEFORMS  =
+    private static final LfoWaveform [] LFO_WAVEFORMS  =
     {
         LfoWaveform.TRIANGLE,
         LfoWaveform.SINE,
@@ -66,11 +66,11 @@ public class AkaiMPC1000Detector extends AbstractDetector<MetadataSettingsUI>
     };
 
     /** Ticks per beat of the LFO rate and delay. */
-    private static final double                   TICKS_PER_BEAT = 96.0;
+    private static final double         TICKS_PER_BEAT = 96.0;
     /** The tempo for converting the tempo synchronized LFO rate and delay. */
-    private static final double                   TEMPO          = 120.0;
+    private static final double         TEMPO          = 120.0;
     /** The depth of a pitch amount of 100, assumed to be 1 octave. */
-    private static final double                   PITCH_SCALE    = 1200.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
+    private static final double         PITCH_SCALE    = 1200.0 / IEnvelope.MAX_ENVELOPE_DEPTH;
 
 
     /**
