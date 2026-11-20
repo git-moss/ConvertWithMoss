@@ -26,6 +26,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -34,6 +35,7 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilEnvelope;
 import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilKeymap;
 import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilKeymapEntry;
+import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilLfo;
 
 
 /**
@@ -309,8 +311,8 @@ public class PC3Creator extends AbstractCreator<PC3CreatorUI>
     /**
      * Create a layer of the program: it plays a keymap on the full key and velocity range and
      * carries the amplitude envelope, the velocity tracking, the filter and the filter envelope or
-     * cutoff velocity modulation of its zones. The zones of a group share these settings, they are
-     * taken from the first zone.
+     * cutoff velocity modulation and the LFO modulations of the pitch, the cutoff and the volume of
+     * its zones. The zones of a group share these settings, they are taken from the first zone.
      *
      * @param preparedZones The zones of the layer
      * @param keymapID The ID of the keymap object of the layer
@@ -360,9 +362,50 @@ public class PC3Creator extends AbstractCreator<PC3CreatorUI>
                 if (velocityDepth != 0)
                     layer.setCutoffVelocityModulation (velocityDepth);
             }
+
+            final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+            if (cutoffLfoModulator.isActive ())
+                layer.setCutoffLfoModulation (createLfo (cutoffLfoModulator), toDepth (cutoffLfoModulator.getDepth (), IEnvelope.MAX_ENVELOPE_DEPTH), toDepth (cutoffLfoModulator.getDepthModWheelModulator ().getDepth (), IEnvelope.MAX_ENVELOPE_DEPTH));
         }
 
+        final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+        if (pitchLfoModulator.isActive ())
+            layer.setPitchLfoModulation (createLfo (pitchLfoModulator), toDepth (pitchLfoModulator.getDepth (), IEnvelope.MAX_ENVELOPE_DEPTH), toDepth (pitchLfoModulator.getDepthModWheelModulator ().getDepth (), IEnvelope.MAX_ENVELOPE_DEPTH));
+
+        final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
+        if (amplitudeLfoModulator.isActive ())
+            layer.setAmplitudeLfoModulation (createLfo (amplitudeLfoModulator), toDepth (amplitudeLfoModulator.getDepth (), ILfoModulator.MAX_VOLUME_DEPTH), toDepth (amplitudeLfoModulator.getDepthModWheelModulator ().getDepth (), ILfoModulator.MAX_VOLUME_DEPTH));
+
         return layer;
+    }
+
+
+    /**
+     * Create the LFO of the device from the source of a LFO modulator. The shape is always written
+     * as a sine since the shape numbering of the PC3 family is not known.
+     *
+     * @param modulator The LFO modulator
+     * @return The LFO
+     */
+    private static KurzweilLfo createLfo (final ILfoModulator modulator)
+    {
+        final KurzweilLfo lfo = new KurzweilLfo (true);
+        lfo.fromLfo (modulator.getSource ());
+        return lfo;
+    }
+
+
+    /**
+     * Convert a modulator depth into the unit of the modulated parameter.
+     *
+     * @param depth The modulator depth in the range of [-1..1]
+     * @param maxDepth The depth in the unit of the parameter (cents or dB) which is a modulator
+     *            depth of 1
+     * @return The depth in the unit of the parameter
+     */
+    private static int toDepth (final double depth, final int maxDepth)
+    {
+        return (int) Math.round (depth * maxDepth);
     }
 
 

@@ -170,7 +170,7 @@ offset size tag  segment
 18     3    0x6A pan/exclusion map (PC88 map)
 21     6    0x10 ASR1, 27 6 0x11 ASR2
 33     4    0x18 FUN1, 37 4 0x19 FUN2
-41     6    0x14 LFO1, 47 6 0x15 LFO2
+41     6    0x14 LFO1, 47 6 0x15 LFO2 (see below)
 53     4    0x1A FUN3, 57 4 0x1B FUN4
 61     15   0x20 envelope control: [1] flags: bit 0 = the 'natural' envelope of the samples
                  is active (the AMPENV values are ignored), then the attack (adjust, key
@@ -180,8 +180,8 @@ offset size tag  segment
 82     16   0x21 AMPENV, 98 16 0x22 ENV2, 114 16 0x23 ENV3 (see below)
 130    32   0x40 keymap/pitch block: [1] 0x7F, [2] transpose (semitones), [3] detune,
                  [4] 0x2B, [8..9] keymap 2 (the right side of a stereo layer), [11] flags
-                 (0x40 on RAM sample layers), [12..13] keymap, [22] pitch control source,
-                 [23] its depth, [30] DSP algorithm number
+                 (0x40 on RAM sample layers), [12..13] keymap, [22..27] the control group
+                 of the pitch (see below), [30] DSP algorithm number
 162    5x22 0x50..0x54 the five DSP function pages (see below)
 272    12   layer effect: 3.3 version, tag 0x51, flags, uint16 effect chain, ...
 284    34   int16 screen transpose, int16 timbre shift, uint16 20 (string length), 20 byte
@@ -277,6 +277,26 @@ files of the others:
 | Forte, Forte SE   | for, fse  | 4.9             | 'Editor Template' of the Forte OS 4.4 (1197 byte trailer) | 0xAA |
 | PC4, PC4 SE, K2700| pc4, p4s, k27 | 4.9         | 'Editor Template' of the OS 4.5 (1413 byte trailer) | 0xAA |
 
+#### LFOs and control groups
+
+An LFO segment holds the tag and the 5 values of a K2x00 LFO in the same order: [1] rate control
+source, [2] minimum rate, [3] maximum rate, [4] phase (0..3 = 0, 90, 180, 270 degrees), [5]
+shape. The rates use the values of the K2x00 (0..184 = 0..24 Hz); the minimum rate adds the
+tempo synchronized values 185..188 (1/16 to 1/4 note; the manuals list '1/16 nt to 1/4 nt').
+The shape numbering differs from the K2x00: an LFO which was not edited holds 0 (the manuals
+give Sine as the default), the template layer of a PC3K holds 4 and the factory sound packs of
+the Forte SE use values up to 49 (e.g. 20 for the vibrato of the POLY-Kz programs), which
+matches none of the shape lists of the manuals; the shapes are therefore read as a sine and a
+sine is written as 0. A layer which does not use its LFOs keeps the values of the template.
+
+The pitch ([22..27] of the keymap/pitch block) and the DSP records ([6..11]) hold the control
+group of the K2x00 with the same control source codes (1 = MWheel, 114 = LFO1, 116 = LFO2, 127
+= ON) and depth units: source 1, its depth, depth control, minimum depth, maximum depth, source
+2. A vibrato with the modulation wheel is written as source 2 = LFO1/LFO2 with the modulation
+wheel as the depth control, the depth with the wheel down as the minimum and with the wheel up
+as the maximum depth; the same is written to the filter record (cutoff) and the amplifier record
+(volume, dB).
+
 Each group of a multi-sample becomes a layer with its own keymap (32 layers at most). The header
 and the trailing block of a program are copies of the default program of the device generation
 with the effect chain references cleared; the layer record is a copy of a layer of a two layer
@@ -297,7 +317,9 @@ consecutive byte offsets. Written files are not yet verified on hardware.
   one header each; multi-header and stereo objects of this type are assumed to follow the PC3K
   object.
 * The layer level and the modulations of the amplifier record (other than its velocity
-  tracking), the layer effects, the LFOs, ASRs, FUNs and the pitch envelope are not converted.
+  tracking and the LFO modulation), the layer effects, ASRs, FUNs and the pitch envelope are not
+  converted. The shape numbering of the LFOs is not known (see above); depth controls other than
+  MWheel, ON and OFF are assumed at their minimum and the global LFO is not converted.
 * The DSP functions which the PC3 family added (numbers from 64 upwards, see above) are read
   without a filter.
-* The modulation of the cutoff by source 2 with its depth control is not read, only source 1.
+* Source 2 of the filter record is only read if it is one of the local LFOs.

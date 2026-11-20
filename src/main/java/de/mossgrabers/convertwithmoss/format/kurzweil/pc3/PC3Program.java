@@ -10,9 +10,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Optional;
 
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilControl;
 import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilEnvelope;
+import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilLfo;
 import de.mossgrabers.convertwithmoss.format.kurzweil.KurzweilProgram;
 
 
@@ -64,6 +68,8 @@ public class PC3Program
     private static final int       LYR_ENABLE_HIGH               = 9;
     private static final int       LYR_DELAY                     = 10;
     private static final int       LYR_CROSSFADE                 = 13;
+    private static final int       LFO1_OFFSET                   = 42;
+    private static final int       LFO2_OFFSET                   = 48;
     private static final int       ENVC_OFFSET                   = 61;
     private static final int       ENV1_OFFSET                   = 82;
     private static final int       ENV2_OFFSET                   = 98;
@@ -72,6 +78,7 @@ public class PC3Program
     private static final int       CAL_KEYMAP_2                  = 8;
     private static final int       CAL_KEYMAP                    = 12;
     private static final int       CAL_LAYER_COUNTER             = 17;
+    private static final int       CAL_PITCH_CONTROL             = 22;
     private static final int       CAL_ALGORITHM                 = 30;
     private static final int       PAGES_OFFSET                  = 162;
     private static final int       PAGE_LENGTH                   = 22;
@@ -86,6 +93,7 @@ public class PC3Program
     // The fields of a DSP record
     private static final int       PAGE_FUNCTION                 = 1;
     private static final int       PAGE_COARSE                   = 2;
+    /** The start of the control group (source 1, depth, depth control, min/max depth, source 2). */
     private static final int       PAGE_SOURCE_1                 = 6;
     private static final int       PAGE_DEPTH_1                  = 7;
     private static final int       PAGE_VELOCITY_TRACKING        = 5;
@@ -211,6 +219,11 @@ public class PC3Program
         private int              cutoff                 = 0;
         private int              secondParameter        = 0;
 
+        private KurzweilLfo []   lfos                   = new KurzweilLfo [2];
+        private KurzweilControl  pitchControl           = new KurzweilControl ();
+        private KurzweilControl  cutoffControl          = new KurzweilControl ();
+        private KurzweilControl  amplitudeControl       = new KurzweilControl ();
+
 
         /**
          * Constructor for a layer which is created for writing.
@@ -248,6 +261,13 @@ public class PC3Program
             // The amplifier: its velocity tracking in dB
             this.velocityTracking = layerRecord[PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_VELOCITY_TRACKING];
 
+            // The local LFOs and the control groups of the pitch and the amplifier which can use
+            // them as modulation sources
+            this.lfos[0] = new KurzweilLfo (layerRecord, LFO1_OFFSET, true);
+            this.lfos[1] = new KurzweilLfo (layerRecord, LFO2_OFFSET, true);
+            this.pitchControl = new KurzweilControl (layerRecord, CAL_OFFSET + CAL_PITCH_CONTROL);
+            this.amplitudeControl = new KurzweilControl (layerRecord, PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_SOURCE_1);
+
             // The filter: the first function block which holds one of the filter functions of the
             // K2x00 family. F2 and F4 are blocks of their own only when F1 and F3 hold a 1-block
             // function - a 2-block function keeps its second parameter (the resonance) in the
@@ -270,6 +290,7 @@ public class PC3Program
                 this.cutoff = layerRecord[offset + PAGE_COARSE];
                 this.cutoffModulationSource = layerRecord[offset + PAGE_SOURCE_1] & 0xFF;
                 this.cutoffModulationDepth = KurzweilProgram.decodeModulationDepth (layerRecord[offset + PAGE_DEPTH_1]);
+                this.cutoffControl = new KurzweilControl (layerRecord, offset + PAGE_SOURCE_1);
                 if (hasResonance (function) && (rec == RECORD_F1 || rec == RECORD_F3))
                 {
                     // 0.5dB steps in the range of the Res parameter (-12 to 24 dB)
@@ -432,8 +453,19 @@ public class PC3Program
                     writeEnvelope (layerRecord, ENV2_OFFSET, this.filterEnvelope);
             }
 
-            // The amplifier: the velocity tracking
+            // The amplifier: the velocity tracking and the LFO modulation (tremolo)
             layerRecord[PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_VELOCITY_TRACKING] = (byte) Math.clamp (this.velocityTracking, 0, 96);
+            if (this.amplitudeControl.hasLfoSource2 ())
+                this.amplitudeControl.write (layerRecord, PAGES_OFFSET + RECORD_AMPLIFIER * PAGE_LENGTH + PAGE_SOURCE_1);
+
+            // The local LFOs and the LFO modulation of the pitch (vibrato); the template keeps its
+            // values if they are not used
+            if (this.lfos[0] != null)
+                this.lfos[0].write (layerRecord, LFO1_OFFSET);
+            if (this.lfos[1] != null)
+                this.lfos[1].write (layerRecord, LFO2_OFFSET);
+            if (this.pitchControl.hasLfoSource2 ())
+                this.pitchControl.write (layerRecord, CAL_OFFSET + CAL_PITCH_CONTROL);
 
             return layerRecord;
         }
@@ -441,7 +473,7 @@ public class PC3Program
 
         /**
          * Write the DSP record of the filter: the function, the cutoff and the modulation of the
-         * cutoff by the filter envelope or the attack velocity.
+         * cutoff by the filter envelope or the attack velocity (source 1) and by a LFO (source 2).
          *
          * @param layerRecord The layer record
          * @param rec The index of the DSP record
@@ -450,9 +482,11 @@ public class PC3Program
         private void writeFilterPage (final byte [] layerRecord, final int rec, final int type)
         {
             writePage (layerRecord, rec, this.filterFunction, this.cutoff, type);
+            final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
+            if (this.cutoffControl.hasLfoSource2 ())
+                this.cutoffControl.write (layerRecord, offset + PAGE_SOURCE_1);
             if (this.cutoffModulationSource == CONTROL_SOURCE_OFF || this.cutoffModulationDepth == 0)
                 return;
-            final int offset = PAGES_OFFSET + rec * PAGE_LENGTH;
             layerRecord[offset + PAGE_SOURCE_1] = (byte) this.cutoffModulationSource;
             layerRecord[offset + PAGE_DEPTH_1] = (byte) KurzweilProgram.encodeModulationDepth (this.cutoffModulationDepth);
         }
@@ -711,6 +745,79 @@ public class PC3Program
         {
             this.cutoffModulationSource = CONTROL_SOURCE_VELOCITY;
             this.cutoffModulationDepth = depth;
+        }
+
+
+        /**
+         * Get the modulation of the pitch by one of the local LFOs (vibrato).
+         *
+         * @return The modulation with the depths in cents, if any
+         */
+        public Optional<KurzweilControl.LfoModulation> getPitchLfoModulation ()
+        {
+            return this.pitchControl.getLfoModulation (this.lfos, KurzweilProgram::decodePitchDepth);
+        }
+
+
+        /**
+         * Modulate the pitch by a LFO (vibrato).
+         *
+         * @param lfo The LFO
+         * @param depth The depth in cents with the modulation wheel fully down
+         * @param modWheelDepth The depth in cents which the modulation wheel adds when fully up
+         */
+        public void setPitchLfoModulation (final KurzweilLfo lfo, final int depth, final int modWheelDepth)
+        {
+            this.pitchControl.setLfoModulation (this.lfos, lfo, depth, modWheelDepth, KurzweilProgram::encodePitchDepth);
+        }
+
+
+        /**
+         * Get the modulation of the filter cutoff by one of the local LFOs.
+         *
+         * @return The modulation with the depths in cents, if any
+         */
+        public Optional<KurzweilControl.LfoModulation> getCutoffLfoModulation ()
+        {
+            return this.cutoffControl.getLfoModulation (this.lfos, KurzweilProgram::decodeModulationDepth);
+        }
+
+
+        /**
+         * Modulate the filter cutoff by a LFO. Source 2 of the filter record is used, source 1
+         * holds the filter envelope or the velocity.
+         *
+         * @param lfo The LFO
+         * @param depth The depth in cents with the modulation wheel fully down
+         * @param modWheelDepth The depth in cents which the modulation wheel adds when fully up
+         */
+        public void setCutoffLfoModulation (final KurzweilLfo lfo, final int depth, final int modWheelDepth)
+        {
+            this.cutoffControl.setLfoModulation (this.lfos, lfo, depth, modWheelDepth, KurzweilProgram::encodeModulationDepth);
+        }
+
+
+        /**
+         * Get the modulation of the volume by one of the local LFOs (tremolo).
+         *
+         * @return The modulation with the depths in dB, if any
+         */
+        public Optional<KurzweilControl.LfoModulation> getAmplitudeLfoModulation ()
+        {
+            return this.amplitudeControl.getLfoModulation (this.lfos, value -> value);
+        }
+
+
+        /**
+         * Modulate the volume by a LFO (tremolo).
+         *
+         * @param lfo The LFO
+         * @param depth The depth in dB with the modulation wheel fully down
+         * @param modWheelDepth The depth in dB which the modulation wheel adds when fully up
+         */
+        public void setAmplitudeLfoModulation (final KurzweilLfo lfo, final int depth, final int modWheelDepth)
+        {
+            this.amplitudeControl.setLfoModulation (this.lfos, lfo, depth, modWheelDepth, value -> Math.clamp (value, -ILfoModulator.MAX_VOLUME_DEPTH, ILfoModulator.MAX_VOLUME_DEPTH));
         }
 
 

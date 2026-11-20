@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -37,11 +38,14 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
@@ -197,7 +201,7 @@ public class Maschine1Format implements IMaschineFormat
 
     /** {@inheritDoc} */
     @Override
-    public void writeSound (final OutputStream out, final String safeSampleFolderName, final IMultisampleSource multisampleSource, final int version) throws IOException
+    public void writeSound (final OutputStream out, final File sampleFolder, final IMultisampleSource multisampleSource, final int version) throws IOException
     {
         // version == 1
 
@@ -208,7 +212,7 @@ public class Maschine1Format implements IMaschineFormat
 
         // There are no groups, therefore, collect all sample zones
         final List<ISampleZone> sampleZones = multisampleSource.getAllSampleZones (true);
-        this.updateZones (sampleZones, safeSampleFolderName);
+        this.updateZones (sampleZones, sampleFolder);
 
         this.updateGlobalParameters (multisampleSource, sampleZones.get (0));
 
@@ -325,6 +329,13 @@ public class Maschine1Format implements IMaschineFormat
         final float modEnvSustain = this.globalParametersVriTags.get (Integer.valueOf (29)).floatValue;
         final float modEnvRelease = MaschinePresetAccessor.mapToDecayAndRelease (this.globalParametersVriTags.get (Integer.valueOf (30)).floatValue) / 1000f;
 
+        // The modulation wheel scales the depth of the LFO, the full depth is reached with the
+        // modulation wheel fully up. The parameter is only present in files from version 1.5 on
+        // (file version 411).
+        final float lfoModWheel = size > 43 ? Math.clamp (this.globalParametersVriTags.get (Integer.valueOf (51)).floatValue, 0f, 1f) : 0f;
+        final float lfoPitchAmount = this.globalParametersVriTags.get (Integer.valueOf (39)).floatValue;
+        final float lfoCutoffAmount = this.globalParametersVriTags.get (Integer.valueOf (40)).floatValue;
+
         final FilterType filterType = FILTER_TYPES.get (Integer.valueOf (this.globalParametersVriTags.get (Integer.valueOf (20)).integerValue));
         if (filterType != null)
         {
@@ -335,6 +346,9 @@ public class Maschine1Format implements IMaschineFormat
             multisampleSource.setGlobalFilter (filter);
 
             filter.getCutoffVelocityModulator ().setDepth (this.globalParametersVriTags.get (Integer.valueOf (5)).floatValue);
+
+            if (lfoCutoffAmount != 0)
+                this.applyLfo (filter.getCutoffLfoModulator (), lfoCutoffAmount, MaschinePresetAccessor.LFO_CUTOFF_RANGE_CENTS, lfoModWheel);
 
             final float envelopeModulation = this.globalParametersVriTags.get (Integer.valueOf (32)).floatValue;
             if (envelopeModulation > 0)
@@ -405,6 +419,10 @@ public class Maschine1Format implements IMaschineFormat
                 }
             }
 
+            // Pitch LFO
+            if (lfoPitchAmount != 0)
+                this.applyLfo (zone.getPitchLfoModulator (), lfoPitchAmount, MaschinePresetAccessor.LFO_PITCH_RANGE_CENTS, lfoModWheel);
+
             // Amplitude
             zone.getAmplitudeVelocityModulator ().setDepth (velocityAmpModulation);
             final IEnvelopeModulator amplitudeEnvelopeModulator = zone.getAmplitudeEnvelopeModulator ();
@@ -426,6 +444,28 @@ public class Maschine1Format implements IMaschineFormat
                 ampEnvelope.setReleaseTime (ampEnvRelease);
             }
         }
+    }
+
+
+    /**
+     * Set the LFO parameters to the given LFO modulator.
+     *
+     * @param modulator The LFO modulator
+     * @param amount The modulation amount in the range of [-1..1]
+     * @param rangeCents The modulation in cents of an amount of 1
+     * @param modWheelAmount The amount of the depth which is controlled by the modulation wheel in
+     *            the range of [0..1]
+     */
+    private void applyLfo (final ILfoModulator modulator, final double amount, final double rangeCents, final double modWheelAmount)
+    {
+        // The waveform values start with 1
+        final LfoWaveform waveform = MaschinePresetAccessor.getLfoWaveform (this.globalParametersVriTags.get (Integer.valueOf (36)).integerValue - 1);
+        // If tempo sync (parameter 38) is enabled, the speed selects a note value. Since the table
+        // of the note values is not known, the speed is converted like an unsynchronized one, which
+        // is close (e.g. 1/8 is 4 Hz at 120 BPM and 4.85 Hz unsynchronized).
+        final double rate = MaschinePresetAccessor.mapToLfoRate (this.globalParametersVriTags.get (Integer.valueOf (35)).floatValue);
+        final double startPhase = this.globalParametersVriTags.get (Integer.valueOf (37)).floatValue;
+        MaschinePresetAccessor.applyLfo (modulator, amount, rangeCents, modWheelAmount, waveform, rate, startPhase);
     }
 
 
@@ -872,26 +912,33 @@ public class Maschine1Format implements IMaschineFormat
      * Create GZN tag trees for all zones.
      *
      * @param sampleZones The sample zones from which to create GZN tags
-     * @param safeSampleFolderName The folder which contains the samples
+     * @param sampleFolder The folder which contains the samples
      * @throws IOException Could not update the zones
      */
-    private void updateZones (final List<ISampleZone> sampleZones, final String safeSampleFolderName) throws IOException
+    private void updateZones (final List<ISampleZone> sampleZones, final File sampleFolder) throws IOException
     {
         final DataTag zoneTemplate = this.zoneParametersTopDataTags.get (0);
         this.zoneParametersTopDataTags.clear ();
+
+        // The URL needs to be in the form file:///C:/Folder/ like in the factory library
+        String folderURL = sampleFolder.getAbsoluteFile ().toPath ().toUri ().toString ();
+        if (!folderURL.endsWith ("/"))
+            folderURL += "/";
+        final URI folderURI = URI.create (folderURL);
 
         for (final ISampleZone zone: sampleZones)
         {
             final DataTag newZoneTag = deepCloneDataTag (zoneTemplate);
             this.zoneParametersTopDataTags.add (newZoneTag);
 
-            // User Library
+            // User Library: Maschine finds the samples only with the absolute URL of the folder,
+            // the sample path is relative to it
             setParameterInteger (newZoneTag, "bsca", 3);
-            setParameterText (newZoneTag, "bsid", safeSampleFolderName);
-            setParameterText (newZoneTag, "bsur", "");
+            setParameterText (newZoneTag, "bsid", sampleFolder.getName ());
+            setParameterText (newZoneTag, "bsur", folderURI.toString ());
 
-            final String samplePath = zone.getName () + ".wav";
-            setParameterText (newZoneTag, "rlur", samplePath);
+            final URI sampleURI = new File (sampleFolder, zone.getName () + ".wav").getAbsoluteFile ().toPath ().toUri ();
+            setParameterText (newZoneTag, "rlur", folderURI.relativize (sampleURI).toString ());
 
             final Optional<ISampleData> sampleData = zone.getSampleData ();
             if (sampleData.isEmpty ())
@@ -939,7 +986,8 @@ public class Maschine1Format implements IMaschineFormat
      */
     private void updateGlobalParameters (final IMultisampleSource multisampleSource, final ISampleZone firstSampleZone)
     {
-        // The template is from 1.0 and does not contain pitch-bend
+        // The pitch-bend range, which is read as 1200 * value²
+        this.globalParametersVriTags.get (Integer.valueOf (48)).floatValue = (float) Math.sqrt (Math.clamp (Math.abs (firstSampleZone.getBendUp ()), 0, 1200) / 1200.0);
 
         // Envelope type is already set to ADSR in template
         final Optional<IEnvelopeModulator> globalAmplitudeModulator = multisampleSource.getGlobalAmplitudeModulator ();
@@ -961,6 +1009,7 @@ public class Maschine1Format implements IMaschineFormat
 
         // There is only 1 modulation envelope, prefer the filter envelope if present
         IEnvelope modEnvelope = null;
+        ILfoModulator cutoffLfoModulator = null;
         final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
         if (globalFilter.isPresent ())
         {
@@ -980,6 +1029,7 @@ public class Maschine1Format implements IMaschineFormat
                     modEnvelope = cutoffEnvelopeModulator.getSource ();
                 }
                 this.globalParametersVriTags.get (Integer.valueOf (5)).floatValue = (float) filter.getCutoffVelocityModulator ().getDepth ();
+                cutoffLfoModulator = filter.getCutoffLfoModulator ();
             }
         }
 
@@ -1004,6 +1054,47 @@ public class Maschine1Format implements IMaschineFormat
             this.globalParametersVriTags.get (Integer.valueOf (29)).floatValue = (float) modEnvelope.getSustainLevel ();
             this.globalParametersVriTags.get (Integer.valueOf (30)).floatValue = MaschinePresetAccessor.decayAndReleaseMillisToInput ((float) Math.max (0, modEnvelope.getReleaseTime ()) * 1000f);
         }
+
+        this.updateLfoParameters (firstSampleZone.getPitchLfoModulator (), cutoffLfoModulator);
+    }
+
+
+    /**
+     * Fill in the LFO parameters. There is only 1 LFO which can modulate pitch and filter cutoff,
+     * the pitch LFO is preferred. The modulation wheel scales the depth of both modulations, the
+     * full depth is reached with the modulation wheel fully up. Therefore, the amount is the sum of
+     * the depth and the modulation wheel depth and the share of the modulation wheel depth is taken
+     * from the first written modulation.
+     *
+     * @param pitchLfoModulator The pitch LFO modulator
+     * @param cutoffLfoModulator The filter cutoff LFO modulator, might be null
+     */
+    private void updateLfoParameters (final ILfoModulator pitchLfoModulator, final ILfoModulator cutoffLfoModulator)
+    {
+        ILfo lfo = null;
+        double modWheelAmount = -1;
+        if (pitchLfoModulator.isActive ())
+        {
+            lfo = pitchLfoModulator.getSource ();
+            modWheelAmount = MaschinePresetAccessor.getLfoModWheelAmount (pitchLfoModulator);
+            this.globalParametersVriTags.get (Integer.valueOf (39)).floatValue = (float) MaschinePresetAccessor.getLfoAmount (pitchLfoModulator, MaschinePresetAccessor.LFO_PITCH_RANGE_CENTS);
+        }
+        if (cutoffLfoModulator != null && cutoffLfoModulator.isActive () && (lfo == null || lfo.equals (cutoffLfoModulator.getSource ())))
+        {
+            lfo = cutoffLfoModulator.getSource ();
+            if (modWheelAmount < 0)
+                modWheelAmount = MaschinePresetAccessor.getLfoModWheelAmount (cutoffLfoModulator);
+            this.globalParametersVriTags.get (Integer.valueOf (40)).floatValue = (float) MaschinePresetAccessor.getLfoAmount (cutoffLfoModulator, MaschinePresetAccessor.LFO_CUTOFF_RANGE_CENTS);
+        }
+        if (lfo == null)
+            return;
+
+        this.globalParametersVriTags.get (Integer.valueOf (51)).floatValue = (float) modWheelAmount;
+
+        if (lfo.getRate () > 0)
+            this.globalParametersVriTags.get (Integer.valueOf (35)).floatValue = MaschinePresetAccessor.lfoRateToInput (lfo.getRate ());
+        this.globalParametersVriTags.get (Integer.valueOf (36)).integerValue = MaschinePresetAccessor.getLfoWaveformIndex (lfo.getWaveform ()) + 1;
+        this.globalParametersVriTags.get (Integer.valueOf (37)).floatValue = (float) Math.max (0, lfo.getStartPhase ());
     }
 
 

@@ -46,10 +46,10 @@ public interface IMaschineFormat
      * Write a new sound file from the given multi-sample source.
      *
      * @param out Where to write the data
-     * @param safeSampleFolderName The folder where the samples are placed
+     * @param sampleFolder The folder where the samples are placed
      * @param multisampleSource The source
      * @param maschineFormat The version number of the format
      * @throws IOException Error writing the file
      */
-    void writeSound (OutputStream out, String safeSampleFolderName, IMultisampleSource multisampleSource, int maschineFormat) throws IOException;
+    void writeSound (OutputStream out, File sampleFolder, IMultisampleSource multisampleSource, int maschineFormat) throws IOException;
 }

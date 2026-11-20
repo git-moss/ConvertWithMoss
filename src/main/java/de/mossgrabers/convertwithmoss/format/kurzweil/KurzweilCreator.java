@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -26,6 +27,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -269,7 +271,8 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
     /**
      * Create the layer of the program: it plays the keymap on the full key and velocity range and
      * carries the global amplitude envelope, filter and filter envelope of the multi-sample if
-     * present.
+     * present. The LFO modulations of the pitch, the volume and the filter cutoff are taken from
+     * the first zone which uses them.
      *
      * @param multisampleSource The multi-sample source
      * @param keymapID The ID of the keymap object of the layer
@@ -313,9 +316,75 @@ public class KurzweilCreator extends AbstractCreator<KurzweilCreatorUI>
                 if (velocityDepth != 0)
                     layer.setCutoffVelocityModulation (velocityDepth);
             }
+
+            final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+            if (cutoffLfoModulator.isActive ())
+                layer.setCutoffLfoModulation (createLfo (cutoffLfoModulator), toDepth (cutoffLfoModulator.getDepth (), IEnvelope.MAX_ENVELOPE_DEPTH), toDepth (cutoffLfoModulator.getDepthModWheelModulator ().getDepth (), IEnvelope.MAX_ENVELOPE_DEPTH));
+        }
+
+        final Optional<ILfoModulator> pitchLfoModulator = findLfoModulator (multisampleSource, ISampleZone::getPitchLfoModulator);
+        if (pitchLfoModulator.isPresent ())
+        {
+            final ILfoModulator modulator = pitchLfoModulator.get ();
+            layer.setPitchLfoModulation (createLfo (modulator), toDepth (modulator.getDepth (), IEnvelope.MAX_ENVELOPE_DEPTH), toDepth (modulator.getDepthModWheelModulator ().getDepth (), IEnvelope.MAX_ENVELOPE_DEPTH));
+        }
+
+        final Optional<ILfoModulator> amplitudeLfoModulator = findLfoModulator (multisampleSource, ISampleZone::getAmplitudeLfoModulator);
+        if (amplitudeLfoModulator.isPresent ())
+        {
+            final ILfoModulator modulator = amplitudeLfoModulator.get ();
+            layer.setAmplitudeLfoModulation (createLfo (modulator), toDepth (modulator.getDepth (), ILfoModulator.MAX_VOLUME_DEPTH), toDepth (modulator.getDepthModWheelModulator ().getDepth (), ILfoModulator.MAX_VOLUME_DEPTH));
         }
 
         return layer;
+    }
+
+
+    /**
+     * Find the first zone of the multi-sample which uses a LFO modulator.
+     *
+     * @param multisampleSource The multi-sample source
+     * @param getModulator Gets the LFO modulator from a zone
+     * @return The active LFO modulator, if any
+     */
+    private static Optional<ILfoModulator> findLfoModulator (final IMultisampleSource multisampleSource, final Function<ISampleZone, ILfoModulator> getModulator)
+    {
+        for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                final ILfoModulator modulator = getModulator.apply (zone);
+                if (modulator.isActive ())
+                    return Optional.of (modulator);
+            }
+        return Optional.empty ();
+    }
+
+
+    /**
+     * Create the LFO of the device from the source of a LFO modulator.
+     *
+     * @param modulator The LFO modulator
+     * @return The LFO
+     */
+    private static KurzweilLfo createLfo (final ILfoModulator modulator)
+    {
+        final KurzweilLfo lfo = new KurzweilLfo (false);
+        lfo.fromLfo (modulator.getSource ());
+        return lfo;
+    }
+
+
+    /**
+     * Convert a modulator depth into the unit of the modulated parameter.
+     *
+     * @param depth The modulator depth in the range of [-1..1]
+     * @param maxDepth The depth in the unit of the parameter (cents or dB) which is a modulator
+     *            depth of 1
+     * @return The depth in the unit of the parameter
+     */
+    private static int toDepth (final double depth, final int maxDepth)
+    {
+        return (int) Math.round (depth * maxDepth);
     }
 
 

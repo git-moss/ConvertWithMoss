@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -366,8 +367,8 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Apply the amplitude envelope, the filter and the filter envelope of the program layer to the
-     * zone.
+     * Apply the amplitude envelope, the filter, the filter envelope and the LFO modulations of the
+     * program layer to the zone.
      *
      * @param zone The zone
      * @param layer The program layer
@@ -377,6 +378,9 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
         final KurzweilEnvelope amplitudeEnvelope = layer.getAmplitudeEnvelope ();
         if (amplitudeEnvelope != null)
             amplitudeEnvelope.toEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource ());
+
+        layer.getPitchLfoModulation ().ifPresent (modulation -> modulation.toModulator (zone.getPitchLfoModulator (), IEnvelope.MAX_ENVELOPE_DEPTH));
+        layer.getAmplitudeLfoModulation ().ifPresent (modulation -> modulation.toModulator (zone.getAmplitudeLfoModulator (), ILfoModulator.MAX_VOLUME_DEPTH));
 
         final FilterType filterType = layer.getFilterType ();
         if (filterType == null)
@@ -392,6 +396,7 @@ public class KurzweilDetector extends AbstractDetector<MetadataSettingsUI>
         final int cutoffVelocityDepth = layer.getCutoffVelocityDepth ();
         if (cutoffVelocityDepth != 0)
             filter.getCutoffVelocityModulator ().setDepth (Math.clamp (cutoffVelocityDepth / (double) MAX_VELOCITY_MODULATION_CENTS, -1, 1));
+        layer.getCutoffLfoModulation ().ifPresent (modulation -> modulation.toModulator (filter.getCutoffLfoModulator (), IEnvelope.MAX_ENVELOPE_DEPTH));
         zone.setFilter (filter);
     }
 

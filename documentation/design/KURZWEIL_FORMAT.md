@@ -161,8 +161,8 @@ which are not listed are 0 in generated programs.
   * CAL (tag 64): `[0]` 0x7F, `[1]` keymap transpose, `[3]` 0x2B, `[7..8]` a *second* keymap
     slot which must stay 0 - writing the keymap ID into both slots makes the layer claim two
     keymaps, which overflows the device at 4 or more layers and mutes the whole program -
-    `[11..12]` keymap object ID (big-endian), `[21]`/`[22]` pitch modulation source/depth
-    (control source 114 = LFO1 for vibrato), `[29]` DSP algorithm number
+    `[11..12]` keymap object ID (big-endian), `[21..26]` the pitch control group (see below,
+    depths in cents), `[29]` DSP algorithm number
   * F1 page (tag 0x50): `[0]` DSP function type of the F1 slot (the filter, see below),
     `[1]` filter cutoff as signed semi-tones: Hz = 440 * 2^((byte - 9) / 12), device range
     -48 (16 Hz) to 79 (25088 Hz), `[5]` cutoff modulation source (121 = ENV2, the filter
@@ -174,10 +174,31 @@ which are not listed are 0 in generated programs.
     instead (64 is a typical medium width)
   * F3 page (tag 0x52): `[0]` function type: 18 = separation, 60 = none
   * F4/amplifier page (tag 0x53): `[0]` 1, `[2]` 0x70, `[13]` 4, `[14]` 0x90 for stereo
-    panning, 0x00 for mono
-  * LFO (tag 0x14): `[2]` rate = 26 + 10 * Hz, `[4]` shape (0 = sine, 2 = square,
-    4 = triangle, 6 = rising saw, 8 = falling saw, 20 = 8-step), `[5]` phase = 1 + degrees/45
-    (not converted, see below)
+    panning, 0x00 for mono; `[5..10]` the control group of the volume (depths in 1 dB steps,
+    -96..96 dB)
+  * LFO1 (tag 0x14) and LFO2 (tag 0x15), the local LFOs of the layer which restart with each
+    note; they follow the ASR and FUN segments: `[1]` rate control source, `[2]` minimum rate,
+    `[3]` maximum rate (the rate control moves the rate between them), `[4]` phase (0..3 = 0,
+    90, 180, 270 degrees), `[5]` shape: 0 = none, 1 = sine, 3 = square, 5 = triangle, 7 =
+    rising saw, 9 = falling saw, the even code after each of them (2, 4, ...) is its unipolar
+    '+' variant; 20, 22, 24, 26, 28, 30, 34 and 38 = 3, 4, 5, 6, 7, 8, 10 and 12 steps, each
+    followed by its '+' variant on the odd code. A rate value is 0.01 Hz steps up to 19
+    (0.19 Hz), then 0.05 Hz steps up to 36 (1 Hz), 0.1 Hz steps up to 126 (10 Hz, i.e. 26 + 10 *
+    Hz in this range), 0.2 Hz steps up to 176 (20 Hz) and 0.5 Hz steps up to 184 (24 Hz).
+    The segment is omitted if the LFO is unused.
+
+The pitch (CAL `[21..26]`), the DSP function pages and the amplifier (`[5..10]`) have the same
+control group of 6 bytes: Src1, its signed Depth, DptCtl, MinDpt, MaxDpt and Src2. Src1 adds
+its depth; Src2 adds a depth between MinDpt and MaxDpt which the depth control source DptCtl
+selects. A control source byte is 0 = OFF, 1 = MWheel, 2 = Breath, 4 = Foot, 7 = Volume, 33 =
+MPress, 100 = attack velocity, 110/111 = ASR1/2, 112/113 = FUN1/2, 114 = LFO1, 115 = LFO1
+phase-shifted, 116 = LFO2, 117 = LFO2 phase-shifted, 120 = AMPENV, 121 = ENV2, 122 = ENV3,
+127 = ON. The pitch depths (-123..123 = -7200..7200 cents) follow the editor steps: 1 cent up
+to 20, 2 cents up to 35 (50 cents), 5 up to 45 (100), 10 up to 55 (200), 20 up to 65 (400), 50
+up to 77 (1000), 100 up to 117 (5000) and then 5300, 5500, 6000, 6500, 6700 and 7200 cents.
+A vibrato with the modulation wheel is typically Src2 = LFO1 with DptCtl = MWheel. The LFO
+segment layout, the control source codes and the depth tables are taken from the K2000 file
+format notes by Geoffrey Mayer (KurzFile, 2000) and match the factory programs.
 
 The filter is spread over the DSP algorithm (CAL `[29]`) and the function types of the F1-F3
 pages:
@@ -200,10 +221,14 @@ and sets mode 2.
 
 * The unit of the keymap entry volume adjust field is not confirmed and therefore ignored
   (the sample header volume adjust is confirmed to be 0.5 dB steps, see above).
-* The LFO segments and the vibrato routing (CAL `[21]`/`[22]`) are decoded (see above) but
-  not converted since the internal model has no LFO representation yet. The pitch envelope
-  (ENV3) is not converted since the control source code which routes it to the pitch is not
-  confirmed. The ASR and FUN segments and the natural envelope records are not decoded.
+* The local LFOs are converted when Src1 or Src2 of the pitch, the F1 page (the filter
+  cutoff) or the amplifier references LFO1 or LFO2. Other depth control sources than MWheel,
+  ON and OFF are assumed at their minimum and only the minimum rate is used unless the rate
+  control is ON or the minimum rate is 0. The step shapes are read as a rising saw and the
+  unipolar shapes with half of the depth. The global LFO (GLFO2) and the phase-shifted LFO
+  sources are not converted. The pitch envelope (ENV3) is not converted since its routing to
+  the pitch is not confirmed. The ASR and FUN segments and the natural envelope records are not
+  decoded.
 * The per-sample playback direction (Normal/Reverse/Bidirectional on the MISC page of the
   sample editor) is stored somewhere in the sample header but the bit positions are unknown.
 * Multi-floppy spanning files (.KR1/.K21 etc. part files) are not supported.

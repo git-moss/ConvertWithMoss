@@ -26,11 +26,14 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -134,6 +137,47 @@ public class MaschinePresetAccessor
         INV_FILTER_TYPE_LOOKUP.put (FilterType.BAND_PASS, Integer.valueOf (2));
         INV_FILTER_TYPE_LOOKUP.put (FilterType.HIGH_PASS, Integer.valueOf (3));
     }
+
+    /** The pitch modulation of an LFO amount of 100%, which is 1 octave up and down. */
+    public static final double          LFO_PITCH_RANGE_CENTS  = 1200.0;
+    /** The cutoff modulation of an LFO amount of 100%, assumed to be the full cutoff range. */
+    public static final double          LFO_CUTOFF_RANGE_CENTS = 1200.0 * 5.9497 / Math.log (2);
+
+    /** The LFO waveforms in the order of their values. */
+    private static final LfoWaveform [] LFO_WAVEFORMS          =
+    {
+        LfoWaveform.SINE,
+        LfoWaveform.TRIANGLE,
+        LfoWaveform.SQUARE,
+        LfoWaveform.SAWTOOTH_UP,
+        LfoWaveform.RANDOM
+    };
+
+    /**
+     * Normalized LFO speed values and the rates in Hertz they display in Maschine. The inner points
+     * were read in Maschine, the end points are extrapolated. Rates in between are interpolated
+     * logarithmically.
+     */
+    private static final double []      LFO_SPEED_VALUES       =
+    {
+        0.0,
+        0.11,
+        0.3,
+        0.5,
+        0.76,
+        0.85,
+        1.0
+    };
+    private static final double []      LFO_SPEED_RATES        =
+    {
+        0.031,
+        0.07,
+        0.29,
+        1.14,
+        3.03,
+        4.85,
+        10.6
+    };
 
     private final INotifier notifier;
 
@@ -415,6 +459,7 @@ public class MaschinePresetAccessor
 
         // There is only 1 modulation envelope, prefer the filter envelope if present
         IEnvelope modEnvelope = null;
+        ILfoModulator cutoffLfoModulator = null;
         final Optional<IFilter> globalFilter = source.getGlobalFilter ();
         if (globalFilter.isPresent ())
         {
@@ -434,6 +479,7 @@ public class MaschinePresetAccessor
                     writeFloatValueRow (globalOffset + 172, data, (float) cutoffModulationIntensity);
                 }
                 writeFloatValueRow (globalOffset + 88, data, (float) filter.getCutoffVelocityModulator ().getDepth ());
+                cutoffLfoModulator = filter.getCutoffLfoModulator ();
             }
         }
 
@@ -460,6 +506,52 @@ public class MaschinePresetAccessor
             writeFloatValueRow (globalOffset + 160, data, (float) (sustainLevel < 0 ? 1 : sustainLevel));
             writeFloatValueRow (globalOffset + 164, data, decayAndReleaseMillisToInput ((float) (releaseTime * 1000.0)));
         }
+
+        writeLfoParameters (globalOffset, data, firstSampleZone.getPitchLfoModulator (), cutoffLfoModulator);
+    }
+
+
+    /**
+     * Fill in the LFO parameters. There is only 1 LFO which can modulate pitch and filter cutoff,
+     * the pitch LFO is preferred. The modulation wheel scales the depth of both modulations.
+     *
+     * @param globalOffset The offset to the global parameters
+     * @param data The parameter rows
+     * @param pitchLfoModulator The pitch LFO modulator
+     * @param cutoffLfoModulator The filter cutoff LFO modulator, might be null
+     * @throws IOException Could not write the parameters
+     */
+    private static void writeLfoParameters (final int globalOffset, final List<byte []> data, final ILfoModulator pitchLfoModulator, final ILfoModulator cutoffLfoModulator) throws IOException
+    {
+        ILfo lfo = null;
+        double modWheelAmount = -1;
+        if (pitchLfoModulator.isActive ())
+        {
+            lfo = pitchLfoModulator.getSource ();
+            modWheelAmount = getLfoModWheelAmount (pitchLfoModulator);
+            writeFloatValueRow (globalOffset + 202, data, (float) getLfoAmount (pitchLfoModulator, LFO_PITCH_RANGE_CENTS));
+        }
+        if (cutoffLfoModulator != null && cutoffLfoModulator.isActive () && (lfo == null || lfo.equals (cutoffLfoModulator.getSource ())))
+        {
+            lfo = cutoffLfoModulator.getSource ();
+            if (modWheelAmount < 0)
+                modWheelAmount = getLfoModWheelAmount (cutoffLfoModulator);
+            writeFloatValueRow (globalOffset + 206, data, (float) getLfoAmount (cutoffLfoModulator, LFO_CUTOFF_RANGE_CENTS));
+        }
+        if (lfo == null)
+            return;
+
+        writeFloatValueRow (globalOffset + 104, data, (float) modWheelAmount);
+
+        final int lfoType = getLfoWaveformIndex (lfo.getWaveform ());
+        MaschinePresetParameterArray.writeIntegers (globalOffset + 185, data, 0, lfoType, lfoType, 0, 0, 0);
+        if (lfo.getRate () > 0)
+            writeFloatValueRow (globalOffset + 189, data, lfoRateToInput (lfo.getRate ()));
+        // The phase is in the range of [-0.5..0.5]
+        final double startPhase = Math.max (0, lfo.getStartPhase ());
+        writeFloatValueRow (globalOffset + 193, data, (float) (startPhase > 0.5 ? startPhase - 1 : startPhase));
+        // Sync: Free
+        MaschinePresetParameterArray.writeIntegers (globalOffset + 198, data, 0, 0, 0, 0, 0, 0);
     }
 
 
@@ -771,6 +863,39 @@ public class MaschinePresetAccessor
         floatValues = parameterArray.readFloat (offset + (isOldFormat ? 129 : 172), 3);
         final double cutoffModulationIntensity = floatValues[0];
 
+        // LFO, the parameters are only known for the new format
+        double lfoPitchAmount = 0;
+        double lfoCutoffAmount = 0;
+        double lfoModWheel = 0;
+        int lfoType = 0;
+        double lfoSpeed = 0.5;
+        double lfoPhase = 0;
+        if (!isOldFormat)
+        {
+            try
+            {
+                lfoType = parameterArray.readInteger (offset + 185);
+                lfoSpeed = parameterArray.readFloat (offset + 189, 3)[0];
+                // -0.5..0.5
+                lfoPhase = parameterArray.readFloat (offset + 193, 3)[0];
+                lfoPitchAmount = parameterArray.readFloat (offset + 202, 3)[0];
+                lfoCutoffAmount = parameterArray.readFloat (offset + 206, 3)[0];
+                // Modulation wheel to LFO depth
+                lfoModWheel = Math.clamp (parameterArray.readFloat (offset + 104, 3)[0], 0, 1);
+            }
+            catch (final IOException _)
+            {
+                // Ignore the LFO if the parameters are not present in this version
+                lfoPitchAmount = 0;
+                lfoCutoffAmount = 0;
+            }
+        }
+        // Tempo synchronized speeds (Retrig and Lock, parameter 198) select a note value. Since the
+        // table of the note values is not known, the speed is converted like an unsynchronized one
+        final LfoWaveform lfoWaveform = getLfoWaveform (lfoType);
+        final double lfoRate = mapToLfoRate (lfoSpeed);
+        final double lfoStartPhase = lfoPhase < 0 ? lfoPhase + 1 : lfoPhase;
+
         // Filter: 0 = Off, 1 = LP2, 2 = BP2, 3 = HP2, 4 = EQ
         final int filterType = parameterArray.readInteger (offset + (isOldFormat ? 42 : 56));
         if (filterType > 0 && filterType < 4)
@@ -795,6 +920,9 @@ public class MaschinePresetAccessor
 
                 filter.getCutoffVelocityModulator ().setDepth (velocityToCutoff);
             }
+
+            if (lfoCutoffAmount != 0)
+                applyLfo (filter.getCutoffLfoModulator (), lfoCutoffAmount, LFO_CUTOFF_RANGE_CENTS, lfoModWheel, lfoWaveform, lfoRate, lfoStartPhase);
 
             multisampleSource.setGlobalFilter (filter);
         }
@@ -840,6 +968,10 @@ public class MaschinePresetAccessor
                     pitchModulator.setDepth (pitchModulationIntensity);
                     pitchModulator.setSource (pitchEnvelope);
                 }
+
+                // Pitch LFO
+                if (lfoPitchAmount != 0)
+                    applyLfo (zone.getPitchLfoModulator (), lfoPitchAmount, LFO_PITCH_RANGE_CENTS, lfoModWheel, lfoWaveform, lfoRate, lfoStartPhase);
             }
 
         return offset + (isOldFormat ? 130 : 173);
@@ -1178,6 +1310,149 @@ public class MaschinePresetAccessor
     {
         final double y = Math.clamp (frequency, 43.7, 19600.0);
         return (float) (Math.log (y / 51.0917) / 5.9497);
+    }
+
+
+    /**
+     * Set the LFO parameters of the given LFO modulator.
+     *
+     * @param modulator The LFO modulator
+     * @param amount The modulation amount in the range of [-1..1]
+     * @param rangeCents The modulation in cents of an amount of 1
+     * @param modWheelAmount The share of the amount which is controlled by the modulation wheel in
+     *            the range of [0..1]. The full amount is reached with the modulation wheel fully up
+     * @param waveform The waveform
+     * @param rate The rate in Hertz
+     * @param startPhase The start phase in the range of [0..1]
+     */
+    public static void applyLfo (final ILfoModulator modulator, final double amount, final double rangeCents, final double modWheelAmount, final LfoWaveform waveform, final double rate, final double startPhase)
+    {
+        final double depth = amount * rangeCents / IEnvelope.MAX_ENVELOPE_DEPTH;
+        modulator.setDepth (Math.clamp (depth * (1.0 - modWheelAmount), -1.0, 1.0));
+        modulator.getDepthModWheelModulator ().setDepth (Math.clamp (depth * modWheelAmount, -1.0, 1.0));
+
+        final ILfo lfo = modulator.getSource ();
+        lfo.setWaveform (waveform);
+        lfo.setRate (rate);
+        lfo.setStartPhase (Math.clamp (startPhase, 0.0, 1.0));
+        lfo.setKeySync (true);
+    }
+
+
+    /**
+     * Get the modulation amount of the given LFO modulator with the modulation wheel fully up.
+     *
+     * @param modulator The LFO modulator
+     * @param rangeCents The modulation in cents of an amount of 1
+     * @return The amount in the range of [-1..1]
+     */
+    public static double getLfoAmount (final ILfoModulator modulator, final double rangeCents)
+    {
+        final double fullDepth = modulator.getDepth () + modulator.getDepthModWheelModulator ().getDepth ();
+        return Math.clamp (fullDepth * IEnvelope.MAX_ENVELOPE_DEPTH / rangeCents, -1.0, 1.0);
+    }
+
+
+    /**
+     * Get the share of the depth of the given LFO modulator which is controlled by the modulation
+     * wheel.
+     *
+     * @param modulator The LFO modulator
+     * @return The share in the range of [0..1]
+     */
+    public static double getLfoModWheelAmount (final ILfoModulator modulator)
+    {
+        final double modWheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
+        final double fullDepth = modulator.getDepth () + modWheelDepth;
+        if (fullDepth == 0)
+            return 0;
+        return Math.clamp (modWheelDepth / fullDepth, 0.0, 1.0);
+    }
+
+
+    /**
+     * Get the LFO waveform for the given index.
+     *
+     * @param index The index of the waveform: 0 = Sine, 1 = Triangle, 2 = Rectangle, 3 = Saw, 4 =
+     *            Random
+     * @return The waveform
+     */
+    public static LfoWaveform getLfoWaveform (final int index)
+    {
+        return LFO_WAVEFORMS[Math.clamp (index, 0, LFO_WAVEFORMS.length - 1)];
+    }
+
+
+    /**
+     * Get the index of the given LFO waveform.
+     *
+     * @param waveform The waveform
+     * @return The index of the waveform: 0 = Sine, 1 = Triangle, 2 = Rectangle, 3 = Saw, 4 = Random
+     */
+    public static int getLfoWaveformIndex (final LfoWaveform waveform)
+    {
+        return switch (waveform)
+        {
+            case TRIANGLE -> 1;
+            case SQUARE -> 2;
+            case SAWTOOTH_UP, SAWTOOTH_DOWN -> 3;
+            case RANDOM -> 4;
+            default -> 0;
+        };
+    }
+
+
+    /**
+     * Maps the normalized LFO speed to a rate.
+     *
+     * @param speed The normalized speed in the range of [0..1]
+     * @return The rate in Hertz
+     */
+    public static double mapToLfoRate (final double speed)
+    {
+        return interpolateLogarithmic (Math.clamp (speed, 0.0, 1.0), LFO_SPEED_VALUES, LFO_SPEED_RATES, false);
+    }
+
+
+    /**
+     * Maps a rate to the normalized LFO speed.
+     *
+     * @param rate The rate in Hertz
+     * @return The normalized speed in the range of [0..1]
+     */
+    public static float lfoRateToInput (final double rate)
+    {
+        final double clampedRate = Math.clamp (rate, LFO_SPEED_RATES[0], LFO_SPEED_RATES[LFO_SPEED_RATES.length - 1]);
+        return (float) interpolateLogarithmic (clampedRate, LFO_SPEED_RATES, LFO_SPEED_VALUES, true);
+    }
+
+
+    /**
+     * Interpolate between the points of two tables, the values of the rate table are interpolated
+     * logarithmically.
+     *
+     * @param value The value to look up in the input table, must be in the range of the table
+     * @param inputs The input table with ascending values
+     * @param outputs The output table
+     * @param isInputRate True if the input table contains the rates, false if the output table
+     *            contains them
+     * @return The interpolated output value
+     */
+    private static double interpolateLogarithmic (final double value, final double [] inputs, final double [] outputs, final boolean isInputRate)
+    {
+        for (int i = 1; i < inputs.length; i++)
+        {
+            if (value > inputs[i])
+                continue;
+            if (isInputRate)
+            {
+                final double position = Math.log (value / inputs[i - 1]) / Math.log (inputs[i] / inputs[i - 1]);
+                return outputs[i - 1] + position * (outputs[i] - outputs[i - 1]);
+            }
+            final double position = (value - inputs[i - 1]) / (inputs[i] - inputs[i - 1]);
+            return outputs[i - 1] * Math.pow (outputs[i] / outputs[i - 1], position);
+        }
+        return outputs[outputs.length - 1];
     }
 
 

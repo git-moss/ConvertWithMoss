@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
@@ -22,7 +23,9 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  * following segments up to the next layer describe it: the envelope control and envelope segments
  * hold the amplitude and filter envelopes, the calibration segment references the keymap and
  * selects the DSP algorithm and the four function page segments configure the DSP functions F1-F3
- * (the filter) and the final amplifier. When creating a program the same segment values are written
+ * (the filter) and the final amplifier. The two LFO segments hold the local LFOs which the control
+ * groups of the pitch, the F1 page and the amplifier can use as modulation sources (vibrato, filter
+ * modulation and tremolo). When creating a program the same segment values are written
  * which KurzFiler uses for its generated instrument programs (verified to load on the devices).
  *
  * @author Jürgen Moßgraber
@@ -32,6 +35,8 @@ public class KurzweilProgram
     private static final int TAG_PROGRAM             = 8;
     private static final int TAG_LAYER               = 9;
     private static final int TAG_FX                  = 15;
+    private static final int TAG_LFO1                = 20;
+    private static final int TAG_LFO2                = 21;
     private static final int TAG_ENVELOPE_CONTROL    = 32;
     private static final int TAG_ENVELOPE            = 33;
     private static final int TAG_ENVELOPE_2          = 34;
@@ -50,6 +55,15 @@ public class KurzweilProgram
     private static final int CONTROL_SOURCE_VELOCITY = 100;
     /** The control source code for 'always on'. */
     private static final int CONTROL_SOURCE_ON       = 0x7F;
+
+    /** The offset of the pitch control group in the calibration segment. */
+    private static final int PITCH_CONTROL_OFFSET    = 21;
+    /** The offset of the control group in the DSP function pages. */
+    private static final int FUNCTION_CONTROL_OFFSET = 5;
+    /** The maximum depth of a volume modulation in dB. */
+    private static final int MAX_VOLUME_DEPTH        = 96;
+    /** The highest value of a pitch depth byte (7200 cents). */
+    private static final int MAX_PITCH_DEPTH_VALUE   = 123;
 
     // The DSP function types of the F1 page which implement a filter
     private static final int FILTER_NONE             = 62;
@@ -95,6 +109,11 @@ public class KurzweilProgram
         private int              f2Type                 = F3_NONE;
         private int              f2Value                = 0;
         private int              f3Type                 = F3_NONE;
+
+        private KurzweilLfo []   lfos                   = new KurzweilLfo [2];
+        private KurzweilControl  pitchControl           = new KurzweilControl ();
+        private KurzweilControl  cutoffControl          = new KurzweilControl ();
+        private KurzweilControl  amplitudeControl       = new KurzweilControl ();
 
 
         /**
@@ -256,6 +275,79 @@ public class KurzweilProgram
         {
             this.cutoffModulationSource = CONTROL_SOURCE_VELOCITY;
             this.cutoffModulationDepth = depth;
+        }
+
+
+        /**
+         * Get the modulation of the pitch by one of the local LFOs (vibrato).
+         *
+         * @return The modulation with the depths in cents, if any
+         */
+        public Optional<KurzweilControl.LfoModulation> getPitchLfoModulation ()
+        {
+            return this.pitchControl.getLfoModulation (this.lfos, KurzweilProgram::decodePitchDepth);
+        }
+
+
+        /**
+         * Modulate the pitch by a LFO (vibrato).
+         *
+         * @param lfo The LFO
+         * @param depth The depth in cents with the modulation wheel fully down
+         * @param modWheelDepth The depth in cents which the modulation wheel adds when fully up
+         */
+        public void setPitchLfoModulation (final KurzweilLfo lfo, final int depth, final int modWheelDepth)
+        {
+            this.pitchControl.setLfoModulation (this.lfos, lfo, depth, modWheelDepth, KurzweilProgram::encodePitchDepth);
+        }
+
+
+        /**
+         * Get the modulation of the filter cutoff by one of the local LFOs.
+         *
+         * @return The modulation with the depths in cents, if any
+         */
+        public Optional<KurzweilControl.LfoModulation> getCutoffLfoModulation ()
+        {
+            return this.cutoffControl.getLfoModulation (this.lfos, KurzweilProgram::decodeModulationDepth);
+        }
+
+
+        /**
+         * Modulate the filter cutoff by a LFO. Source 2 of the F1 page is used, source 1 holds the
+         * filter envelope or the velocity.
+         *
+         * @param lfo The LFO
+         * @param depth The depth in cents with the modulation wheel fully down
+         * @param modWheelDepth The depth in cents which the modulation wheel adds when fully up
+         */
+        public void setCutoffLfoModulation (final KurzweilLfo lfo, final int depth, final int modWheelDepth)
+        {
+            this.cutoffControl.setLfoModulation (this.lfos, lfo, depth, modWheelDepth, KurzweilProgram::encodeModulationDepth);
+        }
+
+
+        /**
+         * Get the modulation of the volume by one of the local LFOs (tremolo).
+         *
+         * @return The modulation with the depths in dB, if any
+         */
+        public Optional<KurzweilControl.LfoModulation> getAmplitudeLfoModulation ()
+        {
+            return this.amplitudeControl.getLfoModulation (this.lfos, value -> value);
+        }
+
+
+        /**
+         * Modulate the volume by a LFO (tremolo).
+         *
+         * @param lfo The LFO
+         * @param depth The depth in dB with the modulation wheel fully down
+         * @param modWheelDepth The depth in dB which the modulation wheel adds when fully up
+         */
+        public void setAmplitudeLfoModulation (final KurzweilLfo lfo, final int depth, final int modWheelDepth)
+        {
+            this.amplitudeControl.setLfoModulation (this.lfos, lfo, depth, modWheelDepth, value -> Math.clamp (value, -MAX_VOLUME_DEPTH, MAX_VOLUME_DEPTH));
         }
 
 
@@ -624,12 +716,17 @@ public class KurzweilProgram
                     currentLayer.filterEnvelope = new KurzweilEnvelope (data);
                     break;
 
+                case TAG_LFO1, TAG_LFO2:
+                    currentLayer.lfos[segment.tag () - TAG_LFO1] = new KurzweilLfo (data);
+                    break;
+
                 case TAG_CALIBRATION:
                     currentLayer.transpose = data[1];
                     currentLayer.keymapID = (data[7] & 0xFF) << 8 | data[8] & 0xFF;
                     if (currentLayer.keymapID == 0)
                         currentLayer.keymapID = (data[11] & 0xFF) << 8 | data[12] & 0xFF;
                     currentLayer.algorithm = data[29] & 0xFF;
+                    currentLayer.pitchControl = new KurzweilControl (data, PITCH_CONTROL_OFFSET);
                     break;
 
                 case TAG_F1_PAGE:
@@ -637,11 +734,16 @@ public class KurzweilProgram
                     currentLayer.cutoff = data[1];
                     currentLayer.cutoffModulationSource = data[5] & 0xFF;
                     currentLayer.cutoffModulationDepth = decodeModulationDepth (data[6]);
+                    currentLayer.cutoffControl = new KurzweilControl (data, FUNCTION_CONTROL_OFFSET);
                     break;
 
                 case TAG_F2_PAGE:
                     currentLayer.f2Type = data[0] & 0xFF;
                     currentLayer.f2Value = data[1] & 0xFF;
+                    break;
+
+                case TAG_AMPLIFIER_PAGE:
+                    currentLayer.amplitudeControl = new KurzweilControl (data, FUNCTION_CONTROL_OFFSET);
                     break;
 
                 default:
@@ -670,8 +772,8 @@ public class KurzweilProgram
 
     /**
      * Add a layer which plays a keymap. Writes the same segment sequence as KurzFiler: layer,
-     * envelope control, amplitude envelope, optionally the filter envelope, calibration and the
-     * four DSP function pages.
+     * optionally the local LFOs, envelope control, amplitude envelope, optionally the filter
+     * envelope, calibration and the four DSP function pages.
      *
      * @param layer The parameters of the layer
      * @param isStereo True if the keymap references stereo samples
@@ -690,6 +792,16 @@ public class KurzweilProgram
         // Mono / stereo flags
         data[8] = (byte) (isStereo ? 0x24 : 0x04);
         this.segments.add (new Segment (TAG_LAYER, data));
+
+        // The local LFOs which modulate the pitch, the filter cutoff or the volume. They follow the
+        // ASR and FUN segments (which are not used) on the device
+        for (int i = 0; i < layer.lfos.length; i++)
+            if (layer.lfos[i] != null)
+            {
+                data = new byte [7];
+                layer.lfos[i].write (data);
+                this.segments.add (new Segment (TAG_LFO1 + i, data));
+            }
 
         // Envelope control: all zero = user envelopes instead of the natural ones
         this.segments.add (new Segment (TAG_ENVELOPE_CONTROL, new byte [15]));
@@ -723,14 +835,17 @@ public class KurzweilProgram
         data[3] = 0x2B;
         data[11] = (byte) (layer.keymapID >>> 8 & 0xFF);
         data[12] = (byte) (layer.keymapID & 0xFF);
+        // The pitch control group with the LFO modulation (vibrato)
+        layer.pitchControl.write (data, PITCH_CONTROL_OFFSET);
         data[29] = (byte) layer.algorithm;
         this.segments.add (new Segment (TAG_CALIBRATION, data));
 
-        // The F1 page with the filter type, the cutoff and the cutoff modulation routing (the
-        // filter envelope or the attack velocity)
+        // The F1 page with the filter type, the cutoff and the cutoff modulation routing: source 1
+        // holds the filter envelope or the attack velocity, source 2 the LFO
         data = new byte [15];
         data[0] = (byte) layer.filterType;
         data[1] = (byte) layer.cutoff;
+        layer.cutoffControl.write (data, FUNCTION_CONTROL_OFFSET);
         if (layer.cutoffModulationSource != 0 && layer.cutoffModulationDepth != 0)
         {
             data[5] = (byte) layer.cutoffModulationSource;
@@ -749,10 +864,11 @@ public class KurzweilProgram
         data[0] = (byte) layer.f3Type;
         this.segments.add (new Segment (TAG_F3_PAGE, data));
 
-        // The amplifier page
+        // The amplifier page with the LFO modulation (tremolo)
         data = new byte [15];
         data[0] = 1;
         data[2] = 0x70;
+        layer.amplitudeControl.write (data, FUNCTION_CONTROL_OFFSET);
         data[13] = 4;
         data[14] = (byte) (isStereo ? 0x90 : 0x00);
         this.segments.add (new Segment (TAG_AMPLIFIER_PAGE, data));
@@ -838,6 +954,67 @@ public class KurzweilProgram
     {
         final int absCents = Math.abs (cents);
         final int depthByte = Math.clamp (absCents <= 1200 ? (int) Math.round (absCents / 30.0) : (int) Math.round (29 + absCents * 0.0090625), 0, 127);
+        return cents < 0 ? -depthByte : depthByte;
+    }
+
+
+    /**
+     * Decode a depth byte of the pitch control group into cents. The values follow the editor
+     * steps of the device: 1 cent steps up to 20 cents, 2 up to 50, 5 up to 100, 10 up to 200, 20
+     * up to 400, 50 up to 1000, 100 up to 5000 and irregular steps up to 7200 cents (123).
+     *
+     * @param depthByte The signed depth byte
+     * @return The depth in cents
+     */
+    public static int decodePitchDepth (final int depthByte)
+    {
+        final int absDepth = Math.min (Math.abs (depthByte), MAX_PITCH_DEPTH_VALUE);
+        final int cents;
+        if (absDepth <= 20)
+            cents = absDepth;
+        else if (absDepth <= 35)
+            cents = 20 + (absDepth - 20) * 2;
+        else if (absDepth <= 45)
+            cents = 50 + (absDepth - 35) * 5;
+        else if (absDepth <= 55)
+            cents = 100 + (absDepth - 45) * 10;
+        else if (absDepth <= 65)
+            cents = 200 + (absDepth - 55) * 20;
+        else if (absDepth <= 77)
+            cents = 400 + (absDepth - 65) * 50;
+        else if (absDepth <= 117)
+            cents = 1000 + (absDepth - 77) * 100;
+        else
+        {
+            // The steps above 5000 cents are irregular
+            final int [] highCents =
+            {
+                5300,
+                5500,
+                6000,
+                6500,
+                6700,
+                7200
+            };
+            cents = highCents[absDepth - 118];
+        }
+        return depthByte < 0 ? -cents : cents;
+    }
+
+
+    /**
+     * Encode a depth of the pitch control group in cents into the nearest signed depth byte.
+     *
+     * @param cents The depth in cents
+     * @return The signed depth byte in the range of -123..123
+     */
+    public static int encodePitchDepth (final int cents)
+    {
+        final int absCents = Math.abs (cents);
+        int depthByte = 0;
+        for (int value = 1; value <= MAX_PITCH_DEPTH_VALUE; value++)
+            if (Math.abs (decodePitchDepth (value) - absCents) < Math.abs (decodePitchDepth (depthByte) - absCents))
+                depthByte = value;
         return cents < 0 ? -depthByte : depthByte;
     }
 }
