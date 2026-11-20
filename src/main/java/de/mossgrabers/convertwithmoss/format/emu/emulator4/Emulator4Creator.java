@@ -34,8 +34,8 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
-import de.mossgrabers.convertwithmoss.format.emu.EmuLfoModulation;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
+import de.mossgrabers.convertwithmoss.format.emu.EmuLfoModulation;
 
 
 /**

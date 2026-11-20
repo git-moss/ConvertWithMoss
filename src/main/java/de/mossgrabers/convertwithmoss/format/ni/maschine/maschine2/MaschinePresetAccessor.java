@@ -179,7 +179,7 @@ public class MaschinePresetAccessor
         10.6
     };
 
-    private final INotifier notifier;
+    private final INotifier             notifier;
 
 
     /**
@@ -871,7 +871,6 @@ public class MaschinePresetAccessor
         double lfoSpeed = 0.5;
         double lfoPhase = 0;
         if (!isOldFormat)
-        {
             try
             {
                 lfoType = parameterArray.readInteger (offset + 185);
@@ -889,7 +888,6 @@ public class MaschinePresetAccessor
                 lfoPitchAmount = 0;
                 lfoCutoffAmount = 0;
             }
-        }
         // Tempo synchronized speeds (Retrig and Lock, parameter 198) select a note value. Since the
         // table of the note values is not known, the speed is converted like an unsynchronized one
         final LfoWaveform lfoWaveform = getLfoWaveform (lfoType);

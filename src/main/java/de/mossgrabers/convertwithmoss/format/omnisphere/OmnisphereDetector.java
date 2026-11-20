@@ -28,6 +28,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -54,6 +56,9 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
     private static final String    FILE_ENDING_ZMAP                     = ".zmap";
     private static final String    IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND = "IDS_NOTIFY_ERR_SAMPLE_FILE_NOT_FOUND";
     private static final String    IDS_NOTIFY_ERR_BAD_METADATA_FILE     = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+    private static final String    SOURCE_TAG                           = "source";
+    private static final String    TARGET_TAG                           = "target";
+    private static final String    AMOUNT_TAG                           = "hi";
 
     private static final String [] PRESET_ENDINGS                       =
     {
@@ -204,8 +209,19 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
 
         final Element modMatrixElement = XMLUtils.getChildElementByName (synthEngElement, "MOD_MATRIX");
         float pitchEnvelopeAmount = 0;
-        if (modMatrixElement != null && "ModEnv1".equals (modMatrixElement.getAttribute ("source0")) && "A tune".equals (modMatrixElement.getAttribute ("target0")) && parseFloatAttribute (modMatrixElement, "hi0", 0) > 0)
-            pitchEnvelopeAmount = (float) (parseFloatAttribute (modMatrixElement, "defV0", 0.5f) * 2.0 - 1.0);
+        if (modMatrixElement != null)
+            for (int row = 0; modMatrixElement.hasAttribute (SOURCE_TAG + row); row++)
+                if ("ModEnv1".equals (modMatrixElement.getAttribute (SOURCE_TAG + row)) && "A tune".equals (modMatrixElement.getAttribute (TARGET_TAG + row)) && !isMuted (modMatrixElement, row))
+                {
+                    // The amount is relative to the range of the coarse tuning (-4800..4800 cents),
+                    // 'defV' only mirrors the coarse tuning itself
+                    final double amount = parseFloatAttribute (modMatrixElement, AMOUNT_TAG + row, 0);
+                    pitchEnvelopeAmount = (float) Math.clamp (amount * OmnisphereLfoUtils.PITCH_RANGE_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH, -1.0, 1.0);
+                    break;
+                }
+
+        final Element lfoSetElement = XMLUtils.getChildElementByName (synthEngElement, "LFO_SET");
+        final List<Element> lfoElements = lfoSetElement == null ? Collections.emptyList () : XMLUtils.getChildElementsByName (lfoSetElement, "LFO");
 
         final List<IGroup> allGroups = new ArrayList<> ();
         for (int i = 0; i < 4; i++)
@@ -227,6 +243,8 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                 {
                     final List<IGroup> groups = new ArrayList<> (msSource.get ().getNonEmptyGroups (false));
                     applyParameters (groups, voiceElement, pitchBendUp, pitchBendDown, hasTracking.get (i).booleanValue (), pitchEnvelopeAmount, modEnvElement, modEnvParamsElement);
+                    if (modMatrixElement != null)
+                        applyLfoModulations (groups, voiceElement, modMatrixElement, lfoElements, (char) ('A' + i));
                     allGroups.addAll (groups);
                 }
             }
@@ -329,6 +347,140 @@ public class OmnisphereDetector extends AbstractDetector<OmnisphereDetectorUI>
                 if (filter != null)
                     zone.setFilter (filter);
             }
+    }
+
+
+    /**
+     * Apply the LFO modulations of the modulation matrix which target the pitch, filter cutoff or
+     * amplitude of the given layer.
+     *
+     * @param groups The groups of the layer
+     * @param voiceElement The voice element of the layer
+     * @param modMatrixElement The modulation matrix element
+     * @param lfoElements The LFO elements
+     * @param layer The letter of the layer, A to D
+     */
+    private static void applyLfoModulations (final List<IGroup> groups, final Element voiceElement, final Element modMatrixElement, final List<Element> lfoElements, final char layer)
+    {
+        final Element oscElement = XMLUtils.getChildElementByName (voiceElement, "OSC");
+        final Element filterElement = XMLUtils.getChildElementByName (voiceElement, "FILTER");
+
+        for (int row = 0; modMatrixElement.hasAttribute (SOURCE_TAG + row); row++)
+        {
+            final String source = modMatrixElement.getAttribute (SOURCE_TAG + row);
+            final double amount = parseFloatAttribute (modMatrixElement, AMOUNT_TAG + row, 0);
+            if (!source.startsWith ("LFO") || amount <= 0 || isMuted (modMatrixElement, row))
+                continue;
+            final int lfoNumber = parseLfoNumber (source);
+            if (lfoNumber < 1 || lfoNumber > lfoElements.size ())
+                continue;
+
+            // The depth of the LFO is set by its 'swing' parameter, which is usually modulated by
+            // the modulation wheel
+            final Element lfoElement = lfoElements.get (lfoNumber - 1);
+            final double lfoDepth = Math.clamp (parseFloatAttribute (lfoElement, "swing", 1.0f), 0.0, 1.0);
+            final double wheelAmount = Math.min (getWheelAmount (modMatrixElement, source + " swing"), 1.0 - lfoDepth);
+
+            final String target = modMatrixElement.getAttribute (TARGET_TAG + row);
+            if (target.equals (layer + " tune"))
+            {
+                final double depth = amount * OmnisphereLfoUtils.PITCH_RANGE_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH;
+                for (final IGroup group: groups)
+                    for (final ISampleZone zone: group.getSampleZones ())
+                        applyLfo (zone.getPitchLfoModulator (), lfoElement, depth, lfoDepth, wheelAmount);
+            }
+            else if (target.equals (layer + " freq"))
+            {
+                // All zones share the same filter
+                final Optional<IFilter> filter = groups.isEmpty () || groups.get (0).getSampleZones ().isEmpty () ? Optional.empty () : groups.get (0).getSampleZones ().get (0).getFilter ();
+                if (filter.isPresent ())
+                {
+                    final double cents = OmnisphereLfoUtils.cutoffAmountToCents (parseFloatAttribute (filterElement, "freq", 1.0f), amount);
+                    applyLfo (filter.get ().getCutoffLfoModulator (), lfoElement, cents / IEnvelope.MAX_ENVELOPE_DEPTH, lfoDepth, wheelAmount);
+                }
+            }
+            else if (target.equals (layer + " atrm"))
+            {
+                final double db = OmnisphereLfoUtils.amplitudeAmountToDb (parseFloatAttribute (oscElement, "atrm", 1.0f), amount);
+                final double depth = Math.min (1.0, db / ILfoModulator.MAX_VOLUME_DEPTH);
+                for (final IGroup group: groups)
+                    for (final ISampleZone zone: group.getSampleZones ())
+                        applyLfo (zone.getAmplitudeLfoModulator (), lfoElement, depth, lfoDepth, wheelAmount);
+            }
+        }
+    }
+
+
+    /**
+     * Set the depths of the LFO modulator and the settings of its LFO.
+     *
+     * @param modulator The LFO modulator
+     * @param lfoElement The LFO element
+     * @param depth The modulation depth with the full LFO depth
+     * @param lfoDepth The depth of the LFO in the range of [0..1]
+     * @param wheelAmount The amount of the LFO depth which is added by the modulation wheel in the
+     *            range of [0..1]
+     */
+    private static void applyLfo (final ILfoModulator modulator, final Element lfoElement, final double depth, final double lfoDepth, final double wheelAmount)
+    {
+        modulator.setDepth (Math.clamp (depth * lfoDepth, -1.0, 1.0));
+        modulator.getDepthModWheelModulator ().setDepth (Math.clamp (depth * wheelAmount, -1.0, 1.0));
+
+        final ILfo lfo = modulator.getSource ();
+        lfo.setWaveform (OmnisphereLfoUtils.getWaveform (parseFloatAttribute (lfoElement, "type", 0)));
+        // A tempo synchronized rate (attribute 'sync') is read like an unsynchronized one
+        lfo.setRate (OmnisphereLfoUtils.normalizedToHertz (parseFloatAttribute (lfoElement, "rate", 0.18f)));
+        lfo.setStartPhase (Math.clamp (parseFloatAttribute (lfoElement, "phase", 0), 0.0, 1.0));
+        lfo.setKeySync (parseFloatAttribute (lfoElement, "resettr", 0) > 0);
+    }
+
+
+    /**
+     * Get the sum of the amounts of all modulation wheel routings to the given target.
+     *
+     * @param modMatrixElement The modulation matrix element
+     * @param target The target, e.g. 'LFO1 swing'
+     * @return The summed amount
+     */
+    private static double getWheelAmount (final Element modMatrixElement, final String target)
+    {
+        double amount = 0;
+        for (int row = 0; modMatrixElement.hasAttribute (SOURCE_TAG + row); row++)
+            if ("Wheel".equals (modMatrixElement.getAttribute (SOURCE_TAG + row)) && target.equals (modMatrixElement.getAttribute (TARGET_TAG + row)) && !isMuted (modMatrixElement, row))
+                amount += parseFloatAttribute (modMatrixElement, AMOUNT_TAG + row, 0);
+        return Math.max (0, amount);
+    }
+
+
+    /**
+     * Check if a row of the modulation matrix is muted.
+     *
+     * @param modMatrixElement The modulation matrix element
+     * @param row The index of the row
+     * @return True if muted
+     */
+    private static boolean isMuted (final Element modMatrixElement, final int row)
+    {
+        return parseFloatAttribute (modMatrixElement, "mute" + row, 0) > 0;
+    }
+
+
+    /**
+     * Parse the number of an LFO source, e.g. 'LFO3'.
+     *
+     * @param source The source
+     * @return The number of the LFO or -1 if it is not a valid LFO source
+     */
+    private static int parseLfoNumber (final String source)
+    {
+        try
+        {
+            return Integer.parseInt (source.substring (3).trim ());
+        }
+        catch (final NumberFormatException _)
+        {
+            return -1;
+        }
     }
 
 

@@ -85,8 +85,8 @@ public class EXSLfo
 
     /**
      * The rate values 0-33 are synchronized to the tempo. These are the lengths of the note values
-     * in whole notes: 1/128t, 1/64, 1/64t, 1/32, 1/32t, 3/64, 1/16, 1/12, 3/32, 1/8, 1/6, 3/16, 1/4,
-     * 1/3, 3/8, 1/2, 2/3, 3/4, 1, 4/3, 3/2, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 28, 32.
+     * in whole notes: 1/128t, 1/64, 1/64t, 1/32, 1/32t, 3/64, 1/16, 1/12, 3/32, 1/8, 1/6, 3/16,
+     * 1/4, 1/3, 3/8, 1/2, 2/3, 3/4, 1, 4/3, 3/2, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 28, 32.
      */
     private static final double []      SYNC_LENGTHS     =
     {

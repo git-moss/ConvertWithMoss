@@ -40,7 +40,7 @@ import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 public class AkaiS1000ProgramConverter
 {
     /** The number of voices of an Akai S1000/S3000. */
-    private static final int    MAX_POLYPHONY    = 16;
+    private static final int    MAX_POLYPHONY               = 16;
 
     /**
      * The sampler scales every parameter which it displays in the range of [0..99] - and every
@@ -48,7 +48,7 @@ public class AkaiS1000ProgramConverter
      * hardware with this table, which its operating system applies with a single table look-up.
      * This is what turns a filter or loudness setting into the value the hardware receives.
      */
-    private static final int [] PARAMETER_SCALE  =
+    private static final int [] PARAMETER_SCALE             =
     {
         0,
         3,
@@ -161,7 +161,7 @@ public class AkaiS1000ProgramConverter
      * upper third, while the middle of the range - where sample libraries place their evolving
      * layers - sits between 300 Hz and 1 kHz.
      */
-    private static final int [] FILTER_CUTOFF    =
+    private static final int [] FILTER_CUTOFF               =
     {
         13,
         14,
@@ -269,16 +269,16 @@ public class AkaiS1000ProgramConverter
      * One step of the scaled parameter range on the loudness scale of the sound hardware, which
      * spans 60.5 dB over its 255 steps.
      */
-    private static final double DECIBEL_PER_STEP = 0.2372;
+    private static final double DECIBEL_PER_STEP            = 0.2372;
 
     /** The scaled value which the loudness of the sound hardware plays at its full level. */
-    private static final int    FULL_LEVEL       = 255;
+    private static final int    FULL_LEVEL                  = 255;
 
     /**
      * The semi-tones of a pitch modulation amount (0, 4, 9, 13, ... 50) at the full output of the
      * modulation source, from the table of the S3000XL manual (+50 is 1 octave).
      */
-    private static final int [] PITCH_AMOUNTS    =
+    private static final int [] PITCH_AMOUNTS               =
     {
         0,
         4,
@@ -582,9 +582,9 @@ public class AkaiS1000ProgramConverter
 
 
     /**
-     * Create LFO 1 of a program. Its output is the fixed depth plus the depth which the
-     * modulation wheel adds, the latter can be increased with the assignable LFO 1 depth
-     * modulation of the S3000. The S1000 has only a triangle waveform.
+     * Create LFO 1 of a program. Its output is the fixed depth plus the depth which the modulation
+     * wheel adds, the latter can be increased with the assignable LFO 1 depth modulation of the
+     * S3000. The S1000 has only a triangle waveform.
      *
      * @param program The program
      * @return The LFO
@@ -672,8 +672,8 @@ public class AkaiS1000ProgramConverter
 
 
     /**
-     * Set the source and depths of an LFO modulator. The depth is the product of the output of
-     * the LFO and the amount of the modulation.
+     * Set the source and depths of an LFO modulator. The depth is the product of the output of the
+     * LFO and the amount of the modulation.
      *
      * @param modulator The modulator to set
      * @param modulation The modulation

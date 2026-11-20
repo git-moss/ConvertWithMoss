@@ -98,7 +98,7 @@ public class AkaiS1000Program
     // 1..99
     private byte                 numberOfKeygroups;
     // -25..25 cents
-    private final byte []        keyTemperament  = new byte [12];
+    private final byte []        keyTemperament      = new byte [12];
     // 0=OFF 1=ON
     @SuppressWarnings("unused")
     private boolean              fxOutput;
@@ -147,16 +147,15 @@ public class AkaiS1000Program
     @SuppressWarnings("unused")
     private byte                 stereoOutputScale;
 
-
     // S3000 only: the sources of the assignable modulations (see the MOD_SOURCE constants) of
     // the loudness 1-3, the LFO 1 depth, the filter frequency 1-3 and the pitch
-    private final byte []        loudnessModSources = new byte [3];
+    private final byte []        loudnessModSources  = new byte [3];
     private byte                 lfo1DepthModSource;
-    private final byte []        filterModSources   = new byte [3];
+    private final byte []        filterModSources    = new byte [3];
     private byte                 pitchModSource;
     // S3000 only: -50..50, the amounts of the loudness modulation 1 and 2 (the one of 3 is part of
     // the key-group) and of the LFO 1 depth modulation
-    private final byte []        loudnessModAmounts = new byte [2];
+    private final byte []        loudnessModAmounts  = new byte [2];
     private byte                 lfo1DepthModAmount;
     // S3000 only: 0=TRIANGLE 1=SAWTOOTH 2=SQUARE 3=RANDOM
     private byte                 lfo1Waveform;

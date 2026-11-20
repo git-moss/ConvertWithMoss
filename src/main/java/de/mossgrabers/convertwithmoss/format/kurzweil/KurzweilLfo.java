@@ -24,32 +24,32 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 public class KurzweilLfo
 {
     /** The rate value of 2 Hertz, the default of the device. */
-    private static final int  DEFAULT_RATE      = 46;
+    private static final int DEFAULT_RATE      = 46;
     /** The highest rate value (24 Hertz). */
-    private static final int  MAX_RATE          = 184;
+    private static final int MAX_RATE          = 184;
 
     /** The control source code for 'always on'. */
-    private static final int  CONTROL_SOURCE_ON = 0x7F;
+    private static final int CONTROL_SOURCE_ON = 0x7F;
 
     // The shapes, the following even code is the unipolar ('+') variant of each shape
-    private static final int  SHAPE_NONE        = 0;
-    private static final int  SHAPE_SINE        = 1;
-    private static final int  SHAPE_SQUARE      = 3;
-    private static final int  SHAPE_TRIANGLE    = 5;
-    private static final int  SHAPE_RISE_SAW    = 7;
-    private static final int  SHAPE_FALL_SAW    = 9;
+    private static final int SHAPE_NONE        = 0;
+    private static final int SHAPE_SINE        = 1;
+    private static final int SHAPE_SQUARE      = 3;
+    private static final int SHAPE_TRIANGLE    = 5;
+    private static final int SHAPE_RISE_SAW    = 7;
+    private static final int SHAPE_FALL_SAW    = 9;
     /**
      * The first of the step shapes: 3, 4, 5, 6, 7, 8, 10 and 12 steps on the even codes, each
      * followed by its unipolar ('+') variant on the odd code.
      */
-    private static final int  SHAPE_FIRST_STEP  = 20;
+    private static final int SHAPE_FIRST_STEP  = 20;
 
-    private final boolean     isPC3;
-    private int               rateControl       = 0;
-    private int               minRate           = DEFAULT_RATE;
-    private int               maxRate           = 0;
-    private int               phase             = 0;
-    private int               shape             = SHAPE_SINE;
+    private final boolean    isPC3;
+    private int              rateControl       = 0;
+    private int              minRate           = DEFAULT_RATE;
+    private int              maxRate           = 0;
+    private int              phase             = 0;
+    private int              shape             = SHAPE_SINE;
 
 
     /**
@@ -224,9 +224,9 @@ public class KurzweilLfo
 
     /**
      * Get the rate value which is active without any controller movement. Without a rate control
-     * source the minimum rate applies, with the control source 'on' the maximum rate. For all
-     * other control sources the minimum rate is used, unless it is 0 which would stop the LFO; in
-     * this case the control source is expected to raise the rate up to the maximum rate.
+     * source the minimum rate applies, with the control source 'on' the maximum rate. For all other
+     * control sources the minimum rate is used, unless it is 0 which would stop the LFO; in this
+     * case the control source is expected to raise the rate up to the maximum rate.
      *
      * @return The rate value
      */

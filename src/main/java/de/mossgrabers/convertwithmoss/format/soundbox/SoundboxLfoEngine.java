@@ -25,66 +25,66 @@ import de.mossgrabers.tools.XMLUtils;
  * One of the 4 LFO engines of the modulation tab of a Soundbox preset, stored in an E element of
  * the Engines section. The 'state' attribute holds the oscillator settings, the 'sequence'
  * attribute the 32 steps of the sequencer shape and each P child element assigns the LFO to one
- * parameter of the preset. A modulated parameter does not keep its own value: it moves between
- * its minimum and maximum around a center set by the position of the assignment, therefore the
- * position replaces the static value of the parameter. See SOUNDBOX_FORMAT.md.
+ * parameter of the preset. A modulated parameter does not keep its own value: it moves between its
+ * minimum and maximum around a center set by the position of the assignment, therefore the position
+ * replaces the static value of the parameter. See SOUNDBOX_FORMAT.md.
  *
  * @author Jürgen Moßgraber
  */
 public class SoundboxLfoEngine
 {
     /** The tag of the section which contains the LFO engines. */
-    public static final String  ENGINES                 = "Engines";
+    public static final String     ENGINES                 = "Engines";
     /** The number of LFO engines of a preset. */
-    public static final int     NUMBER_OF_ENGINES       = 4;
+    public static final int        NUMBER_OF_ENGINES       = 4;
 
     /** The target parameter name of the layer volume (0..1). */
-    public static final String  TARGET_VOLUME           = "VOLUME LAYER";
+    public static final String     TARGET_VOLUME           = "VOLUME LAYER";
     /** The target parameter name of the layer fine tune (-100..100 cents). */
-    public static final String  TARGET_FINE             = "FINE LAYER";
+    public static final String     TARGET_FINE             = "FINE LAYER";
     /** The target parameter name of the layer transpose (-1200..1200 cents). */
-    public static final String  TARGET_TRANSPOSE        = "TRANSPOSE LAYER";
+    public static final String     TARGET_TRANSPOSE        = "TRANSPOSE LAYER";
     /** The target parameter name of the layer octave (-2400..2400 cents). */
-    public static final String  TARGET_OCTAVE           = "OCTAVE LAYER";
+    public static final String     TARGET_OCTAVE           = "OCTAVE LAYER";
     /** The target parameter name of the cutoff of a filter effect (50..15001 Hertz). */
-    public static final String  TARGET_FILTER_FREQUENCY = "FILTER FREQUENCY";
+    public static final String     TARGET_FILTER_FREQUENCY = "FILTER FREQUENCY";
 
     /** The range of the fine tune parameter in cents (in each direction). */
-    public static final double  FINE_RANGE_CENTS        = 100;
+    public static final double     FINE_RANGE_CENTS        = 100;
     /** The range of the transpose parameter in cents (in each direction). */
-    public static final double  TRANSPOSE_RANGE_CENTS   = 1200;
+    public static final double     TRANSPOSE_RANGE_CENTS   = 1200;
     /** The range of the octave parameter in cents (in each direction). */
-    public static final double  OCTAVE_RANGE_CENTS      = 2400;
+    public static final double     OCTAVE_RANGE_CENTS      = 2400;
     /** The lowest frequency of the filter frequency parameter. */
-    public static final double  MIN_FILTER_FREQUENCY    = 50;
+    public static final double     MIN_FILTER_FREQUENCY    = 50;
     /** The highest frequency of the filter frequency parameter. */
-    public static final double  MAX_FILTER_FREQUENCY    = 15001;
+    public static final double     MAX_FILTER_FREQUENCY    = 15001;
 
-    private static final String TAG_ENGINE              = "E";
-    private static final String TAG_ASSIGNMENT          = "P";
-    private static final String ATTR_SEQUENCE           = "sequence";
+    private static final String    TAG_ENGINE              = "E";
+    private static final String    TAG_ASSIGNMENT          = "P";
+    private static final String    ATTR_SEQUENCE           = "sequence";
 
-    private static final int    STATE_SIZE              = 13;
-    private static final int    ASSIGNMENT_SIZE         = 9;
+    private static final int       STATE_SIZE              = 13;
+    private static final int       ASSIGNMENT_SIZE         = 9;
 
-    private static final int    SHAPE_SINE              = 0;
-    private static final int    SHAPE_TRIANGLE          = 1;
-    private static final int    SHAPE_SQUARE            = 2;
-    private static final int    SHAPE_SAW               = 3;
-    private static final int    SHAPE_INVERTED_SAW      = 4;
-    private static final int    SHAPE_SEQUENCER         = 5;
+    private static final int       SHAPE_SINE              = 0;
+    private static final int       SHAPE_TRIANGLE          = 1;
+    private static final int       SHAPE_SQUARE            = 2;
+    private static final int       SHAPE_SAW               = 3;
+    private static final int       SHAPE_INVERTED_SAW      = 4;
+    private static final int       SHAPE_SEQUENCER         = 5;
 
-    private static final int    MOTION_LOOP             = 0;
-    private static final int    MOTION_PING_PONG        = 1;
-    private static final int    MOTION_REVERSE          = 2;
+    private static final int       MOTION_LOOP             = 0;
+    private static final int       MOTION_PING_PONG        = 1;
+    private static final int       MOTION_REVERSE          = 2;
 
-    private static final double MIN_RATE                = 0.1;
-    private static final double MAX_RATE                = 80;
-    private static final double DEFAULT_RATE            = 1;
+    private static final double    MIN_RATE                = 0.1;
+    private static final double    MAX_RATE                = 80;
+    private static final double    DEFAULT_RATE            = 1;
     /** The tempo is not stored in the preset (the host tempo is used), assume 120 BPM. */
-    private static final double DEFAULT_TEMPO           = 120;
+    private static final double    DEFAULT_TEMPO           = 120;
     /** The lengths of one LFO cycle in sync mode, in whole notes: 1/16 .. 16. */
-    private static final double [] NOTE_LENGTHS         =
+    private static final double [] NOTE_LENGTHS            =
     {
         1.0 / 16.0,
         1.0 / 8.0,
@@ -98,21 +98,21 @@ public class SoundboxLfoEngine
     };
 
     // The default state and sequence blobs as written by the Soundbox plug-in
-    private static final String DEFAULT_STATE           = "13..DPyLybOF....D.HA.";
-    private static final String DEFAULT_SEQUENCE        = "128.MyLS9....7iYlY1OMyLy8LyLy7ilYloOMyLy9zLyL8ilYlwO.........7SyLyjOMyLy8nYlY5yLyLyOMyLS+zLyL6iYlY1OZlYF+.....PyLybOMyLS9nYlY5SyLyrO....+nYlY7yLyLyOMyLS+XlYl8C.....MyLy8zLyL4C";
+    private static final String    DEFAULT_STATE           = "13..DPyLybOF....D.HA.";
+    private static final String    DEFAULT_SEQUENCE        = "128.MyLS9....7iYlY1OMyLy8LyLy7ilYloOMyLy9zLyL8ilYlwO.........7SyLyjOMyLy8nYlY5yLyLyOMyLS+zLyL6iYlY1OZlYF+.....PyLybOMyLS9nYlY5SyLyrO....+nYlY7yLyLyOMyLS+XlYl8C.....MyLy8zLyL4C";
 
-    private int                    shape           = SHAPE_SINE;
-    private boolean                retrigger       = true;
-    private double                 rate            = MIN_RATE;
-    private int                    noteLengthIndex = 6;
-    private int                    motion          = MOTION_LOOP;
-    private boolean                bypass          = false;
-    private boolean                infinityActive  = false;
-    private int                    infinityCounter = 1;
-    private int                    numberOfSteps   = 32;
-    private boolean                sync            = true;
-    private String                 sequence        = DEFAULT_SEQUENCE;
-    private final List<Assignment> assignments     = new ArrayList<> ();
+    private int                    shape                   = SHAPE_SINE;
+    private boolean                retrigger               = true;
+    private double                 rate                    = MIN_RATE;
+    private int                    noteLengthIndex         = 6;
+    private int                    motion                  = MOTION_LOOP;
+    private boolean                bypass                  = false;
+    private boolean                infinityActive          = false;
+    private int                    infinityCounter         = 1;
+    private int                    numberOfSteps           = 32;
+    private boolean                sync                    = true;
+    private String                 sequence                = DEFAULT_SEQUENCE;
+    private final List<Assignment> assignments             = new ArrayList<> ();
 
 
     /**
@@ -279,8 +279,7 @@ public class SoundboxLfoEngine
 
 
     /**
-     * Check if the oscillator settings of this engine are identical to the ones of another
-     * engine.
+     * Check if the oscillator settings of this engine are identical to the ones of another engine.
      *
      * @param other The other engine
      * @return True if identical
@@ -445,8 +444,8 @@ public class SoundboxLfoEngine
 
 
     /**
-     * Calculates the position of a filter frequency assignment which centers the modulation at
-     * the given frequency.
+     * Calculates the position of a filter frequency assignment which centers the modulation at the
+     * given frequency.
      *
      * @param center The center frequency in Hertz
      * @return The position

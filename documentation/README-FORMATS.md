@@ -775,9 +775,10 @@ When writing, the play mode (one-shot or one of the loop modes), the start/end a
 ### Limitations
 
 * A Polyend Tracker instrument holds only a single sample. When converting a multi-sample, the zone whose key range covers MIDI note 60 (middle C) is stored - otherwise the first zone - and all other zones are ignored (a note is logged).
-* The wavetable and granular play modes are read as a plain one-shot sample. The wavetable/granular specific parameters, the LFOs and the delay/reverb sends and overdrive are not converted.
+* The wavetable and granular play modes are read as a plain one-shot sample. The wavetable/granular specific parameters and the delay/reverb sends and overdrive are not converted.
 * The playback start/end, loop and slice positions are stored proportionally to the sample length (0 to 65535). Loop points can therefore differ by a tiny fraction of the sample length after a round-trip.
 * The filter cutoff frequency mapping is an approximation since the Tracker's normalized cutoff to frequency curve is internal and not part of the format.
+* The LFOs of the volume, filter cutoff and fine tune automation are converted. The LFO speed is synchronized to the tempo and converted assuming 120 BPM. The Tracker has no modulation wheel control of the LFO depth. Since an automation uses either its envelope or its LFO, an LFO is only written if the envelope is not used; the volume LFO only if the amplitude envelope has no attack, release or sustain level below the maximum.
 * This format has **not** been verified on physical Polyend Tracker hardware. It was validated against the official *tracker-lib* reference implementation and round-trip conversions.
 
 ## Propellerhead Reason NN-XT
@@ -785,6 +786,8 @@ When writing, the play mode (one-shot or one of the loop modes), the start/end a
 The Propellerhead Reason NN-XT is a software sampler that is included in the Reason software package. Reason is a digital audio workstation (DAW) software developed by Propellerhead Software. It allows users to load and play back sampled sounds, such as instruments or drum hits. The file ending is *sxt*.
 
 There are metadata fields for creator and a creator URL.
+
+LFO 1 is converted with its modulation of the pitch, the filter cutoff and the level as well as the modulation wheel control of its depth ('LFO 1 Amt'). LFO 2 (triangle, always key synchronized) is read if it modulates the pitch and LFO 1 does not; its pan modulation is not supported. The LFO modes 'Group Rate' and 'Tempo Sync' are read like 'Free Run'. When writing, LFO 1 uses the LFO of the first active modulation (pitch, filter cutoff, level), other modulations are only written if they use the same LFO.
 
 ## Renoise
 
@@ -996,6 +999,8 @@ Several file types are relevant:
 * .db: these files contain one or more samples.
 * .zmap: these files contain the basic multi-sample layout and reference one or more db files.
 * .prt_omn: these files represent one preset which reference one to four zmap files.
+
+LFOs of a preset which modulate the coarse tuning, the filter cutoff or the amplitude trim of a layer in the modulation matrix are converted, as well as the modulation wheel controlling the depth of these LFOs. Rounded Square is converted to Square, Sample and Hold as well as Random to Random and Heart Beat to Sine, the rate of tempo synchronized LFOs is read like an unsynchronized one. Written presets use LFO 1 for the pitch, LFO 2 for the filter cutoff and LFO 3 for the amplitude of layer A.
 
 The db files need to be in the same folder as the zmap file. The presets need to be in the Omnisphere patches folder under User.
 

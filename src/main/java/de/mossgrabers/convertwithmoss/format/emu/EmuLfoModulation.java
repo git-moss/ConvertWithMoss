@@ -382,17 +382,21 @@ public class EmuLfoModulation
      */
     private static LfoWaveform toWaveform (final int shape)
     {
-        if (shape == SHAPE_RANDOM)
-            return LfoWaveform.RANDOM;
-        if (shape == SHAPE_SINE || shape == SHAPE_SINE_NOISE)
-            return LfoWaveform.SINE;
-        if (shape == SHAPE_SAWTOOTH)
-            return LfoWaveform.SAWTOOTH_DOWN;
-        // The pulse shapes are the closest to a square
-        if (shape >= SHAPE_SQUARE && shape <= SHAPE_PULSE_12)
-            return LfoWaveform.SQUARE;
-        // Triangle and the pattern shapes, which step through intervals
-        return LfoWaveform.TRIANGLE;
+        switch (shape)
+        {
+            case SHAPE_RANDOM:
+                return LfoWaveform.RANDOM;
+            case SHAPE_SINE, SHAPE_SINE_NOISE:
+                return LfoWaveform.SINE;
+            case SHAPE_SAWTOOTH:
+                return LfoWaveform.SAWTOOTH_DOWN;
+            default:
+                // The pulse shapes are the closest to a square
+                if (shape >= SHAPE_SQUARE && shape <= SHAPE_PULSE_12)
+                    return LfoWaveform.SQUARE;
+                // Triangle and the pattern shapes, which step through intervals
+                return LfoWaveform.TRIANGLE;
+        }
     }
 
 

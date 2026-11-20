@@ -22,6 +22,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -48,8 +50,9 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
 
     private static final int                    DEFAULT_GRAIN_LENGTH     = 4410;
     private static final int                    GRANULAR_SHAPE_TRIANGLE  = 1;
-    private static final int                    LFO_SHAPE_TRIANGLE       = 2;
     private static final int                    LFO_SPEED_S4             = 10;
+    /** Envelopes with shorter attack and release times are treated as having no shape. */
+    private static final double                 FLAT_ENVELOPE_SECONDS    = 0.01;
 
 
     /**
@@ -213,7 +216,9 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Write the 6 envelopes and 6 LFOs. The volume envelope is taken from the amplitude envelope of
      * the zone, the cutoff envelope from the filter (if any) and the fine tune envelope from the
-     * pitch envelope (if a depth is set). All others are written with sane disabled defaults.
+     * pitch envelope (if a depth is set). All others are written with sane disabled defaults. Since
+     * an automation slot uses either the envelope or the LFO, an LFO is only written if the
+     * envelope of the slot is not used.
      *
      * @param buffer The output buffer
      * @param zone The zone
@@ -227,11 +232,32 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
         // The volume envelope is always enabled
         writeEnvelope (buffer, PolyendTrackerConstants.ENV_VOLUME, zone.getAmplitudeEnvelopeModulator ().getSource (), true, 1.0);
 
+        // LFO defaults
+        for (int i = 0; i < PolyendTrackerConstants.LFO_COUNT; i++)
+        {
+            final int base = PolyendTrackerConstants.OFF_LFOS + i * PolyendTrackerConstants.LFO_SIZE;
+            buffer.put (base + PolyendTrackerConstants.LFO_OFF_SHAPE, (byte) PolyendTrackerConstants.LFO_SHAPE_TRIANGLE);
+            buffer.put (base + PolyendTrackerConstants.LFO_OFF_SPEED, (byte) LFO_SPEED_S4);
+        }
+
+        // The volume LFO replaces the volume envelope, therefore only use it if the amplitude
+        // envelope has no shape. The amount reduces the volume down to silence.
+        final ILfoModulator amplitudeLfoModulator = zone.getAmplitudeLfoModulator ();
+        if (amplitudeLfoModulator.getDepth () > 0 && isFlat (zone.getAmplitudeEnvelopeModulator ().getSource ()))
+        {
+            final double db = amplitudeLfoModulator.getDepth () * ILfoModulator.MAX_VOLUME_DEPTH;
+            writeLfo (buffer, PolyendTrackerConstants.ENV_VOLUME, amplitudeLfoModulator.getSource (), 1.0 - Math.pow (10.0, -db / 20.0), PolyendTrackerConstants.LFO_SPEED_MIN_VOLUME);
+        }
+
         final Optional<IFilter> optionalFilter = zone.getFilter ();
         if (optionalFilter.isPresent ())
         {
             final IFilter filter = optionalFilter.get ();
             final IEnvelopeModulator cutoffModulator = filter.getCutoffEnvelopeModulator ();
+            // The LFO amount is a normalized cut-off offset like the envelope amount
+            final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+            if (cutoffModulator.getDepth () == 0 && cutoffLfoModulator.getDepth () != 0)
+                writeLfo (buffer, PolyendTrackerConstants.ENV_CUTOFF, cutoffLfoModulator.getSource (), Math.abs (cutoffLfoModulator.getDepth ()), 0);
             if (cutoffModulator.getDepth () != 0)
             {
                 // The modulation depth is a normalized value in the range of [-1..1] and the
@@ -246,14 +272,59 @@ public class PolyendTrackerCreator extends AbstractCreator<EmptySettingsUI>
         final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
         if (pitchModulator.getDepth () != 0)
             writeEnvelope (buffer, PolyendTrackerConstants.ENV_FINETUNE, pitchModulator.getSource (), true, 1.0);
-
-        // LFO defaults
-        for (int i = 0; i < PolyendTrackerConstants.LFO_COUNT; i++)
+        else
         {
-            final int base = PolyendTrackerConstants.OFF_LFOS + i * PolyendTrackerConstants.LFO_SIZE;
-            buffer.put (base, (byte) LFO_SHAPE_TRIANGLE);
-            buffer.put (base + 1, (byte) LFO_SPEED_S4);
+            // The LFO modulates the fine tune which has a range of -100..100 cents
+            final ILfoModulator pitchLfoModulator = zone.getPitchLfoModulator ();
+            if (pitchLfoModulator.getDepth () != 0)
+                writeLfo (buffer, PolyendTrackerConstants.ENV_FINETUNE, pitchLfoModulator.getSource (), Math.abs (pitchLfoModulator.getDepth ()) * IEnvelope.MAX_ENVELOPE_DEPTH / PolyendTrackerConstants.FINETUNE_RANGE_CENTS, 0);
         }
+    }
+
+
+    /**
+     * Write an LFO and switch its automation slot to the LFO. The Tracker has no modulation wheel
+     * control of the LFO depth, therefore only the depth with the modulation wheel fully down is
+     * written. The LFO is always synchronized to the tempo, the speed is calculated for 120 BPM.
+     *
+     * @param buffer The output buffer
+     * @param slot The automation slot index
+     * @param lfo The LFO
+     * @param amount The LFO amount (0 to 1)
+     * @param minimumSpeed The lowest speed value which is available for the slot
+     */
+    private static void writeLfo (final ByteBuffer buffer, final int slot, final ILfo lfo, final double amount, final int minimumSpeed)
+    {
+        final int base = PolyendTrackerConstants.OFF_LFOS + slot * PolyendTrackerConstants.LFO_SIZE;
+        final int shape = switch (lfo.getWaveform ())
+        {
+            case SAWTOOTH_DOWN -> PolyendTrackerConstants.LFO_SHAPE_REV_SAW;
+            case SAWTOOTH_UP -> PolyendTrackerConstants.LFO_SHAPE_SAW;
+            case SQUARE -> PolyendTrackerConstants.LFO_SHAPE_SQUARE;
+            case RANDOM -> PolyendTrackerConstants.LFO_SHAPE_RANDOM;
+            default -> PolyendTrackerConstants.LFO_SHAPE_TRIANGLE;
+        };
+        buffer.put (base + PolyendTrackerConstants.LFO_OFF_SHAPE, (byte) shape);
+        buffer.put (base + PolyendTrackerConstants.LFO_OFF_SPEED, (byte) PolyendTrackerValueConverter.hertzToLfoSpeed (lfo.getRate (), minimumSpeed));
+        buffer.putFloat (base + PolyendTrackerConstants.LFO_OFF_AMOUNT, (float) Math.clamp (amount, 0.0, 1.0));
+
+        final int envelopeBase = PolyendTrackerConstants.OFF_ENVELOPES + slot * PolyendTrackerConstants.ENVELOPE_SIZE;
+        buffer.put (envelopeBase + PolyendTrackerConstants.ENV_OFF_LFO_FLAG, (byte) 1);
+        buffer.put (envelopeBase + PolyendTrackerConstants.ENV_OFF_ENABLED, (byte) 1);
+    }
+
+
+    /**
+     * Check if an amplitude envelope has no shape, which means an instant attack, full sustain and
+     * an instant release.
+     *
+     * @param envelope The envelope
+     * @return True if the envelope has no shape
+     */
+    private static boolean isFlat (final IEnvelope envelope)
+    {
+        final double sustain = envelope.getSustainLevel ();
+        return envelope.getAttackTime () <= FLAT_ENVELOPE_SECONDS && envelope.getReleaseTime () <= FLAT_ENVELOPE_SECONDS && (sustain < 0 || sustain >= 1.0 - FLAT_ENVELOPE_SECONDS);
     }
 
 

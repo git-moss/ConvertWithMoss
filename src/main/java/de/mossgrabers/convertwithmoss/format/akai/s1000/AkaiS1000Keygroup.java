@@ -17,7 +17,7 @@ import de.mossgrabers.convertwithmoss.format.akai.diskformat.IAkaiImage;
 public class AkaiS1000Keygroup
 {
     /** ID for a key-group structure. */
-    private static final int                 AKAI_KEYGROUP_ID       = 2;
+    private static final int                 AKAI_KEYGROUP_ID      = 2;
 
     // 24..127
     private final byte                       lowKey;
@@ -59,19 +59,18 @@ public class AkaiS1000Keygroup
     @SuppressWarnings("unused")
     private final boolean                    holdAttackUntilLoop;
     // Sample 1-4 key tracking : 0=TRACK 1=FIXED
-    private final boolean []                 sampleKeyTracking      = new boolean [4];
+    private final boolean []                 sampleKeyTracking     = new boolean [4];
     // Sample 1-4 AUX out offset 0..7
-    private final byte []                    sampleAuxOutOffset     = new byte [4];
+    private final byte []                    sampleAuxOutOffset    = new byte [4];
     // -9999..9999 (16-bit signed)
-    @SuppressWarnings("unused")
-    private final short []                   velocityToSampleStart  = new short [4];
+    private final short []                   velocityToSampleStart = new short [4];
 
     // S3000 only: -50..50, the amount of the fixed LFO 1 to pitch modulation (the S1000 always
     // applies LFO 1 to the pitch, which equals the default of 50)
-    private byte                             lfo1ToPitch            = 50;
+    private byte                             lfo1ToPitch           = 50;
     // S3000 only: -50..50, the amounts of the assignable filter frequency modulation 1-3, of the
     // pitch modulation and of the loudness modulation 3
-    private final byte []                    filterModAmounts       = new byte [3];
+    private final byte []                    filterModAmounts      = new byte [3];
     private byte                             pitchModAmount;
     private byte                             loudnessMod3Amount;
 

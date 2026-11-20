@@ -140,6 +140,33 @@ public final class PolyendTrackerConstants
     public static final int    ENV_OFF_LFO_FLAG        = 18;
     /** Relative offset of the envelope enabled flag. */
     public static final int    ENV_OFF_ENABLED         = 19;
+    // Offsets of the fields inside one LFO (relative to the start of the LFO)
+    /** Relative offset of the LFO shape. */
+    public static final int    LFO_OFF_SHAPE           = 0;
+    /** Relative offset of the LFO speed (an index into the tempo synchronized speeds). */
+    public static final int    LFO_OFF_SPEED           = 1;
+    /** Relative offset of the LFO amount (32-bit float, 0 to 1). */
+    public static final int    LFO_OFF_AMOUNT          = 4;
+    // LFO shapes
+    /** A falling saw. */
+    public static final int    LFO_SHAPE_REV_SAW       = 0;
+    /** A rising saw. */
+    public static final int    LFO_SHAPE_SAW           = 1;
+    /** A triangle. */
+    public static final int    LFO_SHAPE_TRIANGLE      = 2;
+    /** A square. */
+    public static final int    LFO_SHAPE_SQUARE        = 3;
+    /** Random values. */
+    public static final int    LFO_SHAPE_RANDOM        = 4;
+    /** The slowest speed (24 steps) which is available for the volume LFO. */
+    public static final int    LFO_SPEED_MIN_VOLUME    = 5;
+    /**
+     * The pitch modulation of an LFO amount of 1, the LFO modulates the fine tune which has a range
+     * of -100..100 cents.
+     */
+    public static final double FINETUNE_RANGE_CENTS    = 100.0;
+    /** The lowest amplitude factor of a volume LFO for the conversion to decibels. */
+    public static final double MIN_AMPLITUDE_FACTOR    = 0.00001;
 
     // Automation / envelope indices
     /** The volume (amplitude) automation. */

@@ -198,31 +198,31 @@ public class PC3Program
      */
     public static class Layer
     {
-        private int              keymapID;
-        private int              secondKeymapID;
-        private boolean          isStereo;
-        private boolean          isEnabled              = true;
-        private int              lowKey                 = 0;
-        private int              highKey                = 127;
-        private int              transpose              = 0;
-        private int              velocityLow            = 1;
-        private int              velocityHigh           = 127;
+        private int                  keymapID;
+        private int                  secondKeymapID;
+        private boolean              isStereo;
+        private boolean              isEnabled              = true;
+        private int                  lowKey                 = 0;
+        private int                  highKey                = 127;
+        private int                  transpose              = 0;
+        private int                  velocityLow            = 1;
+        private int                  velocityHigh           = 127;
 
-        private boolean          isNaturalEnvelope      = false;
-        private KurzweilEnvelope amplitudeEnvelope      = null;
-        private KurzweilEnvelope filterEnvelope         = null;
-        private int              cutoffModulationSource = 0;
-        private int              cutoffModulationDepth  = 0;
-        private int              velocityTracking       = DEFAULT_VELOCITY_TRACKING;
+        private boolean              isNaturalEnvelope      = false;
+        private KurzweilEnvelope     amplitudeEnvelope      = null;
+        private KurzweilEnvelope     filterEnvelope         = null;
+        private int                  cutoffModulationSource = 0;
+        private int                  cutoffModulationDepth  = 0;
+        private int                  velocityTracking       = DEFAULT_VELOCITY_TRACKING;
 
-        private int              filterFunction         = FUNCTION_NONE;
-        private int              cutoff                 = 0;
-        private int              secondParameter        = 0;
+        private int                  filterFunction         = FUNCTION_NONE;
+        private int                  cutoff                 = 0;
+        private int                  secondParameter        = 0;
 
-        private KurzweilLfo []   lfos                   = new KurzweilLfo [2];
-        private KurzweilControl  pitchControl           = new KurzweilControl ();
-        private KurzweilControl  cutoffControl          = new KurzweilControl ();
-        private KurzweilControl  amplitudeControl       = new KurzweilControl ();
+        private final KurzweilLfo [] lfos                   = new KurzweilLfo [2];
+        private KurzweilControl      pitchControl           = new KurzweilControl ();
+        private KurzweilControl      cutoffControl          = new KurzweilControl ();
+        private KurzweilControl      amplitudeControl       = new KurzweilControl ();
 
 
         /**

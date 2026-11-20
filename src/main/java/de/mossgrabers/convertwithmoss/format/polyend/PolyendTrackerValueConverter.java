@@ -21,6 +21,42 @@ public final class PolyendTrackerValueConverter
     private static final double FILTER_MIN_HERTZ = 20.0;
     /** The highest filter cutoff frequency in Hertz. */
     private static final double FILTER_MAX_HERTZ = 20000.0;
+    /** The duration of one step in seconds at 120 BPM (4 steps per beat). */
+    private static final double STEP_SECONDS     = 0.125;
+
+    /** The number of steps of one LFO cycle for each LFO speed value. */
+    private static final double [] LFO_SPEED_STEPS =
+    {
+        128,
+        96,
+        64,
+        48,
+        32,
+        24,
+        16,
+        12,
+        8,
+        6,
+        4,
+        3,
+        2,
+        3.0 / 2.0,
+        1,
+        3.0 / 4.0,
+        1.0 / 2.0,
+        3.0 / 8.0,
+        1.0 / 3.0,
+        1.0 / 4.0,
+        3.0 / 16.0,
+        1.0 / 6.0,
+        1.0 / 8.0,
+        1.0 / 12.0,
+        1.0 / 16.0,
+        1.0 / 24.0,
+        1.0 / 32.0,
+        1.0 / 48.0,
+        1.0 / 64.0
+    };
 
 
     /**
@@ -203,6 +239,44 @@ public final class PolyendTrackerValueConverter
     {
         final double fraction = tuning - tuningToTune (tuning);
         return Math.clamp (Math.round (fraction * 100.0), -100, 100);
+    }
+
+
+    /**
+     * Convert a tempo synchronized LFO speed into a rate, assuming 120 BPM.
+     *
+     * @param speed The speed value
+     * @return The rate in Hertz
+     */
+    public static double lfoSpeedToHertz (final int speed)
+    {
+        return 1.0 / (LFO_SPEED_STEPS[Math.clamp (speed, 0, LFO_SPEED_STEPS.length - 1)] * STEP_SECONDS);
+    }
+
+
+    /**
+     * Find the tempo synchronized LFO speed which is closest to the given rate, assuming 120 BPM.
+     *
+     * @param hertz The rate in Hertz
+     * @param minimumSpeed The lowest speed value to use
+     * @return The speed value
+     */
+    public static int hertzToLfoSpeed (final double hertz, final int minimumSpeed)
+    {
+        if (hertz <= 0)
+            return minimumSpeed;
+        int bestSpeed = minimumSpeed;
+        double bestDistance = Double.MAX_VALUE;
+        for (int speed = minimumSpeed; speed < LFO_SPEED_STEPS.length; speed++)
+        {
+            final double distance = Math.abs (Math.log (lfoSpeedToHertz (speed) / hertz));
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestSpeed = speed;
+            }
+        }
+        return bestSpeed;
     }
 
 

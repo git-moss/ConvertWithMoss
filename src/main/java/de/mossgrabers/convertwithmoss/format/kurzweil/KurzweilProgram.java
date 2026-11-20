@@ -25,8 +25,8 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  * selects the DSP algorithm and the four function page segments configure the DSP functions F1-F3
  * (the filter) and the final amplifier. The two LFO segments hold the local LFOs which the control
  * groups of the pitch, the F1 page and the amplifier can use as modulation sources (vibrato, filter
- * modulation and tremolo). When creating a program the same segment values are written
- * which KurzFiler uses for its generated instrument programs (verified to load on the devices).
+ * modulation and tremolo). When creating a program the same segment values are written which
+ * KurzFiler uses for its generated instrument programs (verified to load on the devices).
  *
  * @author Jürgen Moßgraber
  */
@@ -90,30 +90,30 @@ public class KurzweilProgram
      */
     public static class Layer
     {
-        private int              keymapID;
-        private int              lowKey                 = 0;
-        private int              highKey                = 127;
-        private int              transpose              = 0;
-        private int              velocityLow            = 1;
-        private int              velocityHigh           = 127;
+        private int                  keymapID;
+        private int                  lowKey                 = 0;
+        private int                  highKey                = 127;
+        private int                  transpose              = 0;
+        private int                  velocityLow            = 1;
+        private int                  velocityHigh           = 127;
 
-        private boolean          isNaturalEnvelope      = true;
-        private KurzweilEnvelope amplitudeEnvelope      = null;
-        private KurzweilEnvelope filterEnvelope         = null;
-        private int              cutoffModulationSource = 0;
-        private int              cutoffModulationDepth  = 0;
+        private boolean              isNaturalEnvelope      = true;
+        private KurzweilEnvelope     amplitudeEnvelope      = null;
+        private KurzweilEnvelope     filterEnvelope         = null;
+        private int                  cutoffModulationSource = 0;
+        private int                  cutoffModulationDepth  = 0;
 
-        private int              algorithm              = 1;
-        private int              filterType             = FILTER_NONE;
-        private int              cutoff                 = 0;
-        private int              f2Type                 = F3_NONE;
-        private int              f2Value                = 0;
-        private int              f3Type                 = F3_NONE;
+        private int                  algorithm              = 1;
+        private int                  filterType             = FILTER_NONE;
+        private int                  cutoff                 = 0;
+        private int                  f2Type                 = F3_NONE;
+        private int                  f2Value                = 0;
+        private int                  f3Type                 = F3_NONE;
 
-        private KurzweilLfo []   lfos                   = new KurzweilLfo [2];
-        private KurzweilControl  pitchControl           = new KurzweilControl ();
-        private KurzweilControl  cutoffControl          = new KurzweilControl ();
-        private KurzweilControl  amplitudeControl       = new KurzweilControl ();
+        private final KurzweilLfo [] lfos                   = new KurzweilLfo [2];
+        private KurzweilControl      pitchControl           = new KurzweilControl ();
+        private KurzweilControl      cutoffControl          = new KurzweilControl ();
+        private KurzweilControl      amplitudeControl       = new KurzweilControl ();
 
 
         /**
@@ -959,9 +959,9 @@ public class KurzweilProgram
 
 
     /**
-     * Decode a depth byte of the pitch control group into cents. The values follow the editor
-     * steps of the device: 1 cent steps up to 20 cents, 2 up to 50, 5 up to 100, 10 up to 200, 20
-     * up to 400, 50 up to 1000, 100 up to 5000 and irregular steps up to 7200 cents (123).
+     * Decode a depth byte of the pitch control group into cents. The values follow the editor steps
+     * of the device: 1 cent steps up to 20 cents, 2 up to 50, 5 up to 100, 10 up to 200, 20 up to
+     * 400, 50 up to 1000, 100 up to 5000 and irregular steps up to 7200 cents (123).
      *
      * @param depthByte The signed depth byte
      * @return The depth in cents

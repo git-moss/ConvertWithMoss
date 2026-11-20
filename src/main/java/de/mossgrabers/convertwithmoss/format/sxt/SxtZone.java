@@ -15,10 +15,13 @@ import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
@@ -33,166 +36,188 @@ import de.mossgrabers.convertwithmoss.file.StreamUtils;
  */
 class SxtZone
 {
+    /** The rates of the LFOs are stored in cents relative to this frequency. */
+    private static final double LFO_BASE_HERTZ               = 8.176;
+    /** The maximum modulation of the pitch by an LFO in cents. */
+    private static final int    LFO_MAX_PITCH_CENTS          = 2400;
+    /** The lowest amplitude factor of a level modulation for the conversion to decibels. */
+    private static final double MIN_AMPLITUDE_FACTOR         = 0.00001;
+    // The LFO 1 waveforms
+    private static final int    LFO_WAVE_TRIANGLE            = 101;
+    private static final int    LFO_WAVE_INVERTED_SAW        = 102;
+    private static final int    LFO_WAVE_SAW                 = 103;
+    private static final int    LFO_WAVE_SQUARE              = 104;
+    private static final int    LFO_WAVE_RANDOM              = 105;
+    private static final int    LFO_WAVE_SOFT_RANDOM         = 106;
+
     /** The index of the group to which the zone belongs. */
-    long groupIndex                   = -1;
+    long                        groupIndex                   = -1;
 
     /** MinValue = 0, MaxValue = keyRangeEnd, Default = 36. */
-    int  keyRangeStart                = 36;
+    int                         keyRangeStart                = 36;
 
     /** MinValue = 0, MaxValue = keyRangeEnd, Default = 96. */
-    int  keyRangeEnd                  = 96;
+    int                         keyRangeEnd                  = 96;
 
     /** MinValue = 1, MaxValue = velocityRangeEnd, Default = 1. */
-    int  velocityRangeStart           = 1;
+    int                         velocityRangeStart           = 1;
 
     /** MinValue = 1, MaxValue = 127, Default = 127. */
-    int  velocityRangeEnd             = 127;
+    int                         velocityRangeEnd             = 127;
 
     /** MinValue = 0, MaxValue = 127, Default = 60. */
-    int  rootKey                      = 60;
+    int                         rootKey                      = 60;
 
     /** MinValue = -50, MaxValue = 50, Default = 0. */
-    int  sampleTune                   = 0;
+    int                         sampleTune                   = 0;
 
     /** MinValue = 0, MaxValue = SampleEnd. */
-    long sampleStart                  = 0;
+    long                        sampleStart                  = 0;
 
     /** MinValue = 0, MaxValue = SampleSize. */
-    long sampleEnd                    = 0;
+    long                        sampleEnd                    = 0;
 
     /** MinValue = 0, MaxValue = SampleLoopEnd. */
-    long sampleLoopStart              = 0;
+    long                        sampleLoopStart              = 0;
 
     /** MinValue = 0, MaxValue = SampleSize. */
-    long sampleLoopEnd                = 0;
+    long                        sampleLoopEnd                = 0;
 
     /** MinValue = 0. */
-    long sampleSize                   = 0;
+    long                        sampleSize                   = 0;
 
     /**
      * MinValue = 0, MaxValue = 4, Default = 0. Forward = 0, Forward loop = 1, Fwd-bwd loop = 2,
      * Fwd-sus loop = 3, Backwards = 4.
      */
-    int  playMode                     = 0;
+    int                         playMode                     = 0;
 
     /** MinValue = 0, MaxValue = 7, Default = 0. */
-    int  outputPair                   = 0;
+    int                         outputPair                   = 0;
 
     /** MinValue = 0, MaxValue = FadeOut - 1, Default = 0 (Off). */
-    int  velocityFadeIn               = 0;
+    int                         velocityFadeIn               = 0;
 
     /** MinValue = 1, MaxValue = 128, Default = 128 (Off). */
-    int  velocityFadeOut              = 128;
+    int                         velocityFadeOut              = 128;
 
     /** MinValue = 0, MaxValue = 1, Default = 0. */
-    int  alternateMode                = 0;
+    int                         alternateMode                = 0;
 
     /** MinValue = -1000, MaxValue = 1000, Default = 0. */
-    int  modulationToFilterFreq       = 0;
-    int  modulationToModEnvDecay      = 0;
-    int  modulationToLFO1Amt          = 0;
-    int  modulationToFilterQ          = 0;
-    int  modulationToAmpGain          = 0;
-    int  modulationToLFO1Rate         = 0;
-    int  velocityToFilterFreq         = 0;
-    int  velocityToModEnvDecay        = 0;
-    int  velocityToAmpGain            = 0;
-    int  velocityToAmpEnvAttack       = 0;
-    int  velocityToSampleStart        = 0;
+    int                         modulationToFilterFreq       = 0;
+    int                         modulationToModEnvDecay      = 0;
+    int                         modulationToLFO1Amt          = 0;
+    int                         modulationToFilterQ          = 0;
+    int                         modulationToAmpGain          = 0;
+    int                         modulationToLFO1Rate         = 0;
+    int                         velocityToFilterFreq         = 0;
+    int                         velocityToModEnvDecay        = 0;
+    int                         velocityToAmpGain            = 0;
+    int                         velocityToAmpEnvAttack       = 0;
+    int                         velocityToSampleStart        = 0;
 
     /** MinValue = 0, MaxValue = 1. */
-    int  modWheelToFilterFreqOn       = 1;
-    int  modWheelToModEnvDecayOn      = 1;
-    int  modWheelToLFO1AmountOn       = 1;
-    int  modWheelToFilterResOn        = 0;
-    int  modWheelToVolumeOn           = 0;
-    int  modWheelToLFO1RateOn         = 0;
-    int  extControllerToFilterFreqOn  = 0;
-    int  extControllerToModEnvDecayOn = 0;
-    int  extControllerToLFO1AmountOn  = 0;
-    int  extControllerToFilterResOn   = 1;
-    int  extControllerToVolumeOn      = 1;
-    int  extControllerToLFO1RateOn    = 1;
+    int                         modWheelToFilterFreqOn       = 1;
+    int                         modWheelToModEnvDecayOn      = 1;
+    int                         modWheelToLFO1AmountOn       = 1;
+    int                         modWheelToFilterResOn        = 0;
+    int                         modWheelToVolumeOn           = 0;
+    int                         modWheelToLFO1RateOn         = 0;
+    int                         extControllerToFilterFreqOn  = 0;
+    int                         extControllerToModEnvDecayOn = 0;
+    int                         extControllerToLFO1AmountOn  = 0;
+    int                         extControllerToFilterResOn   = 1;
+    int                         extControllerToVolumeOn      = 1;
+    int                         extControllerToLFO1RateOn    = 1;
 
     // LFO1 parameters
-    int  lfo1KeySync                  = 1;
-    int  lfo1Freq                     = -536;
-    int  lfo1TempoSyncRate            = -10500;
-    int  lfo1Delay                    = 1;
-    int  lfo1DelayIsOff               = 1;
-    int  lfo1WaveForm                 = 101;
-    int  lfo1ToPitch                  = 0;
-    int  lfo1ToFilterFreq             = 0;
-    int  lfo1ToAmp                    = 0;
-    int  lfo1SyncMode                 = 89;
+    int                         lfo1KeySync                  = 1;
+    /** The rate in cents relative to 8.176 Hz, e.g. -867 = 5 Hz. */
+    int                         lfo1Freq                     = -536;
+    int                         lfo1TempoSyncRate            = 10;
+    int                         lfo1Delay                    = -10500;
+    int                         lfo1DelayIsOff               = 1;
+    /**
+     * Triangle = 101, Inverted Sawtooth = 102, Sawtooth = 103, Square = 104, Random = 105, Soft
+     * Random = 106.
+     */
+    int                         lfo1WaveForm                 = 101;
+    /** MinValue = -2400, MaxValue = 2400 (cents). */
+    int                         lfo1ToPitch                  = 0;
+    /** MinValue = -1000, MaxValue = 1000. */
+    int                         lfo1ToFilterFreq             = 0;
+    /** MinValue = -1000, MaxValue = 1000. */
+    int                         lfo1ToAmp                    = 0;
+    int                         lfo1SyncMode                 = 89;
 
-    // LFO2 parameters
-    int  lfo2Freq                     = -536;
-    int  lfo2Delay                    = -10500;
-    int  lfo2DelayIsOff               = 1;
-    int  lfo2ToPitch                  = 0;
-    int  lfo2ToPan                    = 0;
+    // LFO2 parameters, LFO 2 has a fixed triangle waveform and is always key synchronized
+    int                         lfo2Freq                     = -536;
+    int                         lfo2Delay                    = -10500;
+    int                         lfo2DelayIsOff               = 1;
+    int                         lfo2ToPitch                  = 0;
+    int                         lfo2ToPan                    = 0;
 
     // Modulation Envelope Parameters
-    int  modEnvDelay                  = -10500;
-    int  modEnvDelayIsOff             = 1;
-    int  modEnvAttack                 = -13159;
-    int  modEnvAttackIsOff            = 0;
-    int  modEnvHold                   = -14400;
-    int  modEnvHoldIsOff              = 1;
-    int  modEnvDecay                  = -1200;
-    int  modEnvSustain                = 0;
-    int  modEnvRelease                = -1200;
-    int  modEnvKeyToDecay             = 0;
-    int  modEnvToFilterFreq           = 0;
-    int  modEnvToPitch                = 0;
+    int                         modEnvDelay                  = -10500;
+    int                         modEnvDelayIsOff             = 1;
+    int                         modEnvAttack                 = -13159;
+    int                         modEnvAttackIsOff            = 0;
+    int                         modEnvHold                   = -14400;
+    int                         modEnvHoldIsOff              = 1;
+    int                         modEnvDecay                  = -1200;
+    int                         modEnvSustain                = 0;
+    int                         modEnvRelease                = -1200;
+    int                         modEnvKeyToDecay             = 0;
+    int                         modEnvToFilterFreq           = 0;
+    int                         modEnvToPitch                = 0;
 
     // Pitch Parameters
 
     /** MinValue = 0, MaxValue = 24, Default = 7. */
-    int  pitchWheelRange              = 7;
+    int                         pitchWheelRange              = 7;
     /** MinValue = -5, MaxValue = 5, Default = 0. */
-    int  octave                       = 0;
+    int                         octave                       = 0;
     /** MinValue = -12, MaxValue = 12, Default = 0. */
-    int  semitone                     = 0;
+    int                         semitone                     = 0;
     /** MinValue = -50, MaxValue = 50, Default = 0. */
-    int  cent                         = 0;
+    int                         cent                         = 0;
     /** MinValue = 0, MaxValue = 1200, Default = 100. */
-    int  keyToPitch                   = 100;
+    int                         keyToPitch                   = 100;
 
     // Filter Parameters
 
     /** MinValue = 0, MaxValue = 1, Default = 1. */
-    int  filterIsOn                   = 1;
+    int                         filterIsOn                   = 1;
     /** MinValue = 0, MaxValue = 14100, Default = 14100. */
-    int  filterFreq                   = 14100;
+    int                         filterFreq                   = 14100;
     /** MinValue = 0, MaxValue = 1000, Default = 0. */
-    int  filterResonance              = 0;
+    int                         filterResonance              = 0;
     /**
      * MinValue = 60, MaxValue = 65, Default = 61. LP24 = 60, LP12 = 61, BP12 = 62, HP12 = 63, Notch
      * = 64, LP6 = 65.
      */
-    int  filterType                   = 61;
+    int                         filterType                   = 61;
     /** MinValue = 0, MaxValue = 1200, Default = 0. */
-    int  keyToFreq                    = 0;
+    int                         keyToFreq                    = 0;
 
     // Amplitude Envelope Parameters
-    int  ampEnvDelay                  = -10500;
-    int  ampEnvDelayIsOff             = 1;
-    int  ampEnvAttack                 = -13159;
-    int  ampEnvAttackIsOff            = 0;
-    int  ampEnvHold                   = -14400;
-    int  ampEnvHoldIsOff              = 1;
-    int  ampEnvDecay                  = -7271;
-    int  ampEnvSustain                = 0;
-    int  ampEnvRelease                = -7271;
-    int  ampEnvKeyToDecay             = 0;
-    int  ampEnvGain                   = 0;
+    int                         ampEnvDelay                  = -10500;
+    int                         ampEnvDelayIsOff             = 1;
+    int                         ampEnvAttack                 = -13159;
+    int                         ampEnvAttackIsOff            = 0;
+    int                         ampEnvHold                   = -14400;
+    int                         ampEnvHoldIsOff              = 1;
+    int                         ampEnvDecay                  = -7271;
+    int                         ampEnvSustain                = 0;
+    int                         ampEnvRelease                = -7271;
+    int                         ampEnvKeyToDecay             = 0;
+    int                         ampEnvGain                   = 0;
 
     // Pan Parameters
-    int  pan                          = 0;
-    int  spreadMode                   = 87;
-    int  spread                       = 0;
+    int                         pan                          = 0;
+    int                         spreadMode                   = 87;
+    int                         spread                       = 0;
 
 
     /**
@@ -602,6 +627,88 @@ class SxtZone
         // Set gain and panning
         zone.setGain (20 * Math.log10 (Math.pow ((this.ampEnvGain + 1440) / 1440.0, 3)));
         zone.setPanning (this.pan / 1000.0);
+
+        this.fillLfosInto (zone);
+    }
+
+
+    /**
+     * Set the LFO modulations of a sample zone. LFO 1 modulates pitch, filter cutoff and level. LFO
+     * 2 is used for the pitch if LFO 1 does not modulate it. The modulation of LFO 2 to the panning
+     * is not supported by the model.
+     *
+     * @param zone The zone to fill
+     */
+    private void fillLfosInto (final ISampleZone zone)
+    {
+        // 'LFO 1 Amt' scales the depths of LFO 1 by the modulation wheel: a positive amount reduces
+        // the depth with the wheel fully down, a negative amount the depth with the wheel fully up
+        final double wheelAmount = this.modWheelToLFO1AmountOn > 0 ? Math.clamp (this.modulationToLFO1Amt / 1000.0, -1.0, 1.0) : 0;
+
+        if (this.lfo1ToPitch != 0)
+            this.applyLfo1 (zone.getPitchLfoModulator (), this.lfo1ToPitch / (double) IEnvelope.MAX_ENVELOPE_DEPTH, wheelAmount);
+        else if (this.lfo2ToPitch != 0)
+        {
+            final ILfoModulator modulator = zone.getPitchLfoModulator ();
+            modulator.setDepth (Math.clamp (this.lfo2ToPitch / (double) IEnvelope.MAX_ENVELOPE_DEPTH, -1.0, 1.0));
+            setLfo (modulator.getSource (), LfoWaveform.TRIANGLE, this.lfo2Freq, this.lfo2Delay, this.lfo2DelayIsOff, true);
+        }
+
+        final Optional<IFilter> filter = zone.getFilter ();
+        if (this.lfo1ToFilterFreq != 0 && filter.isPresent ())
+            this.applyLfo1 (filter.get ().getCutoffLfoModulator (), this.lfo1ToFilterFreq / 1000.0, wheelAmount);
+
+        if (this.lfo1ToAmp != 0)
+        {
+            // A level modulation of 100% reduces the level down to silence
+            final double db = -20.0 * Math.log10 (Math.max (MIN_AMPLITUDE_FACTOR, 1.0 - Math.abs (this.lfo1ToAmp) / 1000.0));
+            this.applyLfo1 (zone.getAmplitudeLfoModulator (), Math.signum (this.lfo1ToAmp) * Math.min (1.0, db / ILfoModulator.MAX_VOLUME_DEPTH), wheelAmount);
+        }
+    }
+
+
+    /**
+     * Set the depths and the LFO 1 settings of an LFO modulator. The modes 'Group Rate' and 'Tempo
+     * Sync' are read like 'Free Run'.
+     *
+     * @param modulator The LFO modulator
+     * @param depth The depth of the LFO 1 destination
+     * @param wheelAmount The 'LFO 1 Amt' setting of the modulation wheel in the range of [-1..1]
+     */
+    private void applyLfo1 (final ILfoModulator modulator, final double depth, final double wheelAmount)
+    {
+        modulator.setDepth (Math.clamp (wheelAmount > 0 ? depth * (1.0 - wheelAmount) : depth, -1.0, 1.0));
+        modulator.getDepthModWheelModulator ().setDepth (Math.clamp (depth * wheelAmount, -1.0, 1.0));
+
+        final LfoWaveform waveform = switch (this.lfo1WaveForm)
+        {
+            case LFO_WAVE_INVERTED_SAW -> LfoWaveform.SAWTOOTH_DOWN;
+            case LFO_WAVE_SAW -> LfoWaveform.SAWTOOTH_UP;
+            case LFO_WAVE_SQUARE -> LfoWaveform.SQUARE;
+            case LFO_WAVE_RANDOM, LFO_WAVE_SOFT_RANDOM -> LfoWaveform.RANDOM;
+            default -> LfoWaveform.TRIANGLE;
+        };
+        setLfo (modulator.getSource (), waveform, this.lfo1Freq, this.lfo1Delay, this.lfo1DelayIsOff, this.lfo1KeySync > 0);
+    }
+
+
+    /**
+     * Set the parameters of an LFO.
+     *
+     * @param lfo The LFO
+     * @param waveform The waveform
+     * @param frequency The rate in cents relative to 8.176 Hz
+     * @param delay The delay in time cents
+     * @param delayIsOff 1 if the delay is off
+     * @param isKeySync True if the LFO is restarted with each note
+     */
+    private static void setLfo (final ILfo lfo, final LfoWaveform waveform, final int frequency, final int delay, final int delayIsOff, final boolean isKeySync)
+    {
+        lfo.setWaveform (waveform);
+        lfo.setRate (LFO_BASE_HERTZ * Math.pow (2, frequency / 1200.0));
+        if (delayIsOff == 0)
+            lfo.setDelay (envelopeTimeCentsToSeconds (delay));
+        lfo.setKeySync (isKeySync);
     }
 
 
@@ -818,6 +925,114 @@ class SxtZone
         this.ampEnvGain = (int) (Math.pow (gainRatio, 1 / 3.0) * 1440.0 - 1440);
 
         this.pan = (int) (zone.getPanning () * 1000.0);
+
+        this.fillLfosFrom (zone);
+    }
+
+
+    /**
+     * Set the LFO 1 parameters from the LFO modulators of a sample zone. LFO 1 can modulate pitch,
+     * filter cutoff and level but has only one waveform and rate, therefore the LFO of the first
+     * active modulator is used and the other modulators are only written if they use the same LFO.
+     *
+     * @param zone The zone from which to get the data
+     */
+    private void fillLfosFrom (final ISampleZone zone)
+    {
+        final Optional<IFilter> filter = zone.getFilter ();
+        final ILfoModulator pitchModulator = zone.getPitchLfoModulator ();
+        final ILfoModulator cutoffModulator = filter.isPresent () ? filter.get ().getCutoffLfoModulator () : null;
+        final ILfoModulator amplitudeModulator = zone.getAmplitudeLfoModulator ();
+
+        ILfo lfo = null;
+        double wheelAmount = 0;
+        for (final ILfoModulator modulator: new ILfoModulator []
+        {
+            pitchModulator,
+            cutoffModulator,
+            amplitudeModulator
+        })
+        {
+            if (modulator == null || !modulator.isActive ())
+                continue;
+            if (lfo == null)
+            {
+                lfo = modulator.getSource ();
+                wheelAmount = getWheelAmount (modulator);
+            }
+            else if (!lfo.equals (modulator.getSource ()))
+                continue;
+
+            final double depth = getKnobDepth (modulator);
+            if (modulator == pitchModulator)
+                this.lfo1ToPitch = Math.clamp (Math.round (depth * IEnvelope.MAX_ENVELOPE_DEPTH), -LFO_MAX_PITCH_CENTS, LFO_MAX_PITCH_CENTS);
+            else if (modulator == cutoffModulator)
+                this.lfo1ToFilterFreq = Math.clamp (Math.round (depth * 1000.0), -1000, 1000);
+            else
+            {
+                // A level modulation of 100% reduces the level down to silence
+                final double amount = 1.0 - Math.pow (10.0, -Math.abs (depth) * ILfoModulator.MAX_VOLUME_DEPTH / 20.0);
+                this.lfo1ToAmp = (int) (Math.signum (depth) * Math.round (Math.clamp (amount, 0.0, 1.0) * 1000.0));
+            }
+        }
+        if (lfo == null)
+            return;
+
+        this.lfo1WaveForm = switch (lfo.getWaveform ())
+        {
+            case SAWTOOTH_DOWN -> LFO_WAVE_INVERTED_SAW;
+            case SAWTOOTH_UP -> LFO_WAVE_SAW;
+            case SQUARE -> LFO_WAVE_SQUARE;
+            case RANDOM -> LFO_WAVE_RANDOM;
+            default -> LFO_WAVE_TRIANGLE;
+        };
+        if (lfo.getRate () > 0)
+            this.lfo1Freq = (int) Math.round (Math.log (lfo.getRate () / LFO_BASE_HERTZ) / Math.log (2) * 1200.0);
+        if (lfo.getDelay () > 0)
+        {
+            this.lfo1DelayIsOff = 0;
+            this.lfo1Delay = envelopeTimeSecondsToCents (lfo.getDelay ());
+        }
+        this.lfo1KeySync = lfo.isKeySync () ? 1 : 0;
+
+        this.modulationToLFO1Amt = (int) Math.round (wheelAmount * 1000.0);
+        if (this.modulationToLFO1Amt != 0)
+            this.modWheelToLFO1AmountOn = 1;
+    }
+
+
+    /**
+     * Get the 'LFO 1 Amt' setting of the modulation wheel for an LFO modulator.
+     *
+     * @param modulator The LFO modulator
+     * @return The amount in the range of [-1..1]
+     */
+    private static double getWheelAmount (final ILfoModulator modulator)
+    {
+        final double depth = modulator.getDepth ();
+        final double wheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
+        // The wheel increases the depth: the knob is set for the wheel fully up
+        if (wheelDepth * depth >= 0)
+        {
+            final double fullDepth = depth + wheelDepth;
+            return fullDepth == 0 ? 0 : Math.clamp (wheelDepth / fullDepth, 0.0, 1.0);
+        }
+        // The wheel reduces the depth: the knob is set for the wheel fully down
+        return depth == 0 ? 0 : Math.clamp (wheelDepth / depth, -1.0, 0.0);
+    }
+
+
+    /**
+     * Get the depth of the LFO 1 knob for an LFO modulator, see {@link #getWheelAmount}.
+     *
+     * @param modulator The LFO modulator
+     * @return The depth
+     */
+    private static double getKnobDepth (final ILfoModulator modulator)
+    {
+        final double depth = modulator.getDepth ();
+        final double wheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
+        return wheelDepth * depth >= 0 ? depth + wheelDepth : depth;
     }
 
 

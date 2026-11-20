@@ -9137,8 +9137,8 @@
       <text:p>velsens</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO -&gt; A atrm, Wheel -&gt; LFO swing</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce5"/>
@@ -9151,8 +9151,8 @@
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>MODENVPARAMS attk, hold, decy, sust, rels</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO -&gt; A tune, Wheel -&gt; LFO swing</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce40" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -9177,8 +9177,8 @@
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>key / keyinv</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO -&gt; A freq, Wheel -&gt; LFO swing</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
      <table:table-cell/>
@@ -9230,19 +9230,19 @@
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 3 -&gt; A atrm, Wheel -&gt; LFO 3 swing</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce5" table:number-columns-repeated="3"/>
      <table:covered-table-cell table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 -&gt; A tune, Wheel -&gt; LFO 1 swing</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:covered-table-cell table:number-columns-repeated="8" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 2 -&gt; A freq, Wheel -&gt; LFO 2 swing</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
      <table:table-cell/>
@@ -9319,16 +9319,16 @@
      <table:table-cell table:style-name="ce29" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>delay, attack, hold, decay,  </text:p><text:p>release, sustain</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="4"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Volume LFO (shape, speed at 120 BPM, amount)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce5"/>
      <table:table-cell table:style-name="ce38" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce29" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>delay, attack, hold, decay,  </text:p><text:p>release, sustain</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Finetune LFO (shape, speed at 120 BPM, amount)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce40" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -9343,8 +9343,8 @@
      <table:table-cell table:style-name="ce29" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>delay, attack, hold, decay,  </text:p><text:p>release, sustain</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce49" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Cutoff LFO (shape, speed at 120 BPM, amount)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
      <table:table-cell/>
@@ -9393,22 +9393,22 @@
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:style-name="ce29"/>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="4"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
+      <text:p>Volume LFO if the amplitude envelope is flat, no mod. wheel</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce5"/>
      <table:table-cell table:style-name="ce38" table:number-columns-repeated="2"/>
      <table:covered-table-cell table:style-name="ce29"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
+      <text:p>Finetune LFO if there is no pitch envelope, no mod. wheel</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
      <table:covered-table-cell table:number-columns-repeated="4" table:style-name="ce29"/>
      <table:table-cell table:style-name="ce49" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
+      <text:p>Cutoff LFO if there is no cutoff envelope, no mod. wheel</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
      <table:table-cell/>
@@ -9709,8 +9709,8 @@
      <table:table-cell table:style-name="ce43"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Mod env key to decay</text:p><text:p>(key only)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 -&gt; Level, Mod Wheel -&gt; LFO 1 Amt</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce5"/>
@@ -9722,8 +9722,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>modEnvToPitch, modEnvDelayIsOff, modEnvDelay,</text:p><text:p>modEnvAttackIsOff, modEnvAttack, modEnvHoldIsOff,</text:p><text:p>modEnvHold, modEnvDecay, modEnvSustain</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Pitch, Mod Wheel -&gt; LFO 1 Amt</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -9749,8 +9749,8 @@
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>SxtZone.keyToFreq</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 -&gt; Filter, Mod Wheel -&gt; LFO 1 Amt</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>
@@ -9799,19 +9799,19 @@
      <table:table-cell table:style-name="ce43"/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Mod env key to decay</text:p><text:p>(key only)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 -&gt; Level, Mod Wheel -&gt; LFO 1 Amt</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 -&gt; Pitch, Mod Wheel -&gt; LFO 1 Amt</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:covered-table-cell table:number-columns-repeated="8" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1 -&gt; Filter, Mod Wheel -&gt; LFO 1 Amt</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>

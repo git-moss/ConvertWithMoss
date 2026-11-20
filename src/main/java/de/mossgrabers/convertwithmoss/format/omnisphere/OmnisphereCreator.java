@@ -33,6 +33,8 @@ import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -131,6 +133,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             text = text.replace ("%PITCHBEND_UP%", toHexFloat (Math.abs (firstSampleZone.getBendUp ()) / 5000.0));
             text = text.replace ("%PITCHBEND_DOWN%", toHexFloat (Math.abs (firstSampleZone.getBendDown ()) / 5000.0));
             text = text.replace ("%SOUND_SOURCE%", filename);
+            text = text.replace ("%AMP_TRIM%", toHexFloat (OmnisphereLfoUtils.MAX_AMPLITUDE));
             text = text.replace ("%KEY_TRACKING%", firstSampleZone.getKeyTracking () > 0 ? DEFAULT_3F800000 : "0");
 
             final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
@@ -215,9 +218,10 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             final boolean hasModEnvelope = pitchEnvelopeDepth > 0;
             text = text.replace ("%PITCH_MOD_SOURCE%", hasModEnvelope ? "ModEnv1" : "off");
             text = text.replace ("%PITCH_MOD_TARGET%", hasModEnvelope ? "A tune" : "off");
-            // 0..1 ~ -4800..4800
-            text = text.replace ("%PITCH_MOD_AMOUNT%", toHexFloat ((pitchEnvelopeDepth + 1.0) / 2.0));
-            text = text.replace ("%PITCH_MOD_INTENSITY%", toHexFloat (1.0));
+            // The target parameter mirrors the coarse tuning of the template (0 cents), the amount is
+            // relative to the range of the coarse tuning (-4800..4800 cents)
+            text = text.replace ("%PITCH_MOD_AMOUNT%", toHexFloat (0.5));
+            text = text.replace ("%PITCH_MOD_INTENSITY%", toHexFloat (Math.clamp (pitchEnvelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH / OmnisphereLfoUtils.PITCH_RANGE_CENTS, 0.0, 1.0)));
 
             // Stored in MODENV
             text = text.replace ("%MOD_ATTACK_SEC%", toSeconds (modEnvelope.getAttackTime ()));
@@ -233,6 +237,33 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             text = text.replace ("%MOD_SUSTAIN%", toSustain (modEnvelope.getSustainLevel ()));
             text = text.replace ("%MOD_RELEASE%", toTime (modEnvelope.getReleaseTime ()));
 
+            // LFOs: LFO1 modulates the pitch, LFO2 the filter cutoff and LFO3 the amplitude of
+            // layer A. The first row of the modulation matrix is used by the pitch envelope.
+            final List<String> modulationRows = new ArrayList<> ();
+            final ILfoModulator pitchLfoModulator = firstSampleZone.getPitchLfoModulator ();
+            final double pitchAmount = Math.clamp (getFullDepth (pitchLfoModulator) * IEnvelope.MAX_ENVELOPE_DEPTH / OmnisphereLfoUtils.PITCH_RANGE_CENTS, 0.0, 1.0);
+            // The coarse tuning of the template is 0 cents
+            text = applyLfo (text, 1, pitchLfoModulator, "A tune", 0.5, pitchAmount, "3e3851ea", modulationRows);
+
+            ILfoModulator cutoffLfoModulator = null;
+            double cutoffAmount = 0;
+            double normalizedCutoff = 1.0;
+            if (globalFilter.isPresent ())
+            {
+                final IFilter filter = globalFilter.get ();
+                cutoffLfoModulator = filter.getCutoffLfoModulator ();
+                normalizedCutoff = OmnisphereFilterUtils.hertzToNormalized (filter.getCutoff ());
+                cutoffAmount = OmnisphereLfoUtils.centsToCutoffAmount (filter.getCutoff (), getFullDepth (cutoffLfoModulator) * IEnvelope.MAX_ENVELOPE_DEPTH);
+            }
+            text = applyLfo (text, 2, cutoffLfoModulator, "A freq", normalizedCutoff, cutoffAmount, "3e28f5c3", modulationRows);
+
+            final ILfoModulator amplitudeLfoModulator = firstSampleZone.getAmplitudeLfoModulator ();
+            final double amplitudeAmount = OmnisphereLfoUtils.dbToAmplitudeAmount (OmnisphereLfoUtils.MAX_AMPLITUDE, getFullDepth (amplitudeLfoModulator) * ILfoModulator.MAX_VOLUME_DEPTH);
+            text = applyLfo (text, 3, amplitudeLfoModulator, "A atrm", OmnisphereLfoUtils.MAX_AMPLITUDE, amplitudeAmount, "3e333333", modulationRows);
+
+            for (int i = 0; i < modulationRows.size (); i++)
+                text = text.replace (createModulationRow (i + 1, "off", "off", 1.0, 0.5), modulationRows.get (i));
+
             final File presetFile = new File (destFolder, filename + ".prt_omn");
             Files.write (presetFile.toPath (), text.getBytes (StandardCharsets.UTF_8));
         }
@@ -240,6 +271,65 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
         {
             this.notifier.logError (ex);
         }
+    }
+
+
+    /**
+     * Fill in the parameters of an LFO and add its modulation routings.
+     *
+     * @param text The text of the template
+     * @param lfoNumber The number of the LFO, 1-3
+     * @param modulator The LFO modulator, might be null
+     * @param target The modulation target, e.g. 'A tune'
+     * @param targetValue The normalized value of the target parameter
+     * @param amount The modulation amount in the range of [0..1]
+     * @param defaultRate The default rate of the LFO
+     * @param modulationRows Where to add the modulation routings
+     * @return The updated text
+     */
+    private static String applyLfo (final String text, final int lfoNumber, final ILfoModulator modulator, final String target, final double targetValue, final double amount, final String defaultRate, final List<String> modulationRows)
+    {
+        final String lfoTag = "%LFO" + lfoNumber;
+        if (modulator == null || amount <= 0)
+            return text.replace (lfoTag + "_TYPE%", "0").replace (lfoTag + "_DEPTH%", DEFAULT_3F800000).replace (lfoTag + "_RATE%", defaultRate);
+
+        // The modulation wheel modulates the depth of the LFO
+        final double wheelAmount = Math.clamp (Math.abs (modulator.getDepthModWheelModulator ().getDepth ()) / getFullDepth (modulator), 0.0, 1.0);
+        final String source = "LFO" + lfoNumber;
+        modulationRows.add (createModulationRow (modulationRows.size () + 1, source, target, targetValue, amount));
+        if (wheelAmount > 0)
+            modulationRows.add (createModulationRow (modulationRows.size () + 1, "Wheel", source + " swing", 1.0 - wheelAmount, wheelAmount));
+
+        final ILfo lfo = modulator.getSource ();
+        return text.replace (lfoTag + "_TYPE%", toHexFloat (OmnisphereLfoUtils.getType (lfo.getWaveform ()))).replace (lfoTag + "_DEPTH%", toHexFloat (1.0 - wheelAmount)).replace (lfoTag + "_RATE%", toHexFloat (OmnisphereLfoUtils.hertzToNormalized (lfo.getRate ())));
+    }
+
+
+    /**
+     * Get the depth of the given LFO modulator with the modulation wheel fully up.
+     *
+     * @param modulator The LFO modulator
+     * @return The absolute depth
+     */
+    private static double getFullDepth (final ILfoModulator modulator)
+    {
+        return Math.abs (modulator.getDepth () + modulator.getDepthModWheelModulator ().getDepth ());
+    }
+
+
+    /**
+     * Create the attributes of a row of the modulation matrix.
+     *
+     * @param row The index of the row
+     * @param source The modulation source
+     * @param target The modulation target
+     * @param targetValue The normalized value of the target parameter
+     * @param amount The modulation amount
+     * @return The attributes
+     */
+    private static String createModulationRow (final int row, final String source, final String target, final double targetValue, final double amount)
+    {
+        return String.format ("source%1$d=\"%2$s\" target%1$d=\"%3$s\" defV%1$d=\"%4$s\"  lo%1$d=\"0\"  hi%1$d=\"%5$s\"", Integer.valueOf (row), source, target, toHexFloat (targetValue), toHexFloat (amount));
     }
 
 

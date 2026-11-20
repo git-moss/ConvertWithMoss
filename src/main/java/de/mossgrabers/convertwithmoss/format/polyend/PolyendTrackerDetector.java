@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
@@ -20,9 +21,12 @@ import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
@@ -219,6 +223,19 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
         if (amplitudeEnvelope.isPresent ())
             zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope.get ());
 
+        // The LFO amount of the volume reduces the volume down to silence
+        final OptionalDouble volumeLfoAmount = readLfoAmount (buffer, PolyendTrackerConstants.ENV_VOLUME);
+        if (volumeLfoAmount.isPresent ())
+        {
+            final double db = -20.0 * Math.log10 (Math.max (PolyendTrackerConstants.MIN_AMPLITUDE_FACTOR, 1.0 - volumeLfoAmount.getAsDouble ()));
+            applyLfo (buffer, PolyendTrackerConstants.ENV_VOLUME, zone.getAmplitudeLfoModulator (), Math.min (1.0, db / ILfoModulator.MAX_VOLUME_DEPTH));
+        }
+
+        // The LFO amount of the fine tune covers its range of -100..100 cents
+        final OptionalDouble pitchLfoAmount = readLfoAmount (buffer, PolyendTrackerConstants.ENV_FINETUNE);
+        if (pitchLfoAmount.isPresent ())
+            applyLfo (buffer, PolyendTrackerConstants.ENV_FINETUNE, zone.getPitchLfoModulator (), pitchLfoAmount.getAsDouble () * PolyendTrackerConstants.FINETUNE_RANGE_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+
         final Optional<IEnvelope> pitchEnvelope = readEnvelope (buffer, PolyendTrackerConstants.ENV_FINETUNE);
         if (pitchEnvelope.isPresent ())
         {
@@ -280,7 +297,63 @@ public class PolyendTrackerDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
+        // The LFO amount is a normalized cut-off offset like the envelope amount
+        final OptionalDouble cutoffLfoAmount = readLfoAmount (buffer, PolyendTrackerConstants.ENV_CUTOFF);
+        if (cutoffLfoAmount.isPresent ())
+            applyLfo (buffer, PolyendTrackerConstants.ENV_CUTOFF, filter.getCutoffLfoModulator (), cutoffLfoAmount.getAsDouble ());
+
         return Optional.of (filter);
+    }
+
+
+    /**
+     * Read the amount of the LFO of an automation slot.
+     *
+     * @param buffer The buffer with the file content
+     * @param slot The index of the automation slot (0 = volume, 2 = cutoff, 5 = fine tune)
+     * @return The amount in the range of [0..1], empty if the slot is disabled, uses the envelope
+     *         instead or the amount is 0
+     */
+    private static OptionalDouble readLfoAmount (final ByteBuffer buffer, final int slot)
+    {
+        final int base = PolyendTrackerConstants.OFF_ENVELOPES + slot * PolyendTrackerConstants.ENVELOPE_SIZE;
+        final boolean usesLFO = (buffer.get (base + PolyendTrackerConstants.ENV_OFF_LFO_FLAG) & 0xFF) != 0;
+        final boolean enabled = (buffer.get (base + PolyendTrackerConstants.ENV_OFF_ENABLED) & 0xFF) != 0;
+        if (!enabled || !usesLFO)
+            return OptionalDouble.empty ();
+
+        final int lfoBase = PolyendTrackerConstants.OFF_LFOS + slot * PolyendTrackerConstants.LFO_SIZE;
+        final double amount = Math.clamp (buffer.getFloat (lfoBase + PolyendTrackerConstants.LFO_OFF_AMOUNT), 0.0, 1.0);
+        return amount > 0 ? OptionalDouble.of (amount) : OptionalDouble.empty ();
+    }
+
+
+    /**
+     * Set the LFO of an automation slot to the given LFO modulator. The Tracker has no modulation
+     * wheel control of the LFO depth. The LFO is always synchronized to the tempo, the rate is
+     * calculated for 120 BPM.
+     *
+     * @param buffer The buffer with the file content
+     * @param slot The index of the automation slot (0 = volume, 2 = cutoff, 5 = fine tune)
+     * @param modulator The LFO modulator
+     * @param depth The modulation depth
+     */
+    private static void applyLfo (final ByteBuffer buffer, final int slot, final ILfoModulator modulator, final double depth)
+    {
+        final int lfoBase = PolyendTrackerConstants.OFF_LFOS + slot * PolyendTrackerConstants.LFO_SIZE;
+        modulator.setDepth (Math.clamp (depth, -1.0, 1.0));
+
+        final ILfo lfo = modulator.getSource ();
+        lfo.setWaveform (switch (buffer.get (lfoBase + PolyendTrackerConstants.LFO_OFF_SHAPE) & 0xFF)
+        {
+            case PolyendTrackerConstants.LFO_SHAPE_REV_SAW -> LfoWaveform.SAWTOOTH_DOWN;
+            case PolyendTrackerConstants.LFO_SHAPE_SAW -> LfoWaveform.SAWTOOTH_UP;
+            case PolyendTrackerConstants.LFO_SHAPE_SQUARE -> LfoWaveform.SQUARE;
+            case PolyendTrackerConstants.LFO_SHAPE_RANDOM -> LfoWaveform.RANDOM;
+            default -> LfoWaveform.TRIANGLE;
+        });
+        lfo.setRate (PolyendTrackerValueConverter.lfoSpeedToHertz (buffer.get (lfoBase + PolyendTrackerConstants.LFO_OFF_SPEED) & 0xFF));
+        lfo.setKeySync (true);
     }
 
 

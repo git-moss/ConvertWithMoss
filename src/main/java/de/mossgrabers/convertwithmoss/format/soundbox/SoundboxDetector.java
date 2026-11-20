@@ -455,8 +455,8 @@ public class SoundboxDetector extends AbstractDetector<EmptySettingsUI>
      * frequency of the filter effect which is used as the filter of the zones the cutoff LFO. If
      * several engines modulate the same destination the strongest one is used. A modulated
      * parameter does not keep its own value but moves around the center which is set by the
-     * position of the assignment, therefore the position replaces the static value of the
-     * parameter in the layer state and engine settings.
+     * position of the assignment, therefore the position replaces the static value of the parameter
+     * in the layer state and engine settings.
      *
      * @param lfoEngines The LFO engines of the preset
      * @param layerIndex The index of the layer

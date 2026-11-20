@@ -740,9 +740,9 @@ public class SoundboxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
 
     /**
-     * Assigns an LFO to a parameter. The assignment is added to an engine with identical
-     * oscillator settings or to a new engine. If all engines are used by different oscillators the
-     * assignment is dropped.
+     * Assigns an LFO to a parameter. The assignment is added to an engine with identical oscillator
+     * settings or to a new engine. If all engines are used by different oscillators the assignment
+     * is dropped.
      *
      * @param lfoEngines The LFO engines
      * @param modulator The LFO modulator of the model
