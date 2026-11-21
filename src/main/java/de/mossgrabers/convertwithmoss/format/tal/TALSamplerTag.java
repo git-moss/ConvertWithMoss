@@ -165,6 +165,17 @@ public class TALSamplerTag
     /** The filter layer on/off attribute. */
     public static final String FILTER_LAYER_ON         = "filterlayer";
 
+    /** The LFO rate attribute, followed by the LFO number 1 to 3. [0..1] -> 0..200Hz */
+    public static final String LFO_RATE                = "lforate";
+    /** The LFO wave form attribute, followed by the LFO number 1 to 3. */
+    public static final String LFO_WAVEFORM            = "lfowaveform";
+    /** The LFO trigger (restart with each note) attribute, followed by the LFO number 1 to 3. */
+    public static final String LFO_TRIGGER             = "lfotrigger";
+    /** The LFO tempo synchronization attribute, followed by the LFO number 1 to 3. */
+    public static final String LFO_SYNC                = "lfosync";
+    /** The LFO unipolar attribute, followed by the LFO number 1 to 3. */
+    public static final String LFO_UNIPOLAR            = "lfounipolar";
+
     /** The modulation matrix tag. */
     public static final String MOD_MATRIX              = "modmatrix";
     /** The modulation matrix entry tag. */

@@ -614,10 +614,10 @@ public class S770Patch
          */
         public LfoModulationSection (final InputStream input) throws IOException
         {
-            this.lfoRateCtrl = StreamUtils.readUnsigned8 (input);
-            this.lfoPitchCtrl = StreamUtils.readUnsigned8 (input);
-            this.lfoTvaDepth = StreamUtils.readUnsigned8 (input);
-            this.lfoTvfDepth = StreamUtils.readUnsigned8 (input);
+            this.lfoRateCtrl = StreamUtils.readSigned8 (input);
+            this.lfoPitchCtrl = StreamUtils.readSigned8 (input);
+            this.lfoTvaDepth = StreamUtils.readSigned8 (input);
+            this.lfoTvfDepth = StreamUtils.readSigned8 (input);
         }
 
 
@@ -801,4 +801,4 @@ public class S770Patch
             return "ControllerSection [ctrlNum=" + this.ctrlSelect + ", pitchCtrl=" + this.pitchCtrl + TVA_CTRL + this.tvaCtrl + TVF_CTRL + this.tvfCtrl + ", lfoRateCtrl=" + this.lfoRateCtrl + LFO_PITCH_CTRL + this.lfoPitchCtrl + LFO_TVA_DEPTH + this.lfoTvaDepth + LFO_TVF_DEPTH + this.lfoTvfDepth + "]";
         }
     }
-}
+}

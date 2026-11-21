@@ -36,9 +36,12 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
@@ -59,6 +62,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     private static final String                  CREATED_BY_VERSION    = "30601";
     private static final String                  FILTER_1_FREQ         = "Filter 1 Freq";
+    private static final double                  DEFAULT_LFO_RATE      = 5.0;
     private static final String                  IDS_NOTIFY_STORING    = "IDS_NOTIFY_STORING";
 
     private static final String                  ICON_CLARINET         = "clarinet";
@@ -820,6 +824,11 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, pitchEnvelope.getReleaseSlope (), 6);
                 addModulationEntry (document, modulationElement, "ENV2", "Pitch", (int) Math.round (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
             }
+
+            // -----------------------------------------------------------
+            // LFOs
+
+            writeLfos (document, soundshapeElement, modulationElement, zone);
         }
 
         // Needs to be added here to fulfill the required order
@@ -829,7 +838,136 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     }
 
 
-    private static void addModulationEntry (final Document document, final Element modulationElement, final String source, final String destination, final String amount)
+    /**
+     * Write the LFO modulators of the pitch, the volume and the filter cutoff as modulation entries
+     * from the two LFOs and add the LFO elements. Modulators with the same LFO settings share an
+     * LFO; if more than two different LFOs are needed, the further modulators use LFO 1. The
+     * modulation wheel is written as the via source of an entry, which scales the modulation
+     * between the amount (wheel down) and the via amount (wheel up).
+     *
+     * @param document The XML document
+     * @param soundshapeElement The sound shape element to which to add the LFO elements
+     * @param modulationElement The modulation element to which to add the entries
+     * @param zone The zone from which to take the LFO modulators
+     */
+    private static void writeLfos (final Document document, final Element soundshapeElement, final Element modulationElement, final ISampleZone zone)
+    {
+        final ILfo [] lfos = new ILfo [2];
+        writeLfoEntry (document, modulationElement, lfos, zone.getPitchLfoModulator (), "Pitch", false);
+        writeLfoEntry (document, modulationElement, lfos, zone.getAmplitudeLfoModulator (), "Volume", true);
+        final Optional<IFilter> filter = zone.getFilter ();
+        if (filter.isPresent () && FILTER_TYPES.get (filter.get ().getType ()) != null)
+            writeLfoEntry (document, modulationElement, lfos, filter.get ().getCutoffLfoModulator (), FILTER_1_FREQ, false);
+
+        for (int i = 0; i < lfos.length; i++)
+        {
+            final ILfo lfo = lfos[i];
+            if (lfo == null)
+                continue;
+            final Element lfoElement = XMLUtils.addElement (document, soundshapeElement, i == 0 ? TX16WxTag.LFO_1 : TX16WxTag.LFO_2);
+            lfoElement.setAttribute (TX16WxTag.LFO_TYPE, getLfoType (lfo.getWaveform ()));
+            lfoElement.setAttribute (TX16WxTag.LFO_RATE, String.format (Locale.US, "%.2f Hz", Double.valueOf (lfo.getRate () > 0 ? lfo.getRate () : DEFAULT_LFO_RATE)));
+            lfoElement.setAttribute (TX16WxTag.LFO_FADE_IN, formatTime (lfo.getFadeIn ()));
+            lfoElement.setAttribute (TX16WxTag.LFO_MODE, "Normal");
+            lfoElement.setAttribute (TX16WxTag.LFO_SYNC, lfo.isKeySync () ? "Key" : "None");
+            lfoElement.setAttribute (TX16WxTag.LFO_POSITION, Math.round (Math.clamp (lfo.getStartPhase (), 0.0, 1.0) * 100.0) + "%");
+            lfoElement.setAttribute (TX16WxTag.LFO_AMPLITUDE, "100%");
+        }
+    }
+
+
+    /**
+     * Write the modulation entry of one LFO modulator if it is active.
+     *
+     * @param document The XML document
+     * @param modulationElement The modulation element to which to add the entry
+     * @param lfos The LFOs which are already used by other entries, index 0 is LFO 1
+     * @param modulator The LFO modulator
+     * @param destination The destination of the entry
+     * @param isVolume True if the destination is the volume (amount in dB), otherwise the amount is
+     *            in cents
+     */
+    private static void writeLfoEntry (final Document document, final Element modulationElement, final ILfo [] lfos, final ILfoModulator modulator, final String destination, final boolean isVolume)
+    {
+        if (!modulator.isActive ())
+            return;
+
+        final ILfo lfo = modulator.getSource ();
+        final int index = getLfoIndex (lfos, lfo);
+        if (lfos[index] == null)
+            lfos[index] = lfo;
+
+        // There is no falling saw-tooth, a rising one with an inverted depth is identical
+        double scale = isVolume ? ILfoModulator.MAX_VOLUME_DEPTH : IEnvelope.MAX_ENVELOPE_DEPTH;
+        if (lfos[index].getWaveform () == LfoWaveform.SAWTOOTH_DOWN)
+            scale = -scale;
+
+        final double depth = modulator.getDepth ();
+        final Element entryElement = addModulationEntry (document, modulationElement, index == 0 ? "LFO1" : "LFO2", destination, formatAmount (depth * scale, isVolume));
+        final double modWheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
+        if (modWheelDepth != 0)
+        {
+            entryElement.setAttribute (TX16WxTag.MODULATION_VIA, "Mod Wheel");
+            entryElement.setAttribute (TX16WxTag.MODULATION_AMOUNT_VIA, formatAmount ((depth + modWheelDepth) * scale, isVolume));
+        }
+    }
+
+
+    /**
+     * Get the index of the LFO to use: an LFO with the same settings if one is already used,
+     * otherwise a free one, otherwise LFO 1.
+     *
+     * @param lfos The LFOs which are already used, index 0 is LFO 1
+     * @param lfo The LFO to place
+     * @return The index of the LFO to use
+     */
+    private static int getLfoIndex (final ILfo [] lfos, final ILfo lfo)
+    {
+        for (int i = 0; i < lfos.length; i++)
+            if (lfos[i] != null && lfos[i].getWaveform () == lfo.getWaveform () && Math.abs (lfos[i].getRate () - lfo.getRate ()) < 0.001 && lfos[i].isKeySync () == lfo.isKeySync ())
+                return i;
+        for (int i = 0; i < lfos.length; i++)
+            if (lfos[i] == null)
+                return i;
+        return 0;
+    }
+
+
+    /**
+     * Get the TX16Wx LFO type of a wave form. There is no random wave form, it is written as a
+     * triangle.
+     *
+     * @param waveform The wave form
+     * @return The LFO type
+     */
+    private static String getLfoType (final LfoWaveform waveform)
+    {
+        return switch (waveform)
+        {
+            case SINE -> "Sinus";
+            case SQUARE -> "Square";
+            case SAWTOOTH_UP, SAWTOOTH_DOWN -> "Sawtooth";
+            default -> "Triangle";
+        };
+    }
+
+
+    /**
+     * Format a modulation amount.
+     *
+     * @param amount The amount in dB or cents
+     * @param isVolume True if the amount is in dB, otherwise in cents
+     * @return The formatted amount
+     */
+    private static String formatAmount (final double amount, final boolean isVolume)
+    {
+        if (isVolume)
+            return String.format (Locale.US, "%.1f dB", Double.valueOf (amount));
+        return Math.round (amount) + "Ct";
+    }
+
+
+    private static Element addModulationEntry (final Document document, final Element modulationElement, final String source, final String destination, final String amount)
     {
         final Element modulationEntryElement = XMLUtils.addElement (document, modulationElement, TX16WxTag.MODULATION_ENTRY);
         modulationEntryElement.setAttribute (TX16WxTag.MODULATION_SOURCE, source);
@@ -841,6 +979,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         final Element modulationViaCurveElement = XMLUtils.addElement (document, modulationEntryElement, TX16WxTag.MODULATION_VIA_CURVE);
         modulationViaCurveElement.setAttribute (TX16WxTag.MODULATION_SMOOTH, "true");
         modulationViaCurveElement.setAttribute (TX16WxTag.MODULATION_SHAPE, "Linear");
+        return modulationEntryElement;
     }
 
 
@@ -864,4 +1003,4 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     {
         return (int) Math.round ((level < 0 ? defaultLevel : level) * 100.0) + "%";
     }
-}
+}

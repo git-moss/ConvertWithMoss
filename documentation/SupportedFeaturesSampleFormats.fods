@@ -10770,8 +10770,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Env time key follow,</text:p><text:p>time velocity sensitivity</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO -&gt; TVA, Mod -&gt; LFO TVA Depth (depth scale estimated)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce5"/>
@@ -10783,8 +10783,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce52" office:value-type="string" calcext:value-type="string"><text:p>4-stage envelope</text:p><text:p>(shared with TVF)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO -&gt; Pitch, Mod -&gt; LFO Pitch</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce5"/>
@@ -10807,8 +10807,8 @@
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>Cutoff KF</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO -&gt; TVF, Mod -&gt; LFO TVF Depth (depth scale estimated)</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>
@@ -12390,13 +12390,13 @@
       <text:p>Patch cable note to volume</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce43"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Volume, Y (Mod Wheel) -&gt; cable depth</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce68"/>
      <table:table-cell table:style-name="ce49" table:number-columns-repeated="4"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Pitch, Y (Mod Wheel) -&gt; cable depth</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce42" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -12420,8 +12420,8 @@
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Note → Frequency</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; LPF/HPF Frequency, Y (Mod Wheel) -&gt; cable depth</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>
@@ -12490,20 +12490,20 @@
       <text:p>Patch cable note to volume</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce43"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Volume, Y (Mod Wheel) -&gt; cable depth</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce68"/>
      <table:table-cell table:style-name="ce49" table:number-columns-repeated="4"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Pitch, Y (Mod Wheel) -&gt; cable depth</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:covered-table-cell table:number-columns-repeated="5" table:style-name="ce26"/>
      <table:covered-table-cell table:style-name="ce29"/>
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; LPF/HPF Frequency, Y (Mod Wheel) -&gt; cable depth</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>
@@ -12617,8 +12617,8 @@
       <text:p>ModMatrix: Vel → Volume A</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1-3 -&gt; Master Volume (mod matrix), MW -&gt; Matrix n</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce60"/>
      <table:table-cell table:style-name="ce52"/>
@@ -12630,8 +12630,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>adsrmodattack, adsrmodhold,</text:p><text:p>adsrmoddecay, adsrmodsustain,</text:p><text:p>adsrmodrelease</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1-3 -&gt; Master Tune (mod matrix), MW -&gt; Matrix n</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce14"/>
@@ -12655,8 +12655,8 @@
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>filterkeyboardvalue</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1-3 -&gt; Cutoff (mod matrix), MW -&gt; Matrix n</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>
@@ -12718,20 +12718,20 @@
      <table:table-cell table:style-name="ce49"/>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1-3 -&gt; Master Volume (mod matrix), MW -&gt; Matrix n</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce60"/>
      <table:table-cell table:style-name="ce52"/>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1-3 -&gt; Master Tune (mod matrix), MW -&gt; Matrix n</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce60"/>
      <table:table-cell table:style-name="ce14"/>
      <table:covered-table-cell table:number-columns-repeated="7" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1-3 -&gt; Cutoff (mod matrix), MW -&gt; Matrix n</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>
@@ -12853,8 +12853,8 @@
       <text:p>velocity</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Volume (mod table), Via Mod Wheel</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce60"/>
      <table:table-cell table:style-name="ce52"/>
@@ -12866,8 +12866,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>time1, time2, time3, level0, level1, level2, level3, shape1, shape2, shape3</text:p><text:p/><text:p/>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Pitch (mod table), Via Mod Wheel</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce14"/>
@@ -12891,8 +12891,8 @@
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Key → Filter 1 Freq</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Filter Freq (mod table), Via Mod Wheel</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>
@@ -12951,20 +12951,20 @@
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="2"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Volume (mod table), Via Mod Wheel</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce60"/>
      <table:table-cell table:style-name="ce52"/>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Pitch (mod table), Via Mod Wheel</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce60"/>
      <table:table-cell table:style-name="ce14"/>
      <table:covered-table-cell table:number-columns-repeated="7" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (mod matrix)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>LFO 1/2 -&gt; Filter Freq (mod table), Via Mod Wheel</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>

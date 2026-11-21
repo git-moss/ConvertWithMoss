@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,10 +36,13 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.TriggerType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
@@ -439,6 +443,8 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
         IEnvelope ampEnvelope = null;
         double ampVelocity = 0;
+        Element lfoSoundShapeElement = null;
+        List<TX16WxModulator> lfoModulators = Collections.emptyList ();
         final String soundShape = groupElement.getAttribute (TX16WxTag.SOUND_SHAPE);
         if (soundShape != null && !soundShape.isBlank ())
         {
@@ -472,6 +478,8 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
                 filter = this.parseFilter (soundShapeElement, modulators);
                 pitchModulator = parsePitchModulator (soundShapeElement, modulators);
+                lfoSoundShapeElement = soundShapeElement;
+                lfoModulators = modulators;
                 final int bend = parsePitchbend (modulators);
                 if (bend > 0)
                     pitchbend = bend;
@@ -509,6 +517,12 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
                 zone.getAmplitudeVelocityModulator ().setDepth (ampVelocity);
                 zone.getAmplitudeEnvelopeModulator ().setSource (ampEnvelope);
+
+                if (lfoSoundShapeElement != null)
+                {
+                    applyLfo (zone.getPitchLfoModulator (), lfoSoundShapeElement, lfoModulators, 1.0 / IEnvelope.MAX_ENVELOPE_DEPTH, "Pitch", "Pitch (raw)", "Pitch (Raw)");
+                    applyLfo (zone.getAmplitudeLfoModulator (), lfoSoundShapeElement, lfoModulators, 1.0 / ILfoModulator.MAX_VOLUME_DEPTH, "Volume");
+                }
             }
         }
 
@@ -703,6 +717,103 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
                 if (envelope.isPresent ())
                     cutoffModulator.setSource (envelope.get ());
             }
+        }
+
+        applyLfo (filter.getCutoffLfoModulator (), soundShapeElement, modulators, 1.0 / IEnvelope.MAX_ENVELOPE_DEPTH, "Filter 1 Freq", "Filter 2 Freq");
+    }
+
+
+    /**
+     * Apply the first modulation entry from one of the two LFOs to one of the given destinations to
+     * an LFO modulator. The amounts of pitch and cutoff are in cents, the one of the volume in dB.
+     * The amplitude of the LFO scales the amounts. If the via source of the entry is the
+     * modulation wheel, the modulation scales between the amount (wheel down) and the via amount
+     * (wheel up); other via sources are ignored. Tempo synchronization is not converted, the rate
+     * in Hertz is always used.
+     *
+     * @param modulator The LFO modulator to fill
+     * @param soundShapeElement The sound shape element which contains the LFOs
+     * @param modulators The modulation entries
+     * @param scale The factor which converts an amount into the depth of the model
+     * @param destinations The destinations to match
+     */
+    private static void applyLfo (final ILfoModulator modulator, final Element soundShapeElement, final List<TX16WxModulator> modulators, final double scale, final String... destinations)
+    {
+        for (final TX16WxModulator entry: modulators)
+        {
+            if (!entry.isEnabled () || !entry.isSource ("LFO1", "LFO2") || !entry.isDestination (destinations))
+                continue;
+            final Optional<Double> amountValue = entry.getModAmountValue ();
+            if (amountValue.isEmpty ())
+                continue;
+
+            final Element lfoElement = XMLUtils.getChildElementByName (soundShapeElement, entry.isSource ("LFO1") ? TX16WxTag.LFO_1 : TX16WxTag.LFO_2);
+            final double amplitude = lfoElement == null ? 1.0 : parseNormalizedVolume (lfoElement, TX16WxTag.LFO_AMPLITUDE);
+            final double amount = amountValue.get ().doubleValue ();
+            modulator.setDepth (Math.clamp (amount * amplitude * scale, -1.0, 1.0));
+
+            if (entry.isVia ("Mod Wheel"))
+            {
+                final Optional<Double> amountViaValue = entry.getModAmountViaValue ();
+                if (amountViaValue.isPresent ())
+                    modulator.getDepthModWheelModulator ().setDepth (Math.clamp ((amountViaValue.get ().doubleValue () - amount) * amplitude * scale, -1.0, 1.0));
+            }
+
+            if (lfoElement != null)
+            {
+                final ILfo lfo = modulator.getSource ();
+                lfo.setWaveform (getLfoWaveform (lfoElement.getAttribute (TX16WxTag.LFO_TYPE)));
+                final double rate = parseFrequency (lfoElement.getAttribute (TX16WxTag.LFO_RATE));
+                if (rate > 0)
+                    lfo.setRate (rate);
+                lfo.setFadeIn (parseTime (lfoElement, TX16WxTag.LFO_FADE_IN));
+                lfo.setStartPhase (Math.clamp (parsePercentage (lfoElement, TX16WxTag.LFO_POSITION), 0.0, 1.0));
+                lfo.setKeySync ("Key".equals (lfoElement.getAttribute (TX16WxTag.LFO_SYNC)));
+            }
+            return;
+        }
+    }
+
+
+    /**
+     * Map the TX16Wx LFO type to the wave form. Exponent has no counterpart and is read as a
+     * triangle.
+     *
+     * @param type The LFO type
+     * @return The wave form
+     */
+    private static LfoWaveform getLfoWaveform (final String type)
+    {
+        return switch (type)
+        {
+            case "Sinus" -> LfoWaveform.SINE;
+            case "Sawtooth" -> LfoWaveform.SAWTOOTH_UP;
+            case "Square" -> LfoWaveform.SQUARE;
+            default -> LfoWaveform.TRIANGLE;
+        };
+    }
+
+
+    /**
+     * Parse a frequency like '5.00 Hz', '0.75Hz' or '1.2kHz'.
+     *
+     * @param value The value to parse
+     * @return The frequency in Hertz or -1 if it cannot be parsed
+     */
+    private static double parseFrequency (final String value)
+    {
+        if (value == null || value.isBlank ())
+            return -1;
+        final String text = value.trim ();
+        final boolean isKiloHertz = text.toLowerCase (Locale.US).endsWith ("khz");
+        try
+        {
+            final double number = Double.parseDouble (text.replaceAll ("(?i)\\s*k?hz$", ""));
+            return isKiloHertz ? number * 1000.0 : number;
+        }
+        catch (final NumberFormatException _)
+        {
+            return -1;
         }
     }
 

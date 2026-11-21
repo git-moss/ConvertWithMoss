@@ -26,10 +26,13 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
@@ -69,6 +72,10 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
     private static final String    ENDING_DELUGE         = ".xml";
     private static final int       KIT_BASE_NOTE         = 36;
     private static final int       SEARCH_LEVELS         = 2;
+    /** The tempo at which tempo synchronized LFO rates are converted. */
+    private static final double    LFO_SYNC_TEMPO        = 120.0;
+    /** The firmware default of the rate of the global LFO: user value 30. */
+    private static final int       DEFAULT_LFO1_RATE     = DelugeValues.userValueToParam (30);
 
     private File                   previousSampleFolder;
 
@@ -582,7 +589,152 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             final Optional<IFilter> filter = readFilter (soundElement, defaultParams);
             if (filter.isPresent ())
                 zone.setFilter (filter.get ());
+
+            applyLfos (soundElement, defaultParams, zone);
         }
+    }
+
+
+    /**
+     * Read the patch cables from an LFO to the pitch, the volume and the filter frequency and apply
+     * them to the LFO modulators of the zone. The global LFO 1 runs freely, the local LFO 2 restarts
+     * with each note. The modulation wheel controls the depth of such a cable with a cable from the
+     * source 'y' (to which the firmware routes CC 1) in its 'depthControlledBy' list.
+     *
+     * @param soundElement The sound element which contains the LFO settings
+     * @param defaultParams The default parameters element which contains the patch cables and the
+     *            LFO rates
+     * @param zone The zone to fill
+     */
+    private static void applyLfos (final Element soundElement, final Element defaultParams, final ISampleZone zone)
+    {
+        final Optional<LfoCable> pitchCable = findLfoCable (defaultParams, DelugeTag.DESTINATION_PITCH);
+        if (pitchCable.isPresent ())
+            applyLfo (zone.getPitchLfoModulator (), soundElement, defaultParams, pitchCable.get (), DelugeValues.pitchAmountToCents (pitchCable.get ().amount ()) / IEnvelope.MAX_ENVELOPE_DEPTH);
+
+        final Optional<LfoCable> volumeCable = findLfoCable (defaultParams, DelugeTag.DESTINATION_VOLUME);
+        if (volumeCable.isPresent ())
+            applyLfo (zone.getAmplitudeLfoModulator (), soundElement, defaultParams, volumeCable.get (), DelugeValues.volumeAmountToDb (volumeCable.get ().amount ()) / ILfoModulator.MAX_VOLUME_DEPTH);
+
+        final Optional<IFilter> filter = zone.getFilter ();
+        if (filter.isEmpty ())
+            return;
+        Optional<LfoCable> cutoffCable = findLfoCable (defaultParams, DelugeTag.LPF_FREQUENCY);
+        if (cutoffCable.isEmpty ())
+            cutoffCable = findLfoCable (defaultParams, DelugeTag.HPF_FREQUENCY);
+        if (cutoffCable.isPresent ())
+            applyLfo (filter.get ().getCutoffLfoModulator (), soundElement, defaultParams, cutoffCable.get (), DelugeValues.cutoffAmountToCents (cutoffCable.get ().amount ()) / IEnvelope.MAX_ENVELOPE_DEPTH);
+    }
+
+
+    /**
+     * Set the depths and the LFO settings of an LFO modulator. A unipolar cable moves the
+     * destination only in one direction, which is approximated with half of the depth. The cable
+     * which controls the depth with the modulation wheel scales the depth by 1 + amount / 2^30 with
+     * the wheel fully up. Tempo synchronized rates are converted assuming 120 BPM.
+     *
+     * @param modulator The LFO modulator
+     * @param soundElement The sound element which contains the LFO settings
+     * @param defaultParams The default parameters element which contains the LFO rates
+     * @param cable The LFO patch cable
+     * @param depth The depth of the cable in the range of [-1..1]
+     */
+    private static void applyLfo (final ILfoModulator modulator, final Element soundElement, final Element defaultParams, final LfoCable cable, final double depth)
+    {
+        final double baseDepth = Math.clamp (cable.isUnipolar () ? depth / 2.0 : depth, -1.0, 1.0);
+        modulator.setDepth (baseDepth);
+        modulator.getDepthModWheelModulator ().setDepth (Math.clamp (baseDepth * cable.modWheelAmount () / DelugeValues.PATCH_CABLE_FULL, -1.0, 1.0));
+
+        final boolean isGlobal = DelugeTag.SOURCE_LFO1.equals (cable.source ());
+        final Optional<Element> lfoElement = getDirectChild (soundElement, isGlobal ? DelugeTag.LFO1 : DelugeTag.LFO2);
+        final ILfo lfo = modulator.getSource ();
+        lfo.setWaveform (getLfoWaveform (lfoElement.isPresent () ? getValue (lfoElement.get (), DelugeTag.TYPE) : ""));
+        lfo.setKeySync (!isGlobal);
+
+        final int syncLevel = lfoElement.isPresent () ? getIntValue (lfoElement.get (), DelugeTag.SYNC_LEVEL, 0) : 0;
+        if (syncLevel > 0)
+            lfo.setRate (DelugeValues.syncedLfoRateToHertz (syncLevel, getIntValue (lfoElement.get (), DelugeTag.SYNC_TYPE, 0), LFO_SYNC_TEMPO));
+        else
+        {
+            final String rate = getValue (defaultParams, isGlobal ? DelugeTag.LFO1_RATE : DelugeTag.LFO2_RATE);
+            lfo.setRate (DelugeValues.lfoRateToHertz (DelugeValues.parseValue (rate, isGlobal ? DEFAULT_LFO1_RATE : 0)));
+        }
+    }
+
+
+    /**
+     * Map the Deluge LFO type to the wave form. The firmware falls back to a triangle for unknown
+     * values.
+     *
+     * @param type The LFO type
+     * @return The wave form
+     */
+    private static LfoWaveform getLfoWaveform (final String type)
+    {
+        return switch (type)
+        {
+            case DelugeTag.LFO_TYPE_SINE -> LfoWaveform.SINE;
+            case DelugeTag.LFO_TYPE_SQUARE -> LfoWaveform.SQUARE;
+            case DelugeTag.LFO_TYPE_SAW -> LfoWaveform.SAWTOOTH_UP;
+            case DelugeTag.LFO_TYPE_SAMPLE_AND_HOLD, DelugeTag.LFO_TYPE_RANDOM_WALK, DelugeTag.LFO_TYPE_WARBLER -> LfoWaveform.RANDOM;
+            default -> LfoWaveform.TRIANGLE;
+        };
+    }
+
+
+    /**
+     * Find the first patch cable from one of the two LFOs to the given destination together with
+     * the amount of the modulation wheel which controls its depth. The depth is either controlled
+     * by a nested cable in 'depthControlledBy' or - in files written before firmware 3.2 - by a
+     * cable to the destination 'range' which affects all cables marked as 'rangeAdjustable'.
+     *
+     * @param defaultParams The default parameters element which contains the patch cables
+     * @param destination The modulation destination to match
+     * @return The cable if found
+     */
+    private static Optional<LfoCable> findLfoCable (final Element defaultParams, final String destination)
+    {
+        final Optional<Element> patchCables = getDirectChild (defaultParams, DelugeTag.PATCH_CABLES);
+        if (patchCables.isEmpty ())
+            return Optional.empty ();
+
+        final List<Element> cables = getDirectChildren (patchCables.get (), DelugeTag.PATCH_CABLE);
+        for (final Element cable: cables)
+        {
+            final String source = getValue (cable, DelugeTag.SOURCE);
+            if (!destination.equals (getValue (cable, DelugeTag.DESTINATION)) || !DelugeTag.SOURCE_LFO1.equals (source) && !DelugeTag.SOURCE_LFO2.equals (source))
+                continue;
+            final int amount = DelugeValues.parseValue (getValue (cable, DelugeTag.AMOUNT), 0);
+            if (amount == 0)
+                continue;
+
+            int modWheelAmount = 0;
+            final Optional<Element> depthControlledBy = getDirectChild (cable, DelugeTag.DEPTH_CONTROLLED_BY);
+            if (depthControlledBy.isPresent ())
+                modWheelAmount = findModWheelAmount (getDirectChildren (depthControlledBy.get (), DelugeTag.PATCH_CABLE), "");
+            else if (getIntValue (cable, DelugeTag.RANGE_ADJUSTABLE, 0) > 0)
+                modWheelAmount = findModWheelAmount (cables, DelugeTag.DESTINATION_RANGE);
+
+            final boolean isUnipolar = DelugeTag.POLARITY_UNIPOLAR.equals (getValue (cable, DelugeTag.POLARITY));
+            return Optional.of (new LfoCable (source, amount, isUnipolar, modWheelAmount));
+        }
+        return Optional.empty ();
+    }
+
+
+    /**
+     * Find the amount of the cable from the source 'y' (the modulation wheel) in the given cables.
+     *
+     * @param cables The cables to search
+     * @param destination The destination which the cable needs to have, empty for no destination
+     * @return The amount or 0 if not found
+     */
+    private static int findModWheelAmount (final List<Element> cables, final String destination)
+    {
+        for (final Element cable: cables)
+            if (DelugeTag.SOURCE_Y.equals (getValue (cable, DelugeTag.SOURCE)) && destination.equals (getValue (cable, DelugeTag.DESTINATION)))
+                return DelugeValues.parseValue (getValue (cable, DelugeTag.AMOUNT), 0);
+        return 0;
     }
 
 
@@ -861,5 +1013,20 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
             if (name.equals (child.getNodeName ()))
                 result.add (child);
         return result;
+    }
+
+
+    /**
+     * A patch cable from an LFO.
+     *
+     * @param source The source of the cable, lfo1 or lfo2
+     * @param amount The amount of the cable
+     * @param isUnipolar True if the cable is unipolar
+     * @param modWheelAmount The amount of the cable from the modulation wheel which controls the
+     *            depth of the cable, 0 if none
+     */
+    private record LfoCable (String source, int amount, boolean isUnipolar, int modWheelAmount)
+    {
+        // Intentionally empty
     }
 }

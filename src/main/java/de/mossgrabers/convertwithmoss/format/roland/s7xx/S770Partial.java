@@ -777,9 +777,9 @@ public class S770Partial
             this.delay = StreamUtils.readUnsigned8 (input);
             this.delayKf = StreamUtils.readUnsigned8 (input);
             this.detune = StreamUtils.readUnsigned8 (input);
-            this.pitch = StreamUtils.readUnsigned8 (input);
-            this.tvfModulationDepth = StreamUtils.readUnsigned8 (input);
-            this.tvaModulationDepth = StreamUtils.readUnsigned8 (input);
+            this.pitch = StreamUtils.readSigned8 (input);
+            this.tvfModulationDepth = StreamUtils.readSigned8 (input);
+            this.tvaModulationDepth = StreamUtils.readSigned8 (input);
         }
 
 
@@ -852,7 +852,7 @@ public class S770Partial
         /**
          * Get the pitch modulation.
          *
-         * @return The pitch modulation
+         * @return The pitch modulation in the range of -63..63
          */
         public int getPitch ()
         {
@@ -863,7 +863,7 @@ public class S770Partial
         /**
          * Get the TVF modulation.
          *
-         * @return The TVF modulation
+         * @return The TVF modulation in the range of -63..63
          */
         public int getTvfModulationDepth ()
         {
@@ -874,7 +874,7 @@ public class S770Partial
         /**
          * Get the TVA modulation.
          *
-         * @return The TVA modulation
+         * @return The TVA modulation in the range of -63..63
          */
         public int getTvaModulationDepth ()
         {
@@ -889,4 +889,4 @@ public class S770Partial
             return "LfoSection [waveForm=" + this.waveForm + ", rate=" + this.rate + ", keySync=" + this.keySync + ", delay=" + this.delay + ", delayKf=" + this.delayKf + ", detune=" + this.detune + ", pitch=" + this.pitch + ", tvfModulationDepth=" + this.tvfModulationDepth + ", tvaModulationDepth=" + this.tvaModulationDepth + "]";
         }
     }
-}
+}

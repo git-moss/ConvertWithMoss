@@ -147,6 +147,25 @@ public class TX16WxTag
     public static final String ENVELOPE_1             = "tx:env1";
     /** The envelope 2 tag. */
     public static final String ENVELOPE_2             = "tx:env2";
+    /** The LFO 1 tag. */
+    public static final String LFO_1                  = "tx:lfo1";
+    /** The LFO 2 tag. */
+    public static final String LFO_2                  = "tx:lfo2";
+    /** The LFO wave form attribute: Triangle, Sinus, Sawtooth, Square or Exponent. */
+    public static final String LFO_TYPE               = "tx:type";
+    /** The LFO rate attribute in Hertz. */
+    public static final String LFO_RATE               = "tx:rate";
+    /** The LFO fade-in time attribute. */
+    public static final String LFO_FADE_IN            = "tx:fade-in";
+    /** The LFO mode attribute. */
+    public static final String LFO_MODE               = "tx:mode";
+    /** The LFO sync attribute: None (free running), Key (restart with each note) or Group. */
+    public static final String LFO_SYNC               = "tx:sync";
+    /** The LFO start position (phase) attribute in percent. */
+    public static final String LFO_POSITION           = "tx:pos";
+    /** The LFO amplitude attribute in percent. */
+    public static final String LFO_AMPLITUDE          = "tx:amp";
+
     /** The envelope 1/2 level 0 attribute. */
     public static final String ENV_LEVEL0             = "tx:level0";
     /** The envelope 1/2 level 1 attribute. */
@@ -196,6 +215,10 @@ public class TX16WxTag
     public static final String MODULATION_DESTINATION = "tx:destination";
     /** The modulation amount attribute. */
     public static final String MODULATION_AMOUNT      = "tx:amount";
+    /** The modulation via source attribute which scales the modulation. */
+    public static final String MODULATION_VIA         = "tx:via";
+    /** The modulation amount attribute which is applied when the via source is at its maximum. */
+    public static final String MODULATION_AMOUNT_VIA  = "tx:amount_via";
     /** The modulation enabled attribute. */
     public static final String MODULATION_ENABLED     = "tx:enabled";
     /** The modulation source curve tag. */

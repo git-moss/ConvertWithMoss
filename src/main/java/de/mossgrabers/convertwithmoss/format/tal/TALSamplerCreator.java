@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.DoubleUnaryOperator;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -25,8 +26,11 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
@@ -400,12 +404,63 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
             modulators.add (new TALSamplerModulator (TALSamplerModulator.SOURCE_ID_ENV3, TALSamplerModulator.DEST_ID_MASTER_TUNE, pitchModDepth));
         }
 
+        // -----------------------------------------------------------
+        // LFOs
+
+        final double mainVolume = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.VOLUME, 0.5);
+        addLfo (programElement, modulators, zone.getPitchLfoModulator (), 1, TALSamplerModulator.DEST_ID_MASTER_TUNE, depth -> depth * IEnvelope.MAX_ENVELOPE_DEPTH / TALSamplerConstants.TUNE_RANGE_CENTS);
+        addLfo (programElement, modulators, zone.getAmplitudeLfoModulator (), 2, TALSamplerModulator.DEST_ID_MASTER_VOLUME, depth -> TALSamplerConstants.dbToVolumeAmount (mainVolume, depth * ILfoModulator.MAX_VOLUME_DEPTH));
+        if (optFilter.isPresent ())
+            addLfo (programElement, modulators, optFilter.get ().getCutoffLfoModulator (), 3, TALSamplerModulator.DEST_ID_CUTOFF, depth -> depth * IEnvelope.MAX_ENVELOPE_DEPTH / TALSamplerConstants.CUTOFF_RANGE);
+
         // Create modulator matrix
         while (modulators.size () != 10)
             modulators.add (new TALSamplerModulator ());
         final Element modMatrixElement = XMLUtils.addElement (document, programElement, TALSamplerTag.MOD_MATRIX);
         for (final TALSamplerModulator modulator: modulators)
             modulator.createModElements (document, modMatrixElement);
+    }
+
+
+    /**
+     * Add the entry of the modulation matrix for an active LFO modulator and set the attributes of
+     * the LFO. The modulation wheel controls the depth with a further entry which modulates the
+     * amount of the LFO entry ('Matrix n'): its amount is added to the normalized amount of the
+     * entry. Tempo synchronization is not used.
+     *
+     * @param programElement The program element
+     * @param modulators The entries of the modulation matrix to add to
+     * @param modulator The LFO modulator
+     * @param lfoNumber The number of the LFO to use, 1 to 3
+     * @param destination The ID of the destination
+     * @param toDisplayAmount Converts a depth of the model into the displayed amount of an entry
+     */
+    private static void addLfo (final Element programElement, final List<TALSamplerModulator> modulators, final ILfoModulator modulator, final int lfoNumber, final int destination, final DoubleUnaryOperator toDisplayAmount)
+    {
+        if (!modulator.isActive ())
+            return;
+
+        final ILfo lfo = modulator.getSource ();
+        // There is no falling saw-tooth, a rising one with an inverted depth is identical
+        final double polarity = lfo.getWaveform () == LfoWaveform.SAWTOOTH_DOWN ? -1.0 : 1.0;
+        final double depth = modulator.getDepth () * polarity;
+        final double wheelDepth = modulator.getDepthModWheelModulator ().getDepth () * polarity;
+
+        final double amount = Math.clamp (toDisplayAmount.applyAsDouble (depth), -1.0, 1.0);
+        final int entryIndex = modulators.size ();
+        modulators.add (TALSamplerModulator.fromDisplayAmount (TALSamplerModulator.SOURCE_ID_LFO1 + lfoNumber - 1, destination, amount));
+        if (wheelDepth != 0)
+        {
+            final double wheelAmount = Math.clamp (toDisplayAmount.applyAsDouble (depth + wheelDepth), -1.0, 1.0);
+            final double normalizedDifference = (Math.cbrt (wheelAmount) - Math.cbrt (amount)) / 2.0;
+            modulators.add (TALSamplerModulator.fromDisplayAmount (TALSamplerModulator.SOURCE_ID_MOD_WHEEL, TALSamplerModulator.DEST_ID_MATRIX_AMOUNT + entryIndex, normalizedDifference));
+        }
+
+        final String number = Integer.toString (lfoNumber);
+        XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.LFO_RATE + number, TALSamplerConstants.hertzToLfoRate (lfo.getRate ()), 6);
+        XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.LFO_WAVEFORM + number, TALSamplerConstants.getLfoWaveformValue (lfo.getWaveform ()), 1);
+        programElement.setAttribute (TALSamplerTag.LFO_TRIGGER + number, lfo.isKeySync () ? "1.0" : "0.0");
+        programElement.setAttribute (TALSamplerTag.LFO_SYNC + number, "0.0");
     }
 
 
@@ -546,4 +601,4 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         }
         return false;
     }
-}
+}

@@ -299,6 +299,8 @@ The output formats use a XML format and keep the samples separate. There followi
 * txbank: A bank of program files, the program files are only referenced and individual txprog files are created as well.
 * txperf: A performance which contains performance settings for several program files, the program files are only referenced and individual txprog files are created as well.
 
+
+The two LFOs are converted from and to the entries of the modulation table which route them to the pitch (vibrato), the volume (tremolo) and the filter frequency, incl. the modulation wheel as the via source of such an entry, which scales the modulation between the amount and the via amount. The wave form, rate, fade-in, start position, key sync and amplitude of the LFOs are converted; a tempo synchronized rate is read as the rate in Hertz, the wave form Exponent as a triangle.
 ## DecentSampler
 
 The Decent Sampler plugin is a free (but closed source) sample player plugin that allows you to play sample libraries in the DecentSampler format (files with extensions: dspreset and dslibrary). See https://www.decentsamples.com/product/decent-sampler-plugin/
@@ -862,6 +864,8 @@ The Roland S-770 series comprises a family of digital PCM samplers introduced be
 
 Only reading is supported. But it supports both HD/CD-Rom and diskette image files. Also files that span multiple diskettes are supported (all disk files need to be in the same folder).
 
+The LFO of a partial is converted to the pitch, cutoff and amplitude LFOs, the LFO depths of the modulation wheel are added as modulation wheel depths. The LFO rates and the pitch depth were measured on an XV-5080 (a depth of 63 modulates the pitch by ±1.5 octaves), the scaling of the TVF and TVA depths is estimated. The delay key follow, the detune and the modulation of the LFO rate are not converted, the bend wave forms (B.UP, B.DW) are converted to saw-tooth waves.
+
 ## Roland SP-404MK2
 
 The Roland SP-404MKII is a pad-based sampler and effector. A project holds 10 banks (A-J) of 16 pads each (160 pads); every pad plays a single sample with its own start/end, loop, level, pan, pitch and BPM. It is not a keyboard multi-sampler - there are no key-ranges - so, as with the other pad devices, ConvertWithMoss treats each **populated bank as one multi-sample** and each **pad as a single-key zone** (a drum-kit-shaped mapping).
@@ -1085,7 +1089,8 @@ The Deluge has no loop cross-fade parameter of its own, so - exactly like the Re
 * The sample ranges of a key map have no level of their own, all of them play at the level of their oscillator. A zone whose gain is 40 dB or more below the loudest zone of the preset - often a layer which the source switched off by its volume - is therefore near-silent: it is left out in both oscillator modes instead of playing at the full level, and the log names it, e.g. *Left out of 'Limbafon 3' as near-silent (40 dB or more below its loudest zone): Metalofone A2*. On keys which only such a zone covers, the neighboring sample plays, as on any gap of a key map. A *Drum Kit* keeps all of its drums.
 * The loop mode belongs to the sample oscillator and not to the individual samples. A one-shot is therefore only written if all zones of the sound are one-shots, otherwise the loop of the source is kept.
 * The amplitude envelope attack, decay and release times are converted using the Deluge's internal rate tables (attack about 0.7 ms .. 3 s, decay/release about 6 ms .. 6 s); times outside that range are clamped. The filter cut-off / resonance are stored as the Deluge's internal 32-bit parameter values and are a musically faithful approximation rather than an exact match.
-* Effects and device-specific modulation are not converted. The Deluge's reverb, delay, chorus / mod-FX, distortion, EQ, sidechain/compressor and arpeggiator are outside the multi-sample model, and modulation sources such as the LFOs are not carried because their parameters (rate ranges, shapes, sync, destinations) differ from one sampler to the next and have no portable representation. A patch that relies on them - for example a pad whose long tail comes from reverb and delay rather than a long amplitude release - therefore sounds drier or shorter after conversion, even though its oscillator, envelopes and filter are translated faithfully.
+* The patch cables from the two LFOs to the pitch, the volume and the filter frequency are converted with the scaling of the firmware, incl. the modulation wheel (CC 1, which the firmware routes to the source *Y*) when it controls the depth of such a cable. LFO 1 runs freely, LFO 2 restarts with each note; tempo synchronized rates are read at 120 BPM. The Deluge LFOs have no delay or fade-in. A depth which only the modulation wheel applies cannot be written exactly, since the wheel can only scale the depth of a cable by up to 2: such a modulation starts at half of its depth. If more than two different LFOs are needed, modulators share one.
+* Effects and other device-specific modulation are not converted. The Deluge's reverb, delay, chorus / mod-FX, distortion, EQ, sidechain/compressor and arpeggiator are outside the multi-sample model, as are the modulations of other destinations. A patch that relies on them - for example a pad whose long tail comes from reverb and delay rather than a long amplitude release - therefore sounds drier or shorter after conversion, even though its oscillator, envelopes and filter are translated faithfully.
 
 ## TAL Sampler
 
@@ -1097,6 +1102,8 @@ Choosing TAL Sampler as the destination format, creates a *talsmpl*
 file and stores all samples in a sub-folder by the same name. The samples of the source groups are distributed across the 4 layers of TAL Sampler in such a way that the key and velocity splits do not overlap. This is a workaround for the fact that TAL Sampler does not support overlapping samples. Since groups have only the name and trigger type as attributes, which are not supported in TAL Sampler anyway, this should work in most cases. If there are still overlapping samples a warning is displayed.
 
 The decay is the exception to the time law of the envelopes above: it approaches the sustain level exponentially and much slower than the other stages - with the value 0.4 it falls by 6 dB after 0.35 seconds and by every further 6 dB after the same time again. It is converted to the linear decay which reaches -20 dB at the same moment, 37.1 x^3.75 seconds (0.4 is 1.2 seconds, 0.6 is 5.5 seconds), and written back with the inverse law.
+
+The three LFOs are converted from and to the entries of the modulation matrix which route them to the master tune (vibrato), the master volume (tremolo) and the filter cutoff, incl. an entry which modulates the amount of such an entry with the modulation wheel ('Matrix n'). The rate (200 x^3 Hz), the wave form and the trigger are converted, tempo synchronized rates are read like free running ones. The plug-in displays the amount of an entry as the cube of the stored value: the master tune covers -12 to +12 semitones, the cutoff the whole range of the filter and the volume amount is added to the main volume. When writing, LFO 1 modulates the pitch, LFO 2 the volume and LFO 3 the cutoff.
 
 ## Teenage Engineering OP-XY
 

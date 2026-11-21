@@ -36,10 +36,13 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.file.wav.DataChunk;
@@ -1040,6 +1043,155 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         // Filter
 
         writeFilter (document, defaultParams, firstZone.getFilter (), patchCables);
+
+        // ------------------------------------
+        // LFOs
+
+        writeLfos (document, soundElement, defaultParams, patchCables, firstZone);
+    }
+
+
+    /**
+     * Write the LFO modulators of the pitch, the volume and the filter cutoff as patch cables from
+     * the two LFOs of the Deluge. A modulator whose LFO restarts with each note uses the local LFO
+     * 2, a free running one the global LFO 1. Modulators with the same LFO settings share an LFO; if
+     * more than two different LFOs are needed, the further modulators use the LFO which matches
+     * their key sync setting. The modulation wheel controls the depth of a cable with a nested
+     * cable from the source 'y' (to which the firmware routes CC 1), which scales the depth by up
+     * to 2 with the wheel fully up - a modulation which is only applied by the wheel therefore
+     * starts at half of its depth.
+     *
+     * @param document The XML document
+     * @param soundElement The sound element
+     * @param defaultParams The default parameters element
+     * @param patchCables The patch cables element to add the modulations to
+     * @param zone The zone from which to take the LFO modulators
+     */
+    private static void writeLfos (final Document document, final Element soundElement, final Element defaultParams, final Element patchCables, final ISampleZone zone)
+    {
+        final ILfo [] lfos = new ILfo [2];
+
+        writeLfoCable (document, patchCables, lfos, zone.getPitchLfoModulator (), DelugeTag.DESTINATION_PITCH);
+        writeLfoCable (document, patchCables, lfos, zone.getAmplitudeLfoModulator (), DelugeTag.DESTINATION_VOLUME);
+
+        final Optional<IFilter> filter = zone.getFilter ();
+        if (filter.isPresent ())
+        {
+            final FilterType type = filter.get ().getType ();
+            if (type == FilterType.LOW_PASS || type == FilterType.HIGH_PASS)
+                writeLfoCable (document, patchCables, lfos, filter.get ().getCutoffLfoModulator (), type == FilterType.HIGH_PASS ? DelugeTag.HPF_FREQUENCY : DelugeTag.LPF_FREQUENCY);
+        }
+
+        for (int i = 0; i < lfos.length; i++)
+        {
+            if (lfos[i] == null)
+                continue;
+            final Element lfoElement = XMLUtils.addElement (document, soundElement, i == 0 ? DelugeTag.LFO1 : DelugeTag.LFO2);
+            XMLUtils.addTextElement (document, lfoElement, DelugeTag.TYPE, getLfoType (lfos[i].getWaveform ()));
+            if (i == 0)
+                XMLUtils.addTextElement (document, lfoElement, DelugeTag.SYNC_LEVEL, "0");
+            XMLUtils.addTextElement (document, defaultParams, i == 0 ? DelugeTag.LFO1_RATE : DelugeTag.LFO2_RATE, DelugeValues.formatHex (DelugeValues.hertzToLfoRate (lfos[i].getRate ())));
+        }
+    }
+
+
+    /**
+     * Write the patch cable of one LFO modulator if it is active.
+     *
+     * @param document The XML document
+     * @param patchCables The patch cables element to add the cable to
+     * @param lfos The LFOs which are already used by other cables, index 0 is LFO 1 and index 1 is
+     *            LFO 2
+     * @param modulator The LFO modulator
+     * @param destination The destination of the cable
+     */
+    private static void writeLfoCable (final Document document, final Element patchCables, final ILfo [] lfos, final ILfoModulator modulator, final String destination)
+    {
+        if (!modulator.isActive ())
+            return;
+
+        final ILfo lfo = modulator.getSource ();
+        final int index = getLfoIndex (lfos, lfo);
+        if (lfos[index] == null)
+            lfos[index] = lfo;
+
+        double depth = modulator.getDepth ();
+        final double modWheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
+        int modWheelAmount = 0;
+        if (modWheelDepth != 0)
+        {
+            if (depth == 0)
+            {
+                depth = modWheelDepth / 2.0;
+                modWheelAmount = DelugeValues.PATCH_CABLE_FULL;
+            }
+            else
+                modWheelAmount = (int) Math.round (Math.clamp (modWheelDepth / depth, -1.0, 1.0) * DelugeValues.PATCH_CABLE_FULL);
+        }
+
+        // There is no falling saw-tooth, a rising one with an inverted depth is identical
+        if (lfos[index].getWaveform () == LfoWaveform.SAWTOOTH_DOWN)
+            depth = -depth;
+
+        final int amount;
+        if (DelugeTag.DESTINATION_PITCH.equals (destination))
+            amount = DelugeValues.centsToPitchAmount (depth * IEnvelope.MAX_ENVELOPE_DEPTH);
+        else if (DelugeTag.DESTINATION_VOLUME.equals (destination))
+            amount = DelugeValues.dbToVolumeAmount (depth * ILfoModulator.MAX_VOLUME_DEPTH);
+        else
+            amount = DelugeValues.centsToCutoffAmount (depth * IEnvelope.MAX_ENVELOPE_DEPTH);
+        if (amount == 0)
+            return;
+
+        final Element patchCable = createPatchCable (document, patchCables, index == 0 ? DelugeTag.SOURCE_LFO1 : DelugeTag.SOURCE_LFO2, destination, amount);
+        if (modWheelAmount != 0)
+        {
+            final Element depthControlledBy = XMLUtils.addElement (document, patchCable, DelugeTag.DEPTH_CONTROLLED_BY);
+            final Element modWheelCable = XMLUtils.addElement (document, depthControlledBy, DelugeTag.PATCH_CABLE);
+            XMLUtils.addTextElement (document, modWheelCable, DelugeTag.SOURCE, DelugeTag.SOURCE_Y);
+            XMLUtils.addTextElement (document, modWheelCable, DelugeTag.AMOUNT, DelugeValues.formatHex (modWheelAmount));
+        }
+    }
+
+
+    /**
+     * Get the index of the Deluge LFO to use for an LFO: an LFO with the same settings if one is
+     * already used, otherwise the free LFO which matches the key sync setting (index 1 for the local
+     * LFO 2 which restarts with each note), otherwise the other free one. If both are already used
+     * with different settings, the one which matches the key sync setting is shared.
+     *
+     * @param lfos The LFOs which are already used, index 0 is LFO 1 and index 1 is LFO 2
+     * @param lfo The LFO to place
+     * @return The index of the LFO to use
+     */
+    private static int getLfoIndex (final ILfo [] lfos, final ILfo lfo)
+    {
+        for (int i = 0; i < lfos.length; i++)
+            if (lfos[i] != null && lfos[i].getWaveform () == lfo.getWaveform () && Math.abs (lfos[i].getRate () - lfo.getRate ()) < 0.001 && lfos[i].isKeySync () == lfo.isKeySync ())
+                return i;
+        final int preferred = lfo.isKeySync () ? 1 : 0;
+        if (lfos[preferred] == null || lfos[1 - preferred] != null)
+            return preferred;
+        return 1 - preferred;
+    }
+
+
+    /**
+     * Get the Deluge LFO type of a wave form.
+     *
+     * @param waveform The wave form
+     * @return The LFO type
+     */
+    private static String getLfoType (final LfoWaveform waveform)
+    {
+        return switch (waveform)
+        {
+            case SINE -> DelugeTag.LFO_TYPE_SINE;
+            case SQUARE -> DelugeTag.LFO_TYPE_SQUARE;
+            case SAWTOOTH_UP, SAWTOOTH_DOWN -> DelugeTag.LFO_TYPE_SAW;
+            case RANDOM -> DelugeTag.LFO_TYPE_SAMPLE_AND_HOLD;
+            default -> DelugeTag.LFO_TYPE_TRIANGLE;
+        };
     }
 
 
@@ -1138,12 +1290,13 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
     }
 
 
-    private static void createPatchCable (final Document document, final Element patchCables, final String source, final String destination, final int amount)
+    private static Element createPatchCable (final Document document, final Element patchCables, final String source, final String destination, final int amount)
     {
         final Element patchCable = XMLUtils.addElement (document, patchCables, DelugeTag.PATCH_CABLE);
         XMLUtils.addTextElement (document, patchCable, DelugeTag.SOURCE, source);
         XMLUtils.addTextElement (document, patchCable, DelugeTag.DESTINATION, destination);
         XMLUtils.addTextElement (document, patchCable, DelugeTag.AMOUNT, DelugeValues.formatHex (amount));
+        return patchCable;
     }
 
 

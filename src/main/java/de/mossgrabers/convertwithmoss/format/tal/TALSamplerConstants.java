@@ -9,6 +9,7 @@ import java.util.Optional;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 
 
@@ -51,6 +52,18 @@ public class TALSamplerConstants
      */
     public static final double       DECAY_TIME_FACTOR = 37.1;
     private static final double      DECAY_EXPONENT    = 3.75;
+
+    /** The modulation range of the master tune in cents: the amount is -12..12 semitones. */
+    public static final double       TUNE_RANGE_CENTS  = 1200.0;
+    /**
+     * The modulation range of the cutoff in cents: the normalized cutoff covers 140 semitones,
+     * see {@link MathUtils#denormalizeCutoff(double)}.
+     */
+    public static final double       CUTOFF_RANGE      = 14000.0;
+    /** The highest rate of an LFO in Hertz. */
+    private static final double      LFO_MAX_RATE      = 200.0;
+    /** The smallest volume of a tremolo to avoid an infinite dB value. */
+    private static final double      MIN_VOLUME        = 0.001;
 
     /**
      * The maximum number of voices which can be played. Like all other parameters of the format,
@@ -298,6 +311,109 @@ public class TALSamplerConstants
     public static double dbToVolume (final double volumeDB)
     {
         return Math.clamp (Math.pow (10.0, volumeDB / 40.0) / 2.0, 0.0, 1.0);
+    }
+
+
+    /**
+     * Convert the LFO rate attribute to Hertz. The plug-in displays the rate as 200 x^3 Hz: 0.3
+     * is 5.40Hz, 0.7216 is 75.14Hz and 1.0 is 200Hz.
+     *
+     * @param value The rate attribute in the range of [0..1]
+     * @return The rate in Hertz
+     */
+    public static double lfoRateToHertz (final double value)
+    {
+        final double rate = Math.clamp (value, 0.0, 1.0);
+        return LFO_MAX_RATE * rate * rate * rate;
+    }
+
+
+    /**
+     * Inverse of {@link #lfoRateToHertz(double)}.
+     *
+     * @param hertz The rate in Hertz
+     * @return The rate attribute in the range of [0..1]
+     */
+    public static double hertzToLfoRate (final double hertz)
+    {
+        return Math.clamp (Math.cbrt (hertz / LFO_MAX_RATE), 0.0, 1.0);
+    }
+
+
+    /**
+     * Get the LFO wave form from the wave form attribute. The plug-in offers Triangle, Saw,
+     * Rectangle, S&amp;H Random, Noise and Sine. Since version 9 the attribute is the index
+     * divided by 5, the presets of version 1.5 store the index divided by 2 (with the first 5 wave
+     * forms only).
+     *
+     * @param value The wave form attribute
+     * @param isOldVersion True if the preset was written by a version before 2
+     * @return The wave form
+     */
+    public static LfoWaveform getLfoWaveform (final double value, final boolean isOldVersion)
+    {
+        final int index = (int) Math.round (value * (isOldVersion ? 2.0 : 5.0));
+        return switch (index)
+        {
+            case 1 -> LfoWaveform.SAWTOOTH_UP;
+            case 2 -> LfoWaveform.SQUARE;
+            case 3, 4 -> LfoWaveform.RANDOM;
+            case 5 -> LfoWaveform.SINE;
+            default -> LfoWaveform.TRIANGLE;
+        };
+    }
+
+
+    /**
+     * Get the wave form attribute of an LFO wave form, the inverse of
+     * {@link #getLfoWaveform(double, boolean)} for the current version. The falling saw-tooth is
+     * written as the rising one (the depth of the modulation needs to be inverted).
+     *
+     * @param waveform The wave form
+     * @return The wave form attribute
+     */
+    public static double getLfoWaveformValue (final LfoWaveform waveform)
+    {
+        return switch (waveform)
+        {
+            case SAWTOOTH_UP, SAWTOOTH_DOWN -> 0.2;
+            case SQUARE -> 0.4;
+            case RANDOM -> 0.6;
+            case SINE -> 1.0;
+            default -> 0;
+        };
+    }
+
+
+    /**
+     * Convert the displayed amount of a modulation of the master volume into the attenuation in dB
+     * at the negative peak of a bipolar source. The amount is added to the main volume, which is
+     * converted with {@link #volumeToDb(double)}.
+     *
+     * @param mainVolume The main volume in the range of [0..1]
+     * @param displayAmount The displayed amount of the modulation in the range of [-1..1]
+     * @return The attenuation in dB, negative for a negative amount
+     */
+    public static double volumeAmountToDb (final double mainVolume, final double displayAmount)
+    {
+        final double volume = Math.max (mainVolume, MIN_VOLUME);
+        final double lowered = Math.max (volume - Math.abs (displayAmount), MIN_VOLUME);
+        return Math.signum (displayAmount) * (volumeToDb (volume) - volumeToDb (lowered));
+    }
+
+
+    /**
+     * Inverse of {@link #volumeAmountToDb(double, double)}.
+     *
+     * @param mainVolume The main volume in the range of [0..1]
+     * @param db The attenuation in dB, negative for a negative amount
+     * @return The displayed amount of the modulation in the range of [-1..1]
+     */
+    public static double dbToVolumeAmount (final double mainVolume, final double db)
+    {
+        final double volume = Math.max (mainVolume, MIN_VOLUME);
+        final double lowered = dbToVolume (volumeToDb (volume) - Math.abs (db));
+        return Math.signum (db) * Math.clamp (volume - lowered, 0.0, 1.0);
     }
 
 

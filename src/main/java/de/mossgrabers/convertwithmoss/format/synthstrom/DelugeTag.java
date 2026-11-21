@@ -172,6 +172,52 @@ public class DelugeTag
     public static final String SOURCE_VELOCITY              = "velocity";
     /** The patch source note (used for filter keyboard tracking). */
     public static final String SOURCE_NOTE                  = "note";
+    /** The patch source of the global LFO (free running). */
+    public static final String SOURCE_LFO1                  = "lfo1";
+    /** The patch source of the local LFO (re-triggered by each note). */
+    public static final String SOURCE_LFO2                  = "lfo2";
+    /** The patch source Y, which is the MPE Y axis and the modulation wheel (CC 1). */
+    public static final String SOURCE_Y                     = "y";
+    /** The patch cable destination for the pitch. */
+    public static final String DESTINATION_PITCH            = "pitch";
+    /** The patch cables which control the depth of a patch cable (since firmware 3.2). */
+    public static final String DEPTH_CONTROLLED_BY          = "depthControlledBy";
+    /** The legacy flag of a cable whose depth is controlled by the cables to 'range'. */
+    public static final String RANGE_ADJUSTABLE             = "rangeAdjustable";
+    /** The legacy destination of a cable which controls the depth of the 'rangeAdjustable' cables. */
+    public static final String DESTINATION_RANGE            = "range";
+    /** The polarity of a patch cable (community firmware). */
+    public static final String POLARITY                     = "polarity";
+    /** The polarity value for a unipolar patch cable. */
+    public static final String POLARITY_UNIPOLAR            = "unipolar";
+
+    // LFO tags / attributes
+    /** The global LFO. */
+    public static final String LFO1                         = "lfo1";
+    /** The local LFO. */
+    public static final String LFO2                         = "lfo2";
+    /** The rate of the global LFO. */
+    public static final String LFO1_RATE                    = "lfo1Rate";
+    /** The rate of the local LFO. */
+    public static final String LFO2_RATE                    = "lfo2Rate";
+    /** The tempo synchronization of an LFO: 0 = off, 1 = whole note ... 9 = 256th note. */
+    public static final String SYNC_LEVEL                   = "syncLevel";
+    /** The type of the tempo synchronization: 0 = even, 1 = triplet, 2 = dotted. */
+    public static final String SYNC_TYPE                    = "syncType";
+    /** The LFO wave form sine. */
+    public static final String LFO_TYPE_SINE                = "sine";
+    /** The LFO wave form triangle. */
+    public static final String LFO_TYPE_TRIANGLE            = "triangle";
+    /** The LFO wave form square. */
+    public static final String LFO_TYPE_SQUARE              = "square";
+    /** The LFO wave form rising saw-tooth. */
+    public static final String LFO_TYPE_SAW                 = "saw";
+    /** The LFO wave form sample and hold. */
+    public static final String LFO_TYPE_SAMPLE_AND_HOLD     = "sah";
+    /** The LFO wave form random walk (community firmware). */
+    public static final String LFO_TYPE_RANDOM_WALK         = "rwalk";
+    /** The LFO wave form warbler (community firmware). */
+    public static final String LFO_TYPE_WARBLER             = "warbler";
 
     // Kit tags / attributes
     /** The container of all drum sounds of a kit. */

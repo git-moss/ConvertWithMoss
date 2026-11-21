@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.DoubleUnaryOperator;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -26,6 +27,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -482,7 +485,103 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 }
             }
 
+        applyLfos (programElement, modulators, multisampleSource, optFilter);
+
         return optFilter;
+    }
+
+
+    /**
+     * Read the modulations of the master tune, the master volume and the filter cutoff by the three
+     * LFOs and apply them to the LFO modulators of all zones and to the filter. A modulation of the
+     * amount of such an entry by the modulation wheel ('Matrix n') is added to the normalized
+     * amount of the entry and is converted as the difference of the depth with the wheel fully up.
+     * Tempo synchronized rates are read like free running ones.
+     *
+     * @param programElement The program element
+     * @param modulators The entries of the modulation matrix
+     * @param multisampleSource The multi-sample source which contains the zones
+     * @param optFilter The filter if present
+     */
+    private static void applyLfos (final Element programElement, final List<TALSamplerModulator> modulators, final IMultisampleSource multisampleSource, final Optional<IFilter> optFilter)
+    {
+        final boolean isOldVersion = parseVersion (programElement.getOwnerDocument ().getDocumentElement ().getAttribute (TALSamplerTag.ROOT_VERSION)) < 2;
+        final double mainVolume = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.VOLUME, 0.5);
+
+        for (final IGroup group: multisampleSource.getGroups ())
+            for (final ISampleZone zone: group.getSampleZones ())
+            {
+                applyLfo (zone.getPitchLfoModulator (), programElement, modulators, TALSamplerModulator.DEST_ID_MASTER_TUNE, isOldVersion, amount -> amount * TALSamplerConstants.TUNE_RANGE_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+                applyLfo (zone.getAmplitudeLfoModulator (), programElement, modulators, TALSamplerModulator.DEST_ID_MASTER_VOLUME, isOldVersion, amount -> TALSamplerConstants.volumeAmountToDb (mainVolume, amount) / ILfoModulator.MAX_VOLUME_DEPTH);
+            }
+
+        if (optFilter.isPresent ())
+            applyLfo (optFilter.get ().getCutoffLfoModulator (), programElement, modulators, TALSamplerModulator.DEST_ID_CUTOFF, isOldVersion, amount -> amount * TALSamplerConstants.CUTOFF_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH);
+    }
+
+
+    /**
+     * Apply the first entry of the modulation matrix which modulates the given destination by one
+     * of the LFOs to an LFO modulator.
+     *
+     * @param modulator The LFO modulator to fill
+     * @param programElement The program element which contains the LFO settings
+     * @param modulators The entries of the modulation matrix
+     * @param destination The ID of the destination
+     * @param isOldVersion True if the preset was written by a version before 2
+     * @param toDepth Converts the displayed amount of an entry into the depth of the model
+     */
+    private static void applyLfo (final ILfoModulator modulator, final Element programElement, final List<TALSamplerModulator> modulators, final int destination, final boolean isOldVersion, final DoubleUnaryOperator toDepth)
+    {
+        for (int i = 0; i < modulators.size (); i++)
+        {
+            final TALSamplerModulator entry = modulators.get (i);
+            final int lfoIndex = entry.getSource () - TALSamplerModulator.SOURCE_ID_LFO1;
+            if (lfoIndex < 0 || lfoIndex > 2 || !entry.isDestination (destination))
+                continue;
+
+            final String lfoNumber = Integer.toString (lfoIndex + 1);
+            // A unipolar LFO moves the destination only in one direction, which is approximated
+            // with half of the depth
+            final double scale = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LFO_UNIPOLAR + lfoNumber, 0) > 0 ? 0.5 : 1.0;
+            final double depth = toDepth.applyAsDouble (entry.getDisplayAmount ());
+            modulator.setDepth (Math.clamp (depth * scale, -1.0, 1.0));
+
+            for (final TALSamplerModulator wheel: modulators)
+                if (wheel.isSource (TALSamplerModulator.SOURCE_ID_MOD_WHEEL) && wheel.isDestination (TALSamplerModulator.DEST_ID_MATRIX_AMOUNT + i))
+                {
+                    final double normalizedAmount = Math.clamp ((entry.getModAmount () + 1.0) / 2.0 + wheel.getDisplayAmount (), 0.0, 1.0);
+                    final double amount = normalizedAmount * 2.0 - 1.0;
+                    final double wheelDepth = toDepth.applyAsDouble (amount * amount * amount);
+                    modulator.getDepthModWheelModulator ().setDepth (Math.clamp ((wheelDepth - depth) * scale, -1.0, 1.0));
+                    break;
+                }
+
+            final ILfo lfo = modulator.getSource ();
+            lfo.setWaveform (TALSamplerConstants.getLfoWaveform (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LFO_WAVEFORM + lfoNumber, 0), isOldVersion));
+            lfo.setRate (TALSamplerConstants.lfoRateToHertz (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LFO_RATE + lfoNumber, 0.5)));
+            lfo.setKeySync (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LFO_TRIGGER + lfoNumber, 0) > 0);
+            return;
+        }
+    }
+
+
+    /**
+     * Parse the version of the file format.
+     *
+     * @param version The version text, e.g. 1.5 or 11
+     * @return The version, a large number if it cannot be parsed
+     */
+    private static double parseVersion (final String version)
+    {
+        try
+        {
+            return Double.parseDouble (version.trim ());
+        }
+        catch (final NumberFormatException _)
+        {
+            return Double.MAX_VALUE;
+        }
     }
 
 

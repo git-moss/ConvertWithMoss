@@ -37,6 +37,17 @@ public final class DelugeValues
     /** The scaling factor of one user value step (see firmware getParamFromUserValue). */
     private static final long   USER_VALUE_STEP    = 85899345L;
 
+    /** The rate of an LFO at the neutral value of its rate parameter (121739 / 2^32 * 44100). */
+    private static final double LFO_NEUTRAL_HERTZ  = 121739.0 / 4294967296.0 * 44100.0;
+    /** The rate parameter difference which doubles the rate of an LFO. */
+    private static final double LFO_RATE_OCTAVE    = 268435456.0;
+    /** The value of an exponential parameter which equals one octave. */
+    private static final double EXP_PER_OCTAVE     = 67108864.0;
+    /** The scaling of the squared amount of a patch cable to the pitch (about 1/sqrt(2)). */
+    private static final double PITCH_AMOUNT_SCALE = 1518500250.0 / 2147483648.0;
+    /** The smallest amplitude factor of a volume modulation to avoid an infinite dB value. */
+    private static final double MIN_AMPLITUDE      = 0.001;
+
     private static final double MIN_FREQUENCY      = 20.0;
     private static final double MAX_FREQUENCY      = 20000.0;
 
@@ -493,6 +504,143 @@ public final class DelugeValues
             transpose,
             cents
         };
+    }
+
+
+    /**
+     * Convert an LFO rate parameter to Hertz. The rate is an exponential parameter of the firmware
+     * (getExp in src/deluge/util/functions.cpp): its neutral value 121739 is the phase increment
+     * per sample at the center of the knob (1.25 Hz at 44.1 kHz) and the parameter range of 2^30
+     * scales the knob so that 2^28 equals one octave - 0.005 to 320 Hz over the full range.
+     *
+     * @param param The rate parameter value
+     * @return The rate in Hertz
+     */
+    public static double lfoRateToHertz (final int param)
+    {
+        return LFO_NEUTRAL_HERTZ * Math.pow (2, param / LFO_RATE_OCTAVE);
+    }
+
+
+    /**
+     * Inverse of lfoRateToHertz.
+     *
+     * @param hertz The rate in Hertz
+     * @return The rate parameter value
+     */
+    public static int hertzToLfoRate (final double hertz)
+    {
+        if (hertz <= 0)
+            return PARAM_MIN;
+        final double param = Math.log (hertz / LFO_NEUTRAL_HERTZ) / Math.log (2) * LFO_RATE_OCTAVE;
+        return (int) Math.round (Math.clamp (param, PARAM_MIN, PARAM_MAX));
+    }
+
+
+    /**
+     * Calculate the rate of a tempo synchronized LFO at the given tempo. The sync level 1 is a
+     * whole note per cycle, each following level halves the length of a cycle.
+     *
+     * @param syncLevel The sync level in the range of 1 (whole note) to 9 (256th note)
+     * @param syncType The sync type: 0 = even, 1 = triplet, 2 = dotted
+     * @param tempo The tempo in beats per minute
+     * @return The rate in Hertz
+     */
+    public static double syncedLfoRateToHertz (final int syncLevel, final int syncType, final double tempo)
+    {
+        double hertz = tempo / 60.0 / 4.0 * Math.pow (2, syncLevel - 1.0);
+        if (syncType == 1)
+            hertz = hertz * 3.0 / 2.0;
+        else if (syncType == 2)
+            hertz = hertz * 2.0 / 3.0;
+        return hertz;
+    }
+
+
+    /**
+     * Convert the amount of a patch cable to the pitch into the modulation depth in cents at the
+     * peak of a bipolar source. The firmware squares the amount of all cables to the pitch for a
+     * finer control of small values and scales it by 1/sqrt(2), which limits the range to almost
+     * 3 octaves (getModifiedPatchCableAmount in patch_cable_set.cpp). The cable value - the source
+     * value (+-2^31) multiplied by the amount and shifted right by 32 - is added to the
+     * exponential pitch parameter in which 2^26 is one octave.
+     *
+     * @param amount The patch cable amount
+     * @return The depth in cents
+     */
+    public static double pitchAmountToCents (final int amount)
+    {
+        final double squared = (double) (amount >> 15) * (amount >> 16);
+        return Math.signum (amount) * squared * PITCH_AMOUNT_SCALE / EXP_PER_OCTAVE / 2.0 * 1200.0;
+    }
+
+
+    /**
+     * Inverse of pitchAmountToCents.
+     *
+     * @param cents The depth in cents
+     * @return The patch cable amount
+     */
+    public static int centsToPitchAmount (final double cents)
+    {
+        final double squared = Math.abs (cents) / 1200.0 * 2.0 * EXP_PER_OCTAVE / PITCH_AMOUNT_SCALE;
+        final double amount = Math.min (PATCH_CABLE_FULL, Math.sqrt (squared * 2147483648.0));
+        return (int) Math.round (Math.signum (cents) * amount);
+    }
+
+
+    /**
+     * Convert the amount of a patch cable to a filter frequency into the modulation depth in cents
+     * at the peak of a bipolar source. The frequency is an exponential parameter in which 2^26 is
+     * one octave, so a full amount modulates the cutoff by +-8 octaves.
+     *
+     * @param amount The patch cable amount
+     * @return The depth in cents
+     */
+    public static double cutoffAmountToCents (final int amount)
+    {
+        return amount / 2.0 / EXP_PER_OCTAVE * 1200.0;
+    }
+
+
+    /**
+     * Inverse of cutoffAmountToCents.
+     *
+     * @param cents The depth in cents
+     * @return The patch cable amount
+     */
+    public static int centsToCutoffAmount (final double cents)
+    {
+        return (int) Math.round (Math.clamp (cents / 1200.0 * EXP_PER_OCTAVE * 2.0, -PATCH_CABLE_FULL, PATCH_CABLE_FULL));
+    }
+
+
+    /**
+     * Convert the amount of a patch cable to the volume into the attenuation in dB at the negative
+     * peak of a bipolar source. The firmware multiplies the volume by 1 + amount / 2^30 times the
+     * source value (combineCablesLinear in patcher.cpp) and squares the result to get the
+     * amplitude (getFinalParameterValueVolume), so a full amount reduces the level down to silence.
+     *
+     * @param amount The patch cable amount
+     * @return The attenuation in dB, negative for a negative amount
+     */
+    public static double volumeAmountToDb (final int amount)
+    {
+        final double depth = Math.min (1.0, Math.abs (amount) / (double) PATCH_CABLE_FULL);
+        return Math.signum (amount) * -40.0 * Math.log10 (Math.max (MIN_AMPLITUDE, 1.0 - depth));
+    }
+
+
+    /**
+     * Inverse of volumeAmountToDb.
+     *
+     * @param db The attenuation in dB, negative for a negative amount
+     * @return The patch cable amount
+     */
+    public static int dbToVolumeAmount (final double db)
+    {
+        final double depth = 1.0 - Math.pow (10.0, -Math.abs (db) / 40.0);
+        return (int) Math.round (Math.signum (db) * Math.min (1.0, depth) * PATCH_CABLE_FULL);
     }
 
 

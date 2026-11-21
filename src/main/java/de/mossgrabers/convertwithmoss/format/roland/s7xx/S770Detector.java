@@ -29,10 +29,13 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
@@ -44,10 +47,12 @@ import de.mossgrabers.convertwithmoss.core.model.implementation.InMemorySampleDa
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.roland.RolandTimeTable;
+import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.LfoSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.SampleSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvaSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Partial.TvfSection;
 import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Patch.BenderSection;
+import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Patch.LfoModulationSection;
 import de.mossgrabers.tools.FileUtils;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.StringUtils;
@@ -68,6 +73,65 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
     private static final LoopType []              LOOP_MODES           = new LoopType [7];
     private static final Map<Integer, FilterType> FILTER_TYPES         = new HashMap<> ();
     private static final Map<String, String>      CATEGORIES           = new HashMap<> ();
+
+    /**
+     * The LFO wave forms in the order of the S-7xx: Sin, Tri, SwUP, SwDW, Squ, Rnd, B.UP, B.DW. The
+     * bend shapes have no counterpart and are mapped to the saw-tooth with the same direction.
+     */
+    private static final LfoWaveform []           LFO_WAVEFORMS        =
+    {
+        LfoWaveform.SINE,
+        LfoWaveform.TRIANGLE,
+        LfoWaveform.SAWTOOTH_UP,
+        LfoWaveform.SAWTOOTH_DOWN,
+        LfoWaveform.SQUARE,
+        LfoWaveform.RANDOM,
+        LfoWaveform.SAWTOOTH_UP,
+        LfoWaveform.SAWTOOTH_DOWN
+    };
+
+    /**
+     * LFO rate values and their frequencies in Hertz, measured from a square LFO on an XV-5080
+     * which loaded an S-7xx patch. The values below 30 are extrapolated with the slope between 30
+     * and 100 (the rate roughly doubles every 12 steps).
+     */
+    private static final int []                   LFO_RATE_VALUES      =
+    {
+        0,
+        30,
+        40,
+        50,
+        60,
+        70,
+        80,
+        90,
+        100,
+        110,
+        127
+    };
+    private static final double []                LFO_RATE_HERTZ       =
+    {
+        0.0137,
+        0.076,
+        0.136,
+        0.243,
+        0.429,
+        0.758,
+        1.397,
+        2.503,
+        4.19,
+        8.2,
+        12.64
+    };
+
+    /**
+     * The pitch modulation of the LFO at a depth of 63 in cents. Measured: a square LFO with a
+     * depth of 63 switches the pitch between 1.5 octaves above and below the note.
+     */
+    private static final double                   LFO_PITCH_RANGE      = 1800.0;
+    /** The smallest amplitude factor of a tremolo to avoid an infinite dB value. */
+    private static final double                   MIN_AMPLITUDE_FACTOR = 0.001;
+
     static
     {
         SAMPLING_FREQUENCIES[0] = 48000;
@@ -479,6 +543,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setAmplitudeKeyTracking (Math.clamp (tva.getLevelKf () / 63.0, -1, 1));
 
         createFilter (sampleZone, partial.getTvf ());
+        applyLfos (sampleZone, partial.getLfoGenerator (), patch.getLfoModulation ());
 
         final BenderSection bender = patch.getBender ();
         sampleZone.setBendUp (bender.getPitchCtrlUp () * 100);
@@ -527,6 +592,94 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
             pitchEnvelopeModulator.setSource (envelope);
             pitchEnvelopeModulator.setDepth (envPitchDepth / 63.0);
         }
+    }
+
+
+    /**
+     * Apply the LFO of the partial to the pitch, cutoff and amplitude LFO modulators of the zone.
+     * The modulation wheel depths of the patch are added on top of the LFO depths of the partial
+     * when the wheel is fully up. The TVF and TVA depths are not measured: a depth of 63 is
+     * expected to sweep the full cutoff range respectively to reduce the level down to silence.
+     * The delay key follow, the de-tuning and the modulation of the rate by the wheel cannot be
+     * mapped.
+     *
+     * @param sampleZone The zone to which to apply the LFOs
+     * @param lfoSection The LFO section of the partial
+     * @param modulation The modulation wheel section of the patch
+     */
+    private static void applyLfos (final ISampleZone sampleZone, final LfoSection lfoSection, final LfoModulationSection modulation)
+    {
+        final double pitchFactor = LFO_PITCH_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH / 63.0;
+        applyLfo (sampleZone.getPitchLfoModulator (), lfoSection, lfoSection.getPitch () * pitchFactor, modulation.getLfoPitchCtrl () * pitchFactor);
+
+        final Optional<IFilter> filter = sampleZone.getFilter ();
+        if (filter.isPresent ())
+            applyLfo (filter.get ().getCutoffLfoModulator (), lfoSection, lfoSection.getTvfModulationDepth () / 63.0, modulation.getLfoTvfDepth () / 63.0);
+
+        applyLfo (sampleZone.getAmplitudeLfoModulator (), lfoSection, tremoloDepth (lfoSection.getTvaModulationDepth ()), tremoloDepth (modulation.getLfoTvaDepth ()));
+    }
+
+
+    /**
+     * Set the depths and the LFO settings of an LFO modulator if any of the depths is not 0.
+     *
+     * @param modulator The LFO modulator
+     * @param lfoSection The LFO section of the partial
+     * @param depth The depth of the modulation in the range of [-1..1]
+     * @param modWheelDepth The additional depth with the modulation wheel fully up in the range of
+     *            [-1..1]
+     */
+    private static void applyLfo (final ILfoModulator modulator, final LfoSection lfoSection, final double depth, final double modWheelDepth)
+    {
+        if (depth == 0 && modWheelDepth == 0)
+            return;
+
+        modulator.setDepth (Math.clamp (depth, -1.0, 1.0));
+        modulator.getDepthModWheelModulator ().setDepth (Math.clamp (modWheelDepth, -1.0, 1.0));
+
+        final ILfo lfo = modulator.getSource ();
+        final int waveForm = lfoSection.getWaveForm ();
+        lfo.setWaveform (waveForm >= 0 && waveForm < LFO_WAVEFORMS.length ? LFO_WAVEFORMS[waveForm] : LfoWaveform.SINE);
+        lfo.setRate (lfoRateToHertz (lfoSection.getRate ()));
+        lfo.setDelay (lfoSection.getDelay () == 0 ? 0 : calculateTime (lfoSection.getDelay ()));
+        lfo.setKeySync (lfoSection.getKeySync () > 0);
+    }
+
+
+    /**
+     * Convert a TVA modulation depth to the depth of a volume LFO modulator. A depth of 63 reduces
+     * the level down to silence.
+     *
+     * @param value The TVA modulation depth in the range of [-63..63]
+     * @return The depth in the range of [-1..1] which relates to [-96..96] dB
+     */
+    private static double tremoloDepth (final int value)
+    {
+        if (value == 0)
+            return 0;
+        final double amount = Math.min (1.0, Math.abs (value) / 63.0);
+        final double db = -20.0 * Math.log10 (Math.max (MIN_AMPLITUDE_FACTOR, 1.0 - amount));
+        return Math.signum (value) * Math.min (1.0, db / ILfoModulator.MAX_VOLUME_DEPTH);
+    }
+
+
+    /**
+     * Convert an LFO rate value to Hertz by interpolating the measured frequencies
+     * logarithmically.
+     *
+     * @param value The rate value in the range of 0..127
+     * @return The frequency in Hertz
+     */
+    private static double lfoRateToHertz (final int value)
+    {
+        final int rate = Math.clamp (value, 0, 127);
+        for (int i = 1; i < LFO_RATE_VALUES.length; i++)
+            if (rate <= LFO_RATE_VALUES[i])
+            {
+                final double ratio = (rate - LFO_RATE_VALUES[i - 1]) / (double) (LFO_RATE_VALUES[i] - LFO_RATE_VALUES[i - 1]);
+                return LFO_RATE_HERTZ[i - 1] * Math.pow (LFO_RATE_HERTZ[i] / LFO_RATE_HERTZ[i - 1], ratio);
+            }
+        return LFO_RATE_HERTZ[LFO_RATE_HERTZ.length - 1];
     }
 
 

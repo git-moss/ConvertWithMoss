@@ -25,8 +25,15 @@ public class TALSamplerModulator
     public static final int DEST_ID_VOLUME_A      = 62;
     /** Parameter ID for Tune of Layer A. */
     public static final int DEST_ID_TUNE_A        = 71;
-    /** Parameter ID for Master Tune. */
+    /** Parameter ID for Master Tune, the amount range is -12..12 semitones. */
     public static final int DEST_ID_MASTER_TUNE   = 164;
+    /** Parameter ID for the Master Volume. */
+    public static final int DEST_ID_MASTER_VOLUME = 1;
+    /**
+     * Parameter ID for the amount of the first entry of the modulation matrix ('Matrix 0'), the
+     * following entries are the next IDs. A modulation of the amount is added to it.
+     */
+    public static final int DEST_ID_MATRIX_AMOUNT = 170;
 
     /** Source ID for Envelope 3 (Modulation Envelope). */
     public static final int SOURCE_ID_ENV3        = 2;
@@ -39,6 +46,8 @@ public class TALSamplerModulator
     public static final int SOURCE_ID_PITCH_WHEEL = 7;
     /** Source ID for the modulation wheel. */
     public static final int SOURCE_ID_MOD_WHEEL   = 8;
+    /** Source ID for LFO 1, LFO 2 and 3 are the next IDs. */
+    public static final int SOURCE_ID_LFO1        = 3;
 
     private final int       source;
     private final int       destination;
@@ -66,6 +75,22 @@ public class TALSamplerModulator
         this.source = source;
         this.destination = destination;
         this.amount = (amount + 1.0) / 2.0;
+    }
+
+
+    /**
+     * Create a modulator from the amount which the plug-in displays. The plug-in shows the cube of
+     * the stored amount, e.g. a stored amount of 0.7938 (0.8969 normalized) is displayed as 0.5,
+     * which is 6 semitones for the master tune.
+     *
+     * @param source The source ID
+     * @param destination The destination ID
+     * @param displayAmount The displayed amount in the range of [-1..1]
+     * @return The modulator
+     */
+    public static TALSamplerModulator fromDisplayAmount (final int source, final int destination, final double displayAmount)
+    {
+        return new TALSamplerModulator (source, destination, Math.cbrt (Math.clamp (displayAmount, -1.0, 1.0)));
     }
 
 
@@ -129,6 +154,41 @@ public class TALSamplerModulator
     public double getModAmount ()
     {
         return this.amount * 2.0 - 1.0;
+    }
+
+
+    /**
+     * Get the modulation amount as displayed by the plug-in, which is the cube of the stored
+     * amount.
+     *
+     * @return The displayed modulation amount in the range of [-1..1]
+     */
+    public double getDisplayAmount ()
+    {
+        final double amount = this.getModAmount ();
+        return amount * amount * amount;
+    }
+
+
+    /**
+     * Get the source ID.
+     *
+     * @return The source ID
+     */
+    public int getSource ()
+    {
+        return this.source;
+    }
+
+
+    /**
+     * Get the destination ID.
+     *
+     * @return The destination ID
+     */
+    public int getDestination ()
+    {
+        return this.destination;
     }
 
 
