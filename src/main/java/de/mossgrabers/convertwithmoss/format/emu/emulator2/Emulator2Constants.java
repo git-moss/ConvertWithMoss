@@ -48,6 +48,8 @@ public class Emulator2Constants
     public static final int KEY_MAP_VOICE_ID       = 0x049;
     /** The key map of the selected preset: the transposition of each key. */
     public static final int KEY_MAP_TRANSPOSE      = 0x086;
+    /** The key map of the selected preset: the flags of the key range entry of each key. */
+    public static final int KEY_MAP_FLAGS          = 0x1F4;
     /** The record of the selected preset. */
     public static final int SELECTED_PRESET        = 0x2AB;
     /** The voice list of the bank: the identifier of each of its up to 100 voice numbers. */
@@ -93,6 +95,14 @@ public class Emulator2Constants
     public static final int VOICE_FLAGS            = 0xC6;
     /** The loop of the voice is switched on. */
     public static final int VOICE_FLAG_LOOP        = 0x04;
+    /** The loop of the voice plays forwards and backwards (the '<-->' mode). */
+    public static final int VOICE_FLAG_ALTERNATING = 0x08;
+    /** The voice plays backwards. */
+    public static final int VOICE_FLAG_BACKWARDS   = 0x10;
+    /** The loop of the voice keeps repeating in the release ('Lp in Rls'). */
+    public static final int VOICE_FLAG_LOOP_IN_REL = 0x20;
+    /** The base of the loop counters of a voice with an alternating loop. */
+    public static final int VOICE_COUNTER_BASE_ALT = 0x600000;
     /** The name of the voice, ASCII, space padded. */
     public static final int VOICE_NAME             = 0xBA;
     /** The length of the name of a voice. */
@@ -162,6 +172,15 @@ public class Emulator2Constants
     public static final int ENTRY_MODE_END         = 0;
     /** The mode of an entry which plays two voices. */
     public static final int ENTRY_MODE_DUAL        = 3;
+    /**
+     * The flags of an entry: bit 3 is set by the sampler, bit 5 switches the voice and bit 6 the
+     * second voice to the non-transpose mode, in which every key plays the recorded pitch.
+     */
+    public static final int ENTRY_FLAGS            = 1;
+    /** The flag of an entry which plays its voice without transposition. */
+    public static final int ENTRY_NON_TRANSPOSE    = 0x20;
+    /** The flag of an entry which plays its second voice without transposition. */
+    public static final int ENTRY_NON_TRANSPOSE_2  = 0x40;
     /** The voice number of an entry, 1 based; 0 means silent. */
     public static final int ENTRY_VOICE            = 2;
     /** The transposition of the first key of an entry. */

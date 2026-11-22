@@ -111,7 +111,7 @@ the part which describes the sample is:
 | `+0x13` | 3 | the same |
 | `+0x22`, `+0x26`, `+0x95`, `+0xA9` | 2-3 | pointers into the record itself: `0x9B00 + 0x100 × index + offset`, so the high byte names the record |
 | `+0xBA` | 12 | name, ASCII, space padded |
-| `+0xC6` | 1 | flags: **bit 2 (`0x04`) = loop on**, bit 4 (`0x10`) = the counter block is stale, bit 3 (`0x08`) changes the base of the loop counter; `0x24` (looped) and `0x20` (not looped) are the usual values, bits 1 and 5 are not decoded |
+| `+0xC6` | 1 | flags (the switches of the Voice Definition module, see *Voice flags*): bit 0 (`0x01`) = solo mode, **bit 2 (`0x04`) = loop on**, bit 3 (`0x08`) = alternating loop (`<-->` mode), bit 4 (`0x10`) = backwards, bit 5 (`0x20`) = loop in release; `0x24` (looped) and `0x20` (not looped) are the usual values, bit 1 is not decoded |
 | `+0xC7` | 3 | **region start**, relative to the bank: the memory of the voice |
 | `+0xCA` | 3 | **slot size** = the audio up to the end of the loop + 4 (+ 2 without a loop); the next voice's start on a contiguous bank |
 | `+0xCD` | 3 | **loop start**, relative to the bank: the audio in front of it plays once |
@@ -132,8 +132,26 @@ all others.
 The counter block proves the reading: it holds exactly what the channel is loaded with, and on
 3,727 of the 3,768 factory voices whose block is valid the number of frames it plays and its loop
 equal the ones computed from the fields above (the other 41 differ by 4 frames). The block is
-stale on the 80 voices with flag bit 4 - copies whose counters were never computed - which is why
-the fields above and not the counters are what the reader uses; the counters serve as the check.
+different on the 80 voices with flag bit 4 - they play backwards, so their counters start at the
+end of the region and count from `0x700000` - which is why the fields above and not the counters
+are what the reader uses; the counters serve as the check.
+
+### Voice flags
+
+The operating system (`EMUIIOS31.E2O`, the Z80 code of the Voice Definition module) toggles one
+bit of `+0xC6` per switch - the code loads the mask and the offset `0xC6` and shows *yes* when the
+bit is set: `0x01` *Solo Mode*, `0x08` *<--> Mode*, `0x10` *Backwards* and `0x20` *Lp in Rls*;
+the loop switch is `0x04`. The factory disks agree: the 80 voices with `0x10` are mostly `*1` and
+`*2` copies of string, brass, flute, organ and bass voices, and their counters run from the end of
+the region; the 160 voices with `0x08` count the loop from `0x600000` (both loop counters); `0x20`
+is set on 3,470 of the 3,624 voices - the sampler keeps looping in the release by default. Bit 1
+(270 voices) stays undecoded.
+
+ConvertWithMoss reads `0x08` as an alternating loop, `0x10` as a reversed zone and a cleared `0x20`
+as a loop which ends at the release. When writing, an alternating loop sets `0x08` and counts its
+loop counters from `0x600000`, a loop which does not end at the release sets `0x20`, and a reversed
+zone is written with its audio reversed (and its loop mirrored) instead of the backwards flag,
+whose counters are not fully understood for looped voices.
 
 Two kinds of voices play from elsewhere than their region start. The `*1` copies of the stacked
 strings (*Stacked Strings*, *Grand Piano & Strings*, *High Strings*, ...) start a few frames in
@@ -211,8 +229,8 @@ and 15, within one step on the 956 tables of all amounts (no weight per entry fi
 exactly; the front panel's 0-99 scale is presumably finer than these steps). No voice with an
 amount of 0 has a varying table.
 
-Two settings the SoundFonts cannot carry stay undecoded: the chorus (a second, detuned channel)
-and *loop in release*, presumably among bits 1, 3 and 5 of the flags. Cross-check of the reading
+One setting the SoundFonts cannot carry stays undecoded: the chorus (a second, detuned channel),
+presumably bit 1 of the flags (*loop in release* is bit 5, see *Voice flags*). Cross-check of the reading
 against the SoundFont route through the model - every preset of the 90 factory disks read from
 the disk and from EMXP's SoundFont, 512 presets and 3,543 zones compared attribute by attribute:
 cutoff within 15 % on 97 %, VCA attack / decay / release within 15 % on 98 / 96 / 96 %, VCF stages
@@ -254,14 +272,25 @@ the signature presets of the Northstar and OMI libraries, which lost the presets
 | | 4 | end marker `00 3D 00 00` (`0x3D` = 61 = the key behind the keyboard) |
 | | 2 | length of the next record |
 
-A key range entry is 5 bytes: `[mode << 6 | count] [00 or 08] [voice] [transposition] [level]`.
+A key range entry is 5 bytes: `[mode << 6 | count] [flags] [voice] [transposition] [level]`.
 The count is the number of keys, the ranges follow each other from the lowest key and sum to 61 -
 or to less, when a preset leaves the upper keys unassigned (47 of the 7,800 presets of the
 community library, e.g. `Crowd Noise` with 18 keys). The mode is 1 for a silent range (voice 0), 2 for one voice and 3 for a range which plays
 **two voices** - the second voice follows as 3 more bytes `[voice] [transposition] [level]`. The
 voice is a 1-based *voice number*, resolved through the voice list at `0x2CF` to a record; a bank
 without a voice list numbers its records in their order. The level is `0x70` on 361 of 375 factory
-ranges. The second byte is 0 or 8 and not decoded.
+ranges.
+
+The second byte holds the flags of the range, which the sampler expands into the ninth key map
+(see *The selected preset*): bit 3 (`0x08`) is set on most entries and not decoded, **bit 5
+(`0x20`) switches the voice and bit 6 (`0x40`) the second voice to the non-transpose mode**. The
+code which packs the key maps into a record (`0x3910` in the OS file) starts a new entry where
+this byte changes; the *NonTransp. Mode* function sets the bit for the keys of a range (`0x20` or
+`0x40`, depending on the voice which is edited) and the playback code replaces the transposition of
+a key by `0x10` - the recorded pitch - when it is set. None of the factory disks uses it.
+ConvertWithMoss reads it as a key tracking of 0 and writes it for a zone with a key tracking below
+50 %; the root key stays where the transposition puts it, which is the key that plays the recorded
+pitch.
 
 ### Real-time controls
 
@@ -323,9 +352,11 @@ the way guitar music is written, and it put every converted preset an octave too
 ### The selected preset
 
 The eleven 61-byte tables at `0x00C` are the working copy of the selected preset which the OS keeps
-expanded per key: voice number, voice identifier, transposition, two zero tables, the
-transposition again, level (`0x70`), second level, a zero table, a table which is `0x0F` except at
-the first key of each range, and a zero table. They only describe the selected preset, which is why
+expanded per key: voice number, voice identifier, transposition, the voice number and the
+identifier of the second voice, its transposition (a copy of the first one when the range plays
+one voice), level (`0x70`), second level, the flags of the entry (`0x1F4`), a table which is `0x0F`
+except at the first key of each range, and a zero table - the order in which the OS unpacks an
+entry. They only describe the selected preset, which is why
 the first reader, which read them, saw one preset per disk - the factory disks hold up to 18.
 
 ### Sample memory
@@ -391,12 +422,9 @@ ranges, roots, lengths and loops.
 
 ### Still to decode
 
-The chorus and *loop in release* switches of a voice (bits 1, 3 and 5 of the voice flags at
-`+0xC6`), the *non-transpose* and *backwards* modes - the 90 factory disks hold no voice which is
-known to use them; bit 0 of the voice flags is set on only 4 voices (*Bass G1* and *Bass G2* of
-*Bass, Synth, Drums*, *strxf.g#1 \*3* and *strxf.g#2 \*3* of *Stacked Strings*) and is a
-candidate -, the high nibble of `+0x1E` (an amount of 0 to 15 on 490 voices, mostly brass, sax and
+The chorus switch of a voice (presumably bit 1 of the voice flags at `+0xC6`), the high nibble of
+`+0x1E` (an amount of 0 to 15 on 490 voices, mostly brass, sax and
 synthesizer voices), the relation of the VCF sustain target to the sustain value (see *Voice
 settings*), the preset parameters (presumably the arpeggiator, the MIDI setup with the controller
-numbers of the MIDI controls A to C, and the pitch bend range) and the second byte of a key range
-entry.
+numbers of the MIDI controls A to C, and the pitch bend range) and bit 3 of the flags of a key
+range entry.

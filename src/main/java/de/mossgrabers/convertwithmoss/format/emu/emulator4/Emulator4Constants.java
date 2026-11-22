@@ -86,11 +86,20 @@ public class Emulator4Constants
 
     /** The 'forward loop on' bit of the sample options field. */
     protected static final int     OPTION_LOOP                = 0x0001;
+    /**
+     * The 'loop in release' bit of the sample options field, the same as on the Emulator III: the
+     * loop keeps playing during the release, otherwise the sample plays on behind the loop. Set on
+     * 482 of 484 looped mono samples of 24 factory and third party banks.
+     */
+    protected static final int     OPTION_LOOP_IN_RELEASE     = 0x0008;
     /** The 'sample holds its left channel' bit of the sample options field. */
     protected static final int     OPTION_CHANNEL_LEFT        = 0x0020;
     /** The sample options of a mono sample without a loop, which is a left channel only. */
     protected static final int     OPTIONS_MONO               = 0x0020;
-    /** The sample options of a mono sample with a forward loop. */
+    /**
+     * The sample options of a mono sample with a forward loop which stops at the release, add
+     * {@link #OPTION_LOOP_IN_RELEASE} for a loop which keeps playing.
+     */
     protected static final int     OPTIONS_MONO_LOOP          = 0x0031;
 
     /** The lowest filter cutoff frequency (cutoff byte 0). */

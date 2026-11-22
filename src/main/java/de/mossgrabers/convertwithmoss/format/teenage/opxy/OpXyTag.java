@@ -62,6 +62,33 @@ public class OpXyTag
     /** The release of an envelope. */
     public static final String TAG_RELEASE                  = "release";
 
+    /**
+     * The filter section ('M3' on the device): <code>{"active", "params", "type"}</code>. The 8
+     * parameters are the values of the controls in the order of the knobs (dark gray, mid gray,
+     * light gray, white), the guide of the device names them cut-off, resonance, envelope amount
+     * and key tracking. This order is derived from the documentation (the device stores the
+     * control values in their declaration order), it is not verified with presets of the device.
+     */
+    public static final String TAG_FX                       = "fx";
+    /** Is the filter switched on? */
+    public static final String TAG_ACTIVE                   = "active";
+    /** The 8 parameters of the filter. */
+    public static final String TAG_PARAMS                   = "params";
+    /** The state variable filter, the default filter of the device (a low-pass is assumed). */
+    public static final String FX_TYPE_SVF                  = "svf";
+    /** The index of the cut-off in the filter parameters. */
+    public static final int    FX_PARAM_CUTOFF              = 0;
+    /** The index of the resonance in the filter parameters. */
+    public static final int    FX_PARAM_RESONANCE           = 1;
+    /** The index of the envelope amount in the filter parameters. */
+    public static final int    FX_PARAM_ENVELOPE_AMOUNT     = 2;
+    /** The index of the key tracking in the filter parameters. */
+    public static final int    FX_PARAM_KEY_TRACKING        = 3;
+    /** The number of filter parameters. */
+    public static final int    FX_PARAM_COUNT               = 8;
+    /** The index of the parameter which is at its maximum in the default filter settings. */
+    public static final int    FX_PARAM_DEFAULT_MAX         = 5;
+
     /** The sample file name of a region. */
     public static final String TAG_SAMPLE                   = "sample";
     /** The lowest key of a region. */

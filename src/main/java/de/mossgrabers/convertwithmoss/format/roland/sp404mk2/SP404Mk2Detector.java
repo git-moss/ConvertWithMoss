@@ -18,6 +18,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
@@ -163,8 +164,8 @@ public class SP404Mk2Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Create a single-key zone from a pad. The full sample is extracted; the on-device start/end
-     * trim is not applied (its byte-offset encoding is not fully decoded).
+     * Create a single-key zone from a pad. The full sample is extracted, the start/end trim and the
+     * loop start of the pad are set as the play range and loop of the zone.
      *
      * @param data The pad configuration
      * @param metaStart The offset of the pad-metadata block
@@ -178,7 +179,7 @@ public class SP404Mk2Detector extends AbstractDetector<MetadataSettingsUI>
     private ISampleZone createZone (final byte [] data, final int metaStart, final int padIndex, final int padInBank, final String name, final File smpFile) throws IOException
     {
         final byte [] smp = Files.readAllBytes (smpFile.toPath ());
-        if (smp.length < SP404Mk2Constants.RFWV_HEADER_SIZE || !SP404Mk2Constants.hasMagic (smp, SP404Mk2Constants.RFWV_MAGIC))
+        if (smp.length < SP404Mk2Constants.SAMPLE_DATA_OFFSET || !SP404Mk2Constants.hasMagic (smp, SP404Mk2Constants.RFWV_MAGIC))
         {
             this.notifier.logError ("IDS_SP404MK2_SAMPLE_INVALID", smpFile.getName ());
             return null;
@@ -194,41 +195,102 @@ public class SP404Mk2Detector extends AbstractDetector<MetadataSettingsUI>
         }
 
         final int bytesPerFrame = channels * 2;
-        final int pcmLength = (smp.length - SP404Mk2Constants.RFWV_HEADER_SIZE) / bytesPerFrame * bytesPerFrame;
+        // The PCM data starts after the 480 byte block which follows the header fields
+        final int pcmLength = (smp.length - SP404Mk2Constants.SAMPLE_DATA_OFFSET) / bytesPerFrame * bytesPerFrame;
         final int frames = pcmLength / bytesPerFrame;
         if (frames <= 0)
             return null;
         final byte [] pcm = new byte [pcmLength];
-        System.arraycopy (smp, SP404Mk2Constants.RFWV_HEADER_SIZE, pcm, 0, pcmLength);
+        System.arraycopy (smp, SP404Mk2Constants.SAMPLE_DATA_OFFSET, pcm, 0, pcmLength);
         SP404Mk2Constants.swap16 (pcm);
 
         final int key = BASE_NOTE + padInBank;
         final ISampleZone zone = new DefaultSampleZone (name, key, key);
         zone.setKeyRoot (key);
         zone.setSampleData (new InMemorySampleData (new DefaultAudioMetadata (channels, rate, 16, frames), pcm));
-        zone.setStart (0);
-        zone.setStop (frames);
 
         final int recordOffset = metaStart + padIndex * SP404Mk2Constants.PAD_RECORD_SIZE;
+        final int start = toFrame (data, recordOffset + SP404Mk2Constants.PAD_START, bytesPerFrame, frames);
+        int stop = toFrame (data, recordOffset + SP404Mk2Constants.PAD_END2, bytesPerFrame, frames);
+        if (stop <= start)
+            stop = frames;
+
+        // HOLD plays only the given percentage of the play range
+        final int hold = Math.clamp (SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_HOLD), 1, 100);
+        if (hold < 100)
+            stop = start + Math.max (1, (int) Math.round ((stop - start) * hold / 100.0));
+        zone.setStart (start);
+        zone.setStop (stop);
+
         final int volume = (int) SP404Mk2Constants.getU32 (data, recordOffset + SP404Mk2Constants.PAD_VOLUME);
         zone.setGain (MathUtils.valueToDb (Math.clamp (volume, 1, 127) / 127.0));
         final int pan = (int) SP404Mk2Constants.getU32 (data, recordOffset + SP404Mk2Constants.PAD_PAN);
         zone.setPanning (Math.clamp ((pan - SP404Mk2Constants.PAN_CENTER) / 63.0, -1.0, 1.0));
-        final int pitch = SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_PITCH);
-        final int fine = SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_FINE);
-        zone.setTuning (pitch + fine / 100.0);
+
+        // With VINYL on the pitch follows the speed and the pitch fields are not used
+        if (SP404Mk2Constants.getU32 (data, recordOffset + SP404Mk2Constants.PAD_VINYL) == 0)
+        {
+            final int pitch = SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_PITCH);
+            final int fine = SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_FINE);
+            zone.setTuning (pitch + fine / 100.0);
+        }
+
+        // Without GATE the sample plays to its end
+        zone.setOneShot (SP404Mk2Constants.getU32 (data, recordOffset + SP404Mk2Constants.PAD_GATE) == 0);
+        final int playMode = SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_PLAY_MODE);
+        zone.setReversed ((playMode & SP404Mk2Constants.PLAY_MODE_REVERSE) != 0);
+
+        zone.setExclusiveGroup (Math.clamp (SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_MUTE_GROUP), 0, SP404Mk2Constants.MUTE_GROUP_COUNT));
+
+        final long flags = SP404Mk2Constants.getU32 (data, recordOffset + SP404Mk2Constants.PAD_FLAGS);
+        if ((flags & SP404Mk2Constants.FLAG_FIXED_VELOCITY) != 0)
+            zone.getAmplitudeVelocityModulator ().setDepth (0);
+
+        final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+        envelope.setAttackTime (toEnvelopeTime (SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_ATTACK)));
+        envelope.setReleaseTime (toEnvelopeTime (SP404Mk2Constants.getS32 (data, recordOffset + SP404Mk2Constants.PAD_RELEASE)));
 
         if (SP404Mk2Constants.getU32 (data, recordOffset + SP404Mk2Constants.PAD_LOOP) != 0)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
-            loop.setType (LoopType.FORWARDS);
-            loop.setStart (0);
-            // The whole sample loops, the end of the model is its last frame
-            loop.setEnd (frames - 1);
+            loop.setType ((playMode & SP404Mk2Constants.PLAY_MODE_PING_PONG) != 0 ? LoopType.ALTERNATING : LoopType.FORWARDS);
+            final int loopStart = toFrame (data, recordOffset + SP404Mk2Constants.PAD_LOOP_START, bytesPerFrame, frames);
+            loop.setStart (loopStart >= start && loopStart < stop ? loopStart : start);
+            // The loop runs to the end of the play range, the end of the model is its last frame
+            loop.setEnd (stop - 1);
             zone.addLoop (loop);
         }
 
         return zone;
+    }
+
+
+    /**
+     * Convert a sample position of a pad record (a byte offset into the .SMP file) into a frame.
+     *
+     * @param data The pad configuration
+     * @param offset The offset of the position field
+     * @param bytesPerFrame The number of bytes of one frame
+     * @param frames The number of frames of the sample
+     * @return The frame, clamped to the sample
+     */
+    private static int toFrame (final byte [] data, final int offset, final int bytesPerFrame, final int frames)
+    {
+        final long position = SP404Mk2Constants.getU32 (data, offset);
+        return Math.clamp ((position - SP404Mk2Constants.SAMPLE_DATA_OFFSET) / bytesPerFrame, 0, frames);
+    }
+
+
+    /**
+     * Convert an envelope attack or release value into seconds. The manual specifies 3 seconds for
+     * the maximum value 127, a linear scale is assumed.
+     *
+     * @param value The value, 0-127
+     * @return The time in seconds
+     */
+    private static double toEnvelopeTime (final int value)
+    {
+        return Math.clamp (value, 0, SP404Mk2Constants.ENVELOPE_MAX) * SP404Mk2Constants.ENVELOPE_MAX_TIME / SP404Mk2Constants.ENVELOPE_MAX;
     }
 
 

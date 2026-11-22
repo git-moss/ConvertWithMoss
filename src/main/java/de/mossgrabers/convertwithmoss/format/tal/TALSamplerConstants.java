@@ -28,8 +28,11 @@ public class TALSamplerConstants
      */
     public static final double       ZONE_VOLUME_0_DB  = 0.7843;
 
-    /** The current file format version to set. */
-    public static final String       CURRENT_VERSION   = "9";
+    /**
+     * The current file format version to set. Version 12 is required for the Sine wave form of the
+     * LFOs, a file with an older version is read by the plug-in with only 5 wave forms.
+     */
+    public static final String       CURRENT_VERSION   = "12";
 
     /**
      * The longest stage of an envelope in seconds, which the value 1 of an attack, hold or release
@@ -342,17 +345,24 @@ public class TALSamplerConstants
 
     /**
      * Get the LFO wave form from the wave form attribute. The plug-in offers Triangle, Saw,
-     * Rectangle, S&amp;H Random, Noise and Sine. Since version 9 the attribute is the index divided
-     * by 5, the presets of version 1.5 store the index divided by 2 (with the first 5 wave forms
-     * only).
+     * Rectangle, S&amp;H Random, Noise and Sine. Since version 12 the attribute is the index divided
+     * by 5 (verified with presets saved by the plug-in: Triangle 0, Saw 0.2, Rectangle 0.4, Random
+     * 0.6, Noise 0.8, Sine 1.0). The plug-in reads a file of an older version with only the first 5
+     * wave forms, the index divided by 4: a version 9 file with the value 1.0 plays Noise. The
+     * presets of version 1.5 store the index divided by 2.
      *
      * @param value The wave form attribute
-     * @param isOldVersion True if the preset was written by a version before 2
+     * @param version The version of the file format
      * @return The wave form
      */
-    public static LfoWaveform getLfoWaveform (final double value, final boolean isOldVersion)
+    public static LfoWaveform getLfoWaveform (final double value, final double version)
     {
-        final int index = (int) Math.round (value * (isOldVersion ? 2.0 : 5.0));
+        final double maxIndex;
+        if (version < 2)
+            maxIndex = 2.0;
+        else
+            maxIndex = version < 12 ? 4.0 : 5.0;
+        final int index = (int) Math.round (value * maxIndex);
         return switch (index)
         {
             case 1 -> LfoWaveform.SAWTOOTH_UP;
@@ -366,7 +376,7 @@ public class TALSamplerConstants
 
     /**
      * Get the wave form attribute of an LFO wave form, the inverse of
-     * {@link #getLfoWaveform(double, boolean)} for the current version. The falling saw-tooth is
+     * {@link #getLfoWaveform(double, double)} for the current version. The falling saw-tooth is
      * written as the rising one (the depth of the modulation needs to be inverted).
      *
      * @param waveform The wave form

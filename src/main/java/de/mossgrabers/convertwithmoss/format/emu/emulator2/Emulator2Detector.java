@@ -255,14 +255,19 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                 zone.setKeyRoot (Emulator2Constants.LOWEST_KEY + range.firstKey + Emulator2Constants.TRANSPOSE_UNITY - transpose);
                 zone.setSampleData (sampleData);
                 Emulator2VoiceSettings.apply (zone, voice.voiceRecord, preset.modWheelDestination);
+                // In the non-transpose mode every key of the range plays the recorded pitch
+                if (layer == 0 ? range.nonTranspose : range.secondNonTranspose)
+                    zone.setKeyTracking (0);
+                zone.setReversed (voice.backwards);
                 if (voice.hasLoop)
                 {
                     final ISampleLoop loop = new DefaultSampleLoop ();
-                    loop.setType (LoopType.FORWARDS);
+                    loop.setType (voice.alternating ? LoopType.ALTERNATING : LoopType.FORWARDS);
                     loop.setStart (voice.loopStart);
                     // The length counts the frames of the loop, the end of the model is its last
                     // one
                     loop.setEnd (voice.loopStart + voice.loopLength - 1);
+                    loop.setLoopUntilRelease (!voice.loopInRelease);
                     zone.addLoop (loop);
                 }
                 group.addSampleZone (zone);
@@ -368,6 +373,12 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
         /** The start of the loop relative to the playback start. */
         int     loopStart;
         int     loopLength;
+        /** The loop plays forwards and backwards. */
+        boolean alternating;
+        /** The loop keeps repeating in the release. */
+        boolean loopInRelease;
+        /** The voice plays backwards. */
+        boolean backwards;
         /** The audio reaches beyond the bank memory which the sampler saves. */
         boolean truncated;
         /** A preset plays the voice. */
@@ -403,10 +414,12 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
     {
         int firstKey;
         int numKeys;
-        int voice;
-        int transpose;
-        int secondVoice;
-        int secondTranspose;
+        int     voice;
+        int     transpose;
+        boolean nonTranspose;
+        int     secondVoice;
+        int     secondTranspose;
+        boolean secondNonTranspose;
     }
 
 
@@ -556,7 +569,8 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
             final int loopStart = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_LOOP_START) - playStart;
             final int loopLength = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_LOOP_LENGTH);
             final int playLength = readAddress (this.image, voiceRecord + Emulator2Constants.VOICE_PLAY_LENGTH);
-            final boolean loopOn = (this.image[voiceRecord + Emulator2Constants.VOICE_FLAGS] & Emulator2Constants.VOICE_FLAG_LOOP) != 0 && loopLength > Emulator2Constants.VOICE_NO_LOOP_LENGTH + 1;
+            final int flags = this.image[voiceRecord + Emulator2Constants.VOICE_FLAGS] & 0xFF;
+            final boolean loopOn = (flags & Emulator2Constants.VOICE_FLAG_LOOP) != 0 && loopLength > Emulator2Constants.VOICE_NO_LOOP_LENGTH + 1;
             final int padding = loopOn ? Emulator2Constants.VOICE_SLOT_PADDING : Emulator2Constants.VOICE_UNLOOPED_PADDING;
 
             // The audio ends at the end of the loop, which the length field of the voice and the
@@ -586,6 +600,9 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
             voice.hasLoop = loopOn && loopStart >= 0 && loopStart + Emulator2Constants.VOICE_NO_LOOP_LENGTH + 1 < numFrames;
             voice.loopStart = loopStart;
             voice.loopLength = Math.min (loopLength, numFrames - loopStart);
+            voice.alternating = (flags & Emulator2Constants.VOICE_FLAG_ALTERNATING) != 0;
+            voice.loopInRelease = (flags & Emulator2Constants.VOICE_FLAG_LOOP_IN_REL) != 0;
+            voice.backwards = (flags & Emulator2Constants.VOICE_FLAG_BACKWARDS) != 0;
             this.voices.add (voice);
         }
 
@@ -644,6 +661,9 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                 range.numKeys = Math.min (count, Emulator2Constants.NUM_KEYS - key);
                 range.voice = this.image[entry + Emulator2Constants.ENTRY_VOICE] & 0xFF;
                 range.transpose = this.image[entry + Emulator2Constants.ENTRY_TRANSPOSE] & 0xFF;
+                // An entry of mode 1 holds the second voice only
+                final int flags = this.image[entry + Emulator2Constants.ENTRY_FLAGS] & 0xFF;
+                range.nonTranspose = (flags & (mode == 1 ? Emulator2Constants.ENTRY_NON_TRANSPOSE_2 : Emulator2Constants.ENTRY_NON_TRANSPOSE)) != 0;
                 entry += Emulator2Constants.ENTRY_SIZE;
                 if (mode == Emulator2Constants.ENTRY_MODE_DUAL)
                 {
@@ -651,6 +671,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                     {
                         range.secondVoice = this.image[entry] & 0xFF;
                         range.secondTranspose = this.image[entry + 1] & 0xFF;
+                        range.secondNonTranspose = (flags & Emulator2Constants.ENTRY_NON_TRANSPOSE_2) != 0;
                     }
                     entry += Emulator2Constants.ENTRY_SECONDARY_SIZE;
                 }
@@ -682,11 +703,12 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                     key++;
                     continue;
                 }
-                // A range runs while the voice stays the same and the transposition keeps rising by
-                // one semitone per key; where it restarts, the voice is mapped again at another
-                // root
+                // A range runs while the voice and the flags stay the same and the transposition
+                // keeps rising by one semitone per key; where it restarts, the voice is mapped again
+                // at another root
+                final int flags = this.image[this.bankOffset + Emulator2Constants.KEY_MAP_FLAGS + key];
                 int last = key;
-                while (last + 1 < Emulator2Constants.NUM_KEYS && (this.image[this.bankOffset + Emulator2Constants.KEY_MAP_VOICE_ID + last + 1] & 0xFF) == voiceID && this.transpose (last + 1) == this.transpose (last) + 1)
+                while (last + 1 < Emulator2Constants.NUM_KEYS && (this.image[this.bankOffset + Emulator2Constants.KEY_MAP_VOICE_ID + last + 1] & 0xFF) == voiceID && this.transpose (last + 1) == this.transpose (last) + 1 && this.image[this.bankOffset + Emulator2Constants.KEY_MAP_FLAGS + last + 1] == flags)
                     last++;
                 final KeyRange range = new KeyRange ();
                 range.firstKey = key;
@@ -694,6 +716,7 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                 // The key map holds identifiers, the ranges of the records hold voice numbers
                 range.voice = -(voiceID - Emulator2Constants.VOICE_ID_BASE + 1);
                 range.transpose = this.transpose (key);
+                range.nonTranspose = (flags & Emulator2Constants.ENTRY_NON_TRANSPOSE) != 0;
                 preset.ranges.add (range);
                 key = last + 1;
             }

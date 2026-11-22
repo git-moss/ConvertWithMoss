@@ -357,9 +357,15 @@ extend the cord table:
   (2 semitones on the 32 semitone scale). The bend range of all other voices is not stored in the
   bank - it is a setting of the application - and the two floats of the `E5MP` chunks (mostly 4.0
   and 7.0) are not a bend range.
-* **Undecoded flags**, candidates for the remaining voice modes: byte 24 of `E5Oc` (0/1, 772
-  voices, mostly drum kits and effects whose voices span many keys - a candidate for *fixed
-  pitch*), byte 38 of `E5Oc` (0/1, 533 voices of 39 presets, guitars, strings and keys), byte 9 of
+* **Fixed Pitch Mode**: byte 24 of `E5Oc` (0/1, 772 voices, mostly drum kits, effects and drones).
+  In Orbit-3 it is set in *sfx:Dirt 1 NTP*, whose name marks it as non-transposing, and the manual
+  describes the mode as turning the keyboard transposition of the voice off, e.g. for drones. It is
+  read as a key tracking of 0 and written for a zone without key tracking.
+* **Not available in the format**: the manual of the Emulator X has no playback direction (reverse
+  is a destructive edit of the sample) and no 'loop in release' option; the loop of a sample always
+  plays on. *Cycle Groups* (a round robin of the Emulator X3) are set in the key CC window; no bank
+  of the corpus uses them, so their encoding is unknown.
+* **Undecoded flags**, candidates for the remaining voice modes: byte 38 of `E5Oc` (0/1, 533 voices of 39 presets, guitars, strings and keys), byte 9 of
   `E5Am` (0-3, 1302 voices, many of them drum kits) and the rare bytes 4, 6 and 8 of `E5Oc`.
 
 An envelope chunk `E5Ev` is `version(4) reserved(6)` followed by six stages of

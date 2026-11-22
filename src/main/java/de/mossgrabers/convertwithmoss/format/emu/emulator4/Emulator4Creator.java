@@ -68,6 +68,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         byte [] pcm;
         int     sampleRate;
         boolean hasLoop;
+        boolean loopInRelease;
         int     loopStart;
         int     loopEnd;
     }
@@ -250,6 +251,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         // The loop is a property of the sample in this format. Backwards loops cannot be
         // expressed; an alternating loop is written as a forward loop
         boolean hasLoop = false;
+        boolean loopInRelease = false;
         int loopStart = 0;
         int loopEnd = 0;
         for (final ISampleLoop loop: zone.getLoops ())
@@ -258,6 +260,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
                 loopStart = Math.clamp (loop.getStart (), 0, numFrames - 1);
                 loopEnd = Math.clamp (loop.getEnd (), loopStart + 1, numFrames);
                 hasLoop = true;
+                loopInRelease = !loop.isLoopUntilRelease ();
                 break;
             }
 
@@ -265,7 +268,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
 
         // Re-use an already written sample with identical content and parameters, e.g. when the
         // same sample is mapped to several key ranges or velocity layers
-        final Object contentKey = List.of (ByteBuffer.wrap (pcm), Integer.valueOf (sampleRate), Boolean.valueOf (hasLoop), Integer.valueOf (loopStart), Integer.valueOf (loopEnd), Integer.valueOf (rootKey));
+        final Object contentKey = List.of (ByteBuffer.wrap (pcm), Integer.valueOf (sampleRate), Boolean.valueOf (hasLoop), Boolean.valueOf (loopInRelease), Integer.valueOf (loopStart), Integer.valueOf (loopEnd), Integer.valueOf (rootKey));
         final Integer existingIndex = sampleIndicesByContent.get (contentKey);
         if (existingIndex != null)
             return existingIndex.intValue ();
@@ -284,6 +287,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         sample.pcm = pcm;
         sample.sampleRate = sampleRate;
         sample.hasLoop = hasLoop;
+        sample.loopInRelease = loopInRelease;
         sample.loopStart = loopStart;
         sample.loopEnd = loopEnd;
         samples.add (sample);
@@ -691,7 +695,10 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         // informational only - it is this signed offset in 1/64 semitones relative to the 44100 Hz
         // playback rate of the sampler
         Emulator4Constants.putU16LE (header, 58, Emulator4Constants.calculatePitchOffset (sample.sampleRate));
-        Emulator4Constants.putU16LE (header, 60, sample.hasLoop ? Emulator4Constants.OPTIONS_MONO_LOOP : Emulator4Constants.OPTIONS_MONO);
+        int options = Emulator4Constants.OPTIONS_MONO;
+        if (sample.hasLoop)
+            options = Emulator4Constants.OPTIONS_MONO_LOOP | (sample.loopInRelease ? Emulator4Constants.OPTION_LOOP_IN_RELEASE : 0);
+        Emulator4Constants.putU16LE (header, 60, options);
         Emulator4Constants.putU32LE (header, 62, structSize);
         return header;
     }

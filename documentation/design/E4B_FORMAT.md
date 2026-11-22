@@ -276,7 +276,8 @@ are byte offsets relative to the struct start (i.e. 92 = first PCM byte):
 | 50 | 4 | loop end, right channel |
 | 54 | 4 | sample rate - informational only, inherited from the EOS 3 struct |
 | 58 | 2 | pitch offset in 1/64 semitones (signed) |
-| 60 | 2 | options: 0x0001 = forward loop, 0x0020 = holds the left channel, 0x0040 = holds the right channel; 0x0020 = mono, 0x0031 = mono with forward loop |
+| 60 | 1 | options: 0x01 = forward loop, 0x08 = loop in release, 0x10 = (?) set on nearly all samples, 0x20 = holds the left channel, 0x40 = holds the right channel; 0x20 = mono, 0x39 = mono with a forward loop which plays on in the release |
+| 61 | 1 | (?) varies freely (signed values), not part of the options |
 | 62 | 4 | data offset = 92 |
 
 Every position exists twice, once per channel - the struct is the one of the
@@ -290,6 +291,15 @@ or drops it altogether. Of 7835 looped samples on three commercial CD-ROMs
 (Producer Series Vol. 1 and 2, E4 Ultra Production Set) 1402 are right channel
 only, and selecting the pair by the option bit makes all 7835 resolve inside
 their sample.
+
+The options are the ones of the Emulator III sample struct. Across 24 factory and third party
+banks (1414 voices) the looped mono samples have the options 0x39 (482 times) and only 2 the 0x31
+of a loop without 0x08: **0x08 is 'loop in release'** as on the Emulator III, the loop keeps
+playing in the release; without it the sample plays on behind the loop when the key is released.
+Reading converts a loop without the bit into a loop which ends with the release, writing sets the
+bit for every loop which plays on (the creator wrote 0x31 before, so every written loop stopped
+at the release). Byte 61 holds unrelated values (0x00, 0xFF, 0x3B, ...) and must not be tested
+together with the options.
 
 EOS has exactly one loop type (forward, on/off at the sample level). A forward
 loop shorter than ~84 frames plays an octave low on the hardware (the E4XT

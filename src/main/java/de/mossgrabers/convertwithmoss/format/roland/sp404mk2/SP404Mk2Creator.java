@@ -11,7 +11,9 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
@@ -19,9 +21,12 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
+import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.settings.EmptySettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
@@ -33,8 +38,9 @@ import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
  * is a project folder with a <i>PADCONF.BIN</i> pad configuration and a <i>SMPL</i> folder of RFWV
  * <i>BANK&lt;bank&gt;-&lt;pad&gt;.SMP</i> samples (48 kHz / 16-bit). Copy the folder into the
  * <i>IMPORT</i> folder of an SD card and load it with the device's <i>IMPORT PROJECT</i> function.
- * Written projects have not been verified on hardware yet. Files round-trip through
- * {@link SP404Mk2Detector}.
+ * Written projects have not been verified on hardware yet. The SP-404MKII App does not import the
+ * samples since the 480 byte block of the sample files (which looks encrypted) cannot be created
+ * and is written zeroed. Files round-trip through {@link SP404Mk2Detector}.
  *
  * @author Jürgen Moßgraber
  */
@@ -45,9 +51,10 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
         16
     }, SP404Mk2Constants.SAMPLE_RATE, true);
 
-    /** The creator always writes the export PADCONF.BIN form. */
-    private static final int                    META_START         = SP404Mk2Constants.HEADER_SIZE_EXPORT;
-    private static final int                    NAME_START         = SP404Mk2Constants.nameBlockStart (SP404Mk2Constants.HEADER_SIZE_EXPORT);
+    /** The creator writes the PADCONF.BIN form which the device and the app store and export. */
+    private static final int                    META_START         = SP404Mk2Constants.HEADER_SIZE_INTERNAL;
+    private static final int                    NAME_START         = SP404Mk2Constants.nameBlockStart (SP404Mk2Constants.HEADER_SIZE_INTERNAL);
+    private static final int                    MARKS_START        = NAME_START + SP404Mk2Constants.PAD_COUNT * SP404Mk2Constants.NAME_SIZE;
 
     /** Default project / pad tempo (120.00 BPM) in the BPM * 100 unit. */
     private static final int                    DEFAULT_PAD_BPM    = 12000;
@@ -55,6 +62,9 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
     private static final int                    DEFAULT_BANK_BPM   = 24000;
     /** Playback speed for 100%. */
     private static final int                    SPEED_100          = 10000;
+
+    /** Maps the exclusive groups of the sources to the mute groups (1-10) of the project. */
+    private final Map<Integer, Integer>         muteGroups         = new HashMap<> ();
 
 
     /**
@@ -109,8 +119,9 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
         safeCreateDirectory (smplFolder);
         this.notifier.log ("IDS_SP404MK2_WRITING_PROJECT", projectFolder.getAbsolutePath ());
 
-        final byte [] padconf = new byte [SP404Mk2Constants.PADCONF_SIZE_EXPORT];
-        writeHeader (padconf);
+        final byte [] padconf = new byte [SP404Mk2Constants.PADCONF_SIZE_INTERNAL];
+        writeHeader (padconf, name);
+        this.muteGroups.clear ();
 
         int bank = 0;
         int pad = 0;
@@ -203,7 +214,7 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
         final byte [] pcm = new byte [pcmLength];
         System.arraycopy (littleEndian, 0, pcm, 0, pcmLength);
         SP404Mk2Constants.swap16 (pcm);
-        final int fileSize = SP404Mk2Constants.RFWV_HEADER_SIZE + pcmLength;
+        final int fileSize = SP404Mk2Constants.SAMPLE_DATA_OFFSET + pcmLength;
 
         final File smpFile = new File (smplFolder, String.format ("BANK%d-%02d.SMP", Integer.valueOf (bank + 1), Integer.valueOf (pad + 1)));
         try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (smpFile.toPath ())))
@@ -213,14 +224,38 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
         }
 
         final int padIndex = bank * SP404Mk2Constants.PADS_PER_BANK + pad;
-        writePadRecord (padconf, padIndex, zone, fileSize);
+        writePadRecord (padconf, padIndex, zone, fileSize, bytesPerFrame, this.getMuteGroup (zone.getExclusiveGroup ()));
         writePadName (padconf, padIndex, zone.getName ());
         return true;
     }
 
 
     /**
-     * Build the 32-byte RFWV header for a sample.
+     * Get the mute group for an exclusive group. The exclusive groups are numbered in the order in
+     * which they appear in the project, since the device has only the 10 mute groups A-J.
+     *
+     * @param exclusiveGroup The exclusive group, 0 for none
+     * @return The mute group (1-10) or 0 if there is none or all 10 mute groups are in use
+     */
+    private int getMuteGroup (final int exclusiveGroup)
+    {
+        if (exclusiveGroup <= 0)
+            return 0;
+        final Integer key = Integer.valueOf (exclusiveGroup);
+        final Integer muteGroup = this.muteGroups.get (key);
+        if (muteGroup != null)
+            return muteGroup.intValue ();
+        if (this.muteGroups.size () >= SP404Mk2Constants.MUTE_GROUP_COUNT)
+            return 0;
+        final int newMuteGroup = this.muteGroups.size () + 1;
+        this.muteGroups.put (key, Integer.valueOf (newMuteGroup));
+        return newMuteGroup;
+    }
+
+
+    /**
+     * Build the 512-byte RFWV header for a sample: the 32 bytes of header fields followed by the
+     * 480 byte block, which is written zeroed since its encoding is unknown.
      *
      * @param pcmLength The number of PCM bytes that follow
      * @param channels The number of channels
@@ -228,9 +263,9 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
      */
     private static byte [] buildRfwvHeader (final int pcmLength, final int channels)
     {
-        final byte [] header = new byte [SP404Mk2Constants.RFWV_HEADER_SIZE];
+        final byte [] header = new byte [SP404Mk2Constants.SAMPLE_DATA_OFFSET];
         System.arraycopy (SP404Mk2Constants.RFWV_MAGIC, 0, header, 0, 4);
-        SP404Mk2Constants.putU32 (header, 4, (long) SP404Mk2Constants.RFWV_HEADER_SIZE + pcmLength - 8);
+        SP404Mk2Constants.putU32 (header, 4, (long) SP404Mk2Constants.SAMPLE_DATA_OFFSET + pcmLength - 8);
         SP404Mk2Constants.putU32 (header, SP404Mk2Constants.RFWV_RATE, SP404Mk2Constants.SAMPLE_RATE);
         SP404Mk2Constants.putU32 (header, SP404Mk2Constants.RFWV_CHANNELS, channels);
         SP404Mk2Constants.putU32 (header, SP404Mk2Constants.RFWV_BITS, 16);
@@ -239,16 +274,17 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Write the header and lay down the fixed "empty pad" template into all 160 records, so unused
-     * pads match the device's own layout.
+     * Write the header, lay down the fixed "empty pad" template into all 160 records and fill the
+     * marks section, so unused pads match the device's own layout.
      *
      * @param padconf The pad configuration to fill
+     * @param projectName The name of the project
      */
-    private static void writeHeader (final byte [] padconf)
+    private static void writeHeader (final byte [] padconf, final String projectName)
     {
         System.arraycopy (SP404Mk2Constants.RFPD_MAGIC, 0, padconf, 0, 4);
         SP404Mk2Constants.putU32 (padconf, SP404Mk2Constants.HDR_PAD_COUNT, SP404Mk2Constants.PAD_COUNT);
-        SP404Mk2Constants.putU32 (padconf, SP404Mk2Constants.HDR_VERSION, 0x02000000);
+        SP404Mk2Constants.putU32 (padconf, SP404Mk2Constants.HDR_VERSION, 0x03000000);
         SP404Mk2Constants.putU32 (padconf, SP404Mk2Constants.HDR_DATA_SIZE, (long) SP404Mk2Constants.PAD_COUNT * SP404Mk2Constants.PAD_RECORD_SIZE + (long) SP404Mk2Constants.PAD_COUNT * SP404Mk2Constants.NAME_SIZE);
         // Observed constant header fields of unknown purpose.
         SP404Mk2Constants.putU32 (padconf, 0x10, 0x000124B8);
@@ -259,6 +295,13 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
             SP404Mk2Constants.putU32 (padconf, 0x2C + i * 4, 0x20);
         for (int bank = 0; bank < SP404Mk2Constants.BANK_COUNT; bank++)
             SP404Mk2Constants.putU32 (padconf, SP404Mk2Constants.HDR_BANK_BPM + bank * 4, DEFAULT_BANK_BPM);
+        final byte [] name = projectName.getBytes (StandardCharsets.US_ASCII);
+        System.arraycopy (name, 0, padconf, SP404Mk2Constants.HDR_PROJECT_NAME, Math.min (name.length, SP404Mk2Constants.HEADER_SIZE_INTERNAL - SP404Mk2Constants.HDR_PROJECT_NAME - 1));
+
+        // The marks section of each pad: 4 zero bytes followed by 0xFF
+        for (int i = 0; i < SP404Mk2Constants.PAD_COUNT; i++)
+            for (int j = 4; j < SP404Mk2Constants.MARKS_RECORD_SIZE; j++)
+                padconf[MARKS_START + i * SP404Mk2Constants.MARKS_RECORD_SIZE + j] = (byte) 0xFF;
 
         // Fill the name block with spaces (an all-space name marks an unused pad).
         for (int i = NAME_START; i < NAME_START + SP404Mk2Constants.PAD_COUNT * SP404Mk2Constants.NAME_SIZE; i++)
@@ -280,45 +323,105 @@ public class SP404Mk2Creator extends AbstractCreator<EmptySettingsUI>
     {
         final int o = META_START + padIndex * SP404Mk2Constants.PAD_RECORD_SIZE;
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_VOLUME, 127);
-        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_LOOP, 1);
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_GATE, 1);
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_USED, 1);
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_BPM, DEFAULT_PAD_BPM);
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_SPEED, SPEED_100);
-        SP404Mk2Constants.putU32 (padconf, o + 0x44, 1);
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_VINYL, 1);
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_PAN, SP404Mk2Constants.PAN_CENTER);
         SP404Mk2Constants.putU32 (padconf, o + 0x50, 1);
         SP404Mk2Constants.putU32 (padconf, o + 0x54, 2);
-        SP404Mk2Constants.putU32 (padconf, o + 0x5C, 100);
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_HOLD, 100);
     }
 
 
     /**
-     * Overlay the pad's parameters onto its (already scaffolded) record. The full sample is played
-     * (start at the beginning, end at the sample end).
+     * Overlay the pad's parameters onto its (already scaffolded) record.
      *
      * @param padconf The pad configuration
      * @param padIndex The global pad index
      * @param zone The zone
      * @param fileSize The size of the pad's .SMP file (the sample-end value)
+     * @param bytesPerFrame The number of bytes of one frame
+     * @param muteGroup The mute group, 0 for none
      */
-    private static void writePadRecord (final byte [] padconf, final int padIndex, final ISampleZone zone, final int fileSize)
+    private static void writePadRecord (final byte [] padconf, final int padIndex, final ISampleZone zone, final int fileSize, final int bytesPerFrame, final int muteGroup)
     {
         final int o = META_START + padIndex * SP404Mk2Constants.PAD_RECORD_SIZE;
+        final int frames = (fileSize - SP404Mk2Constants.SAMPLE_DATA_OFFSET) / bytesPerFrame;
+        final int start = Math.clamp (zone.getStart (), 0, frames - 1);
+        int stop = zone.getStop ();
+        if (stop <= start || stop > frames)
+            stop = frames;
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_END, fileSize);
-        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_END2, fileSize);
-        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_START, SP404Mk2Constants.START_SENTINEL);
-        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_LOOP_START, SP404Mk2Constants.START_SENTINEL);
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_END2, toPosition (stop, bytesPerFrame));
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_START, toPosition (start, bytesPerFrame));
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_VOLUME, levelFromGain (zone.getGain ()));
-        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_LOOP, zone.getLoops ().isEmpty () ? 0 : 1);
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_GATE, zone.isOneShot () ? 0 : 1);
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_MUTE_GROUP, muteGroup);
 
+        final List<ISampleLoop> loops = zone.getLoops ();
+        int playMode = zone.isReversed () ? SP404Mk2Constants.PLAY_MODE_REVERSE : 0;
+        if (loops.isEmpty ())
+            SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_LOOP_START, toPosition (start, bytesPerFrame));
+        else
+        {
+            // The loop always runs to the end of the play range
+            final ISampleLoop loop = loops.get (0);
+            final int loopStart = loop.getStart () >= start && loop.getStart () < stop ? loop.getStart () : start;
+            SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_LOOP_START, toPosition (loopStart, bytesPerFrame));
+            SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_LOOP, 1);
+            SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_LOOP_COUNT, SP404Mk2Constants.LOOP_COUNT_INFINITE);
+            if (loop.getType () == LoopType.ALTERNATING)
+                playMode |= SP404Mk2Constants.PLAY_MODE_PING_PONG;
+        }
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_PLAY_MODE, playMode);
+
+        if (Math.abs (zone.getAmplitudeVelocityModulator ().getDepth ()) < 0.01)
+            SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_FLAGS, SP404Mk2Constants.FLAG_FIXED_VELOCITY);
+
+        final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_ATTACK, toEnvelopeValue (envelope.getAttackTime ()));
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_RELEASE, toEnvelopeValue (envelope.getReleaseTime ()));
+
+        // The pitch fields are only used with VINYL off
         final double tuning = zone.getTuning ();
         final int semitones = (int) tuning;
         final int cents = (int) Math.round ((tuning - semitones) * 100.0);
+        SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_VINYL, 0);
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_PITCH, semitones);
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_FINE, cents);
 
         final int pan = Math.clamp (SP404Mk2Constants.PAN_CENTER + Math.round (zone.getPanning () * 63.0), 0, 127);
         SP404Mk2Constants.putU32 (padconf, o + SP404Mk2Constants.PAD_PAN, pan);
+    }
+
+
+    /**
+     * Convert a frame into a sample position of a pad record (a byte offset into the .SMP file).
+     *
+     * @param frame The frame
+     * @param bytesPerFrame The number of bytes of one frame
+     * @return The position
+     */
+    private static long toPosition (final int frame, final int bytesPerFrame)
+    {
+        return SP404Mk2Constants.SAMPLE_DATA_OFFSET + (long) frame * bytesPerFrame;
+    }
+
+
+    /**
+     * Convert an envelope attack or release time into the 0-127 value (127 = 3 seconds, a linear
+     * scale is assumed).
+     *
+     * @param time The time in seconds, a negative value is not set
+     * @return The value
+     */
+    private static int toEnvelopeValue (final double time)
+    {
+        if (time <= 0)
+            return 0;
+        return Math.clamp (Math.round (time * SP404Mk2Constants.ENVELOPE_MAX / SP404Mk2Constants.ENVELOPE_MAX_TIME), 0, SP404Mk2Constants.ENVELOPE_MAX);
     }
 
 

@@ -498,6 +498,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
         final EmulatorXChunk oscillator = voice.getChild (EmulatorXConstants.OSCILLATOR_TAG);
         final EmulatorXChunk amplifier = voice.getChild (EmulatorXConstants.AMPLIFIER_TAG);
+        final boolean isFixedPitch = oscillator != null && oscillator.getByte (EmulatorXConstants.OSCILLATOR_FIXED_PITCH) == 1;
         final double tuning = oscillator == null ? 0 : oscillator.getSignedByte (EmulatorXConstants.OSCILLATOR_TRANSPOSE) + oscillator.getSignedByte (EmulatorXConstants.OSCILLATOR_COARSE_TUNE) + oscillator.getFloat (EmulatorXConstants.OSCILLATOR_FINE_TUNE) / 100.0;
         // Banks written by third party converters exceed the documented panning range, clamp them
         final double panning = amplifier == null ? 0 : Math.clamp (amplifier.getSignedByte (EmulatorXConstants.AMPLIFIER_PAN) / EmulatorXConstants.PAN_RANGE, -1, 1);
@@ -560,6 +561,8 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
             zone.setTuning (tuning);
             zone.setPanning (panning);
             zone.setGain (gain);
+            if (isFixedPitch)
+                zone.setKeyTracking (0);
             addLoop (zone, sampleFile);
 
             zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);

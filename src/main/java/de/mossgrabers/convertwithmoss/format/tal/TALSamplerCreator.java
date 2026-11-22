@@ -441,8 +441,9 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
             return;
 
         final ILfo lfo = modulator.getSource ();
+        final LfoWaveform waveform = lfo.getWaveform ();
         // There is no falling saw-tooth, a rising one with an inverted depth is identical
-        final double polarity = lfo.getWaveform () == LfoWaveform.SAWTOOTH_DOWN ? -1.0 : 1.0;
+        final double polarity = waveform == LfoWaveform.SAWTOOTH_DOWN ? -1.0 : 1.0;
         final double depth = modulator.getDepth () * polarity;
         final double wheelDepth = modulator.getDepthModWheelModulator ().getDepth () * polarity;
 
@@ -458,7 +459,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         final String number = Integer.toString (lfoNumber);
         XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.LFO_RATE + number, TALSamplerConstants.hertzToLfoRate (lfo.getRate ()), 6);
-        XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.LFO_WAVEFORM + number, TALSamplerConstants.getLfoWaveformValue (lfo.getWaveform ()), 1);
+        XMLUtils.setDoubleAttribute (programElement, TALSamplerTag.LFO_WAVEFORM + number, TALSamplerConstants.getLfoWaveformValue (waveform), 1);
         programElement.setAttribute (TALSamplerTag.LFO_TRIGGER + number, lfo.isKeySync () ? "1.0" : "0.0");
         programElement.setAttribute (TALSamplerTag.LFO_SYNC + number, "0.0");
     }

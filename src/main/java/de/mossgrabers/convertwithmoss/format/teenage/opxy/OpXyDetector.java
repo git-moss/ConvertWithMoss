@@ -16,12 +16,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
@@ -189,6 +194,8 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
 
         final JsonNode envelopeNode = root.get (OpXyTag.TAG_ENVELOPE);
         final JsonNode ampNode = envelopeNode == null ? null : envelopeNode.get (OpXyTag.TAG_AMP);
+        final JsonNode filterEnvelopeNode = envelopeNode == null ? null : envelopeNode.get (OpXyTag.TAG_FILTER);
+        final JsonNode fxNode = root.get (OpXyTag.TAG_FX);
 
         for (final ISampleZone zone: group.getSampleZones ())
         {
@@ -202,14 +209,57 @@ public class OpXyDetector extends AbstractDetector<MetadataSettingsUI>
                 zone.getAmplitudeVelocityModulator ().setDepth (OpXyTag.toFactor (velocitySensitivity));
 
             if (ampNode != null)
+                readEnvelope (ampNode, zone.getAmplitudeEnvelopeModulator ().getSource ());
+
+            final IFilter filter = readFilter (fxNode);
+            if (filter != null)
             {
-                final IEnvelope envelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
-                envelope.setAttackTime (OpXyTag.toEnvelopeTime (getInt (ampNode, OpXyTag.TAG_ATTACK, 0)));
-                envelope.setDecayTime (OpXyTag.toEnvelopeTime (getInt (ampNode, OpXyTag.TAG_DECAY, 0)));
-                envelope.setSustainLevel (OpXyTag.toFactor (getInt (ampNode, OpXyTag.TAG_SUSTAIN, OpXyTag.MAX_VALUE)));
-                envelope.setReleaseTime (OpXyTag.toEnvelopeTime (getInt (ampNode, OpXyTag.TAG_RELEASE, 0)));
+                if (filterEnvelopeNode != null)
+                    readEnvelope (filterEnvelopeNode, filter.getCutoffEnvelopeModulator ().getSource ());
+                zone.setFilter (filter);
             }
         }
+    }
+
+
+    /**
+     * Read the 4 values of an envelope.
+     *
+     * @param envelopeNode The node which contains the envelope values
+     * @param envelope Where to store the values
+     */
+    private static void readEnvelope (final JsonNode envelopeNode, final IEnvelope envelope)
+    {
+        envelope.setAttackTime (OpXyTag.toEnvelopeTime (getInt (envelopeNode, OpXyTag.TAG_ATTACK, 0)));
+        envelope.setDecayTime (OpXyTag.toEnvelopeTime (getInt (envelopeNode, OpXyTag.TAG_DECAY, 0)));
+        envelope.setSustainLevel (OpXyTag.toFactor (getInt (envelopeNode, OpXyTag.TAG_SUSTAIN, OpXyTag.MAX_VALUE)));
+        envelope.setReleaseTime (OpXyTag.toEnvelopeTime (getInt (envelopeNode, OpXyTag.TAG_RELEASE, 0)));
+    }
+
+
+    /**
+     * Read the filter. Only an active state variable filter is read, as a 2-pole low-pass. The
+     * cut-off is assumed to use the normalized range of {@link MathUtils#denormalizeCutoff(double)}
+     * and the envelope amount to be unipolar, both are not verified with the device.
+     *
+     * @param fxNode The filter node, might be null
+     * @return The filter or null if there is no active filter
+     */
+    private static IFilter readFilter (final JsonNode fxNode)
+    {
+        if (fxNode == null || !getBoolean (fxNode, OpXyTag.TAG_ACTIVE) || !OpXyTag.FX_TYPE_SVF.equals (getText (fxNode, OpXyTag.TAG_TYPE, "")))
+            return null;
+        final JsonNode paramsNode = fxNode.get (OpXyTag.TAG_PARAMS);
+        if (paramsNode == null || !paramsNode.isArray () || paramsNode.size () <= OpXyTag.FX_PARAM_KEY_TRACKING)
+            return null;
+
+        final double cutoff = MathUtils.denormalizeCutoff (OpXyTag.toFactor (paramsNode.get (OpXyTag.FX_PARAM_CUTOFF).asInt (OpXyTag.MAX_VALUE)));
+        final double resonance = OpXyTag.toFactor (paramsNode.get (OpXyTag.FX_PARAM_RESONANCE).asInt (0));
+        final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, cutoff, resonance);
+        filter.setCutoffKeyTracking (OpXyTag.toFactor (paramsNode.get (OpXyTag.FX_PARAM_KEY_TRACKING).asInt (0)));
+        final IEnvelopeModulator envelopeModulator = filter.getCutoffEnvelopeModulator ();
+        envelopeModulator.setDepth (OpXyTag.toFactor (paramsNode.get (OpXyTag.FX_PARAM_ENVELOPE_AMOUNT).asInt (0)));
+        return filter;
     }
 
 

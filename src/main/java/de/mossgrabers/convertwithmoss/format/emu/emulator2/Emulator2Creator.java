@@ -78,8 +78,8 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
     private static final int     MAX_TRANSPOSE        = 0x3F;
     /** The level of a key range, which is what the factory library uses throughout. */
     private static final int     RANGE_LEVEL          = 0x70;
-    /** The flags of a voice record without its loop bit, as the factory library sets them. */
-    private static final int     VOICE_FLAGS_DEFAULT  = 0x20;
+    /** The flag which the sampler sets in most key range entries; its meaning is not decoded. */
+    private static final int     ENTRY_FLAGS_DEFAULT  = 0x08;
     /** The sample memory of a bank starts this far behind the end of its records. */
     private static final int     SAMPLE_MEMORY_GAP    = 0x95FE;
     /** The size of the operating system of the disk: tracks 0 to 21. */
@@ -606,12 +606,14 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
             {
                 range.voice = this.getVoiceNumber (primary, voiceNumbers, builder);
                 range.transpose = getTransposition (primary, key);
+                range.nonTranspose = isNonTranspose (primary);
                 largestTransposition = Math.max (largestTransposition, Emulator2Constants.TRANSPOSE_UNITY + Emulator2Constants.LOWEST_KEY + last - getRootKey (primary) - MAX_TRANSPOSE);
             }
             if (secondary != null)
             {
                 range.secondVoice = this.getVoiceNumber (secondary, voiceNumbers, builder);
                 range.secondTranspose = getTransposition (secondary, key);
+                range.secondNonTranspose = isNonTranspose (secondary);
             }
             preset.ranges.add (range);
             key = last + 1;
@@ -624,6 +626,19 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
             playsVoice |= range.voice > 0 || range.secondVoice > 0;
         preset.modWheelDestination = getModWheelDestination (preset, builder);
         return playsVoice ? preset : null;
+    }
+
+
+    /**
+     * Check if a zone plays every key at the pitch of its root key, which is the non-transpose mode
+     * of a key range.
+     *
+     * @param zone The zone
+     * @return True if the zone does not follow the keys
+     */
+    private static boolean isNonTranspose (final ISampleZone zone)
+    {
+        return zone.getKeyTracking () < 0.5;
     }
 
 
@@ -686,7 +701,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
         // Re-use a voice with identical audio, loop and settings, e.g. when the same sample is
         // mapped to several key ranges or is played by several presets of the library
-        final Object contentKey = List.of (ByteBuffer.wrap (voice.audio), Boolean.valueOf (voice.hasLoop), Integer.valueOf (voice.loopStart), Integer.valueOf (voice.loopLength), Double.valueOf (voice.tuning), Double.valueOf (voice.gain), Double.valueOf (voice.velocityDepth), Arrays.asList (Integer.valueOf (voice.lfoRate), Integer.valueOf (voice.lfoDelay), Integer.valueOf (voice.lfoToPitch), Integer.valueOf (voice.lfoToFilter), Integer.valueOf (voice.lfoToLevel), Integer.valueOf (voice.realtimeEnable)), ByteBuffer.wrap (voice.settings));
+        final Object contentKey = List.of (ByteBuffer.wrap (voice.audio), Arrays.asList (Boolean.valueOf (voice.hasLoop), Boolean.valueOf (voice.alternating), Boolean.valueOf (voice.loopInRelease)), Integer.valueOf (voice.loopStart), Integer.valueOf (voice.loopLength), Double.valueOf (voice.tuning), Double.valueOf (voice.gain), Double.valueOf (voice.velocityDepth), Arrays.asList (Integer.valueOf (voice.lfoRate), Integer.valueOf (voice.lfoDelay), Integer.valueOf (voice.lfoToPitch), Integer.valueOf (voice.lfoToFilter), Integer.valueOf (voice.lfoToLevel), Integer.valueOf (voice.realtimeEnable)), ByteBuffer.wrap (voice.settings));
         final Integer existingNumber = builder.voiceNumbersByContent.get (contentKey);
         if (existingNumber != null)
         {
@@ -753,18 +768,34 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
             voice.audio[frame] = (byte) EmuCompanding.compand (sum / numChannels);
         }
 
+        // The backwards mode of the sampler needs counters which run from the end of the voice,
+        // therefore a reversed zone is written with its audio reversed, which plays the same
+        final boolean isReversed = zone.isReversed ();
+        if (isReversed)
+            for (int i = 0; i < numFrames / 2; i++)
+            {
+                final byte value = voice.audio[i];
+                voice.audio[i] = voice.audio[numFrames - 1 - i];
+                voice.audio[numFrames - 1 - i] = value;
+            }
+
         // The audio was re-sampled to the rate of the sampler, so the loop moves with it. The
         // sampler plays the loop as the end of a voice, so the audio behind the loop is dropped
         final double rateRatio = Emulator2Constants.SAMPLE_RATE / (double) sourceRate;
         for (final ISampleLoop loop: zone.getLoops ())
             if (loop.getType () == LoopType.FORWARDS || loop.getType () == LoopType.ALTERNATING)
             {
-                // The loop end is the last frame of the loop, the length counts its frames
-                final int loopEnd = Math.clamp ((int) Math.round (loop.getEnd () * rateRatio), 0, numFrames - 1);
-                final int loopStart = Math.clamp ((int) Math.round (loop.getStart () * rateRatio), 0, Math.max (0, loopEnd + 1 - MINIMUM_LOOP_LENGTH));
+                // The loop end is the last frame of the loop, the length counts its frames; the
+                // loop of reversed audio is mirrored with it
+                final int sourceStart = (int) Math.round (loop.getStart () * rateRatio);
+                final int sourceEnd = (int) Math.round (loop.getEnd () * rateRatio);
+                final int loopEnd = Math.clamp (isReversed ? numFrames - 1 - sourceStart : sourceEnd, 0, numFrames - 1);
+                final int loopStart = Math.clamp (isReversed ? numFrames - 1 - sourceEnd : sourceStart, 0, Math.max (0, loopEnd + 1 - MINIMUM_LOOP_LENGTH));
                 if (loopEnd + 1 - loopStart >= MINIMUM_LOOP_LENGTH)
                 {
                     voice.hasLoop = true;
+                    voice.alternating = loop.getType () == LoopType.ALTERNATING;
+                    voice.loopInRelease = !loop.isLoopUntilRelease ();
                     voice.loopStart = loopStart;
                     voice.loopLength = loopEnd + 1 - loopStart;
                     voice.audio = Arrays.copyOf (voice.audio, loopEnd + 1);
@@ -987,6 +1018,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
                 image[transposeCopy + key] = (byte) transpose;
                 image[level + key] = (byte) (range.voice > 0 ? RANGE_LEVEL : 0);
                 image[secondLevel + key] = (byte) (range.secondVoice > 0 ? RANGE_LEVEL : 0);
+                image[bank + Emulator2Constants.KEY_MAP_FLAGS + key] = (byte) getNonTransposeFlags (range);
                 if (offset == 0)
                     image[rangeStart + key] = 0;
             }
@@ -1022,7 +1054,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
             else
                 mode = range.secondVoice > 0 ? Emulator2Constants.ENTRY_MODE_DUAL : 2;
             presetRecord[position] = (byte) (mode << Emulator2Constants.ENTRY_MODE_SHIFT | range.numKeys);
-            presetRecord[position + 1] = 0x08;
+            presetRecord[position + Emulator2Constants.ENTRY_FLAGS] = (byte) (ENTRY_FLAGS_DEFAULT | getNonTransposeFlags (range));
             presetRecord[position + Emulator2Constants.ENTRY_VOICE] = (byte) range.voice;
             presetRecord[position + Emulator2Constants.ENTRY_TRANSPOSE] = (byte) range.transpose;
             presetRecord[position + Emulator2Constants.ENTRY_LEVEL] = (byte) (range.voice > 0 ? RANGE_LEVEL : 0);
@@ -1038,6 +1070,24 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         // The end marker: an entry of no keys at the key behind the keyboard
         presetRecord[position + 1] = (byte) Emulator2Constants.NUM_KEYS;
         return presetRecord;
+    }
+
+
+    /**
+     * Get the flags of the non-transpose mode of a key range. An entry without a first voice holds
+     * the second voice only, which takes the flag of the second voice.
+     *
+     * @param range The key range
+     * @return The flags
+     */
+    private static int getNonTransposeFlags (final KeyRange range)
+    {
+        int flags = 0;
+        if (range.nonTranspose)
+            flags |= range.voice > 0 ? Emulator2Constants.ENTRY_NON_TRANSPOSE : Emulator2Constants.ENTRY_NON_TRANSPOSE_2;
+        if (range.secondNonTranspose && range.secondVoice > 0)
+            flags |= Emulator2Constants.ENTRY_NON_TRANSPOSE_2;
+        return flags;
     }
 
 
@@ -1080,17 +1130,23 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         image[voiceRecord + Emulator2VoiceSettings.FLAGS] = (byte) (voice.settings[Emulator2VoiceSettings.FLAGS] & ~Emulator2VoiceSettings.REALTIME_ENABLE_ALL | voice.realtimeEnable);
 
         // The audio in front of the loop plays once, the loop repeats; a voice without a loop is
-        // written as the factory library holds it: all of its audio in front of a loop of length 1
+        // written as the factory library holds it: all of its audio in front of a loop of length 1.
+        // The counters of an alternating loop count from a different base
         final int attack = voice.hasLoop ? voice.loopStart : voice.audio.length;
         final int loopLength = voice.hasLoop ? voice.loopLength : Emulator2Constants.VOICE_NO_LOOP_LENGTH;
         final int loopStart = voice.start + attack;
         final int slot = voice.getSlotSize ();
+        final boolean alternating = voice.hasLoop && voice.alternating;
+        final int loopCounterBase = alternating ? Emulator2Constants.VOICE_COUNTER_BASE_ALT : Emulator2Constants.VOICE_COUNTER_BASE;
         writeAddress (image, voiceRecord + Emulator2Constants.VOICE_START_MINUS_ONE, voice.start - 1);
         writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_LENGTH, Emulator2Constants.VOICE_COUNTER_BASE - attack);
         writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_END, loopStart - 1);
-        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_LOOP, Emulator2Constants.VOICE_COUNTER_BASE - loopLength);
-        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_LOOP_2, Emulator2Constants.VOICE_COUNTER_BASE - loopLength);
-        image[voiceRecord + Emulator2Constants.VOICE_FLAGS] = (byte) (VOICE_FLAGS_DEFAULT | (voice.hasLoop ? Emulator2Constants.VOICE_FLAG_LOOP : 0));
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_LOOP, loopCounterBase - loopLength);
+        writeAddress (image, voiceRecord + Emulator2Constants.VOICE_COUNTER_LOOP_2, loopCounterBase - loopLength);
+        int flags = voice.loopInRelease ? Emulator2Constants.VOICE_FLAG_LOOP_IN_REL : 0;
+        if (voice.hasLoop)
+            flags |= Emulator2Constants.VOICE_FLAG_LOOP | (alternating ? Emulator2Constants.VOICE_FLAG_ALTERNATING : 0);
+        image[voiceRecord + Emulator2Constants.VOICE_FLAGS] = (byte) flags;
         writeAddress (image, voiceRecord + Emulator2Constants.VOICE_REGION_START, voice.start);
         writeAddress (image, voiceRecord + Emulator2Constants.VOICE_SLOT_SIZE, slot);
         writeAddress (image, voiceRecord + Emulator2Constants.VOICE_LOOP_START, loopStart);
@@ -1157,6 +1213,13 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         boolean hasLoop;
         int     loopStart;
         int     loopLength;
+        /** The loop plays forwards and backwards. */
+        boolean alternating;
+        /**
+         * The loop keeps repeating in the release, which is how the factory library sets its
+         * voices.
+         */
+        boolean loopInRelease  = true;
         /** The fine tuning in semitones. */
         double  tuning;
         /** The level in decibels. */
@@ -1223,12 +1286,14 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
     /** A range of keys of a preset which plays one or two voices. */
     private static class KeyRange
     {
-        int firstKey;
-        int numKeys;
-        int voice;
-        int transpose;
-        int secondVoice;
-        int secondTranspose;
+        int     firstKey;
+        int     numKeys;
+        int     voice;
+        int     transpose;
+        boolean nonTranspose;
+        int     secondVoice;
+        int     secondTranspose;
+        boolean secondNonTranspose;
     }
 
 

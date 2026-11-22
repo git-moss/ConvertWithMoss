@@ -22,13 +22,16 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
+import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.Functions;
 
@@ -195,12 +198,30 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
         if (bendUp > 0)
             engine.put (OpXyTag.TAG_BEND_RANGE, OpXyTag.fromFactor (bendUp / 100.0 / OpXyTag.MAX_BEND_RANGE));
 
-        final IEnvelope ampEnvelope = firstZone.getAmplitudeEnvelopeModulator ().getSource ();
-        final ObjectNode amp = root.putObject (OpXyTag.TAG_ENVELOPE).putObject (OpXyTag.TAG_AMP);
-        putEnvelopeTime (amp, OpXyTag.TAG_ATTACK, ampEnvelope.getAttackTime (), 0);
-        putEnvelopeTime (amp, OpXyTag.TAG_DECAY, Math.max (0, ampEnvelope.getHoldTime ()) + Math.max (0, ampEnvelope.getDecayTime ()), OpXyTag.MAX_VALUE);
-        amp.put (OpXyTag.TAG_SUSTAIN, ampEnvelope.getSustainLevel () < 0 ? OpXyTag.MAX_VALUE : OpXyTag.fromFactor (ampEnvelope.getSustainLevel ()));
-        putEnvelopeTime (amp, OpXyTag.TAG_RELEASE, ampEnvelope.getReleaseTime (), 0);
+        final ObjectNode envelopes = root.putObject (OpXyTag.TAG_ENVELOPE);
+        putEnvelope (envelopes.putObject (OpXyTag.TAG_AMP), firstZone.getAmplitudeEnvelopeModulator ().getSource ());
+
+        // Only a low-pass filter is written, the state variable filter of the device is assumed
+        // to be one
+        final Optional<IFilter> optFilter = firstZone.getFilter ();
+        if (optFilter.isPresent () && optFilter.get ().getType () == FilterType.LOW_PASS)
+        {
+            final IFilter filter = optFilter.get ();
+            putEnvelope (envelopes.putObject (OpXyTag.TAG_FILTER), filter.getCutoffEnvelopeModulator ().getSource ());
+
+            final ObjectNode fx = root.putObject (OpXyTag.TAG_FX);
+            fx.put (OpXyTag.TAG_ACTIVE, true);
+            fx.put (OpXyTag.TAG_TYPE, OpXyTag.FX_TYPE_SVF);
+            final int [] params = new int [OpXyTag.FX_PARAM_COUNT];
+            params[OpXyTag.FX_PARAM_CUTOFF] = OpXyTag.fromFactor (MathUtils.normalizeCutoff (filter.getCutoff ()));
+            params[OpXyTag.FX_PARAM_RESONANCE] = OpXyTag.fromFactor (filter.getResonance ());
+            params[OpXyTag.FX_PARAM_ENVELOPE_AMOUNT] = OpXyTag.fromFactor (filter.getCutoffEnvelopeModulator ().getDepth ());
+            params[OpXyTag.FX_PARAM_KEY_TRACKING] = OpXyTag.fromFactor (filter.getCutoffKeyTracking ());
+            params[OpXyTag.FX_PARAM_DEFAULT_MAX] = OpXyTag.MAX_VALUE;
+            final ArrayNode paramsNode = fx.putArray (OpXyTag.TAG_PARAMS);
+            for (final int param: params)
+                paramsNode.add (param);
+        }
 
         final ArrayNode regions = root.putArray (OpXyTag.TAG_REGIONS);
         // The device expects the regions to cover the keyboard without gaps: each region ends at
@@ -271,6 +292,21 @@ public class OpXyCreator extends AbstractWavCreator<WavChunkSettingsUI>
         }
 
         return region;
+    }
+
+
+    /**
+     * Store the 4 values of an envelope. A hold phase is added to the decay.
+     *
+     * @param node The node to fill
+     * @param envelope The envelope
+     */
+    private static void putEnvelope (final ObjectNode node, final IEnvelope envelope)
+    {
+        putEnvelopeTime (node, OpXyTag.TAG_ATTACK, envelope.getAttackTime (), 0);
+        putEnvelopeTime (node, OpXyTag.TAG_DECAY, Math.max (0, envelope.getHoldTime ()) + Math.max (0, envelope.getDecayTime ()), OpXyTag.MAX_VALUE);
+        node.put (OpXyTag.TAG_SUSTAIN, envelope.getSustainLevel () < 0 ? OpXyTag.MAX_VALUE : OpXyTag.fromFactor (envelope.getSustainLevel ()));
+        putEnvelopeTime (node, OpXyTag.TAG_RELEASE, envelope.getReleaseTime (), 0);
     }
 
 

@@ -467,6 +467,8 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
         final int semitones = Math.clamp ((int) tuning, -128, 127);
         data[EmulatorXConstants.OSCILLATOR_COARSE_TUNE] = (byte) semitones;
         EmulatorXConstants.putFloatBE (data, EmulatorXConstants.OSCILLATOR_FINE_TUNE, EmulatorXConstants.quantizeFineTune ((tuning - semitones) * 100.0));
+        if (zone.getKeyTracking () == 0)
+            data[EmulatorXConstants.OSCILLATOR_FIXED_PITCH] = 1;
         return data;
     }
 

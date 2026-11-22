@@ -72,6 +72,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         int                rootKey;
         double             tuning;
         boolean            hasLoop;
+        boolean            loopInRelease;
         int                loopStart;
         int                loopEnd;
     }
@@ -343,6 +344,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             // for 261 of 300 loops of the 'Analogia' CD-ROM (see the Emulator III detector)
             sample.loopEnd = Math.min ((int) (loopEndOffset - Emulator4Constants.SAMPLE_STRUCT_SIZE) / 2, numFrames - 1);
             sample.hasLoop = sample.loopStart >= 0 && sample.loopStart < numFrames && sample.loopEnd > sample.loopStart;
+            sample.loopInRelease = (options & Emulator4Constants.OPTION_LOOP_IN_RELEASE) > 0;
         }
 
         samplesByIndex.put (Integer.valueOf (sampleIndex), sample);
@@ -607,6 +609,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
                 loop.setType (LoopType.FORWARDS);
                 loop.setStart (sample.loopStart);
                 loop.setEnd (sample.loopEnd);
+                loop.setLoopUntilRelease (!sample.loopInRelease);
                 zone.getLoops ().add (loop);
             }
 

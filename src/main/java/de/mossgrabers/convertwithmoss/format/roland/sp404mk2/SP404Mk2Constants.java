@@ -40,11 +40,12 @@ public final class SP404Mk2Constants
         'P',
         'D'
     };
-    /** The size of an exported PADCONF.BIN (EXPORT/IMPORT PROJECT form). */
+    /** The size of the short PADCONF.BIN form (no project name, no marks section). */
     public static final int        PADCONF_SIZE_EXPORT   = 31488;
     /**
-     * The size of an internal-storage PADCONF.BIN (has a larger header and a trailing marks
-     * section).
+     * The size of the PADCONF.BIN which the device and the SP-404MKII App store and export (has a
+     * larger header with the project name and a trailing marks section). Only this form is
+     * imported by the SP-404MKII App.
      */
     public static final int        PADCONF_SIZE_INTERNAL = 52000;
     /** Header size of the export form; the pad-metadata block starts right after the header. */
@@ -67,33 +68,74 @@ public final class SP404Mk2Constants
     public static final int        HDR_DATA_SIZE         = 0x0C;
     /** Header: first of the 10 per-bank tempo values (BPM * 200). */
     public static final int        HDR_BANK_BPM          = 0x40;
+    /** Header of the internal form: the project name (up to 31 ASCII characters). */
+    public static final int        HDR_PROJECT_NAME      = 0x80;
+    /** The size of the per-pad record of the marks section of the internal form. */
+    public static final int        MARKS_RECORD_SIZE     = 128;
 
     // Pad-metadata record fields (relative to the record start)
-    /** Sample end as a byte offset into the .SMP file (equals the file size for a full pad). */
+    // All sample positions are byte offsets into the .SMP file: SAMPLE_DATA_OFFSET + frame *
+    // bytes per frame
+    /** Original sample end as a byte offset into the .SMP file (equals the file size). */
     public static final int        PAD_END               = 0x00;
-    /** Sample start as a byte offset; {@link #START_SENTINEL} means "from the beginning". */
+    /** Sample start as a byte offset; {@link #START_SENTINEL} is the first frame. */
     public static final int        PAD_START             = 0x04;
-    /** Duplicate of the sample end (original / user end pair). */
+    /** The (trimmed) sample end as a byte offset. */
     public static final int        PAD_END2              = 0x08;
     /** Playback level, 0-127. */
     public static final int        PAD_VOLUME            = 0x0C;
-    /** Loop enable, 0 or 1. */
-    public static final int        PAD_LOOP              = 0x10;
+    /** GATE: 1 = plays only while the pad is held, 0 = plays to the end. */
+    public static final int        PAD_GATE              = 0x10;
+    /** {@link #LOOP_COUNT_INFINITE} if the loop is on, otherwise 0. */
+    public static final int        PAD_LOOP_COUNT        = 0x14;
     /** Constant 1 for every pad record. */
     public static final int        PAD_USED              = 0x18;
+    /** Mute group: 0 = Off, 1-10 = A-J. */
+    public static final int        PAD_MUTE_GROUP        = 0x1C;
     /** Pad tempo, BPM * 100. */
     public static final int        PAD_BPM               = 0x24;
+    /** Bit field of the pad flags, see {@link #FLAG_FIXED_VELOCITY} and {@link #FLAG_ONE_SHOT}. */
+    public static final int        PAD_FLAGS             = 0x28;
     /** Loop start as a byte offset. */
     public static final int        PAD_LOOP_START        = 0x2C;
+    /** LOOP enable, 0 or 1. */
+    public static final int        PAD_LOOP              = 0x30;
     /** Coarse pitch in semitones (signed). */
-    public static final int        PAD_PITCH             = 0x30;
+    public static final int        PAD_PITCH             = 0x34;
     /** Fine pitch in cents (signed). */
-    public static final int        PAD_FINE              = 0x34;
+    public static final int        PAD_FINE              = 0x38;
+    /** Play mode: 0 = Forward, 1 = Reverse, 2 = Forward Ping-Pong, 3 = Reverse Ping-Pong. */
+    public static final int        PAD_PLAY_MODE         = 0x3C;
     /** Playback speed, 10000 = 100%. */
     public static final int        PAD_SPEED             = 0x40;
+    /** VINYL: 1 = the pitch follows the speed and the pitch fields are ignored. */
+    public static final int        PAD_VINYL             = 0x44;
     /** Panning, 0x40 = center. */
     public static final int        PAD_PAN               = 0x48;
-    /** The byte-offset value used to mean "start at the very beginning". */
+    /** Envelope attack, 0-127 (127 = 3 seconds). */
+    public static final int        PAD_ATTACK            = 0x58;
+    /** Envelope hold, 1-100 percent of the sample which is played back. */
+    public static final int        PAD_HOLD              = 0x5C;
+    /** Envelope release, 0-127 (127 = 3 seconds). */
+    public static final int        PAD_RELEASE           = 0x60;
+
+    /** Flag in {@link #PAD_FLAGS}: FIXED VELOCITY is on. */
+    public static final int        FLAG_FIXED_VELOCITY   = 0x01;
+    /** Flag in {@link #PAD_FLAGS}: ONE SHOT is on. */
+    public static final int        FLAG_ONE_SHOT         = 0x20;
+    /** The value of {@link #PAD_LOOP_COUNT} for an active loop. */
+    public static final long       LOOP_COUNT_INFINITE   = 0x7FFFFFFFL;
+    /** Play mode Reverse. */
+    public static final int        PLAY_MODE_REVERSE     = 1;
+    /** Play mode Forward Ping-Pong. */
+    public static final int        PLAY_MODE_PING_PONG   = 2;
+    /** The number of mute groups (A-J). */
+    public static final int        MUTE_GROUP_COUNT      = 10;
+    /** The maximum value of the envelope attack and release. */
+    public static final int        ENVELOPE_MAX          = 127;
+    /** The time in seconds of the maximum envelope attack and release. */
+    public static final double     ENVELOPE_MAX_TIME     = 3.0;
+    /** The byte offset of the first frame, see {@link #SAMPLE_DATA_OFFSET}. */
     public static final int        START_SENTINEL        = 512;
     /** Center value of the panning field. */
     public static final int        PAN_CENTER            = 0x40;
@@ -107,8 +149,14 @@ public final class SP404Mk2Constants
         'W',
         'V'
     };
-    /** Size of the RFWV header; PCM data follows. */
+    /** Size of the RFWV header fields. */
     public static final int        RFWV_HEADER_SIZE      = 32;
+    /**
+     * The offset of the PCM data. The 32 header bytes are followed by a 480 byte block which looks
+     * encrypted. It depends on the length of the sample but not on its content, and the SP-404MKII
+     * App does not import a sample whose block is zeroed.
+     */
+    public static final int        SAMPLE_DATA_OFFSET    = 512;
     /** RFWV header: sample rate. */
     public static final int        RFWV_RATE             = 0x08;
     /** RFWV header: number of channels. */

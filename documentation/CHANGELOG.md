@@ -1,5 +1,22 @@
 # Changes
 
+## 21.1.0 (work-in-progress)
+
+* E-mu Emulator IV
+  * Fixed: Loops are read and written with their 'loop in release' setting. Written samples had a loop which stopped at the release of the key and played on to the end of the sample, while the loops of the factory banks keep playing in the release; loops which stop at the release were read as playing on.
+* E-mu Emulator X
+  * New: The Fixed Pitch Mode of a voice is read as a key tracking of 0 and written for zones without key tracking, e.g. drum kits and drones.
+* Roland SP-404MK2
+  * New: Read and write the start/end trim and the loop start of a pad, the play mode (reverse, ping-pong loop), GATE (a pad without GATE is a one-shot), FIXED VELOCITY, the mute group (exclusive group; up to 10 groups A-J are written) and the envelope (ATTACK and RELEASE, 127 = 3 seconds; HOLD shortens the played range when read).
+  * Fixed: The audio of a sample file starts at byte 512, not at byte 32. Every pad started with 480 bytes of noise (5 ms for a mono and 2.5 ms for a stereo sample), written sample files had the audio 480 bytes too early.
+  * Fixed: The pitch was read from and written to the wrong fields (the loop switch and the coarse pitch) and written pads kept VINYL on, which ignores the pitch fields. The LOOP switch was read from and written to the GATE field.
+  * Fixed: Projects are now written in the 52,000 byte form of PADCONF.BIN which the device and the SP-404MKII App store; the app imported only the tempos of the 31,488 byte form. Note that the app still does not import the samples of written projects since a 480 byte block in the sample files, which looks encrypted, cannot be created.
+* Teenage Engineering OP-XY
+  * New: Read and write the filter (cut-off, resonance, envelope amount, key tracking) and the filter envelope. The order of the filter parameters is taken from the documentation of the device, the scaling of the cut-off and the envelope amount is estimated; this is not yet verified with presets of the device.
+* TAL Sampler
+  * Fixed: An LFO with the wave form Sine was written as Noise. The value of Sine exists only since version 12 of the file format, the plug-in reads files of an older version - ConvertWithMoss wrote version 9 - with only 5 wave forms. Files are now written as version 12 and the wave forms of older files are read with the scale of their version.
+
+
 ## 21.0.0
 
 * New: Added support for the Kurzweil PC3 series, Forte, Forte SE, PC4 and K2700 (PC3, P3K, K2P, P3A, PLE, FOR, FSE, PC4, P4S, K27): the programs of these object files are read with their keymaps, user samples, envelopes, velocity tracking and filters, in the sample layout of the PC3K as well as in the one of the Forte generation; files of the PC3K (P3K), Forte and Forte SE (FOR, FSE), PC4 and PC4 SE (PC4, P4S) and K2700 (K27) are written. Written files are not yet verified on hardware.
@@ -106,6 +123,7 @@
   * New: The amplitude envelope (attack, decay, sustain, release, velocity to attack), the filter (cutoff, Q, keyboard tracking, velocity to cutoff) and the filter envelope (amount, direction, attack, decay, sustain, release, velocity to attack) of a voice are written; before, every voice got these settings of the template voice, an unfiltered piano with a long decay. The envelope times are rounded to the 31 times the sampler uses (0.01 to 15.3 s); the sustain of the filter envelope is an approximation.
   * New: The LFO of a voice is written (rate, delay, vibrato, tremolo and filter depth); before, every voice got the settings of the template voice without an LFO.
   * New: The modulation wheel assignment of a preset to LFO to pitch, filter or level is read as a modulation wheel controlled LFO depth on the voices without an LFO amount of their own, and written for zones whose LFO depth is only controlled by the modulation wheel. Written presets no longer always assign the right wheel to the vibrato.
+  * New: Read/write the alternating loop ('<--> Mode'), loop in release ('Lp in Rls') and the non-transpose mode of a key range (as a key tracking of 0). Voices which play backwards are read as reversed zones, e.g. the 'Cello *2' and 'AP Saw *2' voices of the factory disks 'Cello & Violin' and 'ARP 2600'; a reversed zone is written with its audio reversed. Before, all loops were read as forward loops which keep repeating in the release, backwards voices played forwards, and written voices always looped in the release.
 * E-mu Emax / Emax II
   * New: The modulation wheel assignment of a preset to LFO to pitch, filter or level is read as a modulation wheel controlled LFO depth, which overrides the LFO amount of the voices, and written for zones with a modulation wheel controlled LFO depth.
 * E-mu Emulator III / IIIX / ESI

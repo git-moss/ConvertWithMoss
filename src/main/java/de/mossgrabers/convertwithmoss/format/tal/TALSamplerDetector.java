@@ -505,18 +505,18 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
      */
     private static void applyLfos (final Element programElement, final List<TALSamplerModulator> modulators, final IMultisampleSource multisampleSource, final Optional<IFilter> optFilter)
     {
-        final boolean isOldVersion = parseVersion (programElement.getOwnerDocument ().getDocumentElement ().getAttribute (TALSamplerTag.ROOT_VERSION)) < 2;
+        final double version = parseVersion (programElement.getOwnerDocument ().getDocumentElement ().getAttribute (TALSamplerTag.ROOT_VERSION));
         final double mainVolume = XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.VOLUME, 0.5);
 
         for (final IGroup group: multisampleSource.getGroups ())
             for (final ISampleZone zone: group.getSampleZones ())
             {
-                applyLfo (zone.getPitchLfoModulator (), programElement, modulators, TALSamplerModulator.DEST_ID_MASTER_TUNE, isOldVersion, amount -> amount * TALSamplerConstants.TUNE_RANGE_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
-                applyLfo (zone.getAmplitudeLfoModulator (), programElement, modulators, TALSamplerModulator.DEST_ID_MASTER_VOLUME, isOldVersion, amount -> TALSamplerConstants.volumeAmountToDb (mainVolume, amount) / ILfoModulator.MAX_VOLUME_DEPTH);
+                applyLfo (zone.getPitchLfoModulator (), programElement, modulators, TALSamplerModulator.DEST_ID_MASTER_TUNE, version, amount -> amount * TALSamplerConstants.TUNE_RANGE_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH);
+                applyLfo (zone.getAmplitudeLfoModulator (), programElement, modulators, TALSamplerModulator.DEST_ID_MASTER_VOLUME, version, amount -> TALSamplerConstants.volumeAmountToDb (mainVolume, amount) / ILfoModulator.MAX_VOLUME_DEPTH);
             }
 
         if (optFilter.isPresent ())
-            applyLfo (optFilter.get ().getCutoffLfoModulator (), programElement, modulators, TALSamplerModulator.DEST_ID_CUTOFF, isOldVersion, amount -> amount * TALSamplerConstants.CUTOFF_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH);
+            applyLfo (optFilter.get ().getCutoffLfoModulator (), programElement, modulators, TALSamplerModulator.DEST_ID_CUTOFF, version, amount -> amount * TALSamplerConstants.CUTOFF_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH);
     }
 
 
@@ -528,10 +528,10 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
      * @param programElement The program element which contains the LFO settings
      * @param modulators The entries of the modulation matrix
      * @param destination The ID of the destination
-     * @param isOldVersion True if the preset was written by a version before 2
+     * @param version The version of the file format
      * @param toDepth Converts the displayed amount of an entry into the depth of the model
      */
-    private static void applyLfo (final ILfoModulator modulator, final Element programElement, final List<TALSamplerModulator> modulators, final int destination, final boolean isOldVersion, final DoubleUnaryOperator toDepth)
+    private static void applyLfo (final ILfoModulator modulator, final Element programElement, final List<TALSamplerModulator> modulators, final int destination, final double version, final DoubleUnaryOperator toDepth)
     {
         for (int i = 0; i < modulators.size (); i++)
         {
@@ -558,7 +558,7 @@ public class TALSamplerDetector extends AbstractDetector<MetadataSettingsUI>
                 }
 
             final ILfo lfo = modulator.getSource ();
-            lfo.setWaveform (TALSamplerConstants.getLfoWaveform (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LFO_WAVEFORM + lfoNumber, 0), isOldVersion));
+            lfo.setWaveform (TALSamplerConstants.getLfoWaveform (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LFO_WAVEFORM + lfoNumber, 0), version));
             lfo.setRate (TALSamplerConstants.lfoRateToHertz (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LFO_RATE + lfoNumber, 0.5)));
             lfo.setKeySync (XMLUtils.getDoubleAttribute (programElement, TALSamplerTag.LFO_TRIGGER + lfoNumber, 0) > 0);
             return;
