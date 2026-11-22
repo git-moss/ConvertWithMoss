@@ -12,20 +12,20 @@ package de.mossgrabers.convertwithmoss.format.polyend;
 public final class PolyendTrackerValueConverter
 {
     /** The raw volume value which represents unity gain (0 dB). */
-    private static final double VOLUME_UNITY     = 50.0;
+    private static final double    VOLUME_UNITY     = 50.0;
     /** The raw panning value which represents the center position. */
-    private static final double PANNING_CENTER   = 50.0;
+    private static final double    PANNING_CENTER   = 50.0;
     /** The maximum resonance value stored in the file (representing the model resonance of 1). */
-    private static final double RESONANCE_MAX    = 4.3;
+    private static final double    RESONANCE_MAX    = 4.3;
     /** The lowest filter cutoff frequency in Hertz. */
-    private static final double FILTER_MIN_HERTZ = 20.0;
+    private static final double    FILTER_MIN_HERTZ = 20.0;
     /** The highest filter cutoff frequency in Hertz. */
-    private static final double FILTER_MAX_HERTZ = 20000.0;
+    private static final double    FILTER_MAX_HERTZ = 20000.0;
     /** The duration of one step in seconds at 120 BPM (4 steps per beat). */
-    private static final double STEP_SECONDS     = 0.125;
+    private static final double    STEP_SECONDS     = 0.125;
 
     /** The number of steps of one LFO cycle for each LFO speed value. */
-    private static final double [] LFO_SPEED_STEPS =
+    private static final double [] LFO_SPEED_STEPS  =
     {
         128,
         96,

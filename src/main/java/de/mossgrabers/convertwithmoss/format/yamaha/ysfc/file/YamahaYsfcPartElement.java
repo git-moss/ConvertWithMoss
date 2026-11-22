@@ -1909,6 +1909,255 @@ public class YamahaYsfcPartElement
 
 
     /**
+     * Get the LFO wave form.
+     *
+     * @return The value in the range of 0 = Saw, 1 = Triangle, 2 = Square
+     */
+    public int getLfoWave ()
+    {
+        return this.lfoWave;
+    }
+
+
+    /**
+     * Set the LFO wave form.
+     *
+     * @param lfoWave The value in the range of 0 = Saw, 1 = Triangle, 2 = Square
+     */
+    public void setLfoWave (final int lfoWave)
+    {
+        this.lfoWave = lfoWave;
+    }
+
+
+    /**
+     * Get the LFO key on reset.
+     *
+     * @return The value in the range of 0 = Off, 1 = On
+     */
+    public int getLfoKeyOnSync ()
+    {
+        return this.lfoKeyOnSync;
+    }
+
+
+    /**
+     * Set the LFO key on reset.
+     *
+     * @param lfoKeyOnSync The value in the range of 0 = Off, 1 = On
+     */
+    public void setLfoKeyOnSync (final int lfoKeyOnSync)
+    {
+        this.lfoKeyOnSync = lfoKeyOnSync;
+    }
+
+
+    /**
+     * Get the LFO delay time.
+     *
+     * @return The value in the range of 0-127
+     */
+    public int getLfoKeyOnDelayTime ()
+    {
+        return this.lfoKeyOnDelayTime;
+    }
+
+
+    /**
+     * Set the LFO delay time.
+     *
+     * @param lfoKeyOnDelayTime The value in the range of 0-127
+     */
+    public void setLfoKeyOnDelayTime (final int lfoKeyOnDelayTime)
+    {
+        this.lfoKeyOnDelayTime = lfoKeyOnDelayTime;
+    }
+
+
+    /**
+     * Get the (normal) LFO speed.
+     *
+     * @return The value in the range of 0-63
+     */
+    public int getLfoSpeed ()
+    {
+        return this.lfoSpeed;
+    }
+
+
+    /**
+     * Set the (normal) LFO speed.
+     *
+     * @param lfoSpeed The value in the range of 0-63
+     */
+    public void setLfoSpeed (final int lfoSpeed)
+    {
+        this.lfoSpeed = lfoSpeed;
+    }
+
+
+    /**
+     * Get the LFO amplitude modulation depth.
+     *
+     * @return The value in the range of 0-127
+     */
+    public int getLfoAmodDepth ()
+    {
+        return this.lfoAmodDepth;
+    }
+
+
+    /**
+     * Set the LFO amplitude modulation depth.
+     *
+     * @param lfoAmodDepth The value in the range of 0-127
+     */
+    public void setLfoAmodDepth (final int lfoAmodDepth)
+    {
+        this.lfoAmodDepth = lfoAmodDepth;
+    }
+
+
+    /**
+     * Get the LFO pitch modulation depth.
+     *
+     * @return The value in the range of 0-127
+     */
+    public int getLfoPmodDepth ()
+    {
+        return this.lfoPmodDepth;
+    }
+
+
+    /**
+     * Set the LFO pitch modulation depth.
+     *
+     * @param lfoPmodDepth The value in the range of 0-127
+     */
+    public void setLfoPmodDepth (final int lfoPmodDepth)
+    {
+        this.lfoPmodDepth = lfoPmodDepth;
+    }
+
+
+    /**
+     * Get the LFO filter modulation depth.
+     *
+     * @return The value in the range of 0-127
+     */
+    public int getLfoFmodDepth ()
+    {
+        return this.lfoFmodDepth;
+    }
+
+
+    /**
+     * Set the LFO filter modulation depth.
+     *
+     * @param lfoFmodDepth The value in the range of 0-127
+     */
+    public void setLfoFmodDepth (final int lfoFmodDepth)
+    {
+        this.lfoFmodDepth = lfoFmodDepth;
+    }
+
+
+    /**
+     * Get the LFO fade in time.
+     *
+     * @return The value in the range of 0-127
+     */
+    public int getLfoFadeInTime ()
+    {
+        return this.lfoFadeInTime;
+    }
+
+
+    /**
+     * Set the LFO fade in time.
+     *
+     * @param lfoFadeInTime The value in the range of 0-127
+     */
+    public void setLfoFadeInTime (final int lfoFadeInTime)
+    {
+        this.lfoFadeInTime = lfoFadeInTime;
+    }
+
+
+    /**
+     * Check if the element contains the extended LFO speed (MODX 1.10+, MONTAGE 2.50+).
+     *
+     * @return True if present
+     */
+    public boolean hasExtendedLfoSpeed ()
+    {
+        return this.unknownBytes != null && this.unknownBytes.length == 3;
+    }
+
+
+    /**
+     * Get the extended LFO speed if it is present and enabled.
+     *
+     * @return The speed in the range of 0-415 or -1 if not present or not enabled
+     */
+    public int getExtendedLfoSpeed ()
+    {
+        if (!this.hasExtendedLfoSpeed () || this.unknownBytes[0] == 0)
+            return -1;
+        return this.unknownBytes[1] & 0xFF | (this.unknownBytes[2] & 0xFF) << 8;
+    }
+
+
+    /**
+     * Enable and set the extended LFO speed. Does nothing if the element does not contain it.
+     *
+     * @param speed The speed in the range of 0-415
+     */
+    public void setExtendedLfoSpeed (final int speed)
+    {
+        if (!this.hasExtendedLfoSpeed ())
+            return;
+        this.unknownBytes[0] = 1;
+        this.unknownBytes[1] = (byte) (speed & 0xFF);
+        this.unknownBytes[2] = (byte) (speed >> 8 & 0xFF);
+    }
+
+
+    /**
+     * Get the depth ratio of one of the 3 boxes of the Part LFO (Common LFO) for this element.
+     *
+     * @param box The index of the box [0..2]
+     * @return The ratio: 0 = Off, 1-128 relates to 0-127
+     */
+    public int getCommonLfoBoxDepthRatio (final int box)
+    {
+        return switch (box)
+        {
+            case 0 -> this.commonLfoBox1DepthRatio;
+            case 1 -> this.commonLfoBox2DepthRatio;
+            default -> this.commonLfoBox3DepthRatio;
+        };
+    }
+
+
+    /**
+     * Set the depth ratio of one of the 3 boxes of the Part LFO (Common LFO) for this element.
+     *
+     * @param box The index of the box [0..2]
+     * @param ratio The ratio: 0 = Off, 1-128 relates to 0-127
+     */
+    public void setCommonLfoBoxDepthRatio (final int box, final int ratio)
+    {
+        switch (box)
+        {
+            case 0 -> this.commonLfoBox1DepthRatio = ratio;
+            case 1 -> this.commonLfoBox2DepthRatio = ratio;
+            default -> this.commonLfoBox3DepthRatio = ratio;
+        }
+    }
+
+
+    /**
      * Read a performance from the input stream.
      *
      * @param in The input stream
@@ -2069,7 +2318,8 @@ public class YamahaYsfcPartElement
         if (rest != 2 && rest != 5)
             throw new IOException (Functions.getMessage ("IDS_YSFC_UNKNOWN_ELEMENT_STRUCT_SIZE"));
 
-        // No idea about these 3 bytes
+        // Since MODX 1.10 / MONTAGE 2.50: Extended LFO switch (0/1) and the extended LFO speed
+        // 0-415 (16-bit little-endian)
         if (rest == 5)
             this.unknownBytes = elementDataIn.readNBytes (3);
 

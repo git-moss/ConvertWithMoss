@@ -184,7 +184,9 @@ public class DelugeTag
     public static final String DEPTH_CONTROLLED_BY          = "depthControlledBy";
     /** The legacy flag of a cable whose depth is controlled by the cables to 'range'. */
     public static final String RANGE_ADJUSTABLE             = "rangeAdjustable";
-    /** The legacy destination of a cable which controls the depth of the 'rangeAdjustable' cables. */
+    /**
+     * The legacy destination of a cable which controls the depth of the 'rangeAdjustable' cables.
+     */
     public static final String DESTINATION_RANGE            = "range";
     /** The polarity of a patch cable (community firmware). */
     public static final String POLARITY                     = "polarity";

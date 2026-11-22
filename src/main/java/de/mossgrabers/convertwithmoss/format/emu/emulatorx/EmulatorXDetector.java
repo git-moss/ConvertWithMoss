@@ -507,6 +507,8 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         final double velocityDepth = readVelocityToVolume (voice);
         final IFilter filter = createFilter (voice, initialControllers);
         final List<EmuLfoModulation.Cord> cords = readCords (voice);
+        final double pitchEnvelopeDepth = readPitchEnvelopeDepth (voice);
+        final IEnvelope pitchEnvelope = pitchEnvelopeDepth == 0 ? null : readEnvelope (voice, EmulatorXConstants.ENVELOPE_AUX);
         final ILfo [] lfos = readLfos (voice);
 
         final List<ISampleZone> zones = new ArrayList<> ();
@@ -562,6 +564,12 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
             zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
             zone.getAmplitudeVelocityModulator ().setDepth (velocityDepth);
+            if (pitchEnvelope != null)
+            {
+                final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
+                pitchModulator.setDepth (pitchEnvelopeDepth);
+                pitchModulator.setSource (pitchEnvelope);
+            }
             if (filter != null)
                 zone.setFilter (filter);
             EmuLfoModulation.applyLfos (zone, cords, lfos);
@@ -805,6 +813,62 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
+     * Read the key tracking of the filter cutoff from the modulation cords which route the key to
+     * the cutoff.
+     *
+     * @param voice The voice chunk
+     * @return The key tracking in the range of -1..1, 0 if there is none
+     */
+    private static double readCutoffKeyTracking (final EmulatorXChunk voice)
+    {
+        final EmulatorXChunk cordList = voice.getList (EmulatorXConstants.CORD_LIST_TYPE);
+        if (cordList == null)
+            return 0;
+        double keyTracking = 0;
+        for (final EmulatorXChunk cord: cordList.getChildren ())
+        {
+            if (!cord.is (EmulatorXConstants.CORD_TAG) || cord.getByte (5) != EmulatorXConstants.CORD_DEST_CUTOFF)
+                continue;
+            final int source = cord.getByte (4);
+            final double amount = cord.getFloat (6) / EmulatorXConstants.FULL_CORD_AMOUNT;
+            if (source == EmulatorXConstants.CORD_SOURCE_KEY)
+                keyTracking += amount * EmulatorXConstants.FULL_KEY_TRACKING;
+            else if (source == EmulatorXConstants.CORD_SOURCE_KEY_CENTER)
+                keyTracking += amount * 2 * EmulatorXConstants.FULL_KEY_TRACKING;
+        }
+        return Math.clamp (keyTracking, -1, 1);
+    }
+
+
+    /**
+     * Read the depth of the pitch envelope, which is the auxiliary envelope routed into the pitch.
+     * The subtracting variant of the source lowers the pitch.
+     *
+     * @param voice The voice chunk
+     * @return The depth in the range of -1..1, 0 if there is none
+     */
+    private static double readPitchEnvelopeDepth (final EmulatorXChunk voice)
+    {
+        final EmulatorXChunk cordList = voice.getList (EmulatorXConstants.CORD_LIST_TYPE);
+        if (cordList == null)
+            return 0;
+        for (final EmulatorXChunk cord: cordList.getChildren ())
+        {
+            if (!cord.is (EmulatorXConstants.CORD_TAG) || cord.getByte (5) != EmulatorXConstants.CORD_DEST_PITCH)
+                continue;
+            final int source = cord.getByte (4);
+            final double amount = cord.getFloat (6) / EmulatorXConstants.FULL_CORD_AMOUNT;
+            if (amount != 0 && source >= EmulatorXConstants.CORD_SOURCE_AUX_FIRST && source <= EmulatorXConstants.CORD_SOURCE_AUX_LAST)
+            {
+                final double signedAmount = source == EmulatorXConstants.CORD_SOURCE_AUX_LAST ? -amount : amount;
+                return Math.clamp (signedAmount * EmulatorXConstants.FULL_PITCH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1);
+            }
+        }
+        return 0;
+    }
+
+
+    /**
      * Read the initial values of the 16 assignable MIDI controllers A to P of a preset. The
      * modulation cords which use one of them start at that value, so it decides where a cutoff
      * which is modulated by a controller actually sits when a note starts.
@@ -830,14 +894,15 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Calculate how far the assignable MIDI controllers of the preset open the filter cutoff when a
-     * note starts. A controller which is not set contributes nothing.
+     * Calculate how far the assignable MIDI controllers of the preset move the filter cutoff or the
+     * resonance when a note starts. A controller which is not set contributes nothing.
      *
      * @param voice The voice chunk
      * @param initialControllers The initial values of the controllers of the preset
-     * @return The offset to add to the normalized cutoff
+     * @param destination The destination of the cords, the cutoff or the resonance
+     * @return The offset to add to the normalized cutoff or resonance
      */
-    private static double controllerCutoffOffset (final EmulatorXChunk voice, final int [] initialControllers)
+    private static double controllerOffset (final EmulatorXChunk voice, final int [] initialControllers, final int destination)
     {
         final EmulatorXChunk cordList = voice.getList (EmulatorXConstants.CORD_LIST_TYPE);
         if (cordList == null)
@@ -845,7 +910,7 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         double offset = 0;
         for (final EmulatorXChunk cord: cordList.getChildren ())
         {
-            if (!cord.is (EmulatorXConstants.CORD_TAG) || cord.getByte (5) != EmulatorXConstants.CORD_DEST_CUTOFF)
+            if (!cord.is (EmulatorXConstants.CORD_TAG) || cord.getByte (5) != destination)
                 continue;
             final int controller = cord.getByte (4) - EmulatorXConstants.CORD_SOURCE_MIDI_A;
             if (controller < 0 || controller >= initialControllers.length || initialControllers[controller] < 0)
@@ -939,14 +1004,20 @@ public class EmulatorXDetector extends AbstractDetector<MetadataSettingsUI>
         // alone would then turn the voice into silence, which is much further from the original
         // than leaving the filter out
         final double envelopeDepth = readFilterEnvelopeDepth (voice);
-        final double startCutoff = Math.clamp (cutoff + controllerCutoffOffset (voice, initialControllers), 0, 1);
+        final double startCutoff = Math.clamp (cutoff + controllerOffset (voice, initialControllers, EmulatorXConstants.CORD_DEST_CUTOFF), 0, 1);
         if (startCutoff < MINIMUM_STATIC_CUTOFF && envelopeDepth == 0 && isCutoffModulated (voice))
             return null;
         // A wide open low-pass is what the banks use instead of switching the filter off
         if (type == FilterType.LOW_PASS && startCutoff >= 1)
             return null;
 
-        final IFilter filter = new DefaultFilter (type, poles, EmulatorXConstants.cutoffToHertz (startCutoff), 0);
+        // The resonance of the filter chunk is zero in all factory banks: the banks set it with
+        // MIDI
+        // controller B, which the manual names as the control of the filter resonance and whose
+        // cord into the resonance nearly every voice has, and its initial value
+        final double resonance = Math.clamp (controllerOffset (voice, initialControllers, EmulatorXConstants.CORD_DEST_RESONANCE), 0, 1);
+        final IFilter filter = new DefaultFilter (type, poles, EmulatorXConstants.cutoffToHertz (startCutoff), resonance);
+        filter.setCutoffKeyTracking (readCutoffKeyTracking (voice));
         if (envelopeDepth != 0)
         {
             final IEnvelope envelope = readEnvelope (voice, EmulatorXConstants.ENVELOPE_FILTER);

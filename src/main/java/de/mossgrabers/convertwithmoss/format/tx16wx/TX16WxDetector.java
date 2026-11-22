@@ -726,10 +726,10 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
     /**
      * Apply the first modulation entry from one of the two LFOs to one of the given destinations to
      * an LFO modulator. The amounts of pitch and cutoff are in cents, the one of the volume in dB.
-     * The amplitude of the LFO scales the amounts. If the via source of the entry is the
-     * modulation wheel, the modulation scales between the amount (wheel down) and the via amount
-     * (wheel up); other via sources are ignored. Tempo synchronization is not converted, the rate
-     * in Hertz is always used.
+     * The amplitude of the LFO scales the amounts. If the via source of the entry is the modulation
+     * wheel, the modulation scales between the amount (wheel down) and the via amount (wheel up);
+     * other via sources are ignored. Tempo synchronization is not converted, the rate in Hertz is
+     * always used.
      *
      * @param modulator The LFO modulator to fill
      * @param soundShapeElement The sound shape element which contains the LFOs

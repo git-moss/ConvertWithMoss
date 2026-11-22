@@ -889,4 +889,4 @@ public class S770Partial
             return "LfoSection [waveForm=" + this.waveForm + ", rate=" + this.rate + ", keySync=" + this.keySync + ", delay=" + this.delay + ", delayKf=" + this.delayKf + ", detune=" + this.detune + ", pitch=" + this.pitch + ", tvfModulationDepth=" + this.tvfModulationDepth + ", tvaModulationDepth=" + this.tvaModulationDepth + "]";
         }
     }
-}
+}

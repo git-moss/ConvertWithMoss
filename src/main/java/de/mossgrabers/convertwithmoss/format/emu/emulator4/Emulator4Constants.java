@@ -54,6 +54,8 @@ public class Emulator4Constants
     protected static final int     PZT_AMPLITUDE_ENVELOPE     = 0;
     /** The offset of the filter envelope inside the primary zone table. */
     protected static final int     PZT_FILTER_ENVELOPE        = 14;
+    /** The offset of the auxiliary envelope inside the primary zone table. */
+    protected static final int     PZT_AUX_ENVELOPE           = 28;
     /** The offset of LFO 1 inside the primary zone table. */
     protected static final int     PZT_LFO1                   = 42;
     /** The offset of LFO 2 inside the primary zone table. */
@@ -112,6 +114,8 @@ public class Emulator4Constants
     protected static final int     MOD_CORD_AMOUNT            = 2;
     /** The modulation source 'key', which the model converts into the cutoff key tracking. */
     protected static final int     MOD_SOURCE_KEY             = 0x08;
+    /** The modulation source 'key centered', which swings around the middle of the keyboard. */
+    protected static final int     MOD_SOURCE_KEY_CENTER      = 0x09;
     /** The modulation source 'filter envelope', which the model converts into a filter envelope. */
     protected static final int     MOD_SOURCE_FILTER_ENVELOPE = 0x50;
     /** The modulation destination 'filter frequency'. */
@@ -122,12 +126,25 @@ public class Emulator4Constants
     protected static final int     MOD_SOURCE_VELOCITY_FIRST  = 0x0A;
     /** The highest modulation source which is one of the velocity variants (subtract). */
     protected static final int     MOD_SOURCE_VELOCITY_LAST   = 0x0C;
+    /** The modulation source 'pitch wheel'. */
+    protected static final int     MOD_SOURCE_PITCH_WHEEL     = 0x10;
+    /** The lowest modulation source which is one of the auxiliary envelope variants (add). */
+    protected static final int     MOD_SOURCE_AUX_ENV_FIRST   = 0x58;
+    /** The highest modulation source which is one of the auxiliary envelope variants (subtract). */
+    protected static final int     MOD_SOURCE_AUX_ENV_LAST    = 0x5A;
+    /** The modulation destination 'pitch'. */
+    protected static final int     MOD_DEST_PITCH             = 0x30;
+    /** The pitch change of a cord with the full amount (+100%) into the pitch: 32 semi-tones. */
+    protected static final double  FULL_PITCH_CENTS           = 3200;
 
     /** The default velocity-to-amplitude modulation amount of the EOS factory cord set (~24%). */
     protected static final int     DEFAULT_VELOCITY_AMOUNT    = 0x1E;
     /** The default release rate of the EOS factory envelope. */
     protected static final int     DEFAULT_RELEASE_RATE       = 0x14;
-    /** The filter cutoff key tracking of a +100% Key-to-FilterFreq cord in octaves per octave. */
+    /**
+     * The filter cutoff key tracking of a +100% Key-to-FilterFreq cord in octaves per octave; the
+     * centered key source tracks twice as steeply.
+     */
     protected static final double  FULL_KEY_TRACKING          = 0.713;
 
     /** The fixed sample play-back rate of the EOS samplers, the reference of the pitch offset. */
@@ -328,6 +345,10 @@ public class Emulator4Constants
     public static final int        MOD_KEY_TRACKING_AMOUNT    = 26;
     /** The amount byte offset of the velocity-to-cutoff cord in the cord table. */
     public static final int        MOD_VELOCITY_CUTOFF_AMOUNT = 18;
+    /**
+     * The amount byte offset of the pitch-wheel-to-pitch cord (the bend range) in the cord table.
+     */
+    public static final int        MOD_PITCH_WHEEL_AMOUNT     = 6;
 
     /** The repeating 12 byte entry of the default E4Ma multimap (all presets on all channels). */
     protected static final byte [] E4MA_ENTRY                 =

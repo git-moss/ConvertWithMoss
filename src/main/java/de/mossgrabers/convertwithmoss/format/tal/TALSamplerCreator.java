@@ -601,4 +601,4 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
         }
         return false;
     }
-}
+}

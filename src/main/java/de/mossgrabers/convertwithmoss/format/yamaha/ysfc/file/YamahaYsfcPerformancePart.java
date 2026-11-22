@@ -22,32 +22,57 @@ import de.mossgrabers.tools.StringUtils;
  */
 public class YamahaYsfcPerformancePart
 {
+    /** The number of control boxes. */
+    public static final int                   NUMBER_OF_CONTROL_BOXES       = 16;
+    /** The number of boxes (destinations) of the Part LFO. */
+    public static final int                   NUMBER_OF_LFO_BOXES           = 3;
+    /** The Part LFO destination Element Level. */
+    public static final int                   LFO_DESTINATION_LEVEL         = 64;
+    /** The Part LFO destination Element Pitch. */
+    public static final int                   LFO_DESTINATION_PITCH         = 65;
+    /** The Part LFO destination Element Filter Cutoff. */
+    public static final int                   LFO_DESTINATION_CUTOFF        = 66;
+    /** The control box source Modulation Wheel. */
+    public static final int                   CONTROL_SOURCE_MOD_WHEEL      = 1;
+    /** The control box destination P.LFO Depth 1, followed by 2 and 3. */
+    public static final int                   CONTROL_DESTINATION_LFO_DEPTH = 184;
+
+    // The offsets of the Part LFO parameters in the many parameters block, which are identical for
+    // MONTAGE and MODX
+    private static final int                  OFFSET_LFO_PHASE              = 56;
+    private static final int                  OFFSET_LFO_WAVE               = 57;
+    private static final int                  OFFSET_LFO_SPEED              = 58;
+    private static final int                  OFFSET_LFO_TEMPO_SYNC         = 60;
+    private static final int                  OFFSET_LFO_KEY_ON_RESET       = 65;
+    private static final int                  OFFSET_LFO_BOX                = 67;
+    private static final int                  CONTROL_BOX_SIZE              = 9;
+
     private String                            name;
     private int                               type;
     private int                               mainCategory;
     private int                               subCategory;
     private int                               partSwitch;
     private int                               keyboardSwitch;
-    private int                               velocityLimitLow    = 1;
-    private int                               velocityLimitHigh   = 127;
-    private int                               noteLimitLow        = 0;
-    private int                               noteLimitHigh       = 127;
+    private int                               velocityLimitLow              = 1;
+    private int                               velocityLimitHigh             = 127;
+    private int                               noteLimitLow                  = 0;
+    private int                               noteLimitHigh                 = 127;
     private int                               pitchBendRangeUpper;
     private int                               pitchBendRangeLower;
-    private int                               velocitySenseDepth  = 64;
-    private int                               velocitySenseOffset = 64;
-    private int                               volume              = 100;
-    private int                               pan                 = 64;
-    private int                               detune              = 128;
-    private int                               reverbSend          = 0;
-    private int                               variationSend       = 0;
-    private int                               dryLevel            = 127;
+    private int                               velocitySenseDepth            = 64;
+    private int                               velocitySenseOffset           = 64;
+    private int                               volume                        = 100;
+    private int                               pan                           = 64;
+    private int                               detune                        = 128;
+    private int                               reverbSend                    = 0;
+    private int                               variationSend                 = 0;
+    private int                               dryLevel                      = 127;
     private int                               noteShift;
 
-    private final List<YamahaYsfcPartElement> elements            = new ArrayList<> ();
+    private final List<YamahaYsfcPartElement> elements                      = new ArrayList<> ();
     private byte []                           manyParameters;
     private byte []                           scenes;
-    private final String []                   assignableKnobs     = new String [8];
+    private final String []                   assignableKnobs               = new String [8];
     private byte []                           controlBoxes;
 
 
@@ -344,6 +369,225 @@ public class YamahaYsfcPerformancePart
     public void setNoteShift (final int noteShift)
     {
         this.noteShift = Math.clamp (noteShift, 40, 88);
+    }
+
+
+    /**
+     * Get the phase of the Part LFO.
+     *
+     * @return The phase: 0 = 0°, 1 = 90°, 2 = 120°, 3 = 180°, 4 = 240°, 5 = 270°
+     */
+    public int getLfoPhase ()
+    {
+        return this.manyParameters[OFFSET_LFO_PHASE];
+    }
+
+
+    /**
+     * Set the phase of the Part LFO.
+     *
+     * @param phase The phase: 0 = 0°, 1 = 90°, 2 = 120°, 3 = 180°, 4 = 240°, 5 = 270°
+     */
+    public void setLfoPhase (final int phase)
+    {
+        this.manyParameters[OFFSET_LFO_PHASE] = (byte) phase;
+    }
+
+
+    /**
+     * Get the wave of the Part LFO.
+     *
+     * @return The wave: 0 = Triangle, 1 = Triangle+, 2 = Saw Up, 3 = Saw Down, 4 = Squ1/4, 5 =
+     *         Squ1/3, 6 = Square, 7 = Squ2/3, 8 = Squ3/4, 9 = Trapezoid, 10 = S/H1, 11 = S/H2, 12 =
+     *         User
+     */
+    public int getLfoWave ()
+    {
+        return this.manyParameters[OFFSET_LFO_WAVE];
+    }
+
+
+    /**
+     * Set the wave of the Part LFO.
+     *
+     * @param wave The wave, see {@link #getLfoWave()}
+     */
+    public void setLfoWave (final int wave)
+    {
+        this.manyParameters[OFFSET_LFO_WAVE] = (byte) wave;
+    }
+
+
+    /**
+     * Get the speed of the Part LFO.
+     *
+     * @return The speed in the range of 0-63
+     */
+    public int getLfoSpeed ()
+    {
+        return this.manyParameters[OFFSET_LFO_SPEED];
+    }
+
+
+    /**
+     * Set the speed of the Part LFO.
+     *
+     * @param speed The speed in the range of 0-63
+     */
+    public void setLfoSpeed (final int speed)
+    {
+        this.manyParameters[OFFSET_LFO_SPEED] = (byte) speed;
+    }
+
+
+    /**
+     * Set the tempo sync of the Part LFO.
+     *
+     * @param tempoSync 0 = Off, 1 = On
+     */
+    public void setLfoTempoSync (final int tempoSync)
+    {
+        this.manyParameters[OFFSET_LFO_TEMPO_SYNC] = (byte) tempoSync;
+    }
+
+
+    /**
+     * Get the key on reset of the Part LFO.
+     *
+     * @return 0 = Off, 1 = Each-On, 2 = 1st-On
+     */
+    public int getLfoKeyOnReset ()
+    {
+        return this.manyParameters[OFFSET_LFO_KEY_ON_RESET];
+    }
+
+
+    /**
+     * Set the key on reset of the Part LFO.
+     *
+     * @param keyOnReset 0 = Off, 1 = Each-On, 2 = 1st-On
+     */
+    public void setLfoKeyOnReset (final int keyOnReset)
+    {
+        this.manyParameters[OFFSET_LFO_KEY_ON_RESET] = (byte) keyOnReset;
+    }
+
+
+    /**
+     * Get the destination of one of the 3 boxes of the Part LFO.
+     *
+     * @param box The index of the box [0..2]
+     * @return The destination, e.g. 64 = Element Level, 65 = Element Pitch, 66 = Element Filter
+     *         Cutoff
+     */
+    public int getLfoBoxDestination (final int box)
+    {
+        return this.manyParameters[OFFSET_LFO_BOX + 2 * box] & 0xFF;
+    }
+
+
+    /**
+     * Get the depth of one of the 3 boxes of the Part LFO.
+     *
+     * @param box The index of the box [0..2]
+     * @return The depth in the range of 0-127
+     */
+    public int getLfoBoxDepth (final int box)
+    {
+        return this.manyParameters[OFFSET_LFO_BOX + 2 * box + 1] & 0xFF;
+    }
+
+
+    /**
+     * Set the destination and depth of one of the 3 boxes of the Part LFO.
+     *
+     * @param box The index of the box [0..2]
+     * @param destination The destination, see {@link #getLfoBoxDestination(int)}
+     * @param depth The depth in the range of 0-127
+     */
+    public void setLfoBox (final int box, final int destination, final int depth)
+    {
+        this.manyParameters[OFFSET_LFO_BOX + 2 * box] = (byte) destination;
+        this.manyParameters[OFFSET_LFO_BOX + 2 * box + 1] = (byte) Math.clamp (depth, 0, 127);
+    }
+
+
+    /**
+     * Get the source of one of the 16 control boxes.
+     *
+     * @param box The index of the box [0..15]
+     * @return The source, 0 = Off, 1 = Modulation Wheel
+     */
+    public int getControlBoxSource (final int box)
+    {
+        return this.controlBoxes[CONTROL_BOX_SIZE * box] & 0xFF;
+    }
+
+
+    /**
+     * Get the destination of one of the 16 control boxes.
+     *
+     * @param box The index of the box [0..15]
+     * @return The destination, the part destinations start at 128
+     */
+    public int getControlBoxDestination (final int box)
+    {
+        final int offset = CONTROL_BOX_SIZE * box;
+        return (this.controlBoxes[offset + 1] & 0x7F) << 7 | this.controlBoxes[offset + 2] & 0x7F;
+    }
+
+
+    /**
+     * Get the ratio of one of the 16 control boxes.
+     *
+     * @param box The index of the box [0..15]
+     * @return The ratio in the range of -64..+63
+     */
+    public int getControlBoxRatio (final int box)
+    {
+        return (this.controlBoxes[CONTROL_BOX_SIZE * box + 8] & 0xFF) - 64;
+    }
+
+
+    /**
+     * Find the first control box which connects a source with a destination.
+     *
+     * @param source The source, 0 = Off, 1 = Modulation Wheel
+     * @param destination The destination, the part destinations start at 128
+     * @return The index of the box [0..15] or -1 if there is none
+     */
+    public int findControlBox (final int source, final int destination)
+    {
+        for (int box = 0; box < NUMBER_OF_CONTROL_BOXES; box++)
+            if (this.getControlBoxSource (box) == source && this.getControlBoxDestination (box) == destination)
+                return box;
+        return -1;
+    }
+
+
+    /**
+     * Set one of the 16 control boxes with the standard curve and unipolar polarity.
+     *
+     * @param box The index of the box [0..15]
+     * @param source The source, 0 = Off, 1 = Modulation Wheel
+     * @param destination The destination, the part destinations start at 128
+     * @param ratio The ratio in the range of -64..+63
+     */
+    public void setControlBox (final int box, final int source, final int destination, final int ratio)
+    {
+        final int offset = CONTROL_BOX_SIZE * box;
+        this.controlBoxes[offset] = (byte) source;
+        this.controlBoxes[offset + 1] = (byte) (destination >> 7 & 0x7F);
+        this.controlBoxes[offset + 2] = (byte) (destination & 0x7F);
+        // Curve bank and type: Standard
+        this.controlBoxes[offset + 3] = 0;
+        this.controlBoxes[offset + 4] = 0;
+        // Curve parameters 1 and 2
+        this.controlBoxes[offset + 5] = 5;
+        this.controlBoxes[offset + 6] = 0;
+        // Polarity: Uni
+        this.controlBoxes[offset + 7] = 0;
+        this.controlBoxes[offset + 8] = (byte) (Math.clamp (ratio, -64, 63) + 64);
     }
 
 

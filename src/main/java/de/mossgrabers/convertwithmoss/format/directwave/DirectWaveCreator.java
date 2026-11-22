@@ -25,6 +25,7 @@ import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
 import de.mossgrabers.convertwithmoss.core.model.IAudioMetadata;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ILfo;
@@ -241,8 +242,16 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
             }
         }
 
+        // The pitch envelope is Zone Env 1, routed to the pitch like the LFOs
+        final IEnvelopeModulator pitchEnvelopeModulator = zone.getPitchEnvelopeModulator ();
+        final double pitchEnvelopeStrength = Math.clamp (pitchEnvelopeModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / DirectWaveTag.PITCH_MODULATION_RANGE, -1, 1);
+        final boolean hasPitchEnvelope = Math.abs (pitchEnvelopeStrength) >= 0.0001 && pitchEnvelopeModulator.getSource () != null;
+        if (hasPitchEnvelope)
+            addModulation (modulations, freeSlots, DirectWaveTag.MODULATION_SOURCE_ENV1, DirectWaveTag.MODULATION_TARGET_PITCH, pitchEnvelopeStrength, pitchEnvelopeStrength);
+
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         final AtomicBoolean isFirstFilter = new AtomicBoolean (true);
+        final AtomicBoolean isFirstZoneEnvelope = new AtomicBoolean (true);
         final int [] lfoIndex = new int [1];
         final int [] modulationIndex = new int [1];
         for (final DirectWaveChunk chunk: chunksOpt.get ())
@@ -280,9 +289,25 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
                     DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_AMP_ENVELOPE, createAmplitudeEnvelope (chunk.getPayload (), zone));
                     break;
 
+                case DirectWaveTag.TAG_BLOCK_01F8:
+                    // The semi-tones of the tuning are baked into the root key (see
+                    // getAdjustedRootKey), the rest is written as the fine tuning in cents
+                    final byte [] parameters = chunk.getPayload ().clone ();
+                    final double tuning = zone.getTuning ();
+                    parameters[DirectWaveTag.PARAMETERS_FINE_TUNE] = (byte) Math.clamp (Math.round ((tuning - Math.round (tuning)) * 100.0), -50, 50);
+                    parameters[DirectWaveTag.PARAMETERS_KEY_TRACKING] = (byte) Math.clamp (Math.round (zone.getKeyTracking () * 100.0), 0, 100);
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_BLOCK_01F8, parameters);
+                    break;
+
                 case DirectWaveTag.TAG_FILTER:
                     // Only the first of the two filter blocks is filled
                     DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_FILTER, isFirstFilter.getAndSet (false) ? createFilter (chunk.getPayload (), zone) : chunk.getPayload ());
+                    break;
+
+                case DirectWaveTag.TAG_ZONE_ENVELOPE:
+                    // Only the first of the two zone envelopes is filled
+                    final boolean isFirstEnvelope = isFirstZoneEnvelope.getAndSet (false);
+                    DirectWaveChunk.writeChunk (out, DirectWaveTag.TAG_ZONE_ENVELOPE, hasPitchEnvelope && isFirstEnvelope ? createZoneEnvelope (chunk.getPayload (), pitchEnvelopeModulator.getSource ()) : chunk.getPayload ());
                     break;
 
                 case DirectWaveTag.TAG_LFO:
@@ -376,6 +401,28 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
         if (envelope.getSustainLevel () >= 0)
             DirectWaveChunk.writeFloatLE (payload, 8, (float) Math.clamp (envelope.getSustainLevel (), 0, 1));
         writeEnvelopeTime (payload, 12, envelope.getReleaseTime ());
+        return payload;
+    }
+
+
+    /**
+     * Fill a zone envelope block with an envelope. The four floats are the attack, decay, sustain
+     * and release knob positions like for the amplitude envelope, but the output of a zone envelope
+     * is the square of its level, therefore the sustain knob is the square root of the sustain
+     * level. An envelope without a sustain level holds its full level.
+     *
+     * @param template The template payload of the zone envelope block
+     * @param envelope The envelope
+     * @return The filled block payload
+     */
+    private static byte [] createZoneEnvelope (final byte [] template, final IEnvelope envelope)
+    {
+        final byte [] payload = template.clone ();
+        writeEnvelopeTime (payload, 0, Math.max (0, envelope.getAttackTime ()));
+        writeEnvelopeTime (payload, 4, Math.max (0, envelope.getDecayTime ()));
+        final double sustain = envelope.getSustainLevel () < 0 ? 1 : Math.clamp (envelope.getSustainLevel (), 0, 1);
+        DirectWaveChunk.writeFloatLE (payload, 8, (float) Math.sqrt (sustain));
+        writeEnvelopeTime (payload, 12, Math.max (0, envelope.getReleaseTime ()));
         return payload;
     }
 
@@ -648,9 +695,9 @@ public class DirectWaveCreator extends AbstractCreator<EmptySettingsUI>
 
 
     /**
-     * Get the root key of the zone with the semitones of the zone tuning applied. DirectWave does
-     * not have a documented tuning field, therefore the tuning is baked into the root key as good
-     * as possible (the cents rest is lost).
+     * Get the root key of the zone with the semitones of the zone tuning applied. The semi-tones
+     * are baked into the root key, which keeps the files inside the byte patterns of the known
+     * factory programs; the cents rest is written as the fine tuning of the zone.
      *
      * @param zone The zone
      * @return The adjusted root key

@@ -134,7 +134,8 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             text = text.replace ("%PITCHBEND_DOWN%", toHexFloat (Math.abs (firstSampleZone.getBendDown ()) / 5000.0));
             text = text.replace ("%SOUND_SOURCE%", filename);
             text = text.replace ("%AMP_TRIM%", toHexFloat (OmnisphereLfoUtils.MAX_AMPLITUDE));
-            text = text.replace ("%KEY_TRACKING%", firstSampleZone.getKeyTracking () > 0 ? DEFAULT_3F800000 : "0");
+            // TRACKING is a switch, a partial key tracking is rounded to on or off
+            text = text.replace ("%KEY_TRACKING%", firstSampleZone.getKeyTracking () >= 0.5 ? DEFAULT_3F800000 : "0");
 
             final Optional<IFilter> globalFilter = multisampleSource.getGlobalFilter ();
             if (globalFilter.isEmpty ())
@@ -218,7 +219,8 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
             final boolean hasModEnvelope = pitchEnvelopeDepth > 0;
             text = text.replace ("%PITCH_MOD_SOURCE%", hasModEnvelope ? "ModEnv1" : "off");
             text = text.replace ("%PITCH_MOD_TARGET%", hasModEnvelope ? "A tune" : "off");
-            // The target parameter mirrors the coarse tuning of the template (0 cents), the amount is
+            // The target parameter mirrors the coarse tuning of the template (0 cents), the amount
+            // is
             // relative to the range of the coarse tuning (-4800..4800 cents)
             text = text.replace ("%PITCH_MOD_AMOUNT%", toHexFloat (0.5));
             text = text.replace ("%PITCH_MOD_INTENSITY%", toHexFloat (Math.clamp (pitchEnvelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH / OmnisphereLfoUtils.PITCH_RANGE_CENTS, 0.0, 1.0)));
@@ -517,7 +519,7 @@ public class OmnisphereCreator extends AbstractCreator<EmptySettingsUI>
         final Element rootElement = document.createElement ("SampledInstrument");
         document.appendChild (rootElement);
         rootElement.setAttribute (ATTRIB_VALUE_DATA_TAG, "");
-        rootElement.setAttribute ("PitchedInstr", sampleZone.getKeyTracking () == 0 ? "0" : "1");
+        rootElement.setAttribute ("PitchedInstr", sampleZone.getKeyTracking () >= 0.5 ? "1" : "0");
         rootElement.setAttribute (LEVEL, DEFAULT_3F800000);
 
         return document;

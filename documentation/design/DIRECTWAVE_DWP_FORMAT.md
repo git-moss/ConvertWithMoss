@@ -79,14 +79,14 @@ The payload is a nested block stream with the same envelope. Blocks in order:
 | 0x01F5 | n      | sample name without extension, e.g. `Instrument_C3_127` |
 | 0x01F6 | n      | sample path, single backslashes: `D:\Instrument\Instrument_C3_127.wav` |
 | 0x01F7 | 40     | audio format, see below |
-| 0x01F8 | 8      | `f32 0.5, u8 0, u8 0, u8 100, u8 0` (identical in all seven specimens) |
+| 0x01F8 | 8      | `f32 0.5, s8 semitones, s8 fine (cents), u8 key tracking, u8 0` - the tuning of the zone, see below |
 | 0x01F9 | 14     | opaque parameters (zeroed in the 0x26 specimen; `0, 0.5, 0.5, 1.0` floats in the factory files) |
 | 0x01FA | 48     | opaque parameters (factory: `0.5, 0.5, 0.5, 1.0` floats then zeros; the 0x26 specimen instead holds zeros, 1.0 at +12 and what looks like uninitialized heap noise) |
 | 0x01FB | 20     | **filter 1 / filter 2** (twice), see below |
 | 0x01FC | 2      | zeroed |
 | 0x01FD | 16     | **the amplitude envelope**: 4 floats attack, decay, sustain, release (see below) |
 | 0x01FE-0x0201 | 9 | opaque parameters (one each) |
-| 0x0202 | 16     | opaque parameters (twice) |
+| 0x0202 | 16     | **Zone Env 1 / Zone Env 2** (twice): 4 floats attack, decay, sustain, release (see below) |
 | 0x0203 | 20     | opaque, varies per program (twice) |
 | 0x0204 | 8      | 16 of them: `u16, u16, f32` triples, opaque parameters |
 | 0x0004 | 0      | container terminator |
@@ -94,6 +94,60 @@ The payload is a nested block stream with the same envelope. Blocks in order:
 The creator copies all opaque blocks verbatim from the first sample container of the
 factory 'Nylon Guitar' program, so written files stay inside the byte patterns of the six
 known-good Image-Line files.
+
+### Zone tuning (0x01F8, 8 bytes)
+
+```
+f32 0.5      (unknown)
+s8  semitones  (the 'Semi' column of the zone list)
+s8  fine       (the 'Fine' column, in cents)
+u8  key track  (the 'K-Trk' column in percent, 100 in all zones of the factory programs)
+u8  0
+```
+
+Decoded from a probe made in FL Studio 2026 (*Testdateien/FL Studio Directwave/probe_tune.fst*):
+four zones with the same sample, one untouched, one with Fine -50, one with Fine +50 and one with
+Semi +12. The only block which differs between the zones is 0x01F8: bytes 4/5 are `00 00`,
+`00 CE`, `00 32` and `0C 00`. The probe is a channel state of FL Studio (*Save channel state
+as...*), since the DirectWave Player of the trial version cannot save programs; the state holds
+the same block stream as a DWP file, without the `DwPr` preamble, followed by the audio.
+A zone with K-Trk set to 50 stores 0x32 in byte 6. The detector reads it as the key tracking of
+the zone, the creator writes it.
+
+### Pitch envelope (Zone Env 1 routed to Voice Pitch)
+
+A zone envelope only has an effect when a matrix slot routes it to a target: source 9 is Zone
+Env 1 (10 is Zone Env 2), target 1 is Voice Pitch. The first 0x0202 block is Zone Env 1, the
+second one Zone Env 2. Their four floats are the attack, decay, sustain and release knob
+positions in the same order as the amplitude envelope.
+
+Decoded the other way round: probe programs were written with the workspace generator (the
+'undertale' program with absolute sample paths, Zone Env 1 and the matrix slot set in all
+zones), opened in the DirectWave Player of FL Studio 2026, a C5 note was rendered (*Export* >
+WAV) and the pitch of the rendering was measured by autocorrelation against the 261.7 Hz of
+the untreated sample. Files: *Testdateien/FL Studio Directwave/probe_pitchenv\*.dwp* and
+*render_pitchenv\*.wav*.
+
+| Probe | Zone Env 1 (A, D, S, R) | Amount | Measured |
+|-------|-------------------------|--------|----------|
+| probe_pitchenv | 0.3, 0.3, 0, 0.3 | 1.0 | rises to +1200 cent within 0.045 s, back to 0 at 0.155 s |
+| probe_pitchenv25 | 0.5, 0.5, 0.5, 0.3 | 0.25 | falls to -287 cent at 0.6 s, holds -75 cent |
+| probe_pitchenv_s08 | 0, 0.4, 0.8, 0.3 | 0.25 | starts at about -300 cent, holds -192 cent from 0.1 s |
+
+* The amount follows the same law as for the LFOs: bipolar around 0.5, strength = cube of
+  twice the distance, 2400 cent at full strength. 0.25 is a strength of -0.125 = -300 cent.
+* The output of a zone envelope is the **square** of its level: a sustain knob of 0.5 holds
+  -300 x 0.25 = -75 cent, a sustain knob of 0.8 holds -300 x 0.64 = -192 cent (both exact).
+* DirectWave raises the pitch by at most one octave: the full positive strength of the first
+  probe (2400 cent) is cut off at +1200 cent.
+* The times roughly follow the knob law of the amplitude envelope (attack plus decay of the
+  first probe take 2 x 0.077 s), but the decay of the third probe settles faster than the
+  0.24 s of the law, presumably because the squared output approaches the sustain level
+  quicker. The times are therefore approximate.
+
+The detector reads a slot from Zone Env 1 or 2 to Voice Pitch as the pitch envelope of the zone
+(sustain level = knob squared), the creator writes the pitch envelope into Zone Env 1 (sustain
+knob = square root of the level) and adds the matrix slot.
 
 ### Zone mapping (0x01F4, 25 bytes)
 

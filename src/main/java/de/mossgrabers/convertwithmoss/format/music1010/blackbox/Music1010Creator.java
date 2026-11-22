@@ -29,6 +29,7 @@ import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.format.music1010.AbstractMusic1010Creator;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010PolyMode;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
@@ -381,6 +382,7 @@ public class Music1010Creator extends AbstractMusic1010Creator
             if (exclusiveGroup > 0)
                 paramsElement.setAttribute (Music1010Tag.ATTR_CHOKE_GROUP, Integer.toString (exclusiveGroup));
 
+            Music1010PolyMode.writePolyphony (paramsElement, multisampleSource);
             createFilter (paramsElement, multisampleSource);
             createLfoModulators (document, slotElement, paramsElement, multisampleSource, true);
         }

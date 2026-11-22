@@ -191,11 +191,34 @@ public class EmulatorXConstants
     public static final int    CORD_DEST_VOLUME        = 0x40;
     /** The modulation destination of the filter cutoff. */
     public static final int    CORD_DEST_CUTOFF        = 0x38;
+    /** The modulation destination of the filter resonance. */
+    public static final int    CORD_DEST_RESONANCE     = 0x39;
+    /** The modulation destination of the pitch. */
+    public static final int    CORD_DEST_PITCH         = 0x30;
+    /** The modulation source of the key, which adds to the destination. */
+    public static final int    CORD_SOURCE_KEY         = 0x08;
+    /** The modulation source of the key, centered: it swings around the middle of the keyboard. */
+    public static final int    CORD_SOURCE_KEY_CENTER  = 0x09;
+    /** The modulation source of MIDI controller B, the standard control of the filter resonance. */
+    public static final int    CORD_SOURCE_MIDI_B      = 0x15;
+    /** The lowest modulation source which is one of the auxiliary envelope variants (add). */
+    public static final int    CORD_SOURCE_AUX_FIRST   = 0x58;
+    /** The highest modulation source which is one of the auxiliary envelope variants (subtract). */
+    public static final int    CORD_SOURCE_AUX_LAST    = 0x5A;
+    /**
+     * The filter cutoff key tracking of a +100% cord from the key to the cutoff in octaves per
+     * octave, the same as on the Emulator IV; the centered key source tracks twice as steeply.
+     */
+    public static final double FULL_KEY_TRACKING       = 0.713;
+    /** The pitch change of a cord with the full amount (+100%) into the pitch: 32 semi-tones. */
+    public static final double FULL_PITCH_CENTS        = 3200;
 
     /** The index of the amplitude envelope in the envelope list of a voice. */
     public static final int    ENVELOPE_AMPLITUDE      = 0;
     /** The index of the filter envelope in the envelope list of a voice. */
     public static final int    ENVELOPE_FILTER         = 1;
+    /** The index of the auxiliary envelope in the envelope list of a voice. */
+    public static final int    ENVELOPE_AUX            = 2;
 
     /** The filter type of the 'No Filter' setting, which bypasses the filter section. */
     public static final int    FILTER_TYPE_BYPASS      = 127;

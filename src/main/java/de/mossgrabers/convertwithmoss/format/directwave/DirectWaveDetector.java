@@ -23,6 +23,7 @@ import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ILfo;
@@ -35,6 +36,7 @@ import de.mossgrabers.convertwithmoss.core.model.enumeration.LfoWaveform;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.PlayLogic;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultAudioMetadata;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleLoop;
@@ -213,6 +215,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         }
 
         byte [] mapping = null;
+        byte [] parameters = null;
         byte [] audioFormat = null;
         byte [] ampEnvelope = null;
         byte [] filter = null;
@@ -221,6 +224,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         String sampleName = null;
         String samplePath = null;
         final List<byte []> lfoBlocks = new ArrayList<> ();
+        final List<byte []> zoneEnvelopes = new ArrayList<> ();
         final List<byte []> modulations = new ArrayList<> ();
         for (final DirectWaveChunk chunk: chunks.get ())
             switch (chunk.getTag ())
@@ -262,7 +266,15 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
                     modulations.add (chunk.getPayload ());
                     break;
 
-                case DirectWaveTag.TAG_BLOCK_01F8, DirectWaveTag.TAG_BLOCK_01F9, DirectWaveTag.TAG_BLOCK_01FA, DirectWaveTag.TAG_BLOCK_01FC, DirectWaveTag.TAG_BLOCK_01FE, DirectWaveTag.TAG_BLOCK_01FF, DirectWaveTag.TAG_BLOCK_0200, DirectWaveTag.TAG_BLOCK_0201, DirectWaveTag.TAG_BLOCK_0202, DirectWaveTag.TAG_SAMPLE_TERMINATOR:
+                case DirectWaveTag.TAG_BLOCK_01F8:
+                    parameters = chunk.getPayload ();
+                    break;
+
+                case DirectWaveTag.TAG_ZONE_ENVELOPE:
+                    zoneEnvelopes.add (chunk.getPayload ());
+                    break;
+
+                case DirectWaveTag.TAG_BLOCK_01F9, DirectWaveTag.TAG_BLOCK_01FA, DirectWaveTag.TAG_BLOCK_01FC, DirectWaveTag.TAG_BLOCK_01FE, DirectWaveTag.TAG_BLOCK_01FF, DirectWaveTag.TAG_BLOCK_0200, DirectWaveTag.TAG_BLOCK_0201, DirectWaveTag.TAG_SAMPLE_TERMINATOR:
                     // Known parameter blocks which contain no information required for the
                     // conversion
                     break;
@@ -314,6 +326,14 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             }
         }
 
+        // The tuning of the zone: the semi-tones and the cents (the columns 'Semi' and 'Fine' of
+        // the
+        // zone list), both signed bytes
+        if (parameters != null && parameters.length > DirectWaveTag.PARAMETERS_FINE_TUNE)
+            zone.setTuning (parameters[DirectWaveTag.PARAMETERS_SEMI_TONES] + parameters[DirectWaveTag.PARAMETERS_FINE_TUNE] / 100.0);
+        if (parameters != null && parameters.length > DirectWaveTag.PARAMETERS_KEY_TRACKING)
+            zone.setKeyTracking (Math.clamp ((parameters[DirectWaveTag.PARAMETERS_KEY_TRACKING] & 0xFF) / 100.0, 0, 1));
+
         // The loop and the one-shot play-back are stored in the audio format block
         if (audioFormat != null && audioFormat.length > DirectWaveTag.FORMAT_LOOP_END + 3)
             switch (DirectWaveChunk.readIntLE (audioFormat, DirectWaveTag.FORMAT_LOOP_MODE))
@@ -340,6 +360,7 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
         applyAmplitudeEnvelope (zone, ampEnvelope, version);
         applyFilter (zone, filter);
         applyLfos (zone, lfoBlocks, modulations);
+        applyPitchEnvelope (zone, zoneEnvelopes, modulations);
 
         // The root key is taken from the mapping above; look for loops in the sample chunks only
         // when the program has none
@@ -418,6 +439,47 @@ public class DirectWaveDetector extends AbstractDetector<MetadataSettingsUI>
             modulator.getDepthModWheelModulator ().setDepth (wheelDepth - depth);
 
             applyLfo (modulator.getSource (), lfoBlocks.get (lfoIndex));
+        }
+    }
+
+
+    /**
+     * Apply the pitch envelope of the zone: a matrix slot which routes one of the two zone
+     * envelopes to the pitch. The amount follows the same law as for the LFOs. The output of a zone
+     * envelope is the square of its level, which is why the sustain level is the square of the
+     * sustain knob; e.g. a sustain knob of 0.5 holds a quarter of the depth. Measured by rendering
+     * probe programs, see the design document. DirectWave raises the pitch by at most one octave, a
+     * deeper envelope is cut off there.
+     *
+     * @param zone The zone
+     * @param zoneEnvelopes The payloads of the two zone envelope blocks
+     * @param modulations The payloads of the modulation matrix slots
+     */
+    private static void applyPitchEnvelope (final ISampleZone zone, final List<byte []> zoneEnvelopes, final List<byte []> modulations)
+    {
+        for (final byte [] modulation: modulations)
+        {
+            if (modulation.length < 8 || DirectWaveChunk.readShortLE (modulation, DirectWaveTag.MODULATION_TARGET) != DirectWaveTag.MODULATION_TARGET_PITCH)
+                continue;
+            final int index = DirectWaveChunk.readShortLE (modulation, DirectWaveTag.MODULATION_SOURCE) - DirectWaveTag.MODULATION_SOURCE_ENV1;
+            if (index < 0 || index > 1 || index >= zoneEnvelopes.size () || zoneEnvelopes.get (index).length < 16)
+                continue;
+            final double strength = modulationStrength (DirectWaveChunk.readFloatLE (modulation, DirectWaveTag.MODULATION_AMOUNT));
+            if (Math.abs (strength) < 0.0001)
+                continue;
+
+            final byte [] block = zoneEnvelopes.get (index);
+            final IEnvelope envelope = new DefaultEnvelope ();
+            envelope.setAttackTime (knobToTime (Math.clamp (DirectWaveChunk.readFloatLE (block, 0), 0, 1)));
+            envelope.setDecayTime (knobToTime (Math.clamp (DirectWaveChunk.readFloatLE (block, 4), 0, 1)));
+            final float sustain = Math.clamp (DirectWaveChunk.readFloatLE (block, 8), 0, 1);
+            envelope.setSustainLevel (sustain * sustain);
+            envelope.setReleaseTime (knobToTime (Math.clamp (DirectWaveChunk.readFloatLE (block, 12), 0, 1)));
+
+            final IEnvelopeModulator modulator = zone.getPitchEnvelopeModulator ();
+            modulator.setDepth (pitchDepth (strength));
+            modulator.setSource (envelope);
+            return;
         }
     }
 

@@ -130,8 +130,8 @@ public class TX16WxModulator
 
 
     /**
-     * Get the modulation amount which is applied when the via source is at its maximum, without
-     * its unit.
+     * Get the modulation amount which is applied when the via source is at its maximum, without its
+     * unit.
      *
      * @return The amount if present and parsable
      */

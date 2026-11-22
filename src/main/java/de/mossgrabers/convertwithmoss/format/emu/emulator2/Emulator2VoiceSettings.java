@@ -4,6 +4,8 @@
 
 package de.mossgrabers.convertwithmoss.format.emu.emulator2;
 
+import java.util.Optional;
+
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -43,12 +45,16 @@ class Emulator2VoiceSettings
     private static final int          KEY_TRACKING                    = 0x1F;
     /** The amount of the filter envelope. */
     private static final int          ENVELOPE_AMOUNT                 = 0x25;
+    /** The copy of the amount, the level from which the decay of the filter envelope starts. */
+    private static final int          ENVELOPE_AMOUNT_COPY            = 0x93;
     /** The pointers into the LFO depth tables: LFO to pitch, to filter and to level. */
     static final int                  LFO_TO_PITCH                    = 0x28;
     static final int                  LFO_TO_FILTER                   = 0x2A;
     static final int                  LFO_TO_LEVEL                    = 0x2C;
     /** The sustain level of the filter envelope. */
     private static final int          VCF_SUSTAIN                     = 0x2E;
+    /** The VCF sustain value which holds the full amount. */
+    private static final int          VCF_SUSTAIN_FULL                = 0x1F;
     /**
      * Flags; the top bit inverts the filter envelope, the bits 0 to 6 enable the real-time control
      * destinations 1 to 7 for the voice (see Emulator2Constants.REALTIME_*).
@@ -78,6 +84,8 @@ class Emulator2VoiceSettings
     private static final int          VCA_DECAY_LOW                   = 0xA7;
     /** The sustain level of the VCA envelope. */
     private static final int          VCA_SUSTAIN                     = 0xA9;
+    /** The VCA sustain value which silences the sustain. */
+    private static final int          VCA_SUSTAIN_OFF                 = 0x07;
     private static final int          VCA_RELEASE_HIGH                = 0xB3;
     private static final int          VCA_RELEASE_LOW                 = 0xB5;
 
@@ -95,6 +103,10 @@ class Emulator2VoiceSettings
     private static final int          ENVELOPE_AMOUNT_NONE            = 0x04;
     /** A Q table value below this holds no resonance. */
     private static final int          Q_NONE                          = 0x17;
+    /** The Q table value which the factory voices without a resonance hold. */
+    private static final int          Q_OFF                           = 0x0F;
+    /** The cutoff table value of a filter which is fully open. */
+    private static final int          CUTOFF_FULLY_OPEN               = 0xFF;
     /** The largest velocity to level attenuation in dB, the reference of the depth of the model. */
     static final double               MAX_LEVEL_DEPTH_DB              = 96;
     /** The velocity to cutoff range of the model, 2 octaves (see the SoundFont 2 reader). */
@@ -103,6 +115,26 @@ class Emulator2VoiceSettings
     private static final double       VELOCITY_CUTOFF_CENTS_PER_UNIT  = -59.4;
     /** The fine tune unit in cents. */
     private static final double       FINE_TUNE_CENTS                 = 100.0 / 64;
+
+    /**
+     * The levels of the stages of the envelopes are stored a second time in the record: the sustain
+     * level of the VCA envelope is also the level of its sustain stage and the start of its release
+     * stage, the sustain level of the VCF envelope (in the unit of the amount) the target of its
+     * decay stage, the level of its sustain stage and the start of its release stage. All 3,624
+     * voices of the factory library hold the same value in all of them.
+     */
+    private static final int []       VCA_SUSTAIN_COPIES              =
+    {
+        0xAF,
+        0xB6
+    };
+    /** The VCF sustain level as the target of the decay and the level of the following stages. */
+    private static final int []       VCF_SUSTAIN_TARGETS             =
+    {
+        0x94,
+        0x9A,
+        0xA1
+    };
 
     /** The cutoff table value to Hertz. */
     private static final double [] [] CUTOFF_HZ                       =
@@ -1218,6 +1250,144 @@ class Emulator2VoiceSettings
             15.3
         }
     };
+    /**
+     * The counters (passes, increment) of the envelope stage times which the factory library uses,
+     * from an instant attack up to 15.3 seconds. The attack stages of all 3,624 voices use only
+     * these pairs, the decay and release stages the same ones with 256 less the increment as their
+     * low value (from the second pair on), the hold (255 / 0) aside. The time of a pair is 2.55
+     * seconds times the passes divided by the increment.
+     */
+    private static final int [] []    ENVELOPE_STEPS                  =
+    {
+        {
+            0,
+            0
+        },
+        {
+            1,
+            255
+        },
+        {
+            1,
+            127
+        },
+        {
+            1,
+            85
+        },
+        {
+            1,
+            63
+        },
+        {
+            1,
+            51
+        },
+        {
+            1,
+            42
+        },
+        {
+            1,
+            31
+        },
+        {
+            1,
+            25
+        },
+        {
+            1,
+            21
+        },
+        {
+            1,
+            17
+        },
+        {
+            1,
+            14
+        },
+        {
+            1,
+            12
+        },
+        {
+            1,
+            9
+        },
+        {
+            1,
+            8
+        },
+        {
+            1,
+            6
+        },
+        {
+            1,
+            5
+        },
+        {
+            1,
+            4
+        },
+        {
+            1,
+            3
+        },
+        {
+            2,
+            5
+        },
+        {
+            1,
+            2
+        },
+        {
+            2,
+            3
+        },
+        {
+            3,
+            4
+        },
+        {
+            1,
+            1
+        },
+        {
+            4,
+            3
+        },
+        {
+            3,
+            2
+        },
+        {
+            2,
+            1
+        },
+        {
+            5,
+            2
+        },
+        {
+            3,
+            1
+        },
+        {
+            4,
+            1
+        },
+        {
+            5,
+            1
+        },
+        {
+            6,
+            1
+        }
+    };
 
 
     /**
@@ -1578,6 +1748,226 @@ class Emulator2VoiceSettings
     {
         data[offset] = (byte) (index % 4);
         data[offset + 1] = (byte) (LFO_TABLE_PAGE + index / 4);
+    }
+
+
+    /**
+     * Write the envelopes and the filter of a zone into the settings of a voice record, the inverse
+     * of apply: the VCA envelope with its velocity to attack, the cutoff, Q and keyboard tracking
+     * of the filter with its velocity to cutoff, and the filter envelope with its amount, its
+     * direction, its stages and its velocity to attack. Settings which the zone does not set keep
+     * the values of the record, which holds the template voice.
+     *
+     * @param zone The zone
+     * @param voiceRecord The 256 bytes of the voice record
+     */
+    static void writeEnvelopesAndFilter (final ISampleZone zone, final byte [] voiceRecord)
+    {
+        // VCA envelope: the sampler has no delay and no hold stage
+        final IEnvelope amplitudeEnvelope = zone.getAmplitudeEnvelopeModulator ().getSource ();
+        final int velocityToVcaAttack = toNibble (amplitudeEnvelope.getTimeVelocityTracking () * 15);
+        writeAttack (voiceRecord, VCA_ATTACK_HIGH, VCA_ATTACK_LOW, amplitudeEnvelope.getAttackTime (), velocityToVcaAttack);
+        writeDecay (voiceRecord, VCA_DECAY_HIGH, VCA_DECAY_LOW, amplitudeEnvelope.getDecayTime ());
+        final double sustain = amplitudeEnvelope.getSustainLevel ();
+        if (sustain >= 0)
+        {
+            // The inverse of the lookup of apply, which takes the sustain level from the
+            // attenuation in hundreds of the full level; no sustain silences the voice
+            final int sustainValue = sustain <= 0 ? VCA_SUSTAIN_OFF : Math.clamp (inverseLookup (VCA_SUSTAIN_DB, (1 - Math.min (1, sustain)) * 100.0), 0, 255);
+            voiceRecord[VCA_SUSTAIN] = (byte) sustainValue;
+            for (final int offset: VCA_SUSTAIN_COPIES)
+                voiceRecord[offset] = (byte) sustainValue;
+        }
+        writeDecay (voiceRecord, VCA_RELEASE_HIGH, VCA_RELEASE_LOW, amplitudeEnvelope.getReleaseTime ());
+
+        final int velocityToVcfAttack = writeFilter (zone.getFilter (), voiceRecord);
+        voiceRecord[VELOCITY_TO_ATTACK] = (byte) (velocityToVcaAttack << 4 | velocityToVcfAttack);
+    }
+
+
+    /**
+     * Write the filter of a zone into the settings of a voice record. The sampler has one 4-pole
+     * low-pass filter, other filter types are not written and the filter stays open.
+     *
+     * @param optFilter The filter of the zone, if any
+     * @param voiceRecord The 256 bytes of the voice record
+     * @return The velocity to VCF attack amount (0-15)
+     */
+    private static int writeFilter (final Optional<IFilter> optFilter, final byte [] voiceRecord)
+    {
+        if (optFilter.isEmpty () || optFilter.get ().getType () != FilterType.LOW_PASS)
+            return 0;
+        final IFilter filter = optFilter.get ();
+        final int cutoff = inverseLookup (CUTOFF_HZ, filter.getCutoff ());
+        if (cutoff >= CUTOFF_OPEN)
+            return 0;
+
+        // The cutoff table runs from the cutoff at the highest velocity down to the one at the
+        // lowest velocity, linearly as for the level table; a positive depth opens the filter the
+        // harder the key is played
+        final double velocityToCutoff = filter.getCutoffVelocityModulator ().getDepth () * VELOCITY_CUTOFF_REFERENCE_CENTS;
+        final int lowestCutoff = Math.clamp (Math.round (cutoff - velocityToCutoff / VELOCITY_CUTOFF_CENTS_PER_UNIT), 0, CUTOFF_FULLY_OPEN);
+        final double resonance = filter.getResonance () * IFilter.MAX_RESONANCE;
+        final int q = resonance < RESONANCE_DB[0][1] ? Q_OFF : Math.clamp (inverseLookup (RESONANCE_DB, resonance), Q_NONE, 255);
+        for (int i = 0; i <= TABLE_LAST_ENTRY; i++)
+        {
+            voiceRecord[CUTOFF_TABLE + i] = (byte) Math.round (cutoff + (lowestCutoff - cutoff) * i / (double) TABLE_LAST_ENTRY);
+            voiceRecord[Q_TABLE + i] = (byte) q;
+        }
+        final int keyTracking = toNibble (filter.getCutoffKeyTracking () * 8);
+        voiceRecord[KEY_TRACKING] = (byte) (keyTracking << 4 | voiceRecord[KEY_TRACKING] & 0x0F);
+
+        // The filter envelope: its amount has no sign, the top bit of the flags inverts it
+        final IEnvelopeModulator envelopeModulator = filter.getCutoffEnvelopeModulator ();
+        final double envelopeAmount = envelopeModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH;
+        if (envelopeAmount < 0)
+            voiceRecord[FLAGS] |= (byte) FLAG_NEGATIVE_ENVELOPE;
+        else
+            voiceRecord[FLAGS] &= (byte) ~FLAG_NEGATIVE_ENVELOPE;
+        final int amount = Math.abs (envelopeAmount) < ENVELOPE_AMOUNT_CENTS[0][1] / 2 ? ENVELOPE_AMOUNT_NONE : inverseLookup (ENVELOPE_AMOUNT_CENTS, Math.abs (envelopeAmount));
+        voiceRecord[ENVELOPE_AMOUNT] = (byte) amount;
+        voiceRecord[ENVELOPE_AMOUNT_COPY] = (byte) amount;
+        if (amount == ENVELOPE_AMOUNT_NONE)
+            return 0;
+
+        final IEnvelope filterEnvelope = envelopeModulator.getSource ();
+        final int velocityToVcfAttack = toNibble (filterEnvelope.getTimeVelocityTracking () * 15);
+        writeAttack (voiceRecord, VCF_ATTACK_HIGH, VCF_ATTACK_LOW, vcfCounterTime (filterEnvelope.getAttackTime ()), velocityToVcfAttack);
+        writeDecay (voiceRecord, VCF_DECAY_HIGH, VCF_DECAY_LOW, vcfCounterTime (filterEnvelope.getDecayTime ()));
+        writeDecay (voiceRecord, VCF_RELEASE_HIGH, VCF_RELEASE_LOW, vcfCounterTime (filterEnvelope.getReleaseTime ()));
+
+        // The sustain value and the sustain level in the unit of the amount which the stages use.
+        // How the sampler relates the two is not decoded: the factory voices do not follow one
+        // law, so the level is set proportionally to the amount, which is exact for no and for a
+        // full sustain. An envelope without a sustain level holds the full amount
+        final double sustain = filterEnvelope.getSustainLevel () < 0 ? 1 : Math.min (1, filterEnvelope.getSustainLevel ());
+        voiceRecord[VCF_SUSTAIN] = (byte) (sustain >= 1 ? VCF_SUSTAIN_FULL : Math.clamp (inverseLookup (VCF_SUSTAIN_LEVEL, sustain), 0, VCF_SUSTAIN_FULL - 1));
+        final int sustainTarget = (int) Math.round (sustain * amount);
+        for (final int offset: VCF_SUSTAIN_TARGETS)
+            voiceRecord[offset] = (byte) sustainTarget;
+        return velocityToVcfAttack;
+    }
+
+
+    /**
+     * Write the velocity table of an attack stage: entry 0 holds the attack at the highest
+     * velocity, the other entries get longer by the velocity to attack amount, which adds one step
+     * of the envelope times over the table per unit (amount 15 adds one step per entry). The tables
+     * of the factory voices follow this within one step.
+     *
+     * @param voiceRecord The 256 bytes of the voice record
+     * @param highOffset The position of the 16 pass counters
+     * @param lowOffset The position of the 16 increments
+     * @param seconds The attack time in seconds, negative if not set
+     * @param velocityAmount The velocity to attack amount (0-15)
+     */
+    private static void writeAttack (final byte [] voiceRecord, final int highOffset, final int lowOffset, final double seconds, final int velocityAmount)
+    {
+        if (seconds < 0 && velocityAmount == 0)
+            return;
+        final int base = getEnvelopeStep (Math.max (0, seconds), true);
+        for (int i = 0; i <= TABLE_LAST_ENTRY; i++)
+        {
+            final int step = Math.min (base + Math.round (velocityAmount * i / (float) TABLE_LAST_ENTRY), ENVELOPE_STEPS.length - 1);
+            voiceRecord[highOffset + i] = (byte) ENVELOPE_STEPS[step][0];
+            voiceRecord[lowOffset + i] = (byte) ENVELOPE_STEPS[step][1];
+        }
+    }
+
+
+    /**
+     * Write the counters of a decay or release stage. The pass counter is stored twice, as the
+     * factory voices do.
+     *
+     * @param voiceRecord The 256 bytes of the voice record
+     * @param highOffset The position of the pass counter
+     * @param lowOffset The position of the negative increment
+     * @param seconds The time in seconds, negative if not set
+     */
+    private static void writeDecay (final byte [] voiceRecord, final int highOffset, final int lowOffset, final double seconds)
+    {
+        if (seconds < 0)
+            return;
+        final int passes;
+        final int low;
+        if (seconds >= HOLD_TIME)
+        {
+            passes = 0xFF;
+            low = 0;
+        }
+        else
+        {
+            final int step = getEnvelopeStep (seconds, false);
+            passes = ENVELOPE_STEPS[step][0];
+            low = 256 - ENVELOPE_STEPS[step][1];
+        }
+        voiceRecord[highOffset] = (byte) passes;
+        voiceRecord[highOffset + 1] = (byte) passes;
+        voiceRecord[lowOffset] = (byte) low;
+    }
+
+
+    /**
+     * Get the envelope step whose time comes closest to a time, compared on a logarithmic scale.
+     *
+     * @param seconds The time in seconds
+     * @param allowInstant True to allow the instant step (only attacks have one)
+     * @return The index into ENVELOPE_STEPS
+     */
+    private static int getEnvelopeStep (final double seconds, final boolean allowInstant)
+    {
+        final double shortest = COUNTER_PASS * ENVELOPE_STEPS[1][0] / ENVELOPE_STEPS[1][1];
+        if (seconds < shortest / 2)
+            return allowInstant ? 0 : 1;
+        int best = 1;
+        double bestDistance = Double.MAX_VALUE;
+        for (int i = 1; i < ENVELOPE_STEPS.length; i++)
+        {
+            final double distance = Math.abs (Math.log (seconds / (COUNTER_PASS * ENVELOPE_STEPS[i][0] / ENVELOPE_STEPS[i][1])));
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+
+    /**
+     * The time a counter takes on the VCA for the time of a filter envelope stage, the inverse of
+     * vcfTime.
+     *
+     * @param filterTime The time of the filter envelope stage in seconds, negative if not set
+     * @return The time of the counter in seconds, negative if not set
+     */
+    private static double vcfCounterTime (final double filterTime)
+    {
+        if (filterTime <= 0)
+            return filterTime;
+        final double [] [] table = VCF_TIME;
+        if (filterTime <= table[0][1])
+            return table[0][0] * filterTime / table[0][1];
+        for (int i = 1; i < table.length; i++)
+            if (filterTime <= table[i][1])
+            {
+                // Interpolate on the logarithmic scales of both axes
+                final double t = Math.log (filterTime / table[i - 1][1]) / Math.log (table[i][1] / table[i - 1][1]);
+                return table[i - 1][0] * Math.pow (table[i][0] / table[i - 1][0], t);
+            }
+        return filterTime;
+    }
+
+
+    /**
+     * Round a value to a nibble.
+     *
+     * @param value The value
+     * @return The value rounded and clamped to the range of [0..15]
+     */
+    private static int toNibble (final double value)
+    {
+        return Math.clamp (Math.round (value), 0, 15);
     }
 
 

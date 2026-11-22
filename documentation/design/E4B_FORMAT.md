@@ -167,6 +167,8 @@ first 8 slots. Routes used by the converter:
 | 0 | velocity (0x0A add / 0x0B centered / 0x0C subtract) -> amp (0x40) | velocity modulation of the amplitude, default amount 0x1E |
 | 5 | filter envelope (0x50) -> filter frequency (0x38) | the depth of the filter envelope |
 | 6 | key (0x08) -> filter frequency (0x38) | filter key tracking; +100% tracks ~0.713 octave per octave |
+| 1 | pitch wheel (0x10) -> pitch (0x30) | the pitch bend range, the same up and down; the default amount 8 (2.02 semitones) stands for 2 semitones, so the range is read in whole semitones; all 771 voices of *B.007-ORBIT-PHATT* use it |
+| behind the defaults | auxiliary envelope (0x58 add, 0x59 centered, 0x5A subtract) -> pitch (0x30) | the pitch envelope; the envelope shape is the auxiliary envelope of the primary zone table, the subtracting source lowers the pitch |
 
 The default set also contains pitch wheel (0x10) -> pitch (0x30) in slot 1,
 LFO 1 centered (0x60) -> pitch (0x30) with amount 0 in slot 2 and modulation

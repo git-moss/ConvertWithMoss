@@ -31,6 +31,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -54,6 +56,7 @@ import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcEntry;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcFileFormat;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcKeybank;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcLfo;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPartElement;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformance;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformancePart;
@@ -323,7 +326,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                         // Ignore if fully outside or clip the ranges it if necessary
                         if (limitKeyrangeAndVelocity (sampleZone, element))
                         {
-                            fillParameterValues (sampleZone, element);
+                            fillParameterValues (sampleZone, part, element);
                             sampleZone.setBendUp ((part.getPitchBendRangeUpper () - 64) * 100);
                             sampleZone.setBendDown ((part.getPitchBendRangeLower () - 64) * 100);
                             group.addSampleZone (sampleZone);
@@ -423,7 +426,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                         // Ignore if fully outside or clip the ranges it if necessary
                         if (limitKeyrangeAndVelocity (sampleZone, element))
                         {
-                            fillParameterValues (sampleZone, element);
+                            fillParameterValues (sampleZone, part, element);
                             sampleZone.setBendDown ((part.getPitchBendRangeLower () - 64) * 100);
                             sampleZone.setBendUp ((part.getPitchBendRangeUpper () - 64) * 100);
                             group.addSampleZone (sampleZone);
@@ -723,7 +726,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
     }
 
 
-    private static void fillParameterValues (final ISampleZone zone, final YamahaYsfcPartElement element)
+    private static void fillParameterValues (final ISampleZone zone, final YamahaYsfcPerformancePart part, final YamahaYsfcPartElement element)
     {
         // Cycle or Random
         final int xaMode = element.getXaMode ();
@@ -803,10 +806,16 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             pitchEnvelope.setTimeKeyTracking (MathUtils.normalizeIntegerRange (element.getPegTimeKeyFollowSensitivity (), -64, 63, 64));
         }
 
+        applyLfo (zone.getPitchLfoModulator (), element, YamahaYsfcLfo.pitchDepthToCents (element.getLfoPmodDepth ()) / IEnvelope.MAX_ENVELOPE_DEPTH);
+        applyLfo (zone.getAmplitudeLfoModulator (), element, YamahaYsfcLfo.amplitudeDepthToDb (element.getLfoAmodDepth ()) / ILfoModulator.MAX_VOLUME_DEPTH);
+
         final Integer filterTypeID = Integer.valueOf (element.getFilterType ());
         final FilterType filterType = FILTER_TYPE_MAP.get (filterTypeID);
         if (filterType == null)
+        {
+            applyPartLfo (zone, part, element);
             return;
+        }
         final double normalizedCutoff = element.getFilterCutoffFrequency () / 255.0;
         final double frequency = MathUtils.denormalizeFrequency (normalizedCutoff, IFilter.MAX_FREQUENCY);
         final double resonance = element.getFilterResonance () / 127.0;
@@ -828,5 +837,116 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
         cutoffEnvelope.setTimeKeyTracking (MathUtils.normalizeIntegerRange (element.getFegTimeKeyFollowSensitivity (), -64, 63, 64));
 
         filter.setCutoffKeyTracking (Math.clamp (element.getFilterCutoffKeyFollowSensitivity () / 100.0, -1, 1));
+
+        applyLfo (filter.getCutoffLfoModulator (), element, YamahaYsfcLfo.filterDepthToCents (element.getLfoFmodDepth ()) / IEnvelope.MAX_ENVELOPE_DEPTH);
+
+        applyPartLfo (zone, part, element);
+    }
+
+
+    /**
+     * Apply the Part LFO to the level, pitch and filter cutoff LFO modulators of a zone. It has
+     * priority over the Element LFO since it is more powerful and only its depth can be controlled
+     * by the modulation wheel (via a control box with the destination P.LFO Depth). The depth of
+     * each LFO box is scaled by the depth ratio of the element. The delay, fade-in, hold, fade-out
+     * and tempo sync settings are not converted.
+     *
+     * @param zone The zone to fill
+     * @param part The part which contains the Part LFO and the control boxes
+     * @param element The element which contains the depth ratios of the LFO boxes
+     */
+    private static void applyPartLfo (final ISampleZone zone, final YamahaYsfcPerformancePart part, final YamahaYsfcPartElement element)
+    {
+        for (int box = 0; box < YamahaYsfcPerformancePart.NUMBER_OF_LFO_BOXES; box++)
+        {
+            // 0 = Off, 1-128 relates to 0-127
+            final int elementRatio = element.getCommonLfoBoxDepthRatio (box);
+            if (elementRatio <= 1)
+                continue;
+
+            final ILfoModulator modulator;
+            final double range;
+            switch (part.getLfoBoxDestination (box))
+            {
+                case YamahaYsfcPerformancePart.LFO_DESTINATION_LEVEL -> {
+                    modulator = zone.getAmplitudeLfoModulator ();
+                    range = YamahaYsfcLfo.PART_LEVEL_RANGE / ILfoModulator.MAX_VOLUME_DEPTH;
+                }
+                case YamahaYsfcPerformancePart.LFO_DESTINATION_PITCH -> {
+                    modulator = zone.getPitchLfoModulator ();
+                    range = YamahaYsfcLfo.PART_PITCH_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH;
+                }
+                case YamahaYsfcPerformancePart.LFO_DESTINATION_CUTOFF -> {
+                    final Optional<IFilter> filter = zone.getFilter ();
+                    if (filter.isEmpty ())
+                        continue;
+                    modulator = filter.get ().getCutoffLfoModulator ();
+                    range = YamahaYsfcLfo.PART_CUTOFF_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH;
+                }
+                default -> {
+                    continue;
+                }
+            }
+
+            final int depth = part.getLfoBoxDepth (box);
+            final double scale = range * (elementRatio - 1) / 127.0;
+            final double baseDepth = YamahaYsfcLfo.partDepthToFactor (depth) * scale;
+            final double fullDepth = YamahaYsfcLfo.partDepthToFactor (getModWheelLfoDepth (part, box, depth)) * scale;
+            if (baseDepth <= 0 && fullDepth <= 0)
+                continue;
+
+            modulator.setDepth (Math.min (1.0, baseDepth));
+            modulator.getDepthModWheelModulator ().setDepth (Math.clamp (fullDepth - baseDepth, -1.0, 1.0));
+            final ILfo lfo = modulator.getSource ();
+            lfo.setWaveform (YamahaYsfcLfo.getPartWaveform (part.getLfoWave ()));
+            lfo.setRate (YamahaYsfcLfo.partSpeedToHertz (part.getLfoSpeed ()));
+            lfo.setKeySync (part.getLfoKeyOnReset () > 0);
+            lfo.setStartPhase (YamahaYsfcLfo.getPartPhase (part.getLfoPhase ()));
+        }
+    }
+
+
+    /**
+     * Get the depth of a Part LFO box when the modulation wheel is fully up. The ratio of the
+     * control box only changes the curve of the wheel, the depth always reaches its maximum (or
+     * minimum for a negative ratio) at the end.
+     *
+     * @param part The part which contains the control boxes
+     * @param box The index of the Part LFO box [0..2]
+     * @param depth The depth of the box without the modulation wheel
+     * @return The depth in the range of 0-127
+     */
+    private static int getModWheelLfoDepth (final YamahaYsfcPerformancePart part, final int box, final int depth)
+    {
+        final int controlBox = part.findControlBox (YamahaYsfcPerformancePart.CONTROL_SOURCE_MOD_WHEEL, YamahaYsfcPerformancePart.CONTROL_DESTINATION_LFO_DEPTH + box);
+        if (controlBox < 0)
+            return depth;
+        final int ratio = part.getControlBoxRatio (controlBox);
+        if (ratio == 0)
+            return depth;
+        return ratio > 0 ? 127 : 0;
+    }
+
+
+    /**
+     * Apply the Element LFO to an LFO modulator if the depth is not 0. The extended LFO speed is
+     * used if it is enabled, otherwise the normal one. The delay and fade-in times are not
+     * converted since their scaling is unknown.
+     *
+     * @param modulator The LFO modulator
+     * @param element The element which contains the LFO settings
+     * @param depth The depth of the modulator in the range of [0..1]
+     */
+    private static void applyLfo (final ILfoModulator modulator, final YamahaYsfcPartElement element, final double depth)
+    {
+        if (depth <= 0)
+            return;
+
+        modulator.setDepth (Math.min (1.0, depth));
+        final ILfo lfo = modulator.getSource ();
+        lfo.setWaveform (YamahaYsfcLfo.getWaveform (element.getLfoWave ()));
+        final int extendedSpeed = element.getExtendedLfoSpeed ();
+        lfo.setRate (extendedSpeed >= 0 ? YamahaYsfcLfo.extendedSpeedToHertz (extendedSpeed) : YamahaYsfcLfo.normalSpeedToHertz (element.getLfoSpeed ()));
+        lfo.setKeySync (element.getLfoKeyOnSync () > 0);
     }
 }

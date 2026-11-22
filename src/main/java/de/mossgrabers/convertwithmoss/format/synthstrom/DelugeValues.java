@@ -560,10 +560,10 @@ public final class DelugeValues
     /**
      * Convert the amount of a patch cable to the pitch into the modulation depth in cents at the
      * peak of a bipolar source. The firmware squares the amount of all cables to the pitch for a
-     * finer control of small values and scales it by 1/sqrt(2), which limits the range to almost
-     * 3 octaves (getModifiedPatchCableAmount in patch_cable_set.cpp). The cable value - the source
-     * value (+-2^31) multiplied by the amount and shifted right by 32 - is added to the
-     * exponential pitch parameter in which 2^26 is one octave.
+     * finer control of small values and scales it by 1/sqrt(2), which limits the range to almost 3
+     * octaves (getModifiedPatchCableAmount in patch_cable_set.cpp). The cable value - the source
+     * value (+-2^31) multiplied by the amount and shifted right by 32 - is added to the exponential
+     * pitch parameter in which 2^26 is one octave.
      *
      * @param amount The patch cable amount
      * @return The depth in cents
@@ -618,8 +618,8 @@ public final class DelugeValues
     /**
      * Convert the amount of a patch cable to the volume into the attenuation in dB at the negative
      * peak of a bipolar source. The firmware multiplies the volume by 1 + amount / 2^30 times the
-     * source value (combineCablesLinear in patcher.cpp) and squares the result to get the
-     * amplitude (getFinalParameterValueVolume), so a full amount reduces the level down to silence.
+     * source value (combineCablesLinear in patcher.cpp) and squares the result to get the amplitude
+     * (getFinalParameterValueVolume), so a full amount reduces the level down to silence.
      *
      * @param amount The patch cable amount
      * @return The attenuation in dB, negative for a negative amount

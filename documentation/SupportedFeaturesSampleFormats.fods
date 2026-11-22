@@ -1207,8 +1207,8 @@
      <table:table-cell table:style-name="ce49"/>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>polymode (Mono, Poly 2, 4, 6, 8, X)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
@@ -1254,8 +1254,8 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>loopend</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO loopfadeamt is not read</text:p>
+     <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string">
+      <text:p>loopfadeamt (only global)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce43"/>
      <table:table-cell table:style-name="ce23"/>
@@ -1326,7 +1326,9 @@
      <table:table-cell table:style-name="ce49" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce43"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce43"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>polymode (Mono, Poly 2, 4, 6, 8, X)</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
@@ -1432,8 +1434,8 @@
      <table:table-cell table:style-name="ce49"/>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>polymode (Mono, Poly 2, 4, 6, 8, X)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
@@ -1541,7 +1543,9 @@
      <table:table-cell table:style-name="ce49" table:number-columns-repeated="2"/>
      <table:table-cell table:style-name="ce43"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:table-cell table:style-name="ce43"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>polymode (Mono, Poly 2, 4, 6, 8, X)</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce26"/>
@@ -4293,11 +4297,32 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>LFO -&gt; pitch</text:p><text:p>(Hz, delay, depth)</text:p><text:p>Mod. wheel: CC1 controlled connection</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO: Example files missing</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>DLS Level 2</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce49" table:number-columns-repeated="7"/>
-     <table:table-cell table:style-name="ce43"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Low Pass</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>2</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter cutoff (absolute pitch)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Filter Q (0-22.5dB)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>EG2 -&gt; cutoff</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Velocity -&gt; cutoff</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Key number -&gt; cutoff</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>LFO -&gt; cutoff</text:p><text:p>Mod. wheel: CC1 controlled connection</text:p>
+     </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>
     </table:table-row>
@@ -4658,7 +4683,7 @@
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="6"/>
      <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>Not supported by the format</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce49"/>
@@ -4667,7 +4692,7 @@
      <table:table-cell table:style-name="ce43" table:number-columns-repeated="7"/>
      <table:table-cell table:style-name="ce49"/>
      <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Check for support</text:p>
+      <text:p>Not supported by the format</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="66"/>
      <table:table-cell/>
@@ -5306,33 +5331,47 @@
      </table:covered-table-cell>
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="Default"/>
      <table:table-cell table:style-name="ce23"/>
-     <table:covered-table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO not decoded</text:p>
-     </table:covered-table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO template voice</text:p>
+     <table:covered-table-cell table:style-name="ce43"/>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>VCA envelope counters (times rounded to 31 steps)</text:p>
      </table:table-cell>
      <table:covered-table-cell table:style-name="Default"/>
      <table:covered-table-cell table:style-name="ce40"/>
      <table:covered-table-cell table:style-name="Default"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO template voice</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Velocity to VCA / VCF attack (+0x1B)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>LFO to level (+0x2C), mod. wheel (real-time control)</text:p>
      </table:table-cell>
      <table:covered-table-cell table:style-name="ce68"/>
-     <table:covered-table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO not decoded</text:p>
-     </table:covered-table-cell>
+     <table:covered-table-cell table:style-name="ce43"/>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="Default"/>
      <table:table-cell table:style-name="ce5" office:value-type="string" calcext:value-type="string">
       <text:p>LFO to pitch (+0x28), mod. wheel (real-time control)</text:p>
      </table:table-cell>
      <table:covered-table-cell table:style-name="ce60"/>
      <table:table-cell table:style-name="ce14"/>
-     <table:table-cell table:number-columns-repeated="7" table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO template voice</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Low-pass (SSM2045)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>4</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Cutoff table (+0x30)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Q table (+0xF0)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
+      <text:p>VCF envelope counters, amount (+0x25), sustain approximated</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Cutoff table entry 0 - 15</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Keyboard tracking (+0x1F)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>LFO to filter (+0x2A), mod. wheel (real-time control)</text:p>
@@ -5847,8 +5886,14 @@
      </table:table-cell>
      <table:table-cell table:style-name="Default"/>
      <table:table-cell table:style-name="ce40" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:number-columns-repeated="3" table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (Cords)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Pitch wheel -&gt; pitch cord (whole semitones)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Pitch wheel -&gt; pitch cord (same as up)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Aux. envelope -&gt; pitch cord</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>LFO 1/2 cord to Pitch / Fine Pitch (rate, shape, delay, key sync), mod. wheel via cord amount</text:p>
@@ -5938,8 +5983,14 @@
      </table:table-cell>
      <table:table-cell table:style-name="Default"/>
      <table:covered-table-cell table:style-name="ce40"/>
-     <table:table-cell table:number-columns-repeated="3" table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (Cords)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Pitch wheel -&gt; pitch cord (whole semitones)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Pitch wheel -&gt; pitch cord (same as up)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Aux. envelope -&gt; pitch cord</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>LFO 1/2 cord to Pitch / Fine Pitch (rate, shape, delay, key sync), mod. wheel via cord amount</text:p>
@@ -6023,7 +6074,7 @@
       <text:p>E5Oc transpose, coarse, fine</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (Fixed Pitch Mode)</text:p>
+      <text:p>TODO Implement (Fixed Pitch Mode), candidate: E5Oc byte 24</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
       <text:p>TODO Implement (Direction)</text:p>
@@ -6073,8 +6124,14 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce40" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:number-columns-repeated="3" table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (Cords)</text:p>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO Implement (Cords): bend range is global, only 1% of the voices have a pitch wheel cord</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO Implement (Cords): bend range is global, only 1% of the voices have a pitch wheel cord</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Aux. envelope -&gt; pitch cord</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>LFO 1/2 cord to Pitch / Fine Pitch (rate, shape, delay, key sync), mod. wheel via cord amount</text:p>
@@ -6089,16 +6146,16 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>E5Fl cutoff</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Controller B -&gt; resonance cords with initial value</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>6-stage envelope +</text:p><text:p>cord depth</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Velocity to cutoff cord (0x0C to 0x38)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (Cords)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Key / key centered -&gt; cutoff cord</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>LFO 1/2 cord to Filter Frequency (rate, shape, delay, key sync), mod. wheel via cord amount</text:p>
@@ -6203,8 +6260,14 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:covered-table-cell table:style-name="ce40"/>
-     <table:table-cell table:number-columns-repeated="3" table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (Cords)</text:p>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO Implement (Cords): bend range is global, only 1% of the voices have a pitch wheel cord</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
+      <text:p>TODO Implement (Cords): bend range is global, only 1% of the voices have a pitch wheel cord</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Aux. envelope -&gt; pitch cord</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>LFO 1/2 cord to Pitch / Fine Pitch (rate, shape, delay, key sync), mod. wheel via cord amount</text:p>
@@ -6219,16 +6282,16 @@
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>E5Fl cutoff</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Controller B -&gt; resonance cord (initial value 127)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>6-stage envelope +</text:p><text:p>cord depth</text:p>
      </table:table-cell>
      <table:covered-table-cell table:style-name="ce26" office:value-type="string" calcext:value-type="string">
       <text:p>Velocity to cutoff cord (0x0C to 0x38)</text:p>
      </table:covered-table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement (Cords)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Key -&gt; cutoff cord</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>LFO 1/2 cord to Filter Frequency (rate, shape, delay, key sync), mod. wheel via cord amount</text:p>
@@ -7041,10 +7104,12 @@
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO tuning field not decoded</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Semi / Fine (0x01F8 bytes 4 and 5)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>K-Trk (0x01F8 byte 6, percent)</text:p>
+     </table:table-cell>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce29" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Zone gain (linear amplitude float)</text:p>
@@ -7092,8 +7157,8 @@
      <table:table-cell table:style-name="ce49"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce19" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:style-name="ce19" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>TODO Check for support</text:p>
+     <table:table-cell table:style-name="ce52" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>Zone Env 1/2 -&gt; Voice Pitch (A/D/S/R knob positions with the provisional time law, sustain = knob squared, amount like the LFOs; DirectWave caps the rise at +1 octave, measured)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce40" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Zone LFO 1 -&gt; Voice Pitch (waveform, rate, amount); mod. wheel: Mod Wheel -&gt; Mod Amt of the slot (the wheel slot strength x 0.5 is added to the amount, measured)</text:p>
@@ -7146,8 +7211,8 @@
      <table:table-cell table:style-name="ce23"/>
      <table:table-cell table:style-name="ce5"/>
      <table:covered-table-cell table:number-columns-repeated="7"/>
-     <table:table-cell table:style-name="ce21" office:value-type="string" calcext:value-type="string">
-      <text:p>Semitones baked into the root key (cents are lost)</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Semitones baked into the root key, cents as fine tuning</text:p>
      </table:table-cell>
      <table:covered-table-cell table:number-columns-repeated="4"/>
      <table:table-cell table:style-name="ce49"/>
@@ -13651,8 +13716,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Env time velocity / key</text:p><text:p>follow sensitivity</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Element LFO AMD</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce68"/>
      <table:table-cell table:style-name="ce42" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -13664,8 +13729,8 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce29" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p>Element:</text:p><text:p>PegHoldTime, PegAttackTime,</text:p><text:p>PegDecay1Time, PegDecay2Time,</text:p><text:p>PegReleaseTime, PegHoldLevel,</text:p><text:p>PegAttackLevel, PegDecay1Level,</text:p><text:p>PegDecay2Level, PegReleaseLevel,</text:p><text:p>PegDepth*</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Element LFO PMD</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce42" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
@@ -13689,8 +13754,8 @@
      <table:table-cell table:style-name="ce29" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Filter Cutoff Key Follow Sensitivity</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Element LFO FMD (estimated scaling)</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>
@@ -13752,20 +13817,20 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string"><text:p>Env time velocity / key</text:p><text:p>follow sensitivity</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Element LFO AMD</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce68"/>
      <table:covered-table-cell table:style-name="ce26"/>
      <table:table-cell table:style-name="ce49" table:number-columns-repeated="2"/>
      <table:covered-table-cell table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Element LFO PMD</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce26"/>
      <table:covered-table-cell table:number-columns-repeated="8" table:style-name="ce26"/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
-      <text:p>TODO Implement</text:p>
+     <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
+      <text:p>Element LFO FMD (estimated scaling)</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="67"/>
      <table:table-cell table:style-name="ce28" table:number-columns-repeated="16247"/>

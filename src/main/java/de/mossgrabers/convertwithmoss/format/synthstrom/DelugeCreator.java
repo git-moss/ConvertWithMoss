@@ -1054,8 +1054,8 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
     /**
      * Write the LFO modulators of the pitch, the volume and the filter cutoff as patch cables from
      * the two LFOs of the Deluge. A modulator whose LFO restarts with each note uses the local LFO
-     * 2, a free running one the global LFO 1. Modulators with the same LFO settings share an LFO; if
-     * more than two different LFOs are needed, the further modulators use the LFO which matches
+     * 2, a free running one the global LFO 1. Modulators with the same LFO settings share an LFO;
+     * if more than two different LFOs are needed, the further modulators use the LFO which matches
      * their key sync setting. The modulation wheel controls the depth of a cable with a nested
      * cable from the source 'y' (to which the firmware routes CC 1), which scales the depth by up
      * to 2 with the wheel fully up - a modulation which is only applied by the wheel therefore
@@ -1119,7 +1119,6 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         final double modWheelDepth = modulator.getDepthModWheelModulator ().getDepth ();
         int modWheelAmount = 0;
         if (modWheelDepth != 0)
-        {
             if (depth == 0)
             {
                 depth = modWheelDepth / 2.0;
@@ -1127,7 +1126,6 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             }
             else
                 modWheelAmount = (int) Math.round (Math.clamp (modWheelDepth / depth, -1.0, 1.0) * DelugeValues.PATCH_CABLE_FULL);
-        }
 
         // There is no falling saw-tooth, a rising one with an inverted depth is identical
         if (lfos[index].getWaveform () == LfoWaveform.SAWTOOTH_DOWN)
@@ -1156,9 +1154,9 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
 
     /**
      * Get the index of the Deluge LFO to use for an LFO: an LFO with the same settings if one is
-     * already used, otherwise the free LFO which matches the key sync setting (index 1 for the local
-     * LFO 2 which restarts with each note), otherwise the other free one. If both are already used
-     * with different settings, the one which matches the key sync setting is shared.
+     * already used, otherwise the free LFO which matches the key sync setting (index 1 for the
+     * local LFO 2 which restarts with each note), otherwise the other free one. If both are already
+     * used with different settings, the one which matches the key sync setting is shared.
      *
      * @param lfos The LFOs which are already used, index 0 is LFO 1 and index 1 is LFO 2
      * @param lfo The LFO to place

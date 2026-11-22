@@ -132,6 +132,8 @@ public class DirectWaveTag
     /** The offset of the modulation amount (a float) in a modulation matrix slot. */
     public static final int         MODULATION_AMOUNT       = 4;
 
+    /** The modulation source value of Zone Env 1, Zone Env 2 follows. */
+    public static final int         MODULATION_SOURCE_ENV1  = 9;
     /** The modulation source value of Zone LFO 1. */
     public static final int         MODULATION_SOURCE_LFO1  = 11;
     /** The modulation source value of Zone LFO 2. */
@@ -183,8 +185,14 @@ public class DirectWaveTag
     /** The magic bytes of a FLAC stream. */
     protected static final byte []  FLAC_MAGIC              = "fLaC".getBytes ();
 
-    /** The tag of the 8 byte parameter block inside of a sample container. */
+    /** The tag of the 8 byte parameter block (incl. the tuning) inside of a sample container. */
     public static final int         TAG_BLOCK_01F8          = 0x01F8;
+    /** The offset of the semi-tones of the zone tuning (a signed byte) in the 0x01F8 block. */
+    public static final int         PARAMETERS_SEMI_TONES   = 4;
+    /** The offset of the fine tuning of the zone in cents (a signed byte) in the 0x01F8 block. */
+    public static final int         PARAMETERS_FINE_TUNE    = 5;
+    /** The offset of the key tracking in percent (an unsigned byte) in the 0x01F8 block. */
+    public static final int         PARAMETERS_KEY_TRACKING = 6;
     /** The tag of the 14 byte zeroed block inside of a sample container. */
     public static final int         TAG_BLOCK_01F9          = 0x01F9;
     /** The tag of the 48 byte parameter block inside of a sample container. */
@@ -230,8 +238,13 @@ public class DirectWaveTag
     public static final int         TAG_BLOCK_0200          = 0x0200;
     /** The fourth of the four 9 byte zeroed blocks inside of a sample container. */
     public static final int         TAG_BLOCK_0201          = 0x0201;
-    /** The tag of the two 16 byte zeroed blocks inside of a sample container. */
-    public static final int         TAG_BLOCK_0202          = 0x0202;
+    /**
+     * The tag of the two zone envelope blocks (Zone Env 1 and Zone Env 2) inside of a sample
+     * container: 4 floats, the attack, decay, sustain and release knob positions like the amplitude
+     * envelope. A zone envelope does nothing on its own, it has to be routed to a target in the
+     * modulation matrix.
+     */
+    public static final int         TAG_ZONE_ENVELOPE       = 0x0202;
     /**
      * The tag of the two LFO blocks (Zone LFO 1 and Zone LFO 2) inside of a sample container:
      * <code>u32 waveform, f32 rate, 3 unknown floats</code>. An LFO does nothing on its own, it has

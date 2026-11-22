@@ -33,6 +33,7 @@ import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
 import de.mossgrabers.convertwithmoss.core.model.enumeration.LoopType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.format.music1010.AbstractMusic1010Creator;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010PolyMode;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.tools.Pair;
 import de.mossgrabers.tools.XMLUtils;
@@ -324,6 +325,7 @@ public class BentoCreator extends AbstractMusic1010Creator
             for (final Map.Entry<String, String> entry: MULTISAMPLE_PARAM_ATTRIBUTES.entrySet ())
                 paramsElement.setAttribute (entry.getKey (), entry.getValue ());
             paramsElement.setAttribute (Music1010Tag.ATTR_INTERPOLATION_QUALITY, this.settingsConfiguration.isInterpolationQualityHigh () ? "1" : "0");
+            Music1010PolyMode.writePolyphony (paramsElement, multisampleSource);
 
             // Add amplitude envelope
             if (!groups.isEmpty ())

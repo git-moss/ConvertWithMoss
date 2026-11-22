@@ -1003,4 +1003,4 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     {
         return (int) Math.round ((level < 0 ? defaultLevel : level) * 100.0) + "%";
     }
-}
+}

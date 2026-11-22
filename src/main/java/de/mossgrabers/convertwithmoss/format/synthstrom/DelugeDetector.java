@@ -597,9 +597,9 @@ public class DelugeDetector extends AbstractDetector<MetadataSettingsUI>
 
     /**
      * Read the patch cables from an LFO to the pitch, the volume and the filter frequency and apply
-     * them to the LFO modulators of the zone. The global LFO 1 runs freely, the local LFO 2 restarts
-     * with each note. The modulation wheel controls the depth of such a cable with a cable from the
-     * source 'y' (to which the firmware routes CC 1) in its 'depthControlledBy' list.
+     * them to the LFO modulators of the zone. The global LFO 1 runs freely, the local LFO 2
+     * restarts with each note. The modulation wheel controls the depth of such a cable with a cable
+     * from the source 'y' (to which the firmware routes CC 1) in its 'depthControlledBy' list.
      *
      * @param soundElement The sound element which contains the LFO settings
      * @param defaultParams The default parameters element which contains the patch cables and the

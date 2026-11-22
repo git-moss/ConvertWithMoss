@@ -599,9 +599,8 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
      * Apply the LFO of the partial to the pitch, cutoff and amplitude LFO modulators of the zone.
      * The modulation wheel depths of the patch are added on top of the LFO depths of the partial
      * when the wheel is fully up. The TVF and TVA depths are not measured: a depth of 63 is
-     * expected to sweep the full cutoff range respectively to reduce the level down to silence.
-     * The delay key follow, the de-tuning and the modulation of the rate by the wheel cannot be
-     * mapped.
+     * expected to sweep the full cutoff range respectively to reduce the level down to silence. The
+     * delay key follow, the de-tuning and the modulation of the rate by the wheel cannot be mapped.
      *
      * @param sampleZone The zone to which to apply the LFOs
      * @param lfoSection The LFO section of the partial
@@ -664,8 +663,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
 
     /**
-     * Convert an LFO rate value to Hertz by interpolating the measured frequencies
-     * logarithmically.
+     * Convert an LFO rate value to Hertz by interpolating the measured frequencies logarithmically.
      *
      * @param value The rate value in the range of 0..127
      * @return The frequency in Hertz

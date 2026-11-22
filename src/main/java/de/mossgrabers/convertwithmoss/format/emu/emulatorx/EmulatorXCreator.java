@@ -154,12 +154,15 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
             }
 
             final List<byte []> voices = new ArrayList<> ();
+            boolean hasResonance = false;
             for (final IGroup group: multisampleSource.getNonEmptyGroups (true))
                 for (final ISampleZone zone: group.getSampleZones ())
                 {
                     final Sample sample = this.addSample (zone, samples, samplesByContent);
-                    if (sample != null)
-                        voices.add (createVoice (zone, sample.index));
+                    if (sample == null)
+                        continue;
+                    voices.add (createVoice (zone, sample.index));
+                    hasResonance |= getResonance (zone) > 0;
                 }
 
             if (voices.isEmpty ())
@@ -167,7 +170,7 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
                 this.notifier.logError ("IDS_EXB_NO_ZONES", multisampleSource.getName ());
                 continue;
             }
-            presets.add (createPreset (multisampleSource.getName (), multisampleSource.getMetadata ().getCategory (), voices));
+            presets.add (createPreset (multisampleSource.getName (), multisampleSource.getMetadata ().getCategory (), voices, hasResonance));
             presetNames.add (multisampleSource.getName ());
         }
 
@@ -359,10 +362,12 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
      * @param name The name of the preset
      * @param category The name of the category to set
      * @param voices The assembled voice chunks
+     * @param hasResonance True if a voice has a filter resonance, which is set with MIDI controller
+     *            B
      * @return The payload
      * @throws IOException Could not assemble the preset
      */
-    private static byte [] createPreset (final String name, final String category, final List<byte []> voices) throws IOException
+    private static byte [] createPreset (final String name, final String category, final List<byte []> voices, final boolean hasResonance) throws IOException
     {
         final byte [] header = new byte [EmulatorXConstants.PRESET_HEADER_SIZE];
         EmulatorXConstants.putU32BE (header, 0, EmulatorXConstants.VERSION_PRESET);
@@ -379,6 +384,10 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
         EmulatorXConstants.putU32BE (controllers, 0, EmulatorXConstants.VERSION_1);
         for (int i = 4; i < controllers.length; i++)
             controllers[i] = (byte) 0xFF;
+        // The resonance of the voices is the amount of their cord from controller B, which
+        // therefore starts fully up
+        if (hasResonance)
+            controllers[EmulatorXConstants.INITIAL_CONTROLLERS + EmulatorXConstants.CORD_SOURCE_MIDI_B - EmulatorXConstants.CORD_SOURCE_MIDI_A] = (byte) EmulatorXConstants.CONTROLLER_RANGE;
 
         final byte [] presetSettings = new byte [12];
         EmulatorXConstants.putU32BE (presetSettings, 0, EmulatorXConstants.VERSION_1);
@@ -430,7 +439,9 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
         out.write (EmulatorXChunk.create (EmulatorXConstants.OSCILLATOR_TAG, createOscillator (zone)));
         out.write (EmulatorXChunk.create (EmulatorXConstants.AMPLIFIER_TAG, createAmplifier (zone)));
         out.write (EmulatorXChunk.create (EmulatorXConstants.FILTER_TAG, createFilter (zone)));
-        out.write (EmulatorXChunk.createList (EmulatorXConstants.ENVELOPE_LIST_TYPE, List.of (createEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource ()), createEnvelope (getFilterEnvelope (zone)), createEnvelope (null))));
+        final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
+        final IEnvelope pitchEnvelope = pitchModulator.getDepth () == 0 ? null : pitchModulator.getSource ();
+        out.write (EmulatorXChunk.createList (EmulatorXConstants.ENVELOPE_LIST_TYPE, List.of (createEnvelope (zone.getAmplitudeEnvelopeModulator ().getSource ()), createEnvelope (getFilterEnvelope (zone)), createEnvelope (pitchEnvelope))));
         final List<EmuLfoModulation.Cord> cords = createCords (zone);
         final ILfo [] lfos = EmuLfoModulation.createLfos (zone, cords, EmulatorXConstants.VOICE_NUM_CORDS);
         out.write (EmulatorXChunk.createList (EmulatorXConstants.LFO_LIST_TYPE, createLFOs (lfos)));
@@ -581,7 +592,8 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
     /**
      * Create the modulation cords of a voice, which are the defaults of the factory banks with the
      * velocity to volume amount, the filter envelope depth and the velocity to cutoff amount taken
-     * from the zone.
+     * from the zone. The cutoff key tracking, the resonance and the pitch envelope get a cord of
+     * their own behind them.
      *
      * @param zone The zone
      * @return The cords, the amounts in the range of -1..1
@@ -603,7 +615,32 @@ public class EmulatorXCreator extends AbstractCreator<EmptySettingsUI>
                 amount = cutoffVelocityAmount;
             cords.add (new EmuLfoModulation.Cord (cord.source (), cord.destination (), amount));
         }
+
+        final IFilter filter = zone.getFilter ().orElse (null);
+        if (filter != null && filter.getCutoffKeyTracking () != 0)
+            cords.add (new EmuLfoModulation.Cord (EmulatorXConstants.CORD_SOURCE_KEY, EmulatorXConstants.CORD_DEST_CUTOFF, Math.clamp (filter.getCutoffKeyTracking () / EmulatorXConstants.FULL_KEY_TRACKING, -1, 1)));
+        final double resonance = getResonance (zone);
+        if (resonance > 0)
+            cords.add (new EmuLfoModulation.Cord (EmulatorXConstants.CORD_SOURCE_MIDI_B, EmulatorXConstants.CORD_DEST_RESONANCE, resonance));
+        final double pitchEnvelopeDepth = zone.getPitchEnvelopeModulator ().getDepth ();
+        if (pitchEnvelopeDepth != 0)
+            cords.add (new EmuLfoModulation.Cord (EmulatorXConstants.CORD_SOURCE_AUX_FIRST, EmulatorXConstants.CORD_DEST_PITCH, Math.clamp (pitchEnvelopeDepth * IEnvelope.MAX_ENVELOPE_DEPTH / EmulatorXConstants.FULL_PITCH_CENTS, -1, 1)));
         return cords;
+    }
+
+
+    /**
+     * Get the resonance of the filter of a zone.
+     *
+     * @param zone The zone
+     * @return The resonance in the range of 0..1, 0 if the zone has no filter which is written
+     */
+    private static double getResonance (final ISampleZone zone)
+    {
+        final Optional<IFilter> filterOpt = zone.getFilter ();
+        if (getFilterTypeCode (filterOpt) == EmulatorXConstants.FILTER_TYPE_BYPASS)
+            return 0;
+        return Math.clamp (filterOpt.get ().getResonance (), 0, 1);
     }
 
 

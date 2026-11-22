@@ -18,12 +18,15 @@ import de.mossgrabers.convertwithmoss.core.INotifier;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
+import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
 import de.mossgrabers.convertwithmoss.core.model.ILfo;
 import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleZone;
+import de.mossgrabers.convertwithmoss.core.model.enumeration.FilterType;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultEnvelope;
+import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultFilter;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultGroup;
 import de.mossgrabers.convertwithmoss.core.model.implementation.DefaultSampleZone;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
@@ -46,6 +49,18 @@ import de.mossgrabers.tools.FileUtils;
  */
 public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
 {
+    /** The value of the filter cutoff which disables the filter (the default of the format). */
+    private static final int    FILTER_CUTOFF_DISABLED          = 0x7FFFFFFF;
+    /**
+     * A cutoff of 13500 cent (about 20kHz) and above leaves the filter open, as for SoundFont 2.
+     */
+    private static final double FILTER_CUTOFF_OPEN_CENTS        = 13500;
+    /** The velocity to cutoff range of the model, 2 octaves (see the SoundFont 2 reader). */
+    private static final double VELOCITY_CUTOFF_REFERENCE_CENTS = 2400;
+    /** The key number is applied with its full range of 128 keys, 100 cent per key. */
+    private static final double KEY_TRACKING_REFERENCE_CENTS    = 12800;
+
+
     /**
      * Constructor.
      *
@@ -227,7 +242,9 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
         final Optional<DlsArticulation> pitchBendModulation = getArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_PITCHWHEEL, DlsArticulation.CONN_DST_PITCH);
         if (pitchBendModulation.isPresent ())
         {
-            final int bendValue = pitchBendModulation.get ().getScale ();
+            // The scale is a relative pitch in cent, stored as a 32-bit fixed point number with
+            // 65536 representing one cent
+            final int bendValue = (int) Math.round (DlsArticulation.relativePitchToCents (pitchBendModulation.get ().getScale ()));
             zone.setBendUp (bendValue);
             zone.setBendDown (-bendValue);
         }
@@ -283,7 +300,87 @@ public class DlsDetector extends AbstractDetector<MetadataSettingsUI>
             zone.setTuning (zone.getTuning () + tuning);
         }
 
-        // Note: filters are supported but there is no example file...
+        final Optional<IFilter> filter = createFilter (dlsInstrument, dlsRegion);
+        if (filter.isPresent ())
+            zone.setFilter (filter.get ());
+    }
+
+
+    /**
+     * Create the filter from the connections to the filter cutoff, which DLS Level 2 defines as a
+     * resonant low-pass filter with 2 poles (12dB/octave).
+     *
+     * @param dlsInstrument The instrument
+     * @param dlsRegion The region
+     * @return The filter, empty if there is no filter or it is disabled
+     */
+    private static Optional<IFilter> createFilter (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion)
+    {
+        // Without a cutoff the filter is disabled, even if there are connections which modulate
+        // the cutoff (e.g. the velocity in many presets of the Roland GM sets)
+        final Optional<DlsArticulation> cutoffArticulation = getControlledArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_FILTER_CUTOFF);
+        if (cutoffArticulation.isEmpty ())
+            return Optional.empty ();
+        // The cutoff is an absolute pitch in cent, stored as a 32-bit fixed point number with 65536
+        // representing one cent
+        final int cutoffValue = cutoffArticulation.get ().getScale ();
+        if (cutoffValue == FILTER_CUTOFF_DISABLED || cutoffValue / 65536.0 >= FILTER_CUTOFF_OPEN_CENTS)
+            return Optional.empty ();
+
+        // The Q is a relative gain in centi-bel in the range of [0..22.5dB]
+        double resonance = 0;
+        final Optional<DlsArticulation> qArticulation = getControlledArticulation (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_SRC_NONE, DlsArticulation.CONN_DST_FILTER_Q);
+        if (qArticulation.isPresent ())
+            resonance = Math.clamp (DlsArticulation.relativeGainToDecibels (qArticulation.get ().getScale ()) / IFilter.MAX_RESONANCE, 0, 1);
+
+        final IFilter filter = new DefaultFilter (FilterType.LOW_PASS, 2, DlsArticulation.absolutePitchToHertz (cutoffValue), resonance);
+
+        // The filter envelope is the second envelope, which is shared with the pitch envelope
+        final double envelopeDepthCents = getCutoffDepth (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_EG2, DlsArticulation.CONN_SRC_NONE);
+        if (envelopeDepthCents != 0)
+        {
+            final IEnvelopeModulator cutoffEnvelopeModulator = filter.getCutoffEnvelopeModulator ();
+            cutoffEnvelopeModulator.setDepth (Math.clamp (envelopeDepthCents, -IEnvelope.MAX_ENVELOPE_DEPTH, IEnvelope.MAX_ENVELOPE_DEPTH) / IEnvelope.MAX_ENVELOPE_DEPTH);
+            cutoffEnvelopeModulator.setSource (createEnvelope (dlsInstrument, dlsRegion, false));
+        }
+
+        // A positive depth opens the filter with increasing velocity
+        final double velocityDepthCents = getCutoffDepth (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_KEYONVELOCITY, DlsArticulation.CONN_SRC_NONE);
+        filter.getCutoffVelocityModulator ().setDepth (Math.clamp (velocityDepthCents / VELOCITY_CUTOFF_REFERENCE_CENTS, -1, 1));
+
+        final double keyDepthCents = getCutoffDepth (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_KEYNUMBER, DlsArticulation.CONN_SRC_NONE);
+        filter.setCutoffKeyTracking (Math.clamp (keyDepthCents / KEY_TRACKING_REFERENCE_CENTS, -1, 1));
+
+        // The LFO is the same as the one of the vibrato and the tremolo, the uncontrolled and the
+        // modulation wheel controlled connections are read for the same reason as for these
+        final double lfoDepthCents = getCutoffDepth (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_LFO, DlsArticulation.CONN_SRC_NONE);
+        final double lfoModWheelDepthCents = getCutoffDepth (dlsInstrument, dlsRegion, DlsArticulation.CONN_SRC_LFO, DlsArticulation.CONN_SRC_CC1);
+        if (lfoDepthCents != 0 || lfoModWheelDepthCents != 0)
+        {
+            final ILfoModulator cutoffLfoModulator = filter.getCutoffLfoModulator ();
+            cutoffLfoModulator.setDepth (Math.clamp (lfoDepthCents, -IEnvelope.MAX_ENVELOPE_DEPTH, IEnvelope.MAX_ENVELOPE_DEPTH) / IEnvelope.MAX_ENVELOPE_DEPTH);
+            cutoffLfoModulator.getDepthModWheelModulator ().setDepth (Math.clamp (lfoModWheelDepthCents, -IEnvelope.MAX_ENVELOPE_DEPTH, IEnvelope.MAX_ENVELOPE_DEPTH) / IEnvelope.MAX_ENVELOPE_DEPTH);
+            setLfo (cutoffLfoModulator.getSource (), dlsInstrument, dlsRegion);
+        }
+
+        return Optional.of (filter);
+    }
+
+
+    /**
+     * Get the depth of a connection which modulates the filter cutoff.
+     *
+     * @param dlsInstrument The instrument
+     * @param dlsRegion The region
+     * @param source The modulation source, see the CONN_SRC_* constants
+     * @param control The controller which modulates the connection, CONN_SRC_NONE for the
+     *            uncontrolled connection
+     * @return The depth in cent, 0 if there is no such connection
+     */
+    private static double getCutoffDepth (final DlsInstrument dlsInstrument, final DlsRegion dlsRegion, final int source, final int control)
+    {
+        final Optional<DlsArticulation> articulation = getControlledArticulation (dlsInstrument, dlsRegion, source, control, DlsArticulation.CONN_DST_FILTER_CUTOFF);
+        return articulation.isEmpty () ? 0 : DlsArticulation.relativePitchToCents (articulation.get ().getScale ());
     }
 
 

@@ -385,6 +385,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         // The modulation cord table: start from the EOS factory default cord set (required for
         // non-transpose voices to be recognized) and set the depths of the used routings
         System.arraycopy (Emulator4Constants.MOD_CORD_TEMPLATE, 0, voice, Emulator4Constants.VOICE_MOD_OFFSET, Emulator4Constants.MOD_CORD_TEMPLATE.length);
+        writePitchModulation (voice, zone);
         writeLfos (voice, zone);
         final double velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
         voice[Emulator4Constants.VOICE_MOD_OFFSET + Emulator4Constants.MOD_VELOCITY_AMOUNT] = (byte) Math.clamp (Math.round (velocityDepth * 127), 0, 127);
@@ -405,6 +406,40 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         voice[entryOffset + 14] = (byte) Math.clamp (zone.getKeyRoot () < 0 ? keyLow : zone.getKeyRoot (), 0, 127);
 
         return voice;
+    }
+
+
+    /**
+     * Write the pitch bend range and the pitch envelope of a zone. The bend range is the amount of
+     * the default cord from the pitch wheel to the pitch, which bends up and down by the same
+     * range; the larger one of the two ranges of the zone is used. The pitch envelope is the
+     * auxiliary envelope with a new cord into the pitch behind the default cord set.
+     *
+     * @param voice The voice block, which already contains the default cord set
+     * @param zone The zone
+     */
+    private static void writePitchModulation (final byte [] voice, final ISampleZone zone)
+    {
+        final int modOffset = Emulator4Constants.VOICE_MOD_OFFSET;
+        final int bendCents = Math.max (Math.abs (zone.getBendUp ()), Math.abs (zone.getBendDown ()));
+        voice[modOffset + Emulator4Constants.MOD_PITCH_WHEEL_AMOUNT] = (byte) Math.clamp (Math.round (bendCents / Emulator4Constants.FULL_PITCH_CENTS * 127), 0, 127);
+
+        final IEnvelopeModulator modulator = zone.getPitchEnvelopeModulator ();
+        final int amount = Math.clamp (Math.round (modulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH / Emulator4Constants.FULL_PITCH_CENTS * 127), -127, 127);
+        if (amount == 0)
+            return;
+        writeModulationEnvelope (voice, Emulator4Constants.VOICE_PZT_OFFSET + Emulator4Constants.PZT_AUX_ENVELOPE, modulator.getSource ());
+        for (int slot = 0; slot < Emulator4Constants.NUM_MOD_CORDS; slot++)
+        {
+            final int cordOffset = modOffset + slot * Emulator4Constants.MOD_CORD_SIZE;
+            if (voice[cordOffset + Emulator4Constants.MOD_CORD_SOURCE] == 0 && voice[cordOffset + Emulator4Constants.MOD_CORD_DESTINATION] == 0)
+            {
+                voice[cordOffset + Emulator4Constants.MOD_CORD_SOURCE] = (byte) Emulator4Constants.MOD_SOURCE_AUX_ENV_FIRST;
+                voice[cordOffset + Emulator4Constants.MOD_CORD_DESTINATION] = (byte) Emulator4Constants.MOD_DEST_PITCH;
+                voice[cordOffset + Emulator4Constants.MOD_CORD_AMOUNT] = (byte) amount;
+                return;
+            }
+        }
     }
 
 
@@ -513,28 +548,40 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         if (depth == 0)
             return 0;
 
-        final IEnvelope envelope = modulator.getSource ();
-        final int offset = Emulator4Constants.VOICE_PZT_OFFSET;
+        writeModulationEnvelope (voice, Emulator4Constants.VOICE_PZT_OFFSET + Emulator4Constants.PZT_FILTER_ENVELOPE, modulator.getSource ());
+        return Math.clamp (depth, -1, 1);
+    }
+
+
+    /**
+     * Write the shape of a filter or auxiliary envelope into the primary zone table of a voice. The
+     * envelope is always stored at full scale; its depth and direction is the amount of the cord
+     * which routes it.
+     *
+     * @param voice The voice block
+     * @param offset The offset of the envelope in the voice block
+     * @param envelope The envelope
+     */
+    private static void writeModulationEnvelope (final byte [] voice, final int offset, final IEnvelope envelope)
+    {
         final double sustainLevel = envelope.getSustainLevel ();
         final int sustain = sustainLevel < 0 ? 127 : (int) Math.clamp (Math.round (sustainLevel * 127), 0, 127);
         final double attackTime = envelope.getAttackTime ();
         final double decayTime = envelope.getDecayTime ();
         final double releaseTime = envelope.getReleaseTime ();
 
-        voice[offset + 14] = (byte) (attackTime < 0 ? 0 : Emulator4Constants.envelopeTimeToRate (attackTime));
-        voice[offset + 15] = 127;
-        voice[offset + 16] = 0;
-        voice[offset + 17] = 127;
-        voice[offset + 18] = (byte) (decayTime < 0 ? 0 : Emulator4Constants.envelopeTimeToRate (decayTime));
-        voice[offset + 19] = (byte) sustain;
-        voice[offset + 20] = 0;
-        voice[offset + 21] = (byte) sustain;
-        voice[offset + 22] = (byte) (releaseTime < 0 ? Emulator4Constants.DEFAULT_RELEASE_RATE : Emulator4Constants.envelopeTimeToRate (releaseTime));
-        voice[offset + 23] = 0;
-        voice[offset + 24] = 0;
-        voice[offset + 25] = 0;
-
-        return Math.clamp (depth, -1, 1);
+        voice[offset] = (byte) (attackTime < 0 ? 0 : Emulator4Constants.envelopeTimeToRate (attackTime));
+        voice[offset + 1] = 127;
+        voice[offset + 2] = 0;
+        voice[offset + 3] = 127;
+        voice[offset + 4] = (byte) (decayTime < 0 ? 0 : Emulator4Constants.envelopeTimeToRate (decayTime));
+        voice[offset + 5] = (byte) sustain;
+        voice[offset + 6] = 0;
+        voice[offset + 7] = (byte) sustain;
+        voice[offset + 8] = (byte) (releaseTime < 0 ? Emulator4Constants.DEFAULT_RELEASE_RATE : Emulator4Constants.envelopeTimeToRate (releaseTime));
+        voice[offset + 9] = 0;
+        voice[offset + 10] = 0;
+        voice[offset + 11] = 0;
     }
 
 

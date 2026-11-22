@@ -501,6 +501,8 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         double filterEnvelopeDepth = 0;
         double filterKeyTracking = 0;
         double filterVelocity = 0;
+        int bendCents = 0;
+        double pitchEnvelopeDepth = 0;
         for (int slot = 0; slot < Emulator4Constants.NUM_MOD_CORDS; slot++)
         {
             final int cordOffset = modOffset + slot * Emulator4Constants.MOD_CORD_SIZE;
@@ -516,14 +518,29 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
                 filterEnvelopeDepth = Math.clamp (amount / 127.0, -1, 1);
             else if (destination == Emulator4Constants.MOD_DEST_CUTOFF && source == Emulator4Constants.MOD_SOURCE_KEY)
                 filterKeyTracking = Math.clamp (amount / 127.0 * Emulator4Constants.FULL_KEY_TRACKING, 0, 1);
+            else if (destination == Emulator4Constants.MOD_DEST_CUTOFF && source == Emulator4Constants.MOD_SOURCE_KEY_CENTER)
+                filterKeyTracking = Math.clamp (amount / 127.0 * 2 * Emulator4Constants.FULL_KEY_TRACKING, 0, 1);
             // The velocity opens the filter with a positive amount, like the velocity cord of the
             // amplifier makes a note louder
             else if (destination == Emulator4Constants.MOD_DEST_CUTOFF && source >= Emulator4Constants.MOD_SOURCE_VELOCITY_FIRST && source <= Emulator4Constants.MOD_SOURCE_VELOCITY_LAST)
                 filterVelocity = Math.clamp (amount / 127.0, -1, 1);
+            // The pitch wheel bends up and down by the same range, a voice without this cord does
+            // not bend at all. The range is rounded to semi-tones, e.g. the amount 8 of the factory
+            // cord set is 2.02 semi-tones and stands for 2
+            else if (destination == Emulator4Constants.MOD_DEST_PITCH && source == Emulator4Constants.MOD_SOURCE_PITCH_WHEEL)
+                bendCents = (int) Math.round (Math.abs (amount) / 127.0 * Emulator4Constants.FULL_PITCH_CENTS / 100.0) * 100;
+            // The auxiliary envelope into the pitch is the pitch envelope; the subtracting variant
+            // of the source lowers the pitch
+            else if (destination == Emulator4Constants.MOD_DEST_PITCH && source >= Emulator4Constants.MOD_SOURCE_AUX_ENV_FIRST && source <= Emulator4Constants.MOD_SOURCE_AUX_ENV_LAST)
+            {
+                final int signedAmount = source == Emulator4Constants.MOD_SOURCE_AUX_ENV_LAST ? -amount : amount;
+                pitchEnvelopeDepth = Math.clamp (signedAmount / 127.0 * Emulator4Constants.FULL_PITCH_CENTS / IEnvelope.MAX_ENVELOPE_DEPTH, -1, 1);
+            }
         }
 
         final int pztOffset = offset + Emulator4Constants.VOICE_PZT_OFFSET;
         final IEnvelope amplitudeEnvelope = parseEnvelope (body, pztOffset + Emulator4Constants.PZT_AMPLITUDE_ENVELOPE);
+        final IEnvelope pitchEnvelope = pitchEnvelopeDepth == 0 ? null : parseEnvelope (body, pztOffset + Emulator4Constants.PZT_AUX_ENVELOPE);
 
         final IFilter filter = createFilter (body, offset, pztOffset, filterEnvelopeDepth, filterKeyTracking, filterVelocity);
 
@@ -595,6 +612,14 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
             zone.getAmplitudeEnvelopeModulator ().setSource (amplitudeEnvelope);
             zone.getAmplitudeVelocityModulator ().setDepth (velocityToAmplitude);
+            zone.setBendUp (bendCents);
+            zone.setBendDown (-bendCents);
+            if (pitchEnvelope != null)
+            {
+                final IEnvelopeModulator pitchModulator = zone.getPitchEnvelopeModulator ();
+                pitchModulator.setDepth (pitchEnvelopeDepth);
+                pitchModulator.setSource (pitchEnvelope);
+            }
             if (filter != null)
                 zone.setFilter (filter);
             EmuLfoModulation.applyLfos (zone, cords, lfos);
@@ -814,7 +839,7 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             if ((body[cordOffset + Emulator4Constants.MOD_CORD_DESTINATION] & 0xFF) != Emulator4Constants.MOD_DEST_CUTOFF || body[cordOffset + Emulator4Constants.MOD_CORD_AMOUNT] == 0)
                 continue;
             final int source = body[cordOffset + Emulator4Constants.MOD_CORD_SOURCE] & 0xFF;
-            if (source != Emulator4Constants.MOD_SOURCE_FILTER_ENVELOPE && source != Emulator4Constants.MOD_SOURCE_KEY)
+            if (source != Emulator4Constants.MOD_SOURCE_FILTER_ENVELOPE && source != Emulator4Constants.MOD_SOURCE_KEY && source != Emulator4Constants.MOD_SOURCE_KEY_CENTER)
                 return true;
         }
         return false;

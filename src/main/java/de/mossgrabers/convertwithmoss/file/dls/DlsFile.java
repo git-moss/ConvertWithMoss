@@ -164,6 +164,7 @@ public class DlsFile extends AbstractRIFFFile
         riffParser.declareGroupChunk (DlsRiffChunkId.WAVE_ID.getFourCC (), CommonRiffChunkId.LIST_ID);
 
         riffParser.declareGroupChunk (DlsRiffChunkId.LART_ID.getFourCC (), CommonRiffChunkId.LIST_ID);
+        riffParser.declareGroupChunk (DlsRiffChunkId.LAR2_ID.getFourCC (), CommonRiffChunkId.LIST_ID);
 
         riffParser.parse (inputStream, this);
 

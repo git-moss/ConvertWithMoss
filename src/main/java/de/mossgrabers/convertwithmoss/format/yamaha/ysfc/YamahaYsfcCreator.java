@@ -33,6 +33,8 @@ import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
 import de.mossgrabers.convertwithmoss.core.model.IGroup;
+import de.mossgrabers.convertwithmoss.core.model.ILfo;
+import de.mossgrabers.convertwithmoss.core.model.ILfoModulator;
 import de.mossgrabers.convertwithmoss.core.model.IMetadata;
 import de.mossgrabers.convertwithmoss.core.model.ISampleData;
 import de.mossgrabers.convertwithmoss.core.model.ISampleLoop;
@@ -51,6 +53,7 @@ import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcChunk;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcEntry;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcFileFormat;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcKeybank;
+import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcLfo;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPartElement;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformance;
 import de.mossgrabers.convertwithmoss.format.yamaha.ysfc.file.YamahaYsfcPerformancePart;
@@ -69,6 +72,22 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
     private static final String                                 IDS_NOTIFY_STORING       = "IDS_NOTIFY_STORING";
 
     private static final int                                    MAX_PERFORMANCES         = 128;
+
+    /** The destinations of the 3 Part LFO boxes: Element Level, Pitch and Filter Cutoff. */
+    private static final int []                                 PART_LFO_DESTINATIONS    =
+    {
+        YamahaYsfcPerformancePart.LFO_DESTINATION_LEVEL,
+        YamahaYsfcPerformancePart.LFO_DESTINATION_PITCH,
+        YamahaYsfcPerformancePart.LFO_DESTINATION_CUTOFF
+    };
+
+    /** The modulation of the 3 Part LFO boxes at depth 127 in the range of the model. */
+    private static final double []                              PART_LFO_RANGES          =
+    {
+        YamahaYsfcLfo.PART_LEVEL_RANGE / ILfoModulator.MAX_VOLUME_DEPTH,
+        YamahaYsfcLfo.PART_PITCH_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH,
+        YamahaYsfcLfo.PART_CUTOFF_RANGE / IEnvelope.MAX_ENVELOPE_DEPTH
+    };
 
     private static final DestinationAudioFormat                 DESTINATION_AUDIO_FORMAT = new DestinationAudioFormat (new int []
     {
@@ -458,7 +477,148 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             final String waveformName = createCategoryNameText (getCategoryIndex (multisampleSource.getMetadata ()), name);
             waveReferences[g] = this.createElement (counters, waveformName, groups.get (g), elements.get (g), format, ysfcFile);
         }
+
+        writePartLfo (part, groups, elements);
+
         return waveReferences;
+    }
+
+
+    /**
+     * Write the level, pitch and filter cutoff LFO modulators to the Part LFO, which replaces the
+     * Element LFOs since only the depth of the Part LFO can be controlled by the modulation wheel.
+     * The 3 LFO boxes are set to Element Level, Element Pitch and Element Filter Cutoff. Wave form,
+     * rate, key sync and start phase are taken from the first active modulator of the first zones
+     * of all groups. The box depths are set to the largest depth of all groups and the depth ratio
+     * of each element is used to scale it down to the depth of its group. If the modulation wheel
+     * increases the depth, a control box with the modulation wheel as the source and the
+     * destination P.LFO Depth is added, which raises the depth to the maximum with the wheel fully
+     * up. The Element LFOs are kept if the rate is above the range of the Part LFO and the
+     * modulation wheel is not used.
+     *
+     * @param part The part to fill
+     * @param groups The groups, one for each element
+     * @param elements The elements of the part
+     */
+    private static void writePartLfo (final YamahaYsfcPerformancePart part, final List<IGroup> groups, final List<YamahaYsfcPartElement> elements)
+    {
+        final int groupCount = groups.size ();
+        final ILfoModulator [] [] modulators = new ILfoModulator [groupCount] [];
+        ILfoModulator source = null;
+        boolean hasModWheel = false;
+        for (int g = 0; g < groupCount; g++)
+        {
+            modulators[g] = getPartLfoModulators (groups.get (g).getSampleZones ().get (0));
+            for (final ILfoModulator modulator: modulators[g])
+                if (modulator != null && modulator.isActive ())
+                {
+                    if (source == null)
+                        source = modulator;
+                    if (modulator.getDepthModWheelModulator ().getDepth () != 0)
+                        hasModWheel = true;
+                }
+        }
+        if (source == null)
+            return;
+
+        final ILfo lfo = source.getSource ();
+        final double rate = lfo.getRate ();
+        if (!hasModWheel && rate > YamahaYsfcLfo.getMaxPartRate () * 1.05)
+            return;
+
+        part.setLfoWave (YamahaYsfcLfo.getPartWaveformValue (lfo.getWaveform ()));
+        part.setLfoSpeed (YamahaYsfcLfo.hertzToPartSpeed (rate));
+        part.setLfoTempoSync (0);
+        part.setLfoKeyOnReset (lfo.isKeySync () ? 1 : 0);
+        part.setLfoPhase (YamahaYsfcLfo.getPartPhaseValue (Math.max (0, lfo.getStartPhase ())));
+
+        for (int box = 0; box < YamahaYsfcPerformancePart.NUMBER_OF_LFO_BOXES; box++)
+        {
+            final double range = PART_LFO_RANGES[box];
+            final double [] baseDepths = new double [groupCount];
+            final double [] fullDepths = new double [groupCount];
+            double maxBaseDepth = 0;
+            double maxFullDepth = 0;
+            for (int g = 0; g < groupCount; g++)
+            {
+                final ILfoModulator modulator = modulators[g][box];
+                if (modulator == null || !modulator.isActive ())
+                    continue;
+                final double depth = modulator.getDepth ();
+                baseDepths[g] = Math.min (1.0, Math.abs (depth) / range);
+                fullDepths[g] = Math.min (1.0, Math.abs (depth + modulator.getDepthModWheelModulator ().getDepth ()) / range);
+                maxBaseDepth = Math.max (maxBaseDepth, baseDepths[g]);
+                maxFullDepth = Math.max (maxFullDepth, fullDepths[g]);
+            }
+
+            final int partDepth = YamahaYsfcLfo.factorToPartDepth (maxBaseDepth);
+            part.setLfoBox (box, PART_LFO_DESTINATIONS[box], partDepth);
+            if (maxBaseDepth <= 0 && maxFullDepth <= 0)
+                continue;
+
+            final boolean useModWheel = maxFullDepth > maxBaseDepth;
+            if (useModWheel)
+                addModWheelControlBox (part, box);
+
+            // Scale the output of the box for each element relative to the largest depth
+            final double reference = useModWheel ? maxFullDepth : YamahaYsfcLfo.partDepthToFactor (partDepth);
+            for (int g = 0; g < groupCount; g++)
+            {
+                final double depth = useModWheel ? fullDepths[g] : baseDepths[g];
+                final YamahaYsfcPartElement element = elements.get (g);
+                element.setCommonLfoBoxDepthRatio (box, depth <= 0 || reference <= 0 ? 0 : (int) Math.round (Math.min (1.0, depth / reference) * 127.0) + 1);
+
+                // Remove the modulation from the Element LFO
+                switch (PART_LFO_DESTINATIONS[box])
+                {
+                    case YamahaYsfcPerformancePart.LFO_DESTINATION_LEVEL -> element.setLfoAmodDepth (0);
+                    case YamahaYsfcPerformancePart.LFO_DESTINATION_PITCH -> element.setLfoPmodDepth (0);
+                    default -> element.setLfoFmodDepth (0);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Get the level, pitch and filter cutoff LFO modulators of a zone in the order of the Part LFO
+     * boxes.
+     *
+     * @param zone The zone
+     * @return The 3 modulators, the cutoff modulator is null if the zone has no filter
+     */
+    private static ILfoModulator [] getPartLfoModulators (final ISampleZone zone)
+    {
+        final Optional<IFilter> filter = zone.getFilter ();
+        return new ILfoModulator []
+        {
+            zone.getAmplitudeLfoModulator (),
+            zone.getPitchLfoModulator (),
+            filter.isPresent () ? filter.get ().getCutoffLfoModulator () : null
+        };
+    }
+
+
+    /**
+     * Add a control box which connects the modulation wheel with the depth of a Part LFO box, if
+     * there is not already one. The first unused control box is taken. The ratio is set to the
+     * default of +32, the depth reaches its maximum with the wheel fully up independent of the
+     * ratio.
+     *
+     * @param part The part
+     * @param box The index of the Part LFO box [0..2]
+     */
+    private static void addModWheelControlBox (final YamahaYsfcPerformancePart part, final int box)
+    {
+        final int destination = YamahaYsfcPerformancePart.CONTROL_DESTINATION_LFO_DEPTH + box;
+        if (part.findControlBox (YamahaYsfcPerformancePart.CONTROL_SOURCE_MOD_WHEEL, destination) >= 0)
+            return;
+        for (int controlBox = 0; controlBox < YamahaYsfcPerformancePart.NUMBER_OF_CONTROL_BOXES; controlBox++)
+            if (part.getControlBoxSource (controlBox) == 0)
+            {
+                part.setControlBox (controlBox, YamahaYsfcPerformancePart.CONTROL_SOURCE_MOD_WHEEL, destination, 32);
+                return;
+            }
     }
 
 
@@ -574,6 +734,10 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             setEnvelopeTimeTracking (pitchEnvelope, element::setPegTimeVelocitySensitivity, element::setPegTimeKeyFollowSensitivity);
         }
 
+        // LFO
+
+        writeLfo (element, zone);
+
         // Filter
 
         final Optional<IFilter> filterOpt = zone.getFilter ();
@@ -612,6 +776,50 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
                 setEnvelopeTimeTracking (cutoffEnvelope, element::setFegTimeVelocitySensitivity, element::setFegTimeKeyFollowSensitivity);
             }
         }
+    }
+
+
+    /**
+     * Write the pitch, amplitude and filter cutoff LFO modulators to the Element LFO. The element
+     * has only one LFO, therefore the wave form, rate and key sync of the first active modulator
+     * are used. The extended LFO speed is written as well if the template contains it, which is
+     * more precise. The modulation wheel and the delay and fade-in times are not written. The
+     * depths are removed again if the Part LFO is used instead, see
+     * {@link #writePartLfo(YamahaYsfcPerformancePart, List, List)}.
+     *
+     * @param element The element to fill
+     * @param zone The zone which contains the LFO modulators
+     */
+    private static void writeLfo (final YamahaYsfcPartElement element, final ISampleZone zone)
+    {
+        final ILfoModulator pitchModulator = zone.getPitchLfoModulator ();
+        final ILfoModulator amplitudeModulator = zone.getAmplitudeLfoModulator ();
+        final Optional<IFilter> filter = zone.getFilter ();
+        final ILfoModulator cutoffModulator = filter.isPresent () ? filter.get ().getCutoffLfoModulator () : null;
+
+        ILfoModulator source = null;
+        if (pitchModulator.isActive ())
+            source = pitchModulator;
+        else if (amplitudeModulator.isActive ())
+            source = amplitudeModulator;
+        else if (cutoffModulator != null && cutoffModulator.isActive ())
+            source = cutoffModulator;
+        if (source == null)
+            return;
+
+        final ILfo lfo = source.getSource ();
+        element.setLfoWave (YamahaYsfcLfo.getWaveformValue (lfo.getWaveform ()));
+        element.setLfoKeyOnSync (lfo.isKeySync () ? 1 : 0);
+        final double rate = lfo.getRate ();
+        element.setLfoSpeed (YamahaYsfcLfo.hertzToNormalSpeed (rate));
+        element.setExtendedLfoSpeed (YamahaYsfcLfo.hertzToExtendedSpeed (rate));
+
+        if (pitchModulator.isActive ())
+            element.setLfoPmodDepth (YamahaYsfcLfo.centsToPitchDepth (pitchModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH));
+        if (amplitudeModulator.isActive ())
+            element.setLfoAmodDepth (YamahaYsfcLfo.dbToAmplitudeDepth (amplitudeModulator.getDepth () * ILfoModulator.MAX_VOLUME_DEPTH));
+        if (cutoffModulator != null && cutoffModulator.isActive ())
+            element.setLfoFmodDepth (YamahaYsfcLfo.centsToFilterDepth (cutoffModulator.getDepth () * IEnvelope.MAX_ENVELOPE_DEPTH));
     }
 
 

@@ -42,6 +42,7 @@ import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Lfo;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010PolyMode;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
@@ -237,6 +238,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         {
             defaultLoop = new DefaultSampleLoop ();
             defaultLoop.setType (loopMode == 2 ? LoopType.ALTERNATING : LoopType.FORWARDS);
+            defaultLoop.setCrossfade (XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_LOOP_FADE_AMOUNT, 0) / 1000.0);
         }
 
         final boolean isReversed = XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_REVERSE, 0) > 0;
@@ -268,6 +270,7 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
                 zone.setExclusiveGroup (exclusiveGroup);
 
         final IMultisampleSource multisampleSource = this.createMultisampleSource (sourceFile, new File (pathPrefix).getName (), Collections.singletonList (group));
+        Music1010PolyMode.readPolyphony (instParamsElement, multisampleSource);
         parseEffects (instParamsElement, multisampleSource);
         readVelocityModulators (instElement, group);
         Music1010Lfo.readLfoModulators (instParamsElement, instElement, group, false);

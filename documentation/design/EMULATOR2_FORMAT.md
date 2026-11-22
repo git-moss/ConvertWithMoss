@@ -185,6 +185,32 @@ which the filter's exponential response to its envelope explains; the reader tak
 the reference, it is not measured on hardware. The counter pair `255`/`0` is a stage which holds
 its level (no decay, a release which never ends), which EMXP writes as 100 s.
 
+**The envelope stages.** Each stage of the two envelopes is a block of 7 bytes which the playback
+engine walks through: the pass counter, a copy of it, the increment, the level the stage starts
+from, the level it moves to and a pointer to the next block (`0x9B00 + 0x100 × record + offset`, or
+`0x0FF3` behind the release). The blocks of the VCF are at `+0x90` (decay), `+0x97` (sustain) and
+`+0x9E` (release), those of the VCA at `+0xA5`, `+0xAC` and `+0xB3`; the attacks are the velocity
+tables at `+0x50`/`+0x60` and `+0x70`/`+0x80`, which start at the levels `+0x24` and `+0x20` (0)
+and rise to `+0x25` (the filter envelope amount) and `+0x21` (`0xFF`). On all 3,624 voices of the
+90 factory disks the copies agree: the pass counters are stored twice, the VCA decay starts at
+`0xFF` and moves to the VCA sustain `+0xA9`, which `+0xAF` and `+0xB6` repeat; the VCF decay starts
+at the amount (`+0x93` = `+0x25`) and moves to a sustain target which `+0x9A` and `+0xA1` repeat
+(`+0x94`). This target does not follow from the VCF sustain value `+0x2E` by one law - e.g. `0x0C`
+gives `0x4C` on an amount of `0xCC`, `0x00` gives `0x94` on an amount of `0x30` -, so how the
+sampler derives one from the other is not decoded; the writer sets the target to the sustain level
+times the amount, which is exact for no and for a full sustain.
+
+**The envelope times.** The attack, decay and release counters of the factory voices use only 31
+pairs, from 0.01 to 15.3 seconds (passes / increment: 1/255, 1/127, 1/85, 1/63, 1/51, 1/42, 1/31,
+1/25, 1/21, 1/17, 1/14, 1/12, 1/9, 1/8, 1/6, 1/5, 1/4, 1/3, 2/5, 1/2, 2/3, 3/4, 1/1, 4/3, 3/2, 2/1,
+5/2, 3/1, 4/1, 5/1, 6/1), the attacks also 0/0 (instant), the decays and releases the same pairs
+with 256 − increment as their low byte and 255/0 to hold. The velocity variants of an attack table
+step through these times: entry *k* is the attack of entry 0 plus round(*n* × *k* / 15) steps,
+*n* being the velocity to attack amount of `+0x1B` - exact on all tables with the amounts 1, 7
+and 15, within one step on the 956 tables of all amounts (no weight per entry fits all amounts
+exactly; the front panel's 0-99 scale is presumably finer than these steps). No voice with an
+amount of 0 has a varying table.
+
 Two settings the SoundFonts cannot carry stay undecoded: the chorus (a second, detuned channel)
 and *loop in release*, presumably among bits 1, 3 and 5 of the flags. Cross-check of the reading
 against the SoundFont route through the model - every preset of the 90 factory disks read from
@@ -351,8 +377,12 @@ group their second voices, identical audio is stored once. The audio is mixed to
 27,777 Hz and companded, and cut at the end of the loop, since the sampler plays the loop as the end
 of a voice; the voice records take their settings from the voice `piano A2` of the disk *Grand
 Piano* with the name, the addresses, the counter block, the loop flag and the pointers replaced
-and with the fine tuning, the level table, the LFO (rate, delay, the three depth pointers) and the
-real-time control enable flags of the zone, the preset records and the key maps of the first preset are written as described, the sample memory
+and with the fine tuning, the level table, the LFO (rate, delay, the three depth pointers), the
+real-time control enable flags, the VCA envelope with its velocity to attack, the cutoff and Q
+tables, the keyboard tracking and the filter envelope (amount, direction, stages, sustain, velocity
+to attack) of the zone - a round trip of the 3,624 factory voices through the model gives the same
+settings again, except for a velocity to cutoff which reaches the full range of the model, which
+comes back 1 % smaller -, the preset records and the key maps of the first preset are written as described, the sample memory
 starts `0x95FE` behind the records and ends at the 485,888 bytes the sampler saves, and the
 operating system is copied from the `.E2O` file or disk image named in the settings. The image is
 written as a HFE with the field spacing of the HxC images or as a raw `.emuiifd`. Round trip: the
@@ -362,6 +392,11 @@ ranges, roots, lengths and loops.
 ### Still to decode
 
 The chorus and *loop in release* switches of a voice (bits 1, 3 and 5 of the voice flags at
-`+0xC6`), the preset parameters (presumably the arpeggiator, the MIDI setup with the controller
+`+0xC6`), the *non-transpose* and *backwards* modes - the 90 factory disks hold no voice which is
+known to use them; bit 0 of the voice flags is set on only 4 voices (*Bass G1* and *Bass G2* of
+*Bass, Synth, Drums*, *strxf.g#1 \*3* and *strxf.g#2 \*3* of *Stacked Strings*) and is a
+candidate -, the high nibble of `+0x1E` (an amount of 0 to 15 on 490 voices, mostly brass, sax and
+synthesizer voices), the relation of the VCF sustain target to the sustain value (see *Voice
+settings*), the preset parameters (presumably the arpeggiator, the MIDI setup with the controller
 numbers of the MIDI controls A to C, and the pitch bend range) and the second byte of a key range
 entry.

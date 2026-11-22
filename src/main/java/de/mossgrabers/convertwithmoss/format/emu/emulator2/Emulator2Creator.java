@@ -128,8 +128,9 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
     /**
      * A voice record of the factory library - the voice 'piano A2' of the disk 'Grand Piano' -
-     * whose settings are used for every written voice. The fields which are decoded - the name, the
-     * addresses, the loop and the pointers into the record - are overwritten.
+     * which is the base of every written voice. The fields which are decoded - the name, the
+     * addresses, the loop, the pointers into the record and the settings of the zone - are
+     * overwritten.
      */
     private static final int []  VOICE_TEMPLATE       =
     {
@@ -685,7 +686,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
         // Re-use a voice with identical audio, loop and settings, e.g. when the same sample is
         // mapped to several key ranges or is played by several presets of the library
-        final Object contentKey = List.of (ByteBuffer.wrap (voice.audio), Boolean.valueOf (voice.hasLoop), Integer.valueOf (voice.loopStart), Integer.valueOf (voice.loopLength), Double.valueOf (voice.tuning), Double.valueOf (voice.gain), Double.valueOf (voice.velocityDepth), Arrays.asList (Integer.valueOf (voice.lfoRate), Integer.valueOf (voice.lfoDelay), Integer.valueOf (voice.lfoToPitch), Integer.valueOf (voice.lfoToFilter), Integer.valueOf (voice.lfoToLevel), Integer.valueOf (voice.realtimeEnable)));
+        final Object contentKey = List.of (ByteBuffer.wrap (voice.audio), Boolean.valueOf (voice.hasLoop), Integer.valueOf (voice.loopStart), Integer.valueOf (voice.loopLength), Double.valueOf (voice.tuning), Double.valueOf (voice.gain), Double.valueOf (voice.velocityDepth), Arrays.asList (Integer.valueOf (voice.lfoRate), Integer.valueOf (voice.lfoDelay), Integer.valueOf (voice.lfoToPitch), Integer.valueOf (voice.lfoToFilter), Integer.valueOf (voice.lfoToLevel), Integer.valueOf (voice.realtimeEnable)), ByteBuffer.wrap (voice.settings));
         final Integer existingNumber = builder.voiceNumbersByContent.get (contentKey);
         if (existingNumber != null)
         {
@@ -736,6 +737,10 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         voice.gain = zone.getGain ();
         voice.velocityDepth = zone.getAmplitudeVelocityModulator ().getDepth ();
         convertLfo (zone, voice);
+        voice.settings = new byte [Emulator2Constants.VOICE_SIZE];
+        for (int i = 0; i < Emulator2Constants.VOICE_SIZE; i++)
+            voice.settings[i] = (byte) VOICE_TEMPLATE[i];
+        Emulator2VoiceSettings.writeEnvelopesAndFilter (zone, voice.settings);
         voice.audio = new byte [numFrames];
         for (int frame = 0; frame < numFrames; frame++)
         {
@@ -1037,8 +1042,9 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
 
 
     /**
-     * Write a voice record: the template of the factory library with the name, the addresses of the
-     * audio and the loop, the loop flag and the pointers of the record.
+     * Write a voice record: the template of the factory library with the envelopes and the filter
+     * of the voice, the name, the addresses of the audio and the loop, the loop flag and the
+     * pointers of the record.
      *
      * @param image The disk image
      * @param voiceRecord The position of the record
@@ -1047,8 +1053,7 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
      */
     private static void writeVoiceRecord (final byte [] image, final int voiceRecord, final int index, final Voice voice)
     {
-        for (int i = 0; i < Emulator2Constants.VOICE_SIZE; i++)
-            image[voiceRecord + i] = (byte) VOICE_TEMPLATE[i];
+        System.arraycopy (voice.settings, 0, image, voiceRecord, Emulator2Constants.VOICE_SIZE);
         for (final int pointer: VOICE_POINTER_BYTES)
             image[voiceRecord + pointer] = (byte) (VOICE_RECORD_ADDRESS + index * Emulator2Constants.VOICE_SIZE >> 8);
 
@@ -1066,13 +1071,13 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
             image[voiceRecord + Emulator2VoiceSettings.LEVEL_TABLE + i] = (byte) Math.round (level + (lowestLevel - level) * i / 15.0);
 
         // The LFO and the real-time control destinations which are enabled for the voice; the top
-        // bit of the flags belongs to the filter envelope of the template
+        // bit of the flags belongs to the filter envelope
         image[voiceRecord + Emulator2VoiceSettings.LFO_RATE] = (byte) voice.lfoRate;
         image[voiceRecord + Emulator2VoiceSettings.LFO_DELAY] = (byte) voice.lfoDelay;
         Emulator2VoiceSettings.writeLfoTableIndex (image, voiceRecord + Emulator2VoiceSettings.LFO_TO_PITCH, voice.lfoToPitch);
         Emulator2VoiceSettings.writeLfoTableIndex (image, voiceRecord + Emulator2VoiceSettings.LFO_TO_FILTER, voice.lfoToFilter);
         Emulator2VoiceSettings.writeLfoTableIndex (image, voiceRecord + Emulator2VoiceSettings.LFO_TO_LEVEL, voice.lfoToLevel);
-        image[voiceRecord + Emulator2VoiceSettings.FLAGS] = (byte) (VOICE_TEMPLATE[Emulator2VoiceSettings.FLAGS] & ~Emulator2VoiceSettings.REALTIME_ENABLE_ALL | voice.realtimeEnable);
+        image[voiceRecord + Emulator2VoiceSettings.FLAGS] = (byte) (voice.settings[Emulator2VoiceSettings.FLAGS] & ~Emulator2VoiceSettings.REALTIME_ENABLE_ALL | voice.realtimeEnable);
 
         // The audio in front of the loop plays once, the loop repeats; a voice without a loop is
         // written as the factory library holds it: all of its audio in front of a loop of length 1
@@ -1167,6 +1172,8 @@ public class Emulator2Creator extends AbstractCreator<EmuDiskCreatorUI>
         int     lfoToLevel;
         /** The flags which enable the real-time control destinations for the voice. */
         int     realtimeEnable = Emulator2VoiceSettings.REALTIME_ENABLE_ALL;
+        /** The voice record: the template with the envelopes and the filter of the zone. */
+        byte [] settings;
 
 
         /**

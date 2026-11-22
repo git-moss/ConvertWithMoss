@@ -42,6 +42,7 @@ import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.StreamUtils;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Lfo;
+import de.mossgrabers.convertwithmoss.format.music1010.Music1010PolyMode;
 import de.mossgrabers.convertwithmoss.format.music1010.Music1010Tag;
 import de.mossgrabers.convertwithmoss.format.wav.WavFileSampleData;
 import de.mossgrabers.tools.FileUtils;
@@ -339,6 +340,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
                 for (final ISampleZone zone: group.getSampleZones ())
                     zone.setExclusiveGroup (exclusiveGroup);
 
+            Music1010PolyMode.readPolyphony (paramsElement, multisampleSource);
             parseEffects (paramsElement, multisampleSource);
         }
 

@@ -56,8 +56,8 @@ public class TALSamplerConstants
     /** The modulation range of the master tune in cents: the amount is -12..12 semitones. */
     public static final double       TUNE_RANGE_CENTS  = 1200.0;
     /**
-     * The modulation range of the cutoff in cents: the normalized cutoff covers 140 semitones,
-     * see {@link MathUtils#denormalizeCutoff(double)}.
+     * The modulation range of the cutoff in cents: the normalized cutoff covers 140 semitones, see
+     * {@link MathUtils#denormalizeCutoff(double)}.
      */
     public static final double       CUTOFF_RANGE      = 14000.0;
     /** The highest rate of an LFO in Hertz. */
@@ -315,8 +315,8 @@ public class TALSamplerConstants
 
 
     /**
-     * Convert the LFO rate attribute to Hertz. The plug-in displays the rate as 200 x^3 Hz: 0.3
-     * is 5.40Hz, 0.7216 is 75.14Hz and 1.0 is 200Hz.
+     * Convert the LFO rate attribute to Hertz. The plug-in displays the rate as 200 x^3 Hz: 0.3 is
+     * 5.40Hz, 0.7216 is 75.14Hz and 1.0 is 200Hz.
      *
      * @param value The rate attribute in the range of [0..1]
      * @return The rate in Hertz
@@ -342,9 +342,9 @@ public class TALSamplerConstants
 
     /**
      * Get the LFO wave form from the wave form attribute. The plug-in offers Triangle, Saw,
-     * Rectangle, S&amp;H Random, Noise and Sine. Since version 9 the attribute is the index
-     * divided by 5, the presets of version 1.5 store the index divided by 2 (with the first 5 wave
-     * forms only).
+     * Rectangle, S&amp;H Random, Noise and Sine. Since version 9 the attribute is the index divided
+     * by 5, the presets of version 1.5 store the index divided by 2 (with the first 5 wave forms
+     * only).
      *
      * @param value The wave form attribute
      * @param isOldVersion True if the preset was written by a version before 2

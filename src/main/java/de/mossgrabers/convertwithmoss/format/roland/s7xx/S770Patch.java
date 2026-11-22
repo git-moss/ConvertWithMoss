@@ -801,4 +801,4 @@ public class S770Patch
             return "ControllerSection [ctrlNum=" + this.ctrlSelect + ", pitchCtrl=" + this.pitchCtrl + TVA_CTRL + this.tvaCtrl + TVF_CTRL + this.tvfCtrl + ", lfoRateCtrl=" + this.lfoRateCtrl + LFO_PITCH_CTRL + this.lfoPitchCtrl + LFO_TVA_DEPTH + this.lfoTvaDepth + LFO_TVF_DEPTH + this.lfoTvfDepth + "]";
         }
     }
-}
+}

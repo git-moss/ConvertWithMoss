@@ -339,6 +339,29 @@ and 127, which opens the filter almost completely; the rest start anywhere betwe
 The meaning of the remaining sources, in particular of the ones which are neither a controller nor
 the filter envelope, is still unknown.
 
+### Further cords and parameters (18 sound sets, 7513 presets, 104722 voices)
+
+The *Single Samples* editions of 18 E-mu sound sets (Mo'Phatt, Orbit, Planet Earth, PROcussion,
+Proteus 1-3, Proteus X Composer, PX-7, SP-1200, Vintage Keys, Virtuoso 2000 and others) confirm and
+extend the cord table:
+
+* **Resonance**: the static resonance is not stored, the banks set it with controller B (0x15)
+  into the resonance (0x39), which 33512 voices have. With the initial value of controller B the
+  resonance a voice starts with follows as for the cutoff; it is above 0 in about 5000 voices.
+* **Key tracking**: key `+` (0x08, 2242 voices, mostly 20-40 %) and key `~` (0x09, 2842 voices,
+  mostly 70-100 %) into the cutoff. As on the Emulator IV a +100 % cord from key `+` tracks 0.713
+  octave per octave; the centered source swings over twice the range and therefore tracks twice as
+  steeply.
+* **Pitch envelope**: the auxiliary envelope (0x58, 0x59, 0x5A) into the pitch, 127 voices.
+* **Pitch bend**: only 1103 voices route the pitch wheel (0x10) into the pitch, mostly with 6 %
+  (2 semitones on the 32 semitone scale). The bend range of all other voices is not stored in the
+  bank - it is a setting of the application - and the two floats of the `E5MP` chunks (mostly 4.0
+  and 7.0) are not a bend range.
+* **Undecoded flags**, candidates for the remaining voice modes: byte 24 of `E5Oc` (0/1, 772
+  voices, mostly drum kits and effects whose voices span many keys - a candidate for *fixed
+  pitch*), byte 38 of `E5Oc` (0/1, 533 voices of 39 presets, guitars, strings and keys), byte 9 of
+  `E5Am` (0-3, 1302 voices, many of them drum kits) and the rare bytes 4, 6 and 8 of `E5Oc`.
+
 An envelope chunk `E5Ev` is `version(4) reserved(6)` followed by six stages of
 `time(float, 4) level(float, 4) curve(1)`. The time is in seconds, the level is a percentage. The
 manual describes the stages as attack 1, attack 2, decay 1, decay 2, release 1 and release 2: the
