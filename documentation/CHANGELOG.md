@@ -2,6 +2,11 @@
 
 ## 21.1.0 (work-in-progress)
 
+* Akai MPC
+  * New: Performances are written as MPC 3 projects (XPJ, requires MPC 3.10 or later): each instrument becomes a keygroup track with its MIDI input channel, volume, panorama and transposition. The samples of all tracks are stored in the '_[ProjectData]' folder of the project.
+  * New: Preset libraries are written as one MPC 3 project (XPJ) with a keygroup track for each multi-sample (up to 128).
+  * New: Projects (XPJ) and tracks (XTY) can be read as performances: each keygroup track becomes an instrument with the MIDI input channel ('All' or 1-16), the volume and panorama of the track mixer (e.g. 0.497 is -6.15dB) and the transposition of the keygroup.
+  * Fixed: Written XTY tracks had a dark grey track colour which is not part of the colour palette of the MPC. They are now written in green (#00FF80).
 * E-mu Emulator IV
   * Fixed: Loops are read and written with their 'loop in release' setting. Written samples had a loop which stopped at the release of the key and played on to the end of the sample, while the loops of the factory banks keep playing in the release; loops which stop at the release were read as playing on.
 * E-mu Emulator X

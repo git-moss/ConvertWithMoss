@@ -72,6 +72,19 @@ public interface ICoreTaskSettings
 
 
     /**
+     * Inform the settings about the selected destination type, e.g. to hide options which do not
+     * apply to it. Only called for the settings of creators.
+     *
+     * @param isLibrary True if a library (of presets or performances) is created
+     * @param isPerformance True if performances are created
+     */
+    default void setDestinationType (final boolean isLibrary, final boolean isPerformance)
+    {
+        // Intentionally empty
+    }
+
+
+    /**
      * Parse a boolean command line parameter. A parameter which is not given on the command line
      * must keep the default of its option, which is the state its check-box has in the user
      * interface. Testing the value alone turns every option off which is enabled by default, so the

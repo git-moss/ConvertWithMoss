@@ -16,6 +16,7 @@ import de.mossgrabers.tools.ui.Functions;
 import de.mossgrabers.tools.ui.control.TitledSeparator;
 import de.mossgrabers.tools.ui.panel.BoxPanel;
 import javafx.geometry.Orientation;
+import javafx.scene.Node;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.Pane;
@@ -32,11 +33,14 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     private static final String MPC_OUTPUT_FORMAT     = "MPCOutputFormat";
     private static final String FORMAT_XPM            = "XPM";
     private static final String FORMAT_XTY            = "XTY";
+    private static final String SEPARATOR_STYLE       = "titled-separator-pane";
 
     private ToggleGroup         outputFormatGroup;
     private ToggleGroup         layerLimitGroup;
     private int                 layerLimit;
     private boolean             writeTrackFile;
+    private final List<Node>    presetOnlyNodes       = new ArrayList<> ();
+    private TitledSeparator     wavChunkSeparator;
 
 
     /**
@@ -56,7 +60,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
     {
         final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
 
-        panel.createSeparator ("@IDS_MPC_OUTPUT_FORMAT");
+        final TitledSeparator outputFormatSeparator = panel.createSeparator ("@IDS_MPC_OUTPUT_FORMAT");
 
         this.outputFormatGroup = new ToggleGroup ();
         final RadioButton formatXpm = panel.createRadioButton ("@IDS_MPC_OUTPUT_FORMAT_XPM");
@@ -66,7 +70,7 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
         formatXty.setAccessibleHelp (Functions.getMessage ("IDS_MPC_OUTPUT_FORMAT"));
         formatXty.setToggleGroup (this.outputFormatGroup);
 
-        panel.createSeparator ("@IDS_MPC_LAYER_LIMIT");
+        final TitledSeparator layerLimitSeparator = panel.createSeparator ("@IDS_MPC_LAYER_LIMIT");
 
         this.layerLimitGroup = new ToggleGroup ();
         final RadioButton order1 = panel.createRadioButton ("@IDS_MPC_LAYER_LIMIT_4");
@@ -76,10 +80,35 @@ public class MPCKeygroupCreatorUI extends WavChunkSettingsUI
         order2.setAccessibleHelp (Functions.getMessage ("IDS_MPC_LAYER_LIMIT"));
         order2.setToggleGroup (this.layerLimitGroup);
 
-        final TitledSeparator separator = this.addWavChunkOptions (panel);
-        separator.getStyleClass ().add ("titled-separator-pane");
+        // Preset libraries and performances are always written as MPC 3.10 projects which support 8
+        // layers, therefore these options only apply to presets
+        this.presetOnlyNodes.clear ();
+        this.presetOnlyNodes.addAll (List.of (outputFormatSeparator, formatXpm, formatXty, layerLimitSeparator, order1, order2));
+
+        this.wavChunkSeparator = this.addWavChunkOptions (panel);
+        this.wavChunkSeparator.getStyleClass ().add (SEPARATOR_STYLE);
 
         return panel.getPane ();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setDestinationType (final boolean isLibrary, final boolean isPerformance)
+    {
+        final boolean isPreset = !isLibrary && !isPerformance;
+        for (final Node node: this.presetOnlyNodes)
+        {
+            node.setVisible (isPreset);
+            node.setManaged (isPreset);
+        }
+
+        // The spacing above the separator is not necessary if it is the first one
+        final List<String> styleClasses = this.wavChunkSeparator.getStyleClass ();
+        if (!isPreset)
+            styleClasses.remove (SEPARATOR_STYLE);
+        else if (!styleClasses.contains (SEPARATOR_STYLE))
+            styleClasses.add (SEPARATOR_STYLE);
     }
 
 
