@@ -144,10 +144,10 @@ public class YamahaYsfcPerformance implements IStreamable
         // Common Parameters
         this.commonParameters = in.readNBytes (43);
 
-        // Scene 1-8
-        if (this.sourceFormat == YamahaYsfcFileFormat.MONTAGE)
+        // Scene 1-8: MONTAGE before 4.0.5 has only 11 bytes per scene, 4.0.5 and MODX have 21
+        if (this.sourceFormat == YamahaYsfcFileFormat.MONTAGE && this.sourceVersion < 405)
             this.sceneData = in.readNBytes (8 * 11);
-        else // MODX
+        else
             this.sceneData = in.readNBytes (8 * 21);
 
         // Assignable Knob 1-8

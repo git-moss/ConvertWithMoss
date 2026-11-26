@@ -356,6 +356,10 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
         final List<YamahaYsfcPerformancePart> filledParts = new ArrayList<> ();
 
+        // There is no solo state, therefore all instruments which are not soloed are muted if
+        // there is at least one soloed instrument
+        final boolean hasSoloedInstrument = instrumentSources.stream ().anyMatch (IInstrumentSource::isSolo);
+
         // Create one part in the performance for each multi-sample source
         final List<int []> allWaveReferences = new ArrayList<> ();
         final Set<Integer> midiChannelsInUse = new HashSet<> ();
@@ -378,19 +382,22 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
             part.setVolume (gain == Double.NEGATIVE_INFINITY ? 0 : (int) Math.round ((gain + 95.25) / (2 * 0.375)));
             part.setNoteShift (instrumentSource.getTranspose () + 64);
             part.setDetuneAsCents (instrumentSource.getTuning ());
+            part.setMute (hasSoloedInstrument ? !instrumentSource.isSolo () : instrumentSource.isMute ());
 
             final int partCategory = getCategoryIndex (multisampleSource.getMetadata ());
 
             allWaveReferences.add (this.fillPart (counters, format, ysfcFile, partCategory, multisampleSource, multisampleName, part));
             filledParts.add (part);
 
+            // The MIDI channels 1-8 are mapped to the scenes 1-8 by enabling keyboard control for
+            // the part in the matching scene, OMNI enables it in all scenes, 'Off' in none
             final int midiChannel = instrumentSource.getMidiChannel ();
             if (midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI)
                 hasOmni = true;
-            else // This contains 'Off' as well!
+            else if (midiChannel >= 0 && midiChannel < 8)
                 midiChannelsInUse.add (Integer.valueOf (midiChannel));
             for (int scene = 0; scene < 8; scene++)
-                part.setSceneKeyboardControl (scene, midiChannel == scene || midiChannel == -1);
+                part.setSceneKeyboardControl (scene, midiChannel == scene || midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI);
         }
 
         // Must be always 8!
@@ -409,8 +416,8 @@ public class YamahaYsfcCreator extends AbstractCreator<YamahaYsfcCreatorUI>
         if (midiChannelsInUse.isEmpty () && hasOmni)
             midiChannelsInUse.add (Integer.valueOf (0));
         // Only activate those scenes for which there is a MIDI channel!
-        for (int i = 0; i < midiChannelsInUse.size (); i++)
-            performance.setSceneKeyboardControl (i, true);
+        for (final Integer midiChannel: midiChannelsInUse)
+            performance.setSceneKeyboardControl (midiChannel.intValue (), true);
 
         final YamahaYsfcEntry performanceEntry = createPerformanceEntry (categoryID, performance.getName (), CONTENT_NUMBER + performanceIndex, combineArrays (allWaveReferences), parts.size ());
         ysfcFile.fillChunkPair (YamahaYsfcChunk.ENTRY_LIST_PERFORMANCE, YamahaYsfcChunk.DATA_LIST_PERFORMANCE, performanceEntry, performance);

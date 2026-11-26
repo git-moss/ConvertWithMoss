@@ -183,11 +183,12 @@ public class K2MetadataFileHandler extends AbstractNKIMetadataFileHandler
         final StringBuilder sb = new StringBuilder ();
         for (int i = 0; i < 64; i++)
         {
-            final int midiChannel = i < instrumentSources.size () ? toKontaktMidiChannel (instrumentSources.get (i)) : i + 1;
+            final IInstrumentSource instrumentSource = i < instrumentSources.size () ? instrumentSources.get (i) : null;
+            final int midiChannel = instrumentSource == null ? i + 1 : toKontaktMidiChannel (instrumentSource);
             final String slot = String.format ("%03d", Integer.valueOf (i));
             appendValue (sb, "midiChannel_slot" + slot, Integer.toString (midiChannel));
-            appendValue (sb, "solo_slot" + slot, "no");
-            appendValue (sb, "mute_slot" + slot, "no");
+            appendValue (sb, "solo_slot" + slot, instrumentSource != null && instrumentSource.isSolo () ? "yes" : "no");
+            appendValue (sb, "mute_slot" + slot, instrumentSource != null && instrumentSource.isMute () ? "yes" : "no");
             for (int aux = 0; aux < 4; aux++)
                 appendValue (sb, "auxSendLevel" + aux + "_slot" + slot, "0");
             appendValue (sb, "reorderIdx_" + slot, Integer.toString (i % 16));

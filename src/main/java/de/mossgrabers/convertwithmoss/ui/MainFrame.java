@@ -281,7 +281,10 @@ public class MainFrame extends AbstractFrame implements INotifier
             this.clearSelection ();
             this.updateContentsButton ();
         });
-        this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ().addListener ((_, _, _) -> this.clearSelection ());
+        this.destinationTypeTabPane.getSelectionModel ().selectedIndexProperty ().addListener ((_, _, _) -> {
+            this.clearSelection ();
+            this.updateDestinationType ();
+        });
         this.updateContentsButton ();
         final BorderPane sourcePane = new BorderPane ();
         sourcePane.setTop (sourceUpperPane.getPane ());
@@ -565,6 +568,8 @@ public class MainFrame extends AbstractFrame implements INotifier
 
         final int destinationType = this.config.getInteger (DESTINATION_TYPE, DEST_TYPE_PRESET);
         this.destinationTypeTabPane.getSelectionModel ().select (destinationType);
+        // The listener is not called if the selection did not change
+        this.updateDestinationType ();
 
         this.presetLibraryFilename.setText (this.config.getProperty (PRESET_LIBRARY_FILENAME, ""));
         this.performanceLibraryFilename.setText (this.config.getProperty (PERFORMANCE_LIBRARY_FILENAME, ""));
@@ -942,6 +947,19 @@ public class MainFrame extends AbstractFrame implements INotifier
     private void updateContentsButton ()
     {
         this.contentsButton.setVisible (this.sourceTaskPane.getSelectedFormatIndex () >= 0);
+    }
+
+
+    /**
+     * Inform the settings of all creators about the selected destination type.
+     */
+    private void updateDestinationType ()
+    {
+        final int selectedType = this.destinationTypeTabPane.getSelectionModel ().getSelectedIndex ();
+        final boolean isLibrary = selectedType == DEST_TYPE_PRESET_LIBRARY || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY;
+        final boolean isPerformance = selectedType == DEST_TYPE_PERFORMANCE || selectedType == DEST_TYPE_PERFORMANCE_LIBRARY;
+        for (final ICreator<?> creator: this.backend.getCreators ())
+            creator.getSettings ().setDestinationType (isLibrary, isPerformance);
     }
 
 

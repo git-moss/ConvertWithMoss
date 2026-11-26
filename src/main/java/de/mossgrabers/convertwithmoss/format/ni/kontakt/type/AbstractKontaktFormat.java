@@ -420,8 +420,8 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
      * Create a performance from the programs of a multi (NKM). The programs must have been
      * converted with isMultiPart set to true, since the volume and panning of the programs are
      * applied to the instruments. The master volume of the multi is added to the gain of all
-     * instruments and the master tuning to the tuning of all sample zones. Muted instruments are
-     * not added; if any instrument is soloed, only the soloed instruments are added.
+     * instruments and the master tuning to the tuning of all sample zones. The mute and solo states
+     * of the slots are stored in the instruments.
      *
      * @param sourceFile The source file of the multi
      * @param presetAccessor Contains the read multi-configuration and bank
@@ -445,7 +445,6 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
         }
 
         final List<MultiInstrument> multiInstruments = multiConfiguration.getMultiInstruments ();
-        final boolean hasSoloedInstrument = multiInstruments.stream ().anyMatch (MultiInstrument::isSoloed);
 
         final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
         performanceSource.setName (FileUtils.getNameWithoutType (sourceFile));
@@ -457,12 +456,6 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             // The slot indices are not continuous
             final int slotIndex = program.getSlotIndex ();
             final MultiInstrument multiInstrument = slotIndex >= 0 && slotIndex < multiInstruments.size () ? multiInstruments.get (slotIndex) : null;
-            if (multiInstrument != null && (hasSoloedInstrument ? !multiInstrument.isSoloed () : multiInstrument.isMuted ()))
-            {
-                this.notifier.log ("IDS_NKM_INSTRUMENT_MUTED", program.getName ());
-                continue;
-            }
-
             // The MIDI channel is stored as 0 = Omni, 1 = A1 ... 64 = D16
             final int kontaktMidiChannel = multiInstrument == null ? 0 : multiInstrument.getMidiChannel ();
             final int midiChannel = kontaktMidiChannel <= 0 ? IInstrumentSource.MIDI_CHANNEL_OMNI : kontaktMidiChannel - 1;
@@ -472,6 +465,11 @@ public abstract class AbstractKontaktFormat implements IKontaktFormat
             instrumentSource.setTranspose (program.getMidiTranspose ());
             instrumentSource.setGain (valueToDb (program.getInstrumentVolume ()) + masterGain);
             instrumentSource.setPanning (Math.clamp (program.getInstrumentPan (), -1.0, 1.0));
+            if (multiInstrument != null)
+            {
+                instrumentSource.setMute (multiInstrument.isMuted ());
+                instrumentSource.setSolo (multiInstrument.isSoloed ());
+            }
 
             if (masterTuning != 0)
                 for (final IGroup group: multisampleSource.getGroups ())

@@ -292,6 +292,15 @@ public class BentoCreator extends AbstractMusic1010Creator
 
             trackParamsElement.setAttribute (Music1010Tag.ATTR_CELLNAME, multisampleSource.getName ());
 
+            // The level of the instrument is set as the track level in dB * 1000 in the range of
+            // -96dB to +12dB, the panning in the range of -1000 (left) to 1000 (right)
+            final double gain = Math.clamp (instrumentSource.getGain (), -96.0, 12.0);
+            trackParamsElement.setAttribute (Music1010Tag.ATTR_TRACK_GAIN, Long.toString (Math.round (gain * 1000.0)));
+            final double panning = Math.clamp (instrumentSource.getPanning (), -1.0, 1.0);
+            trackParamsElement.setAttribute (Music1010Tag.ATTR_TRACK_PANNING, Long.toString (Math.round (panning * 1000.0)));
+            trackParamsElement.setAttribute (Music1010Tag.ATTR_TRACK_MUTE, instrumentSource.isMute () ? "1" : "0");
+            trackParamsElement.setAttribute (Music1010Tag.ATTR_TRACK_SOLO, instrumentSource.isSolo () ? "1" : "0");
+
             final Element instElement = XMLUtils.addElement (document, trackElement, Music1010Tag.CELL);
             instElement.setAttribute (Music1010Tag.ATTR_TYPE, "saminst");
 

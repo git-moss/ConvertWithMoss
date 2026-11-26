@@ -2461,9 +2461,11 @@
       <text:p>Read</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
-      <text:p>XPM / XPJ (read) / XTY (read)</text:p>
+      <text:p>XPM / XTY / XPJ (read)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce48" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>XPJ (write, up to 128 tracks)</text:p>
+     </table:table-cell>
      <table:table-cell table:number-columns-repeated="2" table:style-name="ce14" office:value-type="string" calcext:value-type="string">
       <text:p>All (WAV)</text:p>
      </table:table-cell>
@@ -14042,6 +14044,64 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>panOffset</text:p>
+     </table:table-cell>
+    </table:table-row>
+    <table:table-row table:style-name="ro24">
+     <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string">
+      <text:p>Akai MPC / Force</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>Read</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>XPJ / XTY</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="float" office:value="128" calcext:value-type="float">
+      <text:p>128</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>Omni, 1-16</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>keygroup transpose</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mixer volume</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mixer pan</text:p>
+     </table:table-cell>
+    </table:table-row>
+    <table:table-row table:style-name="ro24">
+     <table:table-cell table:style-name="ce18"/>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>Write</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>XPJ (MPC 3.10 or later)</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="float" office:value="128" calcext:value-type="float">
+      <text:p>128</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>Omni, 1-16</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>clips the key-groups</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>keygroup transpose</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>added to the sample tuning</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mixer volume</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mixer pan</text:p>
      </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro11">

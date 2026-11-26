@@ -244,7 +244,7 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         sampleZone.setStop (start + XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_SAMPLE_LENGTH, 0));
         sampleZone.setReversed (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_REVERSE, 0) == 1);
 
-        // Gain - "gaindb" -> unknown conversion
+        sampleZone.setGain (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_GAIN, 0) / 1000.0);
 
         sampleZone.setTuning (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PITCH, 0) / 1000.0);
         sampleZone.setPanning (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PANNING, 0) / 1000.0);
@@ -304,6 +304,9 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
 
         final Element paramsElement = XMLUtils.getChildElementByName (sampleElement, Music1010Tag.PARAMS);
         int midiChannel = -1;
+        boolean isMuted = false;
+        double gain = 0;
+        double panning = 0;
         if (paramsElement != null)
         {
 
@@ -314,6 +317,10 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
                 midiChannel = -1;
             else if (midiChannel == -1)
                 midiChannel = 0;
+
+            isMuted = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_MUTE, 0) > 0;
+            gain = XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_GAIN, 0) / 1000.0;
+            panning = Math.clamp (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_PANNING, 0) / 1000.0, -1.0, 1.0);
 
             final double ampEnvAttack = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_ATTACK, 0), 9.0);
             final double ampEnvDecay = MathUtils.denormalizeTime (XMLUtils.getIntegerAttribute (paramsElement, Music1010Tag.ATTR_AMPEG_DECAY, 0), 38.0);
@@ -348,7 +355,11 @@ public class Music1010Detector extends AbstractDetector<MetadataSettingsUI>
         if (paramsElement != null)
             Music1010Lfo.readLfoModulators (paramsElement, sampleElement, group, true);
 
-        return Optional.of (new DefaultInstrumentSource (multisampleSource, midiChannel));
+        final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
+        instrumentSource.setMute (isMuted);
+        instrumentSource.setGain (gain);
+        instrumentSource.setPanning (panning);
+        return Optional.of (instrumentSource);
     }
 
 

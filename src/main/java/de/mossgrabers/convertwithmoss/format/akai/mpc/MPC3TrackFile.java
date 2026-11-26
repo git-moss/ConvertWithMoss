@@ -88,21 +88,55 @@ public class MPC3TrackFile
      */
     public TrackDocument create (final IMultisampleSource multisampleSource, final String sampleName) throws IOException
     {
-        final ObjectNode root = (ObjectNode) this.mapper.readTree (Functions.textFileFor (TEMPLATE));
+        final ObjectNode root = this.loadTemplate ();
         final ObjectNode dataNode = (ObjectNode) root.get ("data");
+        final ArrayNode samplesNode = (ArrayNode) dataNode.get ("samples");
+        final ObjectNode samplePrototype = samplesNode.get (0).deepCopy ();
+        samplesNode.removeAll ();
+        final int numKeygroups = this.fillTrack (dataNode, samplesNode, samplePrototype, multisampleSource, sampleName);
+        return new TrackDocument (root.toPrettyString (), numKeygroups);
+    }
+
+
+    /**
+     * Create a copy of the entry of the sample list of the track template. The template of a
+     * project contains no samples, therefore it uses this one.
+     *
+     * @return The sample list entry
+     * @throws IOException Could not load or parse the template
+     */
+    public ObjectNode createSamplePrototype () throws IOException
+    {
+        return this.loadTemplate ().get ("data").get ("samples").get (0).deepCopy ();
+    }
+
+
+    /**
+     * Fill a track node with a multi-sample. The node contains the 'SerialisableTrackData'
+     * structure of a key-group track, either the data node of a track file or a track of a project.
+     * Its instrument slots are replaced, the first instrument slot is the prototype for all slots.
+     * The samples are added to the given sample list: a track file contains its own sample list,
+     * while the tracks of a project (since MPC 3.10) have none and the project lists all samples.
+     *
+     * @param trackNode The track node to fill
+     * @param samplesNode The sample list to which to add the samples of the track
+     * @param samplePrototype The prototype for the entries of the sample list
+     * @param multisampleSource The multi-sample to store
+     * @param sampleName The name which prefixes the sample files
+     * @return The number of created key-groups
+     */
+    public int fillTrack (final ObjectNode trackNode, final ArrayNode samplesNode, final ObjectNode samplePrototype, final IMultisampleSource multisampleSource, final String sampleName)
+    {
         final String name = multisampleSource.getName ();
-        dataNode.put ("name", name);
-        final ObjectNode programNode = (ObjectNode) dataNode.get ("program");
+        trackNode.put ("name", name);
+        final ObjectNode programNode = (ObjectNode) trackNode.get ("program");
         programNode.put ("name", name);
 
-        // The prototypes for the instrument slots and the sample list entries
+        // The prototype for the instrument slots
         final ObjectNode drumNode = (ObjectNode) programNode.get ("drum");
         final ArrayNode instrumentsNode = (ArrayNode) drumNode.get ("instruments");
         final ObjectNode instrumentPrototype = instrumentsNode.get (0).deepCopy ();
         instrumentsNode.removeAll ();
-        final ArrayNode samplesNode = (ArrayNode) dataNode.get ("samples");
-        final ObjectNode samplePrototype = samplesNode.get (0).deepCopy ();
-        samplesNode.removeAll ();
 
         // Stack the zones of all groups into key-groups by their key range
         final Map<String, List<List<ISampleZone>>> keygroupsMap = new LinkedHashMap<> ();
@@ -138,6 +172,12 @@ public class MPC3TrackFile
         // both as a fraction of an octave and as semitone integers
         final ObjectNode keygroupNode = (ObjectNode) programNode.get ("keygroup");
         keygroupNode.put ("numKeygroups", Math.max (1, numKeygroups));
+
+        // The envelopes and the filter are stored in the synthesizer section of each key-group,
+        // which is only used in legacy mode. Otherwise the MPC uses the one of the program
+        // (keygroup/synthSection) for all key-groups, as in the key-group track of the project
+        // template and in programs of the MPC Autosampler.
+        keygroupNode.put ("legacyMode", true);
         int bendUpCents = 200;
         int bendDownCents = 200;
         if (!allZones.isEmpty ())
@@ -185,7 +225,19 @@ public class MPC3TrackFile
                 return sampleNode;
             });
 
-        return new TrackDocument (root.toPrettyString (), numKeygroups);
+        return numKeygroups;
+    }
+
+
+    /**
+     * Load the track template.
+     *
+     * @return The root node of the template
+     * @throws IOException Could not load or parse the template
+     */
+    private ObjectNode loadTemplate () throws IOException
+    {
+        return (ObjectNode) this.mapper.readTree (Functions.textFileFor (TEMPLATE));
     }
 
 

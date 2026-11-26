@@ -216,19 +216,24 @@ A MPC Keygroup or MPC Drum setup is stored in a folder. It contains a descriptio
 A track file (*.xty) is a MPC v3 specific file that saves all settings, samples, macros, FX and MIDI data associated with a track. A track consists of two elements; the track file itself and a trackData folder containing the samples used within the track (ending with '_\[TrackData\]'). If the track contains a keygroup it is extracted as a multi-sample source.
 A project file (*.xpj) contains all track and project settings. All tracks which contain a keygroup are extracted as a multi-sample source.
 
+If 'Performance' is selected as the source type, project and track files are read as performances: each track which contains a keygroup becomes one instrument with the MIDI input channel ('All' or 1-16), the volume and panorama of the track mixer and the transposition of the keygroup.
+
 ### Source Options
 
 * Ignore Loops: There are XPM files which do not contain loops but the related WAV files do (seems to happen with the MPC Autosampler). ConvertWithMoss uses the loops from the WAV files in that case. This might not be what you intended if a multi-sample should be one-shot. Enable this option to ignore the loops.
 
 ### Destination Options
 
-* Output Format: Writes either a MPC 2 keygroup - a folder with the description file (.xpm) and the samples - or a MPC 3 track file (.xty) with its sample folder (ending with '_\[TrackData\]'). The track files replicate the complete 'SerialisableTrackData' structure of files written by MPC firmware 3.7 - all 128 instrument slots with their layers, the key-group performance controls and the sample list - but have not been verified in the MPC 3 software itself yet; reports welcome.
-* Limit layers to: MPC Firmware 3.4 increased the number of possible layers in a keygroup to 8. This option allows you to choose between 4 (for older firmware revisions) or 8.
+* Output Format (only shown if 'Preset' is selected as the destination type): Writes either a MPC 2 keygroup - a folder with the description file (.xpm) and the samples - or a MPC 3 track file (.xty) with its sample folder (ending with '_\[TrackData\]'). The track files replicate the complete 'SerialisableTrackData' structure of files written by MPC firmware 3.7 - all 128 instrument slots with their layers, the key-group performance controls and the sample list - but have not been verified in the MPC 3 software itself yet; reports welcome.
+* If 'Performance' is selected as the destination type, a MPC 3 project file (.xpj) is written with its sample folder (ending with '_\[ProjectData\]'), independent of the Output Format. Each instrument becomes one keygroup track with its MIDI input channel, volume, panorama and transposition.
+* If 'Preset Library' is selected as the destination type, all multi-samples are written as keygroup tracks into one MPC 3 project file (.xpj) with its sample folder, independent of the Output Format. The tracks receive on all MIDI channels. The projects are based on an empty project written by the MPC 3.10 software and require MPC firmware/software 3.10 or later.
+* Limit layers to (only shown if 'Preset' is selected as the destination type): MPC Firmware 3.4 increased the number of possible layers in a keygroup to 8. This option allows you to choose between 4 (for older firmware revisions) or 8. Projects (Preset Library, Performance) always use 8 layers since they require MPC 3.10.
 
 ### Destination Restrictions
 
 * A round robin or random keygroup can only contain up to 4/8 layers (groups), since the MPC picks one of the layers of a keygroup. An error is displayed in this case but the file is converted anyway.
 * Only 128 keygroups are allowed. An error is displayed in this case but the file is written anyway but might not be loadable.
+* A project contains up to 128 keygroup tracks; further instruments are not written. A track has no fine tuning, it is added to the tuning of the samples.
 
 ## Akai MPC60
 

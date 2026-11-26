@@ -15,9 +15,20 @@ the conversion. All multi-byte values are little-endian; in the C listings of th
 * Sector 1: directory, 64 entries of 16 bytes: name (12), `ext` (u16: low byte = type 0-5,
   high byte = disk number for files spanning two disks), start sector (u16).
 * A file = one head sector (64 sector ranges of `start`/`end` u16 pairs, terminated by 0/0;
-  work area; the last 6 bytes hold three u16 counters) + the content sectors.
-* Counters per type: full dump (0): voices/banks/wave blocks; voice (1): 1/0/wave blocks;
-  bank (2): voices/1/wave blocks.
+  work area; the last 6 bytes hold three u16 counters) + the content sectors. On disks written
+  by the sampler the first range starts with the head sector itself (e.g. head at sector 2,
+  range 2-91), the head is not part of the content.
+* Counters (offsets 1018, 1020, 1022): banks/voices/wave blocks, i.e. voice (1): 0/1/wave
+  blocks, bank (2): 1/voices/wave blocks. The development document suggests the order
+  voices/banks, but all files of the examined disk images (voice and bank files) use
+  banks/voices; head + banks + voice blocks + wave blocks equals the sector count of the
+  ranges exactly. The head-less dumps (see below) store their counters in a different order.
+* Files spanning two disks: the high byte of `ext` is the number of the continuation disk
+  (0 = first part). The continuation part (e.g. `AZFRISONAPPL` with `ext = 0x0102`) has a
+  copy of the file head (counters of the complete file) followed directly by the remaining
+  wave data; the bank and voice blocks are only on the first disk. The continuation is
+  therefore skipped, the first part is read with the missing wave data as silence (voices
+  which lie completely in the missing part are dropped).
 * Content order: bank blocks (656 bytes each, effect parameters at offset 960 of the first
   block, 24 bytes), voice blocks (4 voices of 192 bytes per block, 256 bytes stride), wave
   blocks (512 16-bit samples per block, little-endian).

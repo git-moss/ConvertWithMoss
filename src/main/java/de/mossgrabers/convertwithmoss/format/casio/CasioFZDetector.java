@@ -63,7 +63,9 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
             final CasioFZDisk disk = new CasioFZDisk (sourceFile);
             final List<IMultisampleSource> results = new ArrayList<> ();
             for (final CasioFZFile file: disk.getFiles ())
-                results.addAll (this.readFile (sourceFile, file));
+                results.addAll (this.readFile (sourceFile, file, disk.isDiskImage ()));
+            for (final String continuationFile: disk.getContinuationFiles ())
+                this.notifier.logError ("IDS_FZ_CONTINUATION_SKIPPED", continuationFile);
             if (results.isEmpty ())
                 this.notifier.logError ("IDS_FZ_NO_INSTRUMENTS_FOUND", sourceFile.getAbsolutePath ());
             return results;
@@ -81,25 +83,26 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param sourceFile The source file which contains the FZ file
      * @param file The FZ file
+     * @param isFromDiskImage True if the file was read from a disk image
      * @return The multi-samples
      * @throws IOException The file is malformed
      */
-    private List<IMultisampleSource> readFile (final File sourceFile, final CasioFZFile file) throws IOException
+    private List<IMultisampleSource> readFile (final File sourceFile, final CasioFZFile file, final boolean isFromDiskImage) throws IOException
     {
         final int numberOfVoices;
         final int numberOfBanks;
         switch (file.type ())
         {
             case CasioFZDisk.TYPE_FULL_DUMP:
-                numberOfVoices = file.getCounter (0);
-                numberOfBanks = file.getCounter (1);
+                numberOfBanks = file.getCounter (0);
+                numberOfVoices = file.getCounter (1);
                 break;
             case CasioFZDisk.TYPE_VOICE:
                 numberOfVoices = 1;
                 numberOfBanks = 0;
                 break;
             case CasioFZDisk.TYPE_BANK:
-                numberOfVoices = file.getCounter (0);
+                numberOfVoices = file.getCounter (1);
                 numberOfBanks = 1;
                 break;
             default:
@@ -113,10 +116,17 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
         final int parameterLength = (numberOfBanks + voiceBlocks) * CasioFZDisk.SECTOR_SIZE;
         if (numberOfVoices <= 0 || numberOfVoices > 64 || numberOfBanks > 8 || content.length < parameterLength)
             throw new IOException ("Malformed FZ file: " + file.name ());
-        // Some circulating dump files are truncated; the missing wave data plays as silence
+        // Some circulating dump files are truncated; the missing wave data plays as silence. On a
+        // disk image this is a file whose wave data is continued on the next disk
         final int expectedLength = parameterLength + numberOfWaveBlocks * CasioFZDisk.SECTOR_SIZE;
         if (content.length < expectedLength)
-            this.notifier.logError ("IDS_FZ_WAVE_TRUNCATED", file.name (), Integer.toString (expectedLength - content.length));
+        {
+            final String missingBytes = Integer.toString (expectedLength - content.length);
+            if (isFromDiskImage)
+                this.notifier.logError ("IDS_FZ_WAVE_ON_NEXT_DISK", file.name (), missingBytes);
+            else
+                this.notifier.logError ("IDS_FZ_WAVE_TRUNCATED", file.name (), missingBytes);
+        }
 
         // Read the banks
         final List<CasioFZBank> banks = new ArrayList<> ();
@@ -154,7 +164,9 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
         // wave start instead.
         final int wavePoolOffset = voicesOffset + voiceBlocks * CasioFZDisk.SECTOR_SIZE;
         final byte [] wavePool = new byte [numberOfWaveBlocks * CasioFZDisk.SECTOR_SIZE];
-        System.arraycopy (content, wavePoolOffset, wavePool, 0, Math.min (wavePool.length, content.length - wavePoolOffset));
+        final int availableBytes = Math.max (0, Math.min (wavePool.length, content.length - wavePoolOffset));
+        System.arraycopy (content, wavePoolOffset, wavePool, 0, availableBytes);
+        final int availableWords = availableBytes / 2;
         long waveBase = 0;
         for (final CasioFZVoice voice: voices)
             if (voice.mode != CasioFZVoice.MODE_NO_SOUND && voice.waveEnd * 2 > wavePool.length)
@@ -174,7 +186,7 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
             final IGroup group = new DefaultGroup ("Group 1");
             for (final CasioFZVoice voice: voices)
             {
-                final ISampleZone zone = createZone (voice, wavePool, waveBase, bendRangeCents);
+                final ISampleZone zone = createZone (voice, wavePool, availableWords, waveBase, bendRangeCents);
                 if (zone != null)
                 {
                     zone.setKeyLow (Math.clamp (voice.lowKey, 0, 127));
@@ -210,7 +222,7 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
                     this.notifier.logError ("IDS_FZ_VOICE_OUT_OF_BOUNDS", Integer.toString (voiceIndex), bank.name);
                     continue;
                 }
-                final ISampleZone zone = createZone (voices.get (voiceIndex), wavePool, waveBase, bendRangeCents);
+                final ISampleZone zone = createZone (voices.get (voiceIndex), wavePool, availableWords, waveBase, bendRangeCents);
                 if (zone == null)
                     continue;
 
@@ -243,11 +255,13 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param voice The voice
      * @param wavePool The wave data of the file
+     * @param availableWords The number of words at the start of the wave pool which are present
+     *            in the file, the rest is missing (truncated file or continued on the next disk)
      * @param waveBase The word address at which the wave pool starts
      * @param bendRangeCents The pitch bend range in cents, -1 if not present
      * @return The zone or null if the voice has no sound
      */
-    private static ISampleZone createZone (final CasioFZVoice voice, final byte [] wavePool, final long waveBase, final int bendRangeCents)
+    private static ISampleZone createZone (final CasioFZVoice voice, final byte [] wavePool, final int availableWords, final long waveBase, final int bendRangeCents)
     {
         if (voice.mode == CasioFZVoice.MODE_NO_SOUND)
             return null;
@@ -256,7 +270,8 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
         final int waveStart = Math.clamp (voice.waveStart - waveBase, 0, poolWords);
         final int waveEnd = Math.clamp (voice.waveEnd - waveBase, waveStart, poolWords);
         final int numFrames = waveEnd - waveStart;
-        if (numFrames <= 0)
+        // A voice whose wave data is completely missing would only be silent
+        if (numFrames <= 0 || waveStart >= availableWords)
             return null;
 
         // Extract the 16-bit little-endian sample of the voice from the wave pool

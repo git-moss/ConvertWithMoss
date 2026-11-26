@@ -22,11 +22,14 @@ import java.util.zip.GZIPOutputStream;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -43,7 +46,8 @@ import de.mossgrabers.tools.XMLUtils;
 /**
  * Creator for Akai MPC keygroup files. Keygroups have a description file and related samples in one
  * folder. A keygroup program offers up to 128 keygroups, and each keygroup can hold up to four
- * samples (Layers 1–4). This is a total of 512 samples.
+ * samples (Layers 1–4). This is a total of 512 samples. Performances and preset libraries are
+ * stored as MPC 3 projects with one key-group track for each instrument or multi-sample.
  *
  * @author Jürgen Moßgraber
  */
@@ -106,6 +110,100 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
     }
 
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPresetLibraries ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void createPresetLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
+    {
+        // Each multi-sample becomes one key-group track of a MPC 3 project, which receives on all
+        // MIDI channels like a new track
+        final List<IInstrumentSource> instruments = new ArrayList<> ();
+        for (final IMultisampleSource multisampleSource: multisampleSources)
+        {
+            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, IInstrumentSource.MIDI_CHANNEL_OMNI);
+            instrumentSource.setName (multisampleSource.getName ());
+            instruments.add (instrumentSource);
+        }
+        this.createProject (destinationFolder, libraryName, instruments);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
+    {
+        this.createProject (destinationFolder, performanceSource.getName (), performanceSource.getInstruments ());
+    }
+
+
+    /**
+     * Create a MPC 3 project file (*.xpj) with its sample folder. Each instrument becomes one
+     * key-group track.
+     *
+     * @param destinationFolder Where to store the project file
+     * @param name The name of the project
+     * @param instrumentSources The instruments to store, up to 128
+     * @throws IOException Could not store the file
+     */
+    private void createProject (final File destinationFolder, final String name, final List<IInstrumentSource> instrumentSources) throws IOException
+    {
+        List<IInstrumentSource> instruments = instrumentSources;
+        if (instruments.isEmpty ())
+            return;
+        final int numInstruments = instruments.size ();
+        if (numInstruments > MPC3ProjectFile.MAX_TRACKS)
+        {
+            instruments = instruments.subList (0, MPC3ProjectFile.MAX_TRACKS);
+            this.notifier.logError ("IDS_ERR_LIMITED_INSTRUMENTS", Integer.toString (MPC3ProjectFile.MAX_TRACKS), Integer.toString (numInstruments));
+        }
+
+        final String projectName = SafeFileNames.create (name);
+        final File projectFile = this.createUniqueFilename (destinationFolder, projectName, "xpj");
+
+        // The samples of all tracks live in one folder next to the project file - WAV ending needs
+        // to be upper case!
+        final String projectFileName = projectFile.getName ();
+        final File projectDataFolder = new File (destinationFolder, projectFileName.substring (0, projectFileName.length () - ".xpj".length ()) + MPC3ProjectFile.PROJECT_DATA_SUFFIX);
+        safeCreateDirectory (projectDataFolder);
+
+        final MPC3ProjectFile project = new MPC3ProjectFile ();
+        for (final IInstrumentSource instrumentSource: instruments)
+        {
+            if (this.isCancelled ())
+                return;
+
+            instrumentSource.clipKeyRange ();
+            final int numKeygroups = project.addTrack (instrumentSource);
+            if (numKeygroups > 128)
+                this.notifier.logError ("IDS_MPC_MORE_THAN_128_KEYGROUPS", Integer.toString (numKeygroups));
+
+            // The samples are written before the next track is added, since a multi-sample used
+            // by several instruments gets other sample names for each track
+            this.writeSamples (projectDataFolder, instrumentSource.getMultisampleSource (), ".WAV");
+        }
+
+        this.notifier.log ("IDS_NOTIFY_STORING", projectFile.getAbsolutePath ());
+        writeJsonFile (projectFile, MPC3ProjectFile.HEADER_DATA_TYPE, MPCKeygroupConstants.PROJECT_FILE_VERSION, MPCKeygroupConstants.PROJECT_PLATFORM, project.createJson ());
+
+        this.progress.notifyDone ();
+    }
+
+
     /**
      * Create a MPC 3 track file (*.xty) with its sample folder.
      *
@@ -123,20 +221,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
             this.notifier.logError ("IDS_MPC_MORE_THAN_128_KEYGROUPS", Integer.toString (document.numKeygroups ()));
 
         this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
-        try (final Writer writer = new OutputStreamWriter (new GZIPOutputStream (new FileOutputStream (multiFile)), StandardCharsets.UTF_8))
-        {
-            writer.write (MPC3TrackFile.HEADER_MAGIC);
-            writer.write ('\n');
-            writer.write (MPCKeygroupConstants.TRACK_FILE_VERSION);
-            writer.write ('\n');
-            writer.write (MPC3TrackFile.HEADER_DATA_TYPE);
-            writer.write ('\n');
-            writer.write (MPC3TrackFile.HEADER_ENCODING);
-            writer.write ('\n');
-            writer.write (MPCKeygroupConstants.TRACK_FILE_PLATFORM);
-            writer.write ('\n');
-            writer.write (document.json ());
-        }
+        writeJsonFile (multiFile, MPC3TrackFile.HEADER_DATA_TYPE, MPCKeygroupConstants.TRACK_FILE_VERSION, MPCKeygroupConstants.TRACK_FILE_PLATFORM, document.json ());
 
         // The samples live in a folder next to the track file - WAV ending needs to be upper case!
         final String trackFileName = multiFile.getName ();
@@ -145,6 +230,36 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         this.writeSamples (trackDataFolder, multisampleSource, ".WAV");
 
         this.progress.notifyDone ();
+    }
+
+
+    /**
+     * Write a MPC 3 JSON file (track or project): a GZIP compressed text with 5 header lines
+     * followed by the JSON document.
+     *
+     * @param file The file to write
+     * @param dataType The data type of the header
+     * @param version The firmware version of the header
+     * @param platform The platform of the header
+     * @param json The JSON document
+     * @throws IOException Could not store the file
+     */
+    private static void writeJsonFile (final File file, final String dataType, final String version, final String platform, final String json) throws IOException
+    {
+        try (final Writer writer = new OutputStreamWriter (new GZIPOutputStream (new FileOutputStream (file)), StandardCharsets.UTF_8))
+        {
+            writer.write (MPC3TrackFile.HEADER_MAGIC);
+            writer.write ('\n');
+            writer.write (version);
+            writer.write ('\n');
+            writer.write (dataType);
+            writer.write ('\n');
+            writer.write (MPC3TrackFile.HEADER_ENCODING);
+            writer.write ('\n');
+            writer.write (platform);
+            writer.write ('\n');
+            writer.write (json);
+        }
     }
 
 

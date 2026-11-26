@@ -297,6 +297,11 @@ public class Music1010Creator extends AbstractMusic1010Creator
         final int numInstruments = instrumentSources.size ();
         final List<Element> activeSlots = this.createSlots (document, sessionElement, numInstruments);
         int sampleIndex = 0;
+
+        // There is no solo state, therefore all instruments which are not soloed are muted if
+        // there is at least one soloed instrument
+        final boolean hasSoloedInstrument = instrumentSources.stream ().anyMatch (IInstrumentSource::isSolo);
+
         for (int i = 0; i < numInstruments; i++)
         {
             final IInstrumentSource instrumentSource = instrumentSources.get (i);
@@ -322,6 +327,15 @@ public class Music1010Creator extends AbstractMusic1010Creator
             };
 
             XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS).setAttribute (Music1010Tag.ATTR_MIDI_MODE, Integer.toString (midiChannel));
+            final boolean isMuted = hasSoloedInstrument ? !instrumentSource.isSolo () : instrumentSource.isMute ();
+            XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS).setAttribute (Music1010Tag.ATTR_MUTE, isMuted ? "1" : "0");
+
+            // The level of the cell is stored in dB * 1000 in the range of -96dB to +12dB
+            final double gain = Math.clamp (instrumentSource.getGain (), -96.0, 12.0);
+            XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS).setAttribute (Music1010Tag.ATTR_GAIN, Long.toString (Math.round (gain * 1000.0)));
+            // The panning of the cell is stored in the range of -1000 (left) to 1000 (right)
+            final double panning = Math.clamp (instrumentSource.getPanning (), -1.0, 1.0);
+            XMLUtils.getChildElementByName (slotElement, Music1010Tag.PARAMS).setAttribute (Music1010Tag.ATTR_PANNING, Long.toString (Math.round (panning * 1000.0)));
 
             createVelocityModulators (document, slotElement, multisampleSource);
 
