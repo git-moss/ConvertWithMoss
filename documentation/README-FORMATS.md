@@ -395,6 +395,8 @@ Note: the Tonverk stores envelope times and the filter cut-off frequency as norm
 #### Destination Options
 
 * Output Engine: Selects which machine to write. *Multi-Sample* and *Drum Kit* force that machine; *Auto (from source)* writes a Drum machine when the source looks like a drum kit (a percussion category or up to eight single-key zones) and a Multi machine otherwise.
+* Remove category tag at name start: If enabled, a category tag written in upper case at the start of the name is removed from the preset name, e.g. 'PAD Poly800 Better Than a 106' is written as 'Poly800 Better Than a 106', since the display of the Tonverk shows only the start of a long name. The tag still sets the category and the tags of the preset. Off by default.
+* Number presets starting at: If a number is entered, the presets get a three digit number in front of their name like the factory presets, e.g. '176 Poly800 Better Than a 106' (the factory presets use the numbers 001 to 175). The numbering starts with this number for every conversion and follows the order in which the presets are converted, which is the alphabetical order of the source files. Since the preset folder of the Tonverk has no sub-folders, this keeps the presets of a library together. Empty by default (no numbers). CLI: `TonverkFirstPresetNumber=176`.
 * Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
 
 ## E-mu Emulator
@@ -977,7 +979,7 @@ The original SoundFont file format was developed in the early 1990s by E-mu Syst
 
 A SoundFont can contain several presets grouped into banks. Presets refer to one or more instruments which are distributed over a keyboard by key and velocity ranges. The sample data contained in the file is in mono or split stereo with 16 or 24 bit.
 
-The conversion process creates one destination file for each preset found in a SoundFont file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
+The conversion process creates one destination file for each preset found in a SoundFont file. If a SoundFont contains only one preset, its name is taken from the file name, since a SoundFont stores at most 19 characters of a preset name and libraries with one preset per file often name only the file. The mono files are combined into stereo files. If the left and right channel mono samples contain different loops, the loop of the left channel is used.
 
 There are metadata fields for creator and some description specified in the format. However, additional information like a category is retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 

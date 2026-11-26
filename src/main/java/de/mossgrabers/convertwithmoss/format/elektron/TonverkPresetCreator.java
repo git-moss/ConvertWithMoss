@@ -31,6 +31,7 @@ import de.mossgrabers.convertwithmoss.file.AudioFileUtils;
 import de.mossgrabers.convertwithmoss.file.riff.CommonRiffChunkId;
 import de.mossgrabers.convertwithmoss.file.wav.WaveFile;
 import de.mossgrabers.convertwithmoss.file.wav.WaveRiffChunkId;
+import de.mossgrabers.convertwithmoss.format.TagDetector;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkKeyZone;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkSampleSlot;
 import de.mossgrabers.convertwithmoss.format.elektron.TonverkMultiFile.TonverkVelocityLayer;
@@ -101,6 +102,17 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     {
         final boolean resample = this.settingsConfiguration.resampleTo2448 ();
         final boolean drum = this.isDrumOutput (multisampleSource);
+
+        // The display of the Tonverk shows only the start of a long preset name, a category tag
+        // like 'PAD' in front of it can be removed since it was already used for the category
+        if (this.settingsConfiguration.removeCategoryTag ())
+            multisampleSource.setName (TagDetector.removeCategoryPrefix (multisampleSource.getName ()));
+
+        // Number the presets like the factory presets (e.g. '051 VHS PAD'), which keeps the
+        // presets of a library together in the flat preset folder
+        final int presetNumber = this.settingsConfiguration.nextPresetNumber ();
+        if (presetNumber >= 0)
+            multisampleSource.setName (String.format ("%03d %s", Integer.valueOf (presetNumber), multisampleSource.getName ()));
 
         // Mirror the device's SD-card layout: the flat preset goes into 'User/Presets', the samples
         // into 'User/Multi-sampled Instruments/<preset>'. Both sub-trees accumulate across presets

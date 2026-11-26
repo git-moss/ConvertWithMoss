@@ -13,6 +13,11 @@
   * Fixed: Projects are now written in the 52,000 byte form of PADCONF.BIN which the device and the SP-404MKII App store; the app imported only the tempos of the 31,488 byte form. Note that the app still does not import the samples of written projects since a 480 byte block in the sample files, which looks encrypted, cannot be created.
 * Teenage Engineering OP-XY
   * New: Read and write the filter (cut-off, resonance, envelope amount, key tracking) and the filter envelope. The order of the filter parameters is taken from the documentation of the device, the scaling of the cut-off and the envelope amount is estimated; this is not yet verified with presets of the device.
+* Elektron Tonverk Preset
+  * New: Option to remove a category tag at the start of the preset name, e.g. 'PAD Poly800 Better Than a 106' is written as 'Poly800 Better Than a 106', since the display of the Tonverk shows only the start of a long name. The tag is removed only if it is written in upper case and still sets the category and the tags of the preset.
+  * New: Option to number the presets like the factory presets, starting with a given number, e.g. '176 Poly800 Better Than a 106'. Since the preset folder of the Tonverk has no sub-folders, this keeps the presets of a library together.
+* SoundFont 2
+  * Fixed: The name of a SoundFont which contains only one preset is now taken from the file name. A SoundFont stores at most 19 characters of a preset name, so longer names were cut off, e.g. 'PAD Poly800 Better' instead of 'PAD Poly800 Better Than a 106' (24 of the 40 SoundFonts of Vulture Culture's 'Legendary Synths'), and libraries with one preset per file often name only the file, e.g. 'Organ2' is stored in 'BASS M1 Organ2.sf2' and 'LEAD Source Torture' in 'PAD Source Tortured Robots.sf2'. The stored names are still used for SoundFonts with several presets.
 * TAL Sampler
   * Fixed: An LFO with the wave form Sine was written as Noise. The value of Sine exists only since version 12 of the file format, the plug-in reads files of an older version - ConvertWithMoss wrote version 9 - with only 5 wave forms. Files are now written as version 12 and the wave forms of older files are read with the scale of their version.
 
