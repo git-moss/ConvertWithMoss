@@ -207,13 +207,16 @@ public class Kontakt5Format extends AbstractKontaktFormat
             programContainerChunk.write (slotsOut);
             slotMask.set (i);
 
-            // The MIDI channel is stored as 0 = Omni, 1 = A1 ... 64 = D16
+            // The MIDI channel is stored as 0 = Omni, 1 = A1 ... 64 = D16, followed by the mute and
+            // solo state
             final int offset = i * MULTI_CONFIG_SIZE;
-            if (offset + 1 < multiConfiguration.length)
+            if (offset + 3 < multiConfiguration.length)
             {
                 final int kontaktMidiChannel = toKontaktMidiChannel (instrumentSource.getMidiChannel ());
                 multiConfiguration[offset] = (byte) (kontaktMidiChannel & 0xFF);
                 multiConfiguration[offset + 1] = (byte) (kontaktMidiChannel >> 8 & 0xFF);
+                multiConfiguration[offset + 2] = (byte) (instrumentSource.isMute () ? 1 : 0);
+                multiConfiguration[offset + 3] = (byte) (instrumentSource.isSolo () ? 1 : 0);
             }
         }
 

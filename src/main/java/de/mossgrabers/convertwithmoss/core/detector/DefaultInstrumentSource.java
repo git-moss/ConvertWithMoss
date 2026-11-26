@@ -29,6 +29,8 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     private int                tuning      = 0;
     private double             gain        = 0;
     private double             panning     = 0;
+    private boolean            isMute      = false;
+    private boolean            isSolo      = false;
 
 
     /**
@@ -149,6 +151,38 @@ public class DefaultInstrumentSource extends DefaultSource implements IInstrumen
     public void setPanning (final double panning)
     {
         this.panning = panning;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isMute ()
+    {
+        return this.isMute;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setMute (final boolean isMute)
+    {
+        this.isMute = isMute;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean isSolo ()
+    {
+        return this.isSolo;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void setSolo (final boolean isSolo)
+    {
+        this.isSolo = isSolo;
     }
 
 

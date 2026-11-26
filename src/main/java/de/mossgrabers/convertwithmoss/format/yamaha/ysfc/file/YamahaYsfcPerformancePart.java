@@ -37,8 +37,9 @@ public class YamahaYsfcPerformancePart
     /** The control box destination P.LFO Depth 1, followed by 2 and 3. */
     public static final int                   CONTROL_DESTINATION_LFO_DEPTH = 184;
 
-    // The offsets of the Part LFO parameters in the many parameters block, which are identical for
-    // MONTAGE and MODX
+    // The offsets of the Mute Switch and the Part LFO parameters in the many parameters block,
+    // which are identical for MONTAGE and MODX
+    private static final int                  OFFSET_MUTE_SWITCH            = 51;
     private static final int                  OFFSET_LFO_PHASE              = 56;
     private static final int                  OFFSET_LFO_WAVE               = 57;
     private static final int                  OFFSET_LFO_SPEED              = 58;
@@ -250,6 +251,17 @@ public class YamahaYsfcPerformancePart
 
 
     /**
+     * Is the part switched on?
+     *
+     * @return True if the part is on
+     */
+    public boolean isPartSwitch ()
+    {
+        return this.partSwitch > 0;
+    }
+
+
+    /**
      * Set the part to off/on.
      *
      * @param partSwitch True to enable
@@ -257,6 +269,28 @@ public class YamahaYsfcPerformancePart
     public void setPartSwitch (final boolean partSwitch)
     {
         this.partSwitch = partSwitch ? 1 : 0;
+    }
+
+
+    /**
+     * Is the part muted?
+     *
+     * @return True if the part is muted
+     */
+    public boolean isMute ()
+    {
+        return this.manyParameters[OFFSET_MUTE_SWITCH] > 0;
+    }
+
+
+    /**
+     * Mute or un-mute the part.
+     *
+     * @param isMute True to mute the part
+     */
+    public void setMute (final boolean isMute)
+    {
+        this.manyParameters[OFFSET_MUTE_SWITCH] = (byte) (isMute ? 1 : 0);
     }
 
 

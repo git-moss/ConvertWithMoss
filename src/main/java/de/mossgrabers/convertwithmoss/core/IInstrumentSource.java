@@ -109,6 +109,38 @@ public interface IInstrumentSource extends ISource
 
 
     /**
+     * Is the instrument muted?
+     *
+     * @return True if muted
+     */
+    boolean isMute ();
+
+
+    /**
+     * Set the instrument to muted.
+     *
+     * @param isMute True to mute
+     */
+    void setMute (boolean isMute);
+
+
+    /**
+     * Is the instrument soloed?
+     *
+     * @return True if soloed
+     */
+    boolean isSolo ();
+
+
+    /**
+     * Set the instrument to soloed.
+     *
+     * @param isSolo True to solo
+     */
+    void setSolo (boolean isSolo);
+
+
+    /**
      * The lower note which should limit the key-range (this note should still sound).
      *
      * @return The note [0..127]

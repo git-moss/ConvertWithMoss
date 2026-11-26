@@ -289,6 +289,10 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
             final List<YamahaYsfcPerformancePart> parts = performance.getParts ();
             for (final YamahaYsfcPerformancePart part: parts)
             {
+                // Parts which are switched off are not used
+                if (!part.isPartSwitch ())
+                    continue;
+
                 final IMultisampleSource multisampleSource = new DefaultMultisampleSource (globalSourceFile, globalSubPath, performanceName);
 
                 fillMetadata (globalMetadata, multisampleSource.getMetadata (), epfmChunk.getEntryListChunks ().get (i));
@@ -346,6 +350,7 @@ public class YamahaYsfcDetector extends AbstractDetector<YamahaYsfcDetectorUI>
                     instrumentSource.setGain (level == 0 ? Double.NEGATIVE_INFINITY : -95.25 + 2 * level * 0.375);
                     instrumentSource.setTranspose (part.getNoteShift () - 64);
                     instrumentSource.setTuning (part.getDetuneAsCents ());
+                    instrumentSource.setMute (part.isMute ());
                     performanceSource.addInstrument (instrumentSource);
                 }
             }

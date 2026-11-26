@@ -26,10 +26,10 @@ import de.mossgrabers.tools.ui.Functions;
  * tracks, 8 sectors per track and 1,024 bytes per sector. Sector 0 contains the disk name and the
  * cluster allocation table, sector 1 the directory with up to 64 entries. A file consists of a file
  * head sector, which contains up to 64 start/end sector ranges and the object counts, and the
- * content sectors. Additionally, bare dump files (fzf = full dump, fzv = voice, fzb = bank) are
- * supported, which contain the file head followed by the content blocks in sequential order. Full
- * dumps without a file head, as written by the 'fzdump' MIDI utility (e.g. the factory library),
- * are recognized and read as well.
+ * content sectors. The first range starts with the file head itself. Additionally, bare dump
+ * files (fzf = full dump, fzv = voice, fzb = bank) are supported, which contain the file head
+ * followed by the content blocks in sequential order. Full dumps without a file head, as written by
+ * the 'fzdump' MIDI utility (e.g. the factory library), are recognized and read as well.
  *
  * @author Jürgen Moßgraber
  */
@@ -59,7 +59,9 @@ public class CasioFZDisk
     private static final int        MAX_BLOCK_POINTERS = 64;
 
     private String                  diskName           = "";
+    private boolean                 isDiskImage        = false;
     private final List<CasioFZFile> files              = new ArrayList<> ();
+    private final List<String>      continuationFiles  = new ArrayList<> ();
 
 
     /**
@@ -73,8 +75,9 @@ public class CasioFZDisk
     public record CasioFZFile (String name, int type, byte [] head, byte [] content)
     {
         /**
-         * Get one of the three object counters at the end of the file head. Depending on the file
-         * type these contain the number of voices, banks and wave blocks.
+         * Get one of the three object counters at the end of the file head. These contain the
+         * number of banks, voices and wave blocks (in this order, which is confirmed by the
+         * files which the sampler wrote to disk).
          *
          * @param index The index of the counter (0-2)
          * @return The value of the counter
@@ -129,12 +132,14 @@ public class CasioFZDisk
 
         if (fileName.endsWith (".hfe"))
         {
+            this.isDiskImage = true;
             this.parseDiskImage (readHfeImage (sourceFile));
             return;
         }
 
         if (fileName.endsWith (".img") || fileName.endsWith (".ima"))
         {
+            this.isDiskImage = true;
             final byte [] content = Files.readAllBytes (sourceFile.toPath ());
             if (content.length != DISK_SIZE)
                 throw new IOException (Functions.getMessage ("IDS_FZ_UNEXPECTED_IMAGE_SIZE", Integer.toString (content.length), Integer.toString (DISK_SIZE)));
@@ -168,8 +173,8 @@ public class CasioFZDisk
                 final int contentSectors = CasioFZVoice.readUnsigned16 (dump, 1010);
                 final int numberOfWaveBlocks = CasioFZVoice.readUnsigned16 (dump, 1012);
                 head = new byte [SECTOR_SIZE];
-                CasioFZVoice.writeUnsigned16 (head, 1018, numberOfVoices);
-                CasioFZVoice.writeUnsigned16 (head, 1020, contentSectors - numberOfWaveBlocks - (numberOfVoices + 3) / 4);
+                CasioFZVoice.writeUnsigned16 (head, 1018, contentSectors - numberOfWaveBlocks - (numberOfVoices + 3) / 4);
+                CasioFZVoice.writeUnsigned16 (head, 1020, numberOfVoices);
                 CasioFZVoice.writeUnsigned16 (head, 1022, numberOfWaveBlocks);
                 fileContent = dump;
             }
@@ -237,8 +242,8 @@ public class CasioFZDisk
         // plausible
         if (rangeStart != 0 || rangeEnd != 0)
             return false;
-        final int voices = CasioFZVoice.readUnsigned16 (dump, 1018);
-        final int banks = CasioFZVoice.readUnsigned16 (dump, 1020);
+        final int banks = CasioFZVoice.readUnsigned16 (dump, 1018);
+        final int voices = CasioFZVoice.readUnsigned16 (dump, 1020);
         return voices >= 1 && voices <= 64 && banks <= 8;
     }
 
@@ -255,6 +260,17 @@ public class CasioFZDisk
 
 
     /**
+     * Is the source a disk image (img, hfe) or a bare dump file?
+     *
+     * @return True if it is a disk image
+     */
+    public boolean isDiskImage ()
+    {
+        return this.isDiskImage;
+    }
+
+
+    /**
      * Get the files of the disk.
      *
      * @return The files
@@ -262,6 +278,18 @@ public class CasioFZDisk
     public List<CasioFZFile> getFiles ()
     {
         return this.files;
+    }
+
+
+    /**
+     * Get the names of the files on the disk which are the continuation of a file which starts on
+     * a previous disk. These contain only wave data and cannot be read on their own.
+     *
+     * @return The names of the files
+     */
+    public List<String> getContinuationFiles ()
+    {
+        return this.continuationFiles;
     }
 
 
@@ -284,11 +312,16 @@ public class CasioFZDisk
             final int ext = CasioFZVoice.readUnsigned16 (image, entryOffset + 12);
             final int startSector = CasioFZVoice.readUnsigned16 (image, entryOffset + 14);
 
-            // Files which are continued from the 1st disk on a 2nd disk cannot be stitched
-            // together, the counters and addresses of the head on the 1st disk cover both parts
+            // A file which does not fit onto one disk is continued on the next disk. The part on
+            // the next disk has the number of that disk in the upper byte and contains a copy of
+            // the file head followed by the remaining wave data only, the bank and voice
+            // parameters are stored on the 1st disk. Therefore, it cannot be read on its own
             final int diskNumber = ext >> 8;
             if (diskNumber != 0)
+            {
+                this.continuationFiles.add (fileName);
                 continue;
+            }
 
             if (startSector < 2 || startSector >= NUM_SECTORS)
                 throw new IOException (Functions.getMessage ("IDS_FZ_MALFORMED_DIRECTORY"));
@@ -309,6 +342,10 @@ public class CasioFZDisk
                     throw new IOException (Functions.getMessage ("IDS_FZ_MALFORMED_DIRECTORY"));
                 for (int sector = rangeStart; sector <= rangeEnd; sector++)
                 {
+                    // The first range starts with the file head itself, which is not part of
+                    // the content
+                    if (sector == startSector)
+                        continue;
                     final byte [] sectorData = new byte [SECTOR_SIZE];
                     System.arraycopy (image, sector * SECTOR_SIZE, sectorData, 0, SECTOR_SIZE);
                     contentSectors.add (sectorData);
@@ -385,9 +422,9 @@ public class CasioFZDisk
         CasioFZVoice.writeUnsigned16 (image, SECTOR_SIZE + 12, TYPE_FULL_DUMP);
         CasioFZVoice.writeUnsigned16 (image, SECTOR_SIZE + 14, 2);
 
-        // The file head with a single continuous sector range
-        CasioFZVoice.writeUnsigned16 (head, 0, 3);
-        CasioFZVoice.writeUnsigned16 (head, 2, 3 + contentSectors - 1);
+        // The file head with a single continuous sector range which starts with the head itself
+        CasioFZVoice.writeUnsigned16 (head, 0, 2);
+        CasioFZVoice.writeUnsigned16 (head, 2, 2 + contentSectors);
         System.arraycopy (head, 0, image, 2 * SECTOR_SIZE, SECTOR_SIZE);
 
         System.arraycopy (content, 0, image, 3 * SECTOR_SIZE, content.length);

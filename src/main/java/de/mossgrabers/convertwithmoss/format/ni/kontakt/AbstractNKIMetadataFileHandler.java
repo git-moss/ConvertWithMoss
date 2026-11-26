@@ -262,12 +262,16 @@ public abstract class AbstractNKIMetadataFileHandler
             {
                 updateMetadata (metadataConfig, parts, multisampleSource.getMetadata ());
 
-                // Only K2 multis: the MIDI channel of the slot, 0 = Omni
+                // Only K2 multis: the MIDI channel (0 = Omni), the mute and solo state of the slot
                 if (topParameters.isPresent ())
                 {
-                    final String midiChannelStr = topParameters.get ().get (String.format ("midiChannel_slot0%02d", Integer.valueOf (getSlotIndex (programElement, i))));
+                    final Map<String, String> slotParameters = topParameters.get ();
+                    final String slot = String.format ("_slot0%02d", Integer.valueOf (getSlotIndex (programElement, i)));
+                    final String midiChannelStr = slotParameters.get ("midiChannel" + slot);
                     if (midiChannelStr != null)
                         instrumentSource.setMidiChannel (convertMidiChannel (Integer.parseInt (midiChannelStr)));
+                    instrumentSource.setMute ("yes".equals (slotParameters.get ("mute" + slot)));
+                    instrumentSource.setSolo ("yes".equals (slotParameters.get ("solo" + slot)));
                 }
 
                 instrumentSources.add (instrumentSource);

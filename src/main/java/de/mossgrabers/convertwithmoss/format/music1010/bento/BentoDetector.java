@@ -275,7 +275,16 @@ public class BentoDetector extends AbstractDetector<MetadataSettingsUI>
         readVelocityModulators (instElement, group);
         Music1010Lfo.readLfoModulators (instParamsElement, instElement, group, false);
 
-        return Optional.of (new DefaultInstrumentSource (multisampleSource, midiChannel));
+        // The level and panning of the track and the instrument (pad) are combined. The level is
+        // stored in dB * 1000 and the panning in the range of -1000 to 1000
+        final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
+        final int gain = XMLUtils.getIntegerAttribute (trackParamsElement, Music1010Tag.ATTR_TRACK_GAIN, 0) + XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_GAIN, 0);
+        instrumentSource.setGain (gain / 1000.0);
+        final int panning = XMLUtils.getIntegerAttribute (trackParamsElement, Music1010Tag.ATTR_TRACK_PANNING, 0) + XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_PANNING, 0);
+        instrumentSource.setPanning (Math.clamp (panning / 1000.0, -1.0, 1.0));
+        instrumentSource.setMute (XMLUtils.getIntegerAttribute (trackParamsElement, Music1010Tag.ATTR_TRACK_MUTE, 0) > 0 || XMLUtils.getIntegerAttribute (instParamsElement, Music1010Tag.ATTR_PAD_MUTE, 0) > 0);
+        instrumentSource.setSolo (XMLUtils.getIntegerAttribute (trackParamsElement, Music1010Tag.ATTR_TRACK_SOLO, 0) > 0);
+        return Optional.of (instrumentSource);
     }
 
 

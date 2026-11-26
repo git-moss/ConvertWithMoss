@@ -297,6 +297,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
         final double gain;
         final int transpose;
         final int tuning;
+        final boolean isMuted;
         if (z48Part.isPresent ())
         {
             final AkmZ48Part zPart = z48Part.get ();
@@ -308,6 +309,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
             // The tuning is in cents, split it into semi-tones and the remaining [-50..50] cents
             transpose = (int) Math.round (zPart.getTune () / 100.0);
             tuning = zPart.getTune () - transpose * 100;
+            isMuted = zPart.isMuted ();
         }
         else
         {
@@ -318,6 +320,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
             gain = MathUtils.valueToDb (part.getVolume () / 100.0);
             transpose = part.getTranspose ();
             tuning = part.getFineTune ();
+            isMuted = part.isMuted ();
         }
 
         final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSources.get (0), midiChannel % 16);
@@ -336,6 +339,7 @@ public class AkpDetector extends AbstractDetector<MetadataSettingsUI>
             instrumentSource.setGain (gain);
         instrumentSource.setTranspose (transpose);
         instrumentSource.setTuning (tuning);
+        instrumentSource.setMute (isMuted);
 
         return Optional.of (instrumentSource);
     }

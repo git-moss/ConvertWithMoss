@@ -55,7 +55,7 @@ public class AkpCreator extends AbstractWavCreator<AkpCreatorUI>
      */
     public AkpCreator (final INotifier notifier)
     {
-        super ("Akai AKP", "S5000", notifier, new AkpCreatorUI ("S5000"));
+        super ("Akai AKP/AKM", "S5000", notifier, new AkpCreatorUI ("S5000"));
     }
 
 
@@ -102,6 +102,10 @@ public class AkpCreator extends AbstractWavCreator<AkpCreatorUI>
         final File multiFolder = this.createUniqueFilename (destinationFolder, multiName, "");
         safeCreateDirectory (multiFolder);
 
+        // There is no solo state, therefore all instruments which are not soloed are muted if
+        // there is at least one soloed instrument
+        final boolean hasSoloedInstrument = instruments.stream ().anyMatch (IInstrumentSource::isSolo);
+
         // Instruments which use the same multi-sample share the program
         final Map<IMultisampleSource, String> programNames = new IdentityHashMap<> ();
         final Set<String> usedProgramNames = new HashSet<> ();
@@ -121,7 +125,7 @@ public class AkpCreator extends AbstractWavCreator<AkpCreatorUI>
                 programNames.put (multisampleSource, programName);
             }
 
-            setPart (parts.get (partInstruments.size ()), programName, instrumentSource);
+            setPart (parts.get (partInstruments.size ()), programName, instrumentSource, hasSoloedInstrument ? !instrumentSource.isSolo () : instrumentSource.isMute ());
             partInstruments.add (instrumentSource);
         }
         if (partInstruments.isEmpty ())
@@ -210,8 +214,9 @@ public class AkpCreator extends AbstractWavCreator<AkpCreatorUI>
      * @param part The part to fill
      * @param programName The name of the program to play
      * @param instrumentSource The instrument
+     * @param isMuted True if the part should be muted
      */
-    private static void setPart (final AkmPart part, final String programName, final IInstrumentSource instrumentSource)
+    private static void setPart (final AkmPart part, final String programName, final IInstrumentSource instrumentSource, final boolean isMuted)
     {
         part.setPresetName (programName);
 
@@ -226,6 +231,7 @@ public class AkpCreator extends AbstractWavCreator<AkpCreatorUI>
         part.setPanning ((int) Math.round (Math.clamp (instrumentSource.getPanning (), -1.0, 1.0) * 50.0));
         // The level is roughly a linear gain factor with 100 = 0dB
         part.setVolume ((int) Math.round (Math.clamp (100.0 * Math.pow (10.0, instrumentSource.getGain () / 20.0), 0.0, 100.0)));
+        part.setMuted (isMuted);
     }
 
 

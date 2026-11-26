@@ -96,12 +96,16 @@ public class Music1010Tag
     public static final String ATTR_SAMPLE_TRIGGER_TYPE   = "samtrigtype";
     /** The attribute for the choke group: 0 (no choke group), 1 and above (choke group). */
     public static final String ATTR_CHOKE_GROUP           = "chokegrp";
+    /** The attribute for muting a cell: 0 (not muted), 1 (muted). */
+    public static final String ATTR_MUTE                  = "mute";
     /**
      * The attribute for the poly mode: 0 (Mono), 1 (Poly 2), 2 (Poly 4), 3 (Poly 6), 4 (Poly 8), 5
      * (Poly X).
      */
     public static final String ATTR_POLY_MODE             = "polymode";
 
+    /** The attribute for the level of a cell in dB * 1000, -96dB to +12dB. */
+    public static final String ATTR_GAIN                  = "gaindb";
     /** The attribute for the sample pitch. */
     public static final String ATTR_PITCH                 = "pitch";
     /** The attribute for the sample panning. */
@@ -140,6 +144,16 @@ public class Music1010Tag
     public static final String ATTR_ROOT_VEL              = "velroot";
     /** The MIDI input channel attribute. */
     public static final String ATTR_MIDI_INPUT_CHANNEL    = "midiinchan";
+    /** The level of a track in dB * 1000. */
+    public static final String ATTR_TRACK_GAIN            = "trkgain";
+    /** The panning of a track in the range of -1000 (left) to 1000 (right). */
+    public static final String ATTR_TRACK_PANNING         = "trkpan";
+    /** Mutes a track: 0 (not muted), 1 (muted). */
+    public static final String ATTR_TRACK_MUTE            = "trkmute";
+    /** Solos a track: 0 (not soloed), 1 (soloed). */
+    public static final String ATTR_TRACK_SOLO            = "trksolo";
+    /** Mutes the pad of an instrument: 0 (not muted), 1 (muted). */
+    public static final String ATTR_PAD_MUTE              = "padmute";
 
 
     /**

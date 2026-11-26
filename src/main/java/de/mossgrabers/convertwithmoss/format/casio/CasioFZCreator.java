@@ -162,10 +162,10 @@ public class CasioFZCreator extends AbstractCreator<ICoreTaskSettings>
             waveOffset += sample.length;
         }
 
-        // The file head with the voice, bank and wave block counters
+        // The file head with the bank, voice and wave block counters
         final byte [] head = new byte [CasioFZDisk.SECTOR_SIZE];
-        CasioFZVoice.writeUnsigned16 (head, 1018, voices.size ());
-        CasioFZVoice.writeUnsigned16 (head, 1020, 1);
+        CasioFZVoice.writeUnsigned16 (head, 1018, 1);
+        CasioFZVoice.writeUnsigned16 (head, 1020, voices.size ());
         CasioFZVoice.writeUnsigned16 (head, 1022, waveBlocks);
 
         final byte [] image = CasioFZDisk.createDiskImage (toFZName (name), head, content);
