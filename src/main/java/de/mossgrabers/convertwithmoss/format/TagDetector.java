@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
@@ -711,6 +712,7 @@ public class TagDetector
         CATEGORY_PREFIX_LOOKUP.put ("PLUK", CATEGORY_PLUCK);
         CATEGORY_PREFIX_LOOKUP.put ("POLY", CATEGORY_SYNTH);
         CATEGORY_PREFIX_LOOKUP.put ("REES", CATEGORY_BASS);
+        CATEGORY_PREFIX_LOOKUP.put ("SFX", CATEGORY_FX);
         CATEGORY_PREFIX_LOOKUP.put ("STRG", CATEGORY_STRINGS);
         CATEGORY_PREFIX_LOOKUP.put ("SWEP", CATEGORY_SYNTH);
         CATEGORY_PREFIX_LOOKUP.put ("VOC", CATEGORY_VOCAL);
@@ -833,6 +835,28 @@ public class TagDetector
             }
         }
         return Optional.empty ();
+    }
+
+
+    /**
+     * Remove a category tag from the start of a name, e.g. 'PAD Solina' becomes 'Solina'. Only a
+     * tag written in upper case is removed, which is the naming convention of such tags, so that
+     * names like 'Piano Grand' stay as they are. A name which consists only of the tag is kept.
+     *
+     * @param name The name
+     * @return The name without the category tag
+     */
+    public static String removeCategoryPrefix (final String name)
+    {
+        final String trimmed = name.trim ();
+        final Matcher matcher = DELIMITER_PATTERN.matcher (trimmed);
+        if (!matcher.find () || matcher.start () == 0)
+            return name;
+        final String tag = trimmed.substring (0, matcher.start ());
+        final String rest = trimmed.substring (matcher.end ()).trim ();
+        if (rest.isEmpty () || !tag.equals (tag.toUpperCase (Locale.US)) || !CATEGORY_PREFIX_LOOKUP.containsKey (tag))
+            return name;
+        return rest;
     }
 
 
