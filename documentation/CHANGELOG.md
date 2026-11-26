@@ -2,6 +2,7 @@
 
 ## 21.1.0 (work-in-progress)
 
+* New: The abbreviation SFX is recognized as a category tag at the start of a name (FX), e.g. in 'SFX 2500 A Pale Horse' of Vulture Culture's 'Legendary Synth II'. It is used by the option 'Category tag at name start declares the category' and removed by the option of the Elektron Tonverk Preset to remove the category tag.
 * E-mu Emulator IV
   * Fixed: Loops are read and written with their 'loop in release' setting. Written samples had a loop which stopped at the release of the key and played on to the end of the sample, while the loops of the factory banks keep playing in the release; loops which stop at the release were read as playing on.
 * E-mu Emulator X
