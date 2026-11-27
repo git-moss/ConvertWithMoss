@@ -412,8 +412,8 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
     /** A range of keys of a preset which plays one or two voices. */
     private static class KeyRange
     {
-        int firstKey;
-        int numKeys;
+        int     firstKey;
+        int     numKeys;
         int     voice;
         int     transpose;
         boolean nonTranspose;
@@ -704,7 +704,8 @@ public class Emulator2Detector extends AbstractDetector<MetadataSettingsUI>
                     continue;
                 }
                 // A range runs while the voice and the flags stay the same and the transposition
-                // keeps rising by one semitone per key; where it restarts, the voice is mapped again
+                // keeps rising by one semitone per key; where it restarts, the voice is mapped
+                // again
                 // at another root
                 final int flags = this.image[this.bankOffset + Emulator2Constants.KEY_MAP_FLAGS + key];
                 int last = key;

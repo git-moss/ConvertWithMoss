@@ -230,11 +230,11 @@ public class Sf2Detector extends AbstractDetector<Sf2DetectorUI>
 
 
     /**
-     * The name of a preset has at most 19 characters in a SoundFont, longer names are cut off
-     * (e.g. 'PAD Poly800 Better' for the file 'PAD Poly800 Better Than a 106.sf2'). Libraries
-     * with one preset per file name the file and often leave the stored name as it was (e.g.
-     * 'Organ2' for 'BASS M1 Organ2.sf2'). Therefore, the file name is the name of the preset if
-     * the file contains only this preset.
+     * The name of a preset has at most 19 characters in a SoundFont, longer names are cut off (e.g.
+     * 'PAD Poly800 Better' for the file 'PAD Poly800 Better Than a 106.sf2'). Libraries with one
+     * preset per file name the file and often leave the stored name as it was (e.g. 'Organ2' for
+     * 'BASS M1 Organ2.sf2'). Therefore, the file name is the name of the preset if the file
+     * contains only this preset.
      *
      * @param presetName The name of the preset as stored in the SoundFont
      * @param sf2FileName The name of the SoundFont file without the file ending

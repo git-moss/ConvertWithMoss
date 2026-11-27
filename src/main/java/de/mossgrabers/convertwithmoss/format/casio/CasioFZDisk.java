@@ -26,10 +26,10 @@ import de.mossgrabers.tools.ui.Functions;
  * tracks, 8 sectors per track and 1,024 bytes per sector. Sector 0 contains the disk name and the
  * cluster allocation table, sector 1 the directory with up to 64 entries. A file consists of a file
  * head sector, which contains up to 64 start/end sector ranges and the object counts, and the
- * content sectors. The first range starts with the file head itself. Additionally, bare dump
- * files (fzf = full dump, fzv = voice, fzb = bank) are supported, which contain the file head
- * followed by the content blocks in sequential order. Full dumps without a file head, as written by
- * the 'fzdump' MIDI utility (e.g. the factory library), are recognized and read as well.
+ * content sectors. The first range starts with the file head itself. Additionally, bare dump files
+ * (fzf = full dump, fzv = voice, fzb = bank) are supported, which contain the file head followed by
+ * the content blocks in sequential order. Full dumps without a file head, as written by the
+ * 'fzdump' MIDI utility (e.g. the factory library), are recognized and read as well.
  *
  * @author Jürgen Moßgraber
  */
@@ -76,8 +76,8 @@ public class CasioFZDisk
     {
         /**
          * Get one of the three object counters at the end of the file head. These contain the
-         * number of banks, voices and wave blocks (in this order, which is confirmed by the
-         * files which the sampler wrote to disk).
+         * number of banks, voices and wave blocks (in this order, which is confirmed by the files
+         * which the sampler wrote to disk).
          *
          * @param index The index of the counter (0-2)
          * @return The value of the counter
@@ -282,8 +282,8 @@ public class CasioFZDisk
 
 
     /**
-     * Get the names of the files on the disk which are the continuation of a file which starts on
-     * a previous disk. These contain only wave data and cannot be read on their own.
+     * Get the names of the files on the disk which are the continuation of a file which starts on a
+     * previous disk. These contain only wave data and cannot be read on their own.
      *
      * @return The names of the files
      */

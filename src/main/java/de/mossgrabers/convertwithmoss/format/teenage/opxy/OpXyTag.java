@@ -66,8 +66,8 @@ public class OpXyTag
      * The filter section ('M3' on the device): <code>{"active", "params", "type"}</code>. The 8
      * parameters are the values of the controls in the order of the knobs (dark gray, mid gray,
      * light gray, white), the guide of the device names them cut-off, resonance, envelope amount
-     * and key tracking. This order is derived from the documentation (the device stores the
-     * control values in their declaration order), it is not verified with presets of the device.
+     * and key tracking. This order is derived from the documentation (the device stores the control
+     * values in their declaration order), it is not verified with presets of the device.
      */
     public static final String TAG_FX                       = "fx";
     /** Is the filter switched on? */

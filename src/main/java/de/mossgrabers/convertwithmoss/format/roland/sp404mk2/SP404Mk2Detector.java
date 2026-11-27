@@ -253,7 +253,7 @@ public class SP404Mk2Detector extends AbstractDetector<MetadataSettingsUI>
         if (SP404Mk2Constants.getU32 (data, recordOffset + SP404Mk2Constants.PAD_LOOP) != 0)
         {
             final ISampleLoop loop = new DefaultSampleLoop ();
-            loop.setType ((playMode & SP404Mk2Constants.PLAY_MODE_PING_PONG) != 0 ? LoopType.ALTERNATING : LoopType.FORWARDS);
+            loop.setType ((playMode & SP404Mk2Constants.PLAY_MODE_PING_PONG) == 0 ? LoopType.FORWARDS : LoopType.ALTERNATING);
             final int loopStart = toFrame (data, recordOffset + SP404Mk2Constants.PAD_LOOP_START, bytesPerFrame, frames);
             loop.setStart (loopStart >= start && loopStart < stop ? loopStart : start);
             // The loop runs to the end of the play range, the end of the model is its last frame

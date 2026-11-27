@@ -29,8 +29,8 @@ import de.mossgrabers.tools.ui.Functions;
  * Builds the JSON document of a MPC 3 project file (*.xpj) from a template which carries the full
  * 'SerialisableProjectData' structure of an empty project written by MPC software 3.10: one
  * key-group track followed by the bus tracks (8 sub-mixes, 4 returns and 16 outputs). Each
- * instrument of a performance becomes one key-group track, a copy of the template's key-group
- * track which is filled like a track file (see {@link MPC3TrackFile}). The track settings of the
+ * instrument of a performance becomes one key-group track, a copy of the template's key-group track
+ * which is filled like a track file (see {@link MPC3TrackFile}). The track settings of the
  * instrument are stored in the track (MIDI input channel) and in its program (mixer volume and
  * panorama, key-group transposition).
  *

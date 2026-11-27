@@ -74,9 +74,13 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 {
+    private static final String    IDS_NOTIFY_ERR_LOAD_FILE            = "IDS_NOTIFY_ERR_LOAD_FILE";
     private static final String    IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE = "IDS_MPC_NOT_A_PROJECT_OR_TRACK_FILE";
     private static final String    IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY   = "IDS_MPC_COULD_NOT_PARSE_ZONE_PLAY";
     private static final String    BAD_METADATA_FILE                   = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
+
+    private static final String    TAG_PROGRAM                         = "program";
+    private static final String    TAG_TRANSPOSE                       = "transpose";
     private static final String    VALUE0                              = "value0";
     /** The program type of a key-group program. */
     private static final int       PROGRAM_TYPE_KEYGROUP               = 1;
@@ -148,7 +152,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
             }
             catch (final IOException ex)
             {
-                this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+                this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
                 return Collections.emptyList ();
             }
 
@@ -771,7 +775,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
     }
@@ -802,7 +806,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                     return Collections.emptyList ();
 
                 // The transposition is a setting of the instrument instead of the zones
-                final JsonNode programNode = trackNode.get ("program");
+                final JsonNode programNode = trackNode.get (TAG_PROGRAM);
                 final IMultisampleSource multisampleSource = this.readJsonProgram (sourceFile, dataNode, programNode, document.get ().jsonFormat (), false);
                 final int midiChannel = MPC3ProjectFile.toMidiChannel (trackNode.path ("midiInputRoute").path ("inputChannel").asInt (0));
                 final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
@@ -813,7 +817,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 final JsonNode mixableNode = programNode.path ("mixable");
                 instrumentSource.setGain (MPC3ProjectFile.volumeToDb (mixableNode.path ("volume").asDouble (MPC3ProjectFile.VOLUME_0_DB)));
                 instrumentSource.setPanning (Math.clamp (mixableNode.path ("pan").asDouble (0.5) * 2.0 - 1.0, -1.0, 1.0));
-                instrumentSource.setTranspose (programNode.path ("transpose").asInt (0) + programNode.path ("keygroup").path ("transpose").asInt (0));
+                instrumentSource.setTranspose (programNode.path (TAG_TRANSPOSE).asInt (0) + programNode.path ("keygroup").path (TAG_TRANSPOSE).asInt (0));
                 performanceSource.addInstrument (instrumentSource);
             }
 
@@ -821,7 +825,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         }
         catch (final IOException ex)
         {
-            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            this.notifier.logError (IDS_NOTIFY_ERR_LOAD_FILE, ex);
             return Collections.emptyList ();
         }
     }
@@ -930,7 +934,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         final IGroup group = new DefaultGroup ();
         final IMultisampleSource multisampleSource = createMultisampleSource (this.settingsConfiguration, multiSampleFile, parts, programName, Collections.singletonList (group));
 
-        final double programTranspose = includeTranspose ? programNode.get ("transpose").asDouble () : 0;
+        final double programTranspose = includeTranspose ? programNode.get (TAG_TRANSPOSE).asDouble () : 0;
 
         // -------------------------------------------------------------------------------
         // Read all sample info
@@ -962,7 +966,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
         if (keygroupNode != null)
         {
             wheelShare = keygroupNode.path ("wheelToLfo").path (VALUE0).asDouble (0);
-            keygroupTranspose = programTranspose + (includeTranspose ? keygroupNode.get ("transpose").asDouble () : 0);
+            keygroupTranspose = programTranspose + (includeTranspose ? keygroupNode.get (TAG_TRANSPOSE).asDouble () : 0);
             // The ranges are semi-tones, e.g. the default of 2 (the fraction of an octave
             // in 'pitchBendRange' confirms it)
             pitchBendUp = keygroupNode.get ("pitchBendPositiveRange").asInt () * 100;
@@ -1005,7 +1009,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
         final List<JsonNode> programNodes = new ArrayList<> ();
         for (final JsonNode trackNode: collectKeygroupTrackNodes (dataNode, jsonFormat))
-            programNodes.add (trackNode.get ("program"));
+            programNodes.add (trackNode.get (TAG_PROGRAM));
         return programNodes;
     }
 
@@ -1045,7 +1049,7 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
 
     private static boolean isKeygroupTrack (final JsonNode trackNode)
     {
-        final JsonNode programNode = trackNode.get ("program");
+        final JsonNode programNode = trackNode.get (TAG_PROGRAM);
         return programNode != null && programNode.get ("type").asInt () == PROGRAM_TYPE_KEYGROUP;
     }
 

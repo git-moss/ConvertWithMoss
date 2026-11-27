@@ -345,11 +345,11 @@ public class TALSamplerConstants
 
     /**
      * Get the LFO wave form from the wave form attribute. The plug-in offers Triangle, Saw,
-     * Rectangle, S&amp;H Random, Noise and Sine. Since version 12 the attribute is the index divided
-     * by 5 (verified with presets saved by the plug-in: Triangle 0, Saw 0.2, Rectangle 0.4, Random
-     * 0.6, Noise 0.8, Sine 1.0). The plug-in reads a file of an older version with only the first 5
-     * wave forms, the index divided by 4: a version 9 file with the value 1.0 plays Noise. The
-     * presets of version 1.5 store the index divided by 2.
+     * Rectangle, S&amp;H Random, Noise and Sine. Since version 12 the attribute is the index
+     * divided by 5 (verified with presets saved by the plug-in: Triangle 0, Saw 0.2, Rectangle 0.4,
+     * Random 0.6, Noise 0.8, Sine 1.0). The plug-in reads a file of an older version with only the
+     * first 5 wave forms, the index divided by 4: a version 9 file with the value 1.0 plays Noise.
+     * The presets of version 1.5 store the index divided by 2.
      *
      * @param value The wave form attribute
      * @param version The version of the file format

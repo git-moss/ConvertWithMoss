@@ -23,7 +23,9 @@ public class MPCKeygroupConstants
     public static final String TRACK_FILE_VERSION   = "3.7.0.38";
     /** The platform line of a created MPC 3 track file. */
     public static final String TRACK_FILE_PLATFORM  = "Linux";
-    /** The version line of a created MPC 3 project file, the firmware whose structure is written. */
+    /**
+     * The version line of a created MPC 3 project file, the firmware whose structure is written.
+     */
     public static final String PROJECT_FILE_VERSION = "3.10.1.12";
     /** The platform line of a created MPC 3 project file, the one of the template. */
     public static final String PROJECT_PLATFORM     = "Windows";

@@ -120,8 +120,8 @@ public class EmulatorXConstants
     /** The offset of the fine tuning in cents inside the oscillator chunk. */
     public static final int    OSCILLATOR_FINE_TUNE    = 16;
     /**
-     * The offset of the Fixed Pitch Mode (1 = the keyboard does not transpose the voice) inside
-     * the oscillator chunk. Set in drum kits, effects and drones and in 'sfx:Dirt 1 NTP' of Orbit-3,
+     * The offset of the Fixed Pitch Mode (1 = the keyboard does not transpose the voice) inside the
+     * oscillator chunk. Set in drum kits, effects and drones and in 'sfx:Dirt 1 NTP' of Orbit-3,
      * which the name marks as non-transposing.
      */
     public static final int    OSCILLATOR_FIXED_PITCH  = 24;

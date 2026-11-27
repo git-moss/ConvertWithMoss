@@ -44,8 +44,8 @@ public final class SP404Mk2Constants
     public static final int        PADCONF_SIZE_EXPORT   = 31488;
     /**
      * The size of the PADCONF.BIN which the device and the SP-404MKII App store and export (has a
-     * larger header with the project name and a trailing marks section). Only this form is
-     * imported by the SP-404MKII App.
+     * larger header with the project name and a trailing marks section). Only this form is imported
+     * by the SP-404MKII App.
      */
     public static final int        PADCONF_SIZE_INTERNAL = 52000;
     /** Header size of the export form; the pad-metadata block starts right after the header. */

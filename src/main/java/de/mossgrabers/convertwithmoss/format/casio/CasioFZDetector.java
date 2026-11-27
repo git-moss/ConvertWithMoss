@@ -255,8 +255,8 @@ public class CasioFZDetector extends AbstractDetector<MetadataSettingsUI>
      *
      * @param voice The voice
      * @param wavePool The wave data of the file
-     * @param availableWords The number of words at the start of the wave pool which are present
-     *            in the file, the rest is missing (truncated file or continued on the next disk)
+     * @param availableWords The number of words at the start of the wave pool which are present in
+     *            the file, the rest is missing (truncated file or continued on the next disk)
      * @param waveBase The word address at which the wave pool starts
      * @param bendRangeCents The pitch bend range in cents, -1 if not present
      * @return The zone or null if the voice has no sound

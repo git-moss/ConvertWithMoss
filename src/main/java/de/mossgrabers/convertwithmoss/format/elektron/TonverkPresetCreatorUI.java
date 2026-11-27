@@ -42,20 +42,21 @@ public class TonverkPresetCreatorUI extends WavChunkSettingsUI
     }
 
 
-    private static final String OUTPUT_ENGINE     = "OutputEngine";
-    private static final String RESAMPLE_TO_24_48   = "ResampleTo2448";
-    private static final String REMOVE_CATEGORY_TAG = "RemoveCategoryTag";
-    private static final String FIRST_NUMBER        = "FirstPresetNumber";
-    private static final int    MAX_NUMBER          = 999;
+    private static final String CSS_TITLED_SEPARATOR_PANE = "titled-separator-pane";
+    private static final String OUTPUT_ENGINE             = "OutputEngine";
+    private static final String RESAMPLE_TO_24_48         = "ResampleTo2448";
+    private static final String REMOVE_CATEGORY_TAG       = "RemoveCategoryTag";
+    private static final String FIRST_NUMBER              = "FirstPresetNumber";
+    private static final int    MAX_NUMBER                = 999;
 
     private ComboBox<String>    outputEngineBox;
     private CheckBox            removeCategoryTagCheckBox;
     private TextField           firstNumberField;
     private CheckBox            resampleTo2448CheckBox;
 
-    private OutputEngine        outputEngine        = OutputEngine.MULTI;
+    private OutputEngine        outputEngine              = OutputEngine.MULTI;
     private boolean             removeCategoryTag;
-    private int                 nextNumber          = -1;
+    private int                 nextNumber                = -1;
     private boolean             resampleTo2448;
 
 
@@ -85,15 +86,15 @@ public class TonverkPresetCreatorUI extends WavChunkSettingsUI
         panel.addComponent (this.outputEngineBox);
 
         final TitledSeparator nameSeparator = panel.createSeparator ("@IDS_TONVERK_PRESET_NAME");
-        nameSeparator.getStyleClass ().add ("titled-separator-pane");
+        nameSeparator.getStyleClass ().add (CSS_TITLED_SEPARATOR_PANE);
         this.removeCategoryTagCheckBox = panel.createCheckBox ("@IDS_TONVERK_REMOVE_CATEGORY_TAG");
         this.firstNumberField = panel.createField ("@IDS_TONVERK_FIRST_PRESET_NUMBER");
 
         final TitledSeparator resampleSeparator = panel.createSeparator ("@IDS_ELEKTRON_RESAMPLE");
-        resampleSeparator.getStyleClass ().add ("titled-separator-pane");
+        resampleSeparator.getStyleClass ().add (CSS_TITLED_SEPARATOR_PANE);
         this.resampleTo2448CheckBox = panel.createCheckBox ("@IDS_ELEKTRON_CONVERT_TO_24_48");
 
-        this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
+        this.addWavChunkOptions (panel).getStyleClass ().add (CSS_TITLED_SEPARATOR_PANE);
         return panel.getPane ();
     }
 
@@ -189,8 +190,8 @@ public class TonverkPresetCreatorUI extends WavChunkSettingsUI
 
 
     /**
-     * Get the number for the next preset name and count it up. The numbering starts with the
-     * first number of the settings with every conversion.
+     * Get the number for the next preset name and count it up. The numbering starts with the first
+     * number of the settings with every conversion.
      *
      * @return The number or -1 if the presets are not numbered
      */

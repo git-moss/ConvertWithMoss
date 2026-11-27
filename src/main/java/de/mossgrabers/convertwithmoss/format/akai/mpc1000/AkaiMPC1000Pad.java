@@ -114,7 +114,8 @@ public class AkaiMPC1000Pad
         this.filter1Freq = input.read ();
         this.filter1Res = input.read ();
         this.filter1EnvelopeTime = input.read ();
-        this.filter1EnvelopeAmount = (byte) input.read ();
+        final int filEnvAmount = input.read ();
+        this.filter1EnvelopeAmount = filEnvAmount < 0 ? 0 : (byte) filEnvAmount;
         // Velocity to envelope time and velocity to envelope amount, not supported
         input.skipNBytes (2);
         this.filter1VelocityToFrequency = input.read ();

@@ -2,7 +2,7 @@
 
 ## 21.1.0 (work-in-progress)
 
-* New: The abbreviation SFX is recognized as a category tag at the start of a name (FX), e.g. in 'SFX 2500 A Pale Horse' of Vulture Culture's 'Legendary Synth II'. It is used by the option 'Category tag at name start declares the category' and removed by the option of the Elektron Tonverk Preset to remove the category tag.
+* New: The abbreviation SFX is recognized as a category tag at the start of a name (FX).
 * Performances
   * New: Instruments in performances have a mute and solo state.
 * 1010music Blackbox

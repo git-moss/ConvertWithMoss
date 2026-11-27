@@ -165,8 +165,8 @@ public class TALSamplerModulator
      */
     public double getDisplayAmount ()
     {
-        final double amount = this.getModAmount ();
-        return amount * amount * amount;
+        final double modAmount = this.getModAmount ();
+        return modAmount * modAmount * modAmount;
     }
 
 

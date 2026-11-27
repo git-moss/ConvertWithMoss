@@ -53,7 +53,9 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 {
-    private static final String TAG_FALSE = "False";
+    private static final String IDS_NOTIFY_STORING              = "IDS_NOTIFY_STORING";
+    private static final String IDS_MPC_MORE_THAN_128_KEYGROUPS = "IDS_MPC_MORE_THAN_128_KEYGROUPS";
+    private static final String TAG_FALSE                       = "False";
 
 
     private enum SamplePlay
@@ -97,7 +99,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
         if (metadata.isEmpty ())
             return;
 
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
         try (final FileWriter writer = new FileWriter (multiFile, StandardCharsets.UTF_8))
         {
             writer.write (metadata.get ());
@@ -190,14 +192,14 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
             instrumentSource.clipKeyRange ();
             final int numKeygroups = project.addTrack (instrumentSource);
             if (numKeygroups > 128)
-                this.notifier.logError ("IDS_MPC_MORE_THAN_128_KEYGROUPS", Integer.toString (numKeygroups));
+                this.notifier.logError (IDS_MPC_MORE_THAN_128_KEYGROUPS, Integer.toString (numKeygroups));
 
             // The samples are written before the next track is added, since a multi-sample used
             // by several instruments gets other sample names for each track
             this.writeSamples (projectDataFolder, instrumentSource.getMultisampleSource (), ".WAV");
         }
 
-        this.notifier.log ("IDS_NOTIFY_STORING", projectFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, projectFile.getAbsolutePath ());
         writeJsonFile (projectFile, MPC3ProjectFile.HEADER_DATA_TYPE, MPCKeygroupConstants.PROJECT_FILE_VERSION, MPCKeygroupConstants.PROJECT_PLATFORM, project.createJson ());
 
         this.progress.notifyDone ();
@@ -218,9 +220,9 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 
         final MPC3TrackFile.TrackDocument document = new MPC3TrackFile (this.settingsConfiguration.getLayerLimit ()).create (multisampleSource, sampleName);
         if (document.numKeygroups () > 128)
-            this.notifier.logError ("IDS_MPC_MORE_THAN_128_KEYGROUPS", Integer.toString (document.numKeygroups ()));
+            this.notifier.logError (IDS_MPC_MORE_THAN_128_KEYGROUPS, Integer.toString (document.numKeygroups ()));
 
-        this.notifier.log ("IDS_NOTIFY_STORING", multiFile.getAbsolutePath ());
+        this.notifier.log (IDS_NOTIFY_STORING, multiFile.getAbsolutePath ());
         writeJsonFile (multiFile, MPC3TrackFile.HEADER_DATA_TYPE, MPCKeygroupConstants.TRACK_FILE_VERSION, MPCKeygroupConstants.TRACK_FILE_PLATFORM, document.json ());
 
         // The samples live in a folder next to the track file - WAV ending needs to be upper case!
@@ -314,7 +316,7 @@ public class MPCKeygroupCreator extends AbstractWavCreator<MPCKeygroupCreatorUI>
 
         final int size = calcInstrumentNumber (keygroupsMap) - 1;
         if (size > 128)
-            this.notifier.logError ("IDS_MPC_MORE_THAN_128_KEYGROUPS", Integer.toString (size));
+            this.notifier.logError (IDS_MPC_MORE_THAN_128_KEYGROUPS, Integer.toString (size));
         XMLUtils.addTextElement (document, programElement, MPCKeygroupTag.PROGRAM_NUM_KEYGROUPS, Integer.toString (size));
 
         return this.createXMLString (document);

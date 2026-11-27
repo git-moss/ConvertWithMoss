@@ -62,6 +62,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
     private static final String                  CREATED_BY_VERSION    = "30601";
     private static final String                  FILTER_1_FREQ         = "Filter 1 Freq";
+    private static final String                  TAG_PITCH             = "Pitch";
     private static final double                  DEFAULT_LFO_RATE      = 5.0;
     private static final String                  IDS_NOTIFY_STORING    = "IDS_NOTIFY_STORING";
 
@@ -748,7 +749,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
             // Pitch-bend
             int pitchbend = Math.abs (zone.getBendUp ());
             pitchbend = pitchbend <= 0 ? 200 : pitchbend;
-            addModulationEntry (document, modulationElement, "Pitchbend", "Pitch", pitchbend + "Ct");
+            addModulationEntry (document, modulationElement, "Pitchbend", TAG_PITCH, pitchbend + "Ct");
 
             // -----------------------------------------------------------
             // Filter
@@ -822,7 +823,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE1, pitchEnvelope.getAttackSlope (), 6);
                 XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE2, pitchEnvelope.getDecaySlope (), 6);
                 XMLUtils.setDoubleAttribute (envElement, TX16WxTag.ENV_SHAPE3, pitchEnvelope.getReleaseSlope (), 6);
-                addModulationEntry (document, modulationElement, "ENV2", "Pitch", (int) Math.round (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
+                addModulationEntry (document, modulationElement, "ENV2", TAG_PITCH, (int) Math.round (pitchModDepth * IEnvelope.MAX_ENVELOPE_DEPTH) + "Ct");
             }
 
             // -----------------------------------------------------------
@@ -853,7 +854,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
     private static void writeLfos (final Document document, final Element soundshapeElement, final Element modulationElement, final ISampleZone zone)
     {
         final ILfo [] lfos = new ILfo [2];
-        writeLfoEntry (document, modulationElement, lfos, zone.getPitchLfoModulator (), "Pitch", false);
+        writeLfoEntry (document, modulationElement, lfos, zone.getPitchLfoModulator (), TAG_PITCH, false);
         writeLfoEntry (document, modulationElement, lfos, zone.getAmplitudeLfoModulator (), "Volume", true);
         final Optional<IFilter> filter = zone.getFilter ();
         if (filter.isPresent () && FILTER_TYPES.get (filter.get ().getType ()) != null)

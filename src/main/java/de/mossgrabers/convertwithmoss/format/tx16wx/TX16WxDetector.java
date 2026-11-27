@@ -65,6 +65,7 @@ import de.mossgrabers.tools.XMLUtils;
  */
 public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSettingsUI>
 {
+    private static final String                  TAG_PITCH             = "Pitch";
     private static final String                  FILE_INDICATOR        = "file:///";
     private static final String                  ERR_BAD_METADATA_FILE = "IDS_NOTIFY_ERR_BAD_METADATA_FILE";
     private static final String                  ERR_LOAD_FILE         = "IDS_NOTIFY_ERR_LOAD_FILE";
@@ -520,7 +521,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
 
                 if (lfoSoundShapeElement != null)
                 {
-                    applyLfo (zone.getPitchLfoModulator (), lfoSoundShapeElement, lfoModulators, 1.0 / IEnvelope.MAX_ENVELOPE_DEPTH, "Pitch", "Pitch (raw)", "Pitch (Raw)");
+                    applyLfo (zone.getPitchLfoModulator (), lfoSoundShapeElement, lfoModulators, 1.0 / IEnvelope.MAX_ENVELOPE_DEPTH, TAG_PITCH, "Pitch (raw)", "Pitch (Raw)");
                     applyLfo (zone.getAmplitudeLfoModulator (), lfoSoundShapeElement, lfoModulators, 1.0 / ILfoModulator.MAX_VOLUME_DEPTH, "Volume");
                 }
             }
@@ -829,7 +830,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
     private static Optional<IEnvelopeModulator> parsePitchModulator (final Element soundShapeElement, final List<TX16WxModulator> modulators)
     {
         for (final TX16WxModulator modulator: modulators)
-            if (modulator.isSource ("ENV1", "ENV2") && modulator.isDestination ("Pitch", "Pitch (Raw)"))
+            if (modulator.isSource ("ENV1", "ENV2") && modulator.isDestination (TAG_PITCH, "Pitch (Raw)"))
             {
                 final Optional<Integer> modAmoundAsCent = modulator.getModAmountAsCent ();
                 if (modAmoundAsCent.isPresent ())
@@ -908,7 +909,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
     private static int parsePitchbend (final List<TX16WxModulator> modulators)
     {
         for (final TX16WxModulator modulator: modulators)
-            if (modulator.isSource ("Pitchbend") && modulator.isDestination ("Pitch", "Pitch (raw)"))
+            if (modulator.isSource ("Pitchbend") && modulator.isDestination (TAG_PITCH, "Pitch (raw)"))
             {
                 final Optional<Integer> modAmoundAsCent = modulator.getModAmountAsCent ();
                 if (modAmoundAsCent.isPresent ())
