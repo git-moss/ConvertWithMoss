@@ -15,14 +15,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.detector.AbstractDetector;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
+import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -50,8 +55,9 @@ import de.mossgrabers.tools.FileUtils;
  * banks. A bank contains up to 1000 presets and 1000 samples; every preset becomes one multi-sample
  * source. A preset is a list of voices, each of which maps a set of zones (key/velocity ranges
  * referencing a sample) and carries the tuning, volume, filter and envelope settings for them;
- * every voice becomes one group. The format was reverse-engineered by the mpc2emu project, see
- * documentation/design/E4B_FORMAT.md.
+ * every voice becomes one group. As a performance, the multimap of a bank is read: every MIDI
+ * channel which plays a preset becomes one instrument. The format was reverse-engineered by the
+ * mpc2emu project, see documentation/design/E4B_FORMAT.md.
  *
  * @author Jürgen Moßgraber
  */
@@ -75,6 +81,15 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
         boolean            loopInRelease;
         int                loopStart;
         int                loopEnd;
+    }
+
+
+    /** Holds the chunks of a bank which are needed to create the sources. */
+    private static class BankChunks
+    {
+        final List<byte []>        presetChunks   = new ArrayList<> ();
+        final Map<Integer, Sample> samplesByIndex = new HashMap<> ();
+        byte []                    multimap       = null;
     }
 
 
@@ -112,6 +127,57 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
 
             final byte [] data = Files.readAllBytes (sourceFile.toPath ());
             return this.parseBank (sourceFile, FileUtils.getNameWithoutType (sourceFile), data);
+        }
+        catch (final IOException ex)
+        {
+            this.notifier.logError ("IDS_NOTIFY_ERR_LOAD_FILE", ex);
+            return Collections.emptyList ();
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public List<IPerformanceSource> readPerformanceFile (final File sourceFile)
+    {
+        if (this.waitForDelivery ())
+            return Collections.emptyList ();
+
+        try
+        {
+            final List<IPerformanceSource> results = new ArrayList<> ();
+            final byte [] magic = readMagic (sourceFile);
+            if (Emu3DiskImage.isEmu3Image (magic))
+            {
+                // Every bank of the image holds one multimap
+                for (final Emu3DiskImage.ImageFile imageFile: Emu3DiskImage.readFiles (sourceFile))
+                {
+                    final byte [] content = imageFile.getContent ();
+                    if (Emulator4Constants.hasMagic (content, 0, Emulator4Constants.FORM_MAGIC) && Emulator4Constants.hasMagic (content, 8, Emulator4Constants.FORM_TYPE))
+                        this.parsePerformance (sourceFile, imageFile.getName (), content).ifPresent (results::add);
+                }
+                return results;
+            }
+
+            if (!Emulator4Constants.hasMagic (magic, 0, Emulator4Constants.FORM_MAGIC))
+            {
+                // Images of other formats are silently ignored, they belong to other detectors
+                if (sourceFile.getName ().toLowerCase (Locale.US).endsWith (".e4b"))
+                    this.notifier.logError ("IDS_E4B_NOT_A_BANK", sourceFile.getName ());
+                return results;
+            }
+
+            final byte [] data = Files.readAllBytes (sourceFile.toPath ());
+            this.parsePerformance (sourceFile, FileUtils.getNameWithoutType (sourceFile), data).ifPresent (results::add);
+            return results;
         }
         catch (final IOException ex)
         {
@@ -214,11 +280,116 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             return Collections.emptyList ();
         }
 
-        // Walk the chunks sequentially instead of trusting the TOC offsets, which is more robust
-        // against third-party files. Note that the FORM size uses the EOS convention (4 less than
-        // standard IFF) and therefore ends inside the trailing EMSt chunk, which is not needed
-        final List<byte []> presetChunks = new ArrayList<> ();
-        final Map<Integer, Sample> samplesByIndex = new HashMap<> ();
+        final BankChunks chunks = this.readChunks (data);
+        final List<IMultisampleSource> results = new ArrayList<> ();
+        for (final byte [] presetChunk: chunks.presetChunks)
+        {
+            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, presetChunk, chunks.samplesByIndex);
+            if (multisampleSource != null)
+                results.add (multisampleSource);
+        }
+        if (results.isEmpty ())
+            this.notifier.logError ("IDS_E4B_NO_PRESETS", bankName);
+        else
+            this.notifier.log ("IDS_E4B_READING_BANK", bankName, Integer.toString (results.size ()), Integer.toString (chunks.samplesByIndex.size ()));
+        return results;
+    }
+
+
+    /**
+     * Parse the multimap of a bank and create a performance from it. Every MIDI channel which plays
+     * a preset becomes one instrument with the volume and panning of the channel. EOS assigns
+     * preset 0 with the default settings to all unused channels, therefore a channel with the
+     * default settings which plays a preset that is already played by another channel is skipped.
+     *
+     * @param sourceFile The file which contains the bank (the bank file itself or a disk image)
+     * @param bankName The name of the bank, which becomes the name of the performance
+     * @param data The content of the bank
+     * @return The performance or empty if the bank contains no multimap with assigned presets
+     */
+    private Optional<IPerformanceSource> parsePerformance (final File sourceFile, final String bankName, final byte [] data)
+    {
+        if (data.length < 12 || !Emulator4Constants.hasMagic (data, 0, Emulator4Constants.FORM_MAGIC) || !Emulator4Constants.hasMagic (data, 8, Emulator4Constants.FORM_TYPE))
+        {
+            this.notifier.logError ("IDS_E4B_NOT_A_BANK", bankName);
+            return Optional.empty ();
+        }
+
+        final BankChunks chunks = this.readChunks (data);
+        final byte [] multimap = chunks.multimap;
+        if (multimap == null || multimap.length < 2 + Emulator4Constants.E4MA_SIZE)
+        {
+            this.notifier.logError ("IDS_E4B_NO_MULTIMAP", bankName);
+            return Optional.empty ();
+        }
+
+        // The presets are referenced by the index at the start of their chunk
+        final Map<Integer, IMultisampleSource> presetsByIndex = new HashMap<> ();
+        for (final byte [] presetChunk: chunks.presetChunks)
+        {
+            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, presetChunk, chunks.samplesByIndex);
+            if (multisampleSource != null)
+                presetsByIndex.put (Integer.valueOf (Emulator4Constants.getU16BE (presetChunk, 0)), multisampleSource);
+        }
+
+        final IPerformanceSource performanceSource = new DefaultPerformanceSource ();
+        performanceSource.setName (bankName);
+        final Set<Integer> assignedPresets = new HashSet<> ();
+        for (int channel = 0; channel < Emulator4Constants.MULTIMAP_CHANNELS; channel++)
+        {
+            final int offset = 2 + channel * Emulator4Constants.MULTIMAP_ENTRY_SIZE;
+            final int preset = (short) Emulator4Constants.getU16BE (multimap, offset);
+            final IMultisampleSource multisampleSource = presetsByIndex.get (Integer.valueOf (preset));
+            if (preset < 0 || multisampleSource == null)
+                continue;
+
+            final int volume = multimap[offset + 2] & 0xFF;
+            final int panning = multimap[offset + 3];
+            final boolean hasDefaultSettings = volume == 127 && panning == 0 && (multimap[offset + 4] & 0xFF) == 0xFF;
+            if (!assignedPresets.add (Integer.valueOf (preset)) && hasDefaultSettings)
+                continue;
+
+            final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, channel);
+            instrumentSource.setGain (toGain (volume));
+            instrumentSource.setPanning (Math.clamp (panning / 64.0, -1.0, 1.0));
+            performanceSource.addInstrument (instrumentSource);
+        }
+
+        if (performanceSource.getInstruments ().isEmpty ())
+        {
+            this.notifier.logError ("IDS_E4B_NO_MULTIMAP", bankName);
+            return Optional.empty ();
+        }
+        this.notifier.log ("IDS_E4B_READING_MULTIMAP", bankName, Integer.toString (performanceSource.getInstruments ().size ()));
+        return Optional.of (performanceSource);
+    }
+
+
+    /**
+     * Convert the volume of a multimap channel to a gain. The volume curve of the channel is not
+     * known, the MIDI volume curve of 40 * log10 (volume / 127) dB is assumed (as when writing).
+     *
+     * @param volume The volume in the range of 0 to 127
+     * @return The gain in dB, a volume of 0 is limited to the gain of a volume of 1
+     */
+    private static double toGain (final int volume)
+    {
+        return 40.0 * Math.log10 (Math.max (volume, 1) / 127.0);
+    }
+
+
+    /**
+     * Collect the preset, sample and multimap chunks of a bank. The chunks are walked sequentially
+     * instead of trusting the TOC offsets, which is more robust against third-party files. Note
+     * that the FORM size uses the EOS convention (4 less than standard IFF) and therefore ends
+     * inside the trailing EMSt chunk, which is not needed.
+     *
+     * @param data The content of the bank
+     * @return The chunks
+     */
+    private BankChunks readChunks (final byte [] data)
+    {
+        final BankChunks chunks = new BankChunks ();
         final Set<String> usedNames = new HashSet<> ();
         int position = 12;
         while (position + 8 <= data.length)
@@ -231,26 +402,19 @@ public class Emulator4Detector extends AbstractDetector<MetadataSettingsUI>
             {
                 final byte [] body = new byte [(int) size];
                 System.arraycopy (data, position + 8, body, 0, (int) size);
-                presetChunks.add (body);
+                chunks.presetChunks.add (body);
             }
             else if (Emulator4Constants.hasMagic (data, position, Emulator4Constants.SAMPLE_TAG))
-                this.parseSample (data, position + 8, (int) size, samplesByIndex, usedNames);
-            // TOC1, E4Ma and EMSt chunks are ignored
+                this.parseSample (data, position + 8, (int) size, chunks.samplesByIndex, usedNames);
+            else if (Emulator4Constants.hasMagic (data, position, Emulator4Constants.E4MA_TAG))
+            {
+                chunks.multimap = new byte [(int) size];
+                System.arraycopy (data, position + 8, chunks.multimap, 0, (int) size);
+            }
+            // TOC1 and EMSt chunks are ignored
             position = (int) (end + (size % 2 == 0 ? 0 : 1));
         }
-
-        final List<IMultisampleSource> results = new ArrayList<> ();
-        for (final byte [] presetChunk: presetChunks)
-        {
-            final IMultisampleSource multisampleSource = this.parsePreset (sourceFile, bankName, presetChunk, samplesByIndex);
-            if (multisampleSource != null)
-                results.add (multisampleSource);
-        }
-        if (results.isEmpty ())
-            this.notifier.logError ("IDS_E4B_NO_PRESETS", bankName);
-        else
-            this.notifier.log ("IDS_E4B_READING_BANK", bankName, Integer.toString (results.size ()), Integer.toString (samplesByIndex.size ()));
-        return results;
+        return chunks;
     }
 
 

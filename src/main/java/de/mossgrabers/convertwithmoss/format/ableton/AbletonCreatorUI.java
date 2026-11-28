@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.creator.SampleFileFormat;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
@@ -39,7 +40,7 @@ public class AbletonCreatorUI extends WavChunkSettingsUI
      */
     public AbletonCreatorUI ()
     {
-        super ("Ableton");
+        super ("Ableton", false, false, false, false, SampleFileFormat.WAV, SampleFileFormat.AIFF, SampleFileFormat.FLAC);
     }
 
 

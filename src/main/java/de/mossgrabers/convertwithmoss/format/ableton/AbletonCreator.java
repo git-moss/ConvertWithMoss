@@ -139,7 +139,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             // Add all groups
             final List<IGroup> groups = multisampleSource.getNonEmptyGroups (false);
             final String multiSamplePartTemplate = Functions.textFileFor (TEMPLATE_FOLDER + "ADV-MultiSamplePart-Template.xml");
-            final String multisampleParts = addGroups (groups, multiSamplePartTemplate, SafeFileNames.create (multisampleSource.getName ()), writtenSamples, selectorRoundRobin);
+            final String multisampleParts = addGroups (groups, multiSamplePartTemplate, SafeFileNames.create (multisampleSource.getName ()), writtenSamples, selectorRoundRobin, this.getSampleFileEnding ());
 
             String text = Functions.textFileFor (TEMPLATE_FOLDER + (isVersion12 ? "ADV12-Template.xml" : "ADV11-Template.xml"));
 
@@ -416,7 +416,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
     }
 
 
-    private static String addGroups (final List<IGroup> groups, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples, final boolean selectorRoundRobin) throws IOException
+    private static String addGroups (final List<IGroup> groups, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples, final boolean selectorRoundRobin, final String fileEnding) throws IOException
     {
         final Map<ISampleZone, int []> selectorRanges = selectorRoundRobin ? calculateSelectorRanges (groups) : Collections.emptyMap ();
 
@@ -427,7 +427,7 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
             {
                 if (zoneCount > 0)
                     result.append ('\n');
-                result.append (addZoneData (zone, zoneCount, multiSamplePartTemplate, sampleSubFolder, writtenSamples, selectorRanges.get (zone)));
+                result.append (addZoneData (zone, zoneCount, multiSamplePartTemplate, sampleSubFolder, writtenSamples, selectorRanges.get (zone), fileEnding));
                 zoneCount++;
             }
         return result.toString ();
@@ -492,10 +492,10 @@ public class AbletonCreator extends AbstractWavCreator<AbletonCreatorUI>
     }
 
 
-    private static String addZoneData (final ISampleZone zone, final int zoneCount, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples, final int [] selectorRange) throws IOException
+    private static String addZoneData (final ISampleZone zone, final int zoneCount, final String multiSamplePartTemplate, final String sampleSubFolder, final Map<String, File> writtenSamples, final int [] selectorRange, final String fileEnding) throws IOException
     {
         // Must use the same sanitized name which was used for writing the sample file
-        final String zoneFileName = SafeFileNames.create (zone.getName ()) + ".wav";
+        final String zoneFileName = SafeFileNames.create (zone.getName ()) + fileEnding;
 
         final Optional<ISampleData> sampleData = zone.getSampleData ();
         if (sampleData.isEmpty ())

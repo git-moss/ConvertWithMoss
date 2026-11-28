@@ -12,6 +12,7 @@ import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.settings.MetadataSettingsUI;
 import de.mossgrabers.convertwithmoss.format.akai.mpc2000.AkaiMPC2000Detector;
 import de.mossgrabers.convertwithmoss.format.emu.emulator3.Emulator3Detector;
@@ -23,7 +24,8 @@ import de.mossgrabers.convertwithmoss.format.roland.s7xx.S770Detector;
 
 
 /**
- * Detects recursively ISO files in folders. Files must end with <i>.ISO</i>.
+ * Detects recursively ISO files in folders. Files must end with <i>.ISO</i>. Performances are read
+ * from the images of the formats which support them (E-mu EOS and Roland S-7xx).
  *
  * @author Jürgen Moßgraber
  */
@@ -100,6 +102,56 @@ public class IsoDetector extends AbstractIsoDetector<MetadataSettingsUI>
                 this.notifier.logError ("IDS_ISO_UNSUPPORTED_FORMAT", IsoFormat.getName (isoFormat));
                 return Collections.emptyList ();
         }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public List<IPerformanceSource> readPerformanceFile (final File sourceFile)
+    {
+        final IsoFormat isoFormat = IsoFormatIdentifier.identifyIso (sourceFile);
+        final List<IPerformanceSource> results;
+        switch (isoFormat)
+        {
+            case EMU3:
+                // Only the EOS samplers have multimaps, the banks of the Emulator III are ignored
+                this.notifier.log (IDS_ISO_PROCESSING_FORMAT, IsoFormat.getName (isoFormat));
+                this.emulator4Detector.setSourceFolder (this.sourceFolder);
+                this.emulator4Detector.setSettings (this.settingsConfiguration);
+                results = this.emulator4Detector.readPerformanceFile (sourceFile);
+                break;
+
+            case ROLAND_S7XX:
+                this.notifier.log (IDS_ISO_PROCESSING_FORMAT, IsoFormat.getName (isoFormat));
+                this.rolandS7xxDetector.setSourceFolder (this.sourceFolder);
+                this.rolandS7xxDetector.setSettings (this.settingsConfiguration);
+                results = this.rolandS7xxDetector.readPerformanceFile (sourceFile);
+                break;
+
+            case ISO_9660:
+                this.notifier.logError ("IDS_ISO_UNSUPPORTED_9660");
+                return Collections.emptyList ();
+
+            case UNKNOWN:
+                this.notifier.logError ("IDS_ISO_UNSUPPORTED_FORMAT", IsoFormat.getName (isoFormat));
+                return Collections.emptyList ();
+
+            default:
+                results = Collections.emptyList ();
+                break;
+        }
+
+        if (results.isEmpty ())
+            this.notifier.logError ("IDS_ISO_NO_PERFORMANCES", IsoFormat.getName (isoFormat), sourceFile.getName ());
+        return results;
     }
 
 

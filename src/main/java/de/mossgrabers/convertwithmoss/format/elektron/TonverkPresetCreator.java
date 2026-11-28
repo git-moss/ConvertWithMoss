@@ -151,7 +151,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
 
         // The preset must be created after the samples were written since trimming updates the
         // zone/loop positions
-        final TonverkPresetFile preset = drum ? this.buildDrumPreset (multisampleSource, presetName) : buildMultiPreset (multisampleSource);
+        final TonverkPresetFile preset = drum ? this.buildDrumPreset (multisampleSource, presetName) : buildMultiPreset (multisampleSource, this.getSampleFileEnding ());
         applyMetadata (preset, multisampleSource, drum);
 
         // The Tonverk only resolves a preset's samples through an absolute '/mnt/sdcard/...' path
@@ -224,7 +224,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
     }
 
 
-    private static TonverkPresetFile buildMultiPreset (final IMultisampleSource multisampleSource) throws IOException
+    private static TonverkPresetFile buildMultiPreset (final IMultisampleSource multisampleSource, final String fileEnding) throws IOException
     {
         final TonverkPresetFile preset = loadTemplate (MULTI_TEMPLATE);
         preset.machine = Machine.MULTI;
@@ -240,7 +240,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         }
 
         // Re-use the elmulti mapping builder: the key-zone structure is identical
-        final TonverkMultiFile mapping = TonverkMultiCreator.createPreset (multisampleSource);
+        final TonverkMultiFile mapping = TonverkMultiCreator.createPreset (multisampleSource, fileEnding);
         preset.mappingSlotName = mapping.name;
         preset.keyZones.clear ();
         preset.keyZones.addAll (mapping.keyZones);
@@ -279,13 +279,13 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
             applyGainAndPanning (preset, zone.getGain (), zone.getPanning (), voicePrefix);
 
             final int key = Math.clamp (mapped ? zone.getKeyRoot () : padKey++, 0, 127);
-            preset.keyZones.add (createDrumKeyZone (zone, key));
+            preset.keyZones.add (createDrumKeyZone (zone, key, this.getSampleFileEnding ()));
         }
         return preset;
     }
 
 
-    private static TonverkKeyZone createDrumKeyZone (final ISampleZone zone, final int key)
+    private static TonverkKeyZone createDrumKeyZone (final ISampleZone zone, final int key, final String fileEnding)
     {
         final TonverkKeyZone keyZone = new TonverkKeyZone ();
         keyZone.pitch = key;
@@ -296,7 +296,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         keyZone.velocityLayers.add (velocityLayer);
 
         final TonverkSampleSlot sampleSlot = new TonverkSampleSlot ();
-        sampleSlot.sample = SafeFileNames.create (zone.getName ()) + ".wav";
+        sampleSlot.sample = SafeFileNames.create (zone.getName ()) + fileEnding;
         // A one-shot ignores a note-off and always plays the sample to its end which is the loop
         // mode 'Off'. It has priority over a loop since the Tonverk can only store one of both.
         if (TonverkMultiCreator.hasLoop (zone) && !zone.isOneShot ())
@@ -452,7 +452,7 @@ public class TonverkPresetCreator extends AbstractWavCreator<TonverkPresetCreato
         if (this.settingsConfiguration.isRemoveJunkChunks ())
             wavFile.removeChunks (CommonRiffChunkId.JUNK_ID, CommonRiffChunkId.JUNK2_ID, WaveRiffChunkId.FILLER_ID, WaveRiffChunkId.MD5_ID);
 
-        wavFile.write (outputStream);
+        this.writeSampleFile (multisampleSource, zone, wavFile, outputStream);
     }
 
 

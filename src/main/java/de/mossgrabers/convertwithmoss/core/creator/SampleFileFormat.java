@@ -2,10 +2,10 @@
 // (c) 2019-2026
 // Licensed under LGPLv3 - http://www.gnu.org/licenses/lgpl-3.0.txt
 
-package de.mossgrabers.convertwithmoss.format.wav;
+package de.mossgrabers.convertwithmoss.core.creator;
 
 /**
- * The audio file formats which the sample file creator can write.
+ * The audio file formats in which creators can write the sample files.
  *
  * @author Jürgen Moßgraber
  */

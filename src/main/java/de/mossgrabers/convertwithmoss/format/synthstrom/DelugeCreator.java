@@ -778,7 +778,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         soundElement.setAttribute (DelugeTag.FIRMWARE_VERSION, DelugeTag.FIRMWARE_VERSION_VALUE);
         soundElement.setAttribute (DelugeTag.EARLIEST_COMPATIBLE_FIRMWARE, DelugeTag.EARLIEST_COMPATIBLE_VALUE);
 
-        writeSound (document, soundElement, layout, relativeSampleFolder, false, polyphonyMode);
+        writeSound (document, soundElement, layout, relativeSampleFolder, this.getSampleFileEnding (), false, polyphonyMode);
 
         return this.createXMLString (document);
     }
@@ -823,7 +823,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
             XMLUtils.addTextElement (document, drumSound, DelugeTag.NAME, drumName);
             // A drum is one pad of the kit. The polyphony of the source instrument describes the
             // whole instrument and not a single pad, therefore the drums stay polyphonic.
-            writeSound (document, drumSound, DelugeOscillatorLayout.createSingle (Collections.singletonList (zone)), relativeSampleFolder, true, DelugeTag.POLYPHONIC_POLY);
+            writeSound (document, drumSound, DelugeOscillatorLayout.createSingle (Collections.singletonList (zone)), relativeSampleFolder, this.getSampleFileEnding (), true, DelugeTag.POLYPHONIC_POLY);
         }
 
         return this.createXMLString (document);
@@ -839,20 +839,21 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      * @param layout The samples which the oscillators of this sound play (several key ranges for a
      *            synth, a single sample for a drum)
      * @param relativeSampleFolder The card-relative path of the sample folder
+     * @param fileEnding The file ending of the sample files
      * @param isKit True if the sound is one drum of a kit
      * @param polyphonyMode The value for the polyphonic tag
      */
-    private static void writeSound (final Document document, final Element soundElement, final DelugeOscillatorLayout layout, final String relativeSampleFolder, final boolean isKit, final String polyphonyMode)
+    private static void writeSound (final Document document, final Element soundElement, final DelugeOscillatorLayout layout, final String relativeSampleFolder, final String fileEnding, final boolean isKit, final String polyphonyMode)
     {
         // Oscillator 1 with the sample(s)
-        writeSampleOscillator (document, XMLUtils.addElement (document, soundElement, DelugeTag.OSC1), layout.getOscillator1 (), relativeSampleFolder, isKit);
+        writeSampleOscillator (document, XMLUtils.addElement (document, soundElement, DelugeTag.OSC1), layout.getOscillator1 (), relativeSampleFolder, fileEnding, isKit);
 
         // Oscillator 2 with the sample(s) of a second layer, otherwise silent
         final Element osc2 = XMLUtils.addElement (document, soundElement, DelugeTag.OSC2);
         if (layout.getOscillator2 ().isEmpty ())
             XMLUtils.addTextElement (document, osc2, DelugeTag.TYPE, DelugeTag.TYPE_SQUARE);
         else
-            writeSampleOscillator (document, osc2, layout.getOscillator2 (), relativeSampleFolder, isKit);
+            writeSampleOscillator (document, osc2, layout.getOscillator2 (), relativeSampleFolder, fileEnding, isKit);
 
         XMLUtils.addTextElement (document, soundElement, DelugeTag.POLYPHONIC, polyphonyMode);
         XMLUtils.addTextElement (document, soundElement, DelugeTag.VOICE_PRIORITY, "1");
@@ -875,9 +876,10 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      * @param osc The oscillator element
      * @param ranges The key map which the oscillator plays
      * @param relativeSampleFolder The card-relative path of the sample folder
+     * @param fileEnding The file ending of the sample files
      * @param isKit True if the sound is one drum of a kit
      */
-    private static void writeSampleOscillator (final Document document, final Element osc, final List<DelugeOscillatorLayout.SampleRange> ranges, final String relativeSampleFolder, final boolean isKit)
+    private static void writeSampleOscillator (final Document document, final Element osc, final List<DelugeOscillatorLayout.SampleRange> ranges, final String relativeSampleFolder, final String fileEnding, final boolean isKit)
     {
         final List<ISampleZone> zones = ranges.stream ().map (DelugeOscillatorLayout.SampleRange::getZone).toList ();
         // The silent sample, which keeps the oscillator quiet where only the other one plays,
@@ -904,7 +906,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
         XMLUtils.addTextElement (document, osc, DelugeTag.TIME_STRETCH_AMOUNT, "0");
 
         if (ranges.size () == 1)
-            writeZone (document, osc, zones.get (0), relativeSampleFolder, -1, isKit);
+            writeZone (document, osc, zones.get (0), relativeSampleFolder, fileEnding, -1, isKit);
         else
         {
             final Element sampleRanges = XMLUtils.addElement (document, osc, DelugeTag.SAMPLE_RANGES);
@@ -913,7 +915,7 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
                 final Element sampleRange = XMLUtils.addElement (document, sampleRanges, DelugeTag.SAMPLE_RANGE);
                 // The last (highest) range does not store the top note - it covers everything above
                 final int topNote = i == ranges.size () - 1 ? -1 : ranges.get (i).getTopNote ();
-                writeZone (document, sampleRange, zones.get (i), relativeSampleFolder, topNote, isKit);
+                writeZone (document, sampleRange, zones.get (i), relativeSampleFolder, fileEnding, topNote, isKit);
             }
         }
     }
@@ -956,15 +958,16 @@ public class DelugeCreator extends AbstractWavCreator<DelugeCreatorUI>
      * @param parent The parent element (the oscillator for a single sample or a sample range)
      * @param zone The zone
      * @param relativeSampleFolder The card-relative path of the sample folder
+     * @param fileEnding The file ending of the sample files
      * @param topNote The top note of the range or -1 if it should not be written
      * @param isKit True if the sound is one drum of a kit
      */
-    private static void writeZone (final Document document, final Element parent, final ISampleZone zone, final String relativeSampleFolder, final int topNote, final boolean isKit)
+    private static void writeZone (final Document document, final Element parent, final ISampleZone zone, final String relativeSampleFolder, final String fileEnding, final int topNote, final boolean isKit)
     {
         if (topNote >= 0)
             XMLUtils.addTextElement (document, parent, DelugeTag.RANGE_TOP_NOTE, Integer.toString (topNote));
 
-        XMLUtils.addTextElement (document, parent, DelugeTag.FILE_NAME, relativeSampleFolder + "/" + SafeFileNames.create (zone.getName ()) + ".wav");
+        XMLUtils.addTextElement (document, parent, DelugeTag.FILE_NAME, relativeSampleFolder + "/" + SafeFileNames.create (zone.getName ()) + fileEnding);
 
         // A synth maps the sample across the keyboard, so its transpose follows the root note. A
         // kit drum is triggered by its own pad and must play at its natural pitch (like the

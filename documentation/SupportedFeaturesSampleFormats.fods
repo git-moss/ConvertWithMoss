@@ -14171,6 +14171,82 @@
       <text:p>mixer solo</text:p>
      </table:table-cell>
     </table:table-row>
+    <table:table-row table:style-name="ro5">
+     <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string">
+      <text:p>E-mu Emulator IV</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>Read</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>e4b, iso, img, hda</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="float" office:value="32" calcext:value-type="float">
+      <text:p>32</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>A1-A16, B1-B16</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44" table:number-columns-repeated="3"/>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>Volume (MIDI curve assumed)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>Pan</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44" table:number-columns-repeated="2"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro5">
+     <table:table-cell table:style-name="ce18"/>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>Write</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>e4b, iso</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="float" office:value="32" calcext:value-type="float">
+      <text:p>32</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>A1-A16, B1-B16</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44" table:number-columns-repeated="3"/>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>Volume (MIDI curve assumed)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>Pan</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44" table:number-columns-repeated="2"/>
+    </table:table-row>
+    <table:table-row table:style-name="ro5">
+     <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string">
+      <text:p>ISO/IMG file</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>Read</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>iso, img, out, hda</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="float" office:value="32" calcext:value-type="float">
+      <text:p>32</text:p>
+     </table:table-cell>
+     <table:table-cell office:value-type="string" calcext:value-type="string">
+      <text:p>A1-A16, B1-B16 (E-mu) / Off, 1-16 (Roland)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>Zone Lower/Upper (Roland only)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44" table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>Volume (MIDI curve assumed for E-mu)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>Pan</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44" table:number-columns-repeated="2"/>
+    </table:table-row>
     <table:table-row table:style-name="ro11">
      <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2"><text:p><text:span text:style-name="T3">Native Instruments </text:span>Kontakt 1-8</text:p>
      </table:table-cell>

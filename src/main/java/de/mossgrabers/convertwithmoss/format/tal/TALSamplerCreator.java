@@ -22,6 +22,7 @@ import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.algorithm.MathUtils;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
+import de.mossgrabers.convertwithmoss.core.creator.SampleFileFormat;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelopeModulator;
 import de.mossgrabers.convertwithmoss.core.model.IFilter;
@@ -52,7 +53,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
      */
     public TALSamplerCreator (final INotifier notifier)
     {
-        super ("TAL Sampler", "TALSampler", notifier, new WavChunkSettingsUI ("TALSampler", true, false, false, false));
+        super ("TAL Sampler", "TALSampler", notifier, new WavChunkSettingsUI ("TALSampler", true, false, false, false, SampleFileFormat.WAV, SampleFileFormat.AIFF, SampleFileFormat.FLAC));
     }
 
 
@@ -158,7 +159,7 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
             // No group name and trigger types
 
             for (final ISampleZone sample: group.getSampleZones ())
-                createSample (document, folderName, programElement, groupCounter, multisamplesElement, sample, gainAboveDB);
+                createSample (document, folderName, programElement, groupCounter, multisamplesElement, sample, gainAboveDB, this.getSampleFileEnding ());
 
             groupCounter++;
             if (groupCounter == 4)
@@ -182,14 +183,15 @@ public class TALSamplerCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param zone Where to get the sample info from
      * @param gainAboveDB The part of the gain which the main volume and the volume of the layer
      *            carry, in dB
+     * @param fileEnding The file ending of the sample files
      */
-    private static void createSample (final Document document, final String folderName, final Element programElement, final int groupCounter, final Element groupElement, final ISampleZone zone, final double gainAboveDB)
+    private static void createSample (final Document document, final String folderName, final Element programElement, final int groupCounter, final Element groupElement, final ISampleZone zone, final double gainAboveDB, final String fileEnding)
     {
         // -----------------------------------------------------------
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, groupElement, TALSamplerTag.MULTISAMPLE);
-        sampleElement.setAttribute (TALSamplerTag.MULTISAMPLE_URL, AbstractCreator.formatFileName (folderName, zone.getName () + ".wav"));
+        sampleElement.setAttribute (TALSamplerTag.MULTISAMPLE_URL, AbstractCreator.formatFileName (folderName, zone.getName () + fileEnding));
 
         // Always write the volume: a missing attribute is not read back as 0dB
         XMLUtils.setDoubleAttribute (sampleElement, TALSamplerTag.VOLUME, TALSamplerConstants.dbToZoneVolume (zone.getGain () - gainAboveDB), 6);

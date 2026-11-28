@@ -113,7 +113,7 @@ public class Maschine2Format implements IMaschineFormat
 
     /** {@inheritDoc} */
     @Override
-    public void writeSound (final OutputStream out, final File sampleFolder, final IMultisampleSource multisampleSource, final int version) throws IOException
+    public void writeSound (final OutputStream out, final File sampleFolder, final IMultisampleSource multisampleSource, final int version, final String sampleFileEnding) throws IOException
     {
         final NIContainerItem niContainerItem = new NIContainerItem ();
         niContainerItem.read (new ByteArrayInputStream (version == 2 ? MASCHINE_TEMPLATE_V2 : MASCHINE_TEMPLATE_V3));
@@ -134,7 +134,7 @@ public class Maschine2Format implements IMaschineFormat
         if (presetChunk.isPresent () && presetChunk.get ().getData () instanceof final PresetChunkData presetChunkData)
         {
             final MaschinePresetAccessor programAccessor = new MaschinePresetAccessor (this.notifier);
-            final byte [] presetData = programAccessor.writeMaschinePreset (multisampleSource, presetChunkData.getPresetData (), sampleFolder.getName ());
+            final byte [] presetData = programAccessor.writeMaschinePreset (multisampleSource, presetChunkData.getPresetData (), sampleFolder.getName (), sampleFileEnding);
             presetChunkData.setPresetData (presetData);
         }
 

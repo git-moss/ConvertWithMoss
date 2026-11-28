@@ -58,7 +58,7 @@ public class MaschineCreator extends AbstractWavCreator<MaschineCreatorUI>
 
         try (final FileOutputStream out = new FileOutputStream (multiFile))
         {
-            maschineType.writeSound (out, sampleFolder, multisampleSource, maschineVersion);
+            maschineType.writeSound (out, sampleFolder, multisampleSource, maschineVersion, this.getSampleFileEnding ());
         }
 
         this.progress.notifyDone ();

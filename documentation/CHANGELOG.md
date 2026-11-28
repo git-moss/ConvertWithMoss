@@ -2,6 +2,7 @@
 
 ## 21.1.0 (work-in-progress)
 
+* New: Destinations whose samplers support it can store the samples in other audio file formats than WAV (option 'Sample Files - Audio file format', CLI: <prefix>SampleFileFormat): AIFF and FLAC for Ableton Sampler, DecentSampler, SFZ, TAL-Sampler and TX16Wx; AIFF for Elektron Tonverk, NI Maschine and Synthstrom Deluge.
 * New: The abbreviation SFX is recognized as a category tag at the start of a name (FX).
 * Performances
   * New: Instruments in performances have a mute and solo state.
@@ -26,28 +27,35 @@
   * Fixed: Files on disk images (IMG, HFE) were read shifted by one sector (the first sector range includes the file head) and with swapped voice/bank counters: voice files were not found at all and banks contained only one long sample (e.g. bank 'BSN16' now has 7 areas with 6 voices).
   * Fixed: Written disk images used the wrong order of the bank/voice counters and a sector range without the file head. Disk images written by previous versions are no longer read correctly.
 * E-mu Emulator IV
+  * New: Multis can be read as performances (also from ISO/IMG/HDA images). Every channel A1-A16 and B1-B16 which plays a preset becomes an instrument with the volume and panning of the channel.  
   * New: Performances are written as a bank whose multimap assigns the presets to the MIDI channels (A1-B16) with the volume and panning of the instruments. The multisetup is named after the performance.
   * New: A warning is shown if the samples of a bank need more than the 128 MB sample memory of an Emulator IV.
   * Fixed: The multimap of written banks had a wrong layout.
   * Fixed: Loops are read and written with their 'loop in release' setting. Written samples had a loop which stopped at the release of the key and played on to the end of the sample, while the loops of the factory banks keep playing in the release; loops which stop at the release were read as playing on.
 * E-mu Emulator X
   * New: The Fixed Pitch Mode of a voice is read as a key tracking of 0 and written for zones without key tracking, e.g. drum kits and drones.
+* Elektron Tonverk Preset
+  * New: Option to remove a category tag at the start of the preset name, e.g. 'PAD Poly800 Better Than a 106' is written as 'Poly800 Better Than a 106', since the display of the Tonverk shows only the start of a long name. The tag is removed only if it is written in upper case and still sets the category and the tags of the preset.
+  * New: Option to number the presets like the factory presets, starting with a given number, e.g. '176 Poly800 Better Than a 106'. Since the preset folder of the Tonverk has no sub-folders, this keeps the presets of a library together.
+* ISO/IMG file
+  * New: Performances can be read from E-mu EOS (multimaps) and Roland S-7xx images.
+* Kontakt
+  * New: NKM: The mute and solo state of the instruments is read and written (Kontakt 2 and 5+).
 * Roland SP-404MK2
   * New: Read and write the start/end trim and the loop start of a pad, the play mode (reverse, ping-pong loop), GATE (a pad without GATE is a one-shot), FIXED VELOCITY, the mute group (exclusive group; up to 10 groups A-J are written) and the envelope (ATTACK and RELEASE, 127 = 3 seconds; HOLD shortens the played range when read).
   * Fixed: The audio of a sample file starts at byte 512, not at byte 32. Every pad started with 480 bytes of noise (5 ms for a mono and 2.5 ms for a stereo sample), written sample files had the audio 480 bytes too early.
   * Fixed: The pitch was read from and written to the wrong fields (the loop switch and the coarse pitch) and written pads kept VINYL on, which ignores the pitch fields. The LOOP switch was read from and written to the GATE field.
   * Fixed: Projects are now written in the 52,000 byte form of PADCONF.BIN which the device and the SP-404MKII App store; the app imported only the tempos of the 31,488 byte form. Note that the app still does not import the samples of written projects since a 480 byte block in the sample files, which looks encrypted, cannot be created.
-* Kontakt
-  * New: NKM: The mute and solo state of the instruments is read and written (Kontakt 2 and 5+).
-* Teenage Engineering OP-XY
-  * New: Read and write the filter (cut-off, resonance, envelope amount, key tracking) and the filter envelope. The order of the filter parameters is taken from the documentation of the device, the scaling of the cut-off and the envelope amount is estimated; this is not yet verified with presets of the device.
-* Elektron Tonverk Preset
-  * New: Option to remove a category tag at the start of the preset name, e.g. 'PAD Poly800 Better Than a 106' is written as 'Poly800 Better Than a 106', since the display of the Tonverk shows only the start of a long name. The tag is removed only if it is written in upper case and still sets the category and the tags of the preset.
-  * New: Option to number the presets like the factory presets, starting with a given number, e.g. '176 Poly800 Better Than a 106'. Since the preset folder of the Tonverk has no sub-folders, this keeps the presets of a library together.
+* Sample Files
+  * Fixed: 32-bit float samples were written as corrupt AIFF files (noise). AIFF files are now written with at most 24 bit.
+* SFZ
+  * New: The option 'Convert samples to FLAC format' is replaced by the audio file format selection (WAV, AIFF, FLAC). The old setting and the CLI parameter SFZConvertToFlac are still supported.
 * SoundFont 2
   * Fixed: The name of a SoundFont which contains only one preset is now taken from the file name. A SoundFont stores at most 19 characters of a preset name, so longer names were cut off, e.g. 'PAD Poly800 Better' instead of 'PAD Poly800 Better Than a 106' (24 of the 40 SoundFonts of Vulture Culture's 'Legendary Synths'), and libraries with one preset per file often name only the file, e.g. 'Organ2' is stored in 'BASS M1 Organ2.sf2' and 'LEAD Source Torture' in 'PAD Source Tortured Robots.sf2'. The stored names are still used for SoundFonts with several presets.
 * TAL Sampler
   * Fixed: An LFO with the wave form Sine was written as Noise. The value of Sine exists only since version 12 of the file format, the plug-in reads files of an older version - ConvertWithMoss wrote version 9 - with only 5 wave forms. Files are now written as version 12 and the wave forms of older files are read with the scale of their version.
+* Teenage Engineering OP-XY
+  * New: Read and write the filter (cut-off, resonance, envelope amount, key tracking) and the filter envelope. The order of the filter parameters is taken from the documentation of the device, the scaling of the cut-off and the envelope amount is estimated; this is not yet verified with presets of the device.
 * TX16W
   * Fixed: Reading a performance slot with a transpose but without a detune value crashed.
 * Yamaha YSFC

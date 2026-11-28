@@ -338,7 +338,7 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
                     seqLength = Math.max (seqLength, zone.getSequencePosition ());
 
                 ampVelDepths.add (Double.valueOf (zone.getAmplitudeVelocityModulator ().getDepth ()));
-                final Element sampleElement = createSample (document, folderName, groupElement, zone, polyphonyTag);
+                final Element sampleElement = createSample (document, folderName, groupElement, zone, polyphonyTag, this.getSampleFileEnding ());
 
                 // Note: there is no amplitude envelope modulation depth parameter!
                 final IEnvelope modulatorSource = zone.getAmplitudeEnvelopeModulator ().getSource ();
@@ -436,16 +436,17 @@ public class DecentSamplerCreator extends AbstractWavCreator<DecentSamplerCreato
      * @param groupElement The element where to add the sample information
      * @param zone Where to get the sample info from
      * @param polyphonyTag The tag which limits the number of voices, null if there is none
+     * @param fileEnding The file ending of the sample files
      * @return The sample element
      */
-    private static Element createSample (final Document document, final String folderName, final Element groupElement, final ISampleZone zone, final String polyphonyTag)
+    private static Element createSample (final Document document, final String folderName, final Element groupElement, final ISampleZone zone, final String polyphonyTag, final String fileEnding)
     {
         // -----------------------------------------------------------
         // Sample element and attributes
 
         final Element sampleElement = XMLUtils.addElement (document, groupElement, DecentSamplerTag.SAMPLE);
 
-        final String filename = zone.getName () + ".wav";
+        final String filename = zone.getName () + fileEnding;
         sampleElement.setAttribute (DecentSamplerTag.PATH, AbstractCreator.formatFileName (folderName, filename));
 
         final double gain = zone.getGain ();

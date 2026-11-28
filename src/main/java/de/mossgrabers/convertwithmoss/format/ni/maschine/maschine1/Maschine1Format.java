@@ -201,7 +201,7 @@ public class Maschine1Format implements IMaschineFormat
 
     /** {@inheritDoc} */
     @Override
-    public void writeSound (final OutputStream out, final File sampleFolder, final IMultisampleSource multisampleSource, final int version) throws IOException
+    public void writeSound (final OutputStream out, final File sampleFolder, final IMultisampleSource multisampleSource, final int version, final String sampleFileEnding) throws IOException
     {
         // version == 1
 
@@ -212,7 +212,7 @@ public class Maschine1Format implements IMaschineFormat
 
         // There are no groups, therefore, collect all sample zones
         final List<ISampleZone> sampleZones = multisampleSource.getAllSampleZones (true);
-        this.updateZones (sampleZones, sampleFolder);
+        this.updateZones (sampleZones, sampleFolder, sampleFileEnding);
 
         this.updateGlobalParameters (multisampleSource, sampleZones.get (0));
 
@@ -913,9 +913,10 @@ public class Maschine1Format implements IMaschineFormat
      *
      * @param sampleZones The sample zones from which to create GZN tags
      * @param sampleFolder The folder which contains the samples
+     * @param sampleFileEnding The file ending of the sample files (including the dot)
      * @throws IOException Could not update the zones
      */
-    private void updateZones (final List<ISampleZone> sampleZones, final File sampleFolder) throws IOException
+    private void updateZones (final List<ISampleZone> sampleZones, final File sampleFolder, final String sampleFileEnding) throws IOException
     {
         final DataTag zoneTemplate = this.zoneParametersTopDataTags.get (0);
         this.zoneParametersTopDataTags.clear ();
@@ -937,7 +938,7 @@ public class Maschine1Format implements IMaschineFormat
             setParameterText (newZoneTag, "bsid", sampleFolder.getName ());
             setParameterText (newZoneTag, "bsur", folderURI.toString ());
 
-            final URI sampleURI = new File (sampleFolder, zone.getName () + ".wav").getAbsoluteFile ().toPath ().toUri ();
+            final URI sampleURI = new File (sampleFolder, zone.getName () + sampleFileEnding).getAbsoluteFile ().toPath ().toUri ();
             setParameterText (newZoneTag, "rlur", folderURI.relativize (sampleURI).toString ());
 
             final Optional<ISampleData> sampleData = zone.getSampleData ();

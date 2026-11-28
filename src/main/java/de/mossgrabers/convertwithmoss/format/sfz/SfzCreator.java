@@ -150,10 +150,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
         final File sampleFolder = new File (destinationFolder, safeSampleFolderName);
         safeCreateDirectory (sampleFolder);
 
-        if (this.settingsConfiguration.convertToFlac ())
-            this.writeFlacSamples (sampleFolder, multisampleSource);
-        else
-            this.writeSamples (sampleFolder, multisampleSource);
+        this.writeSamples (sampleFolder, multisampleSource);
 
         this.progress.notifyDone ();
     }
@@ -276,7 +273,7 @@ public class SfzCreator extends AbstractWavCreator<SfzCreatorUI>
      */
     private Pair<String, List<String>> createSample (final String safeSampleFolderName, final ISampleZone zone, final boolean isNotRoundRobinGroup)
     {
-        final String ending = this.settingsConfiguration.convertToFlac () ? ".flac" : ".wav";
+        final String ending = this.getSampleFileEnding ();
 
         final StringBuilder regionBuffer = new StringBuilder ();
         regionBuffer.append ("\n<").append (SfzHeader.REGION).append (">\n");

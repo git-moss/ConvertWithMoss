@@ -10,12 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.creator.SampleFileFormat;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
-import de.mossgrabers.tools.ui.panel.BoxPanel;
-import javafx.geometry.Orientation;
-import javafx.scene.control.CheckBox;
-import javafx.scene.layout.Pane;
 
 
 /**
@@ -25,10 +22,8 @@ import javafx.scene.layout.Pane;
  */
 public class SfzCreatorUI extends WavChunkSettingsUI
 {
+    /** The setting of older versions which only allowed to choose between WAV and FLAC. */
     private static final String SFZ_CONVERT_TO_FLAC = "SFZConvertToFlac";
-
-    private CheckBox            convertToFlacCheckBox;
-    private boolean             convertToFlac;
 
 
     /**
@@ -38,19 +33,7 @@ public class SfzCreatorUI extends WavChunkSettingsUI
      */
     public SfzCreatorUI (final String prefix)
     {
-        super (prefix);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public Pane getEditPane ()
-    {
-        final BoxPanel panel = new BoxPanel (Orientation.VERTICAL);
-        panel.createSeparator ("@IDS_OUTPUT_FORMAT");
-        this.convertToFlacCheckBox = panel.createCheckBox ("@IDS_SFZ_CONVERT_TO_FLAC");
-        this.addWavChunkOptions (panel).getStyleClass ().add ("titled-separator-pane");
-        return panel.getPane ();
+        super (prefix, false, false, false, false, SampleFileFormat.WAV, SampleFileFormat.AIFF, SampleFileFormat.FLAC);
     }
 
 
@@ -58,7 +41,9 @@ public class SfzCreatorUI extends WavChunkSettingsUI
     @Override
     public void loadSettings (final BasicConfig config)
     {
-        this.convertToFlacCheckBox.setSelected (config.getBoolean (SFZ_CONVERT_TO_FLAC, false));
+        // Take over the setting of older versions
+        if (config.getProperty (this.getSampleFileFormatKey ()) == null && config.getBoolean (SFZ_CONVERT_TO_FLAC, false))
+            config.setProperty (this.getSampleFileFormatKey (), SampleFileFormat.FLAC.getName ());
 
         super.loadSettings (config);
     }
@@ -66,36 +51,17 @@ public class SfzCreatorUI extends WavChunkSettingsUI
 
     /** {@inheritDoc} */
     @Override
-    public void saveSettings (final BasicConfig config)
-    {
-        config.setBoolean (SFZ_CONVERT_TO_FLAC, this.convertToFlacCheckBox.isSelected ());
-
-        super.saveSettings (config);
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
-    public boolean checkSettingsUI (final INotifier notifier)
-    {
-        if (!super.checkSettingsUI (notifier))
-            return false;
-
-        this.convertToFlac = this.convertToFlacCheckBox.isSelected ();
-        return true;
-    }
-
-
-    /** {@inheritDoc} */
-    @Override
     public boolean checkSettingsCLI (final INotifier notifier, final Map<String, String> parameters)
     {
+        // Still support the parameter of older versions, the new one has precedence
+        final String convertToFlac = parameters.remove (SFZ_CONVERT_TO_FLAC);
+        final boolean hasOutputFormat = parameters.containsKey (this.getSampleFileFormatKey ());
+
         if (!super.checkSettingsCLI (notifier, parameters))
             return false;
 
-        final String value = parameters.remove (SFZ_CONVERT_TO_FLAC);
-        this.convertToFlac = "1".equals (value);
-
+        if (!hasOutputFormat && "1".equals (convertToFlac))
+            this.setSampleFileFormat (SampleFileFormat.FLAC);
         return true;
     }
 
@@ -107,16 +73,5 @@ public class SfzCreatorUI extends WavChunkSettingsUI
         final List<String> parameterNames = new ArrayList<> (Arrays.asList (super.getCLIParameterNames ()));
         parameterNames.add (SFZ_CONVERT_TO_FLAC);
         return parameterNames.toArray (new String [parameterNames.size ()]);
-    }
-
-
-    /**
-     * Should the output samples be converted to FLAC?
-     *
-     * @return True to convert
-     */
-    public boolean convertToFlac ()
-    {
-        return this.convertToFlac;
     }
 }

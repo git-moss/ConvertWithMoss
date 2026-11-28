@@ -30,6 +30,7 @@ import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractWavCreator;
+import de.mossgrabers.convertwithmoss.core.creator.SampleFileFormat;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.detector.DefaultPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.model.IEnvelope;
@@ -257,7 +258,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
      */
     public TX16WxCreator (final INotifier notifier)
     {
-        super ("CWITEC TX16Wx", "TX16Wx", notifier, new WavChunkSettingsUI ("TX16Wx"));
+        super ("CWITEC TX16Wx", "TX16Wx", notifier, new WavChunkSettingsUI ("TX16Wx", false, false, false, false, SampleFileFormat.WAV, SampleFileFormat.AIFF, SampleFileFormat.FLAC));
     }
 
 
@@ -446,7 +447,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 for (final ISampleZone zone: group.getSampleZones ())
                 {
                     final Element waveElement = XMLUtils.addElement (document, bankElement, TX16WxTag.SAMPLE);
-                    waveElement.setAttribute (TX16WxTag.PATH, AbstractCreator.formatFileName (relativeFolderName, zone.getName () + ".wav"));
+                    waveElement.setAttribute (TX16WxTag.PATH, AbstractCreator.formatFileName (relativeFolderName, zone.getName () + this.getSampleFileEnding ()));
                 }
         }
         for (int i = 0; i < instrumentSources.size (); i++)
@@ -533,7 +534,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
             for (final ISampleZone zone: zones)
             {
-                createSample (document, folderName, programElement, groupElement, zone, waveID);
+                createSample (document, folderName, programElement, groupElement, zone, waveID, this.getSampleFileEnding ());
                 waveID++;
             }
 
@@ -625,8 +626,9 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
      * @param groupElement The element where to add the sample information
      * @param zone Where to get the sample info from
      * @param zoneIndex The index of the zone
+     * @param fileEnding The file ending of the sample files
      */
-    private static void createSample (final Document document, final String folderName, final Element programElement, final Element groupElement, final ISampleZone zone, final int zoneIndex)
+    private static void createSample (final Document document, final String folderName, final Element programElement, final Element groupElement, final ISampleZone zone, final int zoneIndex, final String fileEnding)
     {
         final int keyLow = zone.getKeyLow ();
         final int keyHigh = zone.getKeyHigh ();
@@ -639,7 +641,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
 
         // The wave description
         final Element waveElement = XMLUtils.addElement (document, programElement, TX16WxTag.SAMPLE);
-        waveElement.setAttribute (TX16WxTag.PATH, AbstractCreator.formatFileName (folderName, zone.getName () + ".wav"));
+        waveElement.setAttribute (TX16WxTag.PATH, AbstractCreator.formatFileName (folderName, zone.getName () + fileEnding));
         XMLUtils.setIntegerAttribute (waveElement, TX16WxTag.SAMPLE_ID, zoneIndex);
         XMLUtils.setIntegerAttribute (waveElement, TX16WxTag.START, Math.max (0, zone.getStart ()));
         final int stop = zone.getStop ();

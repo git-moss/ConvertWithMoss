@@ -127,7 +127,7 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
 
         // Create the preset file - must be done after the samples were written since trimming
         // does update the zone/loop positions!
-        final TonverkMultiFile elektronMulti = createPreset (multisampleSource);
+        final TonverkMultiFile elektronMulti = createPreset (multisampleSource, this.getSampleFileEnding ());
         final String presetFile = presetName + ".elmulti";
         this.notifier.log ("IDS_NOTIFY_STORING", presetFile);
         elektronMulti.write (new File (presetFolder, presetFile).toPath ());
@@ -173,7 +173,7 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
         if (this.settingsConfiguration.isRemoveJunkChunks ())
             wavFile.removeChunks (CommonRiffChunkId.JUNK_ID, CommonRiffChunkId.JUNK2_ID, WaveRiffChunkId.FILLER_ID, WaveRiffChunkId.MD5_ID);
 
-        wavFile.write (outputStream);
+        this.writeSampleFile (multisampleSource, zone, wavFile, outputStream);
     }
 
 
@@ -218,7 +218,7 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
     }
 
 
-    static TonverkMultiFile createPreset (final IMultisampleSource multiSampleSource)
+    static TonverkMultiFile createPreset (final IMultisampleSource multiSampleSource, final String fileEnding)
     {
         final TonverkMultiFile elektronMulti = new TonverkMultiFile ();
         elektronMulti.name = multiSampleSource.getName ();
@@ -249,7 +249,7 @@ public class TonverkMultiCreator extends AbstractWavCreator<TonverkMultiCreatorU
                     velocityLayer.sampleSlots.add (sampleSlot);
 
                     // Must be identical to the file name created in writeSamples!
-                    sampleSlot.sample = SafeFileNames.create (sampleZone.getName ()) + ".wav";
+                    sampleSlot.sample = SafeFileNames.create (sampleZone.getName ()) + fileEnding;
 
                     // Note: 'trim-start'/'trim-end' must not be set! They are only supported for
                     // single-file multi-samples. The WAV files are physically trimmed instead.

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.creator.SampleFileFormat;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
 import de.mossgrabers.tools.ui.Functions;
@@ -43,7 +44,7 @@ public class MaschineCreatorUI extends WavChunkSettingsUI
      */
     public MaschineCreatorUI (final String prefix)
     {
-        super (prefix);
+        super (prefix, false, false, false, false, SampleFileFormat.WAV, SampleFileFormat.AIFF);
     }
 
 

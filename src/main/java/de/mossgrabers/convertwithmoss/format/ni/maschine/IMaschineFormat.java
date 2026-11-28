@@ -49,7 +49,8 @@ public interface IMaschineFormat
      * @param sampleFolder The folder where the samples are placed
      * @param multisampleSource The source
      * @param maschineFormat The version number of the format
+     * @param sampleFileEnding The file ending of the sample files (including the dot)
      * @throws IOException Error writing the file
      */
-    void writeSound (OutputStream out, File sampleFolder, IMultisampleSource multisampleSource, int maschineFormat) throws IOException;
+    void writeSound (OutputStream out, File sampleFolder, IMultisampleSource multisampleSource, int maschineFormat, String sampleFileEnding) throws IOException;
 }

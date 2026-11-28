@@ -192,7 +192,7 @@ public class S770Detector extends AbstractDetector<MetadataSettingsUI>
 
     /** {@inheritDoc} */
     @Override
-    protected List<IPerformanceSource> readPerformanceFile (final File sourceFile)
+    public List<IPerformanceSource> readPerformanceFile (final File sourceFile)
     {
         if (this.waitForDelivery ())
             return Collections.emptyList ();

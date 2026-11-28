@@ -321,10 +321,11 @@ public class MaschinePresetAccessor
      * @param source The multi-sample source to insert
      * @param templateData The template data array
      * @param safeSampleFolderName The folder which contains the samples
+     * @param sampleFileEnding The file ending of the sample files (including the dot)
      * @return The update data array
      * @throws IOException Could not update data
      */
-    public byte [] writeMaschinePreset (final IMultisampleSource source, final byte [] templateData, final String safeSampleFolderName) throws IOException
+    public byte [] writeMaschinePreset (final IMultisampleSource source, final byte [] templateData, final String safeSampleFolderName, final String sampleFileEnding) throws IOException
     {
         final MaschinePresetParameterArray parameterArray = new MaschinePresetParameterArray (templateData);
         final List<byte []> data = parameterArray.getRawData ();
@@ -347,7 +348,7 @@ public class MaschinePresetAccessor
         // Generate new zones using the template
         final List<byte []> newZones = new ArrayList<> ();
         for (int i = 0; i < maxZones; i++)
-            newZones.addAll (fillZone (i, maxZones, templateZone, sampleZones.get (i), safeSampleFolderName));
+            newZones.addAll (fillZone (i, maxZones, templateZone, sampleZones.get (i), safeSampleFolderName, sampleFileEnding));
 
         // Insert all regenerated zones back in the correct position
         data.addAll (X0D_FIRST_ZONE, newZones);
@@ -555,7 +556,7 @@ public class MaschinePresetAccessor
     }
 
 
-    private static List<byte []> fillZone (final int zoneIndex, final int maxZones, final List<byte []> templateZone, final ISampleZone sampleZone, final String safeSampleFolderName) throws IOException
+    private static List<byte []> fillZone (final int zoneIndex, final int maxZones, final List<byte []> templateZone, final ISampleZone sampleZone, final String safeSampleFolderName, final String sampleFileEnding) throws IOException
     {
         // Clone the zone
         final List<byte []> newZone = new ArrayList<> (X0D_ZONE_SIZE);
@@ -563,7 +564,7 @@ public class MaschinePresetAccessor
             newZone.add (templateZone.get (i).clone ());
 
         // Update the data
-        newZone.set (0, createSamplePathRow (zoneIndex, sampleZone, safeSampleFolderName));
+        newZone.set (0, createSamplePathRow (zoneIndex, sampleZone, safeSampleFolderName, sampleFileEnding));
         if (zoneIndex > 0)
             newZone.set (1, new byte [] {});
 
@@ -689,7 +690,7 @@ public class MaschinePresetAccessor
     }
 
 
-    private static byte [] createSamplePathRow (final int zoneIndex, final ISampleZone sampleZone, final String safeSampleFolderName) throws IOException
+    private static byte [] createSamplePathRow (final int zoneIndex, final ISampleZone sampleZone, final String safeSampleFolderName, final String sampleFileEnding) throws IOException
     {
         final ByteArrayOutputStream out = new ByteArrayOutputStream ();
         if (zoneIndex == 0)
@@ -698,7 +699,7 @@ public class MaschinePresetAccessor
             MaschinePresetParameterArray.writeInteger (out, 0);
         }
         MaschinePresetParameterArray.writeInteger (out, 0);
-        final String samplePath = safeSampleFolderName + "/" + sampleZone.getName () + ".wav";
+        final String samplePath = safeSampleFolderName + "/" + sampleZone.getName () + sampleFileEnding;
         MaschinePresetParameterArray.writeString (out, samplePath);
         if (zoneIndex == 0)
         {

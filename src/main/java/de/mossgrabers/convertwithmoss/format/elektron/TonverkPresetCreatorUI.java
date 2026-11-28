@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.creator.SampleFileFormat;
 import de.mossgrabers.convertwithmoss.core.settings.ICoreTaskSettings;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.tools.ui.BasicConfig;
@@ -69,7 +70,7 @@ public class TonverkPresetCreatorUI extends WavChunkSettingsUI
     {
         // Only the sample chunk is enabled by default: the Tonverk factory WAV files contain only
         // 'fmt ', 'data' and 'smpl' chunks and the Tonverk WAV parser is strict
-        super (prefix, false, false, true, true);
+        super (prefix, false, false, true, true, SampleFileFormat.WAV, SampleFileFormat.AIFF);
     }
 
 

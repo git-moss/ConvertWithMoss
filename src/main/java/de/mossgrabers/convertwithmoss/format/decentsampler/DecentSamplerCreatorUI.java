@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.creator.SampleFileFormat;
 import de.mossgrabers.convertwithmoss.core.settings.WavChunkSettingsUI;
 import de.mossgrabers.convertwithmoss.ui.SystemShortcuts;
 import de.mossgrabers.tools.ui.BasicConfig;
@@ -66,7 +67,7 @@ public class DecentSamplerCreatorUI extends WavChunkSettingsUI
      */
     public DecentSamplerCreatorUI (final String prefix)
     {
-        super (prefix, true, false, false, false);
+        super (prefix, true, false, false, false, SampleFileFormat.WAV, SampleFileFormat.AIFF, SampleFileFormat.FLAC);
     }
 
 

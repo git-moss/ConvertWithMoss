@@ -19,6 +19,17 @@ If there are no metadata fields (category, creator, etc.) specified in the forma
 
 ## Common Destination Options
 
+### Sample File Format
+
+Formats whose samples can also be stored in other audio file formats than WAV offer the option *Sample Files - Audio file format* to select it. Only formats are offered which are documented to be supported by the respective sampler. The format is set on the command line with the parameter *&lt;prefix&gt;SampleFileFormat*, e.g. `-p DecentSamplerSampleFileFormat=FLAC`.
+
+* WAV: The default.
+* AIFF: Uncompressed like WAV. The options of the [WAV Chunk Information](#wav-chunk-information) are applied accordingly: the instrument and sample (loop) information is written to the Instrument and Marker chunks, the metadata texts to the Author and Annotation chunks.
+* CAF: Uncompressed like WAV. The instrument and sample (loop) information is written to the Instrument and Region chunks, the metadata texts to the Information chunk.
+* FLAC: Loss-less compressed. FLAC files carry no instrument or loop information, which is no problem since the formats which offer it store this information in their preset files.
+
+AIFF and FLAC samples are written with integer samples of at most 24 bit, 32-bit samples (also floating point ones) are converted to 24 bit.
+
 ### WAV Chunk Information
 
 If the format uses WAV files to store the samples, the following options to additionally write metadata information to the respective chunks are available:
@@ -165,6 +176,7 @@ Round-robin is supported in both representations: the native round-robin flag of
 ### Destination Options
 
 * Option to set the *Ableton Version*. Setting it to *12* will add additional Round-Robin information (but cannot be loaded in Ableton 11).
+* [Sample File Format](#sample-file-format): WAV, AIFF or FLAC.
 
 ## Akai AKP/AKM (S5000/S6000/Z4/Z8/MPC4000)
 
@@ -306,12 +318,17 @@ The output formats use a XML format and keep the samples separate. There followi
 
 
 The two LFOs are converted from and to the entries of the modulation table which route them to the pitch (vibrato), the volume (tremolo) and the filter frequency, incl. the modulation wheel as the via source of such an entry, which scales the modulation between the amount and the via amount. The wave form, rate, fade-in, start position, key sync and amplitude of the LFOs are converted; a tempo synchronized rate is read as the rate in Hertz, the wave form Exponent as a triangle.
+
+### Destination Options
+
+* [Sample File Format](#sample-file-format): WAV, AIFF or FLAC.
+
 ## DecentSampler
 
 The Decent Sampler plugin is a free (but closed source) sample player plugin that allows you to play sample libraries in the DecentSampler format (files with extensions: dspreset and dslibrary). See https://www.decentsamples.com/product/decent-sampler-plugin/
 The format specification is available here: https://www.decentsamples.com/wp-content/uploads/2020/06/format-documentation.html#the-sample-element
 
-A dspreset file contains a single preset and the description of the multi-sample. The related samples are normally kept in a separate folder. WAV and FLAC files are supported. A dslibrary file contains several dspreset files including the samples compressed in ZIP format. A dsbundle is similar but uncompressed.
+A dspreset file contains a single preset and the description of the multi-sample. The related samples are normally kept in a separate folder. WAV, AIFF and FLAC files are supported. A dslibrary file contains several dspreset files including the samples compressed in ZIP format. A dsbundle is similar but uncompressed.
 
 There are no metadata fields (category, creator, etc.) specified in the format. Therefore, information is stored and retrieved from Broadcast Audio Extension chunks in the WAV files. If no such chunks are present an [automatic detection](#automatic-metadata-detection) is applied.
 
@@ -328,6 +345,7 @@ A pitch LFO (vibrato) is converted as an `<lfo>` bound to the group tuning, carr
 * Make monophonic: Restricts the sound to 1 note, use e.g. for lead sounds. If it is disabled, the polyphony of the source is applied instead (if it has one).
 * Add low-pass filter to all groups if none is present: This always adds a low-pass filter on a group level, if no filter is present yet in the source material. Enable it if you want to have controls for a filter envelope in your template.
 * Template and resources folder: Allows to modify the UI and effects section of the presets (see below).
+* [Sample File Format](#sample-file-format): WAV, AIFF or FLAC.
 * Options to write/update [WAV Chunk Information](#wav-chunk-information).
 
 A one-shot is written by switching off the amplitude envelope of its samples (ampEnvEnabled), unless a sample is looped, since it would never stop then. The samples of an exclusive group carry a tag by which they silence each other (silencedByTags).
@@ -381,6 +399,7 @@ Furthermore, even this basic setup has some limitations:
 #### Destination Options
 
 * Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
+* [Sample File Format](#sample-file-format): WAV or AIFF.
 
 ### Preset (.tvpst)
 
@@ -403,6 +422,7 @@ Note: the Tonverk stores envelope times and the filter cut-off frequency as norm
 * Remove category tag at name start: If enabled, a category tag written in upper case at the start of the name is removed from the preset name, e.g. 'PAD Poly800 Better Than a 106' is written as 'Poly800 Better Than a 106', since the display of the Tonverk shows only the start of a long name. The tag still sets the category and the tags of the preset. Off by default.
 * Number presets starting at: If a number is entered, the presets get a three digit number in front of their name like the factory presets, e.g. '176 Poly800 Better Than a 106' (the factory presets use the numbers 001 to 175). The numbering starts with this number for every conversion and follows the order in which the presets are converted, which is the alphabetical order of the source files. Since the preset folder of the Tonverk has no sub-folders, this keeps the presets of a library together. Empty by default (no numbers). CLI: `TonverkFirstPresetNumber=176`.
 * Re-sample to 24bit/48kHz: If enabled, samples will be resampled to 24bit and 48kHz. While the device can play other resolutions as well, there are reports of issues when you do so.
+* [Sample File Format](#sample-file-format): WAV or AIFF.
 
 ## E-mu Emulator
 
@@ -772,6 +792,7 @@ Note that Maschine contains an auto-sampler with which you can sample plugins or
 ### Destination Options
 
 * Output Format: Select the Maschine output format. Selecting **Maschine 1** will create a MSND file, otherwise a MXSND file is created.
+* [Sample File Format](#sample-file-format): WAV or AIFF.
 
 ## Polyend Tracker
 
@@ -916,7 +937,7 @@ AIFF files are read with integer sound data, AIFC files with integer sound data 
 
 CAF (Apple Core Audio Format) files are read when they contain linear PCM (integer or float in either byte order), IMA4 (Apple's IMA 4:1 ADPCM), µLaw, aLaw, Apple Lossless (ALAC) or MPEG-4 AAC (the low complexity profile, i.e. plain AAC without the high efficiency extensions) audio data. This includes the sample files which the instruments of Logic Pro reference. Files with other codecs are reported with the name of their codec. Root note, key/velocity ranges, gain and tuning are read from the Instrument chunk, loops from the referenced regions or the sustain loop markers and metadata texts from the Information chunk. The ALAC and AAC codecs are ports of their reference implementations (Apple and FFmpeg) and work on all platforms.
 
-As the destination, the audio file format of the written sample files can be selected: WAV, AIFF, CAF (with linear PCM), CAF-ALAC (CAF compressed with Apple Lossless), CAF-AAC (CAF compressed with MPEG-4 AAC, which is lossy - prefer CAF or CAF-ALAC when fidelity matters) or FLAC. This turns the format into a general audio file converter, e.g. from WAV to AIFF or from AIFF to FLAC. All conversions except CAF-AAC are lossless with one exception: FLAC supports at maximum 24-bit, therefore 32-bit samples are reduced. The AAC encoder chooses its scalefactors for a fixed quantization precision instead of using a psychoacoustic model, which results in a simple, high bit rate encoding. Float samples are converted to 16-bit integer for AIFF, CAF-ALAC and FLAC (WAV and CAF keep them as float). The WAV chunk options are applied to the other formats accordingly: the instrument and sample (loop) information is written to the Instrument and Marker chunks of AIFF files and to the Instrument and Region chunks of CAF files, the metadata texts to the Author/Annotation chunks of AIFF files and to the Information chunk of CAF files. FLAC files carry no instrument information.
+As the destination, the audio file format of the written sample files can be selected: WAV, AIFF, CAF (with linear PCM), CAF-ALAC (CAF compressed with Apple Lossless), CAF-AAC (CAF compressed with MPEG-4 AAC, which is lossy - prefer CAF or CAF-ALAC when fidelity matters) or FLAC. This turns the format into a general audio file converter, e.g. from WAV to AIFF or from AIFF to FLAC. All conversions except CAF-AAC are lossless with one exception: FLAC supports at maximum 24-bit, therefore 32-bit samples are reduced. The AAC encoder chooses its scalefactors for a fixed quantization precision instead of using a psychoacoustic model, which results in a simple, high bit rate encoding. AIFF and FLAC files are written with at most 24 bit, 32-bit integer and floating point samples are converted to 24 bit; CAF-ALAC converts floating point samples to 32-bit integer (WAV and CAF keep them as float). The WAV chunk options are applied to the other formats accordingly: the instrument and sample (loop) information is written to the Instrument and Marker chunks of AIFF files and to the Instrument and Region chunks of CAF files, the metadata texts to the Author/Annotation chunks of AIFF files and to the Information chunk of CAF files. FLAC files carry no instrument information.
 
 ### Source Options - Groups
 
@@ -976,7 +997,7 @@ The intensity of the velocity to volume modulation is read and written via the `
 
 ### Destination Options
 
-* Convert to FLAC format: If enabled, the sample files are converted to FLAC.
+* [Sample File Format](#sample-file-format): WAV, AIFF or FLAC. AIFF is part of the SFZ 2 specification; FLAC is not required by the specification, make sure that your player supports it. The parameter *SFZConvertToFlac* of older versions is still supported on the command line.
 
 ## SoundFont 2
 
@@ -1089,6 +1110,7 @@ The Deluge has no loop cross-fade parameter of its own, so - exactly like the Re
   * Samples which are triggered when a note is released are left out. A source without layers which sound together is written with one oscillator as with *Single*, apart from its stereo recordings, whose two channels are combined. The option does not apply to a *Drum Kit*, whose drums always play a single sample.
 * Consolidate kit (one drum per type): For a *Drum Kit*, reduce the kit to a single drum per recognized type (kick, snare, hi-hat, tom, ...) and order the drums by drum role - kick on the lowest row - following the factory TR-808 layout, so a beat can be programmed without switching rows. Several drums of the same type are reduced to the first; unrecognized drums are all kept and appended at the end. Each consolidated drum is labelled by its role (Kick, Snare, Hat Closed, ...) for a clean read-out on the device, while the sample files keep their original names. CLI: `DelugeConsolidateKit=1`.
 * Shorten kit name: For a *Drum Kit*, give the kit a short name for the device display - the last separated segment of the name (separators " - ", " / ", " : ", " | "), prefixed with the zero-padded "Kit" number if present (e.g. "80s hits SSS043 - Kit 07 - Full Kit 2" becomes "007 Full Kit 2"), so it does not scroll as much on the OLED. A redundant trailing "Kit NN" segment is dropped in favour of the preceding one, and a trailing date or version suffix ("-20220718", "v2") is removed while model numbers ("TR-808", "R-50") are kept. CLI: `DelugeShortenKitName=1`.
+* [Sample File Format](#sample-file-format): WAV or AIFF (supported since firmware 2.1).
 * Options to write/update [WAV Chunk Information](#wav-chunk-information).
 
 ### Limitations
@@ -1112,6 +1134,10 @@ file and stores all samples in a sub-folder by the same name. The samples of the
 The decay is the exception to the time law of the envelopes above: it approaches the sustain level exponentially and much slower than the other stages - with the value 0.4 it falls by 6 dB after 0.35 seconds and by every further 6 dB after the same time again. It is converted to the linear decay which reaches -20 dB at the same moment, 37.1 x^3.75 seconds (0.4 is 1.2 seconds, 0.6 is 5.5 seconds), and written back with the inverse law.
 
 The three LFOs are converted from and to the entries of the modulation matrix which route them to the master tune (vibrato), the master volume (tremolo) and the filter cutoff, incl. an entry which modulates the amount of such an entry with the modulation wheel ('Matrix n'). The rate (200 x^3 Hz), the wave form and the trigger are converted, tempo synchronized rates are read like free running ones. The plug-in displays the amount of an entry as the cube of the stored value: the master tune covers -12 to +12 semitones, the cutoff the whole range of the filter and the volume amount is added to the main volume. When writing, LFO 1 modulates the pitch, LFO 2 the volume and LFO 3 the cutoff.
+
+### Destination Options
+
+* [Sample File Format](#sample-file-format): WAV, AIFF or FLAC.
 
 ## Teenage Engineering OP-XY
 

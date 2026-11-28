@@ -466,45 +466,6 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
-     * Writes all samples in FLAC format from all groups into the given folder.
-     *
-     * @param sampleFolder The destination folder
-     * @param multisampleSource The multi-sample
-     * @return The written files
-     * @throws IOException Could not store the samples
-     */
-    protected List<File> writeFlacSamples (final File sampleFolder, final IMultisampleSource multisampleSource) throws IOException
-    {
-        final List<File> writtenFiles = new ArrayList<> ();
-
-        for (final IGroup group: multisampleSource.getGroups ())
-        {
-            final List<ISampleZone> sampleZones = group.getSampleZones ();
-            for (int zoneIndex = 0; zoneIndex < sampleZones.size (); zoneIndex++)
-            {
-                if (this.isCancelled ())
-                    return writtenFiles;
-
-                final ISampleZone zone = sampleZones.get (zoneIndex);
-
-                final File file = new File (sampleFolder, this.createSampleFilename (zone, zoneIndex, ".flac"));
-                this.progress.notifyProgress ();
-                final Optional<ISampleData> sampleData = zone.getSampleData ();
-                if (sampleData.isEmpty ())
-                    this.notifier.logError (IDS_NOTIFY_ERR_MISSING_SAMPLE_DATA, zone.getName (), file.getName ());
-                else
-                {
-                    AudioFileUtils.compressToFLAC (sampleData.get (), file);
-                    writtenFiles.add (file);
-                }
-            }
-        }
-
-        return writtenFiles;
-    }
-
-
-    /**
      * Re-calculates the sample start, stop and loop start, stop positions for the given new sample
      * rate of all samples/zones in the given multi-sample. The audio of a zone with a loop is
      * converted to the new sample rate right away, since its loop only stays intact when the audio
@@ -927,7 +888,20 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
-     * Writes all samples in WAV format from all groups into the given folder.
+     * Get the file ending of the sample files which are written by the writeSamples methods without
+     * an explicit file ending.
+     *
+     * @return The file ending including the dot, WAV by default
+     */
+    protected String getSampleFileEnding ()
+    {
+        return ".wav";
+    }
+
+
+    /**
+     * Writes all samples in WAV format (or the format of the creator settings, if any) from all
+     * groups into the given folder.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multi-sample
@@ -941,7 +915,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
-     * Writes all samples in WAV format from all groups into the given folder.
+     * Writes all samples in WAV format (or the format of the creator settings, if any) from all
+     * groups into the given folder.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multi-sample
@@ -951,12 +926,13 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        return this.writeSamples (sampleFolder, multisampleSource, ".wav", destinationFormat, false);
+        return this.writeSamples (sampleFolder, multisampleSource, this.getSampleFileEnding (), destinationFormat, false);
     }
 
 
     /**
-     * Writes all samples in WAV format from all groups into the given folder.
+     * Writes all samples in WAV format (or the format of the creator settings, if any) from all
+     * groups into the given folder.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multi-sample
@@ -967,12 +943,13 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final DestinationAudioFormat destinationFormat, final boolean trim) throws IOException
     {
-        return this.writeSamples (sampleFolder, multisampleSource, ".wav", destinationFormat, trim);
+        return this.writeSamples (sampleFolder, multisampleSource, this.getSampleFileEnding (), destinationFormat, trim);
     }
 
 
     /**
-     * Writes all samples in WAV format from all groups into the given folder.
+     * Writes all samples in WAV format (or the format of the creator settings, if any) from all
+     * groups into the given folder.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multi-sample
@@ -987,7 +964,8 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
-     * Writes all samples in WAV format from all groups into the given folder.
+     * Writes all samples in WAV format (or the format of the creator settings, if any) from all
+     * groups into the given folder.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multi-sample
@@ -1004,10 +982,10 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
 
 
     /**
-     * Writes the samples of the given zones in WAV format into the given folder. Use this instead
-     * of the all-groups variants when the written preset references only a subset of the zones -
-     * e.g. because the format limits their number - so that no unreferenced sample files are
-     * created.
+     * Writes the samples of the given zones in WAV format (or the format of the creator settings,
+     * if any) into the given folder. Use this instead of the all-groups variants when the written
+     * preset references only a subset of the zones - e.g. because the format limits their number -
+     * so that no unreferenced sample files are created.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multi-sample to which the zones belong
@@ -1018,12 +996,13 @@ public abstract class AbstractCreator<T extends ICoreTaskSettings> extends Abstr
      */
     protected List<File> writeSamples (final File sampleFolder, final IMultisampleSource multisampleSource, final List<ISampleZone> zones, final DestinationAudioFormat destinationFormat) throws IOException
     {
-        return this.writeSamples (sampleFolder, multisampleSource, zones, ".wav", destinationFormat, false);
+        return this.writeSamples (sampleFolder, multisampleSource, zones, this.getSampleFileEnding (), destinationFormat, false);
     }
 
 
     /**
-     * Writes the samples of the given zones in WAV format into the given folder.
+     * Writes the samples of the given zones in WAV format (or the format of the creator settings,
+     * if any) into the given folder.
      *
      * @param sampleFolder The destination folder
      * @param multisampleSource The multi-sample to which the zones belong
