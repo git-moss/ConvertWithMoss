@@ -580,6 +580,7 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
         performanceElement.setAttribute (XMLNS_TX, "http://www.tx16wx.com/3.0/performance");
         performanceElement.setAttribute (XMLNS_XSI, XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI);
 
+        final boolean hasSoloedInstrument = acceptedInstrumentSources.stream ().anyMatch (IInstrumentSource::isSolo);
         for (int i = 0; i < programFiles.size (); i++)
         {
             final Element slotElement = XMLUtils.addElement (document, performanceElement, TX16WxTag.SLOT);
@@ -592,6 +593,14 @@ public class TX16WxCreator extends AbstractWavCreator<WavChunkSettingsUI>
                 midiChannel = 15;
             slotElement.setAttribute (TX16WxTag.MIDI_CHANNEL, midiChannel == IInstrumentSource.MIDI_CHANNEL_OMNI ? "Omni" : Integer.toString (midiChannel + 1));
             slotElement.setAttribute (TX16WxTag.OUTPUT, "Out 1");
+
+            // If a slot is soloed, TX16Wx marks all other slots which are not muted with 'by-solo'
+            if (instrumentSource.isMute ())
+                slotElement.setAttribute (TX16WxTag.SLOT_MUTE, "true");
+            else if (hasSoloedInstrument && !instrumentSource.isSolo ())
+                slotElement.setAttribute (TX16WxTag.SLOT_MUTE, "by-solo");
+            if (instrumentSource.isSolo ())
+                slotElement.setAttribute (TX16WxTag.SLOT_SOLO, "true");
 
             final Element volumeElement = XMLUtils.addElement (document, slotElement, TX16WxTag.SLOT_VOLUME);
             volumeElement.setAttribute (TX16WxTag.VALUE, String.format (Locale.US, "%.2f dB", Double.valueOf (instrumentSource.getGain ())));

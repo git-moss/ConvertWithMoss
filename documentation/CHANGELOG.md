@@ -13,16 +13,22 @@
   * Fixed: The level and panning of the tracks were not read and always written as 0dB/center.
 * Akai S5000/S6000/Z4/Z8
   * New: AKM: The mute state of the parts is read and written. Since there is no solo, all parts which are not soloed are muted if at least one instrument is soloed.
-* Akai MPC
+* Akai MPC / Force
+  * New: The mute and solo state of the tracks (program mixer) is read and written.
   * New: Performances are written as MPC 3 projects (XPJ, requires MPC 3.10 or later): each instrument becomes a keygroup track with its MIDI input channel, volume, panorama and transposition. The samples of all tracks are stored in the '_[ProjectData]' folder of the project.
   * New: Preset libraries are written as one MPC 3 project (XPJ) with a keygroup track for each multi-sample (up to 128).
   * New: Projects (XPJ) and tracks (XTY) can be read as performances: each keygroup track becomes an instrument with the MIDI input channel ('All' or 1-16), the volume and panorama of the track mixer (e.g. 0.497 is -6.15dB) and the transposition of the keygroup.
   * Fixed: Written XTY tracks had a dark grey track colour which is not part of the colour palette of the MPC. They are now written in green (#00FF80).
+* Akai MPC60/MPC2000
+  * Fixed: Disk images (IMG, HFE) of other samplers (e.g. a Casio FZ disk) caused a 'NegativeArraySizeException' instead of being reported as not being a MPC disk image.
 * Casio FZ-1
   * New: Files on disk images which are continued from a previous disk are reported instead of being silently ignored; they contain only wave data and can only be read from the first disk. Files which continue on a next disk are read with a dedicated warning, voices whose wave data is completely on the next disk are dropped.
   * Fixed: Files on disk images (IMG, HFE) were read shifted by one sector (the first sector range includes the file head) and with swapped voice/bank counters: voice files were not found at all and banks contained only one long sample (e.g. bank 'BSN16' now has 7 areas with 6 voices).
   * Fixed: Written disk images used the wrong order of the bank/voice counters and a sector range without the file head. Disk images written by previous versions are no longer read correctly.
 * E-mu Emulator IV
+  * New: Performances are written as a bank whose multimap assigns the presets to the MIDI channels (A1-B16) with the volume and panning of the instruments. The multisetup is named after the performance.
+  * New: A warning is shown if the samples of a bank need more than the 128 MB sample memory of an Emulator IV.
+  * Fixed: The multimap of written banks had a wrong layout.
   * Fixed: Loops are read and written with their 'loop in release' setting. Written samples had a loop which stopped at the release of the key and played on to the end of the sample, while the loops of the factory banks keep playing in the release; loops which stop at the release were read as playing on.
 * E-mu Emulator X
   * New: The Fixed Pitch Mode of a voice is read as a key tracking of 0 and written for zones without key tracking, e.g. drum kits and drones.
@@ -42,6 +48,8 @@
   * Fixed: The name of a SoundFont which contains only one preset is now taken from the file name. A SoundFont stores at most 19 characters of a preset name, so longer names were cut off, e.g. 'PAD Poly800 Better' instead of 'PAD Poly800 Better Than a 106' (24 of the 40 SoundFonts of Vulture Culture's 'Legendary Synths'), and libraries with one preset per file often name only the file, e.g. 'Organ2' is stored in 'BASS M1 Organ2.sf2' and 'LEAD Source Torture' in 'PAD Source Tortured Robots.sf2'. The stored names are still used for SoundFonts with several presets.
 * TAL Sampler
   * Fixed: An LFO with the wave form Sine was written as Noise. The value of Sine exists only since version 12 of the file format, the plug-in reads files of an older version - ConvertWithMoss wrote version 9 - with only 5 wave forms. Files are now written as version 12 and the wave forms of older files are read with the scale of their version.
+* TX16W
+  * Fixed: Reading a performance slot with a transpose but without a detune value crashed.
 * Yamaha YSFC
   * New: The mute state of the performance parts is read and written. Since there is no solo, all parts which are not soloed are muted if at least one instrument is soloed.
   * Fixed: Instruments with an OMNI MIDI channel did not get keyboard control enabled in the scenes. Wrong scenes were enabled.

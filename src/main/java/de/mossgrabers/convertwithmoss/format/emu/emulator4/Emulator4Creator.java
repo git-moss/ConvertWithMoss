@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,8 +20,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import de.mossgrabers.convertwithmoss.core.IInstrumentSource;
 import de.mossgrabers.convertwithmoss.core.IMultisampleSource;
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.convertwithmoss.core.IPerformanceSource;
 import de.mossgrabers.convertwithmoss.core.SafeFileNames;
 import de.mossgrabers.convertwithmoss.core.creator.AbstractCreator;
 import de.mossgrabers.convertwithmoss.core.creator.DestinationAudioFormat;
@@ -89,7 +92,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
     @Override
     public void createPreset (final File destinationFolder, final IMultisampleSource multisampleSource) throws IOException
     {
-        this.writeBank (destinationFolder, List.of (multisampleSource), multisampleSource.getName ());
+        this.writeBank (destinationFolder, List.of (multisampleSource), multisampleSource.getName (), null);
     }
 
 
@@ -106,7 +109,32 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
     public void createPresetLibrary (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String libraryName) throws IOException
     {
         if (!multisampleSources.isEmpty ())
-            this.writeBank (destinationFolder, multisampleSources, libraryName);
+            this.writeBank (destinationFolder, multisampleSources, libraryName, null);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean supportsPerformances ()
+    {
+        return true;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override
+    public void createPerformance (final File destinationFolder, final IPerformanceSource performanceSource) throws IOException
+    {
+        final List<IInstrumentSource> instrumentSources = performanceSource.getInstruments ();
+        if (instrumentSources.isEmpty ())
+            return;
+
+        // Every instrument becomes one preset of the bank, the multimap assigns the presets to
+        // the MIDI channels
+        final List<IMultisampleSource> multisampleSources = new ArrayList<> ();
+        for (final IInstrumentSource instrumentSource: instrumentSources)
+            multisampleSources.add (instrumentSource.getMultisampleSource ());
+        this.writeBank (destinationFolder, multisampleSources, performanceSource.getName (), instrumentSources);
     }
 
 
@@ -115,10 +143,12 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
      *
      * @param destinationFolder Where to create the bank file
      * @param multisampleSources The sources to convert, each becomes one preset
-     * @param name The bank name
+     * @param name The bank name, for a performance also the name of the multisetup
+     * @param instrumentSources The instruments of the sources if the bank is created from a
+     *            performance, null to assign the first preset to all channels
      * @throws IOException Could not write the bank
      */
-    private void writeBank (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name) throws IOException
+    private void writeBank (final File destinationFolder, final List<IMultisampleSource> multisampleSources, final String name, final List<IInstrumentSource> instrumentSources) throws IOException
     {
         final boolean writeCdImage = this.settingsConfiguration.writeCdImage ();
         final String safeName = SafeFileNames.create (name);
@@ -130,9 +160,11 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
         final Set<String> usedSampleNames = new HashSet<> ();
         final List<byte []> presetBodies = new ArrayList<> ();
         final List<String> presetNames = new ArrayList<> ();
+        final List<IInstrumentSource> presetInstruments = new ArrayList<> ();
 
-        for (final IMultisampleSource multisampleSource: multisampleSources)
+        for (int sourceIndex = 0; sourceIndex < multisampleSources.size (); sourceIndex++)
         {
+            final IMultisampleSource multisampleSource = multisampleSources.get (sourceIndex);
             if (presetBodies.size () >= Emulator4Constants.MAX_PRESETS)
             {
                 this.notifier.logError ("IDS_E4B_TOO_MANY_PRESETS", multisampleSource.getName ());
@@ -170,23 +202,186 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
             final String presetName = createPresetName (multisampleSource);
             presetBodies.add (createPresetBody (presetBodies.size (), presetName, voices));
             presetNames.add (presetName);
+            if (instrumentSources != null)
+                presetInstruments.add (instrumentSources.get (sourceIndex));
         }
 
         if (presetBodies.isEmpty ())
             return;
 
+        // The bank is written anyway since it might be used with a sampler which has less memory
+        // than the maximum and the user might want to remove some presets on the sampler
+        long sampleMemory = 0;
+        for (final Sample sample: samples)
+            sampleMemory += sample.pcm.length;
+        if (sampleMemory > Emulator4Constants.MAX_SAMPLE_MEMORY)
+            this.notifier.logError ("IDS_E4B_EXCEEDS_SAMPLE_MEMORY", name, Long.toString (Math.ceilDiv (sampleMemory, 1024L * 1024L)));
+
+        // A performance assigns its presets to the MIDI channels with the volume and panning of
+        // the instruments and names the multisetup. Otherwise, all channels play the first preset
+        final int [] channelPresets = instrumentSources == null ? new int [Emulator4Constants.MULTIMAP_CHANNELS] : this.assignChannels (presetNames, presetInstruments);
+        final int [] channelVolumes = new int [Emulator4Constants.MULTIMAP_CHANNELS];
+        final int [] channelPannings = new int [Emulator4Constants.MULTIMAP_CHANNELS];
+        for (int channel = 0; channel < Emulator4Constants.MULTIMAP_CHANNELS; channel++)
+        {
+            final int preset = channelPresets[channel];
+            if (instrumentSources != null && preset >= 0)
+            {
+                final IInstrumentSource instrumentSource = presetInstruments.get (preset);
+                channelVolumes[channel] = toChannelVolume (instrumentSource.getGain ());
+                channelPannings[channel] = toChannelPanning (instrumentSource.getPanning ());
+            }
+            else
+                channelVolumes[channel] = 127;
+        }
+        final byte [] multimap = createMultimap (channelPresets, channelVolumes, channelPannings);
+        final byte [] masterSetup = createMasterSetup (instrumentSources == null ? null : name, channelPresets, channelVolumes, channelPannings);
+
         if (writeCdImage)
         {
             final ByteArrayOutputStream bankData = new ByteArrayOutputStream ();
-            writeFile (bankData, presetBodies, presetNames, samples);
+            writeFile (bankData, presetBodies, presetNames, samples, multimap, masterSetup);
             Emu3DiskImage.writeImage (outputFile, List.of (new Emu3DiskImage.ImageFile (safeName, bankData.toByteArray ())), Emu3DiskImage.ImageLayout.EOS, Emu3DiskImage.DEFAULT_FOLDER_NAME);
         }
         else
             try (final OutputStream out = new BufferedOutputStream (Files.newOutputStream (outputFile.toPath ())))
             {
-                writeFile (out, presetBodies, presetNames, samples);
+                writeFile (out, presetBodies, presetNames, samples, multimap, masterSetup);
             }
         this.notifier.log ("IDS_NOTIFY_PROGRESS_DONE");
+    }
+
+
+    /**
+     * Assign the presets to the 32 MIDI channels of the multimap (A1-A16 and B1-B16). Since only
+     * one preset can be assigned to a channel, a preset whose channel is already in use, which is
+     * set to Omni or Off or which uses a channel above B16 is assigned to the next free channel.
+     *
+     * @param presetNames The names of the presets
+     * @param presetInstruments The instruments of the presets
+     * @return The index of the preset for each channel, -1 if no preset is assigned
+     */
+    private int [] assignChannels (final List<String> presetNames, final List<IInstrumentSource> presetInstruments)
+    {
+        final int [] channelPresets = new int [Emulator4Constants.MULTIMAP_CHANNELS];
+        Arrays.fill (channelPresets, -1);
+
+        final List<Integer> unassignedPresets = new ArrayList<> ();
+        for (int preset = 0; preset < presetInstruments.size (); preset++)
+        {
+            final int midiChannel = presetInstruments.get (preset).getMidiChannel ();
+            if (midiChannel >= 0 && midiChannel < Emulator4Constants.MULTIMAP_CHANNELS && channelPresets[midiChannel] < 0)
+                channelPresets[midiChannel] = preset;
+            else
+                unassignedPresets.add (Integer.valueOf (preset));
+        }
+
+        int freeChannel = 0;
+        for (final Integer preset: unassignedPresets)
+        {
+            while (freeChannel < Emulator4Constants.MULTIMAP_CHANNELS && channelPresets[freeChannel] >= 0)
+                freeChannel++;
+            final String presetName = presetNames.get (preset.intValue ());
+            if (freeChannel >= Emulator4Constants.MULTIMAP_CHANNELS)
+            {
+                this.notifier.logError ("IDS_E4B_NO_FREE_CHANNEL", presetName);
+                continue;
+            }
+            channelPresets[freeChannel] = preset.intValue ();
+            this.notifier.log ("IDS_E4B_CHANNEL_MOVED", presetName, getChannelName (freeChannel));
+        }
+        return channelPresets;
+    }
+
+
+    /**
+     * Get the name of a MIDI channel of the multimap.
+     *
+     * @param channel The channel index 0-31
+     * @return The name, e.g. 'A1' or 'B16'
+     */
+    private static String getChannelName (final int channel)
+    {
+        return (channel < 16 ? "A" : "B") + (channel % 16 + 1);
+    }
+
+
+    /**
+     * Convert the gain of an instrument to the volume of a multimap channel. The volume curve of the
+     * channel is not known, the MIDI volume curve of 40 * log10 (volume / 127) dB is assumed.
+     *
+     * @param gain The gain in dB
+     * @return The volume in the range of 0 to 127
+     */
+    private static int toChannelVolume (final double gain)
+    {
+        return Math.clamp (Math.round (127.0 * Math.pow (10.0, gain / 40.0)), 0, 127);
+    }
+
+
+    /**
+     * Convert the panning of an instrument to the panning of a multimap channel.
+     *
+     * @param panning The panning in the range of -1 (left) to 1 (right)
+     * @return The panning in the range of -64 to 63
+     */
+    private static int toChannelPanning (final double panning)
+    {
+        return Math.clamp (Math.round (panning * 64.0), -64, 63);
+    }
+
+
+    /**
+     * Create the E4Ma multimap chunk. It starts with the 2 byte chunk index (always 0), followed by
+     * one 8 byte entry per MIDI channel: the preset index (-1 if the channel is disabled), volume
+     * (0-127), panning (-64 to 63), submix (0xFF = voice, 0 = main, 1-3 = sub 1-3) and 3 zero
+     * bytes.
+     *
+     * @param channelPresets The index of the preset for each channel, -1 if no preset is assigned
+     * @param channelVolumes The volume for each channel
+     * @param channelPannings The panning for each channel
+     * @return The data of the chunk
+     */
+    private static byte [] createMultimap (final int [] channelPresets, final int [] channelVolumes, final int [] channelPannings)
+    {
+        final byte [] multimap = new byte [2 + Emulator4Constants.E4MA_SIZE];
+        for (int channel = 0; channel < Emulator4Constants.MULTIMAP_CHANNELS; channel++)
+        {
+            final int offset = 2 + channel * Emulator4Constants.MULTIMAP_ENTRY_SIZE;
+            Emulator4Constants.putU16BE (multimap, offset, channelPresets[channel]);
+            multimap[offset + 2] = (byte) channelVolumes[channel];
+            multimap[offset + 3] = (byte) channelPannings[channel];
+            multimap[offset + 4] = (byte) 0xFF;
+        }
+        return multimap;
+    }
+
+
+    /**
+     * Create the EMSt master setup chunk from the default one. It contains the name of the
+     * multisetup and one 32 byte record per MIDI channel which repeats the preset, volume and
+     * panning of the multimap, followed by the pitch (signed 16 bit), the modulation (0-127) and the
+     * submix. Pitch, modulation and submix keep their defaults (0, 0 and voice).
+     *
+     * @param name The name of the multisetup, null to keep the default name
+     * @param channelPresets The index of the preset for each channel, -1 if no preset is assigned
+     * @param channelVolumes The volume for each channel
+     * @param channelPannings The panning for each channel
+     * @return The data of the chunk
+     */
+    private static byte [] createMasterSetup (final String name, final int [] channelPresets, final int [] channelVolumes, final int [] channelPannings)
+    {
+        final byte [] masterSetup = Emulator4Constants.getDefaultMasterSetup ();
+        if (name != null)
+            Emulator4Constants.encodeName (masterSetup, Emulator4Constants.MSETUP_NAME_OFFSET, name);
+        for (int channel = 0; channel < Emulator4Constants.MULTIMAP_CHANNELS; channel++)
+        {
+            final int offset = Emulator4Constants.MSETUP_CHANNELS_OFFSET + channel * Emulator4Constants.MSETUP_CHANNEL_SIZE;
+            Emulator4Constants.putU16BE (masterSetup, offset, channelPresets[channel]);
+            masterSetup[offset + 2] = (byte) channelVolumes[channel];
+            masterSetup[offset + 3] = (byte) channelPannings[channel];
+        }
+        return masterSetup;
     }
 
 
@@ -711,9 +906,11 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
      * @param presetBodies The bodies of the preset chunks
      * @param presetNames The names of the presets, for the table of contents
      * @param samples The samples
+     * @param multimap The data of the E4Ma multimap chunk
+     * @param masterSetup The data of the EMSt master setup chunk
      * @throws IOException Could not write the bank
      */
-    private static void writeFile (final OutputStream outputStream, final List<byte []> presetBodies, final List<String> presetNames, final List<Sample> samples) throws IOException
+    private static void writeFile (final OutputStream outputStream, final List<byte []> presetBodies, final List<String> presetNames, final List<Sample> samples, final byte [] multimap, final byte [] masterSetup) throws IOException
     {
         final int sampleCount = samples.size ();
         final int presetBodiesSize = presetBodies.size ();
@@ -725,7 +922,7 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
 
         int position = 12 + tocChunkSize;
         final int e4maOffset = position;
-        position += 8 + Emulator4Constants.E4MA_SIZE;
+        position += 8 + multimap.length;
 
         final int [] presetOffsets = new int [presetBodiesSize];
         for (int i = 0; i < presetBodiesSize; i++)
@@ -743,24 +940,20 @@ public class Emulator4Creator extends AbstractCreator<Emulator4CreatorUI>
             position += 8 + sampleBodySizes[i] + sampleBodySizes[i] % 2;
         }
 
-        final byte [] masterSetup = Emulator4Constants.getDefaultMasterSetup ();
         position += 8 + masterSetup.length;
 
         // The FORM size uses the EOS convention which excludes the 4 byte form type, so it is 4
         // less than the standard IFF value and ends inside the trailing zeros of the EMSt chunk
         final long formSize = position - 12L;
 
-        // The table of contents lists all chunks except the trailing EMSt
+        // The table of contents lists all chunks except the trailing EMSt. As in hardware-saved
+        // banks, the listed size excludes the 2 byte index at the start of each chunk
         final byte [] toc = new byte [numTocEntries * Emulator4Constants.TOC_ENTRY_SIZE];
-        createTocEntry (toc, 0, Emulator4Constants.E4MA_TAG, Emulator4Constants.E4MA_SIZE, e4maOffset, 0, "Multimap");
+        createTocEntry (toc, 0, Emulator4Constants.E4MA_TAG, multimap.length - 2, e4maOffset, 0, "Multimap");
         for (int i = 0; i < presetBodiesSize; i++)
-            createTocEntry (toc, 1 + i, Emulator4Constants.PRESET_TAG, presetBodies.get (i).length, presetOffsets[i], i, presetNames.get (i));
+            createTocEntry (toc, 1 + i, Emulator4Constants.PRESET_TAG, presetBodies.get (i).length - 2, presetOffsets[i], i, presetNames.get (i));
         for (int i = 0; i < sampleCount; i++)
-            createTocEntry (toc, 1 + presetBodiesSize + i, Emulator4Constants.SAMPLE_TAG, sampleBodySizes[i], sampleOffsets[i], i + 1, samples.get (i).name);
-
-        final byte [] multimap = new byte [Emulator4Constants.E4MA_SIZE];
-        for (int i = 0; i < Emulator4Constants.E4MA_SIZE; i++)
-            multimap[i] = Emulator4Constants.E4MA_ENTRY[i % Emulator4Constants.E4MA_ENTRY.length];
+            createTocEntry (toc, 1 + presetBodiesSize + i, Emulator4Constants.SAMPLE_TAG, sampleBodySizes[i] - 2, sampleOffsets[i], i + 1, samples.get (i).name);
 
         final OutputStream out = outputStream;
         out.write (Emulator4Constants.FORM_MAGIC);

@@ -32,6 +32,10 @@ public class TX16WxTag
     public static final String SLOT_TRANSPOSE         = "tx:transpose";
     /** The de-tuning of a slot in a performance. */
     public static final String SLOT_DETUNE            = "tx:detune";
+    /** The mute state of a slot: 'true' or 'by-solo' if another slot is soloed. */
+    public static final String SLOT_MUTE              = "tx:mute";
+    /** The solo state of a slot: 'true' if soloed. */
+    public static final String SLOT_SOLO              = "tx:solo";
 
     /** A bank which references several programs. */
     public static final String BANK                   = "tx:bank";

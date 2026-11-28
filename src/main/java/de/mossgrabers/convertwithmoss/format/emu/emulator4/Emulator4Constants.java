@@ -38,8 +38,21 @@ public class Emulator4Constants
     protected static final int     NAME_LENGTH                = 16;
     /** The size of a TOC entry. */
     protected static final int     TOC_ENTRY_SIZE             = 32;
-    /** The size of the E4Ma multimap chunk. */
+    /**
+     * The size of the E4Ma multimap data without the 2 byte chunk index, as listed in the table of
+     * contents.
+     */
     protected static final int     E4MA_SIZE                  = 256;
+    /** The number of MIDI channels in the multimap: A1-A16 and B1-B16. */
+    protected static final int     MULTIMAP_CHANNELS          = 32;
+    /** The size of one channel entry in the multimap. */
+    protected static final int     MULTIMAP_ENTRY_SIZE        = 8;
+    /** The offset of the name of the multisetup in the master setup. */
+    protected static final int     MSETUP_NAME_OFFSET         = 2;
+    /** The offset of the 32 channel records in the master setup. */
+    protected static final int     MSETUP_CHANNELS_OFFSET     = 0x16;
+    /** The size of one channel record in the master setup. */
+    protected static final int     MSETUP_CHANNEL_SIZE        = 32;
     /** The size of an E3S1 sample header: 2 bytes sample index + the 92 byte EOS sample struct. */
     protected static final int     SAMPLE_HEADER_SIZE         = 94;
     /** The size of the EOS sample struct; all start/end/loop offsets are relative to its start. */
@@ -81,6 +94,8 @@ public class Emulator4Constants
 
     /** The maximum number of samples in a bank (S000-S999). */
     protected static final int     MAX_SAMPLES                = 1000;
+    /** The maximum sample memory of an Emulator IV in bytes (128 MB). */
+    protected static final long    MAX_SAMPLE_MEMORY          = 128L * 1024L * 1024L;
     /** The maximum number of presets in a bank (P000-P999). */
     protected static final int     MAX_PRESETS                = 1000;
 
@@ -358,23 +373,6 @@ public class Emulator4Constants
      * The amount byte offset of the pitch-wheel-to-pitch cord (the bend range) in the cord table.
      */
     public static final int        MOD_PITCH_WHEEL_AMOUNT     = 6;
-
-    /** The repeating 12 byte entry of the default E4Ma multimap (all presets on all channels). */
-    protected static final byte [] E4MA_ENTRY                 =
-    {
-        0x00,
-        0x00,
-        0x00,
-        0x01,
-        0x7F,
-        0x00,
-        (byte) 0xFF,
-        0x00,
-        0x00,
-        0x00,
-        (byte) 0xFF,
-        (byte) 0xFF
-    };
 
     // The default 1366 byte 'Untitled MSetup' master setup block, captured from hardware-saved
     // banks (identical across all freshly created banks). The FORM size deliberately stops 4 bytes

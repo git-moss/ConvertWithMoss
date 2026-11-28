@@ -13891,6 +13891,7 @@
     <table:table-column table:style-name="co65" table:default-cell-style-name="ce24"/>
     <table:table-column table:style-name="co66" table:default-cell-style-name="ce55"/>
     <table:table-column table:style-name="co65" table:default-cell-style-name="ce55"/>
+    <table:table-column table:number-columns-repeated="2" table:style-name="co65" table:default-cell-style-name="ce24"/>
     <table:table-row table:style-name="ro5">
      <table:table-cell table:style-name="ce17"/>
      <table:table-cell/>
@@ -13918,6 +13919,12 @@
      <table:table-cell table:style-name="ce32" office:value-type="string" calcext:value-type="string">
       <text:p>Panning</text:p>
      </table:table-cell>
+     <table:table-cell table:style-name="ce32" office:value-type="string" calcext:value-type="string">
+      <text:p>Mute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce32" office:value-type="string" calcext:value-type="string">
+      <text:p>Solo</text:p>
+     </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro11">
      <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -13938,8 +13945,17 @@
      <table:table-cell table:style-name="ce48" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce48" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce48" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:number-columns-repeated="2" office:value-type="string" calcext:value-type="string">
-      <text:p>Same as Preset</text:p>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>trkgain + gaindb</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>trkpan + panpos</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>trkmute, padmute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>trksolo</text:p>
      </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro11">
@@ -13949,7 +13965,18 @@
      </table:table-cell>
      <table:covered-table-cell table:number-columns-repeated="3" table:style-name="ce24"/>
      <table:covered-table-cell table:number-columns-repeated="3"/>
-     <table:table-cell table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>trkgain</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>trkpan</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>trkmute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>trksolo</text:p>
+     </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro11">
      <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -13970,9 +13997,16 @@
      <table:table-cell table:style-name="ce48" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce48" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
      <table:table-cell table:style-name="ce48" table:number-columns-spanned="1" table:number-rows-spanned="2"/>
-     <table:table-cell table:number-columns-repeated="2" office:value-type="string" calcext:value-type="string">
-      <text:p>Same as Preset</text:p>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>gaindb</text:p>
      </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>panpos</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>mute (ignored by the device)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44"/>
     </table:table-row>
     <table:table-row table:style-name="ro11">
      <table:covered-table-cell/>
@@ -13982,7 +14016,18 @@
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce24"/>
      <table:table-cell table:style-name="ce55"/>
      <table:covered-table-cell table:number-columns-repeated="3"/>
-     <table:table-cell table:number-columns-repeated="2"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>gaindb</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>panpos</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>mute (ignored by the device)</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>Other cells are muted</text:p>
+     </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro24">
      <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string">
@@ -14015,6 +14060,10 @@
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>panOffset</text:p>
      </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44"/>
     </table:table-row>
     <table:table-row table:style-name="ro24">
      <table:table-cell table:style-name="ce18"/>
@@ -14045,6 +14094,12 @@
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>panOffset</text:p>
      </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>Other parts are muted</text:p>
+     </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro24">
      <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string">
@@ -14072,6 +14127,12 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>mixer pan</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mixer mute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mixer solo</text:p>
      </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro24">
@@ -14102,6 +14163,12 @@
      </table:table-cell>
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>mixer pan</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mixer mute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mixer solo</text:p>
      </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro11">
@@ -14134,6 +14201,12 @@
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>masterPan</text:p>
      </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>mute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
+      <text:p>solo</text:p>
+     </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro11">
      <table:covered-table-cell/>
@@ -14144,6 +14217,7 @@
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce24"/>
      <table:covered-table-cell table:number-columns-repeated="3"/>
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce24"/>
+     <table:covered-table-cell table:number-columns-repeated="2"/>
     </table:table-row>
     <table:table-row table:style-name="ro5">
      <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string">
@@ -14171,6 +14245,8 @@
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
       <text:p>Panning</text:p>
      </table:table-cell>
+     <table:table-cell table:style-name="ce44"/>
+     <table:table-cell table:style-name="ce44"/>
     </table:table-row>
     <table:table-row table:style-name="ro5">
      <table:table-cell table:style-name="ce18" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -14202,6 +14278,12 @@
      <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Pan</text:p>
      </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>solo</text:p>
+     </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro11">
      <table:covered-table-cell/>
@@ -14212,6 +14294,12 @@
      <table:covered-table-cell table:style-name="ce24"/>
      <table:covered-table-cell table:number-columns-repeated="3"/>
      <table:covered-table-cell table:number-columns-repeated="2" table:style-name="ce24"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>mute</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>solo</text:p>
+     </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro11">
      <table:table-cell table:style-name="ce32" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
@@ -14242,6 +14330,10 @@
      <table:table-cell table:style-name="ce75" office:value-type="string" calcext:value-type="string" table:number-columns-spanned="1" table:number-rows-spanned="2">
       <text:p>Pan</text:p>
      </table:table-cell>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>Mute Switch</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce44"/>
     </table:table-row>
     <table:table-row table:style-name="ro11">
      <table:covered-table-cell/>
@@ -14254,6 +14346,12 @@
       <text:p>Mapped to Scene</text:p>
      </table:table-cell>
      <table:covered-table-cell table:number-columns-repeated="5" table:style-name="Default"/>
+     <table:table-cell table:style-name="ce39" office:value-type="string" calcext:value-type="string">
+      <text:p>Mute Switch</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce55" office:value-type="string" calcext:value-type="string">
+      <text:p>Other parts are muted</text:p>
+     </table:table-cell>
     </table:table-row>
    </table:table>
    <table:named-expressions/>

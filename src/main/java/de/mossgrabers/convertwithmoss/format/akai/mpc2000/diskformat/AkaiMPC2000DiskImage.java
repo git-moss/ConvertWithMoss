@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.mossgrabers.convertwithmoss.core.INotifier;
+import de.mossgrabers.tools.ui.Functions;
 
 
 /**
@@ -97,12 +98,52 @@ public class AkaiMPC2000DiskImage
 
     /**
      * Parse the disk.
+     *
+     * @throws IOException The disk image does not contain a valid boot sector
      */
-    private void parseDisk ()
+    private void parseDisk () throws IOException
     {
+        if (this.diskImage.length < 512)
+            throw new IOException (Functions.getMessage ("IDS_MPC2000_NOT_A_DISK_IMAGE"));
         final ByteBuffer buffer = ByteBuffer.wrap (this.diskImage);
         this.bootSector = AkaiMPC2000BootSector.parse (buffer);
+        this.validateBootSector ();
         this.parseFAT ();
+    }
+
+
+    /**
+     * Check that the values of the boot sector describe a FAT file system which fits into the
+     * disk image. Disk images of other samplers (e.g. a Casio FZ disk in an HFE file, which has
+     * no sectors of 512 bytes) result in random values, which would otherwise lead to negative or
+     * huge sizes.
+     *
+     * @throws IOException The boot sector is not valid
+     */
+    private void validateBootSector () throws IOException
+    {
+        final AkaiMPC2000BootSector bs = this.bootSector;
+        final boolean isValid = isPowerOfTwo (bs.bytesPerSector) && bs.bytesPerSector >= 128 && bs.bytesPerSector <= 4096 && isPowerOfTwo (bs.sectorsPerCluster) && bs.reservedSectors >= 1 && bs.numberOfFATs >= 1 && bs.numberOfFATs <= 4 && bs.rootEntries > 0 && bs.sectorsPerFAT > 0 && bs.totalSectors > 0;
+        if (!isValid)
+            throw new IOException (Functions.getMessage ("IDS_MPC2000_NOT_A_DISK_IMAGE"));
+
+        final long rootDirSectors = ((long) bs.rootEntries * 32 + bs.bytesPerSector - 1) / bs.bytesPerSector;
+        final long dataSectors = (long) bs.totalSectors - bs.reservedSectors - (long) bs.numberOfFATs * bs.sectorsPerFAT - rootDirSectors;
+        final long fatEnd = ((long) bs.reservedSectors + bs.sectorsPerFAT) * bs.bytesPerSector;
+        if (dataSectors <= 0 || fatEnd > this.diskImage.length)
+            throw new IOException (Functions.getMessage ("IDS_MPC2000_NOT_A_DISK_IMAGE"));
+    }
+
+
+    /**
+     * Test if the given value is a power of 2.
+     *
+     * @param value The value to test
+     * @return True if it is a power of 2 (and larger than 0)
+     */
+    private static boolean isPowerOfTwo (final int value)
+    {
+        return value > 0 && (value & value - 1) == 0;
     }
 
 
@@ -124,7 +165,9 @@ public class AkaiMPC2000DiskImage
         final boolean isFAT12 = countOfClusters < 4085;
         if (isFAT12)
         {
-            final int totalEntries = countOfClusters + 2;
+            // Do not read beyond the end of the FAT, each entry uses 1.5 bytes
+            final int fatSizeBytes = this.bootSector.sectorsPerFAT * this.bootSector.bytesPerSector;
+            final int totalEntries = Math.min (countOfClusters + 2, (fatSizeBytes - 1) * 2 / 3);
             this.fat = new int [totalEntries];
             for (int i = 0; i < totalEntries; i++)
             {

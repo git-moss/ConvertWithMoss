@@ -226,6 +226,10 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
                 midiChannel = XMLUtils.getIntegerAttribute (slotElement, TX16WxTag.MIDI_CHANNEL, 1) - 1;
             instrumentSource.setMidiChannel (midiChannel);
 
+            // 'by-solo' only indicates that the slot is muted since another slot is soloed
+            instrumentSource.setMute ("true".equals (slotElement.getAttribute (TX16WxTag.SLOT_MUTE)));
+            instrumentSource.setSolo ("true".equals (slotElement.getAttribute (TX16WxTag.SLOT_SOLO)));
+
             final Element volumeElement = XMLUtils.getChildElementByName (slotElement, TX16WxTag.SLOT_VOLUME);
             if (volumeElement != null)
                 instrumentSource.setGain (this.parseVolume (volumeElement, TX16WxTag.VALUE));
@@ -239,7 +243,7 @@ public class TX16WxDetector extends AbstractDetector<MetadataWithSearchHeightSet
                 instrumentSource.setTranspose (XMLUtils.getIntegerAttribute (transposeElement, TX16WxTag.VALUE, 0));
 
             final Element detuneElement = XMLUtils.getChildElementByName (slotElement, TX16WxTag.SLOT_DETUNE);
-            if (transposeElement != null)
+            if (detuneElement != null)
                 instrumentSource.setTuning (XMLUtils.getIntegerAttribute (detuneElement, TX16WxTag.VALUE, 0));
 
             // Don't use the name from the XML since it might only be something like "CH01"

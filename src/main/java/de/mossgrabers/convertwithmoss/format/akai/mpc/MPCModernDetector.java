@@ -812,11 +812,13 @@ public class MPCModernDetector extends AbstractDetector<MPCKeygroupDetectorUI>
                 final IInstrumentSource instrumentSource = new DefaultInstrumentSource (multisampleSource, midiChannel);
                 instrumentSource.setName (trackNode.path ("name").asText (multisampleSource.getName ()));
 
-                // The volume and panorama of the track are the ones of the mixer of the program,
-                // the ones of the track itself are not used
+                // The volume, panorama, mute and solo of the track are the ones of the mixer of the
+                // program, the ones of the track itself are not used
                 final JsonNode mixableNode = programNode.path ("mixable");
                 instrumentSource.setGain (MPC3ProjectFile.volumeToDb (mixableNode.path ("volume").asDouble (MPC3ProjectFile.VOLUME_0_DB)));
                 instrumentSource.setPanning (Math.clamp (mixableNode.path ("pan").asDouble (0.5) * 2.0 - 1.0, -1.0, 1.0));
+                instrumentSource.setMute (mixableNode.path ("mute").asBoolean (false));
+                instrumentSource.setSolo (mixableNode.path ("solo").asBoolean (false));
                 instrumentSource.setTranspose (programNode.path (TAG_TRANSPOSE).asInt (0) + programNode.path ("keygroup").path (TAG_TRANSPOSE).asInt (0));
                 performanceSource.addInstrument (instrumentSource);
             }

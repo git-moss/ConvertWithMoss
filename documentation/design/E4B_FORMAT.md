@@ -12,7 +12,7 @@ big-endian; the fields inside the E3S1 sample struct are little-endian.
 ```
 FORM <size> E4B0
   TOC1   table of contents, one 32-byte entry per chunk below (not EMSt)
-  E4Ma   256-byte MIDI multimap (channel -> preset routing)
+  E4Ma   MIDI multimap (channel -> preset routing), 2 + 256 bytes
   E4P1   one chunk per preset
   E3S1   one chunk per sample (16-bit mono little-endian PCM)
   EMSt   1366-byte master setup, always the last chunk, NOT listed in the TOC
@@ -31,21 +31,62 @@ the `FORM` size field:
   ignores the FORM size completely and walks the chunks against the real file
   length; the creator writes the EMU convention including the trailing `EMSt`.
 
-The `E4Ma` and `EMSt` blocks are not fully decoded; the creator writes the
-defaults captured from hardware-saved banks ("all presets on all channels" and
-the "Untitled MSetup" block).
+Every chunk starts with its 2-byte index (see the TOC entry). The size listed in
+the TOC excludes this index, i.e. it is the chunk size - 2.
+
+The channel settings of `E4Ma` and `EMSt` are decoded (see below). The rest of
+`EMSt` is not; the creator writes the defaults captured from hardware-saved banks
+(the "Untitled MSetup" block).
 
 ### TOC1 entry (32 bytes)
 
 | Offset | Size | Content |
 |---|---|---|
 | 0  | 4  | chunk tag (`E4Ma`, `E4P1`, `E3S1`) |
-| 4  | 4  | chunk data size |
+| 4  | 4  | chunk data size without the 2-byte index (chunk size - 2) |
 | 8  | 4  | absolute file offset of the chunk tag |
 | 12 | 2  | index: 0 for `E4Ma`, 0-based preset index, **1-based** sample index |
 | 14 | 16 | name, space-padded ASCII |
 | 30 | 1  | 0 |
 | 31 | 1  | MIDI program number (0 = any) |
+
+## MIDI multimap (E4Ma)
+
+The 2-byte chunk index (always 0) followed by one 8-byte entry for each of the 32
+MIDI channels A1-A16 and B1-B16:
+
+| Offset | Size | Content |
+|---|---|---|
+| 0 | 2 | preset index (signed big-endian), -1 (`FFFF`) = channel disabled |
+| 2 | 1 | volume 0-127 |
+| 3 | 1 | pan, signed -64 to +63 (displayed as -64 to +64) |
+| 4 | 1 | submix: `FF` = Voice, 0 = Main, 1-3 = Sub 1-3 |
+| 5 | 3 | 0 |
+
+Banks which are not created as a multi typically assign preset 0 to all channels
+or only to channel A1. EOS writes preset 0 for the B channels if they are not used.
+
+## Master setup (EMSt)
+
+| Offset | Size | Content |
+|---|---|---|
+| 0 | 2 | chunk index (0) |
+| 2 | 16 | name of the multisetup, space-padded ASCII ("Untitled MSetup") |
+| 0x16 | 32 * 32 | one record per MIDI channel A1-B16, see below |
+| 0x416 | 336 | global settings, not decoded |
+
+Channel record (32 bytes); preset, volume, pan and submix repeat the values of
+the multimap:
+
+| Offset | Size | Content |
+|---|---|---|
+| 0 | 2 | preset index (signed big-endian), -1 = channel disabled |
+| 2 | 1 | volume 0-127 |
+| 3 | 1 | pan, signed -64 to +63 |
+| 4 | 2 | pitch, signed big-endian -128 to +127 |
+| 6 | 1 | modulation 0-127 |
+| 7 | 1 | submix: `FF` = Voice, 0 = Main, 1-3 = Sub 1-3 |
+| 8 | 24 | not decoded (0, the last 4 bytes are `7F 00 00 00`) |
 
 ## Preset (E4P1)
 

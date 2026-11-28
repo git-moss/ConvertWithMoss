@@ -149,6 +149,8 @@ public class MPC3ProjectFile
         final ObjectNode mixableNode = (ObjectNode) programNode.get ("mixable");
         mixableNode.put ("volume", dbToVolume (instrumentSource.getGain ()));
         mixableNode.put ("pan", (Math.clamp (instrumentSource.getPanning (), -1.0, 1.0) + 1.0) / 2.0);
+        mixableNode.put ("mute", instrumentSource.isMute ());
+        mixableNode.put ("solo", instrumentSource.isSolo ());
         ((ObjectNode) programNode.get ("keygroup")).put ("transpose", instrumentSource.getTranspose ());
 
         this.tracks.add (trackNode);
